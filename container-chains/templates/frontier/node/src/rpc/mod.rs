@@ -25,8 +25,8 @@ pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
+    cumulus_client_parachain_inherent::ParachainInherentData,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
-    cumulus_primitives_parachain_inherent::ParachainInherentData,
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
     fc_rpc_core::TxPoolApiServer,
@@ -45,14 +45,14 @@ use {
     sc_service::TaskManager,
     sc_transaction_pool::{ChainApi, Pool},
     sc_transaction_pool_api::TransactionPool,
-    sp_api::{CallApiAt, HeaderT, ProvideRuntimeApi},
+    sp_api::{CallApiAt, ProvideRuntimeApi},
     sp_block_builder::BlockBuilder,
     sp_blockchain::{
         Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
     },
     sp_consensus_aura::SlotDuration,
     sp_core::H256,
-    sp_runtime::traits::{BlakeTwo256, Block as BlockT},
+    sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT},
     std::{sync::Arc, time::Duration},
 };
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);

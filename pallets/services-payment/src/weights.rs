@@ -56,6 +56,8 @@ pub trait WeightInfo {
 	fn set_credits() -> Weight;
 	fn set_given_free_credits() -> Weight;
 	fn on_container_author_noted() -> Weight;
+	fn on_collators_assigned() -> Weight;
+	fn set_refund_address() -> Weight;
 }
 
 /// Weights for pallet_services_payment using the Substrate node and recommended hardware.
@@ -108,6 +110,31 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `ServicesPayment::CollatorAssignmentCredits` (r:1 w:0)
+	/// Proof: `ServicesPayment::CollatorAssignmentCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn on_collators_assigned() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `258`
+		//  Estimated: `3593`
+		// Minimum execution time: 18_648_000 picoseconds.
+		Weight::from_parts(19_211_000, 3593)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+	}
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ServicesPayment::RefundAddress` (r:0 w:1)
+	/// Proof: `ServicesPayment::RefundAddress` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn set_refund_address() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `195`
+		//  Estimated: `3660`
+		// Minimum execution time: 12_734_000 picoseconds.
+		Weight::from_parts(13_245_000, 3660)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -156,6 +183,31 @@ impl WeightInfo for () {
 		// Minimum execution time: 19_043_000 picoseconds.
 		Weight::from_parts(19_499_000, 3593)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `ServicesPayment::CollatorAssignmentCredits` (r:1 w:0)
+	/// Proof: `ServicesPayment::CollatorAssignmentCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn on_collators_assigned() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `258`
+		//  Estimated: `3593`
+		// Minimum execution time: 18_648_000 picoseconds.
+		Weight::from_parts(19_211_000, 3593)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+	}
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ServicesPayment::RefundAddress` (r:0 w:1)
+	/// Proof: `ServicesPayment::RefundAddress` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn set_refund_address() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `195`
+		//  Estimated: `3660`
+		// Minimum execution time: 12_734_000 picoseconds.
+		Weight::from_parts(13_245_000, 3660)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

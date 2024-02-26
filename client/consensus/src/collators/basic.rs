@@ -14,43 +14,44 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use cumulus_client_collator::{
-    relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
+use {
+    crate::{
+        collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
+        OrchestratorAuraWorkerAuxData,
+    },
+    cumulus_client_collator::{
+        relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
+    },
+    cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_primitives_core::{
+        relay_chain::{BlockId as RBlockId, Hash as PHash},
+        PersistedValidationData,
+    },
+    cumulus_relay_chain_interface::RelayChainInterface,
+    futures::{channel::mpsc::Receiver, prelude::*},
+    parity_scale_codec::{Codec, Decode},
+    polkadot_node_primitives::CollationResult,
+    polkadot_overseer::Handle as OverseerHandle,
+    polkadot_primitives::{CollatorPair, Id as ParaId},
+    sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
+    sc_consensus::BlockImport,
+    sc_consensus_slots::InherentDataProviderExt,
+    sp_api::ProvideRuntimeApi,
+    sp_application_crypto::AppPublic,
+    sp_blockchain::HeaderBackend,
+    sp_consensus::SyncOracle,
+    sp_consensus_aura::SlotDuration,
+    sp_core::crypto::Pair,
+    sp_inherents::CreateInherentDataProviders,
+    sp_keystore::KeystorePtr,
+    sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
+    std::{convert::TryFrom, sync::Arc, time::Duration},
 };
-use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{
-    relay_chain::{BlockId as RBlockId, Hash as PHash},
-    PersistedValidationData,
-};
-use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::{Codec, Decode};
-
-use polkadot_node_primitives::CollationResult;
-use polkadot_overseer::Handle as OverseerHandle;
-use polkadot_primitives::{CollatorPair, Id as ParaId};
-
-use futures::{channel::mpsc::Receiver, prelude::*};
-use sc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
-use sc_consensus::BlockImport;
-use sc_consensus_slots::InherentDataProviderExt;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::AppPublic;
-use sp_blockchain::HeaderBackend;
-use sp_consensus::SyncOracle;
-use sp_consensus_aura::SlotDuration;
-use sp_core::crypto::Pair;
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::KeystorePtr;
-use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
-use std::{convert::TryFrom, sync::Arc, time::Duration};
-
-use crate::collators as collator_util;
-use crate::{consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator, AuthorityId};
 
 /// Parameters for [`run`].
 pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
     pub create_inherent_data_providers: CIDP,
-    pub get_authorities_from_orchestrator: GOH,
+    pub get_orchestrator_aux_data: GOH,
     pub block_import: BI,
     pub para_client: Arc<Client>,
     pub relay_client: RClient,
@@ -92,13 +93,13 @@ where
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
-    P: Pair,
+    P: Pair + Sync + Send + 'static,
     P::Public: AppPublic + Member + Codec,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
     GOH: RetrieveAuthoritiesFromOrchestrator<
             Block,
             (PHash, PersistedValidationData),
-            Vec<AuthorityId<P>>,
+            OrchestratorAuraWorkerAuxData<P>,
         >
         + 'static
         + Sync
@@ -177,7 +178,7 @@ where
 
             // Retrieve authorities that are able to produce the block
             let authorities = match params
-                .get_authorities_from_orchestrator
+                .get_orchestrator_aux_data
                 .retrieve_authorities_from_orchestrator(
                     parent_hash,
                     (relay_parent_header.hash(), validation_data.clone()),
@@ -200,8 +201,9 @@ where
                 Ok(h) => h,
             };
 
-            let mut claim = match collator_util::tanssi_claim_slot::<P>(
+            let mut claim = match collator_util::tanssi_claim_slot::<P, Block>(
                 authorities,
+                &parent_header,
                 inherent_providers.slot(),
                 params.force_authoring,
                 &params.keystore,
@@ -222,7 +224,7 @@ where
                     .await
             );
 
-            let (collation, _, post_hash) = try_request!(
+            let maybe_collation = try_request!(
                 collator
                     .collate(
                         &parent_header,
@@ -239,11 +241,17 @@ where
                     .await
             );
 
-            let result_sender = Some(collator.collator_service().announce_with_barrier(post_hash));
-            request.complete(Some(CollationResult {
-                collation,
-                result_sender,
-            }));
+            if let Some((collation, _, post_hash)) = maybe_collation {
+                let result_sender =
+                    Some(collator.collator_service().announce_with_barrier(post_hash));
+                request.complete(Some(CollationResult {
+                    collation,
+                    result_sender,
+                }));
+            } else {
+                request.complete(None);
+                tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
+            }
         }
     }
 }

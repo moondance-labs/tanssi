@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, DanceboxSender, EthereumReceiver, FrontierTemplate,
-            FrontierTemplatePallet,
+            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender, EthereumReceiver,
+            FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
         },
         *,
     },
@@ -56,8 +56,9 @@ fn receive_tokens_from_tanssi_to_simple_template() {
 
     let amount_to_send: crate::Balance = dancebox_runtime::ExistentialDeposit::get() * 1000;
 
-    let dancebox_pallet_info_junction =
-        PalletInstance(<<Dancebox as DanceboxPallet>::Balances as PalletInfoAccess>::index() as u8);
+    let dancebox_pallet_info_junction = PalletInstance(
+        <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
+    );
     let assets: MultiAssets = (X1(dancebox_pallet_info_junction), amount_to_send).into();
     let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
@@ -67,7 +68,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
         let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation {
                     parents: 1,
@@ -81,7 +82,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
         );
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::AssetRate::create(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
                 root_origin,
                 bx!(1),
                 FixedU128::from_u32(1)
@@ -92,7 +93,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
         assert_ok!(
-            <Dancebox as DanceboxPallet>::PolkadotXcm::limited_reserve_transfer_assets(
+            <Dancebox as DanceboxParaPallet>::PolkadotXcm::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(frontier_template_dest),
                 bx!(frontier_template_beneficiary),
@@ -109,19 +110,21 @@ fn receive_tokens_from_tanssi_to_simple_template() {
         assert_expected_events!(
             FrontierTemplate,
             vec![
-                RuntimeEvent::XcmpQueue(
-                cumulus_pallet_xcmp_queue::Event::Success {
-                    weight,
-                    ..
-                }) => {
-                    weight: {
-                        outcome_weight = *weight;
-                        weight.all_gte(Weight::from_parts(0, 0))
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
+                    }) => {
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplatePallet>::ForeignAssets;
+
+        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =

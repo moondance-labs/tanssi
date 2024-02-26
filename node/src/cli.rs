@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use sc_chain_spec::ChainSpec;
+use sp_runtime::Storage;
 use {
     crate::chain_spec::RawGenesisConfig,
     node_common::service::Sealing,
@@ -51,7 +53,8 @@ pub enum Subcommand {
     PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
     /// Export the genesis state of the parachain.
-    ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
+    #[command(alias = "export-genesis-state")]
+    ExportGenesisHead(cumulus_client_cli::ExportGenesisHeadCommand),
 
     /// Export the genesis wasm of the parachain.
     ExportGenesisWasm(ExportGenesisWasmCommand),
@@ -72,6 +75,9 @@ pub enum Subcommand {
     /// Key management cli utilities
     #[command(subcommand)]
     Key(KeyCmd),
+
+    /// Precompile the WASM runtime into native code
+    PrecompileWasm(sc_cli::PrecompileWasmCmd),
 }
 
 /// The `build-spec` command used to build a specification.
@@ -323,36 +329,45 @@ impl ContainerChainCli {
             String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
-        let telemetry_endpoints = None;
-        let protocol_id = Some(format!("container-chain-{}", para_id));
-        let fork_id = genesis_data
-            .fork_id
-            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string()))
-            .transpose()?;
-        let properties = Some(
-            properties_to_map(&genesis_data.properties)
-                .map_err(|e| format!("Invalid properties: {}", e))?,
-        );
+        let protocol_id = format!("container-chain-{}", para_id);
+        let properties = properties_to_map(&genesis_data.properties)
+            .map_err(|e| format!("Invalid properties: {}", e))?;
         let extensions = crate::chain_spec::Extensions {
             relay_chain,
             para_id,
         };
-        let chain_spec = crate::chain_spec::RawChainSpec::from_genesis(
-            &name,
-            &id,
-            chain_type,
-            move || RawGenesisConfig {
-                storage_raw: storage_raw.clone(),
-            },
-            boot_nodes,
-            telemetry_endpoints,
-            protocol_id.as_deref(),
-            fork_id.as_deref(),
-            properties,
+        let raw_genesis_config = RawGenesisConfig {
+            storage_raw: storage_raw.clone(),
+        };
+
+        let chain_spec = crate::chain_spec::RawChainSpec::builder(
+            // This code is not used, we override it in `set_storage` below
+            &[],
             // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
             // other extensions are being ignored
             extensions,
-        );
+        )
+        .with_name(&name)
+        .with_id(&id)
+        .with_chain_type(chain_type)
+        .with_properties(properties)
+        .with_boot_nodes(boot_nodes)
+        .with_protocol_id(&protocol_id);
+
+        let chain_spec = if let Some(fork_id) = genesis_data.fork_id {
+            let fork_id_string =
+                String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
+            chain_spec.with_fork_id(&fork_id_string)
+        } else {
+            chain_spec
+        };
+
+        let mut chain_spec = chain_spec.build();
+
+        chain_spec.set_storage(Storage {
+            top: raw_genesis_config.storage_raw,
+            children_default: Default::default(),
+        });
 
         Ok(chain_spec)
     }

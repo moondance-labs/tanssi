@@ -19,11 +19,14 @@
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
 use {
-    crate::collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+    crate::{
+        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        OrchestratorAuraWorkerAuxData,
+    },
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
-    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo},
+    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
@@ -33,20 +36,22 @@ use {
     nimbus_primitives::{
         CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
     },
-    parity_scale_codec::alloc::collections::{BTreeMap, BTreeSet},
+    parity_scale_codec::Encode,
     parking_lot::Mutex,
     polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
         Hash as PHash, OccupiedCoreAssumption, PersistedValidationData, ValidatorId,
     },
-    sc_block_builder::BlockBuilderProvider,
+    sc_block_builder::BlockBuilderBuilder,
     sc_client_api::HeaderBackend,
     sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
     sc_keystore::LocalKeystore,
-    sc_network_test::{Block as TestBlock, *},
+    sc_network_test::{Block as TestBlock, Header as TestHeader, *},
+    sp_api::{ApiRef, ProvideRuntimeApi},
     sp_consensus::{EnableProofRecording, Environment, Proposal, Proposer},
-    sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
+    sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration, AURA_ENGINE_ID},
+    sp_consensus_slots::Slot,
     sp_core::{
         crypto::{ByteArray, Pair},
         traits::SpawnNamed,
@@ -59,7 +64,12 @@ use {
         Digest, DigestItem,
     },
     sp_timestamp::Timestamp,
-    std::{pin::Pin, sync::Arc, time::Duration},
+    std::{
+        collections::{BTreeMap, BTreeSet},
+        pin::Pin,
+        sync::Arc,
+        time::Duration,
+    },
     substrate_test_runtime_client::TestClient,
 };
 
@@ -73,7 +83,6 @@ struct DummyFactory(Arc<TestClient>);
 // We are going to create API because we need this to test runtime apis
 // We use the client normally, but for testing certain runtime-api calls,
 // we basically mock the runtime-api calls
-use sp_api::{ApiRef, ProvideRuntimeApi};
 impl ProvideRuntimeApi<Block> for DummyFactory {
     type Api = MockApi;
 
@@ -81,8 +90,6 @@ impl ProvideRuntimeApi<Block> for DummyFactory {
         MockApi.into()
     }
 }
-
-use cumulus_primitives_core::ParaId;
 
 struct MockApi;
 
@@ -366,7 +373,14 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = self.1.new_block(digests).unwrap().build();
+        let r = BlockBuilderBuilder::new(&*self.1)
+            .on_parent_block(self.1.chain_info().best_hash)
+            .fetch_parent_block_number(&*self.1)
+            .unwrap()
+            .with_inherent_digests(digests)
+            .build()
+            .unwrap()
+            .build();
         let (_relay_parent_storage_root, proof) =
             RelayStateSproofBuilder::default().into_state_root_and_proof();
 
@@ -441,47 +455,89 @@ async fn current_node_authority_should_claim_slot() {
     authorities.push(public.into());
 
     let keystore_ptr: KeystorePtr = keystore.into();
+    let mut claimed_slots = vec![];
 
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 0.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 1.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 2.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 3.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_some()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 4.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 5.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 6.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_none()
-    );
-    assert!(
-        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 7.into(), false, &keystore_ptr)
-            .unwrap()
-            .is_some()
-    );
+    for slot in 0..8 {
+        let dummy_head = TestHeader {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: Default::default(),
+        };
+        let aux_data = OrchestratorAuraWorkerAuxData {
+            authorities: authorities.clone(),
+            min_slot_freq: None,
+        };
+        let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+            aux_data,
+            &dummy_head,
+            slot.into(),
+            false,
+            &keystore_ptr,
+        )
+        .unwrap();
+        if claim.is_some() {
+            claimed_slots.push(slot);
+        }
+    }
+
+    assert_eq!(claimed_slots, vec![3, 7]);
+}
+
+#[tokio::test]
+async fn claim_slot_respects_min_slot_freq() {
+    // There is only 1 authority, but it can only claim every 4 slots
+    let mut authorities: Vec<NimbusId> = vec![];
+    let min_slot_freq = 4;
+
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+
+    let public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, None)
+        .expect("Key should be created");
+    authorities.push(public.into());
+
+    let keystore_ptr: KeystorePtr = keystore.into();
+
+    let mut claimed_slots = vec![];
+
+    for slot in 0..10 {
+        let parent_slot: u64 = claimed_slots.last().copied().unwrap_or_default();
+        let parent_slot: Slot = parent_slot.into();
+        let pre_digest = Digest {
+            logs: vec![
+                DigestItem::PreRuntime(AURA_ENGINE_ID, parent_slot.encode()),
+                //DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
+            ],
+        };
+        let head = TestHeader {
+            parent_hash: Default::default(),
+            // If we use number=0 aura ignores the digest
+            number: claimed_slots.len() as u64,
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: pre_digest,
+        };
+        let aux_data = OrchestratorAuraWorkerAuxData {
+            authorities: authorities.clone(),
+            min_slot_freq: Some(min_slot_freq.into()),
+        };
+        let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+            aux_data,
+            &head,
+            slot.into(),
+            false,
+            &keystore_ptr,
+        )
+        .unwrap();
+        if claim.is_some() {
+            claimed_slots.push(slot);
+        }
+    }
+
+    assert_eq!(claimed_slots, vec![0, 4, 8]);
 }
 
 #[tokio::test]
@@ -562,10 +618,18 @@ async fn collate_returns_correct_block() {
     );
     let keystore_ptr: KeystorePtr = keystore_copy.into();
 
-    let mut claim =
-        tanssi_claim_slot::<NimbusPair>(vec![alice_public.into()], *slot, false, &keystore_ptr)
-            .unwrap()
-            .unwrap();
+    let mut claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+        OrchestratorAuraWorkerAuxData {
+            authorities: vec![alice_public.into()],
+            min_slot_freq: None,
+        },
+        &head,
+        *slot,
+        false,
+        &keystore_ptr,
+    )
+    .unwrap()
+    .unwrap();
 
     // At the end we call collate() function
     let res = collator
@@ -578,6 +642,7 @@ async fn collate_returns_correct_block() {
             3_500_000usize,
         )
         .await
+        .unwrap()
         .unwrap()
         .1;
 

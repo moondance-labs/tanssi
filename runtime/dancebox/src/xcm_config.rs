@@ -16,24 +16,27 @@
 
 use {
     super::{
-        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balance,
-        Balances, ForeignAssetsCreator, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
+        Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, WeightToFee, XcmpQueue,
     },
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess},
+        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
+    parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
+    sp_runtime::Perbill,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, CurrencyAdapter, EnsureXcmOrigin,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
@@ -117,7 +120,7 @@ pub type LocationToAccountId = (
 pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>;
 
 /// Means for transacting the native currency on this chain.
-pub type CurrencyTransactor = CurrencyAdapter<
+pub type CurrencyTransactor = FungibleAdapter<
     // Use this currency:
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
@@ -229,21 +232,20 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
     type WeightInfo = pallet_xcm::TestWeightInfo;
-    #[cfg(feature = "runtime-benchmarks")]
-    type ReachableDest = ReachableDest;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type XcmExecutor = XcmExecutor<XcmConfig>;
     type ChannelInfo = ParachainSystem;
     type VersionWrapper = PolkadotXcm;
-    type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
     type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    // Enqueue XCMP messages from siblings for later processing.
+    type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
+    type MaxInboundSuspended = sp_core::ConstU32<1_000>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
@@ -251,10 +253,14 @@ impl cumulus_pallet_xcm::Config for Runtime {
     type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
+parameter_types! {
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+}
+
 impl cumulus_pallet_dmp_queue::Config for Runtime {
+    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
-    type XcmExecutor = XcmExecutor<XcmConfig>;
-    type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
 
 parameter_types! {
@@ -335,7 +341,6 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
     staging_xcm_executor::traits::JustTry,
 };
@@ -361,24 +366,9 @@ pub type AssetRateAsMultiplier =
     parachains_common::xcm_config::AssetFeeAsExistentialDepositMultiplier<
         Runtime,
         WeightToFee,
-        CustomConverter,
+        AssetRate,
         ForeignAssetsInstance,
     >;
-
-// TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
-pub struct CustomConverter;
-impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
-    for CustomConverter
-{
-    type Error = ();
-    fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
-        let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
-        Ok(sp_runtime::FixedU128::from_u32(1)
-            .checked_div(&rate)
-            .ok_or(())?
-            .saturating_mul_int(balance))
-    }
-}
 
 // TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
@@ -437,4 +427,32 @@ impl Parse for MultiLocation {
             None
         }
     }
+}
+
+parameter_types! {
+    pub MessageQueueServiceWeight: Weight = Perbill::from_percent(25) * RuntimeBlockWeights::get().max_block;
+}
+
+impl pallet_message_queue::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_message_queue::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
+        cumulus_primitives_core::AggregateMessageOrigin,
+    >;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
+        AggregateMessageOrigin,
+        XcmExecutor<XcmConfig>,
+        RuntimeCall,
+    >;
+    type Size = u32;
+    // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
+    type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
+    // NarrowOriginToSibling calls XcmpQueue's is_pause if Origin is sibling. Allows all other origins
+    type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
+    // TODO verify values
+    type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
+    type MaxStale = sp_core::ConstU32<8>;
+    type ServiceWeight = MessageQueueServiceWeight;
 }

@@ -21,10 +21,9 @@ use {
     container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
-    cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider,
-    cumulus_primitives_parachain_inherent::MockXcmConfig,
     nimbus_primitives::NimbusId,
     node_common::service::ManualSealConfiguration,
     node_common::service::Sealing,
@@ -65,7 +64,7 @@ pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
-    type ParachainNativeExecutor = ParachainNativeExecutor;
+    type ParachainExecutor = ParachainExecutor;
 }
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));

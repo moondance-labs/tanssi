@@ -105,6 +105,8 @@ describeSuite({
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
+                await context.createBlock();
+
                 // Make sure the state has ALITH's foreign parachain tokens
                 const testAccountBalance = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
 

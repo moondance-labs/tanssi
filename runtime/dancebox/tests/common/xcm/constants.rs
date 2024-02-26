@@ -17,7 +17,7 @@ use {
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
-    pallet_im_online::sr25519::AuthorityId as ImOnlineId,
+    emulated_integration_tests_common::build_genesis_storage,
     polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
@@ -25,7 +25,7 @@ use {
     sp_core::{sr25519, storage::Storage, Pair, Public},
     sp_runtime::{
         traits::{IdentifyAccount, Verify},
-        BuildStorage, MultiSignature,
+        MultiSignature,
     },
 };
 
@@ -88,7 +88,6 @@ pub mod validators {
         AccountId,
         BabeId,
         GrandpaId,
-        ImOnlineId,
         ValidatorId,
         AssignmentId,
         AuthorityDiscoveryId,
@@ -121,7 +120,6 @@ pub mod westend {
     fn session_keys(
         babe: BabeId,
         grandpa: GrandpaId,
-        im_online: ImOnlineId,
         para_validator: ValidatorId,
         para_assignment: AssignmentId,
         authority_discovery: AuthorityDiscoveryId,
@@ -130,7 +128,6 @@ pub mod westend {
         westend_runtime::SessionKeys {
             babe,
             grandpa,
-            im_online,
             para_validator,
             para_assignment,
             authority_discovery,
@@ -140,10 +137,6 @@ pub mod westend {
 
     pub fn genesis() -> Storage {
         let genesis_config = westend_runtime::RuntimeGenesisConfig {
-            system: westend_runtime::SystemConfig {
-                code: westend_runtime::WASM_BINARY.unwrap().to_vec(),
-                ..Default::default()
-            },
             balances: westend_runtime::BalancesConfig {
                 balances: accounts::init_balances()
                     .iter()
@@ -164,7 +157,6 @@ pub mod westend {
                                 x.4.clone(),
                                 x.5.clone(),
                                 x.6.clone(),
-                                x.7.clone(),
                                 get_from_seed::<BeefyId>("Alice"),
                             ),
                         )
@@ -203,27 +195,22 @@ pub mod westend {
             },
             ..Default::default()
         };
-
-        genesis_config.build_storage().unwrap()
+        build_genesis_storage(&genesis_config, westend_runtime::WASM_BINARY.unwrap())
     }
 }
 
 // Frontier template
 pub mod frontier_template {
     use {
-        container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
-        sp_runtime::BuildStorage,
+        container_chain_template_frontier_runtime::AccountId,
+        emulated_integration_tests_common::build_genesis_storage, hex_literal::hex,
     };
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
+
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
-            system: container_chain_template_frontier_runtime::SystemConfig {
-                code: container_chain_template_frontier_runtime::WASM_BINARY
-                    .expect("WASM binary was not build, please build it!")
-                    .to_vec(),
-                ..Default::default()
-            },
+            system: Default::default(),
             balances: container_chain_template_frontier_runtime::BalancesConfig {
                 balances: pre_funded_accounts()
                     .iter()
@@ -253,7 +240,10 @@ pub mod frontier_template {
             ..Default::default()
         };
 
-        genesis_config.build_storage().unwrap()
+        build_genesis_storage(
+            &genesis_config,
+            container_chain_template_frontier_runtime::WASM_BINARY.unwrap(),
+        )
     }
     /// Get pre-funded accounts
     pub fn pre_funded_accounts() -> Vec<AccountId> {
@@ -270,21 +260,13 @@ pub mod frontier_template {
 
 // Simple template
 pub mod simple_template {
-    use {
-        super::*, container_chain_template_simple_runtime::UNIT as DEV, sp_runtime::BuildStorage,
-    };
+    use {super::*, container_chain_template_simple_runtime::UNIT as DEV};
     pub const PARA_ID: u32 = 2002;
     pub const ORCHESTRATOR: u32 = 2000;
     const ENDOWMENT: u128 = 1_000_000 * DEV;
 
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_simple_runtime::RuntimeGenesisConfig {
-            system: container_chain_template_simple_runtime::SystemConfig {
-                code: container_chain_template_simple_runtime::WASM_BINARY
-                    .expect("WASM binary was not build, please build it!")
-                    .to_vec(),
-                ..Default::default()
-            },
             balances: container_chain_template_simple_runtime::BalancesConfig {
                 balances: accounts::init_balances()
                     .iter()
@@ -305,7 +287,9 @@ pub mod simple_template {
             },
             ..Default::default()
         };
-
-        genesis_config.build_storage().unwrap()
+        build_genesis_storage(
+            &genesis_config,
+            container_chain_template_simple_runtime::WASM_BINARY.unwrap(),
+        )
     }
 }

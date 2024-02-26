@@ -17,7 +17,7 @@
 use {
     crate::{
         container_chain_spawner::{CcSpawnMsg, ContainerChainSpawnerState},
-        service::{ParachainBackend, ParachainClient},
+        service::{ContainerChainBackend, ContainerChainClient},
     },
     cumulus_primitives_core::ParaId,
     std::{
@@ -57,9 +57,9 @@ pub struct SpawnedContainer {
     /// This won't be precise because it is checked using polling with a high period.
     pub stop_refcount_time: Cell<Option<Instant>>,
     /// Used to check the reference count, if it's 0 it means the database has been closed
-    pub backend: std::sync::Weak<ParachainBackend>,
+    pub backend: std::sync::Weak<ContainerChainBackend>,
     /// Used to check the reference count, if it's 0 it means that the client has been closed.
-    pub client: std::sync::Weak<ParachainClient>,
+    pub client: std::sync::Weak<ContainerChainClient>,
 }
 
 impl SpawnedContainer {

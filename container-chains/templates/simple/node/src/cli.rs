@@ -47,7 +47,8 @@ pub enum Subcommand {
     PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
     /// Export the genesis state of the parachain.
-    ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
+    #[command(alias = "export-genesis-state")]
+    ExportGenesisHead(cumulus_client_cli::ExportGenesisHeadCommand),
 
     /// Export the genesis wasm of the parachain.
     ExportGenesisWasm(cumulus_client_cli::ExportGenesisWasmCommand),
@@ -64,6 +65,9 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+
+    /// Precompile the WASM runtime into native code
+    PrecompileWasm(sc_cli::PrecompileWasmCmd),
 }
 
 #[derive(Debug, Parser)]

@@ -73,29 +73,25 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        "Development",
-        // ID
-        "dev",
-        ChainType::Development,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
-            )
-        },
-        boot_nodes,
-        None,
-        None,
-        None,
-        Some(properties),
+    ChainSpec::builder(
+        container_chain_template_frontier_runtime::WASM_BINARY
+            .expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name("Development")
+    .with_id("dev")
+    .with_chain_type(ChainType::Development)
+    .with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
+    ))
+    .with_properties(properties)
+    .with_boot_nodes(boot_nodes)
+    .build()
 }
 
 pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
@@ -105,7 +101,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("tokenDecimals".into(), 18.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
-    let protocol_id = Some(format!("container-chain-{}", para_id));
+    let protocol_id = format!("container-chain-{}", para_id);
 
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.sort();
@@ -118,55 +114,41 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        &format!("Frontier Container {}", para_id),
-        // ID
-        &format!("frontier_container_{}", para_id),
-        ChainType::Local,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
-            )
-        },
-        // Bootnodes
-        boot_nodes,
-        // Telemetry
-        None,
-        // Protocol ID
-        protocol_id.as_deref(),
-        // Fork ID
-        None,
-        // Properties
-        Some(properties),
-        // Extensions
+    ChainSpec::builder(
+        container_chain_template_frontier_runtime::WASM_BINARY
+            .expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name(&format!("Frontier Container {}", para_id))
+    .with_id(&format!("frontier_container_{}", para_id))
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
+    ))
+    .with_properties(properties)
+    .with_protocol_id(&protocol_id)
+    .with_boot_nodes(boot_nodes)
+    .build()
 }
 
 fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_frontier_runtime::RuntimeGenesisConfig {
+) -> serde_json::Value {
     // This is the simplest bytecode to revert without returning any data.
     // We will pre-deploy it under all of our precompiles to ensure they can be called from
     // within contracts.
     // (PUSH1 0x00 PUSH1 0x00 REVERT)
     let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
 
-    container_chain_template_frontier_runtime::RuntimeGenesisConfig {
-        system: container_chain_template_frontier_runtime::SystemConfig {
-            code: container_chain_template_frontier_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!")
-                .to_vec(),
-            ..Default::default()
-        },
+    let g = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
+        system: Default::default(),
         balances: container_chain_template_frontier_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
@@ -224,7 +206,9 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         tx_pause: Default::default(),
-    }
+    };
+
+    serde_json::to_value(&g).unwrap()
 }
 
 /// Get pre-funded accounts

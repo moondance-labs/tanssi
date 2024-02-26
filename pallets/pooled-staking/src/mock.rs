@@ -108,6 +108,7 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 /// Allows to change ED mid-test.

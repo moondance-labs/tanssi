@@ -59,8 +59,7 @@ use {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use tp_traits::SessionContainerChains;
+    use {super::*, tp_traits::SessionContainerChains};
 
     #[pallet::pallet]
     #[pallet::without_storage_info]

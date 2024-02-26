@@ -35,19 +35,19 @@ pub mod xcm_config;
 use {
     crate::precompiles::TemplatePrecompiles,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
+    cumulus_primitives_core::AggregateMessageOrigin,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
+        genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT,
-            FindAuthor, Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
+            FindAuthor, Imbalance, InsideBoth, InstanceFilter, OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -89,6 +89,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -97,8 +98,6 @@ pub use {
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
-
-const LOG_TARGET: &str = "runtime::evm_template";
 
 pub type Precompiles = TemplatePrecompiles<Runtime>;
 
@@ -163,7 +162,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
+    AllPalletsWithSystem,
 >;
 
 impl fp_self_contained::SelfContainedCall for RuntimeCall {
@@ -449,6 +448,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
 }
 
 parameter_types! {
@@ -464,17 +464,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-}
-
-impl pallet_timestamp::Config for Runtime {
-    /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
-        <Self as pallet_author_inherent::Config>::SlotBeacon,
-        ConstU64<{ SLOT_DURATION }>,
-    >;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -503,6 +492,7 @@ impl pallet_balances::Config for Runtime {
 parameter_types! {
     pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -516,11 +506,12 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = MaintenanceMode;
+    type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -661,7 +652,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::TemplateMigrations<Runtime>,);
+    type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 
@@ -706,99 +697,12 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-pub struct NormalDmpHandler;
-impl DmpMessageHandler for NormalDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        limit: Weight,
-    ) -> Weight {
-        (if Migrations::should_pause_xcm() {
-            DmpQueue::handle_dmp_messages(iter, Weight::zero())
-        } else {
-            DmpQueue::handle_dmp_messages(iter, limit)
-        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
-    }
-}
-
-pub struct MaintenanceDmpHandler;
-impl DmpMessageHandler for MaintenanceDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        _limit: Weight,
-    ) -> Weight {
-        DmpQueue::handle_dmp_messages(iter, Weight::zero())
-    }
-}
-
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        AllPalletsWithSystem::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        AllPalletsWithSystem::post_upgrade(state)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
-    }
-}
-
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
-    type NormalDmpHandler = NormalDmpHandler;
-    type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
-    // operation
-    type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
-}
-
-impl pallet_cc_authorities_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorityId = NimbusId;
-    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
 }
 
 // To match ethereum expectations
@@ -897,15 +801,9 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_author_inherent::Config for Runtime {
-    type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::NimbusLookUp;
-    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
-    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+impl pallet_root_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
 }
-
-impl pallet_root_testing::Config for Runtime {}
 
 impl pallet_tx_pause::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -916,6 +814,15 @@ impl pallet_tx_pause::Config for Runtime {
     type MaxNameLen = ConstU32<256>;
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
+
+impl tp_impl_tanssi_pallets_config::Config for Runtime {
+    const SLOT_DURATION: u64 = SLOT_DURATION;
+    type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+    type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+}
+
+impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -953,9 +860,10 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
-        ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 74,
-        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 75,
-        AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 76,
+        MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
+        ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
+        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 76,
+        AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -975,7 +883,7 @@ mod benches {
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [pallet_xcm, PolkadotXcm]
+        [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_assets, ForeignAssets]
         [pallet_asset_rate, AssetRate]
@@ -1129,6 +1037,16 @@ impl_runtime_apis! {
         }
     }
 
+    impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+        fn create_default_config() -> Vec<u8> {
+            create_default_config::<RuntimeGenesisConfig>()
+        }
+
+        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_config::<RuntimeGenesisConfig>(config)
+        }
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(
@@ -1139,6 +1057,7 @@ impl_runtime_apis! {
         ) {
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -1223,6 +1142,44 @@ impl_runtime_apis! {
 
                 fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            impl pallet_xcm::benchmarking::Config for Runtime {
+                fn reachable_dest() -> Option<MultiLocation> {
+                    Some(Parent.into())
+                }
+
+                fn teleportable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // Relay/native token can be teleported between AH and Relay.
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        Parent.into(),
+                    ))
+                }
+
+                fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // AH can reserve transfer native token to some random parachain.
+                    let random_para_id = 43211234;
+                    ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+                        random_para_id.into()
+                    );
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        ParentThen(Parachain(random_para_id).into()).into(),
+                    ))
+                }
+
+                fn set_up_complex_asset_transfer(
+                ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                    None
                 }
             }
 
@@ -1416,7 +1373,7 @@ impl_runtime_apis! {
 
         fn gas_limit_multiplier_support() {}
 
-        fn pending_block(xts: Vec<<Block as sp_api::BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<sp_std::prelude::Vec<TransactionStatus>>) {
+        fn pending_block(xts: Vec<<Block as BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<sp_std::prelude::Vec<TransactionStatus>>) {
             for ext in xts.into_iter() {
                 let _ = Executive::apply_extrinsic(ext);
             }

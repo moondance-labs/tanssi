@@ -16,38 +16,36 @@
 
 use {
     super::{
-        precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId, AllPalletsWithSystem,
-        Balance, Balances, ForeignAssetsCreator, ParachainInfo, ParachainSystem, PolkadotXcm,
-        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
+        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
+        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     ccp_xcm::SignedToAccountKey20,
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{
-            fungibles::Inspect, tokens::ConversionToAssetBalance, Everything, Nothing,
-            PalletInfoAccess,
-        },
+        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
-    pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
     pallet_xcm::XcmPassthrough,
-    parachains_common::impls::AccountIdOf,
+    parachains_common::{
+        message_queue::{NarrowOriginToSibling, ParaIdToSibling},
+        xcm_config::AssetFeeAsExistentialDepositMultiplier,
+    },
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
-    sp_core::{ConstU32, H160},
-    sp_std::{marker::PhantomData, vec::Vec},
+    sp_core::ConstU32,
+    sp_runtime::Perbill,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, CurrencyAdapter, EnsureXcmOrigin,
-        FixedWeightBounds, IsConcrete, ParentIsPreset, RelayChainAsNative,
-        SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountKey20AsNative,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,
+        FungibleAdapter, IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
+        TakeWeightCredit, UsingComponents, WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
 };
-
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -123,7 +121,7 @@ pub type LocationToAccountId = (
 pub type LocalOriginToLocation = SignedToAccountKey20<RuntimeOrigin, AccountId, RelayNetwork>;
 
 /// Means for transacting the native currency on this chain.
-pub type CurrencyTransactor = CurrencyAdapter<
+pub type CurrencyTransactor = FungibleAdapter<
     // Use this currency:
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
@@ -232,21 +230,19 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
     type WeightInfo = pallet_xcm::TestWeightInfo;
-    #[cfg(feature = "runtime-benchmarks")]
-    type ReachableDest = ReachableDest;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type XcmExecutor = XcmExecutor<XcmConfig>;
     type ChannelInfo = ParachainSystem;
     type VersionWrapper = PolkadotXcm;
-    type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
     type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
+    type MaxInboundSuspended = sp_core::ConstU32<1_000>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
@@ -254,10 +250,42 @@ impl cumulus_pallet_xcm::Config for Runtime {
     type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
+parameter_types! {
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+}
+
 impl cumulus_pallet_dmp_queue::Config for Runtime {
+    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
-    type XcmExecutor = XcmExecutor<XcmConfig>;
-    type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
+}
+
+parameter_types! {
+    pub MessageQueueServiceWeight: Weight = Perbill::from_percent(25) * RuntimeBlockWeights::get().max_block;
+}
+
+impl pallet_message_queue::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_message_queue::weights::SubstrateWeight<Self>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
+        cumulus_primitives_core::AggregateMessageOrigin,
+    >;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
+        AggregateMessageOrigin,
+        XcmExecutor<XcmConfig>,
+        RuntimeCall,
+    >;
+    type Size = u32;
+    // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
+    type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
+    // NarrowOriginToSibling calls XcmpQueue's is_pause if Origin is sibling. Allows all other origins
+    type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
+    // TODO verify values
+    type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
+    type MaxStale = sp_core::ConstU32<8>;
+    type ServiceWeight = MessageQueueServiceWeight;
 }
 
 parameter_types! {
@@ -286,33 +314,6 @@ impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelpe
     fn create_asset_kind(id: u32) -> AssetId {
         id.try_into()
             .expect("number too large to create benchmarks")
-    }
-}
-
-// Instruct how to go from an H160 to an AssetID
-// We just take the lowest 2 bytes
-impl AccountIdAssetIdConversion<AccountId, AssetId> for Runtime {
-    /// The way to convert an account to assetId is by ensuring that the prefix is [0xFF, 18]
-    /// and by taking the lowest 2 bytes as the assetId
-    fn account_to_asset_id(account: AccountId) -> Option<(Vec<u8>, AssetId)> {
-        let h160_account: H160 = account.into();
-        let mut data = [0u8; 2];
-        let (prefix_part, id_part) = h160_account.as_fixed_bytes().split_at(18);
-        if prefix_part == FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX {
-            data.copy_from_slice(id_part);
-            let asset_id: AssetId = u16::from_be_bytes(data);
-            Some((prefix_part.to_vec(), asset_id))
-        } else {
-            None
-        }
-    }
-
-    // The opposite conversion
-    fn asset_id_to_account(prefix: &[u8], asset_id: AssetId) -> AccountId {
-        let mut data = [0u8; 20];
-        data[0..18].copy_from_slice(prefix);
-        data[18..20].copy_from_slice(&asset_id.to_be_bytes());
-        AccountId::from(data)
     }
 }
 
@@ -365,7 +366,6 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
     staging_xcm_executor::traits::JustTry,
 };
@@ -387,28 +387,8 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 >;
 
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
-pub type AssetRateAsMultiplier = AssetFeeAsExistentialDepositMultiplier<
-    Runtime,
-    WeightToFee,
-    CustomConverter,
-    ForeignAssetsInstance,
->;
-
-// TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
-pub struct CustomConverter;
-impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
-    for CustomConverter
-{
-    type Error = ();
-    fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
-        let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
-        Ok(sp_runtime::FixedU128::from_u32(1)
-            .checked_div(&rate)
-            .ok_or(())?
-            .saturating_mul_int(balance))
-    }
-}
-
+pub type AssetRateAsMultiplier =
+    AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
 // TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
 impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
@@ -465,49 +445,5 @@ impl Parse for MultiLocation {
         } else {
             None
         }
-    }
-}
-
-pub struct AssetFeeAsExistentialDepositMultiplier<
-    Runtime,
-    WeightToFee,
-    BalanceConverter,
-    AssetInstance: 'static,
->(PhantomData<(Runtime, WeightToFee, BalanceConverter, AssetInstance)>);
-impl<CurrencyBalance, Runtime, WeightToFee, BalanceConverter, AssetInstance>
-    cumulus_primitives_utility::ChargeWeightInFungibles<
-        AccountIdOf<Runtime>,
-        pallet_assets::Pallet<Runtime, AssetInstance>,
-    >
-    for AssetFeeAsExistentialDepositMultiplier<
-        Runtime,
-        WeightToFee,
-        BalanceConverter,
-        AssetInstance,
-    >
-where
-    Runtime: pallet_assets::Config<AssetInstance>,
-    WeightToFee: frame_support::weights::WeightToFee<Balance = CurrencyBalance>,
-    BalanceConverter: ConversionToAssetBalance<
-        CurrencyBalance,
-        <Runtime as pallet_assets::Config<AssetInstance>>::AssetId,
-        <Runtime as pallet_assets::Config<AssetInstance>>::Balance,
-    >,
-{
-    fn charge_weight_in_fungibles(
-        asset_id: <pallet_assets::Pallet<Runtime, AssetInstance> as Inspect<
-            AccountIdOf<Runtime>,
-        >>::AssetId,
-        weight: Weight,
-    ) -> Result<
-        <pallet_assets::Pallet<Runtime, AssetInstance> as Inspect<AccountIdOf<Runtime>>>::Balance,
-        XcmError,
-    > {
-        let amount = WeightToFee::weight_to_fee(&weight);
-        // If the amount gotten is not at least the ED, then make it be the ED of the asset
-        // This is to avoid burning assets and decreasing the supply
-        let asset_amount = BalanceConverter::to_asset_balance(amount, asset_id)
-            .map_err(|_| XcmError::TooExpensive)?;
-        Ok(asset_amount)
     }
 }

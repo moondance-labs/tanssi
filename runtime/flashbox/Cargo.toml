@@ -34,6 +34,8 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-stream-payment = { workspace = true }
+runtime-common = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -65,6 +67,7 @@ sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
+sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
@@ -99,7 +102,6 @@ frame-try-runtime = { workspace = true, optional = true }
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-pallet-im-online = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 sc-consensus-grandpa = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
@@ -144,7 +146,6 @@ std = [
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
 	"pallet-identity/std",
-	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -157,6 +158,7 @@ std = [
 	"pallet-root-testing/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
+	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
@@ -169,6 +171,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
+	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -182,6 +185,7 @@ std = [
 	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
+	"sp-genesis-builder/std",
 	"sp-inherents/std",
 	"sp-io/std",
 	"sp-offchain/std",
@@ -203,6 +207,7 @@ force-debug = [ "sp-debug-derive/force-debug" ]
 runtime-benchmarks = [
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
@@ -217,7 +222,6 @@ runtime-benchmarks = [
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
@@ -225,6 +229,7 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
@@ -233,6 +238,7 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
@@ -245,6 +251,7 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-async-backing/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
@@ -254,7 +261,6 @@ try-runtime = [
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
 	"pallet-identity/try-runtime",
-	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
@@ -266,6 +272,7 @@ try-runtime = [
 	"pallet-root-testing/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
+	"pallet-stream-payment/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
@@ -275,6 +282,7 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"polkadot-runtime-parachains/try-runtime",
+	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 
