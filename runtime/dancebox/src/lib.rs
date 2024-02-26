@@ -1569,10 +1569,10 @@ impl pallet_treasury::Config for Runtime {
 }
 
 parameter_types! {
-    // One storage item; key size 32 + 20; value is size 4+4+16+20. Total = 1 * (52 + 44)
-    pub const DepositBase: Balance = currency::deposit(1, 96);
-    // Additional storage item size of 20 bytes.
-    pub const DepositFactor: Balance = currency::deposit(0, 20);
+    // One storage item; key size 32; value is size 4+4+16+32. Total = 1 * (32 + 56)
+    pub const DepositBase: Balance = currency::deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 32);
     pub const MaxSignatories: u32 = 100;
 }
 
