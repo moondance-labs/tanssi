@@ -9419,7 +9419,9 @@ dependencies = [
 [[package]]
 name = "pallet-xcm-executor-utils"
 version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#a36733c4d733deeed336201c2bcfe4657375b468"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
