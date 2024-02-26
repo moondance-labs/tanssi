@@ -41,7 +41,7 @@ use {
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::dancebox::development_config(
+        "dev" | "dancebox_dev" => Box::new(chain_spec::dancebox::development_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -433,6 +433,16 @@ pub fn run() -> Result<()> {
             Err("Substrate's `try-runtime` subcommand has been migrated \
             to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
                 .into())
+        }
+        Some(Subcommand::PrecompileWasm(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|mut config| {
+                let partials = NodeConfig::new_builder(&mut config, None)?;
+                Ok((
+                    cmd.run(partials.backend, config.chain_spec),
+                    partials.task_manager,
+                ))
+            })
         }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;

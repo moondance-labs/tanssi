@@ -75,6 +75,9 @@ pub enum Subcommand {
     /// Key management cli utilities
     #[command(subcommand)]
     Key(KeyCmd),
+
+    /// Precompile the WASM runtime into native code
+    PrecompileWasm(sc_cli::PrecompileWasmCmd),
 }
 
 /// The `build-spec` command used to build a specification.

@@ -227,15 +227,17 @@ where
         // For now we can work with this, but it will likely need
         // to change once we start having runtime_cache_sizes, or
         // run nodes with the maximum for this value
-        let wasm = WasmExecutor::builder()
+        let mut wasm_builder = WasmExecutor::builder()
             .with_execution_method(parachain_config.wasm_method)
             .with_onchain_heap_alloc_strategy(heap_pages)
             .with_offchain_heap_alloc_strategy(heap_pages)
             .with_max_runtime_instances(parachain_config.max_runtime_instances)
-            .with_runtime_cache_size(parachain_config.runtime_cache_size)
-            .build();
+            .with_runtime_cache_size(parachain_config.runtime_cache_size);
+        if let Some(ref wasmtime_precompiled_path) = parachain_config.wasmtime_precompiled {
+            wasm_builder = wasm_builder.with_wasmtime_precompiled_path(wasmtime_precompiled_path);
+        }
 
-        let executor = ExecutorOf::<T>::new_with_wasm_executor(wasm);
+        let executor = ExecutorOf::<T>::new_with_wasm_executor(wasm_builder.build());
 
         let (client, backend, keystore_container, task_manager) =
             sc_service::new_full_parts::<BlockOf<T>, RuntimeApiOf<T>, _>(

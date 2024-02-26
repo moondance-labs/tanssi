@@ -65,6 +65,9 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+
+    /// Precompile the WASM runtime into native code
+    PrecompileWasm(sc_cli::PrecompileWasmCmd),
 }
 
 #[derive(Debug, Parser)]
