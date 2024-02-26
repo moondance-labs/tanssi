@@ -32,6 +32,9 @@ pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
+# Dancekit
+pallet-xcm-executor-utils = { workspace = true }
+
 # Substrate
 frame-executive = { workspace = true }
 frame-support = { workspace = true }

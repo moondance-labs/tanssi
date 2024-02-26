@@ -643,6 +643,7 @@ construct_runtime!(
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 76,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
+        XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,

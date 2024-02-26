@@ -1815,6 +1815,7 @@ dependencies = [
  "pallet-utility",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
+ "pallet-xcm-executor-utils",
  "parachains-common",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
@@ -1967,6 +1968,7 @@ dependencies = [
  "pallet-utility",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
+ "pallet-xcm-executor-utils",
  "parachains-common",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
@@ -9412,6 +9414,23 @@ dependencies = [
  "sp-std",
  "staging-xcm",
  "staging-xcm-builder",
+]
+
+[[package]]
+name = "pallet-xcm-executor-utils"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#723ab880d7cb91dead467fdd779059ca552b8bc8"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]
