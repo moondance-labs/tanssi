@@ -105,7 +105,13 @@
             "name": "zombie_tanssi",
             "timeout": 600000,
             "testFileDir": ["suites/para"],
-            "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/template-container-2001.json"
+            ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -154,7 +160,12 @@
         {
             "name": "zombie_tanssi_keep_db",
             "testFileDir": ["suites/keep-db"],
-            "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec-warp-sync.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+            ],
             "timeout": 600000,
             "foundation": {
                 "type": "zombie",
@@ -183,7 +194,12 @@
         {
             "name": "zombie_tanssi_metrics",
             "testFileDir": ["suites/metrics"],
-            "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec-warp-sync.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+            ],
             "timeout": 600000,
             "foundation": {
                 "type": "zombie",
@@ -213,7 +229,13 @@
             "name": "zombie_tanssi_parathreads",
             "timeout": 600000,
             "testFileDir": ["suites/parathreads"],
-            "runScripts": ["build-spec-parathreads.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec-parathreads.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/parathreads-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/parathreads-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/parathreads-template-container-2001.json"
+            ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -257,7 +279,13 @@
         {
             "name": "zombie_tanssi_rotation",
             "testFileDir": ["suites/rotation-para"],
-            "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/template-container-2001.json"
+            ],
             "timeout": 600000,
             "foundation": {
                 "type": "zombie",
@@ -301,7 +329,12 @@
         {
             "name": "zombie_tanssi_warp_sync",
             "testFileDir": ["suites/warp-sync"],
-            "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "runScripts": [
+                "build-spec-warp-sync.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+            ],
             "timeout": 600000,
             "foundation": {
                 "type": "zombie",
