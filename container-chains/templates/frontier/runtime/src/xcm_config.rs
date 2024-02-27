@@ -31,6 +31,10 @@ use {
     frame_system::EnsureRoot,
     pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
     pallet_xcm::XcmPassthrough,
+    pallet_xcm_executor_utils::{
+        filters::{IsReserveFilter, IsTeleportFilter},
+        DefaultTrustPolicy,
+    },
     parachains_common::{
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
@@ -177,8 +181,8 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = NativeAssetReserve;
-    type IsTeleporter = ();
+    type IsReserve = IsReserveFilter<Runtime>;
+    type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
@@ -394,6 +398,20 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
+parameter_types! {
+    pub const TrustPolicyMaxAssets: u32 = 1000;
+    pub const AllNativeTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::AllNative;
+}
+impl pallet_xcm_executor_utils::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type TrustPolicyMaxAssets = TrustPolicyMaxAssets;
+    type ReserveDefaultTrustPolicy = AllNativeTrustPolicy;
+    type SetReserveTrustOrigin = EnsureRoot<AccountId>;
+    type TeleportDefaultTrustPolicy = AllNativeTrustPolicy;
+    type SetTeleportTrustOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = pallet_xcm_executor_utils::weights::SubstrateWeight<Runtime>;
+}
+
 use {
     crate::ForeignAssets,
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
@@ -419,61 +437,3 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
 pub type AssetRateAsMultiplier =
     AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
-// TODO: this should probably move to somewhere in the polkadot-sdk repo
-pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
-    fn contains(asset: &MultiAsset, origin: &MultiLocation) -> bool {
-        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if let Concrete(location) = &asset.id {
-            if location.parents == 0 && !matches!(location.first_interior(), Some(Parachain(_))) {
-                Some(MultiLocation::here())
-            } else {
-                location.chain_part()
-            }
-        } else {
-            None
-        };
-
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
-        }
-        false
-    }
-}
-
-pub trait Parse {
-    /// Returns the "chain" location part. It could be parent, sibling
-    /// parachain, or child parachain.
-    fn chain_part(&self) -> Option<MultiLocation>;
-    /// Returns "non-chain" location part.
-    fn non_chain_part(&self) -> Option<MultiLocation>;
-}
-
-impl Parse for MultiLocation {
-    fn chain_part(&self) -> Option<MultiLocation> {
-        match (self.parents, self.first_interior()) {
-            // sibling parachain
-            (1, Some(Parachain(id))) => Some(MultiLocation::new(1, X1(Parachain(*id)))),
-            // parent
-            (1, _) => Some(MultiLocation::parent()),
-            // children parachain
-            (0, Some(Parachain(id))) => Some(MultiLocation::new(0, X1(Parachain(*id)))),
-            _ => None,
-        }
-    }
-
-    fn non_chain_part(&self) -> Option<MultiLocation> {
-        let mut junctions = *self.interior();
-        while matches!(junctions.first(), Some(Parachain(_))) {
-            let _ = junctions.take_first();
-        }
-
-        if junctions != Here {
-            Some(MultiLocation::new(0, junctions))
-        } else {
-            None
-        }
-    }
-}
