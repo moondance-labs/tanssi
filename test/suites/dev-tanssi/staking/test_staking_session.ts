@@ -6,7 +6,7 @@ import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "../../../util/block";
 
 describeSuite({
-    id: "DT3302",
+    id: "DT0304",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -28,7 +28,7 @@ describeSuite({
 
                 const randomAccount = generateKeyringPair("sr25519");
 
-                const tx = polkadotJs.tx.balances.transfer(randomAccount.address, 2n * 10000000000000000n);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, 2n * 10000000000000000n);
                 await context.createBlock([await tx.signAsync(alice)]);
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 

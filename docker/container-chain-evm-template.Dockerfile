@@ -21,7 +21,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 
 USER container-chain-template-evm
 
-COPY --chown=container-chain-template-evm build/container-chain-template-frontier-node /container-chain-template-evm
+COPY --chown=container-chain-template-evm build/container-chain-template-frontier-node* /container-chain-template-evm
 RUN chmod uog+x /container-chain-template-evm/container-chain-template-frontier*
 
 # 30333 for parachain p2p

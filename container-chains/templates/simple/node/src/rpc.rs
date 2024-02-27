@@ -21,17 +21,22 @@
 
 #![warn(missing_docs)]
 
-use std::sync::Arc;
+pub use sc_rpc::DenyUnsafe;
 
-use container_chain_template_simple_runtime::{opaque::Block, AccountId, Index as Nonce};
-
-pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
+    container_chain_template_simple_runtime::{opaque::Block, AccountId, Hash, Index as Nonce},
+    cumulus_primitives_core::ParaId,
+    manual_xcm_rpc::{ManualXcm, ManualXcmApiServer as _},
     sc_client_api::AuxStore,
+    sc_consensus_manual_seal::{
+        rpc::{ManualSeal, ManualSealApiServer as _},
+        EngineCommand,
+    },
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
+    std::sync::Arc,
 };
 
 /// A type representing all RPC extensions.
@@ -45,6 +50,10 @@ pub struct FullDeps<C, P> {
     pub pool: Arc<P>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
+    /// Manual seal command sink
+    pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    /// Channels for manual xcm messages (downward, hrmp)
+    pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
 /// Instantiate all RPC extensions.
@@ -70,8 +79,30 @@ where
         client,
         pool,
         deny_unsafe,
+        command_sink,
+        xcm_senders,
     } = deps;
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
+
+    // Manual seal
+    if let Some(command_sink) = command_sink {
+        module.merge(
+            // We provide the rpc handler with the sending end of the channel to allow the rpc
+            // send EngineCommands to the background block authorship task.
+            ManualSeal::new(command_sink).into_rpc(),
+        )?;
+    };
+
+    if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
+        module.merge(
+            ManualXcm {
+                downward_message_channel,
+                hrmp_message_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
+
     Ok(module)
 }

@@ -1,6 +1,6 @@
 {
     "name": "@tanssi/api-augment",
-    "version": "0.300.0",
+    "version": "0.400.0",
     "type": "module",
     "description": "Tanssi types augment for @polkadot/api",
     "author": "Moondance-labs",
@@ -22,10 +22,12 @@
         "fmt:fix": "prettier --write --ignore-path ../.prettierignore 'src'",
         "postgenerate": "pnpm run pretty",
         "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9933 > metadata-dancebox.json",
-        "generate:defs": "pnpm run generate:defs:dancebox",
+        "generate:defs": "pnpm run generate:defs:dancebox && pnpm run generate:defs:flashbox",
         "generate:defs:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/dancebox/interfaces --endpoint ./metadata-dancebox.json",
-        "generate:meta": "pnpm run generate:meta:dancebox",
+        "generate:defs:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/flashbox/interfaces --endpoint ./metadata-flashbox.json",
+        "generate:meta": "pnpm run generate:meta:dancebox && pnpm run generate:meta:flashbox",
         "generate:meta:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancebox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancebox/interfaces",
+        "generate:meta:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-flashbox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/flashbox/interfaces",
         "prebuild": "rimraf build",
         "build": "tsc -b --verbose",
         "postbuild": "pnpm tsx ./scripts/postbuild.ts",
@@ -46,12 +48,20 @@
             "types": "./build/dancebox/index.d.ts",
             "require": "./build/dancebox/index.cjs",
             "default": "./build/dancebox/index.js"
+        },
+        "./flashbox": {
+            "types": "./build/flashbox/index.d.ts",
+            "require": "./build/flashbox/index.cjs",
+            "default": "./build/flashbox/index.js"
         }
     },
     "typesVersions": {
         "*": {
             "dancebox": [
                 "./build/dancebox/index.d.ts"
+            ],
+            "flashbox": [
+                "./build/flashbox/index.d.ts"
             ]
         }
     },
@@ -67,26 +77,26 @@
         "LICENSE"
     ],
     "dependencies": {
-        "@polkadot/api": "latest",
-        "@polkadot/api-augment": "latest",
-        "@polkadot/api-base": "latest",
-        "@polkadot/api-derive": "latest",
-        "@polkadot/rpc-augment": "latest",
-        "@polkadot/rpc-core": "latest",
-        "@polkadot/rpc-provider": "latest",
-        "@polkadot/types": "latest",
-        "@polkadot/types-augment": "latest",
-        "@polkadot/types-codec": "latest",
-        "@polkadot/types-create": "latest",
-        "@polkadot/types-known": "latest",
-        "@polkadot/types-support": "latest",
+        "@polkadot/api": "^10.11.2",
+        "@polkadot/api-augment": "^10.11.2",
+        "@polkadot/api-base": "^10.11.2",
+        "@polkadot/api-derive": "^10.11.2",
+        "@polkadot/rpc-augment": "^10.11.2",
+        "@polkadot/rpc-core": "^10.11.2",
+        "@polkadot/rpc-provider": "^10.11.2",
+        "@polkadot/types": "^10.11.2",
+        "@polkadot/types-augment": "^10.11.2",
+        "@polkadot/types-codec": "^10.11.2",
+        "@polkadot/types-create": "^10.11.2",
+        "@polkadot/types-known": "^10.11.2",
+        "@polkadot/types-support": "^10.11.2",
         "chalk": "^5.3.0"
     },
     "devDependencies": {
-        "@polkadot/typegen": "latest",
+        "@polkadot/typegen": "^10.11.2",
         "prettier": "^2.8.8",
         "prettier-plugin-jsdoc": "^0.3.38",
-        "tsx": "^3.12.7",
-        "typescript": "^5.1.6"
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.3"
     }
 }

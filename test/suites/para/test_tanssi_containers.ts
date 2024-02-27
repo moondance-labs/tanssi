@@ -239,13 +239,16 @@ describeSuite({
                 const chainSpec2002 = JSON.parse(spec2002);
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
                 const tx1 = paraApi.tx.registrar.register(2002, containerChainGenesisData);
-                const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, 100000, null);
+                const purchasedCredits = 100000n;
+                const requiredBalance = purchasedCredits * 1_000_000n;
+
+                const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, requiredBalance);
                 const tx12 = paraApi.tx.utility.batchAll([tx1, tx2]);
                 await signAndSendAndInclude(tx12, alice);
                 const bootNodes = [
                     "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                 ];
-                const tx3 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
+                const tx3 = paraApi.tx.dataPreservers.setBootNodes(2002, bootNodes);
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 const tx34 = paraApi.tx.utility.batchAll([tx3, tx4]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx34), alice);
@@ -280,7 +283,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 90000,
+            timeout: 120000,
             test: async function () {
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
@@ -349,8 +352,12 @@ describeSuite({
                 // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
                 await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
 
+                expect(sessionPeriod * 5 < blockNumber2002End, "2002 should have deregistered after first rotation");
+                expect(sessionPeriod * 10 > blockNumber2002End, "2002 should have deregistered before second rotation");
+
                 // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-                await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End - 1, 2);
+                // We take from the first block that rotates, otherwise rotation kicks in
+                await countUniqueBlockAuthors(paraApi, sessionPeriod * 5, blockNumber2002End - 1, 2);
 
                 // Need to wait one session because the following blocks don't exist yet
                 await waitSessions(context, paraApi, 1);

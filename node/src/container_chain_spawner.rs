@@ -27,17 +27,18 @@ use {
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, NodeConfig, ParachainClient},
     },
-    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     futures::FutureExt,
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::SyncMode,
+    sc_cli::{Database, SyncMode},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
@@ -78,7 +79,7 @@ pub struct ContainerChainSpawner {
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
 
     // Async callback that enables collation on the orchestrator chain
-    pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
 }
 
 #[derive(Default)]
@@ -91,10 +92,6 @@ pub struct ContainerChainSpawnerState {
 }
 
 pub struct ContainerChainState {
-    /// Async callback that enables collation on this container chain
-    // We don't use it since we are always restarting container chains
-    #[allow(unused)]
-    collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
     stop_handle: StopContainerChain,
 }
@@ -119,6 +116,7 @@ pub enum CcSpawnMsg {
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
+    #[must_use]
     fn spawn(
         &self,
         container_chain_para_id: ParaId,
@@ -174,10 +172,20 @@ impl ContainerChainSpawner {
             let boot_nodes_raw = orchestrator_runtime_api
                 .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error");
-            let boot_nodes: Vec<String> = boot_nodes_raw
-                .into_iter()
-                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
-                .collect::<Result<_, _>>()?;
+            if boot_nodes_raw.is_empty() {
+                log::warn!(
+                    "No boot nodes registered on-chain for container chain {}",
+                    container_chain_para_id
+                );
+            }
+            let boot_nodes =
+                parse_boot_nodes_ignore_invalid(boot_nodes_raw, container_chain_para_id);
+            if boot_nodes.is_empty() {
+                log::warn!(
+                    "No valid boot nodes for container chain {}",
+                    container_chain_para_id
+                );
+            }
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
@@ -209,6 +217,12 @@ impl ContainerChainSpawner {
 
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+            container_chain_cli
+                .base
+                .base
+                .import_params
+                .database_params
+                .database = Some(Database::ParityDb);
 
             let create_container_chain_cli_config = || {
                 let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
@@ -231,7 +245,7 @@ impl ContainerChainSpawner {
                 sc_service::error::Result::Ok((container_chain_cli_config, db_path))
             };
 
-            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+            let (_container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
             let db_exists = db_path.exists();
             let db_exists_but_may_need_removal = db_exists && validator;
             if db_exists_but_may_need_removal {
@@ -261,37 +275,35 @@ impl ContainerChainSpawner {
                 &orchestrator_client,
                 container_chain_para_id,
             )?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
-            let (
-                mut container_chain_task_manager,
-                container_chain_client,
-                container_chain_db,
-                collate_on,
-            ) = start_node_impl_container(
-                container_chain_cli_config,
-                orchestrator_client.clone(),
-                relay_chain_interface.clone(),
-                orchestrator_chain_interface.clone(),
-                collator_key.clone(),
-                sync_keystore.clone(),
-                container_chain_para_id,
-                orchestrator_para_id,
-                validator,
-            )
-            .await?;
+            let (mut container_chain_task_manager, container_chain_client, container_chain_db) =
+                start_node_impl_container(
+                    container_chain_cli_config,
+                    orchestrator_client.clone(),
+                    relay_chain_interface.clone(),
+                    orchestrator_chain_interface.clone(),
+                    collator_key.clone(),
+                    sync_keystore.clone(),
+                    container_chain_para_id,
+                    orchestrator_para_id,
+                    validator && start_collation,
+                )
+                .await?;
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = oneshot::channel::<bool>();
-            let collate_on = collate_on.unwrap_or_else(|| {
-                assert!(
-                    !validator,
-                    "collate_on should be Some if validator flag is true"
-                );
-
-                // When running a full node we don't need to send any collate_on messages, so make this a noop
-                Arc::new(move || Box::pin(std::future::ready(())))
-            });
 
             let monitor_id;
             {
@@ -311,17 +323,12 @@ impl ContainerChainSpawner {
                 state.spawned_container_chains.insert(
                     container_chain_para_id,
                     ContainerChainState {
-                        collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain {
                             signal,
                             id: monitor_id,
                         },
                     },
                 );
-            }
-
-            if start_collation {
-                collate_on().await;
             }
 
             // Add the container chain task manager as a child task to the parent task manager.
@@ -437,7 +444,7 @@ impl ContainerChainSpawner {
 
         // Call collate_on, to start collation on a chain that was already running before
         if let Some(f) = call_collate_on {
-            f().await;
+            f();
         }
 
         // Stop all container chains that are no longer needed
@@ -463,8 +470,7 @@ impl ContainerChainSpawner {
 }
 
 struct HandleUpdateAssignmentResult {
-    call_collate_on:
-        Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
+    call_collate_on: Option<Arc<dyn Fn() + Send + Sync>>,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
     need_to_restart: bool,
@@ -474,7 +480,7 @@ struct HandleUpdateAssignmentResult {
 fn handle_update_assignment_state_change(
     state: &mut ContainerChainSpawnerState,
     orchestrator_para_id: ParaId,
-    collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
     current: Option<ParaId>,
     next: Option<ParaId>,
 ) -> HandleUpdateAssignmentResult {
@@ -686,7 +692,7 @@ fn open_and_maybe_delete_db(
 }
 
 // TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
 // but we want to delete everything under
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
@@ -695,17 +701,46 @@ fn delete_container_chain_db(db_path: &Path) {
     }
 }
 
+/// Parse a list of boot nodes in `Vec<u8>` format. Invalid boot nodes are filtered out.
+fn parse_boot_nodes_ignore_invalid(
+    boot_nodes_raw: Vec<Vec<u8>>,
+    container_chain_para_id: ParaId,
+) -> Vec<MultiaddrWithPeerId> {
+    boot_nodes_raw
+        .into_iter()
+        .filter_map(|x| {
+            let x = String::from_utf8(x)
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    );
+                })
+                .ok()?;
+
+            x.parse::<MultiaddrWithPeerId>()
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    )
+                })
+                .ok()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
-    use futures::executor::block_on;
-
     use super::*;
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
         state: Arc<Mutex<ContainerChainSpawnerState>>,
         orchestrator_para_id: ParaId,
-        collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+        collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
         // Keep track of the last CollateOn message, for tests
         currently_collating_on: Arc<Mutex<Option<ParaId>>>,
     }
@@ -716,7 +751,7 @@ mod tests {
             // The node always starts as an orchestrator chain collator
             let currently_collating_on = Arc::new(Mutex::new(Some(orchestrator_para_id)));
             let currently_collating_on2 = currently_collating_on.clone();
-            let collate_closure = move || async move {
+            let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
                 // TODO: this sometimes fails, see comment in stop_collating_orchestrator
                 /*
@@ -729,9 +764,7 @@ mod tests {
                 */
                 *cco = Some(orchestrator_para_id);
             };
-            let collate_on_tanssi: Arc<
-                dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
-            > = Arc::new(move || Box::pin((collate_closure.clone())()));
+            let collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
 
             Self {
                 state: Arc::new(Mutex::new(ContainerChainSpawnerState {
@@ -746,10 +779,10 @@ mod tests {
             }
         }
 
-        async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
+        fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
             let (signal, _on_exit) = oneshot::channel();
             let currently_collating_on2 = self.currently_collating_on.clone();
-            let collate_closure = move || async move {
+            let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
                 // TODO: this is also wrong, see comment in test keep_collating_on_container
                 /*
@@ -762,9 +795,7 @@ mod tests {
                 */
                 *cco = Some(container_chain_para_id);
             };
-            let collate_on: Arc<
-                dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
-            > = Arc::new(move || Box::pin((collate_closure.clone())()));
+            let collate_on: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
 
             let old = self
                 .state
@@ -774,7 +805,6 @@ mod tests {
                 .insert(
                     container_chain_para_id,
                     ContainerChainState {
-                        collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain { signal, id: 0 },
                     },
                 );
@@ -786,7 +816,7 @@ mod tests {
             );
 
             if start_collation {
-                collate_on().await;
+                collate_on();
             }
         }
 
@@ -824,7 +854,7 @@ mod tests {
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
-                &mut *self.state.lock().unwrap(),
+                &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
                 self.collate_on_tanssi.clone(),
                 current,
@@ -856,7 +886,7 @@ mod tests {
 
             // Call collate_on, to start collation on a chain that was already running before
             if let Some(f) = call_collate_on {
-                block_on(async { f().await });
+                f();
             }
 
             // Stop all container chains that are no longer needed
@@ -869,7 +899,7 @@ mod tests {
                 // Edge case: when starting the node it may be assigned to a container chain, so we need to
                 // start a container chain already collating.
                 let start_collation = Some(para_id) == current;
-                block_on(async { self.spawn(para_id, start_collation).await });
+                self.spawn(para_id, start_collation);
             }
 
             // Assert that if we are currently assigned to a container chain, we are collating there
@@ -1107,5 +1137,26 @@ mod tests {
         m.handle_update_assignment(Some(2000.into()), Some(2000.into()));
         m.assert_collating_on(Some(2000.into()));
         m.assert_running_chains(&[2000.into()]);
+    }
+
+    #[test]
+    fn invalid_boot_nodes_are_ignored() {
+        let para_id = 100.into();
+        let bootnode1 =
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec();
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"A".to_vec()], para_id),
+            vec![]
+        );
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"\xff".to_vec()], para_id),
+            vec![]
+        );
+        // Valid boot nodes are not ignored
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![bootnode1], para_id).len(),
+            1
+        );
     }
 }

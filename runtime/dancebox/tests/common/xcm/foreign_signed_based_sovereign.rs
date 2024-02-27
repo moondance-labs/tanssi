@@ -17,9 +17,9 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxEmptyReceiver, DanceboxPallet, DanceboxSender, EthereumEmptyReceiver,
-            EthereumSender, FrontierTemplate, FrontierTemplatePallet, Westend, WestendPallet,
-            WestendSender,
+            DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
+            EthereumEmptyReceiver, EthereumSender, FrontierTemplatePara as FrontierTemplate,
+            FrontierTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -37,7 +37,7 @@ use {
 #[test]
 fn using_signed_based_sovereign_works_in_tanssi() {
     // XcmPallet send arguments
-    let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
+    let root_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_dest: VersionedMultiLocation = MultiLocation {
         parents: 0,
         interior: X1(Parachain(2000u32)),
@@ -50,6 +50,10 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
+        DescendOrigin(X1(AccountId32 {
+            network: None,
+            id: WestendSender::get().into(),
+        })),
         WithdrawAsset {
             0: vec![buy_execution_fee.clone()].into(),
         },
@@ -83,17 +87,19 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     Dancebox::execute_with(|| {
         let origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
-        assert_ok!(<Dancebox as DanceboxPallet>::Balances::transfer(
-            origin,
-            sp_runtime::MultiAddress::Id(alice_westend_account_dancebox),
-            100 * DANCE
-        ));
+        assert_ok!(
+            <Dancebox as DanceboxParaPallet>::Balances::transfer_allow_death(
+                origin,
+                sp_runtime::MultiAddress::Id(alice_westend_account_dancebox),
+                100 * DANCE
+            )
+        );
     });
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
-            alice_origin,
+        assert_ok!(<Westend as WestendRelayPallet>::XcmPallet::send(
+            root_origin,
             bx!(dancebox_dest),
             bx!(xcm),
         ));
@@ -101,21 +107,10 @@ fn using_signed_based_sovereign_works_in_tanssi() {
 
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: outcome.clone().ensure_complete().is_ok(),
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_complete(None);
         // Assert empty receiver received funds
         assert!(
-            <Dancebox as DanceboxPallet>::System::account(DanceboxEmptyReceiver::get())
+            <Dancebox as DanceboxParaPallet>::System::account(DanceboxEmptyReceiver::get())
                 .data
                 .free
                 > 0
@@ -183,7 +178,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
 
         let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer(
+            <FrontierTemplate as FrontierTemplateParaPallet>::Balances::transfer_allow_death(
                 origin,
                 alice_dancebox_account_frontier,
                 100 * FRONTIER_DEV
@@ -191,7 +186,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
         );
         // Assert empty receiver has 0 funds
         assert_eq!(
-            <FrontierTemplate as FrontierTemplatePallet>::System::account(
+            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
                 EthereumEmptyReceiver::get()
             )
             .data
@@ -202,7 +197,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
 
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
-        assert_ok!(<Dancebox as DanceboxPallet>::PolkadotXcm::send(
+        assert_ok!(<Dancebox as DanceboxParaPallet>::PolkadotXcm::send(
             alice_origin,
             bx!(frontier_destination),
             bx!(xcm),
@@ -220,19 +215,10 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
     });
 
     FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            FrontierTemplate,
-            vec![
-                RuntimeEvent::XcmpQueue(
-                cumulus_pallet_xcmp_queue::Event::Success {
-                    ..
-                }) => {},
-            ]
-        );
+        FrontierTemplate::assert_xcmp_queue_success(None);
         // Assert empty receiver received funds
         assert!(
-            <FrontierTemplate as FrontierTemplatePallet>::System::account(
+            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
                 EthereumEmptyReceiver::get()
             )
             .data

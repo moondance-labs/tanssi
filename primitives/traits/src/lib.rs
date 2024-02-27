@@ -25,11 +25,28 @@ pub use cumulus_primitives_core::{
 };
 use {
     frame_support::{
-        pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
         BoundedVec,
     },
     sp_std::vec::Vec,
 };
+
+/// The collator-assignment hook to react to collators beign assigned to container chains.
+pub trait CollatorAssignmentHook {
+    /// This hook is called when collators are assigned to a container
+    ///
+    /// The hook should never panic and is required to return the weight consumed.
+    fn on_collators_assigned(para_id: ParaId) -> Weight;
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl CollatorAssignmentHook for Tuple {
+    fn on_collators_assigned(p: ParaId) -> Weight {
+        let mut weight: Weight = Default::default();
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p)); )* );
+        weight
+    }
+}
 
 /// The author-noting hook to react to container chains authoring.
 pub trait AuthorNotingHook<AccountId> {
@@ -72,10 +89,42 @@ pub trait GetCurrentContainerChains {
     fn set_current_container_chains(container_chains: &[ParaId]);
 }
 
+/// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
+/// tanssi slot time, 12 seconds by default.
+// TODO: this is currently ignored
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct SlotFrequency {
+    /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
+    /// every `x >= 10` slots, but they are not enforced to. If collators produce a block after less than 10
+    /// slots, they will not be rewarded by tanssi.
+    pub min: u32,
+    /// The parathread will produce at least 1 block every x slots. max=10 means that collators are forced to
+    /// produce 1 block every `x <= 10` slots. Collators can produce a block sooner than that if the `min` allows it, but
+    /// waiting more than 10 slots will make them lose the block reward.
+    pub max: u32,
+}
+
+impl Default for SlotFrequency {
+    fn default() -> Self {
+        Self { min: 1, max: 1 }
+    }
+}
+
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct ParathreadParams {
+    pub slot_frequency: SlotFrequency,
+}
+
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct SessionContainerChains {
+    pub parachains: Vec<ParaId>,
+    pub parathreads: Vec<(ParaId, ParathreadParams)>,
+}
+
 /// Get the list of container chains parachain ids at given
 /// session index.
 pub trait GetSessionContainerChains<SessionIndex> {
-    fn session_container_chains(session_index: SessionIndex) -> Vec<ParaId>;
+    fn session_container_chains(session_index: SessionIndex) -> SessionContainerChains;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_session_container_chains(session_index: SessionIndex, container_chains: &[ParaId]);
 }
@@ -93,6 +142,7 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn min_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
+    fn collators_per_parathread(session_index: SessionIndex) -> u32;
 }
 
 /// Returns current session index.

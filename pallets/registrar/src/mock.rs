@@ -17,14 +17,18 @@
 use tp_container_chain_genesis_data::ContainerChainGenesisData;
 
 use {
-    crate::{self as pallet_registrar},
-    frame_support::traits::{ConstU16, ConstU64},
-    frame_system as system,
+    crate::{self as pallet_registrar, RegistrarHooks},
+    frame_support::{
+        traits::{ConstU16, ConstU64},
+        weights::Weight,
+    },
+    parity_scale_codec::{Decode, Encode},
     sp_core::{parameter_types, ConstU32, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    std::collections::BTreeMap,
     tp_traits::ParaId,
 };
 
@@ -38,10 +42,11 @@ frame_support::construct_runtime!(
         System: frame_system,
         Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         ParaRegistrar: pallet_registrar,
+        Mock: mock_data,
     }
 );
 
-impl system::Config for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
@@ -65,6 +70,7 @@ impl system::Config for Test {
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 parameter_types! {
@@ -82,6 +88,7 @@ impl pallet_balances::Config for Test {
     type FreezeIdentifier = ();
     type MaxFreezes = ();
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
     type MaxHolds = ();
     type WeightInfo = ();
 }
@@ -113,7 +120,133 @@ impl pallet_registrar::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type RegistrarHooks = Mock;
     type WeightInfo = ();
+}
+
+// Pallet to provide some mock data, used to test
+#[frame_support::pallet]
+pub mod mock_data {
+    use {super::*, frame_support::pallet_prelude::*};
+
+    #[pallet::config]
+    pub trait Config: frame_system::Config {}
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {}
+
+    #[pallet::pallet]
+    #[pallet::without_storage_info]
+    pub struct Pallet<T>(_);
+
+    #[pallet::storage]
+    #[pallet::getter(fn mock)]
+    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
+
+    impl<T: Config> Pallet<T> {
+        pub fn get() -> Mocks {
+            Mock::<T>::get()
+        }
+        pub fn mutate<F, R>(f: F) -> R
+        where
+            F: FnOnce(&mut Mocks) -> R,
+        {
+            Mock::<T>::mutate(f)
+        }
+    }
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub enum HookCall {
+    MarkedValid(ParaId),
+    Deregistered(ParaId),
+}
+
+pub enum HookCallType {
+    MarkedValid,
+    Deregistered,
+}
+
+// We use the mock_data pallet to test registrar hooks: we store a list of all the calls, and then check that there
+// are no consecutive calls. Because there used to be a bug where the deregister hook was called twice.
+impl<T> RegistrarHooks for mock_data::Pallet<T> {
+    fn para_deregistered(para_id: ParaId) -> Weight {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::Deregistered(para_id));
+
+            Weight::default()
+        })
+    }
+
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::MarkedValid(para_id));
+
+            Weight::default()
+        })
+    }
+
+    fn check_valid_for_collating(_para_id: ParaId) -> crate::DispatchResult {
+        // Ignored, we already test this in integration tests
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
+}
+
+impl mock_data::Config for Test {}
+
+#[derive(
+    Clone, Default, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo,
+)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct Mocks {
+    pub called_hooks: Vec<HookCall>,
+}
+
+impl Drop for Mocks {
+    fn drop(&mut self) {
+        self.check_consistency();
+    }
+}
+
+impl Mocks {
+    pub fn check_consistency(&self) {
+        /// Asserts that the calls for each ParaId alternate between MarkedValid and Deregister,
+        /// we never see two calls with the same type.
+        pub fn assert_alternating(hook_calls: &[HookCall]) {
+            let mut last_call_type: BTreeMap<ParaId, HookCallType> = BTreeMap::new();
+
+            for call in hook_calls {
+                match call {
+                    HookCall::MarkedValid(para_id) => {
+                        if let Some(HookCallType::MarkedValid) = last_call_type.get(para_id) {
+                            panic!(
+                                "Two consecutive MarkedValid calls for ParaId: {:?}",
+                                para_id
+                            );
+                        }
+                        last_call_type.insert(*para_id, HookCallType::MarkedValid);
+                    }
+                    HookCall::Deregistered(para_id) => {
+                        if let Some(HookCallType::Deregistered) = last_call_type.get(para_id) {
+                            panic!(
+                                "Two consecutive Deregistered calls for ParaId: {:?}",
+                                para_id
+                            );
+                        }
+                        last_call_type.insert(*para_id, HookCallType::Deregistered);
+                    }
+                }
+            }
+        }
+
+        // For each para id, the calls must alterante between MarkedValid and Deregister
+        assert_alternating(&self.called_hooks);
+        // Since para ids can already be registered in genesis, we cannot assert that the first call is MarkedValid
+    }
 }
 
 const ALICE: u64 = 1;
@@ -135,11 +268,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    )>,
+    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),
@@ -159,5 +288,26 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
         fork_id: Default::default(),
         extensions: Default::default(),
         properties: Default::default(),
+    }
+}
+
+pub const SESSION_LEN: u64 = 5;
+
+pub fn run_to_session(n: u32) {
+    let block_number = SESSION_LEN * (n as u64);
+    run_to_block(block_number + 1);
+}
+
+pub fn run_to_block(n: u64) {
+    let old_block_number = System::block_number();
+
+    for x in (old_block_number + 1)..=n {
+        System::reset_events();
+        System::set_block_number(x);
+
+        if x % SESSION_LEN == 1 {
+            let session_index = (x / SESSION_LEN) as u32;
+            ParaRegistrar::initializer_on_new_session(&session_index);
+        }
     }
 }

@@ -72,6 +72,7 @@ impl system::Config for Test {
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type Nonce = u64;
     type Block = Block;
+    type RuntimeTask = ();
 }
 
 parameter_types! {
@@ -88,6 +89,7 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type ReserveIdentifier = [u8; 8];
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
     type FreezeIdentifier = ();
     type MaxLocks = ();
     type MaxReserves = MaxReserves;

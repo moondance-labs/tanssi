@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        self as pallet_collator_assignment, GetRandomnessForNextBlock,
-        RotateCollatorsEveryNSessions,
+        self as pallet_collator_assignment, pallet::CollatorContainerChain,
+        GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
     },
     frame_support::{
         parameter_types,
@@ -25,12 +25,17 @@ use {
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
-    sp_core::H256,
+    sp_core::{Get, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    tp_traits::{ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
+    sp_std::collections::btree_map::BTreeMap,
+    tp_traits::{
+        ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        SessionContainerChains,
+    },
+    tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -69,6 +74,7 @@ impl system::Config for Test {
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 // Pallet to provide some mock data, used to test
@@ -111,9 +117,13 @@ pub struct Mocks {
     pub min_orchestrator_chain_collators: u32,
     pub max_orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
+    pub collators_per_parathread: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
+    pub parathreads: Vec<u32>,
     pub random_seed: [u8; 32],
+    // None means 5
+    pub full_rotation_period: Option<u32>,
 }
 
 impl mock_data::Config for Test {}
@@ -123,7 +133,7 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 parameter_types! {
-    pub const ParachainId: ParaId = ParaId::new(200);
+    pub const ParachainId: ParaId = ParaId::new(1000);
 }
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
@@ -138,6 +148,10 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
     fn collators_per_container(_session_index: u32) -> u32 {
         MockData::mock().collators_per_container
     }
+
+    fn collators_per_parathread(_session_index: u32) -> u32 {
+        MockData::mock().collators_per_parathread
+    }
 }
 
 pub struct CollatorsGetter;
@@ -151,13 +165,32 @@ impl GetCollators<u64, u32> for CollatorsGetter {
 pub struct ContainerChainsGetter;
 
 impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
-    fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
+    fn session_container_chains(_session_index: u32) -> SessionContainerChains {
+        let parachains = MockData::mock()
             .container_chains
             .iter()
             .cloned()
-            .map(ParaId::from)
-            .collect()
+            .map(|para_id| ParaId::from(para_id))
+            .collect();
+
+        let parathreads = MockData::mock()
+            .parathreads
+            .iter()
+            .cloned()
+            .map(|para_id| {
+                (
+                    ParaId::from(para_id),
+                    ParathreadParams {
+                        slot_frequency: Default::default(),
+                    },
+                )
+            })
+            .collect();
+
+        SessionContainerChains {
+            parachains,
+            parathreads,
+        }
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -184,25 +217,45 @@ parameter_types! {
     pub const CollatorRotationSessionPeriod: u32 = 5;
 }
 
+pub struct MockCollatorRotationSessionPeriod;
+
+impl Get<u32> for MockCollatorRotationSessionPeriod {
+    fn get() -> u32 {
+        MockData::mock().full_rotation_period.unwrap_or(5)
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SelfParaId = ParachainId;
-    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
+    type ShouldRotateAllCollators =
+        RotateCollatorsEveryNSessions<MockCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
+    type CollatorAssignmentHook = ();
     type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::<Test>::default()
+    let mut ext: sp_io::TestExternalities = system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()
-        .into()
+        .into();
+
+    ext.execute_with(|| {
+        MockData::mutate(|mocks| {
+            // Initialize collators with 1 collator to avoid error `ZeroCollators` in session 0
+            mocks.collators = vec![100];
+            mocks.min_orchestrator_chain_collators = 1;
+        })
+    });
+
+    ext
 }
 
 pub trait GetCollators<AccountId, SessionIndex> {
@@ -260,7 +313,41 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
     #[cfg(feature = "runtime-benchmarks")]
     fn make_valid_para_ids(para_ids: &[ParaId]) {
         for para_id in para_ids {
-            assert!(para_id > 5000.into(), "{}", para_id);
+            assert!(*para_id > ParaId::from(5000), "{}", para_id);
         }
     }
+}
+
+/// Returns a map of collator to assigned para id
+pub fn assigned_collators() -> BTreeMap<u64, u32> {
+    let assigned_collators = CollatorContainerChain::<Test>::get();
+
+    let mut h = BTreeMap::new();
+
+    for (para_id, collators) in assigned_collators.container_chains.iter() {
+        for collator in collators.iter() {
+            h.insert(*collator, u32::from(*para_id));
+        }
+    }
+
+    for collator in assigned_collators.orchestrator_chain {
+        h.insert(collator, 1000);
+    }
+
+    h
+}
+
+/// Returns the default assignment for session 0 used in tests. Collator 100 is assigned to the orchestrator chain.
+pub fn initial_collators() -> BTreeMap<u64, u32> {
+    BTreeMap::from_iter(vec![(100, 1000)])
+}
+
+/// Executes code without printing any logs. Can be used in tests where we expect logs to be printed, to avoid clogging
+/// up stderr. Only affects the current thread, if `f` spawns any threads or if logs come from another thread, they will
+/// not be silenced.
+pub fn silence_logs<F: FnOnce() -> R, R>(f: F) -> R {
+    let no_logging_layer = tracing_subscriber::filter::LevelFilter::OFF;
+    let no_logging_subscriber = FmtSubscriber::builder().finish().with(no_logging_layer);
+
+    tracing::subscriber::with_default(no_logging_subscriber, f)
 }

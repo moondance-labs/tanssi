@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0303",
+    id: "DT0201",
     title: "Removing session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
