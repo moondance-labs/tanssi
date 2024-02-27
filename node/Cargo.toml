@@ -24,6 +24,7 @@ tokio = { workspace = true }
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
+flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
@@ -67,6 +68,7 @@ sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 
 sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
 sp-inherents = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
@@ -84,6 +86,7 @@ try-runtime-cli = { workspace = true, optional = true }
 
 # Polkadot
 polkadot-cli = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
 polkadot-service = { workspace = true }
 
@@ -92,18 +95,33 @@ cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
+cumulus-client-consensus-proposer = { workspace = true }
 cumulus-client-network = { workspace = true }
+cumulus-client-parachain-inherent = { workspace = true }
 cumulus-client-pov-recovery = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
-runtime-benchmarks = [ "dancebox-runtime/runtime-benchmarks", "polkadot-cli/runtime-benchmarks", "polkadot-service/runtime-benchmarks" ]
-try-runtime = [ "dancebox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"dancebox-runtime/runtime-benchmarks",
+	"flashbox-runtime/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
+try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
 
-fast-runtime = [ "dancebox-runtime/fast-runtime" ]
+fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]

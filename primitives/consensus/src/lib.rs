@@ -23,9 +23,12 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::traits::Get,
     parity_scale_codec::Codec,
-    sp_runtime::traits::Zero,
+    sp_runtime::{traits::Zero, DigestItem},
     sp_std::{marker::PhantomData, vec::Vec},
 };
+
+#[cfg(feature = "runtime-benchmarks")]
+use {nimbus_primitives::NimbusSignature, sp_consensus_aura::digests::CompatibleDigestItem};
 
 sp_api::decl_runtime_apis! {
     /// API necessary for block authorship with Tanssi.
@@ -79,14 +82,24 @@ where
     fn slot() -> u32 {
         use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 
-        let digests = frame_system::Pallet::<ContainerRuntime>::digest();
+        let slot_from_digest = frame_system::Pallet::<ContainerRuntime>::digest()
+            .convert_first(|item: &DigestItem| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID));
 
-        let slot = digests
-            .convert_first(|item| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID))
-            .expect("slot digest should exist");
+        #[cfg(not(feature = "runtime-benchmarks"))]
+        let slot = slot_from_digest.expect("slot digest should exist");
+        #[cfg(feature = "runtime-benchmarks")]
+        let slot = slot_from_digest.unwrap_or_default();
 
         let slot: u64 = slot.into();
         slot as u32
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_slot(slot: u32) {
+        let aura_digest_item =
+            <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(
+                (slot as u64).into(),
+            );
+        frame_system::Pallet::<ContainerRuntime>::deposit_log(aura_digest_item);
     }
 }
 

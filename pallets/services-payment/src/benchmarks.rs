@@ -18,12 +18,30 @@
 
 //! Benchmarking
 use {
-    crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet},
+    crate::{
+        BalanceOf, BlockNumberFor, Call, Config, Pallet, ProvideBlockProductionCost,
+        ProvideCollatorAssignmentCost,
+    },
     frame_benchmarking::{account, v2::*},
-    frame_support::{assert_ok, traits::Currency},
+    frame_support::{
+        assert_ok,
+        traits::{Currency, EnsureOriginWithArg, Get},
+    },
     frame_system::RawOrigin,
+    sp_runtime::Saturating,
     sp_std::prelude::*,
+    tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
+
+// Build genesis storage according to the mock runtime.
+#[cfg(test)]
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    const ALICE: u64 = 1;
+
+    crate::mock::ExtBuilder::default()
+        .with_balances(vec![(ALICE, 1_000)])
+        .build()
+}
 
 const SEED: u32 = 0;
 
@@ -44,9 +62,11 @@ mod benchmarks {
 
     #[benchmark]
     fn purchase_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 100);
         let para_id = 1001u32.into();
-        let credits = 1000u32.into();
+        let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id)
+            .0
+            .saturating_mul(1000u32.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
         // Before call: 0 credits
         assert_eq!(
@@ -55,41 +75,34 @@ mod benchmarks {
         );
 
         #[extrinsic_call]
-        Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller),
-            para_id,
-            credits,
-            Some(u32::MAX.into()),
-        );
+        Pallet::<T>::purchase_credits(RawOrigin::Signed(caller), para_id, payment);
 
         // verification code
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            credits
+            <T::Currency>::total_balance(&crate::Pallet::<T>::parachain_tank(para_id)),
+            payment
         );
     }
 
     #[benchmark]
-    fn set_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 100);
+    fn set_block_production_credits() {
         let para_id = 1001u32.into();
-        let credits = 1000u32.into();
+        let credits = T::FreeBlockProductionCredits::get();
 
-        assert_ok!(Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller).into(),
+        assert_ok!(Pallet::<T>::set_block_production_credits(
+            RawOrigin::Root.into(),
             para_id,
             credits,
-            Some(u32::MAX.into()),
         ));
 
         // Before call: 1000 credits
         assert_eq!(
             crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            1000u32.into()
+            T::FreeBlockProductionCredits::get()
         );
 
         #[extrinsic_call]
-        Pallet::<T>::set_credits(RawOrigin::Root, para_id, 1u32.into());
+        Pallet::<T>::set_block_production_credits(RawOrigin::Root, para_id, 1u32.into());
 
         // After call: 1 credit
         assert_eq!(
@@ -98,5 +111,81 @@ mod benchmarks {
         );
     }
 
-    impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
+    #[benchmark]
+    fn set_given_free_credits() {
+        let para_id = 1001u32.into();
+
+        // Before call: no given free credits
+        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_given_free_credits(RawOrigin::Root, para_id, true);
+
+        // After call: given free credits
+        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn set_refund_address() {
+        let para_id = 1001u32.into();
+
+        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
+            .expect("failed to create SetRefundAddressOrigin");
+
+        let refund_address = account("sufficient", 0, 1000);
+
+        // Before call: no given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, Some(refund_address));
+
+        // After call: given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn on_container_author_noted() {
+        let para_id = 1001u32;
+        let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
+        let credits: BalanceOf<T> = 1000u32.into();
+        let balance_to_purchase = block_cost.saturating_mul(credits);
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+        let existential_deposit = <T::Currency>::minimum_balance();
+        assert_ok!(Pallet::<T>::purchase_credits(
+            RawOrigin::Signed(caller.clone()).into(),
+            para_id.into(),
+            balance_to_purchase + existential_deposit
+        ));
+        #[block]
+        {
+            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_author_noted(
+                &caller,
+                0,
+                para_id.into(),
+            );
+        }
+    }
+
+    #[benchmark]
+    fn on_collators_assigned() {
+        let para_id = 1001u32;
+        let collator_assignment_cost =
+            T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id.into()).0;
+        let max_credit_stored = T::FreeCollatorAssignmentCredits::get();
+        let balance_to_purchase = collator_assignment_cost.saturating_mul(max_credit_stored.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+        let existential_deposit = <T::Currency>::minimum_balance();
+        assert_ok!(Pallet::<T>::purchase_credits(
+            RawOrigin::Signed(caller.clone()).into(),
+            para_id.into(),
+            balance_to_purchase + existential_deposit
+        ));
+        #[block]
+        {
+            <Pallet<T> as CollatorAssignmentHook>::on_collators_assigned(para_id.into());
+        }
+    }
+
+    impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);
 }

@@ -36,24 +36,33 @@
                 {
                     "name": "Collator1000-01",
                     "ws_port": "9948",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
                 {
                     "name": "Collator1000-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
                 {
                     "name": "Collator2000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["-- --keep-db"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --keep-db"
+                    ]
                 },
                 {
                     "name": "Collator2000-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
                 {
                     "name": "Collator1000-03",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 }
             ]
         },
@@ -65,6 +74,7 @@
                     "name": "FullNode-2000",
                     "validator": false,
                     "command": "../target/release/container-chain-template-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
                     "p2p_port": 33049
                 }

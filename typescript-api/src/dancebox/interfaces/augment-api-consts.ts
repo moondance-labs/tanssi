@@ -6,13 +6,16 @@
 import "@polkadot/api-base/types/consts";
 
 import type { ApiTypes, AugmentedConst } from "@polkadot/api-base/types";
-import type { u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
+import type { Option, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { Codec } from "@polkadot/types-codec/types";
+import type { Permill } from "@polkadot/types/interfaces/runtime";
 import type {
+    FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
+    SpWeightsWeightV2Weight,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -38,6 +41,95 @@ declare module "@polkadot/api-base/types/consts" {
             maxLocks: u32 & AugmentedConst<ApiType>;
             /** The maximum number of named reserves that can exist on an account. */
             maxReserves: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        foreignAssets: {
+            /** The amount of funds that must be reserved when creating a new approval. */
+            approvalDeposit: u128 & AugmentedConst<ApiType>;
+            /** The amount of funds that must be reserved for a non-provider asset account to be maintained. */
+            assetAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /** The basic amount of funds that must be reserved for an asset. */
+            assetDeposit: u128 & AugmentedConst<ApiType>;
+            /** The basic amount of funds that must be reserved when adding metadata to your asset. */
+            metadataDepositBase: u128 & AugmentedConst<ApiType>;
+            /** The additional funds that must be reserved for the number of bytes you store in your metadata. */
+            metadataDepositPerByte: u128 & AugmentedConst<ApiType>;
+            /**
+             * Max number of items to destroy per `destroy_accounts` and `destroy_approvals` call.
+             *
+             * Must be configured to result in a weight that makes each call fit in a block.
+             */
+            removeItemsLimit: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a name or symbol stored on-chain. */
+            stringLimit: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        identity: {
+            /** The amount held on deposit for a registered identity. */
+            basicDeposit: u128 & AugmentedConst<ApiType>;
+            /** The amount held on deposit per encoded byte for a registered identity. */
+            byteDeposit: u128 & AugmentedConst<ApiType>;
+            /** Maxmimum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
+            maxRegistrars: u32 & AugmentedConst<ApiType>;
+            /** The maximum number of sub-accounts allowed per identified account. */
+            maxSubAccounts: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a suffix. */
+            maxSuffixLength: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a username, including its suffix and any system-added delimiters. */
+            maxUsernameLength: u32 & AugmentedConst<ApiType>;
+            /** The number of blocks within which a username grant must be accepted. */
+            pendingUsernameExpiration: u32 & AugmentedConst<ApiType>;
+            /**
+             * The amount held on deposit for a registered subaccount. This should account for the fact that one storage
+             * item's value will increase by the size of an account ID, and there will be another trie item whose value is the
+             * size of an account ID plus 32 bytes.
+             */
+            subAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        messageQueue: {
+            /**
+             * The size of the page; this implies the maximum message size which can be sent.
+             *
+             * A good value depends on the expected message sizes, their weights, the weight that is available for processing
+             * them and the maximal needed message size. The maximal message size is slightly lower than this as defined by
+             * [`MaxMessageLenOf`].
+             */
+            heapSize: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of stale pages (i.e. of overweight messages) allowed before culling can happen. Once there
+             * are more stale pages than this, then historical pages may be dropped, even if they contain unprocessed
+             * overweight messages.
+             */
+            maxStale: u32 & AugmentedConst<ApiType>;
+            /**
+             * The amount of weight (if any) which should be provided to the message queue for servicing enqueued items.
+             *
+             * This may be legitimately `None` in the case that you will call `ServiceQueues::service_queues` manually.
+             */
+            serviceWeight: Option<SpWeightsWeightV2Weight> & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        multisig: {
+            /**
+             * The base amount of currency needed to reserve for creating a multisig execution or to store a dispatch call for later.
+             *
+             * This is held for an additional storage item whose value size is `4 + sizeof((BlockNumber, Balance, AccountId))`
+             * bytes and whose key size is `32 + sizeof(AccountId)` bytes.
+             */
+            depositBase: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount of currency needed per unit threshold when creating a multisig execution.
+             *
+             * This is held for adding 32 bytes more into a pre-existing storage value.
+             */
+            depositFactor: u128 & AugmentedConst<ApiType>;
+            /** The maximum amount of signatories allowed in the multisig. */
+            maxSignatories: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -85,6 +177,16 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        relayStorageRoots: {
+            /**
+             * Limit the number of relay storage roots that will be stored. This limit applies to the number of items, not to
+             * their age. Decreasing the value of `MaxStorageRoots` is a breaking change and needs a migration to clean the
+             * `RelayStorageRoots` mapping.
+             */
+            maxStorageRoots: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         system: {
             /** Maximum number of block number to block hash mappings to keep (oldest pruned first). */
             blockHashCount: u32 & AugmentedConst<ApiType>;
@@ -108,9 +210,11 @@ declare module "@polkadot/api-base/types/consts" {
         };
         timestamp: {
             /**
-             * The minimum period between blocks. Beware that this is different to the _expected_ period that the block
-             * production apparatus provides. Your chosen consensus system will generally work with this to determine a
-             * sensible block time. e.g. For Aura, it will be double this period on default settings.
+             * The minimum period between blocks.
+             *
+             * Be aware that this is different to the _expected_ period that the block production apparatus provides. Your
+             * chosen consensus system will generally work with this to determine a sensible block time. For example, in the
+             * Aura pallet it will be double this period on default settings.
              */
             minimumPeriod: u64 & AugmentedConst<ApiType>;
             /** Generic const */
@@ -118,9 +222,9 @@ declare module "@polkadot/api-base/types/consts" {
         };
         transactionPayment: {
             /**
-             * A fee mulitplier for `Operational` extrinsics to compute "virtual tip" to boost their `priority`
+             * A fee multiplier for `Operational` extrinsics to compute "virtual tip" to boost their `priority`
              *
-             * This value is multipled by the `final_fee` to obtain a "virtual tip" that is later added to a tip component in
+             * This value is multiplied by the `final_fee` to obtain a "virtual tip" that is later added to a tip component in
              * regular `priority` calculations. It means that a `Normal` transaction can front-run a similarly-sized
              * `Operational` extrinsic (with no tip), by including a tip value greater than the virtual tip.
              *
@@ -141,9 +245,57 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        treasury: {
+            /** Percentage of spare funds (if any) that are burnt per spend period. */
+            burn: Permill & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of approvals that can wait in the spending queue.
+             *
+             * NOTE: This parameter is also used within the Bounties Pallet extension if enabled.
+             */
+            maxApprovals: u32 & AugmentedConst<ApiType>;
+            /** The treasury's pallet id, used for deriving its sovereign account ID. */
+            palletId: FrameSupportPalletId & AugmentedConst<ApiType>;
+            /** The period during which an approved treasury spend has to be claimed. */
+            payoutPeriod: u32 & AugmentedConst<ApiType>;
+            /**
+             * Fraction of a proposal's value that should be bonded in order to place the proposal. An accepted proposal gets
+             * these back. A rejected proposal does not.
+             */
+            proposalBond: Permill & AugmentedConst<ApiType>;
+            /** Maximum amount of funds that should be placed in a deposit for making a proposal. */
+            proposalBondMaximum: Option<u128> & AugmentedConst<ApiType>;
+            /** Minimum amount of funds that should be placed in a deposit for making a proposal. */
+            proposalBondMinimum: u128 & AugmentedConst<ApiType>;
+            /** Period between successive spends. */
+            spendPeriod: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        txPause: {
+            /**
+             * Maximum length for pallet name and call name SCALE encoded string names.
+             *
+             * TOO LONG NAMES WILL BE TREATED AS PAUSED.
+             */
+            maxNameLen: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         utility: {
             /** The limit on the number of batched calls. */
             batchedCallsLimit: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        xcmpQueue: {
+            /**
+             * The maximum number of inbound XCMP channels that can be suspended simultaneously.
+             *
+             * Any further channel suspensions will fail and messages may get dropped without further notice. Choosing a high
+             * value (1000) is okay; the trade-off that is described in [`InboundXcmpSuspended`] still applies at that scale.
+             */
+            maxInboundSuspended: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

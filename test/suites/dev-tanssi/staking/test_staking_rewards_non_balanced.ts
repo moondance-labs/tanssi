@@ -9,10 +9,10 @@ import {
     filterRewardStakingDelegators,
     jumpSessions,
 } from "util/block";
-import { DANCE, STAKING_ACCOUNT } from "util/constants";
+import { DANCE } from "util/constants";
 
 describeSuite({
-    id: "SR0401",
+    id: "DT0303",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -32,15 +32,10 @@ describeSuite({
             // we will make each of them delegate the other with 50%
             // Alice autocompounding, Bob will be manual
 
-            // Additionally, we need to pass to the staking account the minimum balance
-            const existentialDeposit = polkadotJs.consts.balances.existentialDeposit;
-
             await context.createBlock([
+                // Remove all invulnerables, otherwise they have priority
                 await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(alice.address))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(bob.address))
+                    .sudo(polkadotJs.tx.invulnerables.setInvulnerables([]))
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(alice.address, "AutoCompounding", 18000n * DANCE)
@@ -53,9 +48,6 @@ describeSuite({
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(bob.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-                await polkadotJs.tx.balances
-                    .transfer(STAKING_ACCOUNT, existentialDeposit)
                     .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
             ]);
             // At least 2 sessions for the change to have effect

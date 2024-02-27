@@ -4,6 +4,8 @@ tmp/*
 node_modules/
 **/compiled/*
 **/specs/*
+html/
+wasm/precompiled*
 
 moonbeam
 polkadot

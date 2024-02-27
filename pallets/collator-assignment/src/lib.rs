@@ -43,7 +43,10 @@
 
 pub use pallet::*;
 use {
-    crate::weights::WeightInfo,
+    crate::{
+        assignment::{Assignment, ChainNumCollators},
+        weights::WeightInfo,
+    },
     dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
@@ -55,11 +58,13 @@ use {
     },
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
+        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        ShouldRotateAllCollators, Slot,
     },
 };
 
+mod assignment;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
@@ -98,6 +103,7 @@ pub mod pallet {
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
+        type CollatorAssignmentHook: CollatorAssignmentHook;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -162,13 +168,23 @@ pub mod pallet {
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
             // We get the containerChains that we will have at the target session
-            let mut container_chain_ids =
+            let container_chains =
                 T::ContainerChains::session_container_chains(target_session_index);
-            let num_total_registered_paras = container_chain_ids.len() as u32;
+            let num_total_registered_paras =
+                (container_chains.parachains.len() + container_chains.parathreads.len()) as u32;
+            let mut container_chain_ids = container_chains.parachains;
+            let mut parathreads: Vec<_> = container_chains
+                .parathreads
+                .into_iter()
+                .map(|(para_id, _)| para_id)
+                .collect();
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
             );
+            // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
+            // as paratherads because they will not be producing blocks on every slot.
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.
@@ -176,11 +192,47 @@ pub mod pallet {
             if random_seed != [0; 32] {
                 let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
                 collators.shuffle(&mut rng);
+                // TODO: in the future, instead of shuffling the list of para ids, we need to use the priority fee to
+                // determine priority
                 container_chain_ids.shuffle(&mut rng);
+                parathreads.shuffle(&mut rng);
             }
 
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
+            let orchestrator_chain = ChainNumCollators {
+                para_id: T::SelfParaId::get(),
+                min_collators: T::HostConfiguration::min_collators_for_orchestrator(
+                    target_session_index,
+                ),
+                max_collators: T::HostConfiguration::max_collators_for_orchestrator(
+                    target_session_index,
+                ),
+            };
+            // Initialize list of chains as `[container1, container2, parathread1, parathread2]`.
+            // The order means priority: the first chain in the list will be the first one to get assigned collators.
+            // Chains will not be assigned less than `min_collators`, except the orchestrator chain.
+            // First all chains will be assigned `min_collators`, and then the first one will be assigned up to `max`,
+            // then the second one, and so on.
+            let mut chains = vec![];
+            let collators_per_container =
+                T::HostConfiguration::collators_per_container(target_session_index);
+            for para_id in &container_chain_ids {
+                chains.push(ChainNumCollators {
+                    para_id: *para_id,
+                    min_collators: collators_per_container,
+                    max_collators: collators_per_container,
+                });
+            }
+            let collators_per_parathread =
+                T::HostConfiguration::collators_per_parathread(target_session_index);
+            for para_id in &parathreads {
+                chains.push(ChainNumCollators {
+                    para_id: *para_id,
+                    min_collators: collators_per_parathread,
+                    max_collators: collators_per_parathread,
+                });
+            }
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let new_assigned =
@@ -197,15 +249,10 @@ pub mod pallet {
                         target_session: target_session_index,
                     });
 
-                    Self::assign_collators_rotate_all(
+                    Assignment::<T>::assign_collators_rotate_all(
                         collators,
-                        &container_chain_ids,
-                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
-                            as usize,
-                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
-                            as usize,
-                        T::HostConfiguration::collators_per_container(target_session_index)
-                            as usize,
+                        orchestrator_chain,
+                        chains,
                     )
                 } else {
                     log::info!(
@@ -220,18 +267,49 @@ pub mod pallet {
                         target_session: target_session_index,
                     });
 
-                    Self::assign_collators_always_keep_old(
+                    Assignment::<T>::assign_collators_always_keep_old(
                         collators,
-                        &container_chain_ids,
-                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
-                            as usize,
-                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
-                            as usize,
-                        T::HostConfiguration::collators_per_container(target_session_index)
-                            as usize,
+                        orchestrator_chain,
+                        chains,
                         old_assigned.clone(),
                     )
                 };
+
+            let new_assigned = match new_assigned {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!(
+                        "Error in collator assignment, will keep previous assignment. {:?}",
+                        e
+                    );
+
+                    old_assigned.clone()
+                }
+            };
+
+            // TODO: this probably is asking for a refactor
+            // only apply the onCollatorAssignedHook if sufficient collators
+            for para_id in &container_chain_ids {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
+
+            for para_id in &parathreads {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;
@@ -265,128 +343,6 @@ pub mod pallet {
                 next_assignment: new_assigned,
                 num_total_registered_paras,
             }
-        }
-
-        /// Recompute collator assignment from scratch. If the list of collators and the list of
-        /// container chains are shuffled, this returns a random assignment.
-        fn assign_collators_rotate_all(
-            collators: Vec<T::AccountId>,
-            container_chain_ids: &[ParaId],
-            min_num_orchestrator_chain: usize,
-            max_num_orchestrator_chain: usize,
-            num_each_container_chain: usize,
-        ) -> AssignedCollators<T::AccountId> {
-            // This is just the "always_keep_old" algorithm but with an empty "old"
-            let old_assigned = Default::default();
-
-            Self::assign_collators_always_keep_old(
-                collators,
-                container_chain_ids,
-                min_num_orchestrator_chain,
-                max_num_orchestrator_chain,
-                num_each_container_chain,
-                old_assigned,
-            )
-        }
-
-        /// Assign new collators to missing container_chains.
-        /// Old collators always have preference to remain on the same chain.
-        /// If there are no missing collators, nothing is changed.
-        ///
-        /// `container_chain_ids` should be shuffled or at least rotated on every session to ensure
-        /// a fair distribution, because the order of that list affects container chain priority:
-        /// the first container chain on that list will be the first one to get new collators.
-        fn assign_collators_always_keep_old(
-            collators: Vec<T::AccountId>,
-            container_chain_ids: &[ParaId],
-            min_num_orchestrator_chain: usize,
-            max_num_orchestrator_chain: usize,
-            num_each_container_chain: usize,
-            old_assigned: AssignedCollators<T::AccountId>,
-        ) -> AssignedCollators<T::AccountId> {
-            // TODO: the performance of this function is sad, could be improved by having sets of
-            // old_collators and new_collators instead of doing array.contains() every time.
-            let mut new_assigned = old_assigned;
-            new_assigned.remove_collators_not_in_list(&collators);
-            new_assigned.remove_container_chains_not_in_list(container_chain_ids);
-            let extra_orchestrator_collators =
-                new_assigned.remove_orchestrator_chain_excess_collators(min_num_orchestrator_chain);
-            // Only need to do this if the config params change
-            new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
-
-            // Collators that are not present in old_assigned
-            // This is used to keep track of which collators are old and which ones are new, to keep
-            // the old collators on the same chain if possible.
-            let mut new_collators = vec![];
-            for c in collators {
-                if !new_assigned.find_collator(&c) && !extra_orchestrator_collators.contains(&c) {
-                    new_collators.push(c);
-                }
-            }
-
-            // Fill orchestrator chain collators up to min_num_orchestrator_chain
-            // Give priority to invulnerables
-            let num_missing_orchestrator_collators =
-                min_num_orchestrator_chain.saturating_sub(new_assigned.orchestrator_chain.len());
-            let invulnerables_for_orchestrator = T::RemoveInvulnerables::remove_invulnerables(
-                &mut new_collators,
-                num_missing_orchestrator_collators,
-            );
-            new_assigned.fill_orchestrator_chain_collators(
-                min_num_orchestrator_chain,
-                &mut invulnerables_for_orchestrator.into_iter(),
-            );
-            // If there are no enough invulnerables, or if the invulnerables are currently assigned to other chains,
-            // fill orchestrator chain with regular collators
-            let mut new_collators = new_collators.into_iter();
-            new_assigned
-                .fill_orchestrator_chain_collators(min_num_orchestrator_chain, &mut new_collators);
-
-            // Fill container chain collators using new collators and also the extra
-            // collators that were previously assigned to the orchestrator chain,
-            // but give preference to new collators
-            let mut extra_orchestrator_collators = extra_orchestrator_collators.into_iter();
-            let mut new_plus_extra_collators = new_collators
-                .by_ref()
-                .chain(&mut extra_orchestrator_collators);
-
-            new_assigned.add_and_fill_new_container_chains_in_order(
-                num_each_container_chain,
-                container_chain_ids,
-                &mut new_plus_extra_collators,
-            );
-
-            // Fill orchestrator chain collators back up to max_num_orchestrator_chain,
-            // but give preference to collators that were already there
-            let mut extra_collators_plus_new = extra_orchestrator_collators
-                .by_ref()
-                .chain(&mut new_collators);
-            new_assigned.fill_orchestrator_chain_collators(
-                max_num_orchestrator_chain,
-                &mut extra_collators_plus_new,
-            );
-
-            // Reorganize container chain collators to fill the maximum number of container
-            // chains. For example, if num_each_container_chain == 2 and the number of collators
-            // in each container chain is
-            // [1, 1, 1, 1, 1]
-            // Then we can convert that into
-            // [2, 2, 0, 0, 0]
-            // and assign 1 extra collator to the orchestrator chain, if needed.
-            let incomplete_container_chains_collators = new_assigned
-                .reorganize_incomplete_container_chains_collators(
-                    container_chain_ids,
-                    num_each_container_chain,
-                );
-
-            // Assign collators from container chains that do not reach
-            // "num_each_container_chain" to orchestrator chain
-            new_assigned.fill_orchestrator_chain_collators(
-                max_num_orchestrator_chain,
-                &mut incomplete_container_chains_collators.into_iter(),
-            );
-
-            new_assigned
         }
 
         // Returns the assigned collators as read from storage.
@@ -491,4 +447,14 @@ where
 pub trait GetRandomnessForNextBlock<BlockNumber> {
     fn should_end_session(block_number: BlockNumber) -> bool;
     fn get_randomness() -> [u8; 32];
+}
+
+impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
+    fn should_end_session(_block_number: BlockNumber) -> bool {
+        false
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        [0; 32]
+    }
 }

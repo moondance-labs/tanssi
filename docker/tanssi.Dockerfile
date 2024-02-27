@@ -4,7 +4,7 @@
 
 FROM docker.io/library/ubuntu:20.04 AS builder
 
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates lsof && update-ca-certificates
 
 FROM debian:bookworm-slim
 LABEL maintainer "gorka@moondancelabs.com"
@@ -21,7 +21,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 
 USER tanssi
 
-COPY --chown=tanssi build/tanssi-node /tanssi
+COPY --chown=tanssi build/tanssi-node* /tanssi
 RUN chmod uog+x /tanssi/tanssi*
 
 # 30333 for parachain p2p

@@ -1,0 +1,46 @@
+name: Typescript tests
+description: |
+  Setup and run the typescript tests against a local tanssi node and templates.
+
+inputs:
+  moonwall-environment:
+    description: Name of the moonwall environment to run tests against.
+    required: true
+  force-pass:
+    description: "Indicate whether the workflow should mark the test step as successful, even if actual test failures occur."
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Set binary path and number of CPUs
+      shell: bash
+      run: |
+        #### Set the number of CPUs to use for parallel tests.
+        echo "CPUS=$(lscpu | egrep '^CPU\(s\)' | grep -o '[0-9]*')" >> $GITHUB_ENV
+
+        echo "CPUS: $CPUS"
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: "pnpm"
+
+    - name: Install typescript-api
+      shell: bash
+      run: |
+        cd ./typescript-api
+        pnpm install
+        pnpm create-local-interfaces
+
+    - name: Install and run
+      shell: bash
+      run: |
+        cd ./test
+        pnpm moonwall test ${{ inputs.moonwall-environment }} || [[ '${{ inputs.force-pass }}' == 'true' ]]

@@ -28,6 +28,7 @@ fn config_sets_values_from_genesis() {
         max_orchestrator_collators: 40,
         collators_per_container: 20,
         full_rotation_period: 24,
+        ..Default::default()
     };
     new_test_ext_with_genesis(custom_config.clone()).execute_with(|| {
         run_to_block(1);
@@ -43,6 +44,7 @@ fn config_sets_default_values() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     };
     new_test_ext().execute_with(|| {
         run_to_block(1);
@@ -58,6 +60,7 @@ fn config_set_value() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -77,6 +80,7 @@ fn config_set_value() {
                     max_orchestrator_collators: 5,
                     collators_per_container: 2,
                     full_rotation_period: 24,
+                    ..Default::default()
                 }
             )]
         );
@@ -105,6 +109,7 @@ fn config_set_full_rotation_period_to_zero_works() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -124,6 +129,7 @@ fn config_set_full_rotation_period_to_zero_works() {
                     max_orchestrator_collators: 5,
                     collators_per_container: 2,
                     full_rotation_period: 0,
+                    ..Default::default()
                 }
             )]
         );
@@ -152,6 +158,7 @@ fn config_set_many_values_same_block() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -181,6 +188,7 @@ fn config_set_many_values_same_block() {
                     max_orchestrator_collators: 20,
                     collators_per_container: 10,
                     full_rotation_period: 24,
+                    ..Default::default()
                 }
             )]
         );
@@ -207,6 +215,7 @@ fn config_set_many_values_different_blocks() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -238,6 +247,7 @@ fn config_set_many_values_different_blocks() {
                     max_orchestrator_collators: 20,
                     collators_per_container: 10,
                     full_rotation_period: 24,
+                    ..Default::default()
                 }
             )]
         );
@@ -264,6 +274,7 @@ fn config_set_many_values_different_sessions() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -299,6 +310,7 @@ fn config_set_many_values_different_sessions() {
                         max_orchestrator_collators: 20,
                         collators_per_container: 2,
                         full_rotation_period: 24,
+                        ..Default::default()
                     }
                 ),
                 (
@@ -309,6 +321,7 @@ fn config_set_many_values_different_sessions() {
                         max_orchestrator_collators: 20,
                         collators_per_container: 10,
                         full_rotation_period: 24,
+                        ..Default::default()
                     }
                 )
             ]
@@ -336,6 +349,7 @@ fn config_cannot_set_invalid_values() {
         max_orchestrator_collators: 5,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     })
     .execute_with(|| {
         run_to_block(1);
@@ -383,6 +397,50 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 .get_dispatch_info()
                 .weight,
             <() as crate::weights::WeightInfo>::set_config_with_u32()
+        );
+    });
+}
+
+#[test]
+fn set_max_collators_below_min_orch_collators_errors() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+        ..Default::default()
+    })
+    .execute_with(|| {
+        run_to_block(1);
+        assert_eq!(Configuration::config().max_collators, 100);
+
+        // set max_collators to 1
+        assert_noop!(
+            Configuration::set_max_collators(RuntimeOrigin::root(), 1),
+            Error::<Test>::InvalidNewValue
+        );
+    });
+}
+
+#[test]
+fn set_max_collators_below_min_orch_collators_errors_reverse() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+        ..Default::default()
+    })
+    .execute_with(|| {
+        run_to_block(1);
+        assert_eq!(Configuration::config().max_collators, 100);
+
+        // set max_collators to 1
+        assert_noop!(
+            Configuration::set_min_orchestrator_collators(RuntimeOrigin::root(), 101),
+            Error::<Test>::InvalidNewValue
         );
     });
 }

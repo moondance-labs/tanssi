@@ -18,14 +18,14 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet},
+    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks},
     frame_benchmarking::{account, v2::*},
-    frame_support::{traits::Currency, BoundedVec},
+    frame_support::traits::Currency,
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
     tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
-    tp_traits::ParaId,
+    tp_traits::{ParaId, SlotFrequency},
 };
 
 /// Create a funded user.
@@ -98,7 +98,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+    fn deregister_immediate(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
         let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
         let storage = new_genesis_data(storage);
 
@@ -112,16 +112,70 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
         }
 
         // We should have registered y
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
         #[extrinsic_call]
         Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
         assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+    }
+
+    #[benchmark]
+    fn deregister_scheduled(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
+        let genesis_para_id_len = Pallet::<T>::registered_para_ids().len();
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            // Call mark_valid_for_collating to ensure that the deregister call
+            // does not execute the cleanup hooks immediately
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        // We should have registered y
+        assert_eq!(
+            Pallet::<T>::registered_para_ids().len(),
+            genesis_para_id_len + y as usize
+        );
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+
+        #[extrinsic_call]
+        Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
+
+        // We now have y - 1 but the deposit has not been removed yet
+        assert_eq!(
+            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
+            genesis_para_id_len + (y - 1) as usize
+        );
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Now it has been removed
+        assert_eq!(
+            Pallet::<T>::registered_para_ids().len(),
+            genesis_para_id_len + (y - 1) as usize
+        );
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
     }
 
@@ -155,6 +209,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
@@ -163,39 +218,13 @@ mod benchmarks {
 
         // We should have registered y
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
 
         #[extrinsic_call]
         Pallet::<T>::mark_valid_for_collating(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
         assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
-    }
-
-    #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
-
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
-
-        Pallet::<T>::register(
-            RawOrigin::Signed(caller.clone()).into(),
-            Default::default(),
-            storage,
-        )
-        .expect("Failed to register chain");
-
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-
-        #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(RawOrigin::Signed(caller), Default::default(), boot_nodes);
     }
 
     #[benchmark]
@@ -208,7 +237,7 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
-        // Worst case: when RegisteredParaIds and PendingVerification are both full
+        // Worst case: when RegisteredParaIds and Paused are both full
         // First loop to fill RegisteredParaIds to its maximum
         for i in 0..y {
             // Twice the deposit just in case
@@ -220,10 +249,11 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
-        // Second loop to fill PendingVerification to its maximum
+        // Second loop to fill Paused to its maximum
         for k in 1000..(1000 + y) {
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
@@ -233,30 +263,183 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
-        // Check PendingParaIds has a length of y
-        assert_eq!(
-            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
-            y as usize
+        // Check PendingPaused has a length of y
+        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize);
+        // Check y-1 is not in PendingPaused
+        assert!(!Pallet::<T>::pending_paused()[0]
+            .1
+            .contains(&ParaId::from(y - 1)));
+        // Check y-1 is in pending_registered_para_ids
+        assert!(Pallet::<T>::pending_registered_para_ids()[0]
+            .1
+            .contains(&ParaId::from(y - 1)));
+
+        #[extrinsic_call]
+        Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into());
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Check y-1 is in Paused
+        assert!(Pallet::<T>::paused().contains(&ParaId::from(y - 1)));
+        // Check y-1 is not in registered_para_ids
+        assert!(!Pallet::<T>::registered_para_ids().contains(&ParaId::from(y - 1)));
+    }
+
+    #[benchmark]
+    fn unpause_container_chain(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
+        let storage = new_genesis_data(storage);
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
+
+        // Worst case: when RegisteredParaIds and Paused are both full
+        // First loop to fill RegisteredParaIds to its maximum
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Second loop to fill Paused to its maximum
+        for k in 1000..(1000 + y) {
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                k.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+
+        // Check PendingPaused has a length of y
+        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize);
+        // Check 1000 is in PendingPaused
+        assert!(Pallet::<T>::pending_paused()[0]
+            .1
+            .contains(&ParaId::from(1000)));
+        // Check 1000 is not in pending_registered_para_ids
+        assert!(!Pallet::<T>::pending_registered_para_ids()[0]
+            .1
+            .contains(&ParaId::from(1000)));
+
+        #[extrinsic_call]
+        Pallet::<T>::unpause_container_chain(RawOrigin::Root, 1000u32.into());
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Check 1000 is not in Paused
+        assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000)));
+        // Check 1000 is in registered_para_ids
+        assert!(Pallet::<T>::registered_para_ids().contains(&ParaId::from(1000)));
+    }
+
+    #[benchmark]
+    fn register_parathread(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
+        let mut data = vec![];
+        // Number of keys
+        for _i in 1..z {
+            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
+        }
+
+        let slot_frequency = SlotFrequency::default();
+        let storage = new_genesis_data(data);
+
+        for i in 1..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register_parathread(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                slot_frequency.clone(),
+                storage.clone(),
+            )
+            .unwrap();
+        }
+
+        // We should have registered y-1
+        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        #[extrinsic_call]
+        Pallet::<T>::register_parathread(
+            RawOrigin::Signed(caller),
+            Default::default(),
+            slot_frequency,
+            storage,
+        );
+
+        // verification code
+        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+    }
+
+    #[benchmark]
+    fn set_parathread_params(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
+        let storage = new_genesis_data(storage);
+        let slot_frequency = SlotFrequency::default();
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register_parathread(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                slot_frequency.clone(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        let new_slot_frequency = SlotFrequency { min: 2, max: 2 };
+
+        #[extrinsic_call]
+        Pallet::<T>::set_parathread_params(
+            RawOrigin::Root,
+            (y - 1).into(),
+            new_slot_frequency.clone(),
         );
 
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
 
-        // Check y-1 is not in PendingVerification
-        assert!(!Pallet::<T>::pending_verification().contains(&ParaId::from(y - 1)));
-
-        #[extrinsic_call]
-        Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into());
-
-        // y-1 should be included again in PendingVerification
-        assert!(Pallet::<T>::pending_verification().contains(&ParaId::from(y - 1)));
-
-        // y-1 should not be in PendingParaIds
+        // Check y-1 has new slot frequency
         assert_eq!(
-            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
-            (y - 1) as usize
+            Pallet::<T>::parathread_params(&ParaId::from(y - 1)).map(|x| x.slot_frequency),
+            Some(new_slot_frequency)
         );
     }
 

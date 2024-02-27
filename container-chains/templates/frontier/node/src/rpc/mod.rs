@@ -25,7 +25,9 @@ pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
-    cumulus_primitives_core::ParaId,
+    cumulus_client_parachain_inherent::ParachainInherentData,
+    cumulus_primitives_core::{ParaId, PersistedValidationData},
+    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
     fc_rpc_core::TxPoolApiServer,
     fp_rpc::EthereumRuntimeRPCApi,
@@ -43,16 +45,16 @@ use {
     sc_service::TaskManager,
     sc_transaction_pool::{ChainApi, Pool},
     sc_transaction_pool_api::TransactionPool,
-    sp_api::{CallApiAt, HeaderT, ProvideRuntimeApi},
+    sp_api::{CallApiAt, ProvideRuntimeApi},
     sp_block_builder::BlockBuilder,
     sp_blockchain::{
         Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
     },
+    sp_consensus_aura::SlotDuration,
     sp_core::H256,
-    sp_runtime::traits::{BlakeTwo256, Block as BlockT},
+    sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT},
     std::{sync::Arc, time::Duration},
 };
-
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
@@ -174,8 +176,61 @@ where
         }
     }
     let convert_transaction: Option<Never> = None;
+    let authorities = vec![tc_consensus::get_aura_id_from_seed("alice")];
+    let authorities_for_cdp = authorities.clone();
 
-    let pending_create_inherent_data_providers = move |_, _| async move { Ok(()) };
+    let pending_create_inherent_data_providers = move |_, _| {
+        let authorities_for_cidp = authorities.clone();
+
+        async move {
+            let mocked_authorities_noting =
+                ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
+                    current_para_block: 1000,
+                    relay_offset: 1000,
+                    relay_blocks_per_para_block: 2,
+                    orchestrator_para_id: 1000u32.into(),
+                    container_para_id: 2000u32.into(),
+                    authorities: authorities_for_cidp,
+                };
+
+            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+            // Create a dummy parachain inherent data provider which is required to pass
+            // the checks by the para chain system. We use dummy values because in the 'pending context'
+            // neither do we have access to the real values nor do we need them.
+            let (relay_parent_storage_root, relay_chain_state) = RelayStateSproofBuilder {
+                additional_key_values: mocked_authorities_noting.get_key_values(),
+                ..Default::default()
+            }
+            .into_state_root_and_proof();
+            let vfp = PersistedValidationData {
+                // This is a hack to make `cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases`
+                // happy. Relay parent number can't be bigger than u32::MAX.
+                relay_parent_number: u32::MAX,
+                relay_parent_storage_root,
+                ..Default::default()
+            };
+            let parachain_inherent_data = ParachainInherentData {
+                validation_data: vfp,
+                relay_chain_state: relay_chain_state,
+                downward_messages: Default::default(),
+                horizontal_messages: Default::default(),
+            };
+            Ok((
+                timestamp,
+                parachain_inherent_data,
+                mocked_authorities_noting,
+            ))
+        }
+    };
+
+    let pending_consensus_data_provider_frontier: Option<
+        Box<(dyn fc_rpc::pending::ConsensusDataProvider<_>)>,
+    > = Some(Box::new(
+        tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
+            SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION),
+            authorities_for_cdp,
+        ),
+    ));
 
     io.merge(
         Eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
@@ -193,9 +248,8 @@ where
             fee_history_limit,
             10,
             None,
-            // TODO: resvisit
             pending_create_inherent_data_providers,
-            None,
+            pending_consensus_data_provider_frontier,
         )
         .into_rpc(),
     )?;
