@@ -21,7 +21,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 
 USER tanssi
 
-COPY --chown=tanssi build/tanssi-node /tanssi
+COPY --chown=tanssi build/tanssi-node* /tanssi
 RUN chmod uog+x /tanssi/tanssi*
 
 # 30333 for parachain p2p
