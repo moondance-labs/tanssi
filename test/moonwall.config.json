@@ -49,7 +49,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/dev-frontier-template"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains", "suites/dev-frontier-template"],
             "runScripts": [
                 "pre-build-contracts.ts",
                 "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c dev"
@@ -76,7 +76,7 @@
         },
         {
             "name": "dev_simple_template",
-            "testFileDir": ["suites/common-all", "suites/common-xcm"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains"],
             "runScripts": [
                 "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c dev"
             ],

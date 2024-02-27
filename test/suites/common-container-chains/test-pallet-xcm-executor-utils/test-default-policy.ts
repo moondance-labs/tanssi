@@ -1,21 +1,31 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { alith } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import { KeyringPair, alith } from "@moonwall/util";
+import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
 import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
 import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
+// This assumes that the XcmExecutorUtils ReserveDefaultTrustPolicy set in the runtime is AllNative
 describeSuite({
-    id: "DF0901",
+    id: "DC0201",
     title: "XcmExecutorUtils - Default policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
+        let alice: KeyringPair;
+        let chain: string;
         const transferredBalance = 10_000_000_000_000n;
 
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
+            chain = polkadotJs.consts.system.version.specName.toString();
+            alice =
+                chain == "frontier-template"
+                    ? alith
+                    : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
+                          name: "Alice default",
+                      });
         });
 
         it({
@@ -30,14 +40,14 @@ describeSuite({
                                 polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
                                     RELAY_SOURCE_LOCATION,
                                     1,
-                                    alith.address,
+                                    alice.address,
                                     true,
                                     1
                                 ),
                                 polkadotJs.tx.assetRate.create(1, 2_000_000_000_000_000_000n),
                             ])
                         )
-                        .signAsync(alith),
+                        .signAsync(alice),
                     {
                         allowFailures: false,
                     }
@@ -54,7 +64,7 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    beneficiary: u8aToHex(alith.addressRaw),
+                    beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
                     .clear_origin()
@@ -70,12 +80,12 @@ describeSuite({
                 // Create a block in which the XCM will be executed
                 await context.createBlock();
 
-                const alith_asset_balance = (await polkadotJs.query.foreignAssets.account(1, alith.address))
+                const alice_asset_balance = (await polkadotJs.query.foreignAssets.account(1, alice.address))
                     .unwrap()
                     .balance.toBigInt();
-                expect(alith_asset_balance > 0n).to.be.true;
+                expect(alice_asset_balance > 0n).to.be.true;
                 // we should expect to have received less than the amount transferred
-                expect(alith_asset_balance < transferredBalance).to.be.true;
+                expect(alice_asset_balance < transferredBalance).to.be.true;
             },
         });
 
@@ -91,14 +101,14 @@ describeSuite({
                                 polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
                                     RELAY_SOURCE_LOCATION_2,
                                     2,
-                                    alith.address,
+                                    alice.address,
                                     true,
                                     1
                                 ),
                                 polkadotJs.tx.assetRate.create(2, 2_000_000_000_000_000_000n),
                             ])
                         )
-                        .signAsync(alith),
+                        .signAsync(alice),
                     {
                         allowFailures: false,
                     }
@@ -115,7 +125,7 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    beneficiary: u8aToHex(alith.addressRaw),
+                    beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
                     .clear_origin()
@@ -130,9 +140,10 @@ describeSuite({
 
                 await context.createBlock();
 
-                // Tokens should have been rejected
-                const alith_asset_balance = await polkadotJs.query.foreignAssets.account(2, alith.address);
-                expect(alith_asset_balance.isNone).to.be.true;
+                // Grandparent tokens should have been rejected, so asset balance for Alice shouldn't exist
+                const alice_asset_balance = await polkadotJs.query.foreignAssets.account(2, alice.address);
+                console.log(alice_asset_balance.toHuman());
+                expect(alice_asset_balance.isNone).to.be.true;
             },
         });
     },

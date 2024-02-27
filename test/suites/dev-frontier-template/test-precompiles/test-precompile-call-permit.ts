@@ -7,7 +7,7 @@ import { getSignatureParameters } from "util/ethereum";
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
 describeSuite({
-    id: "DF1002",
+    id: "DF0902",
     title: "Precompile - Call Permit - foo",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

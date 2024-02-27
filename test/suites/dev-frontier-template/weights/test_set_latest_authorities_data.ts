@@ -4,7 +4,7 @@ import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
 
 describeSuite({
-    id: "DF1101",
+    id: "DF1001",
     title: "On set latest authorities data weight check",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
