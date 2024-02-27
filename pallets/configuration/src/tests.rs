@@ -422,3 +422,25 @@ fn set_max_collators_below_min_orch_collators_errors() {
         );
     });
 }
+
+#[test]
+fn set_max_collators_below_min_orch_collators_errors_reverse() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+        ..Default::default()
+    })
+    .execute_with(|| {
+        run_to_block(1);
+        assert_eq!(Configuration::config().max_collators, 100);
+
+        // set max_collators to 1
+        assert_noop!(
+            Configuration::set_min_orchestrator_collators(RuntimeOrigin::root(), 101),
+            Error::<Test>::InvalidNewValue
+        );
+    });
+}
