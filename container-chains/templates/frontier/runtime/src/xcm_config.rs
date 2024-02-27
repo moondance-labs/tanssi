@@ -370,7 +370,7 @@ impl pallet_asset_rate::Config for Runtime {
 
 parameter_types! {
     pub const TrustPolicyMaxAssets: u32 = 1000;
-    pub const AllNativeTrustPolicy: DefaultTrustPolicy = pallet_xcm_executor_utils::DefaultTrustPolicy::AllNative;
+    pub const AllNativeTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::AllNative;
 }
 impl pallet_xcm_executor_utils::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
