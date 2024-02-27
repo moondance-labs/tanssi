@@ -130,6 +130,11 @@ import type {
     PalletMessageQueuePage,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMultisigCall,
+    PalletMultisigError,
+    PalletMultisigEvent,
+    PalletMultisigMultisig,
+    PalletMultisigTimepoint,
     PalletPooledStakingAllTargetPool,
     PalletPooledStakingCall,
     PalletPooledStakingCandidateEligibleCandidate,
@@ -407,6 +412,11 @@ declare module "@polkadot/types/types/registry" {
         PalletMessageQueuePage: PalletMessageQueuePage;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMultisigCall: PalletMultisigCall;
+        PalletMultisigError: PalletMultisigError;
+        PalletMultisigEvent: PalletMultisigEvent;
+        PalletMultisigMultisig: PalletMultisigMultisig;
+        PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
         PalletPooledStakingCall: PalletPooledStakingCall;
         PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;

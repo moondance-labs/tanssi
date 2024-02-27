@@ -165,6 +165,21 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
+pub mod currency {
+    use super::Balance;
+
+    pub const MICROUNIT: Balance = 1_000_000_000_000;
+    pub const MILLIUNIT: Balance = 1_000_000_000_000_000;
+    pub const UNIT: Balance = 1_000_000_000_000_000_000;
+    pub const KILOUNIT: Balance = 1_000_000_000_000_000_000_000;
+
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT;
+
+    pub const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 100 * MILLIUNIT + (bytes as Balance) * STORAGE_BYTE_FEE
+    }
+}
+
 impl fp_self_contained::SelfContainedCall for RuntimeCall {
     type SignedInfo = H160;
 
@@ -822,6 +837,24 @@ impl tp_impl_tanssi_pallets_config::Config for Runtime {
     type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    // One storage item; key size 32 + 20; value is size 4+4+16+20. Total = 1 * (52 + 44)
+    pub const DepositBase: Balance = currency::deposit(1, 96);
+    // Additional storage item size of 20 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 20);
+    pub const MaxSignatories: u32 = 100;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = MaxSignatories;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+}
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -842,6 +875,9 @@ construct_runtime!(
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
+
+        // Other utilities
+        Multisig: pallet_multisig = 16,
 
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
@@ -882,6 +918,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
+        [pallet_multisig, Multisig]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]

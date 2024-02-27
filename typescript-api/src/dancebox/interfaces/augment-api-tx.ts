@@ -12,7 +12,7 @@ import type {
     SubmittableExtrinsicFunction,
 } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type { Bytes, Compact, Null, Option, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
+import type { Bytes, Compact, Null, Option, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -24,6 +24,7 @@ import type {
     DanceboxRuntimeStreamPaymentAssetId,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletMultisigTimepoint,
     PalletPooledStakingAllTargetPool,
     PalletPooledStakingPendingOperationQuery,
     PalletPooledStakingSharesOrStake,
@@ -1151,6 +1152,62 @@ declare module "@polkadot/api-base/types/submittable" {
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [CumulusPrimitivesCoreAggregateMessageOrigin, u32]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        multisig: {
+            /** See [`Pallet::approve_as_multi`]. */
+            approveAsMulti: AugmentedSubmittable<
+                (
+                    threshold: u16 | AnyNumber | Uint8Array,
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    maybeTimepoint:
+                        | Option<PalletMultisigTimepoint>
+                        | null
+                        | Uint8Array
+                        | PalletMultisigTimepoint
+                        | { height?: any; index?: any }
+                        | string,
+                    callHash: U8aFixed | string | Uint8Array,
+                    maxWeight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u16, Vec<AccountId32>, Option<PalletMultisigTimepoint>, U8aFixed, SpWeightsWeightV2Weight]
+            >;
+            /** See [`Pallet::as_multi`]. */
+            asMulti: AugmentedSubmittable<
+                (
+                    threshold: u16 | AnyNumber | Uint8Array,
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    maybeTimepoint:
+                        | Option<PalletMultisigTimepoint>
+                        | null
+                        | Uint8Array
+                        | PalletMultisigTimepoint
+                        | { height?: any; index?: any }
+                        | string,
+                    call: Call | IMethod | string | Uint8Array,
+                    maxWeight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u16, Vec<AccountId32>, Option<PalletMultisigTimepoint>, Call, SpWeightsWeightV2Weight]
+            >;
+            /** See [`Pallet::as_multi_threshold_1`]. */
+            asMultiThreshold1: AugmentedSubmittable<
+                (
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    call: Call | IMethod | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>, Call]
+            >;
+            /** See [`Pallet::cancel_as_multi`]. */
+            cancelAsMulti: AugmentedSubmittable<
+                (
+                    threshold: u16 | AnyNumber | Uint8Array,
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    timepoint: PalletMultisigTimepoint | { height?: any; index?: any } | string | Uint8Array,
+                    callHash: U8aFixed | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u16, Vec<AccountId32>, PalletMultisigTimepoint, U8aFixed]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

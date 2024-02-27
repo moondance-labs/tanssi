@@ -15,6 +15,7 @@ import type {
     FrameSupportDispatchDispatchInfo,
     FrameSupportMessagesProcessMessageError,
     FrameSupportTokensMiscBalanceStatus,
+    PalletMultisigTimepoint,
     PalletPooledStakingTargetPool,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
@@ -548,6 +549,61 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** Runtime upgrade started */
             RuntimeUpgradeStarted: AugmentedEvent<ApiType, []>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        multisig: {
+            /** A multisig operation has been approved by someone. */
+            MultisigApproval: AugmentedEvent<
+                ApiType,
+                [approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed],
+                {
+                    approving: AccountId32;
+                    timepoint: PalletMultisigTimepoint;
+                    multisig: AccountId32;
+                    callHash: U8aFixed;
+                }
+            >;
+            /** A multisig operation has been cancelled. */
+            MultisigCancelled: AugmentedEvent<
+                ApiType,
+                [
+                    cancelling: AccountId32,
+                    timepoint: PalletMultisigTimepoint,
+                    multisig: AccountId32,
+                    callHash: U8aFixed
+                ],
+                {
+                    cancelling: AccountId32;
+                    timepoint: PalletMultisigTimepoint;
+                    multisig: AccountId32;
+                    callHash: U8aFixed;
+                }
+            >;
+            /** A multisig operation has been executed. */
+            MultisigExecuted: AugmentedEvent<
+                ApiType,
+                [
+                    approving: AccountId32,
+                    timepoint: PalletMultisigTimepoint,
+                    multisig: AccountId32,
+                    callHash: U8aFixed,
+                    result: Result<Null, SpRuntimeDispatchError>
+                ],
+                {
+                    approving: AccountId32;
+                    timepoint: PalletMultisigTimepoint;
+                    multisig: AccountId32;
+                    callHash: U8aFixed;
+                    result: Result<Null, SpRuntimeDispatchError>;
+                }
+            >;
+            /** A new multisig operation has begun. */
+            NewMultisig: AugmentedEvent<
+                ApiType,
+                [approving: AccountId32, multisig: AccountId32, callHash: U8aFixed],
+                { approving: AccountId32; multisig: AccountId32; callHash: U8aFixed }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

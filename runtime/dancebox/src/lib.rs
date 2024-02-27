@@ -1568,6 +1568,24 @@ impl pallet_treasury::Config for Runtime {
     type BenchmarkHelper = ();
 }
 
+parameter_types! {
+    // One storage item; key size 32; value is size 4+4+16+32. Total = 1 * (32 + 56)
+    pub const DepositBase: Balance = currency::deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 32);
+    pub const MaxSignatories: u32 = 100;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = MaxSignatories;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1591,6 +1609,7 @@ construct_runtime!(
 
         // Other utilities
         Identity: pallet_identity = 15,
+        Multisig: pallet_multisig = 16,
 
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
@@ -1653,6 +1672,7 @@ mod benches {
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
         [pallet_author_inherent, AuthorInherent]
+        [pallet_multisig, Multisig]
         [pallet_pooled_staking, PooledStaking]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
