@@ -33,6 +33,7 @@ pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
+pallet-evm-precompileset-assets-erc20 = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
@@ -160,6 +161,7 @@ std = [
 	"pallet-evm-precompile-sha3fips/std",
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm-precompile-xcm-utils/std",
+	"pallet-evm-precompileset-assets-erc20/std",
 	"pallet-evm/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-hotfix-sufficients/std",
