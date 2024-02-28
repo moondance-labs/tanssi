@@ -57,7 +57,7 @@ pub(crate) fn operation_stake(
         TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards { candidate, at },
     };
 
-    let shares = PendingOperations::<Runtime>::get(&delegator, &operation_key);
+    let shares = PendingOperations::<Runtime>::get(delegator, operation_key);
     if shares == 0 {
         return 0;
     }
@@ -158,7 +158,7 @@ impl ExecuteDelegation {
         assert_ok!(Staking::execute_pending_operations(
             RuntimeOrigin::signed(delegator),
             vec![PendingOperationQuery {
-                delegator: delegator,
+                delegator,
                 operation: P::joining_operation_key(candidate, block_number)
             }]
         ));
@@ -352,7 +352,7 @@ impl ExecuteUndelegation {
         assert_ok!(Staking::execute_pending_operations(
             RuntimeOrigin::signed(delegator),
             vec![PendingOperationQuery {
-                delegator: delegator,
+                delegator,
                 operation: PendingOperationKey::Leaving {
                     candidate,
                     at: block_number

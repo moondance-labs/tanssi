@@ -159,7 +159,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::RequestedDelegate {
             candidate,
             delegator,
-            pool: pool,
+            pool,
             pending: stake.0,
         });
 
@@ -365,7 +365,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::ExecutedDelegate {
             candidate,
             delegator,
-            pool: pool,
+            pool,
             staked: actually_staked.0,
             released: release,
         });
@@ -535,9 +535,9 @@ impl<T: Config> Calls<T> {
     ) -> Result<Stake<T::Balance>, DispatchErrorWithPostInfo> {
         match pool {
             TargetPool::AutoCompounding => {
-                let stake = pools::AutoCompounding::<T>::shares_to_stake(&candidate, shares)?;
+                let stake = pools::AutoCompounding::<T>::shares_to_stake(candidate, shares)?;
 
-                if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
+                if stake.0 > pools::AutoCompounding::<T>::hold(candidate, delegator).0 {
                     Self::rebalance_hold(
                         candidate.clone(),
                         delegator.clone(),
@@ -547,15 +547,15 @@ impl<T: Config> Calls<T> {
 
                 // This should be the same `stake` as before.
                 let stake =
-                    pools::AutoCompounding::<T>::sub_shares(&candidate, &delegator, shares)?;
+                    pools::AutoCompounding::<T>::sub_shares(candidate, delegator, shares)?;
 
-                pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                pools::AutoCompounding::<T>::decrease_hold(candidate, delegator, &stake)?;
                 Ok(stake)
             }
             TargetPool::ManualRewards => {
-                let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, shares)?;
+                let stake = pools::ManualRewards::<T>::shares_to_stake(candidate, shares)?;
 
-                if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
+                if stake.0 > pools::ManualRewards::<T>::hold(candidate, delegator).0 {
                     Self::rebalance_hold(
                         candidate.clone(),
                         delegator.clone(),
@@ -564,9 +564,9 @@ impl<T: Config> Calls<T> {
                 }
 
                 // This should be the same `stake` as before.
-                let stake = pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, shares)?;
+                let stake = pools::ManualRewards::<T>::sub_shares(candidate, delegator, shares)?;
 
-                pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                pools::ManualRewards::<T>::decrease_hold(candidate, delegator, &stake)?;
                 Ok(stake)
             }
         }
@@ -586,10 +586,10 @@ impl<T: Config> Calls<T> {
         // As with all pools there will be some rounding error, this amount
         // should be small enough so that it is safe to directly release it
         // in the delegator account.
-        let leaving_shares = pools::Leaving::<T>::stake_to_shares_or_init(&candidate, stake)?;
+        let leaving_shares = pools::Leaving::<T>::stake_to_shares_or_init(candidate, stake)?;
         let leaving_stake =
-            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares)?;
-        pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
+            pools::Leaving::<T>::add_shares(candidate, delegator, leaving_shares)?;
+        pools::Leaving::<T>::increase_hold(candidate, delegator, &leaving_stake)?;
 
         // We create/mutate a request for leaving.
         let now = T::LeavingRequestTimer::now();
@@ -597,11 +597,11 @@ impl<T: Config> Calls<T> {
             candidate: candidate.clone(),
             at: now,
         };
-        let operation = PendingOperations::<T>::get(&delegator, &operation_key);
+        let operation = PendingOperations::<T>::get(delegator, &operation_key);
         let operation = operation
             .err_add(&leaving_shares.0)
             .map_err(|_| Error::<T>::MathOverflow)?;
-        PendingOperations::<T>::set(&delegator, &operation_key, operation);
+        PendingOperations::<T>::set(delegator, &operation_key, operation);
 
         // We release the dust if non-zero.
         let dust = stake
@@ -612,7 +612,7 @@ impl<T: Config> Calls<T> {
         if !dust.is_zero() {
             T::Currency::release(
                 &HoldReason::PooledStake.into(),
-                &delegator,
+                delegator,
                 dust,
                 Precision::Exact,
             )?;

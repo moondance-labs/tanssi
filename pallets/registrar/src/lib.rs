@@ -294,7 +294,7 @@ pub mod pallet {
             // All para ids have an entry in `ParaGenesisData`
             for para_id in &para_ids {
                 assert!(
-                    ParaGenesisData::<T>::contains_key(&para_id),
+                    ParaGenesisData::<T>::contains_key(para_id),
                     "Para id {} missing genesis data",
                     u32::from(*para_id)
                 );
@@ -1080,7 +1080,7 @@ pub mod pallet {
 
             for para_id in paras {
                 // TODO: sweet O(n) db reads
-                if let Some(parathread_params) = ParathreadParams::<T>::get(&para_id) {
+                if let Some(parathread_params) = ParathreadParams::<T>::get(para_id) {
                     parathreads.push((para_id, parathread_params));
                 } else {
                     parachains.push(para_id);

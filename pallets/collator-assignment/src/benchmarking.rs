@@ -40,11 +40,11 @@ fn invulnerable<T: Config>(c: u32, seed: u32) -> T::AccountId {
 }
 
 fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec<T::AccountId> {
-    let invulnerables = (0..count)
-        .map(|c| invulnerable::<T>(c, seed))
-        .collect::<Vec<_>>();
+    
 
-    invulnerables
+    (0..count)
+        .map(|c| invulnerable::<T>(c, seed))
+        .collect::<Vec<_>>()
 }
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
@@ -69,7 +69,7 @@ mod benchmarks {
         frame_system::Pallet::<T>::set_block_number(0u32.into());
 
         let collators = invulnerables::<T>(x, SEED);
-        let container_chains: Vec<_> = (0..y).map(|para_id| ParaId::from(para_id)).collect();
+        let container_chains: Vec<_> = (0..y).map(ParaId::from).collect();
         let session_index = 0u32.into();
         T::ContainerChains::set_session_container_chains(session_index, &container_chains);
         T::RemoveParaIdsWithNoCredits::make_valid_para_ids(&container_chains);

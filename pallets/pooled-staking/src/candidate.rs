@@ -153,7 +153,7 @@ impl<T: Config> Candidates<T> {
         };
 
         let eligible = self_delegation >= T::MinimumSelfDelegation::get()
-            && T::EligibleCandidatesFilter::is_candidate_eligible(&candidate);
+            && T::EligibleCandidatesFilter::is_candidate_eligible(candidate);
 
         // Find new position in the sorted list.
         // It will not be inserted if under the minimum self delegation.

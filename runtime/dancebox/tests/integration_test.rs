@@ -889,7 +889,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             // No credits are consumed if the container chain is not producing blocks
             run_block();
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, credits_1001);
@@ -913,7 +913,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             run_block();
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, credits_1001 - 1);
@@ -926,7 +926,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             // The container chain only produced one block, so it only consumed one block credit.
             // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, credits_1001 - 1);
@@ -4482,7 +4482,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
 
             // We received aññ free credits, because we cannot have more than MaxCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
@@ -4527,7 +4527,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             ),);
             // We received free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
@@ -4538,7 +4538,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             run_to_session(3);
             let credits_before_2nd_register = pallet_services_payment::BlockProductionCredits::<
                 Runtime,
-            >::get(&ParaId::from(1001))
+            >::get(ParaId::from(1001))
             .unwrap_or_default();
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
@@ -4562,7 +4562,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             ),);
             // No more free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits, credits_before_2nd_register);
@@ -5486,12 +5486,12 @@ fn test_migration_services_collator_assignment_payment() {
             ));
 
             let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(credits_1001, 0);
             let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                &ParaId::from(1002),
+                ParaId::from(1002),
             )
             .unwrap_or_default();
             assert_eq!(credits_1002, 0);
@@ -5503,7 +5503,7 @@ fn test_migration_services_collator_assignment_payment() {
 
             // Both parachains have been given credits
             let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                &ParaId::from(1001),
+                ParaId::from(1001),
             )
             .unwrap_or_default();
             assert_eq!(
@@ -5511,7 +5511,7 @@ fn test_migration_services_collator_assignment_payment() {
                 dancebox_runtime::FreeCollatorAssignmentCredits::get()
             );
             let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                &ParaId::from(1002),
+                ParaId::from(1002),
             )
             .unwrap_or_default();
             assert_eq!(

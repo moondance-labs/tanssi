@@ -182,7 +182,7 @@ pub mod pallet {
             Self::deposit_event(Event::<T>::CreditsPurchased {
                 para_id,
                 payer: account,
-                credit: credit,
+                credit,
             });
 
             Ok(().into())
@@ -320,7 +320,7 @@ pub mod pallet {
             let block_production_updated_credits = T::FreeBlockProductionCredits::get();
             // Do not update credits if for some reason this para id had more
             if block_production_existing_credits < block_production_updated_credits {
-                Self::set_free_block_production_credits(&para_id, block_production_updated_credits);
+                Self::set_free_block_production_credits(para_id, block_production_updated_credits);
             }
 
             // Set number of credits to FreeCollatorAssignmentCredits
@@ -331,7 +331,7 @@ pub mod pallet {
             // Do not update credits if for some reason this para id had more
             if collator_assignment_existing_credits < collator_assignment_updated_credits {
                 Self::set_free_collator_assignment_credits(
-                    &para_id,
+                    para_id,
                     collator_assignment_updated_credits,
                 );
             }

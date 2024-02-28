@@ -143,8 +143,7 @@ fn bug_not_using_assigned_invulnerables() {
     // After `prioritize_invulnerables` the first one from the container should move to orchestrator
     let collators = vec![1, 2, 3, 4, 5, 102, 103, 104];
 
-    let container_chains = vec![
-        ChainNumCollators {
+    let container_chains = [ChainNumCollators {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
@@ -158,8 +157,7 @@ fn bug_not_using_assigned_invulnerables() {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 2,
-        },
-    ];
+        }];
     let orchestrator_chain = container_chains[0];
 
     let mut old_assigned = BTreeMap::from_iter(vec![

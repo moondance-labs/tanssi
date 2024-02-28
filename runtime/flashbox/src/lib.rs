@@ -358,7 +358,7 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
             .expect("authorities should be set")
             .orchestrator_chain;
 
-        if authorities.len() == 0 {
+        if authorities.is_empty() {
             return false;
         }
 

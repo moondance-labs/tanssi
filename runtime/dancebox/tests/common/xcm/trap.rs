@@ -44,9 +44,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,

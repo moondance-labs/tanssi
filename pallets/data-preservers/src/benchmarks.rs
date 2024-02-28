@@ -52,7 +52,7 @@ mod benchmarks {
         #[extrinsic_call]
         Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
 
-        assert_eq!(Pallet::<T>::boot_nodes(&para_id), boot_nodes);
+        assert_eq!(Pallet::<T>::boot_nodes(para_id), boot_nodes);
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
