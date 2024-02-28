@@ -7,7 +7,6 @@ USER root
 RUN apt-get update && \
     apt-get install openssh-server -y
 
-RUN rustup component add rust-src
 USER 1001
 RUN echo $SHELL && \
  rustup component add rust-src
