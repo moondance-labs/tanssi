@@ -546,8 +546,7 @@ impl<T: Config> Calls<T> {
                 }
 
                 // This should be the same `stake` as before.
-                let stake =
-                    pools::AutoCompounding::<T>::sub_shares(candidate, delegator, shares)?;
+                let stake = pools::AutoCompounding::<T>::sub_shares(candidate, delegator, shares)?;
 
                 pools::AutoCompounding::<T>::decrease_hold(candidate, delegator, &stake)?;
                 Ok(stake)
@@ -587,8 +586,7 @@ impl<T: Config> Calls<T> {
         // should be small enough so that it is safe to directly release it
         // in the delegator account.
         let leaving_shares = pools::Leaving::<T>::stake_to_shares_or_init(candidate, stake)?;
-        let leaving_stake =
-            pools::Leaving::<T>::add_shares(candidate, delegator, leaving_shares)?;
+        let leaving_stake = pools::Leaving::<T>::add_shares(candidate, delegator, leaving_shares)?;
         pools::Leaving::<T>::increase_hold(candidate, delegator, &leaving_stake)?;
 
         // We create/mutate a request for leaving.

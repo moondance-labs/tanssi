@@ -94,8 +94,11 @@ where
 
         let new_assigned_chains =
             Self::assign_full(collators, chains_with_collators, old_assigned)?;
-        let mut new_assigned = AssignedCollators::default();
-        new_assigned.container_chains = new_assigned_chains;
+
+        let mut new_assigned = AssignedCollators {
+            container_chains: new_assigned_chains,
+            ..Default::default()
+        };
 
         // Add container chains with 0 collators so that they are shown in UI
         for para_id in all_para_ids {

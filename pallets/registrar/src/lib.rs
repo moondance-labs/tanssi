@@ -615,7 +615,7 @@ pub mod pallet {
         }
 
         #[cfg(feature = "runtime-benchmarks")]
-        pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> Result<T::AccountId, ()> {
+        pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> T::AccountId {
             use {
                 frame_benchmarking::account,
                 frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
@@ -652,7 +652,7 @@ pub mod pallet {
             T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
             T::Currency::issue(new_balance);
 
-            Ok(deposit_info.creator)
+            deposit_info.creator
         }
 
         fn do_register(
@@ -1148,7 +1148,7 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn try_successful_origin(para_id: &ParaId) -> Result<T::RuntimeOrigin, ()> {
-        let manager = Pallet::<T>::benchmarks_get_or_create_para_manager(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+        let manager = Pallet::<T>::benchmarks_get_or_create_para_manager(para_id);
 
         Ok(frame_system::RawOrigin::Signed(manager).into())
     }

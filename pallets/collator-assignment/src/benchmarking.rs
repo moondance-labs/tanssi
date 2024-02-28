@@ -40,8 +40,6 @@ fn invulnerable<T: Config>(c: u32, seed: u32) -> T::AccountId {
 }
 
 fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec<T::AccountId> {
-    
-
     (0..count)
         .map(|c| invulnerable::<T>(c, seed))
         .collect::<Vec<_>>()

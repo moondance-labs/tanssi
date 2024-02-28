@@ -71,11 +71,12 @@ fn test_header() -> sp_runtime::generic::Header<u32, BlakeTwo256> {
 #[test]
 fn header_double_encode() {
     // The ParaHeaderSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
-    let mut s = ParaHeaderSproofBuilderItem::default();
-    s.para_id = 1001.into();
     let header = test_header();
     let header_encoded = header.encode();
-    s.author_id = HeaderAs::NonEncoded(header);
+    let s = ParaHeaderSproofBuilderItem {
+        para_id: 1001.into(),
+        author_id: HeaderAs::NonEncoded(header),
+    };
 
     let mut sb = ParaHeaderSproofBuilder::default();
     sb.items.push(s);
@@ -93,11 +94,12 @@ fn header_double_encode() {
 #[test]
 fn header_double_encode_even_if_already_encoded() {
     // The ParaHeaderSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
-    let mut s = ParaHeaderSproofBuilderItem::default();
-    s.para_id = 1001.into();
     let header = test_header();
     let header_encoded = header.encode();
-    s.author_id = HeaderAs::AlreadyEncoded(header_encoded.clone());
+    let s = ParaHeaderSproofBuilderItem {
+        para_id: 1001.into(),
+        author_id: HeaderAs::AlreadyEncoded(header_encoded.clone()),
+    };
 
     let mut sb = ParaHeaderSproofBuilder::default();
     sb.items.push(s);

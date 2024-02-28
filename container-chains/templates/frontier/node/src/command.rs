@@ -24,8 +24,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::command::generate_genesis_block,
-    node_common::service::NodeBuilderConfig as _,
+    node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
     sc_cli::{
@@ -229,8 +228,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|mut config| {
-                let partials = NodeConfig::new_builder(&mut config, None)?;
+            runner.sync_run(|config| {
+                let partials = NodeConfig::new_builder(&config, None)?;
                 cmd.run(partials.client)
             })
         }
@@ -254,8 +253,8 @@ pub fn run() -> Result<()> {
                             .into())
                     }
                 }
-                BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
-                    let partials = NodeConfig::new_builder(&mut config, None)?;
+                BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
+                    let partials = NodeConfig::new_builder(&config, None)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -265,8 +264,8 @@ pub fn run() -> Result<()> {
                         .into(),
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
-                BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
-                    let partials = NodeConfig::new_builder(&mut config, None)?;
+                BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
+                    let partials = NodeConfig::new_builder(&config, None)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -294,8 +293,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|mut config| {
-                let partials = NodeConfig::new_builder(&mut config, None)?;
+            runner.async_run(|config| {
+                let partials = NodeConfig::new_builder(&config, None)?;
                 Ok((
                     cmd.run(partials.backend, config.chain_spec),
                     partials.task_manager,

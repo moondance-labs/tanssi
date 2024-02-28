@@ -206,7 +206,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 fn wasm_ext() -> sp_io::TestExternalities {
-    
     new_test_ext()
 }
 

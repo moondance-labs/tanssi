@@ -675,13 +675,13 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            RuntimeCall::Ethereum(_) => false,
-            RuntimeCall::EVM(_) => false,
-            RuntimeCall::PolkadotXcm(_) => false,
-            _ => true,
-        }
+        !matches!(
+            c,
+            RuntimeCall::Balances(_)
+                | RuntimeCall::Ethereum(_)
+                | RuntimeCall::EVM(_)
+                | RuntimeCall::PolkadotXcm(_)
+        )
     }
 }
 
@@ -693,22 +693,18 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
+        !matches!(
+            c,
             // Filtering the EVM prevents possible re-entrancy from the precompiles which could
             // lead to unexpected scenarios.
             // See https://github.com/PureStake/sr-moonbeam/issues/30
             // Note: It is also assumed that EVM calls are only allowed through `Origin::Root` so
             // this can be seen as an additional security
-            RuntimeCall::EVM(_) => false,
+            RuntimeCall::EVM(_) |
             // We filter anonymous proxy as they make "reserve" inconsistent
             // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
-            RuntimeCall::Proxy(method) => match method {
-                pallet_proxy::Call::create_pure { .. } => false,
-                pallet_proxy::Call::kill_pure { .. } => false,
-                _ => true,
-            },
-            _ => true,
-        }
+            RuntimeCall::Proxy(pallet_proxy::Call::create_pure { .. } | pallet_proxy::Call::kill_pure { .. })
+        )
     }
 }
 

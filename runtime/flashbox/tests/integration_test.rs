@@ -879,34 +879,33 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             // No credits are consumed if the container chain is not producing blocks
             run_block();
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, credits_1001);
 
             // Simulate block inclusion from container chain 1001
             let mut sproof = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = 1001.into();
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: 1001.into(),
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
             set_author_noting_inherent_data(sproof);
 
             run_block();
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, credits_1001 - 1);
 
             run_to_session(4u32);
@@ -916,10 +915,9 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             // The container chain only produced one block, so it only consumed one block credit.
             // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, credits_1001 - 1);
         });
 }
@@ -1706,17 +1704,18 @@ fn test_author_noting_self_para_id_not_noting() {
             let mut sproof = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let self_para = parachain_info::Pallet::<Runtime>::get();
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = self_para;
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: Default::default(),
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: self_para,
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: Default::default(),
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
 
             set_author_noting_inherent_data(sproof);
@@ -1758,17 +1757,18 @@ fn test_author_noting_not_self_para() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = other_para;
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: other_para,
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
 
             set_author_noting_inherent_data(sproof);
@@ -1902,17 +1902,18 @@ fn test_author_noting_runtime_api() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = other_para;
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: other_para,
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
 
             set_author_noting_inherent_data(sproof);
@@ -2630,10 +2631,9 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             ));
 
             // We received aññ free credits, because we cannot have more than FreeBlockProductionCredits
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, flashbox_runtime::FreeBlockProductionCredits::get());
         });
 }
@@ -2675,20 +2675,18 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 1001.into()
             ),);
             // We received free credits
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, flashbox_runtime::FreeBlockProductionCredits::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
 
             run_to_session(3);
-            let credits_before_2nd_register = pallet_services_payment::BlockProductionCredits::<
-                Runtime,
-            >::get(ParaId::from(1001))
-            .unwrap_or_default();
+            let credits_before_2nd_register =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
@@ -2710,10 +2708,9 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 1001.into()
             ),);
             // No more free credits
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
+            let credits =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                    .unwrap_or_default();
             assert_eq!(credits, credits_before_2nd_register);
         });
 }
@@ -2841,17 +2838,18 @@ fn test_ed_plus_two_sessions_purchase_works() {
             // Simulate block inclusion from container chain 1001
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = 1001.into();
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: 1001.into(),
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
             set_author_noting_inherent_data(sproof);
 
@@ -3088,17 +3086,18 @@ fn test_ed_plus_two_collator_assignment_sessions_purchase_works() {
             // Simulate block inclusion from container chain 1001
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = 1001.into();
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: 1001.into(),
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof.items.push(s);
             set_author_noting_inherent_data(sproof);
 
