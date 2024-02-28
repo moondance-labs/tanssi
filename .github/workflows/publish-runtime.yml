@@ -88,17 +88,6 @@ jobs:
         with:
           name: original-scripts
           path: original-scripts
-      - name: Build & Push purestake/srtool image
-        if: github.repository == 'moondance-labs/tanssi'
-        run: |
-          echo ${{ matrix.chain.runtime_name }}
-          docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
-
-          if [[ $image_exists = "false" ]]; then
-            exit 1
-          else
-            echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
-          fi
       - name: Srtool build
         id: srtool_build
         uses: chevdor/srtool-actions@v0.9.2
