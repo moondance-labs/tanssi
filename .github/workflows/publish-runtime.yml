@@ -69,7 +69,7 @@ jobs:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
-          - paritytech/srtool
+          - moondancelabs/srtool
         srtool_image_tag:
           - 1.75.0
     steps:
@@ -88,7 +88,14 @@ jobs:
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
-            exit 1
+            echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker build --pull --no-cache . \
+              -f docker/tanssi-srtool.Dockerfile \
+              --build-arg SRTOOL_IMAGE_TAG=${{ matrix.srtool_image_tag }} \
+              -t ${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}
+
+            echo pushing "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker push "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
           else
             echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
           fi
