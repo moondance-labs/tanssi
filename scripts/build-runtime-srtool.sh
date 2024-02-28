@@ -19,6 +19,7 @@ CMD="docker run \
   -i \
   --rm \
   $(~/srtool/uid-gid-mapping.sh 1001 | xargs) \
+  rustup component add rust-src
   -e CARGO_NET_GIT_FETCH_WITH_CLI=true \
   -e PACKAGE=${PACKAGE} \
   -e RUNTIME_DIR=${RUNTIME_DIR} \
