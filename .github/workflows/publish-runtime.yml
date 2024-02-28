@@ -95,26 +95,17 @@ jobs:
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
-            echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
-            docker build --pull --no-cache . \
-              -f docker/tanssi-srtool.Dockerfile \
-              --build-arg SRTOOL_IMAGE_TAG=${{ matrix.srtool_image_tag }} \
-              -t ${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}
-
-            echo pushing "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
-            docker push "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            exit 1
           else
             echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
           fi
-      - name: Build runtime using "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+      - name: Srtool build
         id: srtool_build
-        env:
-          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain.runtime_name }}
-          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
-          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
-        run: |
-          chmod u+x ./original-scripts/build-runtime-srtool.sh
-          ./original-scripts/build-runtime-srtool.sh
+        uses: chevdor/srtool-actions@v0.9.2
+        with:
+          chain: ${{ matrix.chain.runtime_name }}
+          runtime_dir: ${{ matrix.chain.path }}
+
       - name: Summary
         run: |
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
