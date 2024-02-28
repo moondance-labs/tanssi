@@ -69,9 +69,9 @@ jobs:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
-          - moonbeamfoundation/srtool
+          - paritytech/srtool
         srtool_image_tag:
-          - 1.74.0
+          - 1.75.0
     steps:
       - uses: actions/checkout@v3
         with:
