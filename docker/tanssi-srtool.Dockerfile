@@ -9,3 +9,5 @@ RUN apt-get update && \
 
 RUN rustup component add rust-src
 USER 1001
+RUN echo $SHELL && \
+ rustup component add rust-src
