@@ -11,9 +11,9 @@ git ls-files | grep '^.*/Cargo.toml$' | while read -r file; do
         echo "Missing [lints] workspace = true in $file"
         failure=1
     else
-	:;
+        :;
         # If found, print a confirmation message (optional)
-        echo "[lints] workspace = true found in $file"
+        #echo "[lints] workspace = true found in $file"
     fi
 done
 
