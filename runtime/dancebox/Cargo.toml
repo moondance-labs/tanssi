@@ -27,6 +27,7 @@ pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-authority-assignment = { workspace = true }
 pallet-authority-mapping = { workspace = true }
+pallet-xcm-core-buyer = { workspace = true }
 pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
@@ -120,8 +121,6 @@ frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
 
 [dev-dependencies]
-# Needed to force include the runtime-benchmark feature as emulated-integration-tests-common
-# hasn't implemented that feature
 assets-common = { workspace = true }
 container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
@@ -131,13 +130,15 @@ emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 polkadot-service = { workspace = true }
+rococo-runtime = { workspace = true }
+rococo-runtime-constants = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
 sc-service = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
-westend-runtime = { workspace = true, features = [ "std" ] }
+westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
 
@@ -219,6 +220,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
+	"rococo-runtime/std",
 	"runtime-common/std",
 	"scale-info/std",
 	"serde",
@@ -253,6 +255,7 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
+	"pallet-xcm-core-buyer/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -317,6 +320,8 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"pallet-xcm-core-buyer/runtime-benchmarks",
+	"rococo-runtime/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -374,6 +379,8 @@ try-runtime = [
 	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
+	"pallet-xcm-core-buyer/try-runtime",
+	"rococo-runtime/try-runtime"
 ]
 
 fast-runtime = []

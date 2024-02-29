@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_support::pallet_prelude::Get;
+use parity_scale_codec::Encode;
+use sp_runtime::traits::Convert;
+use sp_runtime::transaction_validity::TransactionPriority;
+use sp_std::vec::Vec;
 use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
@@ -339,6 +344,8 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
+use crate::System;
+use pallet_xcm_core_buyer::GetPurchaseCoretimeCall;
 use {
     crate::ForeignAssets,
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
@@ -455,4 +462,144 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+}
+
+parameter_types! {
+    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
+    pub const XcmBuyExecutionDotRococo: u128 = XCM_BUY_EXECUTION_COST_ROCOCO;
+}
+
+pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 50_000_000;
+
+impl pallet_xcm_core_buyer::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+
+    // TODO: calculate weight and use rococo weight to fee
+    // /home/tomasz/.cargo/git/checkouts/polkadot-sdk-df3be1d6828443a1/77c5b55/polkadot/runtime/rococo/src/xcm_config.rs
+    /*
+       /// Returns weight of `weight_of_initiate_reserve_withdraw` call.
+       fn weight_of_initiate_reserve_withdraw() -> Weight {
+           let dest = MultiLocation::parent();
+
+           // We can use whatever asset here
+           let asset = MultiLocation::parent();
+
+           // Construct MultiAsset
+           let fee = MultiAsset {
+               id: Concrete(asset.clone()),
+               fun: Fungible(0),
+           };
+
+           let xcm: Xcm<()> = Xcm(vec![
+               WithdrawAsset(fee.into()),
+               InitiateReserveWithdraw {
+                   assets: MultiAssetFilter::Wild(All),
+                   reserve: dest.clone(),
+                   xcm: Xcm(vec![]),
+               },
+           ]);
+           T::Weigher::weight(&mut xcm.into()).map_or(Weight::max_value(), |w| {
+               T::BaseXcmWeight::get().saturating_add(w)
+           })
+       }
+
+    */
+    // TODO: this depends on the relay
+    type XcmBuyExecutionDot = XcmBuyExecutionDotRococo;
+    type XcmSender = XcmRouter;
+    type GetPurchaseCoretimeCall = EncodedCallToBuyCoretime;
+    type GetBlockNumber = GetBlockNumber;
+    type AccountIdToArray32 = AccountIdToArray32;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type UnsignedPriority = ParasUnsignedPriority;
+
+    type WeightInfo = ();
+}
+
+pub struct GetBlockNumber;
+
+impl Get<u32> for GetBlockNumber {
+    fn get() -> u32 {
+        System::block_number()
+    }
+}
+
+pub struct AccountIdToArray32;
+
+impl Convert<AccountId, [u8; 32]> for AccountIdToArray32 {
+    fn convert(a: AccountId) -> [u8; 32] {
+        a.into()
+    }
+}
+
+pub struct EncodedCallToBuyCoretime;
+
+impl GetPurchaseCoretimeCall for EncodedCallToBuyCoretime {
+    fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight) {
+        // TODO: this should use westend_runtime, but the polkadot 1.6.0 release does not have this pallet yet...
+        // TODO: this should depend on the relay chain defined in the chain spec, can we do that?
+        // probably the best solution would be to default to westend and use a storage item to override it
+        // so that we can set rococo for tests
+        // TODO: return weight of parachains_assigner_on_demand::Call::place_order_allow_death
+        let weight = Weight::from_parts(1_000_000_000, 100_000);
+
+        // TODO: use place_order_keep_alive?
+        let call = rococo_calls::RelayCall::OnDemandAssignmentProvider(
+            rococo_calls::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                max_amount,
+                para_id,
+            },
+        );
+
+        (call.encode(), weight)
+    }
+}
+
+// TODO: create a crate for rococo_calls
+pub mod rococo_calls {
+    use super::*;
+    pub type Balance = u128;
+
+    #[derive(Encode)]
+    pub enum RelayCall {
+        #[codec(index = 66u8)]
+        OnDemandAssignmentProvider(OnDemandAssignmentProviderCall),
+    }
+
+    #[derive(Encode)]
+    pub enum OnDemandAssignmentProviderCall {
+        #[codec(index = 0u8)]
+        PlaceOrderAllowDeath {
+            max_amount: Balance,
+            para_id: ParaId,
+        },
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
+
+        #[test]
+        fn encode_place_order_allow_death() {
+            let max_amount = u128::MAX;
+            let para_id = u32::MAX.into();
+            let call = rococo_runtime::RuntimeCall::OnDemandAssignmentProvider(
+                parachains_assigner_on_demand::Call::place_order_allow_death {
+                    max_amount,
+                    para_id,
+                },
+            );
+            let call2 = RelayCall::OnDemandAssignmentProvider(
+                OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                    max_amount,
+                    para_id,
+                },
+            );
+
+            // If this fails check if indices changed
+            assert_eq!(call.encode(), call2.encode());
+        }
+    }
 }

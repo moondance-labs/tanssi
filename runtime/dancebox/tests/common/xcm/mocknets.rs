@@ -17,7 +17,7 @@ pub use sp_core::Get;
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
-        frontier_template, simple_template, westend,
+        frontier_template, rococo, simple_template, westend,
     },
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
@@ -46,6 +46,26 @@ decl_test_relay_chains! {
             Balances: westend_runtime::Balances,
             XcmPallet: westend_runtime::XcmPallet,
             Sudo: westend_runtime::Sudo,
+        }
+    },
+    #[api_version(10)]
+    pub struct Rococo {
+        genesis = rococo::genesis(),
+        on_init = (),
+        runtime = rococo_runtime,
+        core = {
+            SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
+        },
+        pallets = {
+            System: rococo_runtime::System,
+            Session: rococo_runtime::Session,
+            Configuration: rococo_runtime::Configuration,
+            Balances: rococo_runtime::Balances,
+            Registrar: rococo_runtime::Registrar,
+            ParasSudoWrapper: rococo_runtime::ParasSudoWrapper,
+            OnDemandAssignmentProvider: rococo_runtime::OnDemandAssignmentProvider,
+            XcmPallet: rococo_runtime::XcmPallet,
+            Sudo: rococo_runtime::Sudo,
         }
     }
 }
@@ -136,6 +156,93 @@ decl_test_parachains! {
             AssetRate:  container_chain_template_simple_runtime::AssetRate,
             ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
         }
+    },
+
+    // Parachains
+    pub struct DanceboxRococo {
+        genesis = crate::ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
+            (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
+            // Give some balance to the relay chain account
+            (ParentIsPreset::<crate::AccountId>::convert_location(&MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT),
+            // And to sovereigns
+            (
+                SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    &MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
+                ).unwrap(), 100_000 * crate::UNIT
+            ),
+            (
+                SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    &MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
+                ).unwrap(), 100_000 * crate::UNIT
+            ),
+
+
+        ])
+        .with_safe_xcm_version(3)
+        .with_own_para_id(2000u32.into())
+        .build_storage(),
+        on_init = {
+            dancebox_runtime::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
+        },
+        runtime = dancebox_runtime,
+        core = {
+            XcmpMessageHandler: dancebox_runtime::XcmpQueue,
+            LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: dancebox_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+        },
+        pallets = {
+            System: dancebox_runtime::System,
+            Balances: dancebox_runtime::Balances,
+            ParachainSystem: dancebox_runtime::ParachainSystem,
+            PolkadotXcm: dancebox_runtime::PolkadotXcm,
+            ForeignAssets:  dancebox_runtime::ForeignAssets,
+            AssetRate:  dancebox_runtime::AssetRate,
+            ForeignAssetsCreator: dancebox_runtime::ForeignAssetsCreator,
+        }
+    },
+    pub struct FrontierTemplateRococo {
+        genesis = frontier_template::genesis(),
+        on_init = (),
+        runtime = container_chain_template_frontier_runtime,
+        core = {
+            XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
+            LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+        },
+        pallets = {
+            System: container_chain_template_frontier_runtime::System,
+            Balances: container_chain_template_frontier_runtime::Balances,
+            ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
+            PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
+            ForeignAssets:  container_chain_template_frontier_runtime::ForeignAssets,
+            AssetRate:  container_chain_template_frontier_runtime::AssetRate,
+            ForeignAssetsCreator: container_chain_template_frontier_runtime::ForeignAssetsCreator,
+        }
+    },
+    pub struct SimpleTemplateRococo {
+        genesis = simple_template::genesis(),
+        on_init = (),
+        runtime = container_chain_template_simple_runtime,
+        core = {
+            XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
+            LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+        },
+        pallets = {
+            System: container_chain_template_simple_runtime::System,
+            Balances: container_chain_template_simple_runtime::Balances,
+            ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
+            PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
+            ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
+            AssetRate:  container_chain_template_simple_runtime::AssetRate,
+            ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
+        }
     }
 }
 
@@ -152,6 +259,15 @@ decl_test_networks! {
             SimpleTemplate,
         ],
         bridge = ()
+    },
+    pub struct RococoMockNet {
+        relay_chain = Rococo,
+        parachains = vec![
+            DanceboxRococo,
+            FrontierTemplateRococo,
+            SimpleTemplateRococo,
+        ],
+        bridge = ()
     }
 }
 
@@ -160,6 +276,12 @@ parameter_types! {
     pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(ALICE);
     pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(BOB);
     pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(RANDOM);
+
+    // Rococo
+    pub RococoSender: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(ALICE);
+    pub RococoReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(BOB);
+    pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
+
     // Dancebox
     pub DanceboxSender: dancebox_runtime::AccountId = crate::AccountId::from(crate::ALICE);
     pub DanceboxReceiver: dancebox_runtime::AccountId = crate::AccountId::from(crate::BOB);

@@ -48,6 +48,7 @@ pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
+pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
@@ -200,6 +201,8 @@ polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkado
 staging-xcm = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 staging-xcm-builder = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 staging-xcm-executor = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+rococo-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+rococo-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 westend-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 
