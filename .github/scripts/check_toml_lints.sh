@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Always run the commands from the "tanssi" dir
+cd $(dirname $0)/../..
+
 # Initialize a flag to indicate failure
 failure=0
 
