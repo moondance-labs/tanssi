@@ -88,7 +88,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          registry: index.docker.io
       - name: Download original scripts
         uses: actions/download-artifact@v3
         with:
@@ -99,8 +98,7 @@ jobs:
         run: |
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
-          echo $image_exists
-          if [[ $image_exists == "false" ]]; then
+          if [[ $image_exists = "false" ]]; then
             echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
             docker build --pull --no-cache . \
               -f docker/tanssi-srtool.Dockerfile \
