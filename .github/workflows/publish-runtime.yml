@@ -50,10 +50,10 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='{"runtime_name": "dancebox","runtime_path" : "./runtime/dancebox/src/lib.rs", "runtime_dir" : "./runtime/dancebox"}'
-          flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs", "runtime_dir" : "./runtime/flashbox"}'
-          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/templates/frontier/runtime/src/lib.rs", "runtime_dir" : "./container-chains/templates/frontier/runtime/"}'
-          simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/templates/simple/runtime/src/lib.rs", "runtime_dir" : "./container-chains/templates/simple/runtime/"}'
+          dancebox='{"runtime_name": "dancebox","runtime_path" : "./runtime/dancebox/src/lib.rs", "runtime_dir" : "./runtime/dancebox", "chain_name": "dancebox"}'
+          flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs", "runtime_dir" : "./runtime/flashbox", "chain_name": flashbox}'
+          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/templates/frontier/runtime/src/lib.rs", "runtime_dir" : "./container-chains/templates/frontier/runtime/", "chain_name": "container-chain-template-frontier-runtime"}'
+          simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/templates/simple/runtime/src/lib.rs", "runtime_dir" : "./container-chains/templates/simple/runtime/", "chain_name": container-chain-template-simple-runtime}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
@@ -105,7 +105,7 @@ jobs:
         id: srtool_build
         uses: chevdor/srtool-actions@v0.9.2
         with:
-          chain: ${{ matrix.chain.runtime_name }}
+          chain: ${{ matrix.chain.chain_name }}
           runtime_dir: ${{ matrix.chain.runtime_dir }}
       - name: Summary
         run: |
