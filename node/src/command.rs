@@ -25,8 +25,7 @@ use {
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::command::generate_genesis_block,
-    node_common::service::NodeBuilderConfig as _,
+    node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
     polkadot_service::WestendChainSpec,
     sc_cli::{
@@ -436,8 +435,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|mut config| {
-                let partials = NodeConfig::new_builder(&mut config, None)?;
+            runner.async_run(|config| {
+                let partials = NodeConfig::new_builder(&config, None)?;
                 Ok((
                     cmd.run(partials.backend, config.chain_spec),
                     partials.task_manager,

@@ -168,7 +168,7 @@ where
         let maybe_proposal = self
             .proposer
             .propose(
-                &parent_header,
+                parent_header,
                 &inherent_data.0,
                 inherent_data.1,
                 Digest { logs: digest },

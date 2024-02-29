@@ -70,7 +70,7 @@ mod benchmarks {
 
         // Before call: 0 credits
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
+            crate::BlockProductionCredits::<T>::get(para_id).unwrap_or_default(),
             0u32.into()
         );
 
@@ -97,7 +97,7 @@ mod benchmarks {
 
         // Before call: 1000 credits
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
+            crate::BlockProductionCredits::<T>::get(para_id).unwrap_or_default(),
             T::FreeBlockProductionCredits::get()
         );
 
@@ -106,7 +106,7 @@ mod benchmarks {
 
         // After call: 1 credit
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
+            crate::BlockProductionCredits::<T>::get(para_id).unwrap_or_default(),
             1u32.into()
         );
     }
@@ -116,13 +116,13 @@ mod benchmarks {
         let para_id = 1001u32.into();
 
         // Before call: no given free credits
-        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_none());
+        assert!(crate::GivenFreeCredits::<T>::get(para_id).is_none());
 
         #[extrinsic_call]
         Pallet::<T>::set_given_free_credits(RawOrigin::Root, para_id, true);
 
         // After call: given free credits
-        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+        assert!(crate::GivenFreeCredits::<T>::get(para_id).is_some());
     }
 
     #[benchmark]
@@ -135,13 +135,13 @@ mod benchmarks {
         let refund_address = account("sufficient", 0, 1000);
 
         // Before call: no given free credits
-        assert!(crate::RefundAddress::<T>::get(&para_id).is_none());
+        assert!(crate::RefundAddress::<T>::get(para_id).is_none());
 
         #[extrinsic_call]
         Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, Some(refund_address));
 
         // After call: given free credits
-        assert!(crate::RefundAddress::<T>::get(&para_id).is_some());
+        assert!(crate::RefundAddress::<T>::get(para_id).is_some());
     }
 
     #[benchmark]

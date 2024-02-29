@@ -170,7 +170,7 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
             .container_chains
             .iter()
             .cloned()
-            .map(|para_id| ParaId::from(para_id))
+            .map(ParaId::from)
             .collect();
 
         let parathreads = MockData::mock()

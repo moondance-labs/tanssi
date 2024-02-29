@@ -43,10 +43,12 @@ fn test_author_id_insertion() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -54,7 +56,8 @@ fn test_author_id_insertion() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -88,9 +91,10 @@ fn test_author_id_insertion_real_data() {
 
             match relay_block_num {
                 1 => {
-                    let mut s = ParaHeaderSproofBuilderItem::default();
-                    s.para_id = 1001.into();
-                    s.author_id = HeaderAs::AlreadyEncoded(statemint_data.to_vec());
+                    let s = ParaHeaderSproofBuilderItem {
+                        para_id: 1001.into(),
+                        author_id: HeaderAs::AlreadyEncoded(statemint_data.to_vec()),
+                    };
                     sproof.items.push(s);
                 }
                 _ => unreachable!(),
@@ -116,10 +120,12 @@ fn test_author_id_insertion_many_paras() {
                 // Since the default parachain list is vec![1001],
                 // we must always include a sproof for this para_id
                 let slot: InherentType = 10u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -127,15 +133,18 @@ fn test_author_id_insertion_many_paras() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             2 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 2,
                         state_root: Default::default(),
@@ -143,14 +152,17 @@ fn test_author_id_insertion_many_paras() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
 
                 let slot: InherentType = 14u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1002.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1002.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -158,7 +170,8 @@ fn test_author_id_insertion_many_paras() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -203,10 +216,12 @@ fn test_should_panic_with_invalid_proof_root() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -214,7 +229,8 @@ fn test_should_panic_with_invalid_proof_root() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -242,10 +258,12 @@ fn test_should_panic_with_invalid_proof_state() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -253,7 +271,8 @@ fn test_should_panic_with_invalid_proof_state() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -277,12 +296,9 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
     // Since the default parachain list is vec![1001],
     // we must always include a sproof for this para_id
     let slot: InherentType = 10u64.into();
-    let mut para_id_1001_item = ParaHeaderSproofBuilderItem::default();
-    let mut proof_item = ParaHeaderSproofBuilder::default();
-
-    para_id_1001_item.para_id = 1001.into();
-    para_id_1001_item.author_id =
-        HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+    let para_id_1001_item = ParaHeaderSproofBuilderItem {
+        para_id: 1001.into(),
+        author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
             parent_hash: Default::default(),
             number: Default::default(),
             state_root: Default::default(),
@@ -290,7 +306,9 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
             digest: sp_runtime::generic::Digest {
                 logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
             },
-        });
+        }),
+    };
+    let mut proof_item = ParaHeaderSproofBuilder::default();
     proof_item.items.push(para_id_1001_item.clone());
 
     // However we insert a new para in the state. The idea is that the proof we
@@ -298,10 +316,9 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
     // we should see the node panicking.
 
     let slot: InherentType = 14u64.into();
-    let mut para_id_1002_item = ParaHeaderSproofBuilderItem::default();
-    para_id_1002_item.para_id = 1002.into();
-    para_id_1002_item.author_id =
-        HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+    let para_id_1002_item = ParaHeaderSproofBuilderItem {
+        para_id: 1002.into(),
+        author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
             parent_hash: Default::default(),
             number: Default::default(),
             state_root: Default::default(),
@@ -309,7 +326,8 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
             digest: sp_runtime::generic::Digest {
                 logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
             },
-        });
+        }),
+    };
     proof_item.items.push(para_id_1002_item.clone());
 
     // lets get the generated proof here. However we will modify later on the proof we pass to include para id 1002
@@ -390,10 +408,12 @@ fn test_not_inserting_inherent() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: Default::default(),
                         state_root: Default::default(),
@@ -401,7 +421,8 @@ fn test_not_inserting_inherent() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -422,19 +443,20 @@ fn encode_proof_for_benchmarks() {
 
         for para_id in 0..x {
             let slot: InherentType = 13u64.into();
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = para_id.into();
-            // TODO: this header can be arbitrarily large, because "digest.logs" is an unbounded vec
-            let header = HeaderAs::NonEncoded(dp_core::Header {
-                parent_hash: Default::default(),
-                number: Default::default(),
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
-            s.author_id = header;
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: para_id.into(),
+
+                // TODO: this header can be arbitrarily large, because "digest.logs" is an unbounded vec
+                author_id: HeaderAs::NonEncoded(dp_core::Header {
+                    parent_hash: Default::default(),
+                    number: Default::default(),
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
             sproof_builder.items.push(s);
         }
 
@@ -458,10 +480,12 @@ fn test_set_author() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -469,7 +493,8 @@ fn test_set_author() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -515,10 +540,12 @@ fn test_on_initalize_does_not_kill_and_panics() {
             1 => {
                 crate::DidSetContainerAuthorData::<Test>::put(true);
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: Default::default(),
                         state_root: Default::default(),
@@ -526,7 +553,9 @@ fn test_on_initalize_does_not_kill_and_panics() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
+
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -539,9 +568,11 @@ fn test_header_non_decodable_does_not_insert() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id = HeaderAs::AlreadyEncoded(hex!("4321").to_vec());
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::AlreadyEncoded(hex!("4321").to_vec()),
+                };
+
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -557,10 +588,12 @@ fn test_non_aura_digest_does_not_insert_key() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: Default::default(),
                         state_root: Default::default(),
@@ -572,7 +605,8 @@ fn test_non_aura_digest_does_not_insert_key() {
                                 slot.encode(),
                             )],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -587,10 +621,12 @@ fn test_non_decodable_slot_does_not_insert_key() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: Default::default(),
                         state_root: Default::default(),
@@ -599,7 +635,8 @@ fn test_non_decodable_slot_does_not_insert_key() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, 1u8.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -658,10 +695,12 @@ fn test_kill_author_data() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -669,7 +708,8 @@ fn test_kill_author_data() {
                         digest: sp_runtime::generic::Digest {
                             logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),
@@ -702,10 +742,12 @@ fn test_author_id_insertion_not_first_log() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = 1001.into();
-                s.author_id =
-                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                let s = ParaHeaderSproofBuilderItem {
+                    para_id: 1001.into(),
+                    author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<
+                        u32,
+                        BlakeTwo256,
+                    > {
                         parent_hash: Default::default(),
                         number: 1,
                         state_root: Default::default(),
@@ -717,7 +759,8 @@ fn test_author_id_insertion_not_first_log() {
                                 DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
                             ],
                         },
-                    });
+                    }),
+                };
                 sproof.items.push(s);
             }
             _ => unreachable!(),

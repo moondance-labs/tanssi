@@ -208,7 +208,7 @@ fn testnet_genesis(
         tx_pause: Default::default(),
     };
 
-    serde_json::to_value(&g).unwrap()
+    serde_json::to_value(g).unwrap()
 }
 
 /// Get pre-funded accounts

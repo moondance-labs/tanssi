@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use parity_scale_codec::Encode;
-use sc_chain_spec::ChainSpec;
-use sp_runtime::{
-    traits::{Block as BlockT, Hash as HashT, Header as HeaderT, Zero},
-    StateVersion,
+use {
+    parity_scale_codec::Encode,
+    sc_chain_spec::ChainSpec,
+    sp_runtime::{
+        traits::{Block as BlockT, Hash as HashT, Header as HeaderT, Zero},
+        StateVersion,
+    },
 };
 
 /// Generate the genesis block from a given ChainSpec.
