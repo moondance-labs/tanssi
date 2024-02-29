@@ -8,6 +8,7 @@ version = "0.1.0"
 
 [lints]
 workspace = true
+
 [dependencies]
 async-trait = { workspace = true, optional = true }
 hex-literal = { workspace = true }

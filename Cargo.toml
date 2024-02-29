@@ -18,45 +18,16 @@ authors = [ "Moondance Labs" ]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.lints.clippy]
-all = { level = "allow", priority = 0 }
-bind_instead_of_map = { level = "allow", priority = 2 }
-borrowed-box = { level = "allow", priority = 2 }
 complexity = { level = "deny", priority = 1 }
 correctness = { level = "deny", priority = 1 }
-default_constructed_unit_structs = { level = "allow", priority = 2 }
-derivable_impls = { level = "allow", priority = 2 }
-eq_op = { level = "allow", priority = 2 }
 erasing_op = { level = "allow", priority = 2 }
-extra-unused-type-parameters = { level = "allow", priority = 2 }
-identity-op = { level = "allow", priority = 2 }
-if-same-then-else = { level = "allow", priority = 2 }
-needless_option_as_deref = { level = "allow", priority = 2 }
-nonminimal-bool = { level = "allow", priority = 2 }
-option-map-unit-fn = { level = "allow", priority = 2 }
-stable_sort_primitive = { level = "allow", priority = 2 }
+identity_op = { level = "allow", priority = 2 }
+suspicious = { level = "deny", priority = 1 }
 too-many-arguments = { level = "allow", priority = 2 }
 type_complexity = { level = "allow", priority = 2 }
-unit_arg = { level = "allow", priority = 2 }
-unnecessary_cast = { level = "allow", priority = 2 }
-useless_conversion = { level = "allow", priority = 2 }
-while_immutable_condition = { level = "allow", priority = 2 }
-zero-prefixed-literal = { level = "allow", priority = 2 }
 
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
-
-# Old lints:
-#rustflags = [
-#  "-Dunsafe_code",
-#  "-Dclippy::correctness",
-#  "-Dclippy::complexity",
-#  "-Dclippy::suspicious",
-#  "-Aclippy::type_complexity",           # raison d'etre
-#  "-Aclippy::too-many-arguments",        # (Turning this on would lead to)
-#  "-Aclippy::erasing_op",                # E.g. 0 * DOLLARS
-#  "-Aclippy::identity_op",               # E.g. 1 * DOLLARS
-#]
-
 
 [workspace.dependencies]
 
