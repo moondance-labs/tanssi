@@ -82,6 +82,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.to }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v2.2.0
+        if: github.repository == 'moonbeam-foundation/moonbeam'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: index.docker.io
       - name: Download original scripts
         uses: actions/download-artifact@v3
         with:
@@ -95,7 +102,7 @@ jobs:
           if [[ $image_exists = "false" ]]; then
             echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
             docker build --pull --no-cache . \
-              -f docker/moonbeam-srtool.Dockerfile \
+              -f docker/tanssi-srtool.Dockerfile \
               --build-arg SRTOOL_IMAGE_TAG=${{ matrix.srtool_build_source_image_tag }} \
               --build-arg SRTOOL_IMAGE_REPO=${{ matrix.srtool_build_base_dockerhub }} \
               -t ${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}
