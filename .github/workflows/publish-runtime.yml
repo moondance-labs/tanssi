@@ -99,6 +99,7 @@ jobs:
         run: |
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
+          echo $image_exists
           if [[ $image_exists == "false" ]]; then
             echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
             docker build --pull --no-cache . \
