@@ -89,7 +89,7 @@ jobs:
           name: original-scripts
           path: original-scripts
       - name: Build & Push purestake/srtool image
-        if: github.repository == 'moondance-labs/tanssi'
+        if: github.repository == 'moondance-labs/tanssiasdas'
         run: |
           exit 1
           echo ${{ matrix.chain.runtime_name }}
