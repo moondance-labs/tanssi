@@ -438,7 +438,7 @@ mod benchmarks {
 
         // Check y-1 has new slot frequency
         assert_eq!(
-            Pallet::<T>::parathread_params(&ParaId::from(y - 1)).map(|x| x.slot_frequency),
+            Pallet::<T>::parathread_params(ParaId::from(y - 1)).map(|x| x.slot_frequency),
             Some(new_slot_frequency)
         );
     }

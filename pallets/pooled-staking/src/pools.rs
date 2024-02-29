@@ -372,7 +372,7 @@ impl<T: Config> ManualRewards<T> {
         candidate: &Candidate<T>,
         rewards: Stake<T::Balance>,
     ) -> Result<Stake<T::Balance>, Error<T>> {
-        let Shares(supply) = Self::shares_supply(&candidate);
+        let Shares(supply) = Self::shares_supply(candidate);
         if supply.is_zero() {
             return Ok(Stake(Zero::zero()));
         }
@@ -465,7 +465,7 @@ pub fn distribute_rewards<T: Config>(
     let (candidate_manual_rewards, other_rewards) = rewards.split(candidate_manual_rewards);
 
     if !candidate_manual_rewards.peek().is_zero() {
-        T::Currency::resolve(&candidate, candidate_manual_rewards)
+        T::Currency::resolve(candidate, candidate_manual_rewards)
             .map_err(|_| DispatchError::NoProviders)?;
     }
 
@@ -498,7 +498,7 @@ fn distribute_rewards_inner<T: Config>(
         Zero::zero()
     } else {
         let rewards = delegators_rewards.mul_div(manual_total_stake, combined_total_stake)?;
-        ManualRewards::<T>::increase_rewards(&candidate, Stake(rewards))?.0
+        ManualRewards::<T>::increase_rewards(candidate, Stake(rewards))?.0
     };
 
     // Distribute delegators AutoCompounding rewards with dust from ManualRewards.

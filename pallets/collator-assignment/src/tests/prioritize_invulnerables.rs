@@ -143,7 +143,7 @@ fn bug_not_using_assigned_invulnerables() {
     // After `prioritize_invulnerables` the first one from the container should move to orchestrator
     let collators = vec![1, 2, 3, 4, 5, 102, 103, 104];
 
-    let container_chains = vec![
+    let container_chains = [
         ChainNumCollators {
             para_id: 1000.into(),
             min_collators: 2,

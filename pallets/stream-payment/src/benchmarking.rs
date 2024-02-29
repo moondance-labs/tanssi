@@ -210,7 +210,7 @@ mod benchmarks {
             Event::StreamConfigChanged {
                 stream_id: 0u32.into(),
                 old_config: config,
-                new_config: new_config,
+                new_config,
                 deposit_change: Some(DepositChange::Increase(1_000u32.into())),
             }
             .into(),

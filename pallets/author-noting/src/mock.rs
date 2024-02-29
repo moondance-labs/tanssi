@@ -206,8 +206,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 fn wasm_ext() -> sp_io::TestExternalities {
-    let ext = new_test_ext();
-    ext
+    new_test_ext()
 }
 
 /// BlockTests exist to test blocks with some setup: we have to assume that

@@ -21,18 +21,14 @@ use {
     cumulus_primitives_core::ParaId,
 };
 
+pub type ContainerChainGenesisDataResult<T> =
+    Result<(ParaId, ContainerChainGenesisData<T>, Vec<Vec<u8>>), String>;
+
 /// Reads a raw ChainSpec file stored in `path`, and returns its `ParaId` and
 /// a `ContainerChainGenesisData` that can be used to recreate the ChainSpec later.
 pub fn container_chain_genesis_data_from_path<MaxLengthTokenSymbol: Get<u32>>(
     path: &str,
-) -> Result<
-    (
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    ),
-    String,
-> {
+) -> ContainerChainGenesisDataResult<MaxLengthTokenSymbol> {
     // Read raw chainspec file
     let raw_chainspec_str = std::fs::read_to_string(path)
         .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
@@ -42,14 +38,7 @@ pub fn container_chain_genesis_data_from_path<MaxLengthTokenSymbol: Get<u32>>(
 
 pub fn container_chain_genesis_data_from_str<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_str: &str,
-) -> Result<
-    (
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    ),
-    String,
-> {
+) -> ContainerChainGenesisDataResult<MaxLengthTokenSymbol> {
     let raw_chainspec_json: serde_json::Value =
         serde_json::from_str(raw_chainspec_str).map_err(|e| e.to_string())?;
 
@@ -58,14 +47,7 @@ pub fn container_chain_genesis_data_from_str<MaxLengthTokenSymbol: Get<u32>>(
 
 pub fn container_chain_genesis_data_from_json<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_json: &serde_json::Value,
-) -> Result<
-    (
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    ),
-    String,
-> {
+) -> ContainerChainGenesisDataResult<MaxLengthTokenSymbol> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // TODO: this bound checking may panic, but that shouldn't be too dangerous because this

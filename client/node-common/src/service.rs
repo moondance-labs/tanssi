@@ -552,7 +552,7 @@ where
             // in there and swapping out the requirements for your own are probably a good idea. The
             // requirements for a para-chain are dictated by its relay-chain.
             if collator {
-                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench) {
                     log::warn!(
                         "⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
                         err
@@ -791,7 +791,7 @@ where
             task_manager: &mut task_manager,
             relay_chain_interface: relay_chain_interface.clone(),
             spawner: spawner.clone(),
-            parachain_consensus: parachain_consensus,
+            parachain_consensus,
             import_queue: import_queue_service,
             collator_key,
             relay_chain_slot_duration,
@@ -894,7 +894,7 @@ where
             announce_block: announce_block.clone(),
             overseer_handle: overseer_handle.clone(),
             spawner: spawner.clone(),
-            para_id: para_id,
+            para_id,
             key: collator_key.clone(),
             parachain_consensus: parachain_consensus.clone(),
         }

@@ -116,9 +116,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,
@@ -182,9 +180,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,
@@ -263,9 +259,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,
@@ -348,9 +342,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,

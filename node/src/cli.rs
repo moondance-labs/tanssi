@@ -14,15 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_chain_spec::ChainSpec;
-use sp_runtime::Storage;
 use {
     crate::chain_spec::RawGenesisConfig,
     node_common::service::Sealing,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    sc_chain_spec::ChainSpec,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
-    sp_runtime::traits::Get,
+    sp_runtime::{traits::Get, Storage},
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };

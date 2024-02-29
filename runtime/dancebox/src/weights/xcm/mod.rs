@@ -33,7 +33,7 @@ trait WeighMultiAssets {
 
 impl WeighMultiAssets for MultiAssets {
     fn weigh_multi_assets(&self, weight: Weight) -> XCMWeight {
-        weight.saturating_mul(self.inner().into_iter().count() as u64)
+        weight.saturating_mul(self.inner().iter().count() as u64)
     }
 }
 
