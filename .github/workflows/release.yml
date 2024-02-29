@@ -114,6 +114,9 @@ jobs:
             - name: Setup Rust toolchain
               run: rustup show
 
+            - name: Find toml files with lints key not set
+              run: ./.github/scripts/check_toml_lints.sh
+
             - name: Clippy
               run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features runtime-benchmarks
 
