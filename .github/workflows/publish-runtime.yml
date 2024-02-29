@@ -69,9 +69,15 @@ jobs:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
-          - moonbeamfoundation/srtool
+          - moondancelabs/srtool
         srtool_image_tag:
-          - 1.70.0
+          - 1.75.0
+        # Change this once https://github.com/paritytech/srtool/pull/81 gets merged
+        srtool_build_base_dockerhub:
+          - moondancelabs/srtool
+        srtool_build_source_image_tag:
+          - temp-1.75
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -81,14 +87,21 @@ jobs:
         with:
           name: original-scripts
           path: original-scripts
-      - name: Build & Push purestake/srtool image
+      - name: Build & Push moondancelabs/srtool image
         if: github.repository == 'moondance-labs/tanssi'
         run: |
-          echo ${{ matrix.chain.runtime_name }}
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
-            exit 1
+            echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker build --pull --no-cache . \
+              -f docker/moonbeam-srtool.Dockerfile \
+              --build-arg SRTOOL_IMAGE_TAG=${{ matrix.srtool_build_source_image_tag }} \
+              --build-arg SRTOOL_IMAGE_REPO=${{ matrix.srtool_build_base_dockerhub }} \
+              -t ${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}
+
+            echo pushing "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker push "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
           else
             echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
           fi
