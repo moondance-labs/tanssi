@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Script to check that all the Cargo.toml files in the repo have an entry with
+# [lints] workspace = true
+# (except the root Cargo.toml, which should have the list of lints)
+# If a Cargo.toml does not have this entry, running cargo clippy will use the
+# default lints instead of our lints, which can lead to false positives and
+# false negatives.
+
 # Always run the commands from the "tanssi" dir
 cd $(dirname $0)/../..
 
