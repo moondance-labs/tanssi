@@ -5,6 +5,9 @@ description = "primitives related to author-noting-inherent"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+
+[lints]
+workspace = true
 [dependencies]
 async-trait = { workspace = true, optional = true }
 hex-literal = { workspace = true }
