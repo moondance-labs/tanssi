@@ -150,6 +150,7 @@ where
     /// The Tanssi Aura pre-digest is set internally.
     ///
     /// This does not announce the collation to the parachain network or the relay chain.
+    #[allow(clippy::cast_precision_loss)]
     pub async fn collate(
         &mut self,
         parent_header: &Block::Header,
@@ -217,9 +218,9 @@ where
             tracing::info!(
                 target: crate::LOG_TARGET,
                 "PoV size {{ header: {}kb, extrinsics: {}kb, storage_proof: {}kb }}",
-                block_data.header().encode().len() as f64 / 1024f64,
-                block_data.extrinsics().encode().len() as f64 / 1024f64,
-                block_data.storage_proof().encode().len() as f64 / 1024f64,
+                block_data.header().encoded_size() as f64 / 1024f64,
+                block_data.extrinsics().encoded_size() as f64 / 1024f64,
+                block_data.storage_proof().encoded_size() as f64 / 1024f64,
             );
 
             if let MaybeCompressedPoV::Compressed(ref pov) = collation.proof_of_validity {
