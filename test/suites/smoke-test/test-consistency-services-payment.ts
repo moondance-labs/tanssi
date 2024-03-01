@@ -17,7 +17,7 @@ describeSuite({
         beforeAll(async () => {
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
-            let chain = api.consts.system.version.specName.toString();
+            const chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain == "Dancebox" ? 300n : 5n;
         });
 
@@ -30,7 +30,7 @@ describeSuite({
                 }
                 const existentialDeposit = await api.consts.balances.existentialDeposit.toBigInt();
 
-                let pending = await api.query.registrar.pendingParaIds();
+                const pending = await api.query.registrar.pendingParaIds();
                 const parasToBeEvaluated = pending.isEmpty ? await api.query.registrar.registeredParaIds() : pending;
 
                 for (const paraId of parasToBeEvaluated.toJSON()) {
