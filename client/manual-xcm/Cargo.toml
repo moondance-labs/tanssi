@@ -6,6 +6,9 @@ license = "GPL-3.0-only"
 repository = { workspace = true }
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 flume = { workspace = true }
 futures = { workspace = true, features = [ "compat" ] }
