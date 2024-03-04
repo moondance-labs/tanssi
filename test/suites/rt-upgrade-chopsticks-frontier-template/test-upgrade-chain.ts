@@ -15,10 +15,6 @@ describeSuite({
             api = context.polkadotJs();
 
             const rtBefore = api.consts.system.version.specVersion.toNumber();
-            if (rtBefore >= 500) {
-                log(`We cannot run this with current chopsticks/moonwall vers`);
-                return;
-            }
             log(`About to upgrade to runtime at:`);
             log((await MoonwallContext.getContext()).rtUpgradePath);
 
