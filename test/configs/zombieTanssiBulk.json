@@ -1,0 +1,116 @@
+{
+    "settings": {
+        "timeout": 1000,
+        "provider": "native"
+    },
+    "relaychain": {
+        "chain": "rococo-local",
+        "default_command": "tmp/polkadot",
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "nodes": [
+            {
+                "name": "alice",
+                "ws_port": "9947",
+                "validator": true
+            },
+            {
+                "name": "bob",
+                "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
+            }
+        ]
+    },
+    "parachains": [
+        {
+            "id": 1005,
+            "chain": "coretime-rococo-local",
+            "collators": [
+                {
+                    "name": "collator1",
+                    "ws_port": "9940",
+                    "command": "/home/girazoki/Downloads/polkadot-parachain_1600"
+                },
+                {
+                    "name": "collator2",
+                    "command": "/home/girazoki/Downloads/polkadot-parachain_1600"
+                }
+            ]
+        },
+        {
+            "id": 1000,
+            "chain_spec_path": "specs/tanssi-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec.sh`",
+            "collators": [
+                {
+                    "name": "Collator1000-01",
+                    "ws_port": "9948",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator1000-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2000-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2000-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2001-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2001-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2002-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2002-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                }
+            ]
+        },
+        {
+            "id": 2000,
+            "chain_spec_path": "specs/template-container-2000.json",
+            "collators": [
+                {
+                    "name": "FullNode-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-template-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9949,
+                    "p2p_port": 33049
+                }
+            ]
+        }
+    ],
+    "types": {
+        "Header": {
+            "number": "u64",
+            "parent_hash": "Hash",
+            "post_state": "Hash"
+        }
+    }
+}
