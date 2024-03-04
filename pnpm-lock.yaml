@@ -25,11 +25,11 @@ importers:
         specifier: 0.2600.0
         version: 0.2600.0
       '@moonwall/cli':
-        specifier: 5.0.0
-        version: 5.0.0(@acala-network/chopsticks@0.9.9-1)(@polkadot/api@10.11.2)(@types/node@20.10.5)(@vitest/ui@1.1.0)(typescript@5.3.3)(vitest@1.1.0)
+        specifier: 5.0.3
+        version: 5.0.3(@acala-network/chopsticks@0.9.9-1)(@polkadot/api@10.11.2)(@types/node@20.10.5)(@vitest/ui@1.1.0)(typescript@5.3.3)(vitest@1.1.0)
       '@moonwall/util':
-        specifier: 5.0.0
-        version: 5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0)
+        specifier: 5.0.3
+        version: 5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0)
       '@polkadot/api':
         specifier: 10.11.2
         version: 10.11.2
@@ -818,8 +818,8 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: true
 
-  /@moonwall/cli@5.0.0(@acala-network/chopsticks@0.9.9-1)(@polkadot/api@10.11.2)(@types/node@20.10.5)(@vitest/ui@1.1.0)(typescript@5.3.3)(vitest@1.1.0):
-    resolution: {integrity: sha512-okZ3t6d1GLs9Z2J6HyBRdfxey85s2Oz0XBE/HrZulfkYNeyYYcbnwMnluLSA+caoXu20b82XKgEepnzHjjjBhA==}
+  /@moonwall/cli@5.0.3(@acala-network/chopsticks@0.9.9-1)(@polkadot/api@10.11.2)(@types/node@20.10.5)(@vitest/ui@1.1.0)(typescript@5.3.3)(vitest@1.1.0):
+    resolution: {integrity: sha512-n9j6Er3ysUa1RgJlktZYCi7DiJpEdGmG/nhOAB0b3w/k9S4qDs53c29Bk6brXR9uLocROmH3qVAufR7iy9jlnQ==}
     engines: {node: '>=20', pnpm: '>=7'}
     hasBin: true
     peerDependencies:
@@ -830,8 +830,8 @@ packages:
     dependencies:
       '@acala-network/chopsticks': 0.9.9-1(debug@4.3.4)
       '@moonbeam-network/api-augment': 0.2700.0
-      '@moonwall/types': 5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3)
-      '@moonwall/util': 5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0)
+      '@moonwall/types': 5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3)
+      '@moonwall/util': 5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0)
       '@octokit/rest': 20.0.2
       '@polkadot/api': 10.11.2
       '@polkadot/api-derive': 10.11.2
@@ -879,8 +879,8 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/types@5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3):
-    resolution: {integrity: sha512-v3PRabqKVujxrMQ3yHSGNW0zwNZ+XfvM0/DUQVCDquf0Th7LSwIwHqjHZOFMm0djOi2Sk9lx+ynm/YL4PFBEcQ==}
+  /@moonwall/types@5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3):
+    resolution: {integrity: sha512-/YAC+vwzzwi0tNo+ggYGo2d1JTlTx75y9Zp0u41p9ePegIQnk31JEvoUuKK/Y4VgKm8Ga/jDn05sEfhF7gvo5A==}
     engines: {node: '>=20', pnpm: '>=7'}
     peerDependencies:
       '@polkadot/api': 10.11.2
@@ -910,15 +910,15 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/util@5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0):
-    resolution: {integrity: sha512-ZzfFpUtWT3lmcdAjfG2Iq7Hg9TVSJX1Yre/pGBH6IjAPpk2OxaQc4XzUamvBJlQxxfRdio1NFWhWhAYZwGCnKA==}
+  /@moonwall/util@5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3)(vitest@1.1.0):
+    resolution: {integrity: sha512-1V/Tjbn3T3T53tuiAqcF8DyNnNw/ecZBGixCesO2x3/a2gqvLRC9BvKGqKGKEYyCWcmjWaxqe2DsY+Bqk5GjAA==}
     engines: {node: '>=20', pnpm: '>=7'}
     peerDependencies:
       '@polkadot/api': 10.11.2
       vitest: 1.2.2
     dependencies:
       '@moonbeam-network/api-augment': 0.2700.0
-      '@moonwall/types': 5.0.0(@polkadot/api@10.11.2)(typescript@5.3.3)
+      '@moonwall/types': 5.0.3(@polkadot/api@10.11.2)(typescript@5.3.3)
       '@polkadot/api': 10.11.2
       '@polkadot/api-derive': 10.11.2
       '@polkadot/keyring': 12.6.2(@polkadot/util-crypto@12.6.2)(@polkadot/util@12.6.2)
@@ -2348,7 +2348,7 @@ packages:
   /array-buffer-byte-length@1.0.0:
     resolution: {integrity: sha512-LPuwb2P+NrQw3XhxGc36+XSvuBPopovXYTR9Ew++Du9Yb/bx5AzBfrIsBoj0EZUifjQU+sHL21sseZ3jerWO/A==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       is-array-buffer: 3.0.2
     dev: true
 
@@ -2861,9 +2861,9 @@ packages:
     resolution: {integrity: sha512-xjVyBf0w5vH0I42jdAZzOKVldmPgSulmiyPRywoyq7HXC9qdgo17kxJE+rdnif5Tz6+pIrpJI8dCpMNLIGkUiA==}
     dependencies:
       array-buffer-byte-length: 1.0.0
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       es-get-iterator: 1.1.3
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       is-arguments: 1.1.1
       is-array-buffer: 3.0.2
       is-date-object: 1.0.5
@@ -3057,8 +3057,8 @@ packages:
   /es-get-iterator@1.1.3:
     resolution: {integrity: sha512-sPZmqHBe6JIiTfN5q2pEi//TwxmAFHwj/XEuYjTuse78i8KxaqMTTzxPoFKuzRpDpTJ+0NAbpfenkmH2rePtuw==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       has-symbols: 1.0.3
       is-arguments: 1.1.1
       is-map: 2.0.2
@@ -3989,7 +3989,7 @@ packages:
     resolution: {integrity: sha512-Y+R5hJrzs52QCG2laLn4udYVnxsfny9CpOhNhUvk/SSSVyF6T27FzRbF0sroPidSu3X8oEAkOn2K804mjpt6UQ==}
     engines: {node: '>= 0.4'}
     dependencies:
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       has: 1.0.3
       side-channel: 1.0.4
     dev: true
@@ -4011,8 +4011,8 @@ packages:
   /is-array-buffer@3.0.2:
     resolution: {integrity: sha512-y+FyyR/w8vfIRq4eQcM1EYgSTnmHXPqaF+IgzgraytCFq5Xh8lllDVmAZolPJiZttZLeFSINPYMaEJ7/vWUa1w==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       is-typed-array: 1.1.12
     dev: true
 
@@ -4032,7 +4032,7 @@ packages:
     resolution: {integrity: sha512-gDYaKHJmnj4aWxyj6YHyXVpdQawtVLHU5cb+eztPGczf6cjuTdwve5ZIEfgXqH4e57An1D1AKf8CZ3kYrQRqYA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       has-tostringtag: 1.0.0
     dev: true
 
@@ -4133,7 +4133,7 @@ packages:
     resolution: {integrity: sha512-kvRdxDsxZjhzUX07ZnLydzS1TU/TJlTUHHY4YLL87e37oUA49DfkLqgy+VjFocowy29cKvcSiu+kIv728jTTVg==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       has-tostringtag: 1.0.0
     dev: true
 
@@ -4144,7 +4144,7 @@ packages:
   /is-shared-array-buffer@1.0.2:
     resolution: {integrity: sha512-sqN2UDu1/0y6uvXyStCOzyhAjCSlHceFoMKJW8W9EU9cvic/QdsZ0kEU93HEy3IUEFZIiH/3w+AH/UQbPHNdhA==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
     dev: true
 
   /is-stream@2.0.1:
@@ -4192,8 +4192,8 @@ packages:
   /is-weakset@2.0.2:
     resolution: {integrity: sha512-t2yVvttHkQktwnNNmBQ98AhENLdPUTDTE21uPqAQ0ARwQfGeQKRVS0NNurH7bTf7RrvcVn1OOge45CnBeHCSmg==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
     dev: true
 
   /isarray@2.0.5:
@@ -5136,7 +5136,7 @@ packages:
     resolution: {integrity: sha512-3cyDsyHgtmi7I7DfSSI2LDp6SK2lwvtbg0p0R1e0RvTqF5ceGx+K2dfSjm1bKDMVCFEDAQvy+o8c6a7VujOddw==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
     dev: true
 
@@ -5149,7 +5149,7 @@ packages:
     resolution: {integrity: sha512-1mxKf0e58bvyjSCtKYY4sRe9itRk3PJpquJOjeIkz885CczcI4IvJJDLPS72oowuSh+pBxUFROpX+TU++hxhZQ==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       has-symbols: 1.0.3
       object-keys: 1.1.1
@@ -5608,7 +5608,7 @@ packages:
     resolution: {integrity: sha512-0SutC3pNudRKgquxGoRGIz946MZVHqbNfPjBdxeOhBrdgDKlRoXmYLQN9xRbrR09ZXWeGAdPuif7egofn6v5LA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       functions-have-names: 1.2.3
     dev: true
@@ -5826,8 +5826,8 @@ packages:
   /side-channel@1.0.4:
     resolution: {integrity: sha512-q5XPytqFEIKHkGdiMIrY10mvLRvnQh42/+GoBlFW3b2LXLE2xxJpZFdm94we0BaoV3RwJyGqg5wS7epxTv0Zvw==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       object-inspect: 1.12.3
     dev: true
 
@@ -6842,7 +6842,7 @@ packages:
     resolution: {integrity: sha512-nj0JfeD45BbzVJcVYpUJnSo8iwDcY9CQ7CZhhIVVOFjvpMAPw0zEwjTvZEIQyCW61OoDG9xcBzwxe2tZoYhMRw==}
     engines: {node: '>=14', npm: '>=6.12.0'}
     dependencies:
-      '@adraffy/ens-normalize': 1.10.0
+      '@adraffy/ens-normalize': 1.10.1
       web3-core: 4.3.2
       web3-errors: 1.1.4
       web3-eth: 4.4.0(typescript@5.3.3)
@@ -7042,8 +7042,8 @@ packages:
       '@types/ws': 8.5.3
       isomorphic-ws: 5.0.0(ws@8.16.0)
       web3-errors: 1.1.4
-      web3-types: 1.3.1
-      web3-utils: 4.1.0
+      web3-types: 1.4.0
+      web3-utils: 4.2.0
       ws: 8.16.0
     transitivePeerDependencies:
       - bufferutil
@@ -7084,6 +7084,7 @@ packages:
   /web3-types@1.3.1:
     resolution: {integrity: sha512-8fXi7h/t95VKRtgU4sxprLPZpsTh3jYDfSghshIDBgUD/OoGe5S+syP24SUzBZYllZ/L+hMr2gdp/0bGJa8pYQ==}
     engines: {node: '>=14', npm: '>=6.12.0'}
+    requiresBuild: true
     dev: true
 
   /web3-types@1.4.0:
@@ -7104,12 +7105,14 @@ packages:
   /web3-utils@4.1.0:
     resolution: {integrity: sha512-+VJWR6FtCsgwuJr5tvSvQlSEG06586df8h2CxGc9tcNtIDyJKNkSDDWJkdNPvyDhhXFzQYFh8QOGymD1CIP6fw==}
     engines: {node: '>=14', npm: '>=6.12.0'}
+    requiresBuild: true
     dependencies:
       ethereum-cryptography: 2.1.2
       web3-errors: 1.1.4
       web3-types: 1.3.1
       web3-validator: 2.0.3
     dev: true
+    optional: true
 
   /web3-utils@4.2.0:
     resolution: {integrity: sha512-UE7tmqPnC6sD0kpHhZiO9Zu8q7hiBItCQhnmxoMxk8OI91qlBWw6L7w1VNZo7TMBWH1Qe4R5l8h2vaoQCizVyA==}
@@ -7143,6 +7146,7 @@ packages:
       web3-types: 1.3.1
       zod: 3.22.2
     dev: true
+    optional: true
 
   /web3-validator@2.0.4:
     resolution: {integrity: sha512-qRxVePwdW+SByOmTpDZFWHIUAa7PswvxNszrOua6BoGqAhERo5oJZBN+EbWtK/+O+ApNxt5FR3nCPmiZldiOQA==}
@@ -7490,6 +7494,7 @@ packages:
     resolution: {integrity: sha512-wvWkphh5WQsJbVk1tbx1l1Ly4yg+XecD+Mq280uBGt9wa5BKSWf4Mhp6GmrkPixhMxmabYY7RbzlwVP32pbGCg==}
     requiresBuild: true
     dev: true
+    optional: true
 
   /zod@3.22.4:
     resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
