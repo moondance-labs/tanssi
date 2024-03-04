@@ -156,7 +156,11 @@ describeSuite({
 
                 const tx = paraApi.tx.registrar.deregister(2000);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                await waitSessions(context, paraApi, 2);
+                await waitSessions(context, paraApi, 2, async () => {
+                    const registered = await paraApi.query.registrar.registeredParaIds();
+                    // Stop waiting if 2000 is no longer registered
+                    return !registered.toJSON().includes(2000);
+                });
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.

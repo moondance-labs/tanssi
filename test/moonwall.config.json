@@ -49,7 +49,12 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains", "suites/dev-frontier-template"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-xcm",
+                "suites/common-container-chains",
+                "suites/dev-frontier-template"
+            ],
             "runScripts": [
                 "pre-build-contracts.ts",
                 "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c dev"

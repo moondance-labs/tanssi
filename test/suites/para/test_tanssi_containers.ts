@@ -322,7 +322,14 @@ describeSuite({
 
                 const tx = paraApi.tx.registrar.deregister(2002);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                await waitSessions(context, paraApi, 2);
+                // Container chain will be deregistered after 2 sessions, but because `signAndSendAndInclude` waits
+                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
+                // 1 session. So use a callback to wait 1 or 2 sessions.
+                await waitSessions(context, paraApi, 2, async () => {
+                    const registered = await paraApi.query.registrar.registeredParaIds();
+                    // Stop waiting if 2002 is no longer registered
+                    return !registered.toJSON().includes(2002);
+                });
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 blockNumber2002End = blockNum;
 
