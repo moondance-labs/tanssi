@@ -33,7 +33,6 @@ describeSuite({
                     for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
                         // This is a parathread is this is Some
                         if ((await api.query.registrar.parathreadParams(container)).isNone) {
-                            console.log("here");
                             expect(
                                 assignmentCollatorKey["containerChains"][container].length,
                                 `Container chain ${container} has ${assignmentCollatorKey["containerChains"][container].length} but it should have  ${configuration.collatorsPerContainer}`

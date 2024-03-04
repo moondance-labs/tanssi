@@ -25,15 +25,14 @@ describeSuite({
                 const maxStorageRoots = (await api.consts.relayStorageRoots.maxStorageRoots).toNumber();
                 const relayStorageRoots = (await api.query.relayStorageRoots.relayStorageRoot.keys()).length;
                 const relayStorageRootKeys = (await api.query.relayStorageRoots.relayStorageRootKeys()).length;
-                console.log(relayStorageRootKeys);
                 expect(
                     maxStorageRoots,
-                    `We should storate ${maxStorageRoots} roots at most and we have ${relayStorageRoots}`
+                    `We should store ${maxStorageRoots} roots at most and we have ${relayStorageRoots}`
                 ).toBe(relayStorageRoots);
 
                 expect(
                     maxStorageRoots,
-                    `We should storate ${maxStorageRoots} keys at most and we have ${relayStorageRootKeys}`
+                    `We should store ${maxStorageRoots} keys at most and we have ${relayStorageRootKeys}`
                 ).toBe(relayStorageRootKeys);
             },
         });

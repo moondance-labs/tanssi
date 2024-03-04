@@ -30,35 +30,41 @@ describeSuite({
                 }
                 const existentialDeposit = await api.consts.balances.existentialDeposit.toBigInt();
 
-                const pending = await api.query.registrar.pendingParaIds();
-                const parasToBeEvaluated = pending.isEmpty ? await api.query.registrar.registeredParaIds() : pending;
+                // If they have collators scheduled, they should have at least enough money to pay
+                const pending = await api.query.collatorAssignment.pendingCollatorContainerChain();
 
-                for (const paraId of parasToBeEvaluated.toJSON()) {
-                    const freeBlockCredits = (await api.query.servicesPayment.blockProductionCredits(paraId))
-                        .unwrap()
-                        .toBigInt();
-                    const freeSessionCredits = (await api.query.servicesPayment.collatorAssignmentCredits(paraId))
-                        .unwrap()
-                        .toBigInt();
-                    console.log(freeBlockCredits);
-                    console.log(freeSessionCredits);
-                    // We need, combined, at least credits for 2 session coverage + blocks
-                    const neededBlockPaymentAfterCredits =
-                        2n * blocksPerSession - freeBlockCredits < 0n ? 0n : 2n * blocksPerSession - freeBlockCredits;
-                    const neededCollatorAssignmentPaymentAfterCredits =
-                        2n - freeSessionCredits < 0n ? 0n : 2n - freeSessionCredits;
+                if (pending["containerChains"] != undefined) {
+                    for (const container of Object.keys(pending["containerChains"])) {
+                        const freeBlockCredits = (await api.query.servicesPayment.blockProductionCredits(container))
+                            .unwrap()
+                            .toBigInt();
+                        const freeSessionCredits = (
+                            await api.query.servicesPayment.collatorAssignmentCredits(container)
+                        )
+                            .unwrap()
+                            .toBigInt();
+                        // We need, combined, at least credits for 2 session coverage + blocks
+                        const neededBlockPaymentAfterCredits =
+                            2n * blocksPerSession - freeBlockCredits < 0n
+                                ? 0n
+                                : 2n * blocksPerSession - freeBlockCredits;
+                        const neededCollatorAssignmentPaymentAfterCredits =
+                            2n - freeSessionCredits < 0n ? 0n : 2n - freeSessionCredits;
 
-                    if (neededBlockPaymentAfterCredits > 0n || neededCollatorAssignmentPaymentAfterCredits > 0n) {
-                        const neededTankMoney =
-                            existentialDeposit +
-                            neededCollatorAssignmentPaymentAfterCredits * costPerSession +
-                            neededCollatorAssignmentPaymentAfterCredits * costPerBlock;
-                        const tankBalance = (await api.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
+                        if (neededBlockPaymentAfterCredits > 0n || neededCollatorAssignmentPaymentAfterCredits > 0n) {
+                            const neededTankMoney =
+                                existentialDeposit +
+                                neededCollatorAssignmentPaymentAfterCredits * costPerSession +
+                                neededCollatorAssignmentPaymentAfterCredits * costPerBlock;
+                            const tankBalance = (
+                                await api.query.system.account(paraIdTank(container))
+                            ).data.free.toBigInt();
 
-                        expect(
-                            tankBalance,
-                            `Container chain ${paraId} was assigned collators without having a way to pay for it`
-                        ).toBeGreaterThan(neededTankMoney);
+                            expect(
+                                tankBalance,
+                                `Container chain ${container} was assigned collators without having a way to pay for it`
+                            ).toBeGreaterThanOrEqual(neededTankMoney);
+                        }
                     }
                 }
             },
