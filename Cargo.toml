@@ -68,6 +68,7 @@ test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit"
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0" }
 
 # Moonkit (wasm)
+async-backing-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.6.0" }
 nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 pallet-async-backing = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
@@ -192,6 +193,7 @@ westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0" }
+polkadot-node-subsystem = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0" }
 polkadot-overseer = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0" }
 polkadot-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 polkadot-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0" }

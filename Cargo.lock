@@ -1759,6 +1759,7 @@ dependencies = [
 name = "container-chain-template-frontier-runtime"
 version = "0.1.0"
 dependencies = [
+ "async-backing-primitives",
  "ccp-xcm",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
@@ -1931,6 +1932,7 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
+ "async-backing-primitives",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
@@ -2986,6 +2988,7 @@ name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
  "assets-common",
+ "async-backing-primitives",
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "cumulus-pallet-dmp-queue",
@@ -15332,6 +15335,7 @@ checksum = "69758bda2e78f098e4ccb393021a0963bb3442eac05f135c30f61b7370bbafae"
 name = "tc-consensus"
 version = "0.1.0"
 dependencies = [
+ "async-backing-primitives",
  "async-trait",
  "cumulus-client-collator",
  "cumulus-client-consensus-aura",
@@ -15352,6 +15356,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "polkadot-core-primitives",
  "polkadot-node-primitives",
+ "polkadot-node-subsystem",
  "polkadot-overseer",
  "polkadot-parachain-primitives",
  "polkadot-primitives",

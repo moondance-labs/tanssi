@@ -1798,6 +1798,15 @@ impl_runtime_apis! {
         }
     }
 
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+		fn can_build_upon(
+			included_hash: <Block as BlockT>::Hash,
+			slot: async_backing_primitives::Slot,
+		) -> bool {
+			ConsensusHook::can_build_upon(included_hash, slot)
+		}
+	} 
+
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn create_default_config() -> Vec<u8> {
             create_default_config::<RuntimeGenesisConfig>()
