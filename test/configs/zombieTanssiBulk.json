@@ -33,12 +33,12 @@
             "chain": "coretime-rococo-local",
             "collators": [
                 {
-                    "name": "collator1",
+                    "name": "alice",
                     "ws_port": "9940",
                     "command": "/home/girazoki/Downloads/polkadot-parachain_1600"
                 },
                 {
-                    "name": "collator2",
+                    "name": "bob",
                     "command": "/home/girazoki/Downloads/polkadot-parachain_1600"
                 }
             ]
