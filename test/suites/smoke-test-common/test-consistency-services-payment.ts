@@ -44,12 +44,8 @@ describeSuite({
                             .unwrap()
                             .toBigInt();
                         // We need, combined, at least credits for 2 session coverage + blocks
-                        const neededBlockPaymentAfterCredits =
-                            2n * blocksPerSession - freeBlockCredits < 0n
-                                ? 0n
-                                : 2n * blocksPerSession - freeBlockCredits;
-                        const neededCollatorAssignmentPaymentAfterCredits =
-                            2n - freeSessionCredits < 0n ? 0n : 2n - freeSessionCredits;
+                        const neededBlockPaymentAfterCredits = Math.max(0n, 2n * blocksPerSession - freeBlockCredits);
+                        const neededCollatorAssignmentPaymentAfterCredits = Math.max(0n, 2n - freeSessionCredits);
 
                         if (neededBlockPaymentAfterCredits > 0n || neededCollatorAssignmentPaymentAfterCredits > 0n) {
                             const neededTankMoney =
