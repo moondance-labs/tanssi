@@ -31,7 +31,7 @@ describeSuite({
 
                 if (assignmentCollatorKey["containerChains"] != undefined) {
                     for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
-                        // This is a parathread is this is Some
+                        // This is a parathread if this is Some
                         if ((await api.query.registrar.parathreadParams(container)).isNone) {
                             expect(
                                 assignmentCollatorKey["containerChains"][container].length,
