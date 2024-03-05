@@ -58,7 +58,13 @@ where
             "Slot duration cannot be zero."
         );
 
+        log::info!("ON_TIMESTAMP_SET: MOMENT: {}", moment);
+        log::info!("ON_TIMESTAMP_SET: DURATION: {}", SlotDuration::get());
+        log::info!("ON_TIMESTAMP_SET: SLOT BEACON: {}", SlotBeacon::slot());
+
         let timestamp_slot = moment / SlotDuration::get();
+
+        log::info!("ON_TIMESTAMP_SET: TIMESTAMP SLOT: {}", timestamp_slot);
 
         assert!(
             SlotBeacon::slot() as u64 == timestamp_slot,

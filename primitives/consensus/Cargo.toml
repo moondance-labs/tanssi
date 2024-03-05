@@ -8,6 +8,7 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
+log = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -33,6 +34,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"nimbus-primitives/std",
 	"parity-scale-codec/std",
 	"scale-info/std",

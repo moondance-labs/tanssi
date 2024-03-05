@@ -73,6 +73,7 @@ use {
     std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
+        collators::lookahead::{self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams},
         collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
         OrchestratorAuraWorkerAuxData,
     },
@@ -421,6 +422,7 @@ async fn start_node_impl(
             let node_keystore = node_builder.keystore_container.keystore().clone();
             let node_telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
             let node_client = node_builder.client.clone();
+            let node_backend = node_builder.backend.clone();
             let relay_interface = relay_chain_interface.clone();
             let node_sync_service = node_builder.network.sync_service.clone();
             let overseer = overseer_handle.clone();
@@ -435,6 +437,7 @@ async fn start_node_impl(
             move || {
                 start_consensus_orchestrator(
                     node_client.clone(),
+                    node_backend.clone(),
                     block_import.clone(),
                     node_spawn_handle.clone(),
                     relay_interface.clone(),
@@ -622,8 +625,10 @@ pub async fn start_node_impl_container(
 
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
+        let node_backend = node_builder.backend.clone();
         start_consensus_container(
             node_client.clone(),
+            node_backend.clone(),
             orchestrator_client.clone(),
             block_import.clone(),
             prometheus_registry.clone(),
@@ -671,6 +676,7 @@ fn build_manual_seal_import_queue(
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
+    backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
@@ -713,7 +719,17 @@ fn start_consensus_container(
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
 
-    let params = BasicTanssiAuraParams {
+    let client_for_hash_provider = client.clone();
+
+    let code_hash_provider = move |block_hash| {
+        client_for_hash_provider
+            .code_at(block_hash)
+            .ok()
+            .map(polkadot_primitives::ValidationCode)
+            .map(|c| c.hash())
+    };
+
+    let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
@@ -812,15 +828,18 @@ fn start_consensus_container(
         collator_service,
         // Very limited proposal time.
         authoring_duration: Duration::from_millis(500),
-        collation_request_receiver: None,
+        para_backend: backend,
+        code_hash_provider,
+        //collation_request_receiver: None,
     };
 
-    let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
+    let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _,_,_>(params);
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
+    backend: Arc<FullBackend>,
     block_import: ParachainBlockImport,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
@@ -849,8 +868,17 @@ fn start_consensus_orchestrator(
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let client_set_aside_for_cidp = client.clone();
     let client_set_aside_for_orch = client.clone();
+    let client_for_hash_provider = client.clone();
 
-    let params = BasicTanssiAuraParams {
+    let code_hash_provider = move |block_hash| {
+        client_for_hash_provider
+            .code_at(block_hash)
+            .ok()
+            .map(polkadot_primitives::ValidationCode)
+            .map(|c| c.hash())
+    };
+
+    let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
@@ -930,10 +958,13 @@ fn start_consensus_orchestrator(
         collator_service,
         // Very limited proposal time.
         authoring_duration: Duration::from_millis(500),
-        collation_request_receiver: None,
+        code_hash_provider,
+        para_backend: backend,
+        //collation_request_receiver: None,
     };
 
-    let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
+    //let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
+    let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _,_,_>(params);
     spawner.spawn("tanssi-aura", None, fut);
 }
 

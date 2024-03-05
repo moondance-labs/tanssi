@@ -15830,6 +15830,7 @@ dependencies = [
  "cumulus-primitives-core",
  "frame-support",
  "frame-system",
+ "log",
  "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",

@@ -210,26 +210,6 @@ where
 				},
 			};
 
-			let (slot_now, _) = match consensus_common::relay_slot_and_timestamp(
-				&relay_parent_header,
-				params.relay_chain_slot_duration,
-			) {
-				None => continue,
-				Some((relay_slot, relay_timestamp)) => {
-					let our_slot = Slot::from_timestamp(relay_timestamp, params.slot_duration);
-					tracing::debug!(
-						target: crate::LOG_TARGET,
-						relay_slot = ?relay_slot,
-						para_slot = ?our_slot,
-						timestamp = ?relay_timestamp,
-						slot_duration = ?params.slot_duration,
-						relay_chain_slot_duration = ?params.relay_chain_slot_duration,
-						"Adjusted relay-chain slot to parachain slot"
-					);
-					(our_slot, relay_timestamp)
-				},
-			};
-
 			let parent_search_params = ParentSearchParams {
 				relay_parent,
 				para_id: params.para_id,
@@ -267,7 +247,7 @@ where
 
 			let para_client = &*params.para_client;
 			let keystore = &params.keystore;
-			let can_build_upon = |block_hash, aux_data| {
+			let can_build_upon = |slot_now, block_hash, aux_data| {
 				can_build_upon::<_, _, P>(
 					slot_now,
 					aux_data,
@@ -321,7 +301,22 @@ where
 					Ok(h) => h,
 				};
 
-				let mut slot_claim = match can_build_upon(parent_header.clone(), aux_data).await {
+				let inherent_providers = match params
+                	.create_inherent_data_providers
+                	.create_inherent_data_providers(
+                    	parent_hash,
+                    	(relay_parent_header.hash(), validation_data.clone()),
+                )
+                	.await
+            	{
+                	Err(e) => {
+						tracing::error!(target: crate::LOG_TARGET, ?e);
+						break;
+					},
+                	Ok(h) => h,
+            	};
+
+				let mut slot_claim = match can_build_upon(inherent_providers.slot(), parent_header.clone(), aux_data).await {
 					Ok(None) => break,
 					Err(e) => {
 						tracing::error!(target: crate::LOG_TARGET, ?e);

@@ -33,7 +33,7 @@ pub use sp_runtime::BuildStorage;
 pub mod weights;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
@@ -498,7 +498,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 pub struct ParaSlotProvider;
@@ -510,7 +510,7 @@ impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
 }
 
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
