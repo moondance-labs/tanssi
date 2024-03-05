@@ -31,27 +31,35 @@ describeSuite({
                 const existentialDeposit = await api.consts.balances.existentialDeposit.toBigInt();
 
                 // If they have collators scheduled, they should have at least enough money to pay
-                const pending = await api.query.collatorAssignment.pendingCollatorContainerChain();
-
+                let pending = await api.query.collatorAssignment.pendingCollatorContainerChain();
+                if (pending.isNone) {
+                    pending = await api.query.collatorAssignment.collatorContainerChain();
+                }
                 if (pending["containerChains"] != undefined) {
-                    for (const container of Object.keys(pending["containerChains"])) {
+                    for (const container of Object.keys(pending.toJSON()["containerChains"])) {
                         const freeBlockCredits = (await api.query.servicesPayment.blockProductionCredits(container))
                             .unwrap()
                             .toBigInt();
+
                         const freeSessionCredits = (
                             await api.query.servicesPayment.collatorAssignmentCredits(container)
                         )
                             .unwrap()
                             .toBigInt();
+
                         // We need, combined, at least credits for 2 session coverage + blocks
-                        const neededBlockPaymentAfterCredits = Math.max(0n, 2n * blocksPerSession - freeBlockCredits);
-                        const neededCollatorAssignmentPaymentAfterCredits = Math.max(0n, 2n - freeSessionCredits);
+                        const neededBlockPaymentAfterCredits =
+                            2n * blocksPerSession - freeBlockCredits < 0n
+                                ? 0n
+                                : 2n * blocksPerSession - freeBlockCredits;
+                        const neededCollatorAssignmentPaymentAfterCredits =
+                            2n - freeSessionCredits < 0n ? 0n : 2n - freeSessionCredits;
 
                         if (neededBlockPaymentAfterCredits > 0n || neededCollatorAssignmentPaymentAfterCredits > 0n) {
                             const neededTankMoney =
                                 existentialDeposit +
                                 neededCollatorAssignmentPaymentAfterCredits * costPerSession +
-                                neededCollatorAssignmentPaymentAfterCredits * costPerBlock;
+                                neededBlockPaymentAfterCredits * costPerBlock;
                             const tankBalance = (
                                 await api.query.system.account(paraIdTank(container))
                             ).data.free.toBigInt();
