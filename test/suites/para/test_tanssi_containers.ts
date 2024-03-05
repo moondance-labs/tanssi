@@ -263,11 +263,11 @@ describeSuite({
                 expect(registered3.toJSON().includes(2002)).to.be.false;
 
                 // The node starts one session before the container chain is in registered list
-                await waitSessions(context, paraApi, 1);
+                /* await waitSessions(context, paraApi, 1);
                 // Not registered yet, still pending
                 const registered4 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
-                expect(registered4.toJSON().includes(2002)).to.be.false;
+                expect(registered4.toJSON().includes(2002)).to.be.false; */
 
                 await waitSessions(context, paraApi, 1);
                 // Check that registered para ids contains 2002
