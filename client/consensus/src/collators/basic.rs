@@ -70,10 +70,9 @@ pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
 }
 
 /// Run tanssi Aura consensus as a relay-chain-driven collator.
-pub fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
+pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
     params: Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>,
-) -> impl Future<Output = ()> + Send + 'static
-where
+) where
     Block: BlockT + Send,
     Client: ProvideRuntimeApi<Block>
         + BlockOf
@@ -105,35 +104,34 @@ where
         + Sync
         + Send,
 {
-    async move {
-        let mut collation_requests = match params.collation_request_receiver {
-            Some(receiver) => receiver,
-            None => {
-                cumulus_client_collator::relay_chain_driven::init(
-                    params.collator_key,
-                    params.para_id,
-                    params.overseer_handle,
-                )
-                .await
-            }
+    let mut collation_requests = match params.collation_request_receiver {
+        Some(receiver) => receiver,
+        None => {
+            cumulus_client_collator::relay_chain_driven::init(
+                params.collator_key,
+                params.para_id,
+                params.overseer_handle,
+            )
+            .await
+        }
+    };
+
+    let mut collator = {
+        let params = collator_util::Params {
+            create_inherent_data_providers: params.create_inherent_data_providers.clone(),
+            block_import: params.block_import,
+            relay_client: params.relay_client.clone(),
+            keystore: params.keystore.clone(),
+            para_id: params.para_id,
+            proposer: params.proposer,
+            collator_service: params.collator_service,
         };
 
-        let mut collator = {
-            let params = collator_util::Params {
-                create_inherent_data_providers: params.create_inherent_data_providers.clone(),
-                block_import: params.block_import,
-                relay_client: params.relay_client.clone(),
-                keystore: params.keystore.clone(),
-                para_id: params.para_id,
-                proposer: params.proposer,
-                collator_service: params.collator_service,
-            };
+        collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
+    };
 
-            collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
-        };
-
-        while let Some(request) = collation_requests.next().await {
-            macro_rules! reject_with_error {
+    while let Some(request) = collation_requests.next().await {
+        macro_rules! reject_with_error {
 				($err:expr) => {{
 					request.complete(None);
 					tracing::error!(target: crate::LOG_TARGET, err = ?{ $err });
@@ -141,117 +139,110 @@ where
 				}};
 			}
 
-            macro_rules! try_request {
-                ($x:expr) => {{
-                    match $x {
-                        Ok(x) => x,
-                        Err(e) => reject_with_error!(e),
-                    }
-                }};
-            }
+        macro_rules! try_request {
+            ($x:expr) => {{
+                match $x {
+                    Ok(x) => x,
+                    Err(e) => reject_with_error!(e),
+                }
+            }};
+        }
 
-            let validation_data = request.persisted_validation_data();
+        let validation_data = request.persisted_validation_data();
 
-            let parent_header = try_request!(Block::Header::decode(
-                &mut &validation_data.parent_head.0[..]
-            ));
+        let parent_header = try_request!(Block::Header::decode(
+            &mut &validation_data.parent_head.0[..]
+        ));
 
-            let parent_hash = parent_header.hash();
+        let parent_hash = parent_header.hash();
 
-            // Check whether we can build upon this block
-            if !collator
-                .collator_service()
-                .check_block_status(parent_hash, &parent_header)
-            {
-                continue;
-            }
+        // Check whether we can build upon this block
+        if !collator
+            .collator_service()
+            .check_block_status(parent_hash, &parent_header)
+        {
+            continue;
+        }
 
-            let relay_parent_header = match params
-                .relay_client
-                .header(RBlockId::hash(*request.relay_parent()))
+        let relay_parent_header = match params
+            .relay_client
+            .header(RBlockId::hash(*request.relay_parent()))
+            .await
+        {
+            Err(e) => reject_with_error!(e),
+            Ok(None) => continue, // sanity: would be inconsistent to get `None` here
+            Ok(Some(h)) => h,
+        };
+
+        // Retrieve authorities that are able to produce the block
+        let authorities = match params
+            .get_orchestrator_aux_data
+            .retrieve_authorities_from_orchestrator(
+                parent_hash,
+                (relay_parent_header.hash(), validation_data.clone()),
+            )
+            .await
+        {
+            Err(e) => reject_with_error!(e),
+            Ok(h) => h,
+        };
+
+        let inherent_providers = match params
+            .create_inherent_data_providers
+            .create_inherent_data_providers(
+                parent_hash,
+                (*request.relay_parent(), validation_data.clone()),
+            )
+            .await
+        {
+            Err(e) => reject_with_error!(e),
+            Ok(h) => h,
+        };
+
+        let mut claim = match collator_util::tanssi_claim_slot::<P, Block>(
+            authorities,
+            &parent_header,
+            inherent_providers.slot(),
+            params.force_authoring,
+            &params.keystore,
+        ) {
+            Ok(None) => continue,
+            Err(e) => reject_with_error!(e),
+            Ok(Some(h)) => h,
+        };
+
+        let (parachain_inherent_data, other_inherent_data) = try_request!(
+            collator
+                .create_inherent_data(*request.relay_parent(), validation_data, parent_hash, None,)
                 .await
-            {
-                Err(e) => reject_with_error!(e),
-                Ok(None) => continue, // sanity: would be inconsistent to get `None` here
-                Ok(Some(h)) => h,
-            };
+        );
 
-            // Retrieve authorities that are able to produce the block
-            let authorities = match params
-                .get_orchestrator_aux_data
-                .retrieve_authorities_from_orchestrator(
-                    parent_hash,
-                    (relay_parent_header.hash(), validation_data.clone()),
+        let maybe_collation = try_request!(
+            collator
+                .collate(
+                    &parent_header,
+                    &mut claim,
+                    None,
+                    (parachain_inherent_data, other_inherent_data),
+                    params.authoring_duration,
+                    // Set the block limit to 50% of the maximum PoV size.
+                    //
+                    // TODO: If we got benchmarking that includes the proof size,
+                    // we should be able to use the maximum pov size.
+                    (validation_data.max_pov_size / 2) as usize,
                 )
                 .await
-            {
-                Err(e) => reject_with_error!(e),
-                Ok(h) => h,
-            };
+        );
 
-            let inherent_providers = match params
-                .create_inherent_data_providers
-                .create_inherent_data_providers(
-                    parent_hash,
-                    (*request.relay_parent(), validation_data.clone()),
-                )
-                .await
-            {
-                Err(e) => reject_with_error!(e),
-                Ok(h) => h,
-            };
-
-            let mut claim = match collator_util::tanssi_claim_slot::<P, Block>(
-                authorities,
-                &parent_header,
-                inherent_providers.slot(),
-                params.force_authoring,
-                &params.keystore,
-            ) {
-                Ok(None) => continue,
-                Err(e) => reject_with_error!(e),
-                Ok(Some(h)) => h,
-            };
-
-            let (parachain_inherent_data, other_inherent_data) = try_request!(
-                collator
-                    .create_inherent_data(
-                        *request.relay_parent(),
-                        &validation_data,
-                        parent_hash,
-                        None,
-                    )
-                    .await
-            );
-
-            let maybe_collation = try_request!(
-                collator
-                    .collate(
-                        &parent_header,
-                        &mut claim,
-                        None,
-                        (parachain_inherent_data, other_inherent_data),
-                        params.authoring_duration,
-                        // Set the block limit to 50% of the maximum PoV size.
-                        //
-                        // TODO: If we got benchmarking that includes the proof size,
-                        // we should be able to use the maximum pov size.
-                        (validation_data.max_pov_size / 2) as usize,
-                    )
-                    .await
-            );
-
-            if let Some((collation, _, post_hash)) = maybe_collation {
-                let result_sender =
-                    Some(collator.collator_service().announce_with_barrier(post_hash));
-                request.complete(Some(CollationResult {
-                    collation,
-                    result_sender,
-                }));
-            } else {
-                request.complete(None);
-                tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
-            }
+        if let Some((collation, _, post_hash)) = maybe_collation {
+            let result_sender = Some(collator.collator_service().announce_with_barrier(post_hash));
+            request.complete(Some(CollationResult {
+                collation,
+                result_sender,
+            }));
+        } else {
+            request.complete(None);
+            tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
         }
     }
 }

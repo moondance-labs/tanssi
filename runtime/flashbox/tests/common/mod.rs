@@ -140,10 +140,12 @@ pub fn run_block() -> RunSummary {
 pub fn set_parachain_inherent_data() {
     use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 
-    let mut relay_sproof = RelayStateSproofBuilder::default();
-    relay_sproof.para_id = 100u32.into();
-    relay_sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
-    relay_sproof.current_slot = (current_slot() * 2).into();
+    let relay_sproof = RelayStateSproofBuilder {
+        para_id: 100u32.into(),
+        included_para_head: Some(HeadData(vec![1, 2, 3])),
+        current_slot: (current_slot() * 2).into(),
+        ..Default::default()
+    };
 
     let (relay_parent_storage_root, relay_chain_state) = relay_sproof.into_state_root_and_proof();
     let vfp = PersistedValidationData {
@@ -153,7 +155,7 @@ pub fn set_parachain_inherent_data() {
     };
     let parachain_inherent_data = ParachainInherentData {
         validation_data: vfp,
-        relay_chain_state: relay_chain_state,
+        relay_chain_state,
         downward_messages: Default::default(),
         horizontal_messages: Default::default(),
     };

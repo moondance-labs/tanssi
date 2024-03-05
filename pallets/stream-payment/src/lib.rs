@@ -616,7 +616,7 @@ pub mod pallet {
 
             // If time unit changes we need to update `last_time_updated` to be in the
             // new unit.
-            if &stream.config.time_unit != &request.new_config.time_unit {
+            if stream.config.time_unit != request.new_config.time_unit {
                 stream.last_time_updated = T::TimeProvider::now(&request.new_config.time_unit)
                     .ok_or(Error::<T>::CantFetchCurrentTime)?;
             }

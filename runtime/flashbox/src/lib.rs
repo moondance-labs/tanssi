@@ -204,7 +204,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 500,
+    spec_version: 600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -358,7 +358,7 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
             .expect("authorities should be set")
             .orchestrator_chain;
 
-        if authorities.len() == 0 {
+        if authorities.is_empty() {
             return false;
         }
 
@@ -1032,16 +1032,14 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            // We filter anonymous proxy as they make "reserve" inconsistent
-            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
-            RuntimeCall::Proxy(method) => match method {
-                pallet_proxy::Call::create_pure { .. } => false,
-                pallet_proxy::Call::kill_pure { .. } => false,
-                _ => true,
-            },
-            _ => true,
-        }
+        // We filter anonymous proxy as they make "reserve" inconsistent
+        // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+        !matches!(
+            c,
+            RuntimeCall::Proxy(
+                pallet_proxy::Call::create_pure { .. } | pallet_proxy::Call::kill_pure { .. }
+            )
+        )
     }
 }
 

@@ -5,6 +5,7 @@ keys = [
     "bin",
     "lib",
     "test",
+    "lints",
     "dependencies",
     "dev-dependencies",
     "build-dependencies",

@@ -17,6 +17,18 @@ resolver = "2"
 authors = [ "Moondance Labs" ]
 repository = "https://github.com/moondance-labs/tanssi"
 
+[workspace.lints.clippy]
+complexity = { level = "deny", priority = 1 }
+correctness = { level = "deny", priority = 1 }
+erasing_op = { level = "allow", priority = 2 }
+identity_op = { level = "allow", priority = 2 }
+suspicious = { level = "deny", priority = 1 }
+too-many-arguments = { level = "allow", priority = 2 }
+type_complexity = { level = "allow", priority = 2 }
+
+[workspace.lints.rust]
+unsafe-code = { level = "deny", priority = 1 }
+
 [workspace.dependencies]
 
 # Members

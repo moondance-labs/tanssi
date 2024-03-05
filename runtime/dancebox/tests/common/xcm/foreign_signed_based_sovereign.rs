@@ -54,9 +54,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
             network: None,
             id: WestendSender::get().into(),
         })),
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,
@@ -141,9 +139,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        WithdrawAsset {
-            0: vec![buy_execution_fee.clone()].into(),
-        },
+        WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
             weight_limit: Unlimited,

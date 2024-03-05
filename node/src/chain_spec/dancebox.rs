@@ -273,7 +273,7 @@ fn testnet_genesis(
         treasury: Default::default(),
     };
 
-    serde_json::to_value(&g).unwrap()
+    serde_json::to_value(g).unwrap()
 }
 
 fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(

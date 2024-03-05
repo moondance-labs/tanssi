@@ -313,7 +313,7 @@ mod tests {
         assert_eq!(monitor.list.len(), 15);
         assert_eq!(monitor.count, 20);
         // Truncate should remove the oldest stopped chains, so the first id is now 5
-        assert_eq!(monitor.list.get(0).map(|x| x.id), Some(5));
+        assert_eq!(monitor.list.front().map(|x| x.id), Some(5));
 
         // We are using Default::default which has a refcount of 0, so all chains are considered stopped
         assert!(monitor.list.iter().all(|x| x.is_stopped()));
@@ -321,6 +321,6 @@ mod tests {
         assert_eq!(monitor.list.len(), 10);
         assert_eq!(monitor.count, 20);
         // Truncate should remove the oldest stopped chains, so the first id is now 10
-        assert_eq!(monitor.list.get(0).map(|x| x.id), Some(10));
+        assert_eq!(monitor.list.front().map(|x| x.id), Some(10));
     }
 }
