@@ -381,7 +381,7 @@
         },
         {
             "name": "dancebox_smoke",
-            "testFileDir": ["suites/smoke-test"],
+            "testFileDir": ["suites/smoke-test-dancebox", "suites/smoke-test-common"],
             "foundation": {
                 "type": "read_only"
             },
@@ -396,7 +396,7 @@
         },
         {
             "name": "stagenet_dancebox_smoke",
-            "testFileDir": ["suites/smoke-test"],
+            "testFileDir": ["suites/smoke-test-dancebox", "suites/smoke-test-common"],
             "foundation": {
                 "type": "read_only"
             },
@@ -406,6 +406,21 @@
                     "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
+                }
+            ]
+        },
+        {
+            "name": "flashbox_smoke",
+            "testFileDir": ["suites/smoke-test-common"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://fraa-flashbox-rpc.a.stagenet.tanssi.network"]
                 }
             ]
         },
