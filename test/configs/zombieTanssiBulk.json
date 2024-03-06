@@ -30,6 +30,9 @@
     "parachains": [
         {
             "id": 1005,
+            "add_to_genesis": false,
+            "register_para": false,
+            "onboard_as_parachain": false,
             "chain": "coretime-rococo-local",
             "collators": [
                 {
@@ -93,6 +96,9 @@
         },
         {
             "id": 2000,
+            "add_to_genesis": false,
+            "register_para": false,
+            "onboard_as_parachain": false,
             "chain_spec_path": "specs/template-container-2000.json",
             "collators": [
                 {

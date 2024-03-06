@@ -75,20 +75,6 @@
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 }
             ]
-        },
-        {
-            "id": 2000,
-            "chain_spec_path": "specs/template-container-2000.json",
-            "collators": [
-                {
-                    "name": "FullNode-2000",
-                    "validator": false,
-                    "command": "../target/release/container-chain-template-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9949,
-                    "p2p_port": 33049
-                }
-            ]
         }
     ],
     "types": {
