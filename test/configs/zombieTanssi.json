@@ -7,6 +7,21 @@
         "chain": "rococo-local",
         "default_command": "tmp/polkadot",
         "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "genesis": {
+            "runtimeGenesis":{
+                "patch": {
+                    "configuration":{
+                        "config":{
+                            "async_backing_params": {
+                                "allowed_ancestry_len": 2,
+                                "max_candidate_depth": 3
+                            },
+                            "scheduling_lookahead": 2
+                        }
+                    }
+                }
+            }
+        },
         "nodes": [
             {
                 "name": "alice",
@@ -46,6 +61,7 @@
                 },
                 {
                     "name": "Collator2000-01",
+                    "ws_port": "9960",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
@@ -56,6 +72,7 @@
                 },
                 {
                     "name": "Collator2001-01",
+                    "ws_port": "9961",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
@@ -66,6 +83,7 @@
                 },
                 {
                     "name": "Collator2002-01",
+                    "ws_port": "9962",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
