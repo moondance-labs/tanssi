@@ -127,8 +127,6 @@ pub mod pallet {
         #[pallet::constant]
         type MaxGenesisDataSize: Get<u32>;
 
-        type MaxBootNodes: Get<u32>;
-        type MaxBootNodeUrlLen: Get<u32>;
         type MaxLengthTokenSymbol: Get<u32>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;

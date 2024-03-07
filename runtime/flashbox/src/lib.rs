@@ -862,8 +862,6 @@ impl pallet_registrar::Config for Runtime {
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxBootNodes = MaxBootNodes;
-    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
