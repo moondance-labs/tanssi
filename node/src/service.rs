@@ -42,9 +42,9 @@ use {
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHeader,
     },
-    futures::StreamExt,
+    futures::{Stream, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -70,7 +70,7 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{sync::Arc, time::Duration},
+    std::{pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
@@ -1273,5 +1273,23 @@ where
 
     fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         Ok(self.overseer_handle.clone())
+    }
+
+    async fn import_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
+    }
+
+    async fn new_best_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
+    }
+
+    async fn finality_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
     }
 }
