@@ -1341,7 +1341,7 @@ dependencies = [
 [[package]]
 name = "ccp-authorities-noting-inherent"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "ccp-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3127,11 +3127,13 @@ dependencies = [
 [[package]]
 name = "dc-orchestrator-chain-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
+ "dp-core",
  "futures 0.3.30",
+ "jsonrpsee",
  "parity-scale-codec",
  "polkadot-overseer",
  "sc-client-api",
@@ -3346,7 +3348,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "dp-chain-state-snapshot"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -3358,7 +3360,7 @@ dependencies = [
 [[package]]
 name = "dp-collator-assignment"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -3378,7 +3380,7 @@ dependencies = [
 [[package]]
 name = "dp-core"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -7983,7 +7985,7 @@ dependencies = [
 [[package]]
 name = "pallet-cc-authorities-noting"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "ccp-authorities-noting-inherent",
  "cumulus-pallet-parachain-system",
@@ -9445,7 +9447,7 @@ dependencies = [
 [[package]]
 name = "pallet-xcm-executor-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -15426,7 +15428,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 [[package]]
 name = "test-relay-sproof-builder"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#e77a98ee860d9a2e8492b65e3a30257b0d57c39d"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#30f3637b9dca0045eee702276d88ebe387097b75"
 dependencies = [
  "cumulus-primitives-core",
  "dp-collator-assignment",

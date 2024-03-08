@@ -22,6 +22,7 @@ use {
         cli::ContainerChainCli,
         container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
     },
+    core::pin::Pin,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{
@@ -33,7 +34,7 @@ use {
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
-        relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
+        relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
         ParaId,
     },
     cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
@@ -42,8 +43,9 @@ use {
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash, PHeader,
     },
+    futures::Stream,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
@@ -1273,5 +1275,40 @@ where
 
     fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         Ok(self.overseer_handle.clone())
+    }
+
+    /// Get a stream of import block notifications.
+    async fn import_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notification_stream = self
+            .full_client
+            .import_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
+    }
+
+    /// Get a stream of new best block notifications.
+    async fn new_best_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notifications_stream =
+            self.full_client
+                .import_notification_stream()
+                .filter_map(|notification| async move {
+                    notification.is_new_best.then_some(notification.header)
+                });
+        Ok(Box::pin(notifications_stream))
+    }
+
+    /// Get a stream of finality notifications.
+    async fn finality_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notification_stream = self
+            .full_client
+            .finality_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
     }
 }
