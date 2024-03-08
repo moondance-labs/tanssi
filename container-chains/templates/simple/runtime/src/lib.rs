@@ -72,7 +72,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
+    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 
 pub mod xcm_config;
@@ -610,7 +610,7 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
-impl tp_impl_tanssi_pallets_config::Config for Runtime {
+impl dp_impl_tanssi_pallets_config::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
     type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
     type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;

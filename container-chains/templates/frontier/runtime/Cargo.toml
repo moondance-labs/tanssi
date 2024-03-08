@@ -25,8 +25,8 @@ smallvec = { workspace = true }
 ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
-tp-consensus = { workspace = true }
-tp-impl-tanssi-pallets-config = { workspace = true }
+dp-consensus = { workspace = true }
+dp-impl-tanssi-pallets-config = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -214,8 +214,8 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
-	"tp-consensus/std",
-	"tp-impl-tanssi-pallets-config/std",
+	"dp-consensus/std",
+	"dp-impl-tanssi-pallets-config/std",
 	"xcm-primitives/std",
 ]
 
@@ -263,7 +263,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
-	"tp-consensus/runtime-benchmarks",
+	"dp-consensus/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 ]
 

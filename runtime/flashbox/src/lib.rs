@@ -343,7 +343,7 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
+    type OnTimestampSet = dp_consensus::OnTimestampSet<
         <Self as pallet_author_inherent::Config>::SlotBeacon,
         ConstU64<{ SLOT_DURATION }>,
     >;
@@ -371,9 +371,9 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::NimbusLookUp;
+    type AccountLookup = dp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
-    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1743,7 +1743,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
+    impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let parent_number = System::block_number();

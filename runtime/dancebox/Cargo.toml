@@ -89,7 +89,7 @@ sp-trie = { workspace = true }
 
 sp-version = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-consensus = { workspace = true }
+dp-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
 # Polkadot
@@ -248,7 +248,7 @@ std = [
 	"staging-xcm/std",
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
-	"tp-consensus/std",
+	"dp-consensus/std",
 	"tp-traits/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
@@ -313,7 +313,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
-	"tp-consensus/runtime-benchmarks",
+	"dp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",

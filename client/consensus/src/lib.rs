@@ -48,7 +48,7 @@ pub use {
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
-    tp_consensus::TanssiAuthorityAssignmentApi,
+    dp_consensus::TanssiAuthorityAssignmentApi,
 };
 
 use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
