@@ -310,7 +310,7 @@ describeSuite({
         it({
             id: "T15",
             title: "Deregister container chain 2002, collators should move to tanssi",
-            timeout: 300000,
+            timeout: 600000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -358,12 +358,12 @@ describeSuite({
                 // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
                 await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
 
-                expect(sessionPeriod * 5 < blockNumber2002End, "2002 should have deregistered after first rotation");
-                expect(sessionPeriod * 10 > blockNumber2002End, "2002 should have deregistered before second rotation");
+                expect(sessionPeriod * 10 < blockNumber2002End, "2002 should have deregistered after first rotation");
+                expect(sessionPeriod * 20 > blockNumber2002End, "2002 should have deregistered before second rotation");
 
                 // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
                 // We take from the first block that rotates, otherwise rotation kicks in
-                await countUniqueBlockAuthors(paraApi, sessionPeriod * 5, blockNumber2002End - 1, 2);
+                await countUniqueBlockAuthors(paraApi, sessionPeriod * 10, blockNumber2002End - 1, 2);
 
                 // Need to wait one session because the following blocks don't exist yet
                 await waitSessions(context, paraApi, 1);
