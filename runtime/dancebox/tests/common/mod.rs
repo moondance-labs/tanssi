@@ -21,6 +21,7 @@ use {
         AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
         MaxBootNodes, MaxLengthTokenSymbol,
     },
+    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -37,7 +38,6 @@ use {
     sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
 mod xcm;

@@ -34,6 +34,7 @@ pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
+    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -72,7 +73,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 
 pub mod xcm_config;

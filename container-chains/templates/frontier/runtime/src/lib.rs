@@ -36,6 +36,7 @@ use {
     crate::precompiles::TemplatePrecompiles,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
+    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
@@ -89,7 +90,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,

@@ -30,6 +30,7 @@ mod tests;
 pub use {
     crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,
+    dp_consensus::TanssiAuthorityAssignmentApi,
     manual_seal::{
         get_aura_id_from_seed, ContainerManualSealAuraConsensusDataProvider,
         OrchestratorManualSealAuraConsensusDataProvider,
@@ -48,7 +49,6 @@ pub use {
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
-    dp_consensus::TanssiAuthorityAssignmentApi,
 };
 
 use {sp_consensus_slots::Slot, sp_core::crypto::Pair};

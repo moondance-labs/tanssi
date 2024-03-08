@@ -17,6 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
+    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     flashbox_runtime::{
         AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
         MaxBootNodes, MaxLengthTokenSymbol,
@@ -37,7 +38,6 @@ use {
     sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
 pub use flashbox_runtime::{
