@@ -1777,7 +1777,8 @@ fn test_author_noting_not_self_para() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 5.into(),
                 })
             );
         });
@@ -1811,14 +1812,16 @@ fn test_author_noting_set_author_and_kill_author_data() {
                 root_origin(),
                 other_para,
                 1,
-                AccountId::from(DAVE)
+                AccountId::from(DAVE),
+                1.into()
             ));
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 1.into(),
                 })
             );
 
@@ -1857,7 +1860,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
                     origin_of(ALICE.into()),
                     other_para,
                     1,
-                    AccountId::from(DAVE)
+                    AccountId::from(DAVE),
+                    1.into()
                 ),
                 BadOrigin
             );
@@ -1922,7 +1926,8 @@ fn test_author_noting_runtime_api() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 5.into(),
                 })
             );
 
