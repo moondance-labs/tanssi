@@ -379,10 +379,14 @@ impl pallet_author_inherent::Config for Runtime {
 
 parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
+    pub const MaxFreezes: u32 = 10;
+    pub const MaxHolds: u32 = 1;
+    pub const MaxLocks: u32 = 50;
+    pub const MaxReserves: u32 = 10;
 }
 
 impl pallet_balances::Config for Runtime {
-    type MaxLocks = ConstU32<50>;
+    type MaxLocks = MaxLocks;
     /// The type for recording an account's balance.
     type Balance = Balance;
     /// The ubiquitous event type.
@@ -390,15 +394,35 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type MaxReserves = ConstU32<50>;
+    type MaxReserves = MaxReserves;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = [u8; 8];
-    type MaxFreezes = ConstU32<10>;
+    type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxFreezes = MaxFreezes;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<1>;
+    type MaxHolds = MaxHolds;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
+
+const _TEST_PALLET_BALANCES_INTEGRITY: () = {
+    const fn pallet_balances_has_valid_limits()
+    {
+        use frame_support::traits::VariantCount;
+        let variant_count_freeze = <<Runtime as pallet_balances::Config>::RuntimeFreezeReason as VariantCount>::VARIANT_COUNT;
+        let variant_count_hold = <<Runtime as pallet_balances::Config>::RuntimeHoldReason as VariantCount>::VARIANT_COUNT;
+        let max_freezes = MaxFreezes::get();
+        let max_holds = MaxHolds::get();
+        assert!(
+            variant_count_freeze <= max_freezes
+        );
+        assert!(
+            variant_count_hold <= max_holds
+        );
+        assert!(EXISTENTIAL_DEPOSIT != 0);
+    }
+
+    pallet_balances_has_valid_limits()
+};
 
 pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<NegativeImbalance<R>> for DealWithFees<R>
