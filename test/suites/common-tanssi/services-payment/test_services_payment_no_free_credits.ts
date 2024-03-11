@@ -15,7 +15,7 @@ describeSuite({
         const paraId2001 = 2001n;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
-        const blocksPerSession = 5n;
+        const blocksPerSession = 10n;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
