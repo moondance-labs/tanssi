@@ -66,7 +66,7 @@ impl system::Config for Test {
 }
 
 thread_local! {
-    pub static SESSION_CHANGE_VALIDATORS: RefCell<Option<(u32, Vec<u64>)>> = RefCell::new(None);
+    pub static SESSION_CHANGE_VALIDATORS: RefCell<Option<(u32, Vec<u64>)>> = const { RefCell::new(None) };
 }
 
 pub fn session_change_validators() -> Option<(u32, Vec<u64>)> {
