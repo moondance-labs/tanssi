@@ -150,7 +150,7 @@ pub fn set_parachain_inherent_data() {
     let relay_sproof = RelayStateSproofBuilder {
         para_id: 100u32.into(),
         included_para_head: Some(HeadData(vec![1, 2, 3])),
-        current_slot: (current_slot() * 2).into(),
+        current_slot: (current_slot()).into(),
         ..Default::default()
     };
 
@@ -192,7 +192,7 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 
         sproof.para_id = 100u32.into();
         sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
-        sproof.current_slot = (slot * 2).into();
+        sproof.current_slot = (slot).into();
 
         sproof.into_state_root_and_proof()
     };
