@@ -33,7 +33,6 @@ pub mod migrations;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
     frame_support::{
         construct_runtime,
@@ -795,13 +794,13 @@ impl_runtime_apis! {
     }
 
     impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
-		fn can_build_upon(
-			included_hash: <Block as BlockT>::Hash,
-			slot: async_backing_primitives::Slot,
-		) -> bool {
-			ConsensusHook::can_build_upon(included_hash, slot)
-		}
-	}
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
+        }
+    }
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn create_default_config() -> Vec<u8> {
