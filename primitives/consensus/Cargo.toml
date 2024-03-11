@@ -12,10 +12,10 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
-log = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+log = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 
