@@ -100,10 +100,10 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type FreezeIdentifier = RuntimeFreezeReason;
-    type MaxFreezes = ConstU32<1>;
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
     type RuntimeHoldReason = RuntimeHoldReason;
-    type RuntimeFreezeReason = RuntimeFreezeReason;
+    type RuntimeFreezeReason = ();
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }

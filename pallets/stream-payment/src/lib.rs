@@ -361,12 +361,6 @@ pub mod pallet {
         },
     }
 
-    /// Freeze reason to use if needed.
-    #[pallet::composite_enum]
-    pub enum FreezeReason {
-        StreamPayment,
-    }
-
     /// Hold reason to use if needed.
     #[pallet::composite_enum]
     pub enum HoldReason {
