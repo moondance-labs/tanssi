@@ -77,22 +77,32 @@ fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
 
 fn invulnerable<T: Config + session::Config + pallet_balances::Config>(
     c: u32,
-) -> (T::AccountId, <T as session::Config>::Keys) {
-    (create_funded_user::<T>("candidate", c, 100), keys::<T>(c))
+) -> (T::AccountId, T::CollatorId, <T as session::Config>::Keys) {
+    let funded_user = create_funded_user::<T>("candidate", c, 100);
+    let collator_id = T::CollatorIdOf::convert(funded_user)
+        .expect("Converstion of account id of collator id failed.");
+    (
+        create_funded_user::<T>("candidate", c, 100),
+        collator_id,
+        keys::<T>(c),
+    )
 }
 
 fn invulnerables<
     T: Config + frame_system::Config + pallet_session::Config + pallet_balances::Config,
 >(
     count: u32,
-) -> Vec<T::AccountId> {
+) -> Vec<(T::AccountId, T::CollatorId)> {
     let invulnerables = (0..count).map(|c| invulnerable::<T>(c)).collect::<Vec<_>>();
 
-    for (who, keys) in invulnerables.clone() {
+    for (who, _collator_id, keys) in invulnerables.clone() {
         <session::Pallet<T>>::set_keys(RawOrigin::Signed(who).into(), keys, Vec::new()).unwrap();
     }
 
-    invulnerables.into_iter().map(|(who, _)| who).collect()
+    invulnerables
+        .into_iter()
+        .map(|(who, collator_id, _)| (who, collator_id))
+        .collect()
 }
 
 pub type BalanceOf<T> =
@@ -119,13 +129,16 @@ mod benchmarks {
 
         let new_invulnerables = invulnerables::<T>(b);
 
+        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            new_invulnerables.into_iter().unzip();
+
         #[extrinsic_call]
-        _(origin as T::RuntimeOrigin, new_invulnerables.clone());
+        _(origin as T::RuntimeOrigin, account_ids);
 
         // assert that it comes out sorted
         assert_last_event::<T>(
             Event::NewInvulnerables {
-                invulnerables: new_invulnerables,
+                invulnerables: collator_ids,
             }
             .into(),
         );
@@ -142,11 +155,15 @@ mod benchmarks {
         // now we need to fill up invulnerables
         let mut invulnerables = invulnerables::<T>(b);
         invulnerables.sort();
+
+        let (_account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            invulnerables.into_iter().unzip();
+
         let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
-            frame_support::BoundedVec::try_from(invulnerables).unwrap();
+            frame_support::BoundedVec::try_from(collator_ids).unwrap();
         <Invulnerables<T>>::put(invulnerables);
 
-        let (new_invulnerable, keys) = invulnerable::<T>(b + 1);
+        let (new_invulnerable, _collator_id, keys) = invulnerable::<T>(b + 1);
         <session::Pallet<T>>::set_keys(
             RawOrigin::Signed(new_invulnerable.clone()).into(),
             keys,
@@ -174,10 +191,14 @@ mod benchmarks {
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
         let mut invulnerables = invulnerables::<T>(b);
         invulnerables.sort();
+
+        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            invulnerables.into_iter().unzip();
+
         let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
-            frame_support::BoundedVec::try_from(invulnerables).unwrap();
+            frame_support::BoundedVec::try_from(collator_ids).unwrap();
         <Invulnerables<T>>::put(invulnerables);
-        let to_remove = <Invulnerables<T>>::get().first().unwrap().clone();
+        let to_remove = account_ids.first().unwrap().clone();
 
         #[extrinsic_call]
         _(origin as T::RuntimeOrigin, to_remove.clone());
@@ -201,7 +222,11 @@ mod benchmarks {
         // now we need to fill up invulnerables
         let mut invulnerables = invulnerables::<T>(r);
         invulnerables.sort();
-        <InvulnerablesPallet<T>>::set_invulnerables(origin, invulnerables)
+
+        let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            invulnerables.into_iter().unzip();
+
+        <InvulnerablesPallet<T>>::set_invulnerables(origin, account_ids)
             .expect("set invulnerables failed");
 
         #[block]
@@ -218,10 +243,14 @@ mod benchmarks {
     ) -> Result<(), BenchmarkError> where {
         let mut invulnerables = invulnerables::<T>(b);
         invulnerables.sort();
+
+        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            invulnerables.into_iter().unzip();
+
         let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
-            frame_support::BoundedVec::try_from(invulnerables).unwrap();
+            frame_support::BoundedVec::try_from(collator_ids).unwrap();
         <Invulnerables<T>>::put(invulnerables);
-        let to_reward = <Invulnerables<T>>::get().first().unwrap().clone();
+        let to_reward = account_ids.first().unwrap().clone();
         // Create new supply for rewards
         let new_supply = currency_issue::<T>(1000u32.into());
         #[block]
