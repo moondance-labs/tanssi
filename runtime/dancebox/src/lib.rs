@@ -107,6 +107,9 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
+/// CollatorId type expected by this runtime.
+pub type CollatorId = AccountId;
+
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
     frame_system::CheckNonZeroSender<Runtime>,
@@ -621,8 +624,8 @@ impl parachain_info::Config for Runtime {}
 pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 
 /// Play the role of the session manager.
-impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking {
-    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking {
+    fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
         log::info!(
             "assembling new collators for new session {} at #{:?}",
             index,
@@ -673,7 +676,7 @@ parameter_types! {
 
 impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorId = CollatorId;
     // we don't have stash and controller, thus we don't need the convert as well.
     type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -729,11 +732,11 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
 
 pub struct RemoveInvulnerablesImpl;
 
-impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        collators: &mut Vec<CollatorId>,
         num_invulnerables: usize,
-    ) -> Vec<AccountId> {
+    ) -> Vec<CollatorId> {
         if num_invulnerables == 0 {
             return vec![];
         }
