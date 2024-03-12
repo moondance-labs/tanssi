@@ -62,6 +62,7 @@ use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::KeystorePtr;
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
 //use sp_timestamp::Timestamp;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{convert::TryFrom, error::Error, sync::Arc, time::Duration};
 
 use crate::{
@@ -142,6 +143,17 @@ where
     log::info!("LOOKAHEAD COLLATOR RUNNING...");
 
     async move {
+        static UNSAFE_GLOBAL_FLAG: AtomicBool = AtomicBool::new(false);
+
+        if params.para_id == 1000.into() {
+            let prev = UNSAFE_GLOBAL_FLAG.fetch_or(true, Ordering::SeqCst);
+
+            if prev {
+                log::info!("Lookahead collator not running because it is already running");
+                return;
+            }
+        }
+
         cumulus_client_collator::initialize_collator_subsystems(
             &mut params.overseer_handle,
             params.collator_key,
