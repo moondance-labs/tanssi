@@ -1341,7 +1341,7 @@ dependencies = [
 [[package]]
 name = "ccp-authorities-noting-inherent"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "ccp-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1769,6 +1769,8 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "dp-consensus",
+ "dp-impl-tanssi-pallets-config",
  "fp-account",
  "fp-evm",
  "fp-rpc",
@@ -1848,8 +1850,6 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
- "tp-consensus",
- "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -1941,6 +1941,8 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "dp-consensus",
+ "dp-impl-tanssi-pallets-config",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -2002,8 +2004,6 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
- "tp-consensus",
- "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -3001,6 +3001,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
+ "dp-consensus",
  "dp-core",
  "emulated-integration-tests-common",
  "frame-benchmarking",
@@ -3093,7 +3094,6 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
- "tp-consensus",
  "tp-traits",
  "westend-runtime",
  "westend-runtime-constants",
@@ -3130,11 +3130,13 @@ dependencies = [
 [[package]]
 name = "dc-orchestrator-chain-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
+ "dp-core",
  "futures 0.3.30",
+ "jsonrpsee",
  "parity-scale-codec",
  "polkadot-overseer",
  "sc-client-api",
@@ -3349,7 +3351,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "dp-chain-state-snapshot"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -3361,7 +3363,7 @@ dependencies = [
 [[package]]
 name = "dp-collator-assignment"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -3379,9 +3381,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "dp-consensus"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-consensus-aura",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "dp-core"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -3391,6 +3410,21 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "dp-impl-tanssi-pallets-config"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
+dependencies = [
+ "dp-consensus",
+ "frame-support",
+ "impls",
+ "pallet-author-inherent",
+ "pallet-cc-authorities-noting",
+ "pallet-timestamp",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4178,6 +4212,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
+ "dp-consensus",
  "dp-core",
  "frame-benchmarking",
  "frame-executive",
@@ -4254,7 +4289,6 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
- "tp-consensus",
  "tp-traits",
 ]
 
@@ -7986,7 +8020,7 @@ dependencies = [
 [[package]]
 name = "pallet-cc-authorities-noting"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "ccp-authorities-noting-inherent",
  "cumulus-pallet-parachain-system",
@@ -9448,7 +9482,7 @@ dependencies = [
 [[package]]
 name = "pallet-xcm-executor-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -15345,6 +15379,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
+ "dp-consensus",
  "fc-rpc",
  "futures 0.3.30",
  "futures-timer",
@@ -15387,7 +15422,6 @@ dependencies = [
  "substrate-test-runtime-client",
  "tempfile",
  "tokio",
- "tp-consensus",
  "tracing",
 ]
 
@@ -15431,7 +15465,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 [[package]]
 name = "test-relay-sproof-builder"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#2d02dd7c338a8b567fd9f714c0b7a0f088052703"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0-lookahead#43a207fa1036fcc06772542e1e26dea57aab0281"
 dependencies = [
  "cumulus-primitives-core",
  "dp-collator-assignment",
@@ -15824,25 +15858,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tp-consensus"
-version = "0.1.0"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "frame-system",
- "log",
- "nimbus-primitives",
- "parity-scale-codec",
- "scale-info",
- "sp-api",
- "sp-consensus-aura",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "tp-container-chain-genesis-data"
 version = "0.1.0"
 dependencies = [
@@ -15862,19 +15877,6 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
-]
-
-[[package]]
-name = "tp-impl-tanssi-pallets-config"
-version = "0.1.0"
-dependencies = [
- "frame-support",
- "impls",
- "pallet-author-inherent",
- "pallet-cc-authorities-noting",
- "pallet-timestamp",
- "sp-core",
- "sp-runtime",
 ]
 
 [[package]]

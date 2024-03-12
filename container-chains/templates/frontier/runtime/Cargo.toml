@@ -23,10 +23,10 @@ smallvec = { workspace = true }
 
 # Local
 ccp-xcm = { workspace = true }
+dp-consensus = { workspace = true }
+dp-impl-tanssi-pallets-config = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
-tp-consensus = { workspace = true }
-tp-impl-tanssi-pallets-config = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -138,6 +138,8 @@ std = [
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
+	"dp-consensus/std",
+	"dp-impl-tanssi-pallets-config/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",
@@ -216,8 +218,6 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
-	"tp-consensus/std",
-	"tp-impl-tanssi-pallets-config/std",
 	"xcm-primitives/std",
 ]
 
@@ -231,6 +231,7 @@ runtime-benchmarks = [
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
+	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
@@ -265,7 +266,6 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
-	"tp-consensus/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 ]
 

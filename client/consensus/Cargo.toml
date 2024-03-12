@@ -33,8 +33,8 @@ sp-timestamp = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own
+dp-consensus = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
-tp-consensus = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
 cumulus-client-collator = { workspace = true }

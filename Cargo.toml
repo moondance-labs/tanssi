@@ -59,10 +59,8 @@ node-common = { path = "client/node-common" }
 runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
-tp-impl-tanssi-pallets-config = { path = "primitives/impl-tanssi-pallets-config", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
@@ -71,6 +69,9 @@ ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dan
 ccp-xcm = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
 dp-chain-state-snapshot = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
 dp-collator-assignment = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
+dp-consensus = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
+dp-impl-tanssi-pallets-config = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
+
 dp-core = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
 pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
 pallet-xcm-executor-utils = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0-lookahead", default-features = false }
