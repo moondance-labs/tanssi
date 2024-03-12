@@ -80,6 +80,7 @@ use {
         OrchestratorAuraWorkerAuxData,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
+    tokio::sync::watch::Receiver,
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -401,6 +402,8 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
+    let (tx, rx) = tokio::sync::watch::channel(());
+
     if validator {
         let collator_key = collator_key
             .clone()
@@ -452,6 +455,7 @@ async fn start_node_impl(
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),
+                    Some(rx.clone()),
                 )
             }
         };
@@ -511,7 +515,7 @@ async fn start_node_impl(
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx),
+            container_chain_spawner.rx_loop(cc_spawn_rx, tx),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
@@ -832,6 +836,7 @@ fn start_consensus_container(
         authoring_duration: Duration::from_millis(500),
         para_backend: backend,
         code_hash_provider,
+        end_lookahead_receiver: None
         //collation_request_receiver: None,
     };
 
@@ -854,6 +859,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
+    end_lookahead_receiver: Option<Receiver<()>>
 ) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
@@ -879,7 +885,6 @@ fn start_consensus_orchestrator(
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
     };
-
     let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
@@ -962,6 +967,7 @@ fn start_consensus_orchestrator(
         authoring_duration: Duration::from_millis(500),
         code_hash_provider,
         para_backend: backend,
+        end_lookahead_receiver,
         //collation_request_receiver: None,
     };
 

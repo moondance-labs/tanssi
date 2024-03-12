@@ -49,6 +49,7 @@ use polkadot_overseer::Handle as OverseerHandle;
 use polkadot_primitives::{CollatorPair, Id as ParaId, OccupiedCoreAssumption};
 
 use futures::{channel::oneshot, prelude::*};
+use tokio::sync::watch::Receiver;
 use sc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
 use sc_consensus::BlockImport;
 use sc_consensus_slots::InherentDataProviderExt;
@@ -90,6 +91,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH
     pub collator_service: CS,
     pub authoring_duration: Duration,
     pub force_authoring: bool,
+    pub end_lookahead_receiver: Option<Receiver<()>>
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -141,6 +143,7 @@ where
 
     log::info!("LOOKAHEAD COLLATOR RUNNING...");
 
+    
     async move {
         cumulus_client_collator::initialize_collator_subsystems(
             &mut params.overseer_handle,
@@ -177,7 +180,21 @@ where
             collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
         };
 
+        // If when we start this, we dont mark the value as unchanged, this will
+        // exit in the following lines
+        if let Some(end_lookahead_receiver) = &mut params.end_lookahead_receiver {
+            end_lookahead_receiver.mark_unchanged();
+        }
+
         while let Some(relay_parent_header) = import_notifications.next().await {
+            if let Some(end_lookahead_receiver) = &mut params.end_lookahead_receiver {
+                // if the value has changed, it means that containerChainSpawner has told
+                // us that we need to tear down this consensus task
+                if let Ok(true) = end_lookahead_receiver.has_changed() {
+                    log::info!("I AM ENTERING HERE AND RETURNING");
+                    return;
+                }
+            }
             let relay_parent = relay_parent_header.hash();
 
             if !is_para_scheduled(relay_parent, params.para_id, &mut params.overseer_handle).await {
