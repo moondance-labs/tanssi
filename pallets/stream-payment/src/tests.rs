@@ -367,7 +367,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = roll_to(10) as u128;
+            let delta = u128::from(roll_to(10));
             let payment = delta * open_stream.config.rate;
             let deposit_left = open_stream.deposit - payment;
 
@@ -601,7 +601,7 @@ mod perform_payment {
             );
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = roll_to(10) as u128;
+            let delta = u128::from(roll_to(10));
             let payment = delta * open_stream.config.rate * 12; // 12 sec per block
             let deposit_left = open_stream.deposit - payment;
 
@@ -731,7 +731,7 @@ mod close_stream {
             assert_balance_change!(-, ALICE, open_stream.deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = roll_to(10) as u128;
+            let delta = u128::from(roll_to(10));
             let payment = delta * open_stream.config.rate;
             let deposit_left = open_stream.deposit - payment;
 
@@ -1044,7 +1044,7 @@ mod request_change {
             ));
 
             // Roll to block after deadline, payment should stop at deadline.
-            let delta = roll_to(11) as u128;
+            let delta = u128::from(roll_to(11));
             let payment = (delta - 1) * open_stream.config.rate;
 
             assert_ok!(StreamPayment::perform_payment(
@@ -1103,7 +1103,7 @@ mod request_change {
             ));
 
             // Roll to block after deadline, payment should stop at deadline.
-            let delta = roll_to(11) as u128;
+            let delta = u128::from(roll_to(11));
             let payment = (delta - 1) * open_stream.config.rate;
 
             assert_ok!(StreamPayment::perform_payment(
