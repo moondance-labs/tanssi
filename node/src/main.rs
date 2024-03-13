@@ -19,12 +19,12 @@
 #![warn(missing_docs)]
 
 mod chain_spec;
-mod service;
 mod cli;
 mod command;
 mod container_chain_monitor;
 mod container_chain_spawner;
 mod rpc;
+mod service;
 
 fn main() -> sc_cli::Result<()> {
     command::run()
