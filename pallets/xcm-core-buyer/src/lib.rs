@@ -52,11 +52,12 @@ use {
 pub mod pallet {
     use super::*;
     use sp_runtime::traits::TrailingZeroInput;
+    use tp_traits::ParathreadParams;
 
     /// Data preservers pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
-    pub struct Pallet<T>(core::marker::PhantomData<T>);
+    pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -66,11 +67,16 @@ pub mod pallet {
 
         type XcmBuyExecutionDot: Get<u128>;
         type XcmSender: SendXcm;
-        type GetPurchaseCoretimeCall: GetPurchaseCoretimeCall;
+        type GetPurchaseCoreCall: GetPurchaseCoreCall;
         type GetBlockNumber: Get<u32>;
         // TODO: use AccountIdConversion trait here?
         type AccountIdToArray32: Convert<Self::AccountId, [u8; 32]>;
         type SelfParaId: Get<ParaId>;
+        type MaxParathreads: Get<u32>;
+        // TODO: do not abuse Get and Convert traits
+        type GetParathreadParams: Convert<ParaId, Option<ParathreadParams>>;
+        // TODO: Self::CollatorId?
+        type GetAssignedCollators: Convert<ParaId, Vec<Self::AccountId>>;
         /// A configuration for base priority of unsigned transactions.
         ///
         /// This is exposed so that it can be tuned for particular runtime, when
@@ -85,22 +91,43 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// An XCM message to buy a core for this parathread has been sent to the relay chain.
-        CoretimeXcmSent { para_id: ParaId },
+        BuyCoreXcmSent { para_id: ParaId },
     }
 
     #[pallet::error]
     pub enum Error<T> {
-        NoAccountForParaId,
-        ErrorValidating,
-        ErrorDelivering,
+        InvalidProof,
+        ErrorValidatingXCM,
+        ErrorDeliveringXCM,
+        /// An order for this para id already exists
+        OrderAlreadyExists,
+        /// The para id is not a parathread
+        NotAParathread,
+        /// There are too many in-flight orders, buying cores will not work until some of those
+        /// orders finish.
+        InFlightLimitReached,
+        /// There are no collators assigned to this parathread, so no point in buying a core
+        NoAssignedCollators,
+        /// This collator is not assigned to this parathread
+        CollatorNotAssigned,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
-    pub struct BuyCoretimeCollatorProof {
+    #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct BuyCoreCollatorProof<T: Config> {
+        account: T::AccountId,
         // TODO
         _signature: (),
     }
+
+    /// Set of parathreads that have already sent an XCM message to buy a core recently.
+    /// Used to avoid 2 collators buying a core at the same time, because it is only possible to buy
+    /// 1 core in 1 relay block.
+    #[pallet::storage]
+    //pub type InFlightOrders<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
+    pub type InFlightOrders<T: Config> =
+        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxParathreads>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -114,31 +141,47 @@ pub mod pallet {
         #[pallet::call_index(0)]
         // TODO: weight
         #[pallet::weight(T::WeightInfo::set_boot_nodes(1, 1))]
-        pub fn buy_coretime(
+        pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
             // since signature verification is done in `validate_unsigned`
             // we can skip doing it here again.
-            _proof: BuyCoretimeCollatorProof,
+            proof: BuyCoreCollatorProof<T>,
         ) -> DispatchResult {
             // Signature verification is done in `validate_unsigned`.
             // We use `ensure_none` here because this can only be called by collators, and we do not
             // want collators to pay fees.
             ensure_none(origin)?;
 
-            Self::on_collator_instantaneous_core_requested(para_id)
+            let assigned_collators = T::GetAssignedCollators::convert(para_id);
+            if assigned_collators.is_empty() {
+                return Err(Error::<T>::NoAssignedCollators.into());
+            }
+
+            if !assigned_collators.contains(&proof.account) {
+                return Err(Error::<T>::CollatorNotAssigned.into());
+            }
+
+            // TODO: implement proof validation
+            return Err(Error::<T>::InvalidProof.into());
+
+            //Self::on_collator_instantaneous_core_requested(para_id)
         }
 
-        /// Buy coretime for para id as root. Does not require any proof, useful in tests.
+        /// Buy core for para id as root. Does not require any proof, useful in tests.
         #[pallet::call_index(1)]
         // TODO: weight
         #[pallet::weight(T::WeightInfo::set_boot_nodes(1, 1))]
-        pub fn force_buy_coretime(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+        pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
-            // TODO: check that the para_id is a parathread, and at least one collator could buy a
-            // core for it. Even though this extrinsic is called `force`, it should only be possible
+            // Check that at least one collator could buy a core for this parathread.
+            // Even though this extrinsic is called `force`, it should only be possible
             // to use it when an equivalent non-force call can be created.
+            let assigned_collators = T::GetAssignedCollators::convert(para_id);
+            if assigned_collators.is_empty() {
+                return Err(Error::<T>::NoAssignedCollators.into());
+            }
 
             Self::on_collator_instantaneous_core_requested(para_id)
         }
@@ -189,6 +232,20 @@ pub mod pallet {
         }
 
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
+            let mut in_flight_orders = InFlightOrders::<T>::get();
+            if in_flight_orders.contains(&para_id) {
+                return Err(Error::<T>::OrderAlreadyExists.into());
+            }
+            in_flight_orders
+                .try_insert(para_id)
+                .map_err(|_| Error::<T>::InFlightLimitReached)?;
+
+            // Check that the para id is a parathread
+            let parathread_params = T::GetParathreadParams::convert(para_id);
+            if parathread_params.is_none() {
+                return Err(Error::<T>::NotAParathread.into());
+            }
+
             // TODO: the origin should have rights to create blocks for para_id
             let withdraw_amount = T::XcmBuyExecutionDot::get();
 
@@ -201,14 +258,13 @@ pub mod pallet {
             // pay for fees, instead use `DescendOrigin` to make the container chain sovereign account
             // pay for fees. The container chain sovereign account is derived from the tanssi sovereign
             // account.
-            // TODO: when coretime is implemented, buy coretime instead of buying on-demand cores
+            // TODO: when coretime is implemented, buy core there instead of buying on-demand cores
             let origin = OriginKind::SovereignAccount;
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
             // It should be defined in a storage item somewhere, contrallable by the container chain
             // manager.
             let max_amount = u128::MAX;
-            let (call, weight_at_most) =
-                T::GetPurchaseCoretimeCall::get_encoded(max_amount, para_id);
+            let (call, weight_at_most) = T::GetPurchaseCoreCall::get_encoded(max_amount, para_id);
 
             // Assumption: derived account already has DOT
             // The balance should be enough to cover
@@ -247,11 +303,37 @@ pub mod pallet {
             let relay_chain = MultiLocation::parent();
             let (ticket, _price) =
                 T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
-                    .map_err(|_| Error::<T>::ErrorValidating)?;
-            T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDelivering)?;
-            Self::deposit_event(Event::CoretimeXcmSent { para_id });
+                    .map_err(|_| Error::<T>::ErrorValidatingXCM)?;
+            T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
+            Self::deposit_event(Event::BuyCoreXcmSent { para_id });
+            InFlightOrders::<T>::put(in_flight_orders);
 
             Ok(())
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::zero();
+
+            // 1 write in on_finalize
+            weight += T::DbWeight::get().writes(1);
+
+            weight
+        }
+
+        fn on_finalize(_: BlockNumberFor<T>) {
+            // We clear this storage item because we only need it to prevent collators from buying
+            // more than one core in the same relay block
+            // TODO: with async backing, it is possible that two tanssi blocks are included in the
+            // same relay block, so this kill is not correct, should only kill the storage if the
+            // relay block number has changed
+            // TODO: this allows collators to send N consecutive messages to buy 1 core for the same
+            // parathread, as long as the parathread block is not included in pallet_author_noting.
+            // So a malicious collator could drain the parathread tank account by buying cores on
+            // every tanssi block but not actually producing any block.
+            InFlightOrders::<T>::kill();
         }
     }
 
@@ -260,7 +342,7 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if let Call::buy_coretime { para_id, proof } = call {
+            if let Call::buy_core { para_id, proof } = call {
                 /*
                 if <Pallet<T>>::is_online(heartbeat.authority_index) {
                     // we already received a heartbeat for this authority
@@ -299,7 +381,7 @@ pub mod pallet {
                 // TODO: validate proof
                 let _ = proof;
 
-                ValidTransaction::with_tag_prefix("BuyCoretime")
+                ValidTransaction::with_tag_prefix("XcmCoreBuyer")
                     .priority(T::UnsignedPriority::get())
                     // TODO: tags
                     .and_provides((block_number, para_id))
@@ -320,7 +402,7 @@ pub mod pallet {
     }
 }
 
-pub trait GetPurchaseCoretimeCall {
+pub trait GetPurchaseCoreCall {
     /// Get the encoded call to buy a core for this `para_id`, with this `max_amount`.
     /// Returns the encoded call and its estimated weight.
     fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight);

@@ -1638,7 +1638,7 @@ construct_runtime!(
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 56,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 57,
-        BuyCoretime: pallet_xcm_core_buyer = 58,
+        XcmCoreBuyer: pallet_xcm_core_buyer = 58,
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,

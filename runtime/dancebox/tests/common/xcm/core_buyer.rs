@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::common::xcm::mocknets::RococoSender;
+use crate::common::xcm::mocknets::{DanceboxSender, RococoSender};
 use crate::common::xcm::*;
-use dancebox_runtime::BuyCoretime;
+use crate::common::{dummy_boot_nodes, empty_genesis_data, run_to_session};
+use dancebox_runtime::{DataPreservers, Registrar, XcmCoreBuyer};
 use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
 use sp_runtime::AccountId32;
-use tp_traits::ParaId;
+use tp_traits::{ParaId, SlotFrequency};
 use xcm_emulator::RelayChain;
 use {
     crate::common::xcm::mocknets::{
@@ -53,22 +54,32 @@ fn constants() {
 /// * tank_account_balance: the balance of the parachain tank account in the relay chain
 /// * spot_price: the price of a core
 fn do_test(tank_account_balance: u128) {
-    // Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
-    // parathread para id.
-    let parathread_tank_in_relay = Dancebox::execute_with(|| {
-        let parathread_tank_multilocation = BuyCoretime::absolute_multilocation(
-            BuyCoretime::interior_multilocation(PARATHREAD_ID.into()),
-        );
-        let parathread_tank_in_relay =
-            <Rococo as RelayChain>::SovereignAccountOf::convert_location(
-                &parathread_tank_multilocation,
-            )
-            .expect("probably this relay chain does not allow DescendOrigin");
+    Dancebox::execute_with(|| {
+        // Register parathread
+        let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
+        assert_ok!(Registrar::register_parathread(
+            alice_origin.clone(),
+            PARATHREAD_ID.into(),
+            SlotFrequency { min: 1, max: 1 },
+            empty_genesis_data()
+        ));
+        assert_ok!(DataPreservers::set_boot_nodes(
+            alice_origin,
+            PARATHREAD_ID.into(),
+            dummy_boot_nodes()
+        ));
+        let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
+        assert_ok!(Registrar::mark_valid_for_collating(
+            root_origin,
+            PARATHREAD_ID.into()
+        ));
 
-        parathread_tank_in_relay
+        run_to_session(2);
     });
 
-    // Pre-fund container chain tank in Relay Chain
+    let parathread_tank_in_relay = get_parathread_tank_relay_address();
+
+    // Pre-fund parathread tank in Relay Chain
     Rococo::execute_with(|| {
         let alice_origin = <Rococo as Chain>::RuntimeOrigin::signed(RococoSender::get());
         let destination = sp_runtime::MultiAddress::Id(parathread_tank_in_relay.clone());
@@ -102,10 +113,10 @@ fn do_test(tank_account_balance: u128) {
     });
      */
 
-    // Send XCM message from Dancebox pallet BuyCoretime
+    // Send XCM message from Dancebox pallet XcmCoreBuyer
     Dancebox::execute_with(|| {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
-        assert_ok!(BuyCoretime::force_buy_coretime(
+        assert_ok!(XcmCoreBuyer::force_buy_core(
             root_origin,
             PARATHREAD_ID.into()
         ));
@@ -114,8 +125,8 @@ fn do_test(tank_account_balance: u128) {
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::BuyCoretime(
-                    pallet_xcm_core_buyer::Event::CoretimeXcmSent { para_id }
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::BuyCoreXcmSent { para_id }
                 ) => {
                     para_id: *para_id == ParaId::from(PARATHREAD_ID),
                 },
@@ -141,10 +152,12 @@ fn assert_relay_order_event_not_emitted() {
     // OnDemandOrderPlaced
 }
 
+/// Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
+/// parathread para id.
 fn get_parathread_tank_relay_address() -> AccountId32 {
     let parathread_tank_in_relay = Dancebox::execute_with(|| {
-        let parathread_tank_multilocation = BuyCoretime::absolute_multilocation(
-            BuyCoretime::interior_multilocation(PARATHREAD_ID.into()),
+        let parathread_tank_multilocation = XcmCoreBuyer::absolute_multilocation(
+            XcmCoreBuyer::interior_multilocation(PARATHREAD_ID.into()),
         );
         let parathread_tank_in_relay =
             <Rococo as RelayChain>::SovereignAccountOf::convert_location(
@@ -204,7 +217,10 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
     let parathread_tank_in_relay = get_parathread_tank_relay_address();
     let balance_before = BUY_EXECUTION_COST;
 
-    // Invariant: if balance_before >= BUY_EXECUTION_COST then balance_after <= (balance_before - BUY_EXECUTION_COST)
+    // Invariant: if balance_before >= BUY_EXECUTION_COST then
+    // balance_after <= (balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST)
+    // In this case the balance_after is 0 because BUY_EXECUTION_REFUND < ROCOCO_ED,
+    // so the account gets the refund but it is immediatelly killed.
     do_test(balance_before);
 
     // Receive XCM message in Relay Chain

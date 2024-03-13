@@ -23,8 +23,8 @@ use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
         Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
-        RuntimeOrigin, WeightToFee, XcmpQueue,
+        ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
+        RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -344,8 +344,9 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
-use crate::System;
-use pallet_xcm_core_buyer::GetPurchaseCoretimeCall;
+use crate::{CollatorAssignment, System};
+use pallet_xcm_core_buyer::GetPurchaseCoreCall;
+use tp_traits::ParathreadParams;
 use {
     crate::ForeignAssets,
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
@@ -508,10 +509,13 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     // TODO: this depends on the relay
     type XcmBuyExecutionDot = XcmBuyExecutionDotRococo;
     type XcmSender = XcmRouter;
-    type GetPurchaseCoretimeCall = EncodedCallToBuyCoretime;
+    type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
     type AccountIdToArray32 = AccountIdToArray32;
     type SelfParaId = parachain_info::Pallet<Runtime>;
+    type MaxParathreads = ConstU32<100>;
+    type GetParathreadParams = GetParathreadParams;
+    type GetAssignedCollators = GetAssignedCollators;
     type UnsignedPriority = ParasUnsignedPriority;
 
     type WeightInfo = ();
@@ -525,6 +529,28 @@ impl Get<u32> for GetBlockNumber {
     }
 }
 
+pub struct GetParathreadParams;
+
+impl Convert<ParaId, Option<ParathreadParams>> for GetParathreadParams {
+    fn convert(para_id: ParaId) -> Option<ParathreadParams> {
+        Registrar::parathread_params(para_id)
+    }
+}
+
+pub struct GetAssignedCollators;
+
+impl Convert<ParaId, Vec<AccountId>> for GetAssignedCollators {
+    fn convert(para_id: ParaId) -> Vec<AccountId> {
+        // We do not need to check if the para_id is a valid parathread,
+        // because that is already being checked by `GetParathreadParams`.
+        CollatorAssignment::collator_container_chain()
+            .container_chains
+            .get(&para_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+}
+
 pub struct AccountIdToArray32;
 
 impl Convert<AccountId, [u8; 32]> for AccountIdToArray32 {
@@ -533,9 +559,9 @@ impl Convert<AccountId, [u8; 32]> for AccountIdToArray32 {
     }
 }
 
-pub struct EncodedCallToBuyCoretime;
+pub struct EncodedCallToBuyCore;
 
-impl GetPurchaseCoretimeCall for EncodedCallToBuyCoretime {
+impl GetPurchaseCoreCall for EncodedCallToBuyCore {
     fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight) {
         // TODO: this should use westend_runtime, but the polkadot 1.6.0 release does not have this pallet yet...
         // TODO: this should depend on the relay chain defined in the chain spec, can we do that?

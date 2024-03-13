@@ -57,7 +57,7 @@ pub mod pallet {
     /// Inflation rewards pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
-    pub struct Pallet<T>(core::marker::PhantomData<T>);
+    pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {

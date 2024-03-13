@@ -14,24 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::GetPurchaseCoretimeCall;
+use crate::GetPurchaseCoreCall;
 use bounded_collections::ConstU128;
 use sp_runtime::traits::Convert;
 use sp_runtime::BuildStorage;
+use staging_xcm::latest::{
+    MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash,
+};
+use tp_traits::{ParathreadParams, SlotFrequency};
 use {
     crate::{self as pallet_xcm_core_buyer},
     dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything},
+        traits::{ConstU64, Everything},
     },
-    frame_system::{EnsureSigned, RawOrigin},
     sp_core::H256,
-    sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup},
-        Either,
-    },
+    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
     sp_std::collections::btree_map::BTreeMap,
 };
 
@@ -135,87 +135,14 @@ impl mock_data::Config for Test {}
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    /// List of container chains, with the corresponding "manager" account.
-    /// In dancebox, the manager is the one who put the deposit in pallet_registrar.
-    /// The manager can be None if the chain was registered by root, or in genesis.
-    pub container_chain_managers: BTreeMap<ParaId, Option<AccountId>>,
+    pub container_chain_collators: BTreeMap<ParaId, Vec<AccountId>>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chain_managers: BTreeMap::from_iter([(ParaId::from(1001), None)]),
+            container_chain_collators: BTreeMap::from_iter([(ParaId::from(3333), vec![BOB])]),
         }
-    }
-}
-
-pub struct MockContainerChainManagerOrRootOrigin<T, RootOrigin> {
-    // Configurable root origin
-    container_chain_manager_origin: PhantomData<RootOrigin>,
-    _phantom: PhantomData<T>,
-}
-
-impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
-    for MockContainerChainManagerOrRootOrigin<T, RootOrigin>
-where
-    T: crate::Config,
-    RootOrigin: EnsureOriginWithArg<O, ParaId>,
-    O: From<RawOrigin<T::AccountId>>,
-    Result<RawOrigin<T::AccountId>, O>: From<O>,
-    u64: From<T::AccountId>,
-    T::AccountId: From<u64>,
-    O: Clone,
-{
-    type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
-
-    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
-        let origin = EitherOfDiverse::<EnsureSigned<T::AccountId>, RootOrigin>::try_origin(
-            o.clone(),
-            para_id,
-        )?;
-
-        if let Either::Left(signed_account) = &origin {
-            // This check will only pass if both are true:
-            // * The para_id has a deposit in pallet_registrar
-            // * The deposit creator is the signed_account
-            MockData::get()
-                .container_chain_managers
-                .get(para_id)
-                .and_then(|inner| *inner)
-                .and_then(|manager| {
-                    if manager != u64::from(signed_account.clone()) {
-                        None
-                    } else {
-                        Some(())
-                    }
-                })
-                .ok_or(o)?;
-        }
-
-        Ok(origin)
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
-        // Return container chain manager, or register container chain as ALICE if it does not exist
-        MockData::mutate(|m| {
-            m.container_chain_managers
-                .entry(*para_id)
-                .or_insert_with(move || {
-                    const ALICE: u64 = 1;
-
-                    Some(ALICE)
-                });
-        });
-
-        // This panics if the container chain was registered by root (None)
-        let o = MockData::get()
-            .container_chain_managers
-            .get(para_id)
-            .unwrap()
-            .unwrap();
-
-        Ok(O::from(RawOrigin::Signed(o.into())))
     }
 }
 
@@ -227,14 +154,54 @@ impl pallet_xcm_core_buyer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type XcmBuyExecutionDot = ConstU128<1_000>;
-    type XcmSender = ();
-    type GetPurchaseCoretimeCall = EncodedCallToBuyCoretime;
+    type XcmSender = DevNull;
+    type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = ();
     type AccountIdToArray32 = AccountIdToArray32;
     type SelfParaId = ParachainId;
+    type MaxParathreads = ConstU32<100>;
+    type GetParathreadParams = GetParathreadParams;
+    type GetAssignedCollators = GetAssignedCollators;
     type UnsignedPriority = ();
 
     type WeightInfo = ();
+}
+
+pub struct DevNull;
+impl SendXcm for DevNull {
+    type Ticket = ();
+    fn validate(_: &mut Option<MultiLocation>, _: &mut Option<Xcm<()>>) -> SendResult<()> {
+        Ok(((), MultiAssets::new()))
+    }
+    fn deliver(_: ()) -> Result<XcmHash, SendError> {
+        Ok([0; 32])
+    }
+}
+
+pub struct GetParathreadParams;
+
+impl Convert<ParaId, Option<ParathreadParams>> for GetParathreadParams {
+    fn convert(para_id: ParaId) -> Option<ParathreadParams> {
+        if para_id == 3333.into() {
+            Some(ParathreadParams {
+                slot_frequency: SlotFrequency { min: 10, max: 10 },
+            })
+        } else {
+            None
+        }
+    }
+}
+
+pub struct GetAssignedCollators;
+
+impl Convert<ParaId, Vec<AccountId>> for GetAssignedCollators {
+    fn convert(para_id: ParaId) -> Vec<AccountId> {
+        MockData::mock()
+            .container_chain_collators
+            .get(&para_id)
+            .cloned()
+            .unwrap_or_default()
+    }
 }
 
 pub struct GetBlockNumber;
@@ -257,9 +224,9 @@ impl Convert<u64, [u8; 32]> for AccountIdToArray32 {
     }
 }
 
-pub struct EncodedCallToBuyCoretime;
+pub struct EncodedCallToBuyCore;
 
-impl GetPurchaseCoretimeCall for EncodedCallToBuyCoretime {
+impl GetPurchaseCoreCall for EncodedCallToBuyCore {
     fn get_encoded(_max_amount: u128, _para_id: ParaId) -> (Vec<u8>, Weight) {
         let weight = Weight::from_parts(1_000_000_000, 100_000);
 
@@ -308,3 +275,21 @@ pub(crate) fn events() -> Vec<pallet_xcm_core_buyer::Event<Test>> {
         })
         .collect::<Vec<_>>()
 }
+
+pub fn run_to_block(n: u64) {
+    let old_block_number = System::block_number();
+
+    for x in (old_block_number + 1)..=n {
+        if x > 0 {
+            XcmCoreBuyer::on_finalize(x - 1);
+            System::on_finalize(x - 1);
+        }
+        System::reset_events();
+        System::set_block_number(x);
+        System::on_initialize(x);
+        XcmCoreBuyer::on_initialize(x);
+    }
+}
+
+pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;

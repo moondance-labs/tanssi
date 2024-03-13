@@ -91,8 +91,6 @@ decl_test_parachains! {
                     &MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
-
-
         ])
         .with_safe_xcm_version(3)
         .with_own_para_id(2000u32.into())
@@ -181,6 +179,19 @@ decl_test_parachains! {
 
 
         ])
+        .with_collators(vec![
+            (crate::AccountId::from(crate::ALICE), 210 * crate::UNIT),
+            (crate::AccountId::from(crate::BOB), 100 * crate::UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            collators_per_parathread: 1,
+            full_rotation_period: 0,
+            ..Default::default()
+        })
         .with_safe_xcm_version(3)
         .with_own_para_id(2000u32.into())
         .build_storage(),

@@ -20,38 +20,114 @@ use {
     sp_runtime::traits::BadOrigin,
 };
 
-const ALICE: u64 = 1;
-
 #[test]
-fn root_origin_can_force_send_xcm() {
+fn root_origin_can_force_buy_xcm() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            System::set_block_number(1);
+            run_to_block(1);
             let para_id = 3333.into();
 
-            assert_ok!(XcmCoreBuyer::force_buy_coretime(
-                RuntimeOrigin::root(),
-                para_id,
-            ));
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
 
-            assert_eq!(events(), vec![Event::CoretimeXcmSent { para_id }]);
+            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
         });
 }
 
 #[test]
-fn signed_origin_cannot_force_send_xcm() {
+fn signed_origin_cannot_force_buy_xcm() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            System::set_block_number(1);
+            run_to_block(1);
             let para_id = 3333.into();
 
             assert_noop!(
-                XcmCoreBuyer::force_buy_coretime(RuntimeOrigin::signed(ALICE), para_id),
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::signed(ALICE), para_id),
                 BadOrigin
+            );
+        });
+}
+
+#[test]
+fn force_buy_two_messages_in_one_block_fails() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::OrderAlreadyExists
+            );
+        });
+}
+
+#[test]
+fn force_buy_two_messages_in_two_consecutive_blocks_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+
+            run_to_block(2);
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+        });
+}
+
+#[test]
+fn cannot_force_buy_invalid_para_id() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 2000.into();
+
+            MockData::mutate(|m| {
+                // Mock para_id 2000 as a container chain with collators, but not a parathread
+                m.container_chain_collators.insert(2000.into(), vec![ALICE]);
+            });
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::NotAParathread
+            );
+        });
+}
+
+#[test]
+fn cannot_force_buy_para_id_with_no_collators() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+            MockData::mutate(|m| {
+                m.container_chain_collators = Default::default();
+            });
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::NoAssignedCollators
             );
         });
 }
