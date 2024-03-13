@@ -24,10 +24,8 @@ correctness = { level = "deny", priority = 1 }
 suspicious = { level = "deny", priority = 1 }
 
 # Add some additional lints
-#as_conversions = { level = "warn", priority = 1 }
 as_underscore = { level = "warn", priority = 1 }
 cast_lossless = { level = "warn", priority = 1 }
-#cast_possible_truncation = { level = "warn", priority = 1 }
 cast_possible_wrap = { level = "warn", priority = 1 }
 cast_precision_loss = { level = "warn", priority = 1 }
 cast_sign_loss = { level = "warn", priority = 1 }

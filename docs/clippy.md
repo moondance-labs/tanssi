@@ -3,6 +3,8 @@ Some useful clippy lints, can be added to root `Cargo.toml` for better developer
 ```toml
 # Some lints that can be useful but should not be enabled in CI
 # because of false positives and noise in tests
+as_conversions = { level = "warn", priority = 1 }
+cast_possible_truncation = { level = "warn", priority = 1 }
 cognitive_complexity = { level = "warn", priority = 1 }
 derive_partial_eq_without_eq = { level = "warn", priority = 1 }
 else_if_without_else = { level = "warn", priority = 1 }
