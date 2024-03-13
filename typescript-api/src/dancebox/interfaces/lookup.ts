@@ -3632,7 +3632,13 @@ export default {
     },
     /** Lookup424: pallet_invulnerables::pallet::Error<T> */
     PalletInvulnerablesError: {
-        _enum: ["TooManyInvulnerables", "AlreadyInvulnerable", "NotInvulnerable", "NoKeysRegistered"],
+        _enum: [
+            "TooManyInvulnerables",
+            "AlreadyInvulnerable",
+            "NotInvulnerable",
+            "NoKeysRegistered",
+            "UnableToDeriveCollatorId",
+        ],
     },
     /** Lookup429: sp_core::crypto::KeyTypeId */
     SpCoreCryptoKeyTypeId: "[u8;4]",
