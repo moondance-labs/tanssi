@@ -402,7 +402,7 @@ parameter_types! {
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
 pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 3;
-pub const BLOCK_PROCESSING_VELOCITY: u32 = 2;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
     Runtime,
