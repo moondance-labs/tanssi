@@ -59,8 +59,8 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"staging-xcm/std",
 	"tp-traits/std",
-	"staging-xcm/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
