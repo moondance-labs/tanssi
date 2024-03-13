@@ -61,8 +61,8 @@ use sp_core::crypto::Pair;
 use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::KeystorePtr;
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
-//use sp_timestamp::Timestamp;
 use std::{convert::TryFrom, error::Error, sync::Arc, time::Duration};
+use tokio::sync::watch::Receiver;
 
 use crate::{
     collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
@@ -90,6 +90,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH
     pub collator_service: CS,
     pub authoring_duration: Duration,
     pub force_authoring: bool,
+    pub end_lookahead_receiver: Option<Receiver<()>>,
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -177,7 +178,26 @@ where
             collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
         };
 
+        // If we move forward without marking the value as unchanged,
+        // the channel will assume that the value has already changed
+        // in a different step than the one we want (inside containerChainSpawner)
+        // and will not kill the lookahead collator properly if it was already running.
+        if let Some(end_lookahead_receiver) = &mut params.end_lookahead_receiver {
+            end_lookahead_receiver.mark_unchanged();
+        }
+
         while let Some(relay_parent_header) = import_notifications.next().await {
+            if let Some(end_lookahead_receiver) = &mut params.end_lookahead_receiver {
+                // If the value of the channel has changed, it means that 
+                // containerChainSpawner has informed that we need to tear down
+                // this consensus task, meaning that we don't need to spawn the
+                // lookahead collator twice.
+                if let Ok(true) = end_lookahead_receiver.has_changed() {
+                    log::info!("Lookahead collator was already running! Exiting...");
+                    return;
+                }
+            }
+
             let relay_parent = relay_parent_header.hash();
 
             if !is_para_scheduled(relay_parent, params.para_id, &mut params.overseer_handle).await {

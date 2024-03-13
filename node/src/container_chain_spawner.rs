@@ -51,7 +51,7 @@ use {
         time::Instant,
     },
     tokio::{
-        sync::{mpsc, oneshot},
+        sync::{mpsc, oneshot, watch},
         time::{sleep, Duration},
     },
 };
@@ -411,11 +411,11 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
+    pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, end_lookahead_sender: watch::Sender<()>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next).await;
+                    self.handle_update_assignment(current, next, &end_lookahead_sender).await;
                 }
             }
         }
@@ -427,7 +427,7 @@ impl ContainerChainSpawner {
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>) {
+    async fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>, end_lookahead_sender: &watch::Sender<()>) {
         let HandleUpdateAssignmentResult {
             call_collate_on,
             chains_to_stop,
@@ -443,6 +443,8 @@ impl ContainerChainSpawner {
 
         // Call collate_on, to start collation on a chain that was already running before
         if let Some(f) = call_collate_on {
+            // End previous tanssi-aura job
+            let _ = end_lookahead_sender.send(());
             f();
         }
 
