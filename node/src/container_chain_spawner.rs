@@ -411,11 +411,16 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, end_lookahead_sender: watch::Sender<()>) {
+    pub async fn rx_loop(
+        self,
+        mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>,
+        end_lookahead_sender: watch::Sender<()>,
+    ) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next, &end_lookahead_sender).await;
+                    self.handle_update_assignment(current, next, &end_lookahead_sender)
+                        .await;
                 }
             }
         }
@@ -427,7 +432,12 @@ impl ContainerChainSpawner {
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>, end_lookahead_sender: &watch::Sender<()>) {
+    async fn handle_update_assignment(
+        &self,
+        current: Option<ParaId>,
+        next: Option<ParaId>,
+        end_lookahead_sender: &watch::Sender<()>,
+    ) {
         let HandleUpdateAssignmentResult {
             call_collate_on,
             chains_to_stop,

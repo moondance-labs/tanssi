@@ -188,7 +188,7 @@ where
 
         while let Some(relay_parent_header) = import_notifications.next().await {
             if let Some(end_lookahead_receiver) = &mut params.end_lookahead_receiver {
-                // If the value of the channel has changed, it means that 
+                // If the value of the channel has changed, it means that
                 // containerChainSpawner has informed that we need to tear down
                 // this consensus task, meaning that we don't need to spawn the
                 // lookahead collator twice.

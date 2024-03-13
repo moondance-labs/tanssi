@@ -79,7 +79,10 @@ use {
         //collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
         OrchestratorAuraWorkerAuxData,
     },
-    tokio::sync::{watch::Receiver, mpsc::{unbounded_channel, UnboundedSender}},
+    tokio::sync::{
+        mpsc::{unbounded_channel, UnboundedSender},
+        watch::Receiver,
+    },
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -858,7 +861,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-    end_lookahead_receiver: Option<Receiver<()>>
+    end_lookahead_receiver: Option<Receiver<()>>,
 ) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
