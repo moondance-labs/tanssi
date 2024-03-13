@@ -217,7 +217,7 @@ pub mod pallet {
                 network: None,
             };
 
-            InteriorMultiLocation::X1(account_junction.clone())
+            InteriorMultiLocation::X1(account_junction)
         }
 
         /// Returns a multilocation that can be used in the `deposit_asset` XCM opcode.

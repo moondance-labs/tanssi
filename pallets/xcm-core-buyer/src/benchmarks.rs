@@ -17,15 +17,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
+use crate::InFlightOrders;
+use sp_std::collections::btree_set::BTreeSet;
 use {
     crate::{Call, Config, Pallet},
     frame_benchmarking::v2::*,
-    frame_support::{
-        traits::{EnsureOriginWithArg, OriginTrait},
-        BoundedVec,
-    },
     frame_system::RawOrigin,
-    sp_std::vec,
     tp_traits::ParaId,
 };
 
@@ -33,27 +30,19 @@ use {
 mod benchmarks {
     use super::*;
 
-    // TODO
     #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-        let para_id = ParaId::from(2);
-        let origin = T::SetBootNodesOrigin::try_successful_origin(&para_id)
-            .expect("failed to create SetBootNodesOrigin");
-        // Worst case is when caller is not root
-        let raw_origin = origin.as_system_ref();
-        assert!(matches!(raw_origin, Some(RawOrigin::Signed(..))));
+    fn force_buy_core(x: Linear<1, 200>, y: Linear<1, 10>) {
+        let para_id = ParaId::from(3333);
+        assert_eq!(InFlightOrders::<T>::get(), BTreeSet::new());
+
+        // TODO: need to add benchmark methods to config traits, to ensure that:
+        // * the para_id is a parathread
+        // * and to assign collators to that para_id
 
         #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
+        Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);
 
-        assert_eq!(Pallet::<T>::boot_nodes(&para_id), boot_nodes);
+        assert_eq!(InFlightOrders::<T>::get(), BTreeSet::from_iter([para_id]));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
