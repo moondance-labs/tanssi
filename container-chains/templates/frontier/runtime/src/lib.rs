@@ -36,6 +36,7 @@ use {
     crate::precompiles::TemplatePrecompiles,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
+    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
@@ -89,7 +90,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -320,7 +320,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("frontier-template"),
     impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
-    spec_version: 500,
+    spec_version: 600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -826,7 +826,7 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
-impl tp_impl_tanssi_pallets_config::Config for Runtime {
+impl dp_impl_tanssi_pallets_config::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
     type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
     type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;

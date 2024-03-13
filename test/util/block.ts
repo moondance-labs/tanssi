@@ -40,14 +40,29 @@ export async function jumpToBlock(context: DevModeContext, targetBlockNumber: nu
     }
 }
 
-export async function waitSessions(context, paraApi: ApiPromise, count: number): Promise<string | null> {
+export async function waitSessions(
+    context,
+    paraApi: ApiPromise,
+    count: number,
+    earlyExit?: () => Promise<boolean> | boolean
+): Promise<string | null> {
     const session = (await paraApi.query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
-    return waitToSession(context, paraApi, session);
+    return waitToSession(context, paraApi, session, earlyExit);
 }
 
-export async function waitToSession(context, paraApi: ApiPromise, session: number): Promise<string | null> {
+export async function waitToSession(
+    context,
+    paraApi: ApiPromise,
+    session: number,
+    earlyExit?: () => Promise<boolean> | boolean
+): Promise<string | null> {
     for (;;) {
+        if (earlyExit && (await earlyExit())) {
+            // Exit early if the callback returns true
+            return null;
+        }
+
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         if (currentSession === session) {
             const signedBlock = await paraApi.rpc.chain.getBlock();
@@ -207,10 +222,10 @@ export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: 
 export function signAndSendAndInclude(tx, account): Promise<{ txHash; blockHash; status }> {
     return new Promise((resolve) => {
         tx.signAndSend(account, ({ status, txHash }) => {
-            if (status.isInBlock) {
+            if (status.isFinalized) {
                 resolve({
                     txHash,
-                    blockHash: status.asInBlock,
+                    blockHash: status.asFinalized,
                     status,
                 });
             }

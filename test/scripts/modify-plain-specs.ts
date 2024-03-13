@@ -29,7 +29,7 @@ yargs(hideBin(process.argv))
             process.stdout.write(`Done ✅\n`);
 
             plainSpec.bootNodes = [];
-            plainSpec.genesis.runtime.invulnerables.invulnerables = [ALICE_ADDRESS];
+            plainSpec.genesis.runtimeGenesis.config.invulnerables.invulnerables = [ALICE_ADDRESS];
 
             process.stdout.write(`Writing to: ${argv.outputPath} ...`);
             await fs.writeFile(argv.outputPath!, convertExponentials(JSONbig.stringify(plainSpec, null, 3)));

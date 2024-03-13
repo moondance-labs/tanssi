@@ -112,8 +112,6 @@ impl pallet_registrar::Config for Test {
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
-    type MaxBootNodes = ConstU32<10>;
-    type MaxBootNodeUrlLen = ConstU32<200>;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;

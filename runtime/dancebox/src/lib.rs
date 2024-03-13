@@ -218,7 +218,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 500,
+    spec_version: 600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -356,7 +356,7 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
+    type OnTimestampSet = dp_consensus::OnTimestampSet<
         <Self as pallet_author_inherent::Config>::SlotBeacon,
         ConstU64<{ SLOT_DURATION }>,
     >;
@@ -390,9 +390,9 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::NimbusLookUp;
+    type AccountLookup = dp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
-    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1002,8 +1002,6 @@ impl pallet_registrar::Config for Runtime {
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxBootNodes = MaxBootNodes;
-    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
@@ -2158,7 +2156,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
+    impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let parent_number = System::block_number();
