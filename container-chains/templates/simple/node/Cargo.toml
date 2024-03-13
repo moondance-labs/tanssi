@@ -16,11 +16,19 @@ async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 flume = { workspace = true }
 futures = { workspace = true }
+hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }
+
+# Dancekit
+dc-orchestrator-chain-interface = { workspace = true }
+dp-core = { workspace = true }
+orchestrator-chain-rpc-interface = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
@@ -90,6 +98,7 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

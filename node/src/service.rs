@@ -1207,10 +1207,10 @@ impl OrchestratorChainInProcessInterfaceBuilder {
 
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
-    full_client: Arc<Client>,
-    backend: Arc<FullBackend>,
-    sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
-    overseer_handle: Handle,
+    pub full_client: Arc<Client>,
+    pub backend: Arc<FullBackend>,
+    pub sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+    pub overseer_handle: Handle,
 }
 
 impl<Client> OrchestratorChainInProcessInterface<Client> {

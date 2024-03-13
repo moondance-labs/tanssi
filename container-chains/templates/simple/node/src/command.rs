@@ -22,17 +22,18 @@ use {
     },
     container_chain_template_simple_runtime::Block,
     cumulus_primitives_core::ParaId,
+    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
-    polkadot_service::IdentifyVariant as _,
+    polkadot_service::{IdentifyVariant as _, TaskManager},
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, SharedParams, SubstrateCli,
     },
     sc_service::config::{BasePath, PrometheusConfig},
-    sp_core::hexdisplay::HexDisplay,
+    sp_core::{hexdisplay::HexDisplay, H256},
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
 };
@@ -280,6 +281,47 @@ pub fn run() -> Result<()> {
                     cmd.run(partials.backend, config.chain_spec),
                     partials.task_manager,
                 ))
+            })
+        }
+        Some(Subcommand::RpcProvider(cmd)) => {
+            let runner = cli.create_runner(&cli.run.normalize())?;
+
+            runner.run_node_until_exit(|config| async move {
+                let client: Box<dyn OrchestratorChainInterface>;
+                let mut task_manager;
+
+                if cmd.orchestrator_endpoints.is_empty() {
+                    todo!("Start in process node")
+                } else {
+                    task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
+                        .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+
+                    client = orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                        cmd.orchestrator_endpoints.clone(),
+                        &mut task_manager,
+                        None,
+                    )
+                    .await
+                    .map(Box::new)
+                    .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+                };
+
+                // POC: Try to fetch some data through the interface.
+                let response = client
+                    .get_storage_by_key(
+                        H256::from_slice(&hex_literal::hex!(
+                            "f6abf6eb1d245e6ecb6e6b598b3a1f302af4cfc0d895abd38b2762e10481915a"
+                        )),
+                        &hex_literal::hex!(
+                            "f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
+                        ),
+                    )
+                    .await
+                    .expect("to fetch requested data");
+
+                println!("{response:?}");
+
+                Ok(task_manager)
             })
         }
         None => {
