@@ -79,13 +79,9 @@ fn invulnerable<T: Config + session::Config + pallet_balances::Config>(
     c: u32,
 ) -> (T::AccountId, T::CollatorId, <T as session::Config>::Keys) {
     let funded_user = create_funded_user::<T>("candidate", c, 100);
-    let collator_id = T::CollatorIdOf::convert(funded_user)
+    let collator_id = T::CollatorIdOf::convert(funded_user.clone())
         .expect("Converstion of account id of collator id failed.");
-    (
-        create_funded_user::<T>("candidate", c, 100),
-        collator_id,
-        keys::<T>(c),
-    )
+    (funded_user, collator_id, keys::<T>(c))
 }
 
 fn invulnerables<
