@@ -264,6 +264,7 @@ where
 pub struct SlotClaim<Pub> {
     author_pub: Pub,
     pre_digest: Vec<DigestItem>,
+    slot: Slot,
 }
 
 impl<Pub: Clone> SlotClaim<Pub> {
@@ -276,6 +277,7 @@ impl<Pub: Clone> SlotClaim<Pub> {
         SlotClaim {
             author_pub: author_pub.clone(),
             pre_digest: pre_digest_data::<P>(slot, author_pub),
+            slot,
         }
     }
 
@@ -287,6 +289,11 @@ impl<Pub: Clone> SlotClaim<Pub> {
     /// Get the pre-digest.
     pub fn pre_digest(&self) -> &Vec<DigestItem> {
         &self.pre_digest
+    }
+
+    /// Get the slot assigned to this claim.
+    pub fn slot(&self) -> Slot {
+        self.slot
     }
 }
 
