@@ -1674,6 +1674,7 @@ mod benches {
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
         [pallet_assets, ForeignAssets]

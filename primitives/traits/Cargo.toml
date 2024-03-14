@@ -14,6 +14,7 @@ frame-support = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
+serde = { workspace = true, optional = true }
 sp-std = { workspace = true }
 
 # Cumulus
@@ -27,6 +28,8 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-std/std",
+	"serde",
+	"serde/std",
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",

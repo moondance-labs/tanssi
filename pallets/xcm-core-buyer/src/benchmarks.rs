@@ -17,13 +17,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::InFlightOrders;
-use sp_std::collections::btree_set::BTreeSet;
 use {
-    crate::{Call, Config, Pallet},
-    frame_benchmarking::v2::*,
+    crate::{Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet},
+    frame_benchmarking::{account, v2::*},
+    frame_support::BoundedBTreeSet,
     frame_system::RawOrigin,
-    tp_traits::ParaId,
+    sp_std::{collections::btree_set::BTreeSet, vec},
+    tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
 #[benchmarks]
@@ -31,18 +31,33 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn force_buy_core(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let para_id = ParaId::from(3333);
+    fn force_buy_core(x: Linear<1, 99>) {
+        let para_id = ParaId::from(x + 1);
         assert_eq!(InFlightOrders::<T>::get(), BTreeSet::new());
+
+        // Mock `x` xcm messages already sent in this block
+        let bbs: BoundedBTreeSet<ParaId, _> = BTreeSet::from_iter((0..x).map(ParaId::from))
+            .try_into()
+            .expect("x is greater than MaxParathreads");
+        InFlightOrders::<T>::put(bbs);
+        assert!(!InFlightOrders::<T>::get().contains(&para_id));
 
         // TODO: need to add benchmark methods to config traits, to ensure that:
         // * the para_id is a parathread
         // * and to assign collators to that para_id
+        T::GetParathreadParams::set_parathread_params(
+            para_id,
+            Some(ParathreadParams {
+                slot_frequency: SlotFrequency { min: 10, max: 10 },
+            }),
+        );
+        let author: T::AccountId = account("account id", 0u32, 0u32);
+        T::GetAssignedCollators::set_parathread_collators(para_id, vec![author]);
 
         #[extrinsic_call]
         Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);
 
-        assert_eq!(InFlightOrders::<T>::get(), BTreeSet::from_iter([para_id]));
+        assert!(InFlightOrders::<T>::get().contains(&para_id));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

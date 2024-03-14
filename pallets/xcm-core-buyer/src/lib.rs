@@ -32,6 +32,8 @@ mod tests;
 mod benchmarks;
 pub mod weights;
 
+use sp_runtime::traits::TrailingZeroInput;
+use tp_traits::ParathreadParams;
 use {
     crate::weights::WeightInfo,
     dp_core::ParaId,
@@ -51,8 +53,6 @@ use {
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use sp_runtime::traits::TrailingZeroInput;
-    use tp_traits::ParathreadParams;
 
     /// Data preservers pallet.
     #[pallet::pallet]
@@ -74,9 +74,9 @@ pub mod pallet {
         type SelfParaId: Get<ParaId>;
         type MaxParathreads: Get<u32>;
         // TODO: do not abuse Get and Convert traits
-        type GetParathreadParams: Convert<ParaId, Option<ParathreadParams>>;
+        type GetParathreadParams: GetParathreadParams;
         // TODO: Self::CollatorId?
-        type GetAssignedCollators: Convert<ParaId, Vec<Self::AccountId>>;
+        type GetAssignedCollators: GetParathreadCollators<Self::AccountId>;
         /// A configuration for base priority of unsigned transactions.
         ///
         /// This is exposed so that it can be tuned for particular runtime, when
@@ -140,7 +140,7 @@ pub mod pallet {
         // state.
         #[pallet::call_index(0)]
         // TODO: weight
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(1, 1))]
+        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -153,7 +153,7 @@ pub mod pallet {
             // want collators to pay fees.
             ensure_none(origin)?;
 
-            let assigned_collators = T::GetAssignedCollators::convert(para_id);
+            let assigned_collators = T::GetAssignedCollators::get_parathread_collators(para_id);
             if assigned_collators.is_empty() {
                 return Err(Error::<T>::NoAssignedCollators.into());
             }
@@ -171,14 +171,14 @@ pub mod pallet {
         /// Buy core for para id as root. Does not require any proof, useful in tests.
         #[pallet::call_index(1)]
         // TODO: weight
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(1, 1))]
+        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
             // Check that at least one collator could buy a core for this parathread.
             // Even though this extrinsic is called `force`, it should only be possible
             // to use it when an equivalent non-force call can be created.
-            let assigned_collators = T::GetAssignedCollators::convert(para_id);
+            let assigned_collators = T::GetAssignedCollators::get_parathread_collators(para_id);
             if assigned_collators.is_empty() {
                 return Err(Error::<T>::NoAssignedCollators.into());
             }
@@ -241,7 +241,7 @@ pub mod pallet {
                 .map_err(|_| Error::<T>::InFlightLimitReached)?;
 
             // Check that the para id is a parathread
-            let parathread_params = T::GetParathreadParams::convert(para_id);
+            let parathread_params = T::GetParathreadParams::get_parathread_params(para_id);
             if parathread_params.is_none() {
                 return Err(Error::<T>::NotAParathread.into());
             }
@@ -406,4 +406,18 @@ pub trait GetPurchaseCoreCall {
     /// Get the encoded call to buy a core for this `para_id`, with this `max_amount`.
     /// Returns the encoded call and its estimated weight.
     fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight);
+}
+
+pub trait GetParathreadCollators<AccountId> {
+    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>);
+}
+
+pub trait GetParathreadParams {
+    fn get_parathread_params(para_id: ParaId) -> Option<ParathreadParams>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>);
 }

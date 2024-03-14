@@ -14,25 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::GetPurchaseCoreCall;
-use bounded_collections::ConstU128;
-use sp_runtime::traits::Convert;
-use sp_runtime::BuildStorage;
-use staging_xcm::latest::{
-    MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash,
-};
-use tp_traits::{ParathreadParams, SlotFrequency};
 use {
-    crate::{self as pallet_xcm_core_buyer},
+    crate::{self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall},
     dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU64, Everything},
+        traits::{ConstU128, ConstU64, Everything},
     },
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, IdentityLookup},
+    sp_runtime::{traits::Convert, BuildStorage},
     sp_std::collections::btree_map::BTreeMap,
+    staging_xcm::latest::{
+        MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash,
+    },
+    tp_traits::{ParathreadParams, SlotFrequency},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -136,12 +133,19 @@ impl mock_data::Config for Test {}
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub container_chain_collators: BTreeMap<ParaId, Vec<AccountId>>,
+    pub parathread_params: BTreeMap<ParaId, ParathreadParams>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
             container_chain_collators: BTreeMap::from_iter([(ParaId::from(3333), vec![BOB])]),
+            parathread_params: BTreeMap::from_iter([(
+                ParaId::from(3333),
+                ParathreadParams {
+                    slot_frequency: SlotFrequency { min: 10, max: 10 },
+                },
+            )]),
         }
     }
 }
@@ -160,8 +164,8 @@ impl pallet_xcm_core_buyer::Config for Test {
     type AccountIdToArray32 = AccountIdToArray32;
     type SelfParaId = ParachainId;
     type MaxParathreads = ConstU32<100>;
-    type GetParathreadParams = GetParathreadParams;
-    type GetAssignedCollators = GetAssignedCollators;
+    type GetParathreadParams = GetParathreadParamsImpl;
+    type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ();
 
     type WeightInfo = ();
@@ -178,29 +182,41 @@ impl SendXcm for DevNull {
     }
 }
 
-pub struct GetParathreadParams;
+pub struct GetParathreadParamsImpl;
 
-impl Convert<ParaId, Option<ParathreadParams>> for GetParathreadParams {
-    fn convert(para_id: ParaId) -> Option<ParathreadParams> {
-        if para_id == 3333.into() {
-            Some(ParathreadParams {
-                slot_frequency: SlotFrequency { min: 10, max: 10 },
-            })
-        } else {
-            None
-        }
+impl crate::GetParathreadParams for GetParathreadParamsImpl {
+    fn get_parathread_params(para_id: ParaId) -> Option<ParathreadParams> {
+        MockData::mock().parathread_params.get(&para_id).cloned()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>) {
+        MockData::mutate(|m| {
+            if let Some(parathread_params) = parathread_params {
+                m.parathread_params.insert(para_id, parathread_params);
+            } else {
+                m.parathread_params.remove(&para_id);
+            }
+        });
     }
 }
 
-pub struct GetAssignedCollators;
+pub struct GetAssignedCollatorsImpl;
 
-impl Convert<ParaId, Vec<AccountId>> for GetAssignedCollators {
-    fn convert(para_id: ParaId) -> Vec<AccountId> {
+impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
+    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId> {
         MockData::mock()
             .container_chain_collators
             .get(&para_id)
             .cloned()
             .unwrap_or_default()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
+        MockData::mutate(|m| {
+            m.container_chain_collators.insert(para_id, collators);
+        })
     }
 }
 
@@ -276,8 +292,7 @@ pub(crate) fn events() -> Vec<pallet_xcm_core_buyer::Event<Test>> {
         .collect::<Vec<_>>()
 }
 
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
+#[cfg(feature = "runtime-benchmarks")]
 pub fn new_test_ext() -> sp_io::TestExternalities {
     frame_system::GenesisConfig::<Test>::default()
         .build_storage()

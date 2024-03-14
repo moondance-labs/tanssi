@@ -14,40 +14,41 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::pallet_prelude::Get;
-use parity_scale_codec::Encode;
-use sp_runtime::traits::Convert;
-use sp_runtime::transaction_validity::TransactionPriority;
-use sp_std::vec::Vec;
 use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
-        Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
-        RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        Balance, Balances, CollatorAssignment, ForeignAssets, ForeignAssetsCreator,
+        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Registrar,
+        Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, System,
+        WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
+        pallet_prelude::Get,
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
+    pallet_xcm_core_buyer::{GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall},
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
+    parity_scale_codec::Encode,
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
-    sp_runtime::Perbill,
+    sp_runtime::{traits::Convert, transaction_validity::TransactionPriority, Perbill},
+    sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
-        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin,
+        FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
+        SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin,
     },
-    staging_xcm_executor::XcmExecutor,
+    staging_xcm_executor::{traits::JustTry, XcmExecutor},
+    tp_traits::ParathreadParams,
 };
 
 parameter_types! {
@@ -344,15 +345,6 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
-use crate::{CollatorAssignment, System};
-use pallet_xcm_core_buyer::GetPurchaseCoreCall;
-use tp_traits::ParathreadParams;
-use {
-    crate::ForeignAssets,
-    staging_xcm_builder::{FungiblesAdapter, NoChecking},
-    staging_xcm_executor::traits::JustTry,
-};
-
 /// Means for transacting foreign assets from different global consensus.
 pub type ForeignFungiblesTransactor = FungiblesAdapter<
     // Use this fungibles implementation:
@@ -514,8 +506,8 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type AccountIdToArray32 = AccountIdToArray32;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type MaxParathreads = ConstU32<100>;
-    type GetParathreadParams = GetParathreadParams;
-    type GetAssignedCollators = GetAssignedCollators;
+    type GetParathreadParams = GetParathreadParamsImpl;
+    type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ParasUnsignedPriority;
 
     type WeightInfo = ();
@@ -529,18 +521,27 @@ impl Get<u32> for GetBlockNumber {
     }
 }
 
-pub struct GetParathreadParams;
+pub struct GetParathreadParamsImpl;
 
-impl Convert<ParaId, Option<ParathreadParams>> for GetParathreadParams {
-    fn convert(para_id: ParaId) -> Option<ParathreadParams> {
+impl GetParathreadParams for GetParathreadParamsImpl {
+    fn get_parathread_params(para_id: ParaId) -> Option<ParathreadParams> {
         Registrar::parathread_params(para_id)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>) {
+        if let Some(parathread_params) = parathread_params {
+            pallet_registrar::ParathreadParams::<Runtime>::insert(para_id, parathread_params);
+        } else {
+            pallet_registrar::ParathreadParams::<Runtime>::remove(para_id);
+        }
     }
 }
 
-pub struct GetAssignedCollators;
+pub struct GetAssignedCollatorsImpl;
 
-impl Convert<ParaId, Vec<AccountId>> for GetAssignedCollators {
-    fn convert(para_id: ParaId) -> Vec<AccountId> {
+impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
+    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId> {
         // We do not need to check if the para_id is a valid parathread,
         // because that is already being checked by `GetParathreadParams`.
         CollatorAssignment::collator_container_chain()
@@ -548,6 +549,12 @@ impl Convert<ParaId, Vec<AccountId>> for GetAssignedCollators {
             .get(&para_id)
             .cloned()
             .unwrap_or_default()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
+        use tp_traits::GetContainerChainAuthor;
+        CollatorAssignment::set_authors_for_para_id(para_id, collators);
     }
 }
 
