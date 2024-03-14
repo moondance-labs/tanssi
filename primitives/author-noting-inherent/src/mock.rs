@@ -62,8 +62,9 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         &self,
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
-        let slot_number =
-            InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
+        let slot_number = InherentType::from(
+            u64::from(self.slots_per_para_block) * u64::from(self.current_para_block),
+        );
 
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
@@ -144,8 +145,9 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
 
 impl MockAuthorNotingInherentDataProvider {
     pub fn get_key_values(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
-        let slot_number =
-            InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
+        let slot_number = InherentType::from(
+            u64::from(self.slots_per_para_block) * u64::from(self.current_para_block),
+        );
 
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 

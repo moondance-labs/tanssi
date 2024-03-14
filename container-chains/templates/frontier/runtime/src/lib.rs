@@ -537,7 +537,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 pub struct ParaSlotProvider;
 impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     fn get() -> (Slot, SlotDuration) {
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
     }
 }
@@ -1028,7 +1028,7 @@ impl_runtime_apis! {
                             dispatch_info.weight
                         );
                     let tip_per_gas = if effective_gas > 0 {
-                        tip.saturating_div(effective_gas as u128)
+                        tip.saturating_div(u128::from(effective_gas))
                     } else {
                         0
                     };
