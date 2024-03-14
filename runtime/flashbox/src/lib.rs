@@ -100,6 +100,9 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
+/// CollatorId type expected by this runtime.
+pub type CollatorId = AccountId;
+
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
     frame_system::CheckNonZeroSender<Runtime>,
@@ -536,8 +539,8 @@ impl parachain_info::Config for Runtime {}
 pub struct CollatorsFromInvulnerables;
 
 /// Play the role of the session manager.
-impl SessionManager<AccountId> for CollatorsFromInvulnerables {
-    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+impl SessionManager<CollatorId> for CollatorsFromInvulnerables {
+    fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
         log::info!(
             "assembling new collators for new session {} at #{:?}",
             index,
@@ -583,11 +586,11 @@ impl pallet_session::Config for Runtime {
 
 pub struct RemoveInvulnerablesImpl;
 
-impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        collators: &mut Vec<CollatorId>,
         num_invulnerables: usize,
-    ) -> Vec<AccountId> {
+    ) -> Vec<CollatorId> {
         if num_invulnerables == 0 {
             return vec![];
         }
@@ -775,7 +778,7 @@ impl pallet_invulnerables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
-    type CollatorId = <Self as frame_system::Config>::AccountId;
+    type CollatorId = CollatorId;
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
     type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
