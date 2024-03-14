@@ -32,8 +32,6 @@ mod tests;
 mod benchmarks;
 pub mod weights;
 
-use sp_runtime::traits::TrailingZeroInput;
-use tp_traits::ParathreadParams;
 use {
     crate::weights::WeightInfo,
     dp_core::ParaId,
@@ -42,12 +40,12 @@ use {
         traits::fungible::{Balanced, Inspect},
     },
     frame_system::pallet_prelude::*,
-    sp_io::hashing::blake2_256,
     sp_runtime::traits::{Convert, Get},
     sp_std::vec,
     sp_std::vec::Vec,
     staging_xcm::prelude::*,
     staging_xcm::v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Xcm},
+    tp_traits::ParathreadParams,
 };
 
 #[frame_support::pallet]
@@ -65,17 +63,13 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
-        type XcmBuyExecutionDot: Get<u128>;
         type XcmSender: SendXcm;
         type GetPurchaseCoreCall: GetPurchaseCoreCall;
         type GetBlockNumber: Get<u32>;
-        // TODO: use AccountIdConversion trait here?
-        type AccountIdToArray32: Convert<Self::AccountId, [u8; 32]>;
+        type GetParathreadAccountId: Convert<ParaId, [u8; 32]>;
         type SelfParaId: Get<ParaId>;
         type MaxParathreads: Get<u32>;
-        // TODO: do not abuse Get and Convert traits
         type GetParathreadParams: GetParathreadParams;
-        // TODO: Self::CollatorId?
         type GetAssignedCollators: GetParathreadCollators<Self::AccountId>;
         /// A configuration for base priority of unsigned transactions.
         ///
@@ -110,6 +104,9 @@ pub mod pallet {
         NoAssignedCollators,
         /// This collator is not assigned to this parathread
         CollatorNotAssigned,
+        /// The `XcmWeights` storage has not been set. This must have been set by root with the
+        /// value of the relay chain xcm call weight and extrinsic weight
+        XcmWeightStorageNotSet,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
@@ -128,6 +125,20 @@ pub mod pallet {
     //pub type InFlightOrders<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
     pub type InFlightOrders<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxParathreads>, ValueQuery>;
+
+    /// This must be set by root with the value of the relay chain xcm call weight and extrinsic
+    /// weight limit. This is a storage item because relay chain weights can change, so we need to
+    /// be able to adjust them without doing a runtime upgrade.
+    #[pallet::storage]
+    pub type XcmWeights<T: Config> = StorageValue<_, XcmWeightsTy<T>, OptionQuery>;
+
+    #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct XcmWeightsTy<T> {
+        pub buy_execution_cost: u128,
+        pub weight_at_most: Weight,
+        pub _phantom: PhantomData<T>,
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -170,7 +181,6 @@ pub mod pallet {
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
         #[pallet::call_index(1)]
-        // TODO: weight
         #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
@@ -185,35 +195,33 @@ pub mod pallet {
 
             Self::on_collator_instantaneous_core_requested(para_id)
         }
+
+        #[pallet::call_index(2)]
+        // TODO: weight
+        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
+        pub fn set_xcm_weights(
+            origin: OriginFor<T>,
+            xcm_weights: Option<XcmWeightsTy<T>>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            if let Some(xcm_weights) = xcm_weights {
+                XcmWeights::<T>::put(xcm_weights);
+            } else {
+                XcmWeights::<T>::kill();
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
-        /// Derive a derivative account ID from the paraId to use as a DOT tank in the relay chain.
-        /// This is not the actual address, the actual address can be computed as a derivative of
-        /// the tanssi sovereign account and this address.
-        pub fn relay_parachain_tank_id(para_id: ParaId) -> T::AccountId {
-            // TODO: we could use the services_payment parachain tank account here, it could be
-            // easier to remember that it is the same account, but DANCE tokens are stored in
-            // tanssi and DOT tokens are stored in the relay chain
-            // TODO: and we could go a step further and set the tank address in tanssi
-            // equal to the relay chain, but not sure if that's a good idea
-            let entropy = (b"modlpy/buycoretim", para_id).using_encoded(blake2_256);
-            Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
-                .expect("infinite length input; no invalid inputs for type; qed")
-        }
-
         /// Returns the interior multilocation for this container chain para id. This is a relative
         /// multilocation that can be used in the `descend_origin` XCM opcode.
         pub fn interior_multilocation(para_id: ParaId) -> InteriorMultiLocation {
-            /*
-            // Not using this method in case another pallet also wants to use a derived account for
-            // a different purpose.
-            let interior_multilocation =
-                InteriorMultiLocation::X1(Junction::Parachain(para_id.into()));
-             */
-            let container_chain_account = Self::relay_parachain_tank_id(para_id);
+            let container_chain_account = T::GetParathreadAccountId::convert(para_id);
             let account_junction = Junction::AccountId32 {
-                id: T::AccountIdToArray32::convert(container_chain_account),
+                id: container_chain_account,
                 network: None,
             };
 
@@ -246,8 +254,12 @@ pub mod pallet {
                 return Err(Error::<T>::NotAParathread.into());
             }
 
-            // TODO: the origin should have rights to create blocks for para_id
-            let withdraw_amount = T::XcmBuyExecutionDot::get();
+            // TODO: also compare the latest slot from pallet_author_noting with parathread_params.slot_frequency
+
+            let xcm_weights_storage =
+                XcmWeights::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;
+
+            let withdraw_amount = xcm_weights_storage.buy_execution_cost;
 
             // Send xcm to the relay
             // Use a derivative account from the sovereign account based on the paraId
@@ -261,10 +273,11 @@ pub mod pallet {
             // TODO: when coretime is implemented, buy core there instead of buying on-demand cores
             let origin = OriginKind::SovereignAccount;
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
-            // It should be defined in a storage item somewhere, contrallable by the container chain
+            // It should be defined in a storage item somewhere, controllable by the container chain
             // manager.
             let max_amount = u128::MAX;
-            let (call, weight_at_most) = T::GetPurchaseCoreCall::get_encoded(max_amount, para_id);
+            let call = T::GetPurchaseCoreCall::get_encoded(max_amount, para_id);
+            let weight_at_most = xcm_weights_storage.weight_at_most;
 
             // Assumption: derived account already has DOT
             // The balance should be enough to cover
@@ -325,7 +338,7 @@ pub mod pallet {
 
         fn on_finalize(_: BlockNumberFor<T>) {
             // We clear this storage item because we only need it to prevent collators from buying
-            // more than one core in the same relay block
+            // more than one core for the same parathread in the same relay block
             // TODO: with async backing, it is possible that two tanssi blocks are included in the
             // same relay block, so this kill is not correct, should only kill the storage if the
             // relay block number has changed
@@ -405,7 +418,7 @@ pub mod pallet {
 pub trait GetPurchaseCoreCall {
     /// Get the encoded call to buy a core for this `para_id`, with this `max_amount`.
     /// Returns the encoded call and its estimated weight.
-    fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight);
+    fn get_encoded(max_amount: u128, para_id: ParaId) -> Vec<u8>;
 }
 
 pub trait GetParathreadCollators<AccountId> {

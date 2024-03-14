@@ -42,9 +42,9 @@ mod benchmarks {
         InFlightOrders::<T>::put(bbs);
         assert!(!InFlightOrders::<T>::get().contains(&para_id));
 
-        // TODO: need to add benchmark methods to config traits, to ensure that:
+        // For the extrinsic to succeed, we need to ensure that:
         // * the para_id is a parathread
-        // * and to assign collators to that para_id
+        // * it has assigned collators
         T::GetParathreadParams::set_parathread_params(
             para_id,
             Some(ParathreadParams {

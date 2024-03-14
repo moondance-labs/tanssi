@@ -131,3 +131,21 @@ fn cannot_force_buy_para_id_with_no_collators() {
             );
         });
 }
+
+#[test]
+fn cannot_buy_if_no_weights_storage_set() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            assert_ok!(XcmCoreBuyer::set_xcm_weights(RuntimeOrigin::root(), None));
+
+            let para_id = 3333.into();
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::XcmWeightStorageNotSet
+            );
+        });
+}

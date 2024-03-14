@@ -15,14 +15,18 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall},
+    crate::{
+        self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall, XcmWeightsTy,
+    },
     dp_core::ParaId,
     frame_support::{
+        assert_ok,
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU128, ConstU64, Everything},
+        traits::{ConstU64, Everything},
     },
     sp_core::H256,
+    sp_io::TestExternalities,
     sp_runtime::traits::{BlakeTwo256, IdentityLookup},
     sp_runtime::{traits::Convert, BuildStorage},
     sp_std::collections::btree_map::BTreeMap,
@@ -157,11 +161,10 @@ parameter_types! {
 impl pallet_xcm_core_buyer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
-    type XcmBuyExecutionDot = ConstU128<1_000>;
     type XcmSender = DevNull;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = ();
-    type AccountIdToArray32 = AccountIdToArray32;
+    type GetParathreadAccountId = ParaIdToAccount32;
     type SelfParaId = ParachainId;
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
@@ -228,13 +231,13 @@ impl Get<u32> for GetBlockNumber {
     }
 }
 
-pub struct AccountIdToArray32;
+pub struct ParaIdToAccount32;
 
-impl Convert<u64, [u8; 32]> for AccountIdToArray32 {
-    fn convert(a: u64) -> [u8; 32] {
+impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
+    fn convert(para_id: ParaId) -> [u8; 32] {
         let mut res = [0; 32];
 
-        res[..8].copy_from_slice(&a.to_le_bytes());
+        res[..4].copy_from_slice(&u32::from(para_id).to_le_bytes());
 
         res
     }
@@ -243,14 +246,13 @@ impl Convert<u64, [u8; 32]> for AccountIdToArray32 {
 pub struct EncodedCallToBuyCore;
 
 impl GetPurchaseCoreCall for EncodedCallToBuyCore {
-    fn get_encoded(_max_amount: u128, _para_id: ParaId) -> (Vec<u8>, Weight) {
-        let weight = Weight::from_parts(1_000_000_000, 100_000);
-
-        let encoded_call = vec![];
-
-        (encoded_call, weight)
+    fn get_encoded(_max_amount: u128, _para_id: ParaId) -> Vec<u8> {
+        vec![]
     }
 }
+
+pub const BUY_EXECUTION_COST: u128 = 50_000_000;
+pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
 #[derive(Default)]
 pub struct ExtBuilder {
@@ -274,7 +276,20 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        let mut ext: TestExternalities = t.into();
+
+        ext.execute_with(|| {
+            assert_ok!(XcmCoreBuyer::set_xcm_weights(
+                RuntimeOrigin::root(),
+                Some(XcmWeightsTy {
+                    buy_execution_cost: BUY_EXECUTION_COST,
+                    weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+                    _phantom: PhantomData,
+                }),
+            ));
+        });
+
+        ext
     }
 }
 
@@ -294,10 +309,23 @@ pub(crate) fn events() -> Vec<pallet_xcm_core_buyer::Event<Test>> {
 
 #[cfg(feature = "runtime-benchmarks")]
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::<Test>::default()
+    let mut ext: TestExternalities = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()
-        .into()
+        .into();
+
+    ext.execute_with(|| {
+        assert_ok!(XcmCoreBuyer::set_xcm_weights(
+            RuntimeOrigin::root(),
+            Some(XcmWeightsTy {
+                buy_execution_cost: BUY_EXECUTION_COST,
+                weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+                _phantom: PhantomData,
+            }),
+        ));
+    });
+
+    ext
 }
 
 pub fn run_to_block(n: u64) {

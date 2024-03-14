@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_runtime::traits::AccountIdConversion;
 use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
@@ -468,42 +469,10 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
 
-    // TODO: calculate weight and use rococo weight to fee
-    // /home/tomasz/.cargo/git/checkouts/polkadot-sdk-df3be1d6828443a1/77c5b55/polkadot/runtime/rococo/src/xcm_config.rs
-    /*
-       /// Returns weight of `weight_of_initiate_reserve_withdraw` call.
-       fn weight_of_initiate_reserve_withdraw() -> Weight {
-           let dest = MultiLocation::parent();
-
-           // We can use whatever asset here
-           let asset = MultiLocation::parent();
-
-           // Construct MultiAsset
-           let fee = MultiAsset {
-               id: Concrete(asset.clone()),
-               fun: Fungible(0),
-           };
-
-           let xcm: Xcm<()> = Xcm(vec![
-               WithdrawAsset(fee.into()),
-               InitiateReserveWithdraw {
-                   assets: MultiAssetFilter::Wild(All),
-                   reserve: dest.clone(),
-                   xcm: Xcm(vec![]),
-               },
-           ]);
-           T::Weigher::weight(&mut xcm.into()).map_or(Weight::max_value(), |w| {
-               T::BaseXcmWeight::get().saturating_add(w)
-           })
-       }
-
-    */
-    // TODO: this depends on the relay
-    type XcmBuyExecutionDot = XcmBuyExecutionDotRococo;
     type XcmSender = XcmRouter;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
-    type AccountIdToArray32 = AccountIdToArray32;
+    type GetParathreadAccountId = ParaIdToAccount32;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
@@ -558,24 +527,26 @@ impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
     }
 }
 
-pub struct AccountIdToArray32;
+pub struct ParaIdToAccount32;
 
-impl Convert<AccountId, [u8; 32]> for AccountIdToArray32 {
-    fn convert(a: AccountId) -> [u8; 32] {
-        a.into()
+impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
+    fn convert(para_id: ParaId) -> [u8; 32] {
+        // Derive a 32 byte account id for a parathread. Note that this is not the address of
+        // the relay chain parathread tank, but that address is derived from this.
+        let account: AccountId = para_id.into_account_truncating();
+
+        account.into()
     }
 }
 
 pub struct EncodedCallToBuyCore;
 
 impl GetPurchaseCoreCall for EncodedCallToBuyCore {
-    fn get_encoded(max_amount: u128, para_id: ParaId) -> (Vec<u8>, Weight) {
+    fn get_encoded(max_amount: u128, para_id: ParaId) -> Vec<u8> {
         // TODO: this should use westend_runtime, but the polkadot 1.6.0 release does not have this pallet yet...
         // TODO: this should depend on the relay chain defined in the chain spec, can we do that?
         // probably the best solution would be to default to westend and use a storage item to override it
         // so that we can set rococo for tests
-        // TODO: return weight of parachains_assigner_on_demand::Call::place_order_allow_death
-        let weight = Weight::from_parts(1_000_000_000, 100_000);
 
         // TODO: use place_order_keep_alive?
         let call = rococo_calls::RelayCall::OnDemandAssignmentProvider(
@@ -585,7 +556,7 @@ impl GetPurchaseCoreCall for EncodedCallToBuyCore {
             },
         );
 
-        (call.encode(), weight)
+        call.encode()
     }
 }
 

@@ -14,21 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::common::xcm::mocknets::{DanceboxSender, RococoSender};
-use crate::common::xcm::*;
-use crate::common::{dummy_boot_nodes, empty_genesis_data, run_to_session};
-use dancebox_runtime::{DataPreservers, Registrar, XcmCoreBuyer};
-use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
-use sp_runtime::AccountId32;
-use tp_traits::{ParaId, SlotFrequency};
-use xcm_emulator::RelayChain;
 use {
-    crate::common::xcm::mocknets::{
-        DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet,
+    crate::common::{
+        dummy_boot_nodes, empty_genesis_data, run_to_session,
+        xcm::mocknets::{
+            DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+            RococoRelayPallet, RococoSender,
+        },
+        xcm::*,
     },
+    core::marker::PhantomData,
+    cumulus_primitives_core::Weight,
+    dancebox_runtime::{DataPreservers, Registrar, XcmCoreBuyer},
     frame_support::assert_ok,
+    pallet_xcm_core_buyer::XcmWeightsTy,
+    polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
+    sp_runtime::AccountId32,
     staging_xcm_executor::traits::ConvertLocation,
-    xcm_emulator::Chain,
+    tp_traits::{ParaId, SlotFrequency},
+    xcm_emulator::{Chain, RelayChain},
 };
 
 const PARATHREAD_ID: u32 = 3333;
@@ -37,6 +41,7 @@ const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded.
 const BUY_EXECUTION_REFUND: u128 = 5115980;
+const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
 #[test]
 fn constants() {
@@ -116,6 +121,14 @@ fn do_test(tank_account_balance: u128) {
     // Send XCM message from Dancebox pallet XcmCoreBuyer
     Dancebox::execute_with(|| {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
+        assert_ok!(XcmCoreBuyer::set_xcm_weights(
+            root_origin.clone(),
+            Some(XcmWeightsTy {
+                buy_execution_cost: BUY_EXECUTION_COST,
+                weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+                _phantom: PhantomData,
+            }),
+        ));
         assert_ok!(XcmCoreBuyer::force_buy_core(
             root_origin,
             PARATHREAD_ID.into()
