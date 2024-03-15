@@ -163,9 +163,11 @@ impl<T: Config> Candidates<T> {
                 stake: new_stake.0,
             };
 
-            let pos = list
-                .binary_search(&entry)
-                .expect_err("Candidate should be present at most once in the list.");
+            // Candidate should not appear in the list, we're instead searching where
+            // to insert it.
+            let Err(pos) = list.binary_search(&entry) else {
+                return Err(Error::<T>::InconsistentState);
+            };
 
             if pos >= T::EligibleCandidatesBufferSize::get() as usize {
                 None
@@ -176,7 +178,8 @@ impl<T: Config> Candidates<T> {
                         list.insert(pos, entry.clone());
                         list.truncate(T::EligibleCandidatesBufferSize::get() as usize)
                     })
-                    .expect("list is truncated using the vec bound");
+                    // This should not occur as we truncate the list above.
+                    .ok_or(Error::<T>::InconsistentState)?;
 
                 Some(pos as u32)
             }

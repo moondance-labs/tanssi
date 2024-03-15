@@ -21,6 +21,7 @@ import type {
     FlashboxRuntimeOriginCaller,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeRuntime,
+    FlashboxRuntimeRuntimeFreezeReason,
     FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
     FlashboxRuntimeStreamPaymentAssetId,
@@ -64,7 +65,8 @@ import type {
     PalletBalancesCall,
     PalletBalancesError,
     PalletBalancesEvent,
-    PalletBalancesIdAmount,
+    PalletBalancesIdAmountRuntimeFreezeReason,
+    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
@@ -121,6 +123,7 @@ import type {
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentError,
     PalletStreamPaymentEvent,
+    PalletStreamPaymentFreezeReason,
     PalletStreamPaymentHoldReason,
     PalletStreamPaymentParty,
     PalletStreamPaymentStream,
@@ -198,6 +201,7 @@ declare module "@polkadot/types/types/registry" {
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;
         FlashboxRuntimeProxyType: FlashboxRuntimeProxyType;
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
+        FlashboxRuntimeRuntimeFreezeReason: FlashboxRuntimeRuntimeFreezeReason;
         FlashboxRuntimeRuntimeHoldReason: FlashboxRuntimeRuntimeHoldReason;
         FlashboxRuntimeSessionKeys: FlashboxRuntimeSessionKeys;
         FlashboxRuntimeStreamPaymentAssetId: FlashboxRuntimeStreamPaymentAssetId;
@@ -241,7 +245,8 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
         PalletBalancesEvent: PalletBalancesEvent;
-        PalletBalancesIdAmount: PalletBalancesIdAmount;
+        PalletBalancesIdAmountRuntimeFreezeReason: PalletBalancesIdAmountRuntimeFreezeReason;
+        PalletBalancesIdAmountRuntimeHoldReason: PalletBalancesIdAmountRuntimeHoldReason;
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
@@ -298,6 +303,7 @@ declare module "@polkadot/types/types/registry" {
         PalletStreamPaymentDepositChange: PalletStreamPaymentDepositChange;
         PalletStreamPaymentError: PalletStreamPaymentError;
         PalletStreamPaymentEvent: PalletStreamPaymentEvent;
+        PalletStreamPaymentFreezeReason: PalletStreamPaymentFreezeReason;
         PalletStreamPaymentHoldReason: PalletStreamPaymentHoldReason;
         PalletStreamPaymentParty: PalletStreamPaymentParty;
         PalletStreamPaymentStream: PalletStreamPaymentStream;

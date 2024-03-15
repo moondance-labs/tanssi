@@ -67,7 +67,7 @@ impl NodeBuilderConfig for NodeConfig {
     type ParachainExecutor = ParachainExecutor;
 }
 
-thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
 
 /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
 /// Each call will increment timestamp by slot_duration making Aura think time has passed.
@@ -261,7 +261,7 @@ pub async fn start_dev_node(
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
                 let slot_duration = container_chain_template_simple_runtime::SLOT_DURATION;
 
-                let mut timestamp: u64 = 0u64;
+                let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
                     timestamp = x.clone().take();
                 });

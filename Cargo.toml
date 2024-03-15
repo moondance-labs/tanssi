@@ -18,11 +18,24 @@ authors = [ "Moondance Labs" ]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.lints.clippy]
+# Deny main lint groups
 complexity = { level = "deny", priority = 1 }
 correctness = { level = "deny", priority = 1 }
+suspicious = { level = "deny", priority = 1 }
+
+# Add some additional lints
+as_underscore = { level = "warn", priority = 1 }
+cast_lossless = { level = "warn", priority = 1 }
+cast_possible_wrap = { level = "warn", priority = 1 }
+cast_precision_loss = { level = "warn", priority = 1 }
+cast_sign_loss = { level = "warn", priority = 1 }
+debug_assert_with_mut_call = { level = "warn", priority = 1 }
+fn_to_numeric_cast_any = { level = "warn", priority = 1 }
+invalid_upcast_comparisons = { level = "warn", priority = 1 }
+
+# Allow annoying lints and false positives
 erasing_op = { level = "allow", priority = 2 }
 identity_op = { level = "allow", priority = 2 }
-suspicious = { level = "deny", priority = 1 }
 too-many-arguments = { level = "allow", priority = 2 }
 type_complexity = { level = "allow", priority = 2 }
 
@@ -59,10 +72,8 @@ node-common = { path = "client/node-common" }
 runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
-tp-impl-tanssi-pallets-config = { path = "primitives/impl-tanssi-pallets-config", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
@@ -71,6 +82,9 @@ ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dan
 ccp-xcm = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 dp-chain-state-snapshot = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 dp-collator-assignment = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+dp-consensus = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+dp-impl-tanssi-pallets-config = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+
 dp-core = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 pallet-xcm-executor-utils = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }

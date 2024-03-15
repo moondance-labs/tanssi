@@ -42,9 +42,9 @@ use {
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHeader,
     },
-    futures::StreamExt,
+    futures::{Stream, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -70,7 +70,7 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{sync::Arc, time::Duration},
+    std::{pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
@@ -128,7 +128,7 @@ pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =
     TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
-thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
 
 /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
 /// Each call will increment timestamp by slot_duration making Aura think time has passed.
@@ -1042,7 +1042,7 @@ pub fn start_dev_node(
 
                 let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client.clone()).expect("Slot duration should be set");
 
-                let mut timestamp: u64 = 0u64;
+                let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
                     timestamp = x.clone().take();
                 });
@@ -1273,5 +1273,23 @@ where
 
     fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         Ok(self.overseer_handle.clone())
+    }
+
+    async fn import_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
+    }
+
+    async fn new_best_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
+    }
+
+    async fn finality_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!();
     }
 }

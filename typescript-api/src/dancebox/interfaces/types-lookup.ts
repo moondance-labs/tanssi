@@ -4887,7 +4887,13 @@ declare module "@polkadot/types/lookup" {
         readonly isAlreadyInvulnerable: boolean;
         readonly isNotInvulnerable: boolean;
         readonly isNoKeysRegistered: boolean;
-        readonly type: "TooManyInvulnerables" | "AlreadyInvulnerable" | "NotInvulnerable" | "NoKeysRegistered";
+        readonly isUnableToDeriveCollatorId: boolean;
+        readonly type:
+            | "TooManyInvulnerables"
+            | "AlreadyInvulnerable"
+            | "NotInvulnerable"
+            | "NoKeysRegistered"
+            | "UnableToDeriveCollatorId";
     }
 
     /** @name SpCoreCryptoKeyTypeId (430) */

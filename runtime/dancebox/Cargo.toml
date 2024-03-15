@@ -87,9 +87,9 @@ sp-std = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-trie = { workspace = true }
 
+dp-consensus = { workspace = true }
 sp-version = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
 # Polkadot
@@ -161,6 +161,7 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"cumulus-test-relay-sproof-builder/std",
+	"dp-consensus/std",
 	"dp-core/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
@@ -248,7 +249,6 @@ std = [
 	"staging-xcm/std",
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
-	"tp-consensus/std",
 	"tp-traits/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
@@ -268,6 +268,7 @@ runtime-benchmarks = [
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
+	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -313,7 +314,6 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
-	"tp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",

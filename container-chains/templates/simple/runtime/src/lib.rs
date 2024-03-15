@@ -34,6 +34,7 @@ pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
+    dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -72,7 +73,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 
 pub mod xcm_config;
@@ -371,7 +371,7 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = [u8; 8];
+    type FreezeIdentifier = RuntimeFreezeReason;
     type MaxFreezes = ConstU32<0>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
@@ -427,7 +427,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 pub struct ParaSlotProvider;
 impl sp_core::Get<(Slot, SlotDuration)> for ParaSlotProvider {
     fn get() -> (Slot, SlotDuration) {
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
     }
 }
@@ -610,7 +610,7 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
-impl tp_impl_tanssi_pallets_config::Config for Runtime {
+impl dp_impl_tanssi_pallets_config::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
     type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
     type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;

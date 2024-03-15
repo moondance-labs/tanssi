@@ -18,6 +18,7 @@
 
 use {
     cumulus_primitives_core::ParaId,
+    dp_consensus::TanssiAuthorityAssignmentApi,
     nimbus_primitives::{
         CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId, NimbusPair, NimbusSignature,
     },
@@ -36,7 +37,6 @@ use {
     },
     sp_timestamp::TimestampInherentData,
     std::{marker::PhantomData, sync::Arc},
-    tp_consensus::TanssiAuthorityAssignmentApi,
 };
 /// Consensus data provider for Orchestrator Manual Seal Aura.
 pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {

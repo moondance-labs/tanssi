@@ -95,7 +95,7 @@ struct MockApi;
 
 // This is our MockAPi impl. We need these to test first_eligible_key
 sp_api::mock_impl_runtime_apis! {
-    impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for MockApi {
+    impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for MockApi {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             // We always return Alice if paraId is 1000

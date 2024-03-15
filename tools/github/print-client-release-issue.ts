@@ -26,7 +26,8 @@ async function main() {
   - [ ] Start the github action Publish Binary Draft with ${previousVersion} => ${newVersion}
   (master branch).
   - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
-  - [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx
+  - [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${previousVersion} (mster branch)
+  - [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx built from the optimized binary and pushed to docker
   (matching your ${newVersion} tag) and increase the config version + 1.
   - [ ] Test the new client on stagenet-dancebox.
   - [ ] Publish the client release draft.
