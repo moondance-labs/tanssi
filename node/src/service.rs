@@ -839,7 +839,6 @@ fn start_consensus_container(
         para_backend: backend,
         code_hash_provider,
         end_lookahead_receiver: None,
-        //collation_request_receiver: None,
     };
 
     let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
@@ -977,10 +976,8 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         end_lookahead_receiver,
-        //collation_request_receiver: None,
     };
 
-    //let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
     let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura", None, fut);
 }
