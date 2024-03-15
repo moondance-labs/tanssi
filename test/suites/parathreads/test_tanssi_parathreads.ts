@@ -60,12 +60,7 @@ describeSuite({
             expect(header2001.number.toNumber()).to.be.equal(0);
 
             // Initialize list of all collators, this should match the names from build-spec.sh script
-            allCollators = [
-                "Collator-01",
-                "Collator-02",
-                "Collator-03",
-                "Collator-04",
-            ];
+            allCollators = ["Collator-01", "Collator-02", "Collator-03", "Collator-04"];
             // Initialize reverse map of collator key to collator name
             collatorName = createCollatorKeyToNameMap(paraApi, allCollators);
             console.log(collatorName);
