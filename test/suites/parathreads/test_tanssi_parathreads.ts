@@ -258,7 +258,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Check block frequency of parathreads",
-            timeout: 240000,
+            timeout: 120000,
             test: async function () {
                 // Wait 1 session so that parathreads have produced at least a few blocks each
                 await waitSessions(context, paraApi, 2);
