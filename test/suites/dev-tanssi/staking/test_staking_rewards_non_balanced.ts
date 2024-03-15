@@ -63,7 +63,7 @@ describeSuite({
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const expectedOrchestratorReward = chainRewards - chainRewards * 2n / 3n;
+                const expectedOrchestratorReward = chainRewards - (chainRewards * 2n) / 3n;
                 const reward = await fetchRewardAuthorOrchestrator(events);
                 const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
                 const stakingRewardedDelegators = await filterRewardStakingDelegators(
