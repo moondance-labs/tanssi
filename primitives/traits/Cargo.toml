@@ -27,9 +27,9 @@ std = [
 	"frame-support/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"sp-std/std",
 	"serde",
 	"serde/std",
+	"sp-std/std",
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
