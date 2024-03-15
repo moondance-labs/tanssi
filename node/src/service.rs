@@ -1042,7 +1042,7 @@ pub fn start_dev_node(
 
                 let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client.clone()).expect("Slot duration should be set");
 
-                let mut timestamp: u64 = 0u64;
+                let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
                     timestamp = x.clone().take();
                 });

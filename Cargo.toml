@@ -18,11 +18,24 @@ authors = [ "Moondance Labs" ]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.lints.clippy]
+# Deny main lint groups
 complexity = { level = "deny", priority = 1 }
 correctness = { level = "deny", priority = 1 }
+suspicious = { level = "deny", priority = 1 }
+
+# Add some additional lints
+as_underscore = { level = "warn", priority = 1 }
+cast_lossless = { level = "warn", priority = 1 }
+cast_possible_wrap = { level = "warn", priority = 1 }
+cast_precision_loss = { level = "warn", priority = 1 }
+cast_sign_loss = { level = "warn", priority = 1 }
+debug_assert_with_mut_call = { level = "warn", priority = 1 }
+fn_to_numeric_cast_any = { level = "warn", priority = 1 }
+invalid_upcast_comparisons = { level = "warn", priority = 1 }
+
+# Allow annoying lints and false positives
 erasing_op = { level = "allow", priority = 2 }
 identity_op = { level = "allow", priority = 2 }
-suspicious = { level = "deny", priority = 1 }
 too-many-arguments = { level = "allow", priority = 2 }
 type_complexity = { level = "allow", priority = 2 }
 

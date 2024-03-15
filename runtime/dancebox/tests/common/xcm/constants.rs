@@ -319,7 +319,7 @@ pub mod frontier_template {
             // We should change this to something different than Moonbeam
             // For now moonwall is very tailored for moonbeam so we need it for tests
             evm_chain_id: container_chain_template_frontier_runtime::EVMChainIdConfig {
-                chain_id: 1281u32 as u64,
+                chain_id: 1281,
                 ..Default::default()
             },
             sudo: container_chain_template_frontier_runtime::SudoConfig {
