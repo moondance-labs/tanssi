@@ -905,6 +905,12 @@ fn start_consensus_orchestrator(
                     )
                     .await;
 
+                // Fetch duration every block to avoid downtime when passing from 12 to 6s
+                let slot_duration = cumulus_client_consensus_aura::slot_duration(
+                    &*client_set_aside_for_cidp.clone(),
+                )
+                .expect("Slot duration should be set");
+
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =
