@@ -32,6 +32,8 @@ import type {
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
+    PalletXcmCoreBuyerBuyCoreCollatorProof,
+    PalletXcmCoreBuyerXcmWeightsTy,
     SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
@@ -2150,6 +2152,40 @@ declare module "@polkadot/api-base/types/submittable" {
                     weight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [Call, SpWeightsWeightV2Weight]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        xcmCoreBuyer: {
+            /** See [`Pallet::buy_core`]. */
+            buyCore: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    proof:
+                        | PalletXcmCoreBuyerBuyCoreCollatorProof
+                        | { account?: any; signature?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, PalletXcmCoreBuyerBuyCoreCollatorProof]
+            >;
+            /** See [`Pallet::force_buy_core`]. */
+            forceBuyCore: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /** See [`Pallet::set_xcm_weights`]. */
+            setXcmWeights: AugmentedSubmittable<
+                (
+                    xcmWeights:
+                        | Option<PalletXcmCoreBuyerXcmWeightsTy>
+                        | null
+                        | Uint8Array
+                        | PalletXcmCoreBuyerXcmWeightsTy
+                        | { buyExecutionCost?: any; weightAtMost?: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [Option<PalletXcmCoreBuyerXcmWeightsTy>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

@@ -194,6 +194,11 @@ import type {
     PalletUtilityError,
     PalletUtilityEvent,
     PalletXcmCall,
+    PalletXcmCoreBuyerBuyCoreCollatorProof,
+    PalletXcmCoreBuyerCall,
+    PalletXcmCoreBuyerError,
+    PalletXcmCoreBuyerEvent,
+    PalletXcmCoreBuyerXcmWeightsTy,
     PalletXcmError,
     PalletXcmEvent,
     PalletXcmOrigin,
@@ -476,6 +481,11 @@ declare module "@polkadot/types/types/registry" {
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;
         PalletXcmCall: PalletXcmCall;
+        PalletXcmCoreBuyerBuyCoreCollatorProof: PalletXcmCoreBuyerBuyCoreCollatorProof;
+        PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
+        PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
+        PalletXcmCoreBuyerEvent: PalletXcmCoreBuyerEvent;
+        PalletXcmCoreBuyerXcmWeightsTy: PalletXcmCoreBuyerXcmWeightsTy;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
         PalletXcmOrigin: PalletXcmOrigin;
