@@ -436,6 +436,7 @@ impl pallet_async_backing::Config for Runtime {
     type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type ExpectedBlockTime = ConstU64<SLOT_DURATION>;
 }
 
 impl parachain_info::Config for Runtime {}
