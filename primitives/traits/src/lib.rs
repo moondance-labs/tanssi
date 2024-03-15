@@ -23,7 +23,6 @@ pub use cumulus_primitives_core::{
     relay_chain::{BlockNumber, Slot},
     ParaId,
 };
-use frame_support::__private::serde;
 use {
     frame_support::{
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},

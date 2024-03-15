@@ -197,8 +197,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        // TODO: weight
-        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
+        #[pallet::weight(T::WeightInfo::set_xcm_weights())]
         pub fn set_xcm_weights(
             origin: OriginFor<T>,
             xcm_weights: Option<XcmWeightsTy<T>>,

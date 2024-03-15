@@ -18,13 +18,20 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet},
+    crate::{
+        Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
+        XcmWeights, XcmWeightsTy,
+    },
+    core::marker::PhantomData,
     frame_benchmarking::{account, v2::*},
-    frame_support::BoundedBTreeSet,
+    frame_support::{assert_ok, pallet_prelude::Weight, BoundedBTreeSet},
     frame_system::RawOrigin,
     sp_std::{collections::btree_set::BTreeSet, vec},
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
+
+pub const BUY_EXECUTION_COST: u128 = 50_000_000;
+pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
 #[benchmarks]
 mod benchmarks {
@@ -32,6 +39,15 @@ mod benchmarks {
 
     #[benchmark]
     fn force_buy_core(x: Linear<1, 99>) {
+        assert_ok!(Pallet::<T>::set_xcm_weights(
+            RawOrigin::Root.into(),
+            Some(XcmWeightsTy {
+                buy_execution_cost: BUY_EXECUTION_COST,
+                weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+                _phantom: PhantomData,
+            }),
+        ));
+
         let para_id = ParaId::from(x + 1);
         assert_eq!(InFlightOrders::<T>::get(), BTreeSet::new());
 
@@ -58,6 +74,20 @@ mod benchmarks {
         Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);
 
         assert!(InFlightOrders::<T>::get().contains(&para_id));
+    }
+
+    #[benchmark]
+    fn set_xcm_weights() {
+        let xcm_weights = XcmWeightsTy {
+            buy_execution_cost: BUY_EXECUTION_COST,
+            weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+            _phantom: PhantomData,
+        };
+
+        #[extrinsic_call]
+        Pallet::<T>::set_xcm_weights(RawOrigin::Root, Some(xcm_weights.clone()));
+
+        assert_eq!(XcmWeights::<T>::get(), Some(xcm_weights));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
