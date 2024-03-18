@@ -9,7 +9,7 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         const sessionKeysManagementProxy = 8;
-        const someKeys = '0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF';
+        const someKeys = "0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF";
 
         beforeAll(() => {
             polkadotJs = context.polkadotJs();
@@ -19,7 +19,6 @@ describeSuite({
             id: "E01",
             title: "Delegate account can manage keys",
             test: async function () {
-
                 const delegator_alice = context.keyring.alice;
                 const delegate_charlie = context.keyring.charlie;
 
@@ -37,7 +36,7 @@ describeSuite({
                 tx = polkadotJs.tx.proxy.proxy(
                     delegator_alice.address,
                     null,
-                    polkadotJs.tx.session.setKeys(someKeys, '0x')
+                    polkadotJs.tx.session.setKeys(someKeys, "0x")
                 );
                 await context.createBlock([await tx.signAsync(delegate_charlie)]);
                 events = await polkadotJs.query.system.events();
@@ -53,7 +52,6 @@ describeSuite({
             id: "E02",
             title: "Non-Delegate account fails to manage other account's keys",
             test: async function () {
-
                 const alice = context.keyring.alice;
                 const non_delegate_dave = context.keyring.dave;
 
@@ -62,7 +60,10 @@ describeSuite({
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,
-                    polkadotJs.tx.session.setKeys('0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF', '0x')
+                    polkadotJs.tx.session.setKeys(
+                        "0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF",
+                        "0x"
+                    )
                 );
                 await context.createBlock([await tx.signAsync(non_delegate_dave)]);
                 const events = await polkadotJs.query.system.events();
@@ -72,6 +73,5 @@ describeSuite({
                 expect(ev1.length).to.be.equal(0);
             },
         });
-
     },
 });
