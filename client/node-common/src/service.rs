@@ -220,7 +220,7 @@ where
             parachain_config
                 .default_heap_pages
                 .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
-                    extra_pages: h as _,
+                    extra_pages: h as u32,
                 });
 
         // Default runtime_cache_size is 2

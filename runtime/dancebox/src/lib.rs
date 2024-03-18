@@ -107,6 +107,9 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
+/// CollatorId type expected by this runtime.
+pub type CollatorId = AccountId;
+
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
     frame_system::CheckNonZeroSender<Runtime>,
@@ -504,7 +507,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 pub struct ParaSlotProvider;
 impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     fn get() -> (Slot, SlotDuration) {
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
     }
 }
@@ -621,8 +624,8 @@ impl parachain_info::Config for Runtime {}
 pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 
 /// Play the role of the session manager.
-impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking {
-    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking {
+    fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
         log::info!(
             "assembling new collators for new session {} at #{:?}",
             index,
@@ -673,7 +676,7 @@ parameter_types! {
 
 impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorId = CollatorId;
     // we don't have stash and controller, thus we don't need the convert as well.
     type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -729,11 +732,11 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
 
 pub struct RemoveInvulnerablesImpl;
 
-impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        collators: &mut Vec<CollatorId>,
         num_invulnerables: usize,
-    ) -> Vec<AccountId> {
+    ) -> Vec<CollatorId> {
         if num_invulnerables == 0 {
             return vec![];
         }
@@ -783,8 +786,8 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
-            let remaining_block_credits_to_pay = (remaining_block_credits as u128).saturating_mul(block_production_costs);
-            let remaining_session_credits_to_pay = (remaining_session_credits as u128).saturating_mul(collator_assignment_costs);
+            let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
             let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
 
             // This should take into account whether we tank goes below ED
@@ -1327,7 +1330,7 @@ impl Get<AccountId32> for GetSelfChainBlockAuthor {
         // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
         // we should also make sure we actually account for the weight of these
         // although most of these should be cached as they are read every block
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         let self_para_id = ParachainInfo::get();
         let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
         author.expect("author should be set")

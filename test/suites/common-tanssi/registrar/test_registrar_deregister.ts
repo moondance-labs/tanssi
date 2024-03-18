@@ -27,8 +27,8 @@ describeSuite({
                 expect(parasRegistered).to.contain(2001);
 
                 // Set storage of pallet_author_noting and pallet_services_payment to test that it gets deleted later
-                const tx1 = polkadotJs.tx.authorNoting.setAuthor(2000, 1, alice.address);
-                const tx2 = polkadotJs.tx.authorNoting.setAuthor(2001, 1, alice.address);
+                const tx1 = polkadotJs.tx.authorNoting.setAuthor(2000, 1, alice.address, 1);
+                const tx2 = polkadotJs.tx.authorNoting.setAuthor(2001, 1, alice.address, 1);
                 await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll([tx1, tx2])).signAndSend(alice);
 
                 // Credits already exist

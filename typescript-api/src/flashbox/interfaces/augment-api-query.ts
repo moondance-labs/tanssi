@@ -7,7 +7,7 @@ import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type { BTreeMap, Bytes, Null, Option, Struct, U8aFixed, Vec, bool, u128, u32, u64 } from "@polkadot/types-codec";
+import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, bool, u128, u32, u64 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -16,7 +16,6 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
-    FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
@@ -28,7 +27,8 @@ import type {
     PalletAuthorNotingContainerChainBlockInfo,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
-    PalletBalancesIdAmount,
+    PalletBalancesIdAmountRuntimeFreezeReason,
+    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletIdentityAuthorityProperties,
@@ -152,21 +152,14 @@ declare module "@polkadot/api-base/types/storage" {
             /** Freeze locks on account balances. */
             freezes: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmount>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeFreezeReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<
-                    Vec<
-                        {
-                            readonly id: FlashboxRuntimeRuntimeHoldReason;
-                            readonly amount: u128;
-                        } & Struct
-                    >
-                >,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeHoldReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;

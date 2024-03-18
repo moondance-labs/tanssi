@@ -41,7 +41,7 @@ use {
     frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
-    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
@@ -224,6 +224,7 @@ pub mod pallet {
             para_id: ParaId,
             block_number: BlockNumber,
             author: T::AccountId,
+            latest_slot_number: Slot,
         ) -> DispatchResult {
             ensure_root(origin)?;
             LatestAuthor::<T>::insert(
@@ -231,12 +232,14 @@ pub mod pallet {
                 ContainerChainBlockInfo {
                     block_number,
                     author: author.clone(),
+                    latest_slot_number,
                 },
             );
             Self::deposit_event(Event::LatestAuthorChanged {
                 para_id,
                 block_number,
                 new_author: author,
+                latest_slot_number,
             });
             Ok(())
         }
@@ -259,6 +262,7 @@ pub mod pallet {
             para_id: ParaId,
             block_number: BlockNumber,
             new_author: T::AccountId,
+            latest_slot_number: Slot,
         },
         /// Removed author data
         RemovedAuthorData { para_id: ParaId },
@@ -277,6 +281,7 @@ pub mod pallet {
     pub struct ContainerChainBlockInfo<T: Config> {
         pub block_number: BlockNumber,
         pub author: T::AccountId,
+        pub latest_slot_number: Slot,
     }
 
     /// Was the containerAuthorData set?
@@ -383,6 +388,7 @@ impl<T: Config> Pallet<T> {
             Ok(ContainerChainBlockInfo {
                 block_number: author_header.number,
                 author,
+                latest_slot_number: slot,
             })
         } else {
             Err(Error::<T>::NonAuraDigest)
