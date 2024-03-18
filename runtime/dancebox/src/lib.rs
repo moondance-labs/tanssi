@@ -1057,6 +1057,8 @@ pub enum ProxyType {
     Registrar = 6,
     /// Allow extrinsics related to Registrar that needs to be called through Sudo
     SudoRegistrar = 7,
+    /// Allow extrinsics from the Session pallet for key management. 
+    SessionKeyManagement = 8,
 }
 
 impl Default for ProxyType {
@@ -1112,6 +1114,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
+            ProxyType::SessionKeyManagement => {
+                matches!(c, RuntimeCall::Session(..))
+            }
         }
     }
 
