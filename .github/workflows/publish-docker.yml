@@ -53,6 +53,8 @@ jobs:
             -f docker/${{matrix.image.name}}.Dockerfile \
             -t "${DOCKER_IMAGE}:${VERSION}" \
             . 
+          echo tagging "${DOCKER_IMAGE}:${VERSION}"
+          docker push "${DOCKER_IMAGE}:${VERSION}"
 
             if [[ $VERSION =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
               MINOR=${VERSION%.*}
