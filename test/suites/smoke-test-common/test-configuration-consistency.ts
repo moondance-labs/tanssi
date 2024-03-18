@@ -9,14 +9,12 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
         let blocksPerSession;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
 
         beforeAll(() => {
             api = context.polkadotJs();
-            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
             const chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain == "Dancebox" ? 300n : 5n;
         });

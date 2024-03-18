@@ -16,10 +16,10 @@ export function paraIdTank(paraId: any): any {
 export async function hasEnoughCredits(
     paraApi: ApiPromise,
     paraId: ParaId,
-    blocksPerSession: BigInt,
-    minSessionRequirement: BigInt,
-    costPerSession: BigInt,
-    costPerBlock: BigInt
+    blocksPerSession: bigint,
+    minSessionRequirement: bigint,
+    costPerSession: bigint,
+    costPerBlock: bigint
 ): Promise<boolean> {
     const existentialDeposit = await paraApi.consts.balances.existentialDeposit.toBigInt();
 

@@ -1,7 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
-import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
     id: "S10",

@@ -28,7 +28,6 @@ describeSuite({
                 if (runtimeVersion < 500) {
                     return;
                 }
-                const existentialDeposit = await api.consts.balances.existentialDeposit.toBigInt();
 
                 // If they have collators scheduled, they should have at least enough money to pay
                 let pending = await api.query.collatorAssignment.pendingCollatorContainerChain();
