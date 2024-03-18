@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_runtime::traits::AccountIdConversion;
 use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
@@ -32,12 +31,15 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_core_buyer::{GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall},
+    pallet_xcm_core_buyer::{
+        GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
+        ParaIdIntoAccountTruncating,
+    },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::Encode,
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
-    sp_runtime::{traits::Convert, transaction_validity::TransactionPriority, Perbill},
+    sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
@@ -472,7 +474,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type XcmSender = XcmRouter;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
-    type GetParathreadAccountId = ParaIdToAccount32;
+    type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
@@ -524,18 +526,6 @@ impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
     fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
         use tp_traits::GetContainerChainAuthor;
         CollatorAssignment::set_authors_for_para_id(para_id, collators);
-    }
-}
-
-pub struct ParaIdToAccount32;
-
-impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
-    fn convert(para_id: ParaId) -> [u8; 32] {
-        // Derive a 32 byte account id for a parathread. Note that this is not the address of
-        // the relay chain parathread tank, but that address is derived from this.
-        let account: AccountId = para_id.into_account_truncating();
-
-        account.into()
     }
 }
 

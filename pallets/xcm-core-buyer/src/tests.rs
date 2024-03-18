@@ -149,3 +149,31 @@ fn cannot_buy_if_no_weights_storage_set() {
             );
         });
 }
+
+#[test]
+fn xcm_locations() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            assert_ok!(XcmCoreBuyer::set_xcm_weights(RuntimeOrigin::root(), None));
+
+            let para_id = 3333.into();
+
+            let interior_mloc = XcmCoreBuyer::interior_multilocation(para_id);
+            let absolute_mloc = XcmCoreBuyer::absolute_multilocation(interior_mloc.clone());
+
+            assert_eq!(interior_mloc.len(), 1);
+            assert_eq!(absolute_mloc.len(), 2);
+
+            let (rest, first) = absolute_mloc.interior.split_first();
+            assert_eq!(first, Some(Parachain(1000)));
+            assert_eq!(rest, interior_mloc);
+
+            // Print debug representation for informative purposes
+            // The account id is `concat(b"para", u32::from(3333).to_le_bytes(), [0; 32 - 8])`
+            assert_eq!(format!("{:?}", interior_mloc), "X1(AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] })");
+            assert_eq!(format!("{:?}", absolute_mloc), "MultiLocation { parents: 0, interior: X2(Parachain(1000), AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }) }");
+        });
+}

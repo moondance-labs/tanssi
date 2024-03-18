@@ -16,7 +16,8 @@
 
 use {
     crate::{
-        self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall, XcmWeightsTy,
+        self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
+        ParaIdIntoAccountTruncating, XcmWeightsTy,
     },
     dp_core::ParaId,
     frame_support::{
@@ -164,7 +165,7 @@ impl pallet_xcm_core_buyer::Config for Test {
     type XcmSender = DevNull;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = ();
-    type GetParathreadAccountId = ParaIdToAccount32;
+    type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type SelfParaId = ParachainId;
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;

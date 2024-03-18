@@ -40,7 +40,7 @@ use {
         traits::fungible::{Balanced, Inspect},
     },
     frame_system::pallet_prelude::*,
-    sp_runtime::traits::{Convert, Get},
+    sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::vec,
     sp_std::vec::Vec,
     staging_xcm::prelude::*,
@@ -51,8 +51,6 @@ use {
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-
-    /// Data preservers pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
@@ -64,12 +62,23 @@ pub mod pallet {
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
         type XcmSender: SendXcm;
+        /// Get encoded call to buy a core in the relay chain. This will be passed to the XCM
+        /// `Transact` instruction.
         type GetPurchaseCoreCall: GetPurchaseCoreCall;
+        /// Get current block number, used in `validate_unsigned`.
         type GetBlockNumber: Get<u32>;
+        /// How to convert a `ParaId` into an `AccountId32`. Used to derive the parathread tank
+        /// account in `interior_multilocation`.
         type GetParathreadAccountId: Convert<ParaId, [u8; 32]>;
+        /// Orchestartor chain `ParaId`. Used in `absolute_multilocation` to convert the
+        /// `interior_multilocation` into what the relay chain needs to allow to `DepositAsset`.
         type SelfParaId: Get<ParaId>;
+        /// Limit how many in-flight XCM requests can be sent to the relay chain in one block.
         type MaxParathreads: Get<u32>;
+        /// Get the parathread params. Used to verify that the para id is a parathread.
+        // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
         type GetParathreadParams: GetParathreadParams;
+        /// Get a list of collators assigned to this parathread. Used to verify the collator proof.
         type GetAssignedCollators: GetParathreadCollators<Self::AccountId>;
         /// A configuration for base priority of unsigned transactions.
         ///
@@ -120,9 +129,8 @@ pub mod pallet {
 
     /// Set of parathreads that have already sent an XCM message to buy a core recently.
     /// Used to avoid 2 collators buying a core at the same time, because it is only possible to buy
-    /// 1 core in 1 relay block.
+    /// 1 core in 1 relay block for the same parathread.
     #[pallet::storage]
-    //pub type InFlightOrders<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
     pub type InFlightOrders<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxParathreads>, ValueQuery>;
 
@@ -232,10 +240,14 @@ pub mod pallet {
         pub fn absolute_multilocation(
             interior_multilocation: InteriorMultiLocation,
         ) -> MultiLocation {
-            let mut l = interior_multilocation;
-            l.push_front(Junction::Parachain(T::SelfParaId::get().into()))
-                .expect("multilocation too long");
-            MultiLocation::from(l)
+            let relay_chain = MultiLocation::parent();
+            let context = Parachain(T::SelfParaId::get().into()).into();
+            let mut reanchored: MultiLocation = interior_multilocation.into();
+            reanchored
+                .reanchor(&relay_chain, context)
+                .expect("reanchor failed");
+
+            reanchored
         }
 
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
@@ -266,9 +278,9 @@ pub mod pallet {
             // Any failure should return everything to the derivative account
 
             // Don't use utility::as_derivative because that will make the tanssi sovereign account
-            // pay for fees, instead use `DescendOrigin` to make the container chain sovereign account
-            // pay for fees. The container chain sovereign account is derived from the tanssi sovereign
-            // account.
+            // pay for fees, instead use `DescendOrigin` to make the parathread tank account
+            // pay for fees. The parathread tank account is derived from the tanssi sovereign
+            // account and the parathread para id.
             // TODO: when coretime is implemented, buy core there instead of buying on-demand cores
             let origin = OriginKind::SovereignAccount;
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
@@ -279,12 +291,8 @@ pub mod pallet {
             let weight_at_most = xcm_weights_storage.weight_at_most;
 
             // Assumption: derived account already has DOT
-            // The balance should be enough to cover
-            // TODO: we could make this be part of the proof, so collators cannot call this if the
-            // derived account does not have enough balance
-            // Although that would not be perfect, the relay state can change in the following block,
-            // and the xcm message will be executed in the block n+2, where n is the latest relay
-            // block number seen from the tanssi block that included this extrinsic.
+            // The balance should be enough to cover the `Withdraw` needed to `BuyExecution`, plus
+            // the price of the core, which can change based on demand.
             let relay_asset_total: MultiAsset = (Here, withdraw_amount).into();
             let refund_asset_filter: MultiAssetFilter =
                 MultiAssetFilter::Wild(WildMultiAsset::AllCounted(1));
@@ -432,4 +440,17 @@ pub trait GetParathreadParams {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>);
+}
+
+/// Use `into_account_truncating` to convert a `ParaId` into a `[u8; 32]`.
+pub struct ParaIdIntoAccountTruncating;
+
+impl Convert<ParaId, [u8; 32]> for ParaIdIntoAccountTruncating {
+    fn convert(para_id: ParaId) -> [u8; 32] {
+        // Derive a 32 byte account id for a parathread. Note that this is not the address of
+        // the relay chain parathread tank, but that address is derived from this.
+        let account: dp_core::AccountId = para_id.into_account_truncating();
+
+        account.into()
+    }
 }
