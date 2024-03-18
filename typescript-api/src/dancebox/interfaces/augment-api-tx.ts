@@ -98,9 +98,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
                     blockNumber: u32 | AnyNumber | Uint8Array,
-                    author: AccountId32 | string | Uint8Array
+                    author: AccountId32 | string | Uint8Array,
+                    latestSlotNumber: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, AccountId32]
+                [u32, u32, AccountId32, u64]
             >;
             /** See [`Pallet::set_latest_author_data`]. */
             setLatestAuthorData: AugmentedSubmittable<

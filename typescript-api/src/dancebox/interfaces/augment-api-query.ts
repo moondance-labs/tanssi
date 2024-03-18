@@ -1259,7 +1259,7 @@ declare module "@polkadot/api-base/types/storage" {
         xcmCoreBuyer: {
             /**
              * Set of parathreads that have already sent an XCM message to buy a core recently. Used to avoid 2 collators
-             * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block.
+             * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same parathread.
              */
             inFlightOrders: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
