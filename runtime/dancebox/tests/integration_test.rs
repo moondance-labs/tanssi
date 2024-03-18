@@ -2328,7 +2328,7 @@ fn test_proxy_utility() {
         | ProxyType::CancelProxy
         | ProxyType::Balances
         | ProxyType::Registrar
-        | ProxyType::SudoRegistrar,
+        | ProxyType::SudoRegistrar
         | ProxyType::SessionKeyManagement => (),
     };
 
