@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
+import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
     id: "S04",
@@ -8,9 +9,16 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let runtimeVersion;
+        let blocksPerSession;
+        const costPerSession = 100_000_000n;
+        const costPerBlock = 1_000_000n;
 
         beforeAll(() => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
+            const chain = api.consts.system.version.specName.toString();
+            blocksPerSession = chain == "Dancebox" ? 300n : 5n;
         });
 
         it({
@@ -56,8 +64,11 @@ describeSuite({
                 const config = await api.query.configuration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
-                // get current authorities
-                const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
+                // get pending authorities
+                // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
+                const authorities = (
+                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
+                ).toJSON();
 
                 // If we have container chain collators, is because we at least assigned min to orchestrator
                 if (
@@ -67,10 +78,17 @@ describeSuite({
 
                     expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
 
+                    // This should be true as long as they have enough credits for getting collators
                     for (const container of liveContainers) {
-                        expect(authorities["containerChains"][container.toString()].length).to.be.equal(
-                            config["collatorsPerContainer"].toNumber()
-                        );
+                        // we should only check those who have enough credits
+                        if (
+                            await hasEnoughCredits(api, container, blocksPerSession, 2n, costPerSession, costPerBlock)
+                        ) {
+                            // A different test checks that this number is correct with respect to configuration
+                            // test-collator-number-consistency
+                            // Here we only check that  that we have collators
+                            expect(authorities["containerChains"][container.toString()].length).to.be.greaterThan(0);
+                        }
                     }
                 }
             },
