@@ -24,7 +24,7 @@ use {
         *,
     },
     frame_support::{
-        assert_ok,
+        assert_noop, assert_ok,
         traits::PalletInfoAccess,
         weights::{Weight, WeightToFee},
     },
@@ -185,8 +185,7 @@ fn transfer_assets_relay_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = 
-        (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
+    let dancebox_assets = (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
     let relay_amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
     let relay_assets: MultiAssets = (Here, relay_amount_to_send).into();
@@ -313,10 +312,14 @@ fn transfer_assets_relay_tanssi() {
         );
     });
 
-    let relay_tokens_to_send_simple_template  = (relay_amount_to_send - native_balance)/2;
+    let relay_tokens_to_send_simple_template = (relay_amount_to_send - native_balance) / 2;
     // We just send half of the DOT received
     let combined_assets: MultiAssets = vec![
-        (Here, relay_tokens_to_send_simple_template).into(),
+        (
+            MultiLocation::parent(),
+            relay_tokens_to_send_simple_template,
+        )
+            .into(),
         dancebox_assets.into(),
     ]
     .into();
@@ -324,8 +327,9 @@ fn transfer_assets_relay_tanssi() {
     // Now we need to send both to simple template
     // Send XCM message from Dancebox
     // Let's try to use dot as the fee
+    // This should not work as we are trying to use a remote reserve as fee
     Dancebox::execute_with(|| {
-        assert_ok!(
+        assert_noop!(
             <Dancebox as DanceboxParaPallet>::PolkadotXcm::transfer_assets(
                 alice_dancebox_origin,
                 bx!(simple_template_dest),
@@ -333,7 +337,8 @@ fn transfer_assets_relay_tanssi() {
                 bx!(combined_assets.into()),
                 0,
                 WeightLimit::Unlimited,
-            )
+            ),
+            pallet_xcm::Error::<dancebox_runtime::Runtime>::InvalidAssetUnsupportedReserve
         );
     });
 }
