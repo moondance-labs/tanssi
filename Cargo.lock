@@ -15312,6 +15312,7 @@ dependencies = [
  "sc-cli",
  "sc-client-api",
  "sc-consensus",
+ "sc-consensus-aura",
  "sc-consensus-manual-seal",
  "sc-executor",
  "sc-network",

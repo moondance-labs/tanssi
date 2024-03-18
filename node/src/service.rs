@@ -905,8 +905,9 @@ fn start_consensus_orchestrator(
                     .await;
 
                 // Fetch duration every block to avoid downtime when passing from 12 to 6s
-                let slot_duration = cumulus_client_consensus_aura::slot_duration(
+                let slot_duration = sc_consensus_aura::standalone::slot_duration_at(
                     &*client_set_aside_for_cidp.clone(),
+                    block_hash,
                 )
                 .expect("Slot duration should be set");
 
@@ -1085,7 +1086,10 @@ pub fn start_dev_node(
                 let para_head_key = RelayWellKnownKeys::para_head(para_id);
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
 
-                let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client.clone()).expect("Slot duration should be set");
+                let slot_duration = sc_consensus_aura::standalone::slot_duration_at(
+                    &*client.clone(),
+                    block,
+                ).expect("Slot duration should be set");
 
                 let mut timestamp: u64 = 0u64;
                 TIMESTAMP.with(|x| {
