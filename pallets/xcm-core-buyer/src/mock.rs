@@ -17,7 +17,7 @@
 use {
     crate::{
         self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
-        ParaIdIntoAccountTruncating, XcmWeightsTy,
+        ParaIdIntoAccountTruncating, RelayXcmWeightConfigInner,
     },
     dp_core::ParaId,
     frame_support::{
@@ -282,7 +282,7 @@ impl ExtBuilder {
         ext.execute_with(|| {
             assert_ok!(XcmCoreBuyer::set_xcm_weights(
                 RuntimeOrigin::root(),
-                Some(XcmWeightsTy {
+                Some(RelayXcmWeightConfigInner {
                     buy_execution_cost: BUY_EXECUTION_COST,
                     weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
                     _phantom: PhantomData,
@@ -318,7 +318,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     ext.execute_with(|| {
         assert_ok!(XcmCoreBuyer::set_xcm_weights(
             RuntimeOrigin::root(),
-            Some(XcmWeightsTy {
+            Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,
                 weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
                 _phantom: PhantomData,

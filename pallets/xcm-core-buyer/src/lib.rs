@@ -116,6 +116,8 @@ pub mod pallet {
         /// The `XcmWeights` storage has not been set. This must have been set by root with the
         /// value of the relay chain xcm call weight and extrinsic weight
         XcmWeightStorageNotSet,
+        /// Converting a multilocation into a relay relative multilocation failed
+        ReanchorFailed,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
@@ -138,11 +140,12 @@ pub mod pallet {
     /// weight limit. This is a storage item because relay chain weights can change, so we need to
     /// be able to adjust them without doing a runtime upgrade.
     #[pallet::storage]
-    pub type XcmWeights<T: Config> = StorageValue<_, XcmWeightsTy<T>, OptionQuery>;
+    pub type RelayXcmWeightConfig<T: Config> =
+        StorageValue<_, RelayXcmWeightConfigInner<T>, OptionQuery>;
 
     #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
     #[scale_info(skip_type_params(T))]
-    pub struct XcmWeightsTy<T> {
+    pub struct RelayXcmWeightConfigInner<T> {
         pub buy_execution_cost: u128,
         pub weight_at_most: Weight,
         pub _phantom: PhantomData<T>,
@@ -208,14 +211,14 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_xcm_weights())]
         pub fn set_xcm_weights(
             origin: OriginFor<T>,
-            xcm_weights: Option<XcmWeightsTy<T>>,
+            xcm_weights: Option<RelayXcmWeightConfigInner<T>>,
         ) -> DispatchResult {
             ensure_root(origin)?;
 
             if let Some(xcm_weights) = xcm_weights {
-                XcmWeights::<T>::put(xcm_weights);
+                RelayXcmWeightConfig::<T>::put(xcm_weights);
             } else {
-                XcmWeights::<T>::kill();
+                RelayXcmWeightConfig::<T>::kill();
             }
 
             Ok(())
@@ -237,19 +240,20 @@ pub mod pallet {
 
         /// Returns a multilocation that can be used in the `deposit_asset` XCM opcode.
         /// The `interior_multilocation` can be obtained using `Self::interior_multilocation`.
-        pub fn absolute_multilocation(
+        pub fn relay_relative_multilocation(
             interior_multilocation: InteriorMultiLocation,
-        ) -> MultiLocation {
+        ) -> Result<MultiLocation, Error<T>> {
             let relay_chain = MultiLocation::parent();
             let context = Parachain(T::SelfParaId::get().into()).into();
             let mut reanchored: MultiLocation = interior_multilocation.into();
             reanchored
                 .reanchor(&relay_chain, context)
-                .expect("reanchor failed");
+                .map_err(|_| Error::<T>::ReanchorFailed)?;
 
-            reanchored
+            Ok(reanchored)
         }
 
+        /// Send an XCM message to the relay chain to try to buy a core for this para_id.
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
             let mut in_flight_orders = InFlightOrders::<T>::get();
             if in_flight_orders.contains(&para_id) {
@@ -268,20 +272,19 @@ pub mod pallet {
             // TODO: also compare the latest slot from pallet_author_noting with parathread_params.slot_frequency
 
             let xcm_weights_storage =
-                XcmWeights::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;
+                RelayXcmWeightConfig::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;
 
             let withdraw_amount = xcm_weights_storage.buy_execution_cost;
 
-            // Send xcm to the relay
-            // Use a derivative account from the sovereign account based on the paraId
+            // Use the account derived from the multilocation composed with DescendOrigin
             // Buy on-demand cores
             // Any failure should return everything to the derivative account
 
             // Don't use utility::as_derivative because that will make the tanssi sovereign account
             // pay for fees, instead use `DescendOrigin` to make the parathread tank account
-            // pay for fees. The parathread tank account is derived from the tanssi sovereign
-            // account and the parathread para id.
-            // TODO: when coretime is implemented, buy core there instead of buying on-demand cores
+            // pay for fees.
+            // TODO: when coretime is implemented, use coretime instantaneous credits instead of
+            // buying on-demand cores at the price defined by the relay
             let origin = OriginKind::SovereignAccount;
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
             // It should be defined in a storage item somewhere, controllable by the container chain
@@ -296,15 +299,16 @@ pub mod pallet {
             let relay_asset_total: MultiAsset = (Here, withdraw_amount).into();
             let refund_asset_filter: MultiAssetFilter =
                 MultiAssetFilter::Wild(WildMultiAsset::AllCounted(1));
-            // TODO: need better names for this methods.
-            //  interior_multilocation is the one used in DescendOrigin
-            //  absolute_multilocation is the one used in DepositAsset
-            // They can be easily converted from one another, the difference is that absolute_multilocation
-            // has an extra "Parachain" junction in the front, using SelfParaId::get()
-            let interior_multilocation = Self::interior_multilocation(para_id);
-            let derived_account = Self::absolute_multilocation(interior_multilocation);
 
-            // Need to use `builder_unsafe` because safe `builder` does not allow `descend_origin` as first instruction
+            let interior_multilocation = Self::interior_multilocation(para_id);
+            // The parathread tank account is derived from the tanssi sovereign account and the
+            // parathread para id.
+            let derived_account = Self::relay_relative_multilocation(interior_multilocation)?;
+
+            // Need to use `builder_unsafe` because safe `builder` does not allow `descend_origin` as first instruction.
+            // We use `descend_origin` instead of wrapping the transact call in `utility.as_derivative`
+            // because with `descend_origin` the parathread tank account will pay for fees, while
+            // `utility.as_derivative` will make the tanssi sovereign account pay for fees.
             let message: Xcm<()> = Xcm::builder_unsafe()
                 .descend_origin(interior_multilocation)
                 .withdraw_asset(MultiAssets::from(vec![relay_asset_total.clone()]))
@@ -319,8 +323,9 @@ pub mod pallet {
                 .transact(origin, weight_at_most, call.into())
                 .build();
 
-            // Send to destination chain
+            // Send XCM to relay chain
             let relay_chain = MultiLocation::parent();
+            // We intentionally do not charge any fees
             let (ticket, _price) =
                 T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
                     .map_err(|_| Error::<T>::ErrorValidatingXCM)?;

@@ -27,7 +27,7 @@ use {
     cumulus_primitives_core::Weight,
     dancebox_runtime::{DataPreservers, Registrar, XcmCoreBuyer},
     frame_support::assert_ok,
-    pallet_xcm_core_buyer::XcmWeightsTy,
+    pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
     sp_runtime::AccountId32,
     staging_xcm_executor::traits::ConvertLocation,
@@ -123,7 +123,7 @@ fn do_test(tank_account_balance: u128) {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
         assert_ok!(XcmCoreBuyer::set_xcm_weights(
             root_origin.clone(),
-            Some(XcmWeightsTy {
+            Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,
                 weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
                 _phantom: PhantomData,
@@ -169,9 +169,10 @@ fn assert_relay_order_event_not_emitted() {
 /// parathread para id.
 fn get_parathread_tank_relay_address() -> AccountId32 {
     let parathread_tank_in_relay = Dancebox::execute_with(|| {
-        let parathread_tank_multilocation = XcmCoreBuyer::absolute_multilocation(
+        let parathread_tank_multilocation = XcmCoreBuyer::relay_relative_multilocation(
             XcmCoreBuyer::interior_multilocation(PARATHREAD_ID.into()),
-        );
+        )
+        .expect("reanchor failed");
         let parathread_tank_in_relay =
             <Rococo as RelayChain>::SovereignAccountOf::convert_location(
                 &parathread_tank_multilocation,

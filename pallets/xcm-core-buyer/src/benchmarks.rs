@@ -20,7 +20,7 @@
 use {
     crate::{
         Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
-        XcmWeights, XcmWeightsTy,
+        RelayXcmWeightConfig, RelayXcmWeightConfigInner,
     },
     core::marker::PhantomData,
     frame_benchmarking::{account, v2::*},
@@ -41,7 +41,7 @@ mod benchmarks {
     fn force_buy_core(x: Linear<1, 99>) {
         assert_ok!(Pallet::<T>::set_xcm_weights(
             RawOrigin::Root.into(),
-            Some(XcmWeightsTy {
+            Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,
                 weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
                 _phantom: PhantomData,
@@ -78,7 +78,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_xcm_weights() {
-        let xcm_weights = XcmWeightsTy {
+        let xcm_weights = RelayXcmWeightConfigInner {
             buy_execution_cost: BUY_EXECUTION_COST,
             weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
             _phantom: PhantomData,
@@ -87,7 +87,7 @@ mod benchmarks {
         #[extrinsic_call]
         Pallet::<T>::set_xcm_weights(RawOrigin::Root, Some(xcm_weights.clone()));
 
-        assert_eq!(XcmWeights::<T>::get(), Some(xcm_weights));
+        assert_eq!(RelayXcmWeightConfig::<T>::get(), Some(xcm_weights));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

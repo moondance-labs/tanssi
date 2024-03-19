@@ -157,12 +157,10 @@ fn xcm_locations() {
         .build()
         .execute_with(|| {
             run_to_block(1);
-            assert_ok!(XcmCoreBuyer::set_xcm_weights(RuntimeOrigin::root(), None));
 
             let para_id = 3333.into();
-
             let interior_mloc = XcmCoreBuyer::interior_multilocation(para_id);
-            let absolute_mloc = XcmCoreBuyer::absolute_multilocation(interior_mloc.clone());
+            let absolute_mloc = XcmCoreBuyer::relay_relative_multilocation(interior_mloc.clone()).expect("reanchor failed");
 
             assert_eq!(interior_mloc.len(), 1);
             assert_eq!(absolute_mloc.len(), 2);
