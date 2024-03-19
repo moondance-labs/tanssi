@@ -139,7 +139,10 @@ fn cannot_buy_if_no_weights_storage_set() {
         .build()
         .execute_with(|| {
             run_to_block(1);
-            assert_ok!(XcmCoreBuyer::set_relay_xcm_weight_config(RuntimeOrigin::root(), None));
+            assert_ok!(XcmCoreBuyer::set_relay_xcm_weight_config(
+                RuntimeOrigin::root(),
+                None
+            ));
 
             let para_id = 3333.into();
 
