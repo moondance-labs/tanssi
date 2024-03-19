@@ -237,7 +237,7 @@ pub mod pallet {
             // we use the config scheduled at the target_session_index
             let new_assigned =
                 if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
-                    log::info!(
+                    log::debug!(
                         "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
                         current_session_index.encode(),
                         random_seed
@@ -255,7 +255,7 @@ pub mod pallet {
                         chains,
                     )
                 } else {
-                    log::info!(
+                    log::debug!(
                         "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
                         current_session_index.encode(),
                         random_seed
