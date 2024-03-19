@@ -626,11 +626,20 @@ pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 /// Play the role of the session manager.
 impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking {
     fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
-        log::info!(
-            "assembling new collators for new session {} at #{:?}",
-            index,
-            <frame_system::Pallet<Runtime>>::block_number(),
-        );
+        if <frame_system::Pallet<Runtime>>::block_number() == 0 {
+            // Do not show this log in genesis
+            log::debug!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        } else {
+            log::info!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        }
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
         let candidates_staking =
