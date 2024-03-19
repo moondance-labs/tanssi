@@ -4442,11 +4442,11 @@ declare module "@polkadot/types/lookup" {
         readonly asForceBuyCore: {
             readonly paraId: u32;
         } & Struct;
-        readonly isSetXcmWeights: boolean;
-        readonly asSetXcmWeights: {
-            readonly xcmWeights: Option<PalletXcmCoreBuyerXcmWeightsTy>;
+        readonly isSetRelayXcmWeightConfig: boolean;
+        readonly asSetRelayXcmWeightConfig: {
+            readonly xcmWeights: Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>;
         } & Struct;
-        readonly type: "BuyCore" | "ForceBuyCore" | "SetXcmWeights";
+        readonly type: "BuyCore" | "ForceBuyCore" | "SetRelayXcmWeightConfig";
     }
 
     /** @name PalletXcmCoreBuyerBuyCoreCollatorProof (336) */
@@ -4455,8 +4455,8 @@ declare module "@polkadot/types/lookup" {
         readonly signature: Null;
     }
 
-    /** @name PalletXcmCoreBuyerXcmWeightsTy (338) */
-    interface PalletXcmCoreBuyerXcmWeightsTy extends Struct {
+    /** @name PalletXcmCoreBuyerRelayXcmWeightConfigInner (338) */
+    interface PalletXcmCoreBuyerRelayXcmWeightConfigInner extends Struct {
         readonly buyExecutionCost: u128;
         readonly weightAtMost: SpWeightsWeightV2Weight;
     }
@@ -5494,6 +5494,7 @@ declare module "@polkadot/types/lookup" {
         readonly isNoAssignedCollators: boolean;
         readonly isCollatorNotAssigned: boolean;
         readonly isXcmWeightStorageNotSet: boolean;
+        readonly isReanchorFailed: boolean;
         readonly type:
             | "InvalidProof"
             | "ErrorValidatingXCM"
@@ -5503,7 +5504,8 @@ declare module "@polkadot/types/lookup" {
             | "InFlightLimitReached"
             | "NoAssignedCollators"
             | "CollatorNotAssigned"
-            | "XcmWeightStorageNotSet";
+            | "XcmWeightStorageNotSet"
+            | "ReanchorFailed";
     }
 
     /** @name FrameSystemExtensionsCheckNonZeroSender (515) */

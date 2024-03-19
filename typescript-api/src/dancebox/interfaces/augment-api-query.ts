@@ -69,7 +69,7 @@ import type {
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
-    PalletXcmCoreBuyerXcmWeightsTy,
+    PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
     PalletXcmVersionMigrationStage,
@@ -1268,7 +1268,11 @@ declare module "@polkadot/api-base/types/storage" {
              * a storage item because relay chain weights can change, so we need to be able to adjust them without doing a
              * runtime upgrade.
              */
-            xcmWeights: AugmentedQuery<ApiType, () => Observable<Option<PalletXcmCoreBuyerXcmWeightsTy>>, []> &
+            relayXcmWeightConfig: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;

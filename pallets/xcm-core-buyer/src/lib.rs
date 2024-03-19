@@ -208,8 +208,8 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::set_xcm_weights())]
-        pub fn set_xcm_weights(
+        #[pallet::weight(T::WeightInfo::set_relay_xcm_weight_config())]
+        pub fn set_relay_xcm_weight_config(
             origin: OriginFor<T>,
             xcm_weights: Option<RelayXcmWeightConfigInner<T>>,
         ) -> DispatchResult {

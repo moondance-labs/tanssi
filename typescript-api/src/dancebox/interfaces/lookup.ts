@@ -3291,8 +3291,8 @@ export default {
             force_buy_core: {
                 paraId: "u32",
             },
-            set_xcm_weights: {
-                xcmWeights: "Option<PalletXcmCoreBuyerXcmWeightsTy>",
+            set_relay_xcm_weight_config: {
+                xcmWeights: "Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>",
             },
         },
     },
@@ -3301,8 +3301,8 @@ export default {
         account: "AccountId32",
         signature: "Null",
     },
-    /** Lookup338: pallet_xcm_core_buyer::pallet::XcmWeightsTy<T> */
-    PalletXcmCoreBuyerXcmWeightsTy: {
+    /** Lookup338: pallet_xcm_core_buyer::pallet::RelayXcmWeightConfigInner<T> */
+    PalletXcmCoreBuyerRelayXcmWeightConfigInner: {
         buyExecutionCost: "u128",
         weightAtMost: "SpWeightsWeightV2Weight",
     },
@@ -4063,6 +4063,7 @@ export default {
             "NoAssignedCollators",
             "CollatorNotAssigned",
             "XcmWeightStorageNotSet",
+            "ReanchorFailed",
         ],
     },
     /** Lookup515: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */

@@ -280,7 +280,7 @@ impl ExtBuilder {
         let mut ext: TestExternalities = t.into();
 
         ext.execute_with(|| {
-            assert_ok!(XcmCoreBuyer::set_xcm_weights(
+            assert_ok!(XcmCoreBuyer::set_relay_xcm_weight_config(
                 RuntimeOrigin::root(),
                 Some(RelayXcmWeightConfigInner {
                     buy_execution_cost: BUY_EXECUTION_COST,
@@ -316,7 +316,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .into();
 
     ext.execute_with(|| {
-        assert_ok!(XcmCoreBuyer::set_xcm_weights(
+        assert_ok!(XcmCoreBuyer::set_relay_xcm_weight_config(
             RuntimeOrigin::root(),
             Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,

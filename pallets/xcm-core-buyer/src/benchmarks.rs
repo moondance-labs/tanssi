@@ -39,7 +39,7 @@ mod benchmarks {
 
     #[benchmark]
     fn force_buy_core(x: Linear<1, 99>) {
-        assert_ok!(Pallet::<T>::set_xcm_weights(
+        assert_ok!(Pallet::<T>::set_relay_xcm_weight_config(
             RawOrigin::Root.into(),
             Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,
@@ -77,7 +77,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn set_xcm_weights() {
+    fn set_relay_xcm_weight_config() {
         let xcm_weights = RelayXcmWeightConfigInner {
             buy_execution_cost: BUY_EXECUTION_COST,
             weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
@@ -85,7 +85,7 @@ mod benchmarks {
         };
 
         #[extrinsic_call]
-        Pallet::<T>::set_xcm_weights(RawOrigin::Root, Some(xcm_weights.clone()));
+        Pallet::<T>::set_relay_xcm_weight_config(RawOrigin::Root, Some(xcm_weights.clone()));
 
         assert_eq!(RelayXcmWeightConfig::<T>::get(), Some(xcm_weights));
     }

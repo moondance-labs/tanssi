@@ -556,6 +556,8 @@ declare module "@polkadot/api-base/types/errors" {
             NotAParathread: AugmentedError<ApiType>;
             /** An order for this para id already exists */
             OrderAlreadyExists: AugmentedError<ApiType>;
+            /** Converting a multilocation into a relay relative multilocation failed */
+            ReanchorFailed: AugmentedError<ApiType>;
             /**
              * The `XcmWeights` storage has not been set. This must have been set by root with the value of the relay chain
              * xcm call weight and extrinsic weight

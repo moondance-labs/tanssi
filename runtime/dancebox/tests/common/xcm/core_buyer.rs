@@ -121,7 +121,7 @@ fn do_test(tank_account_balance: u128) {
     // Send XCM message from Dancebox pallet XcmCoreBuyer
     Dancebox::execute_with(|| {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
-        assert_ok!(XcmCoreBuyer::set_xcm_weights(
+        assert_ok!(XcmCoreBuyer::set_relay_xcm_weight_config(
             root_origin.clone(),
             Some(RelayXcmWeightConfigInner {
                 buy_execution_cost: BUY_EXECUTION_COST,

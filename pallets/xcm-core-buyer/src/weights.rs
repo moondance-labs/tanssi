@@ -54,7 +54,7 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_xcm_core_buyer.
 pub trait WeightInfo {
 	fn force_buy_core(x: u32, ) -> Weight;
-	fn set_xcm_weights() -> Weight;
+	fn set_relay_xcm_weight_config() -> Weight;
 }
 
 /// Weights for pallet_xcm_core_buyer using the Substrate node and recommended hardware.
@@ -93,7 +93,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	/// Storage: `XcmCoreBuyer::XcmWeights` (r:0 w:1)
 	/// Proof: `XcmCoreBuyer::XcmWeights` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	fn set_xcm_weights() -> Weight {
+	fn set_relay_xcm_weight_config() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
@@ -138,7 +138,7 @@ impl WeightInfo for () {
 	}
 	/// Storage: `XcmCoreBuyer::XcmWeights` (r:0 w:1)
 	/// Proof: `XcmCoreBuyer::XcmWeights` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	fn set_xcm_weights() -> Weight {
+	fn set_relay_xcm_weight_config() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`

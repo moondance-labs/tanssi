@@ -33,7 +33,7 @@ import type {
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
     PalletXcmCoreBuyerBuyCoreCollatorProof,
-    PalletXcmCoreBuyerXcmWeightsTy,
+    PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
@@ -2175,18 +2175,18 @@ declare module "@polkadot/api-base/types/submittable" {
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
-            /** See [`Pallet::set_xcm_weights`]. */
-            setXcmWeights: AugmentedSubmittable<
+            /** See [`Pallet::set_relay_xcm_weight_config`]. */
+            setRelayXcmWeightConfig: AugmentedSubmittable<
                 (
                     xcmWeights:
-                        | Option<PalletXcmCoreBuyerXcmWeightsTy>
+                        | Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>
                         | null
                         | Uint8Array
-                        | PalletXcmCoreBuyerXcmWeightsTy
+                        | PalletXcmCoreBuyerRelayXcmWeightConfigInner
                         | { buyExecutionCost?: any; weightAtMost?: any }
                         | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [Option<PalletXcmCoreBuyerXcmWeightsTy>]
+                [Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
