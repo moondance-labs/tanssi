@@ -61,7 +61,6 @@
                 },
                 {
                     "name": "Collator2000-01",
-                    "ws_port": "9960",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
@@ -72,7 +71,6 @@
                 },
                 {
                     "name": "Collator2001-01",
-                    "ws_port": "9961",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
@@ -83,7 +81,6 @@
                 },
                 {
                     "name": "Collator2002-01",
-                    "ws_port": "9962",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },

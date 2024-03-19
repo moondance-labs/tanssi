@@ -76,7 +76,6 @@ use {
         collators::lookahead::{
             self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
         },
-        //collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
         OrchestratorAuraWorkerAuxData,
     },
     tokio::sync::{
@@ -404,6 +403,8 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
+    // This channel allows us to notify the lookahead collator when it should stop.
+    // Useful when rotating containers.
     let (end_lookahead_sender, end_lookahead_receiver) = tokio::sync::watch::channel(());
 
     if validator {
