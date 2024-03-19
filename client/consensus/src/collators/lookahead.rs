@@ -31,43 +31,43 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
-use async_backing_primitives::UnincludedSegmentApi;
-use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{
-    self as consensus_common, load_abridged_host_configuration, ParachainBlockImportMarker,
-    ParentSearchParams,
-};
-use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData};
-use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::{Codec, Encode};
-use polkadot_node_primitives::SubmitCollationParams;
-use polkadot_node_subsystem::messages::{
-    CollationGenerationMessage, RuntimeApiMessage, RuntimeApiRequest,
-};
-use polkadot_overseer::Handle as OverseerHandle;
-use polkadot_primitives::{CollatorPair, Id as ParaId, OccupiedCoreAssumption};
-
-use futures::{channel::oneshot, prelude::*};
-use sc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
-use sc_consensus::BlockImport;
-use sc_consensus_slots::InherentDataProviderExt;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::AppPublic;
-use sp_blockchain::HeaderBackend;
-use sp_consensus::SyncOracle;
-use sp_consensus_aura::{Slot, SlotDuration};
-use sp_core::crypto::Pair;
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::KeystorePtr;
-use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
-use std::{convert::TryFrom, error::Error, sync::Arc, time::Duration};
-use tokio::sync::watch::Receiver;
-
-use crate::{
-    collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
-    consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-    OrchestratorAuraWorkerAuxData,
+use {
+    crate::{
+        collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
+        consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
+        OrchestratorAuraWorkerAuxData,
+    },
+    async_backing_primitives::UnincludedSegmentApi,
+    cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_common::{
+        self as consensus_common, load_abridged_host_configuration, ParachainBlockImportMarker,
+        ParentSearchParams,
+    },
+    cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
+    cumulus_relay_chain_interface::RelayChainInterface,
+    futures::{channel::oneshot, prelude::*},
+    parity_scale_codec::{Codec, Encode},
+    polkadot_node_primitives::SubmitCollationParams,
+    polkadot_node_subsystem::messages::{
+        CollationGenerationMessage, RuntimeApiMessage, RuntimeApiRequest,
+    },
+    polkadot_overseer::Handle as OverseerHandle,
+    polkadot_primitives::{CollatorPair, Id as ParaId, OccupiedCoreAssumption},
+    sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
+    sc_consensus::BlockImport,
+    sc_consensus_slots::InherentDataProviderExt,
+    sp_api::ProvideRuntimeApi,
+    sp_application_crypto::AppPublic,
+    sp_blockchain::HeaderBackend,
+    sp_consensus::SyncOracle,
+    sp_consensus_aura::{Slot, SlotDuration},
+    sp_core::crypto::Pair,
+    sp_inherents::CreateInherentDataProviders,
+    sp_keystore::KeystorePtr,
+    sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
+    std::{convert::TryFrom, error::Error, sync::Arc, time::Duration},
+    tokio::sync::watch::Receiver,
 };
 
 /// Parameters for [`run`].
