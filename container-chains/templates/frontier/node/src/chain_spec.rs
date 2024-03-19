@@ -165,7 +165,7 @@ fn testnet_genesis(
         // We should change this to something different than Moonbeam
         // For now moonwall is very tailored for moonbeam so we need it for tests
         evm_chain_id: EVMChainIdConfig {
-            chain_id: 1281u32 as u64,
+            chain_id: 1281,
             ..Default::default()
         },
         evm: EVMConfig {

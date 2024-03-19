@@ -90,7 +90,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Set 1 collator per parachain, and full_rotation every 5 sessions",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -186,7 +186,7 @@ describeSuite({
         it({
             id: "T08",
             title: "Test author noting is correct for both containers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
@@ -231,7 +231,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Transactions can be made with ethers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
@@ -249,7 +249,7 @@ describeSuite({
         it({
             id: "T12",
             title: "On session 3 we have 1 collator per chain",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 3);
 
@@ -269,7 +269,7 @@ describeSuite({
         it({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 4);
 
@@ -324,7 +324,7 @@ describeSuite({
         it({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();

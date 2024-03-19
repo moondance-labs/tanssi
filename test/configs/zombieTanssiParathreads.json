@@ -68,26 +68,6 @@
                     "name": "Collator-04",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
-                },
-                {
-                    "name": "Collator-05",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
-                },
-                {
-                    "name": "Collator-06",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
-                },
-                {
-                    "name": "Collator-07",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
-                },
-                {
-                    "name": "Collator-08",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 }
             ]
         },

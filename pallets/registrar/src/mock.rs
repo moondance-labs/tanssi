@@ -292,7 +292,7 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
 pub const SESSION_LEN: u64 = 5;
 
 pub fn run_to_session(n: u32) {
-    let block_number = SESSION_LEN * (n as u64);
+    let block_number = SESSION_LEN * u64::from(n);
     run_to_block(block_number + 1);
 }
 

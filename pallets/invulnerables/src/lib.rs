@@ -26,7 +26,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use {core::marker::PhantomData, sp_runtime::TokenError};
+use {
+    core::marker::PhantomData,
+    sp_runtime::{traits::Convert, TokenError},
+};
 
 #[cfg(test)]
 mod mock;
@@ -84,7 +87,7 @@ pub mod pallet {
         type MaxInvulnerables: Get<u32>;
 
         /// A stable ID for a collator.
-        type CollatorId: Member + Parameter;
+        type CollatorId: Member + Parameter + MaybeSerializeDeserialize + MaxEncodedLen + Ord;
 
         /// A conversion from account ID to collator ID.
         ///
@@ -110,12 +113,12 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn invulnerables)]
     pub type Invulnerables<T: Config> =
-        StorageValue<_, BoundedVec<T::AccountId, T::MaxInvulnerables>, ValueQuery>;
+        StorageValue<_, BoundedVec<T::CollatorId, T::MaxInvulnerables>, ValueQuery>;
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        pub invulnerables: Vec<T::AccountId>,
+        pub invulnerables: Vec<T::CollatorId>,
     }
 
     #[pallet::genesis_build]
@@ -142,7 +145,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// New Invulnerables were set.
-        NewInvulnerables { invulnerables: Vec<T::AccountId> },
+        NewInvulnerables { invulnerables: Vec<T::CollatorId> },
         /// A new Invulnerable was added.
         InvulnerableAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
@@ -162,6 +165,8 @@ pub mod pallet {
         NotInvulnerable,
         /// Account does not have keys registered
         NoKeysRegistered,
+        /// Unable to derive collator id from account id
+        UnableToDeriveCollatorId,
     }
 
     #[pallet::call]
@@ -186,11 +191,11 @@ pub mod pallet {
             // check if the invulnerables have associated validator keys before they are set
             for account_id in &new {
                 // don't let one unprepared collator ruin things for everyone.
-                let collator_id = T::CollatorIdOf::convert(account_id.clone());
-                let is_valid =
-                    collator_id.map_or(false, |key| T::CollatorRegistration::is_registered(&key));
-                if is_valid {
-                    new_with_keys.push(account_id.clone());
+                let maybe_collator_id = T::CollatorIdOf::convert(account_id.clone())
+                    .filter(T::CollatorRegistration::is_registered);
+
+                if let Some(collator_id) = maybe_collator_id {
+                    new_with_keys.push(collator_id.clone());
                 } else {
                     Self::deposit_event(Event::InvalidInvulnerableSkipped {
                         account_id: account_id.clone(),
@@ -224,20 +229,17 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared collator ruin things for everyone.
-            let collator_id = T::CollatorIdOf::convert(who.clone());
+            let maybe_collator_id = T::CollatorIdOf::convert(who.clone())
+                .filter(T::CollatorRegistration::is_registered);
 
-            // Ensure it has keys registered
-            ensure!(
-                collator_id.map_or(false, |key| T::CollatorRegistration::is_registered(&key)),
-                Error::<T>::NoKeysRegistered
-            );
+            let collator_id = maybe_collator_id.ok_or(Error::<T>::NoKeysRegistered)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                if invulnerables.contains(&who) {
+                if invulnerables.contains(&collator_id) {
                     Err(Error::<T>::AlreadyInvulnerable)?;
                 }
                 invulnerables
-                    .try_push(who.clone())
+                    .try_push(collator_id.clone())
                     .map_err(|_| Error::<T>::TooManyInvulnerables)?;
                 Ok(())
             })?;
@@ -263,10 +265,13 @@ pub mod pallet {
         pub fn remove_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
+            let collator_id = T::CollatorIdOf::convert(who.clone())
+                .ok_or(Error::<T>::UnableToDeriveCollatorId)?;
+
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
                 let pos = invulnerables
                     .iter()
-                    .position(|x| x == &who)
+                    .position(|x| x == &collator_id)
                     .ok_or(Error::<T>::NotInvulnerable)?;
                 invulnerables.remove(pos);
                 Ok(())
@@ -278,8 +283,8 @@ pub mod pallet {
     }
 
     /// Play the role of the session manager.
-    impl<T: Config> SessionManager<T::AccountId> for Pallet<T> {
-        fn new_session(index: SessionIndex) -> Option<Vec<T::AccountId>> {
+    impl<T: Config> SessionManager<T::CollatorId> for Pallet<T> {
+        fn new_session(index: SessionIndex) -> Option<Vec<T::CollatorId>> {
             log::info!(
                 "assembling new invulnerable collators for new session {} at #{:?}",
                 index,
@@ -327,9 +332,11 @@ where
         amount: CreditOf<Runtime, Currency>,
     ) -> frame_support::pallet_prelude::DispatchResultWithPostInfo {
         let mut total_weight = Weight::zero();
+        let collator_id = Runtime::CollatorIdOf::convert(rewarded.clone())
+            .ok_or(Error::<Runtime>::UnableToDeriveCollatorId)?;
         // weight to read invulnerables
         total_weight += Runtime::DbWeight::get().reads(1);
-        if !Invulnerables::<Runtime>::get().contains(&rewarded) {
+        if !Invulnerables::<Runtime>::get().contains(&collator_id) {
             let post_info = Fallback::distribute_rewards(rewarded, amount)?;
             if let Some(weight) = post_info.actual_weight {
                 total_weight += weight;

@@ -563,7 +563,7 @@ pub fn current_author() -> AccountId {
 
 pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
     let block_cost = BlockProductionCost::block_cost(&para_id).0;
-    (number_of_blocks as u128).saturating_mul(block_cost)
+    u128::from(number_of_blocks).saturating_mul(block_cost)
 }
 
 pub fn collator_assignment_credits_to_required_balance(
@@ -571,7 +571,7 @@ pub fn collator_assignment_credits_to_required_balance(
     para_id: ParaId,
 ) -> Balance {
     let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
-    (number_of_sessions as u128).saturating_mul(collator_assignment_cost)
+    u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
 }
 
 pub const ALICE: [u8; 32] = [4u8; 32];
