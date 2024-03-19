@@ -512,10 +512,15 @@ impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     }
 }
 
+parameter_types! {
+    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+}
+
 impl pallet_async_backing::Config for Runtime {
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
