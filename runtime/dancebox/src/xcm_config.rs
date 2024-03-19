@@ -325,6 +325,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type OnForeignAssetCreated = ();
+    type OnForeignAssetDestroyed = ();
 }
 
 impl pallet_asset_rate::Config for Runtime {
