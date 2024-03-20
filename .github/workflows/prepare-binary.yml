@@ -20,7 +20,7 @@ jobs:
       RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.sha }}
       - name: Setup Rust toolchain
@@ -56,10 +56,10 @@ jobs:
             image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
     steps:
         - name: Checkout
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ github.event.inputs.sha }}
-        - uses: actions/download-artifact@v3.0.2
+        - uses: actions/download-artifact@v4
           with:
             name: binaries
             path: build
@@ -72,21 +72,21 @@ jobs:
             echo "tags=${TAGS}" >> $GITHUB_OUTPUT
             echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
         - name: Set up QEMU
-          uses: docker/setup-qemu-action@v2.1.0
+          uses: docker/setup-qemu-action@v3
         - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v2.5.0
+          uses: docker/setup-buildx-action@v3
           with:
             version: latest
             driver-opts: |
                 image=moby/buildkit:master
         - name: Login to DockerHub
-          uses: docker/login-action@v2.2.0
+          uses: docker/login-action@v3
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
         - name: Build and push
           id: docker_build
-          uses: docker/build-push-action@v4
+          uses: docker/build-push-action@v5
           with:
             context: .
             file: ./docker/${{matrix.image}}.Dockerfile
@@ -103,7 +103,7 @@ jobs:
                 org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
 
         - name: Login to DockerHub
-          uses: docker/login-action@v2.2.0
+          uses: docker/login-action@v3
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}

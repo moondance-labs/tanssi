@@ -27,7 +27,7 @@ jobs:
     runs-on: self-hosted
     steps:
       ## Use scripts and tools from current branch
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Upload scripts
         uses: actions/upload-artifact@v3
         with:
@@ -44,7 +44,7 @@ jobs:
     outputs:
       matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
     # Build input dependent matrix
       - name: create matrix
@@ -73,7 +73,7 @@ jobs:
         srtool_image_tag:
           - 1.75.0
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
       - name: Login to DockerHub
@@ -83,7 +83,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download original scripts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: original-scripts
           path: original-scripts
@@ -117,7 +117,7 @@ jobs:
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0 
@@ -126,12 +126,12 @@ jobs:
         with:
           node-version: 18.x  
       - name: Download Original Tools
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v3.0.2
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build  
@@ -165,12 +165,12 @@ jobs:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v3.0.2
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build    

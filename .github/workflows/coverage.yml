@@ -51,7 +51,7 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
       - name: Setup Variables

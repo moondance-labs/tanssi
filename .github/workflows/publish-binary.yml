@@ -16,7 +16,7 @@ jobs:
   setup-scripts:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Upload tools
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -33,7 +33,7 @@ jobs:
       RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
       - name: Setup Rust toolchain
@@ -69,7 +69,7 @@ jobs:
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
@@ -78,7 +78,7 @@ jobs:
         with:
           node-version: 18.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: original-tools
           path: original-tools
@@ -111,7 +111,7 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-node", "container-chain-template-frontier-node", "container-chain-template-simple-node"]
     steps:
-      - uses: actions/download-artifact@v3.0.2
+      - uses: actions/download-artifact@v4
         with:
           name: binaries
           path: build

@@ -35,7 +35,7 @@ jobs:
                     echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
                   fi
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ steps.check-git-ref.outputs.git_ref }}
             - name: Get Latest RT Release
@@ -88,7 +88,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Find un-copyrighted files
@@ -107,7 +107,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -125,7 +125,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -143,7 +143,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -161,7 +161,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -184,7 +184,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -212,7 +212,7 @@ jobs:
             CARGO_TARGET_DIR: "target"
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
@@ -275,7 +275,7 @@ jobs:
             SCCACHE_CACHE_SIZE: "100GB"
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
@@ -301,7 +301,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -309,7 +309,7 @@ jobs:
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -333,7 +333,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -341,7 +341,7 @@ jobs:
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -367,7 +367,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -375,7 +375,7 @@ jobs:
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -401,7 +401,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -414,7 +414,7 @@ jobs:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -435,7 +435,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -448,7 +448,7 @@ jobs:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -469,7 +469,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -482,7 +482,7 @@ jobs:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -498,7 +498,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -514,7 +514,7 @@ jobs:
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -553,7 +553,7 @@ jobs:
       needs: ["set-tags", "build"]
       steps:
         - name: Checkout
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -569,7 +569,7 @@ jobs:
             cache: "pnpm"
 
         - name: "Download binaries"
-          uses: actions/download-artifact@v3.0.2
+          uses: actions/download-artifact@v4
           with:
             name: binaries
             path: target/release
@@ -608,7 +608,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -624,7 +624,7 @@ jobs:
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -663,7 +663,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -679,7 +679,7 @@ jobs:
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -730,7 +730,7 @@ jobs:
         DEBUG_COLORS: 1
       steps:
         - name: Checkout
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
         - uses: pnpm/action-setup@v2
@@ -745,7 +745,7 @@ jobs:
             mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             mkdir -p test/tmp
         - name: "Download runtime"
-          uses: actions/download-artifact@v3.0.2
+          uses: actions/download-artifact@v4
           with:
             name: runtimes
             path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -763,7 +763,7 @@ jobs:
                 chain: ["dancebox"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -783,13 +783,13 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
 
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
@@ -843,10 +843,10 @@ jobs:
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
-            - uses: actions/download-artifact@v3.0.2
+            - uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: build
