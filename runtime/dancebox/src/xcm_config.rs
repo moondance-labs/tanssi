@@ -60,7 +60,7 @@ parameter_types! {
     // a MultiLocation: (Self Balances pallet index)
     // We use the RELATIVE multilocation
     pub SelfReserve: MultiLocation = MultiLocation {
-        parents:0,
+        parents: 0,
         interior: Junctions::X1(
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
         )
@@ -538,62 +538,13 @@ impl GetPurchaseCoreCall for EncodedCallToBuyCore {
         // probably the best solution would be to default to westend and use a storage item to override it
         // so that we can set rococo for tests
 
-        // TODO: use place_order_keep_alive?
-        let call = rococo_calls::RelayCall::OnDemandAssignmentProvider(
-            rococo_calls::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+        let call = tanssi_relay_encoder::rococo::RelayCall::OnDemandAssignmentProvider(
+            tanssi_relay_encoder::rococo::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
                 max_amount,
                 para_id,
             },
         );
 
         call.encode()
-    }
-}
-
-// TODO: create a crate for rococo_calls
-pub mod rococo_calls {
-    use super::*;
-    pub type Balance = u128;
-
-    #[derive(Encode)]
-    pub enum RelayCall {
-        #[codec(index = 66u8)]
-        OnDemandAssignmentProvider(OnDemandAssignmentProviderCall),
-    }
-
-    #[derive(Encode)]
-    pub enum OnDemandAssignmentProviderCall {
-        #[codec(index = 0u8)]
-        PlaceOrderAllowDeath {
-            max_amount: Balance,
-            para_id: ParaId,
-        },
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
-
-        #[test]
-        fn encode_place_order_allow_death() {
-            let max_amount = u128::MAX;
-            let para_id = u32::MAX.into();
-            let call = rococo_runtime::RuntimeCall::OnDemandAssignmentProvider(
-                parachains_assigner_on_demand::Call::place_order_allow_death {
-                    max_amount,
-                    para_id,
-                },
-            );
-            let call2 = RelayCall::OnDemandAssignmentProvider(
-                OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
-                    max_amount,
-                    para_id,
-                },
-            );
-
-            // If this fails check if indices changed
-            assert_eq!(call.encode(), call2.encode());
-        }
     }
 }

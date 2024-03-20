@@ -3092,6 +3092,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-relay-encoder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
@@ -15376,6 +15377,26 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-container-chain-genesis-data",
  "try-runtime-cli",
+]
+
+[[package]]
+name = "tanssi-relay-encoder"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "pallet-balances",
+ "parity-scale-codec",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

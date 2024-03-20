@@ -42,6 +42,7 @@ pallet-services-payment = { workspace = true }
 pallet-stream-payment = { workspace = true }
 pallet-xcm-core-buyer = { workspace = true }
 runtime-common = { workspace = true }
+tanssi-relay-encoder = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -251,6 +252,7 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
+	"tanssi-relay-encoder/std",
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
