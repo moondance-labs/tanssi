@@ -246,7 +246,7 @@ jobs:
                   cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
             - name: Upload runtimes
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: runtimes
                   path: runtimes
@@ -257,7 +257,7 @@ jobs:
                   cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
                   cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
             - name: Upload binary
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: binaries
                   path: binaries
@@ -543,7 +543,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs
                   path: logs
@@ -598,7 +598,7 @@ jobs:
 
         - name: "Upload zombie logs"
           if: failure()
-          uses: actions/upload-artifact@v3.1.2
+          uses: actions/upload-artifact@v4
           with:
             name: logs-parathreads
             path: logs
@@ -653,7 +653,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs-rotation
                   path: logs
@@ -708,7 +708,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs-warp-sync
                   path: logs
@@ -828,7 +828,7 @@ jobs:
                   MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
                   find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
                   echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-            - uses: actions/upload-artifact@v3.1.2
+            - uses: actions/upload-artifact@v4
               if: failure()
               with:
                   name: failed-node-logs
