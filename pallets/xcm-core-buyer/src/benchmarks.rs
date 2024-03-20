@@ -20,7 +20,7 @@
 use {
     crate::{
         Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
-        RelayXcmWeightConfig, RelayXcmWeightConfigInner,
+        RelayChain, RelayXcmWeightConfig, RelayXcmWeightConfigInner,
     },
     core::marker::PhantomData,
     frame_benchmarking::{account, v2::*},
@@ -88,6 +88,12 @@ mod benchmarks {
         Pallet::<T>::set_relay_xcm_weight_config(RawOrigin::Root, Some(xcm_weights.clone()));
 
         assert_eq!(RelayXcmWeightConfig::<T>::get(), Some(xcm_weights));
+    }
+
+    #[benchmark]
+    fn set_relay_chain() {
+        #[extrinsic_call]
+        Pallet::<T>::set_relay_chain(RawOrigin::Root, Some(T::RelayChain::default()));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

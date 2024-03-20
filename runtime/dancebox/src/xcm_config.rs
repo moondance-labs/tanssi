@@ -36,8 +36,9 @@ use {
         ParaIdIntoAccountTruncating,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    parity_scale_codec::Encode,
+    parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    scale_info::TypeInfo,
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
@@ -478,6 +479,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetBlockNumber = GetBlockNumber;
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type SelfParaId = parachain_info::Pallet<Runtime>;
+    type RelayChain = RelayChain;
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
@@ -531,22 +533,40 @@ impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
     }
 }
 
+/// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
+/// pallet indices for pallet_on_demand_assignment_provider
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo)]
+pub enum RelayChain {
+    #[default]
+    Westend,
+    Rococo,
+}
+
 pub struct EncodedCallToBuyCore;
 
-impl GetPurchaseCoreCall for EncodedCallToBuyCore {
-    fn get_encoded(max_amount: u128, para_id: ParaId) -> Vec<u8> {
-        // TODO: this should use westend_runtime, but the polkadot 1.6.0 release does not have this pallet yet...
-        // TODO: this should depend on the relay chain defined in the chain spec, can we do that?
-        // probably the best solution would be to default to westend and use a storage item to override it
-        // so that we can set rococo for tests
+impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
+    fn get_encoded(relay_chain: RelayChain, max_amount: u128, para_id: ParaId) -> Vec<u8> {
+        match relay_chain {
+            RelayChain::Westend => {
+                let call = tanssi_relay_encoder::westend::RelayCall::OnDemandAssignmentProvider(
+                    tanssi_relay_encoder::westend::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                        max_amount,
+                        para_id,
+                    },
+                );
 
-        let call = tanssi_relay_encoder::rococo::RelayCall::OnDemandAssignmentProvider(
-            tanssi_relay_encoder::rococo::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
-                max_amount,
-                para_id,
-            },
-        );
+                call.encode()
+            }
+            RelayChain::Rococo => {
+                let call = tanssi_relay_encoder::rococo::RelayCall::OnDemandAssignmentProvider(
+                    tanssi_relay_encoder::rococo::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                        max_amount,
+                        para_id,
+                    },
+                );
 
-        call.encode()
+                call.encode()
+            }
+        }
     }
 }

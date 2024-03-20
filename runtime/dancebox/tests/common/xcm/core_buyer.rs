@@ -129,6 +129,10 @@ fn do_test(tank_account_balance: u128) {
                 _phantom: PhantomData,
             }),
         ));
+        assert_ok!(XcmCoreBuyer::set_relay_chain(
+            root_origin.clone(),
+            Some(dancebox_runtime::xcm_config::RelayChain::Rococo),
+        ));
         assert_ok!(XcmCoreBuyer::force_buy_core(
             root_origin,
             PARATHREAD_ID.into()

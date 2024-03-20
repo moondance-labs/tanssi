@@ -40,6 +40,7 @@ use {
         traits::fungible::{Balanced, Inspect},
     },
     frame_system::pallet_prelude::*,
+    parity_scale_codec::EncodeLike,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::vec,
     sp_std::vec::Vec,
@@ -64,7 +65,7 @@ pub mod pallet {
         type XcmSender: SendXcm;
         /// Get encoded call to buy a core in the relay chain. This will be passed to the XCM
         /// `Transact` instruction.
-        type GetPurchaseCoreCall: GetPurchaseCoreCall;
+        type GetPurchaseCoreCall: GetPurchaseCoreCall<Self::RelayChain>;
         /// Get current block number, used in `validate_unsigned`.
         type GetBlockNumber: Get<u32>;
         /// How to convert a `ParaId` into an `AccountId32`. Used to derive the parathread tank
@@ -73,6 +74,14 @@ pub mod pallet {
         /// Orchestartor chain `ParaId`. Used in `absolute_multilocation` to convert the
         /// `interior_multilocation` into what the relay chain needs to allow to `DepositAsset`.
         type SelfParaId: Get<ParaId>;
+        type RelayChain: Default
+            + Encode
+            + Decode
+            + TypeInfo
+            + EncodeLike
+            + Clone
+            + PartialEq
+            + sp_std::fmt::Debug;
         /// Limit how many in-flight XCM requests can be sent to the relay chain in one block.
         type MaxParathreads: Get<u32>;
         /// Get the parathread params. Used to verify that the para id is a parathread.
@@ -151,6 +160,12 @@ pub mod pallet {
         pub _phantom: PhantomData<T>,
     }
 
+    /// This must be set by root with the value of the relay chain xcm call weight and extrinsic
+    /// weight limit. This is a storage item because relay chain weights can change, so we need to
+    /// be able to adjust them without doing a runtime upgrade.
+    #[pallet::storage]
+    pub type RelayChain<T: Config> = StorageValue<_, T::RelayChain, ValueQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Buy a core for this parathread id.
@@ -223,6 +238,23 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_relay_chain())]
+        pub fn set_relay_chain(
+            origin: OriginFor<T>,
+            relay_chain: Option<T::RelayChain>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            if let Some(relay_chain) = relay_chain {
+                RelayChain::<T>::put(relay_chain);
+            } else {
+                RelayChain::<T>::kill();
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -290,7 +322,8 @@ pub mod pallet {
             // It should be defined in a storage item somewhere, controllable by the container chain
             // manager.
             let max_amount = u128::MAX;
-            let call = T::GetPurchaseCoreCall::get_encoded(max_amount, para_id);
+            let call =
+                T::GetPurchaseCoreCall::get_encoded(RelayChain::<T>::get(), max_amount, para_id);
             let weight_at_most = xcm_weights_storage.weight_at_most;
 
             // Assumption: derived account already has DOT
@@ -427,10 +460,10 @@ pub mod pallet {
     }
 }
 
-pub trait GetPurchaseCoreCall {
+pub trait GetPurchaseCoreCall<RelayChain> {
     /// Get the encoded call to buy a core for this `para_id`, with this `max_amount`.
     /// Returns the encoded call and its estimated weight.
-    fn get_encoded(max_amount: u128, para_id: ParaId) -> Vec<u8>;
+    fn get_encoded(relay_chain: RelayChain, max_amount: u128, para_id: ParaId) -> Vec<u8>;
 }
 
 pub trait GetParathreadCollators<AccountId> {

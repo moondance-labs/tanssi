@@ -167,6 +167,7 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetBlockNumber = ();
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type SelfParaId = ParachainId;
+    type RelayChain = ();
     type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
@@ -246,8 +247,8 @@ impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
 
 pub struct EncodedCallToBuyCore;
 
-impl GetPurchaseCoreCall for EncodedCallToBuyCore {
-    fn get_encoded(_max_amount: u128, _para_id: ParaId) -> Vec<u8> {
+impl GetPurchaseCoreCall<()> for EncodedCallToBuyCore {
+    fn get_encoded(_relay_chain: (), _max_amount: u128, _para_id: ParaId) -> Vec<u8> {
         vec![]
     }
 }

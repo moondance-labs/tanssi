@@ -39,7 +39,7 @@ decl_test_relay_chains! {
         on_init = (),
         runtime = westend_runtime,
         core = {
-            SovereignAccountOf: westend_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
+            SovereignAccountOf: westend_runtime::xcm_config::LocationConverter,
         },
         pallets = {
             System: westend_runtime::System,
@@ -54,7 +54,7 @@ decl_test_relay_chains! {
         on_init = (),
         runtime = rococo_runtime,
         core = {
-            SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
+            SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter,
         },
         pallets = {
             System: rococo_runtime::System,
