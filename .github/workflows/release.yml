@@ -169,7 +169,7 @@ jobs:
               with:
                   version: 8
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -192,7 +192,7 @@ jobs:
               with:
                   version: 8
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -314,7 +314,7 @@ jobs:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -346,7 +346,7 @@ jobs:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -380,7 +380,7 @@ jobs:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -409,7 +409,7 @@ jobs:
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -443,7 +443,7 @@ jobs:
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -477,7 +477,7 @@ jobs:
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -508,7 +508,7 @@ jobs:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -563,7 +563,7 @@ jobs:
             version: 8
 
         - name: Setup Node
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v4
           with:
             node-version: 20.x
             cache: "pnpm"
@@ -618,7 +618,7 @@ jobs:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -673,7 +673,7 @@ jobs:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -736,7 +736,7 @@ jobs:
         - uses: pnpm/action-setup@v2
           with:
             version: 8
-        - uses: actions/setup-node@v3
+        - uses: actions/setup-node@v4
           with:
             node-version: 20.x
             cache: "pnpm"
@@ -773,7 +773,7 @@ jobs:
                   version: 8
 
             - name: Setup node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -858,21 +858,21 @@ jobs:
                   echo "tags=${TAGS}" >> $GITHUB_OUTPUT
                   echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
             - name: Set up QEMU
-              uses: docker/setup-qemu-action@v2.1.0
+              uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2.5.0
+              uses: docker/setup-buildx-action@v3
               with:
                   version: latest
                   driver-opts: |
                       image=moby/buildkit:master
             - name: Login to DockerHub
-              uses: docker/login-action@v2.2.0
+              uses: docker/login-action@v3
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: Build and push
               id: docker_build
-              uses: docker/build-push-action@v4
+              uses: docker/build-push-action@v5
               with:
                   context: .
                   file: ./docker/${{matrix.image}}.Dockerfile
