@@ -14,7 +14,7 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         // TODO: don't hardcode the period here
-        const sessionPeriod = 5;
+        const sessionPeriod = 10;
 
         beforeAll(async () => {
             alice = context.keyring.alice;

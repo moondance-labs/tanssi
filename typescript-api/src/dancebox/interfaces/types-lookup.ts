@@ -354,6 +354,7 @@ declare module "@polkadot/types/lookup" {
         readonly isBalances: boolean;
         readonly isRegistrar: boolean;
         readonly isSudoRegistrar: boolean;
+        readonly isSessionKeyManagement: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -362,7 +363,8 @@ declare module "@polkadot/types/lookup" {
             | "CancelProxy"
             | "Balances"
             | "Registrar"
-            | "SudoRegistrar";
+            | "SudoRegistrar"
+            | "SessionKeyManagement";
     }
 
     /** @name PalletMigrationsEvent (41) */

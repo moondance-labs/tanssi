@@ -12,7 +12,7 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        const blocksPerSession = 5n;
+        const blocksPerSession = 10n;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

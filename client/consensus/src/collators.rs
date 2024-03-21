@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod basic;
+pub mod lookahead;
 
 use {
     crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},

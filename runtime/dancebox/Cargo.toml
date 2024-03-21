@@ -45,6 +45,7 @@ runtime-common = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 
 # Moonkit
+async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
@@ -151,6 +152,7 @@ default = [
 	"std",
 ]
 std = [
+	"async-backing-primitives/std",
 	"container-chain-template-frontier-runtime/std",
 	"container-chain-template-simple-runtime/std",
 	"cumulus-pallet-dmp-queue/std",
