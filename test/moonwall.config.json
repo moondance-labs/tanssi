@@ -19,7 +19,9 @@
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
                         "options": [
-                            "--dev",
+                            "--alice",
+                            "--tmp",
+                            "--chain=tmp/dancebox_dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
                             "--wasmtime-precompiled=wasm"
@@ -69,7 +71,9 @@
                         "name": "frontier-template",
                         "binPath": "../target/release/container-chain-template-frontier-node",
                         "options": [
-                            "--dev",
+                            "--alice",
+                            "--tmp",
+                            "--chain=tmp/dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
                             "--wasmtime-precompiled=wasm"
@@ -95,7 +99,9 @@
                         "name": "simple-template",
                         "binPath": "../target/release/container-chain-template-simple-node",
                         "options": [
-                            "--dev",
+                            "--alice",
+                            "--tmp",
+                            "--chain=tmp/dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
                             "--wasmtime-precompiled=wasm"
