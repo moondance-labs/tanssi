@@ -33,7 +33,7 @@ pub use sp_runtime::BuildStorage;
 pub mod weights;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
@@ -234,7 +234,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 12000;
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -482,7 +482,7 @@ parameter_types! {
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
-pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 3;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
@@ -501,7 +501,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 pub struct ParaSlotProvider;
@@ -512,10 +512,15 @@ impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     }
 }
 
+parameter_types! {
+    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+}
+
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -626,11 +631,20 @@ pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 /// Play the role of the session manager.
 impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking {
     fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
-        log::info!(
-            "assembling new collators for new session {} at #{:?}",
-            index,
-            <frame_system::Pallet<Runtime>>::block_number(),
-        );
+        if <frame_system::Pallet<Runtime>>::block_number() == 0 {
+            // Do not show this log in genesis
+            log::debug!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        } else {
+            log::info!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        }
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
         let candidates_staking =
@@ -1057,6 +1071,8 @@ pub enum ProxyType {
     Registrar = 6,
     /// Allow extrinsics related to Registrar that needs to be called through Sudo
     SudoRegistrar = 7,
+    /// Allow extrinsics from the Session pallet for key management.
+    SessionKeyManagement = 8,
 }
 
 impl Default for ProxyType {
@@ -1112,6 +1128,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
+            ProxyType::SessionKeyManagement => {
+                matches!(c, RuntimeCall::Session(..))
+            }
         }
     }
 
@@ -1311,12 +1330,12 @@ parameter_types! {
     pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
     // The equation to solve is:
-    // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
-    // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
+    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
-    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
+    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
     // 30% for parachain bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
@@ -1794,6 +1813,15 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
         }
     }
 

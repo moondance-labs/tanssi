@@ -27,6 +27,7 @@ pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
 
 # Moonkit
+async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
@@ -105,6 +106,7 @@ substrate-wasm-builder = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"async-backing-primitives/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",

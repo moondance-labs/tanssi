@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -32,7 +33,6 @@ pub mod migrations;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
@@ -225,7 +225,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 12000;
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -401,7 +401,7 @@ parameter_types! {
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
-pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 3;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
@@ -420,7 +420,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 
@@ -432,10 +432,15 @@ impl sp_core::Get<(Slot, SlotDuration)> for ParaSlotProvider {
     }
 }
 
+parameter_types! {
+    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+}
+
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -790,6 +795,15 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
         }
     }
 

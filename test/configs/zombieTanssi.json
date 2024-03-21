@@ -7,6 +7,21 @@
         "chain": "rococo-local",
         "default_command": "tmp/polkadot",
         "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "genesis": {
+            "runtimeGenesis": {
+                "patch": {
+                    "configuration": {
+                        "config": {
+                            "async_backing_params": {
+                                "allowed_ancestry_len": 2,
+                                "max_candidate_depth": 3
+                            },
+                            "scheduling_lookahead": 2
+                        }
+                    }
+                }
+            }
+        },
         "nodes": [
             {
                 "name": "alice",

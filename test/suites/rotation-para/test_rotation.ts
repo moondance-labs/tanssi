@@ -275,7 +275,7 @@ describeSuite({
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
+                await context.waitBlock(6, "Tanssi");
                 const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
                 // The assignment is random, so there is a small chance that it will be the same,
                 // and in that case this test shouldn't fail
@@ -333,7 +333,7 @@ describeSuite({
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
                 // This also serves to check that Tanssi is producing blocks after the rotation
-                await context.waitBlock(3, "Tanssi");
+                await context.waitBlock(6, "Tanssi");
 
                 // First, check that nodes have stopped in their previously assigned chain
                 const oldC2000 = collatorName[assignment3.containerChains[2000][0]];

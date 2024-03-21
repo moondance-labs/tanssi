@@ -235,7 +235,17 @@ export default {
     },
     /** Lookup39: dancebox_runtime::ProxyType */
     DanceboxRuntimeProxyType: {
-        _enum: ["Any", "NonTransfer", "Governance", "Staking", "CancelProxy", "Balances", "Registrar", "SudoRegistrar"],
+        _enum: [
+            "Any",
+            "NonTransfer",
+            "Governance",
+            "Staking",
+            "CancelProxy",
+            "Balances",
+            "Registrar",
+            "SudoRegistrar",
+            "SessionKeyManagement",
+        ],
     },
     /** Lookup41: pallet_migrations::pallet::Event<T> */
     PalletMigrationsEvent: {
