@@ -2328,7 +2328,8 @@ fn test_proxy_utility() {
         | ProxyType::CancelProxy
         | ProxyType::Balances
         | ProxyType::Registrar
-        | ProxyType::SudoRegistrar => (),
+        | ProxyType::SudoRegistrar
+        | ProxyType::SessionKeyManagement => (),
     };
 
     // All except for any
@@ -2340,6 +2341,7 @@ fn test_proxy_utility() {
         ProxyType::Balances,
         ProxyType::Registrar,
         ProxyType::SudoRegistrar,
+        ProxyType::SessionKeyManagement,
     ];
 
     for &proxy_type in proxy_types {
