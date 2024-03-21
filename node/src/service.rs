@@ -44,6 +44,7 @@ use {
     dc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHeader,
     },
+    dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     futures::{Stream, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
@@ -66,7 +67,7 @@ use {
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
     sp_consensus::{EnableProofRecording, SyncOracle},
-    sp_consensus_slots::Slot,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
@@ -727,7 +728,7 @@ fn start_consensus_container(
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
-
+    let client_for_cidp = client.clone();
     let client_for_hash_provider = client.clone();
 
     let code_hash_provider = move |block_hash| {
@@ -739,9 +740,10 @@ fn start_consensus_container(
     };
 
     let params = LookaheadTanssiAuraParams {
-        create_inherent_data_providers: move |_block_hash, (relay_parent, _validation_data)| {
+        create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
+            let client = client_for_cidp.clone();
 
             async move {
                 let authorities_noting_inherent =
@@ -753,7 +755,16 @@ fn start_consensus_container(
                     )
                     .await;
 
-                // TODO: should we still retrieve timestamp and slot?
+                let slot_duration = {
+                    // Default to 12s if runtime API does not exist
+                    let slot_duration_ms = client
+                        .runtime_api()
+                        .slot_duration(block_hash)
+                        .unwrap_or(12_000);
+
+                    SlotDuration::from_millis(slot_duration_ms)
+                };
+
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =

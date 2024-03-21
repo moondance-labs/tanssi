@@ -22,6 +22,7 @@ smallvec = { workspace = true }
 
 # Own
 dp-core = { workspace = true }
+dp-slot-duration-runtime-api = { workspace = true }
 pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-authority-assignment = { workspace = true }
@@ -204,6 +205,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
+	"dp-slot-duration-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)

@@ -21,6 +21,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
+dp-slot-duration-runtime-api = { workspace = true }
 dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
@@ -177,6 +178,7 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"xcm-primitives/std",
+	"dp-slot-duration-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
