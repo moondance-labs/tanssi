@@ -757,8 +757,6 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         );
     });
 
-    // I will in any case leave the test ready for when we incorporate this change.
-    // Relay execute with to create a block
     Westend::execute_with(|| {
         type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
