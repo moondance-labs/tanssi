@@ -20,7 +20,7 @@
 use {
     crate::{
         Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
-        RelayChain, RelayXcmWeightConfig, RelayXcmWeightConfigInner,
+        RelayXcmWeightConfig, RelayXcmWeightConfigInner,
     },
     core::marker::PhantomData,
     frame_benchmarking::{account, v2::*},
