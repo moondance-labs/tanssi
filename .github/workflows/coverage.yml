@@ -57,7 +57,7 @@ jobs:
       - name: Setup Variables
         shell: bash
         run: |
-          echo "RUSTFLAGS=-C opt-level=3 -D warnings -C instrument-coverage" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C opt-level=3 -D warnings -C instrument-coverage -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
           # Disable coverage when building
           echo "LLVM_PROFILE_FILE=/dev/null" >> $GITHUB_ENV
       - name: Setup grcov
@@ -65,8 +65,6 @@ jobs:
           wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
           tar xvf grcov-x86_64-unknown-linux-gnu.tar.bz2
           chmod +x grcov
-      - name: Setup Mold Linker
-        uses: rui314/setup-mold@v1
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
