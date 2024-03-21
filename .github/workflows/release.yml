@@ -35,7 +35,7 @@ jobs:
                     echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
                   fi
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ steps.check-git-ref.outputs.git_ref }}
             - name: Get Latest RT Release
@@ -88,7 +88,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Find un-copyrighted files
@@ -107,7 +107,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -125,7 +125,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -143,7 +143,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
@@ -161,15 +161,15 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -184,15 +184,15 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -212,11 +212,11 @@ jobs:
             CARGO_TARGET_DIR: "target"
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.3
+              uses: mozilla-actions/sccache-action@v0.0.4
             - name: Setup Variables
               shell: bash
               run: |
@@ -231,7 +231,7 @@ jobs:
               shell: bash
               run: |
                   mkdir -p mold
-                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
+                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
             - name: Setup Rust toolchain
               run: rustup show
             - name: Formatter
@@ -246,7 +246,7 @@ jobs:
                   cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
             - name: Upload runtimes
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: runtimes
                   path: runtimes
@@ -257,7 +257,7 @@ jobs:
                   cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
                   cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
             - name: Upload binary
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: binaries
                   path: binaries
@@ -275,11 +275,11 @@ jobs:
             SCCACHE_CACHE_SIZE: "100GB"
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.3
+              uses: mozilla-actions/sccache-action@v0.0.4
             - name: Setup Variables
               shell: bash
               run: |
@@ -288,7 +288,7 @@ jobs:
               shell: bash
               run: |
                   mkdir -p mold
-                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
+                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
             - name: Setup Rust toolchain
               run: rustup show
             - name: Unit tests
@@ -301,20 +301,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -333,20 +333,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -367,20 +367,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
             - name: "Setup Node"
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -401,20 +401,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -435,20 +435,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -469,20 +469,20 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -498,23 +498,23 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -543,7 +543,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs
                   path: logs
@@ -553,23 +553,23 @@ jobs:
       needs: ["set-tags", "build"]
       steps:
         - name: Checkout
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
 
         - name: Pnpm
-          uses: pnpm/action-setup@v2
+          uses: pnpm/action-setup@v3.0.0
           with:
             version: 8
 
         - name: Setup Node
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v4
           with:
             node-version: 20.x
             cache: "pnpm"
 
         - name: "Download binaries"
-          uses: actions/download-artifact@v3.0.2
+          uses: actions/download-artifact@v4
           with:
             name: binaries
             path: target/release
@@ -598,7 +598,7 @@ jobs:
 
         - name: "Upload zombie logs"
           if: failure()
-          uses: actions/upload-artifact@v3.1.2
+          uses: actions/upload-artifact@v4
           with:
             name: logs-parathreads
             path: logs
@@ -608,23 +608,23 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -653,7 +653,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs-rotation
                   path: logs
@@ -663,23 +663,23 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
 
             - name: Setup Node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
 
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
@@ -708,7 +708,7 @@ jobs:
 
             - name: "Upload zombie logs"
               if: failure()
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v4
               with:
                   name: logs-warp-sync
                   path: logs
@@ -730,13 +730,13 @@ jobs:
         DEBUG_COLORS: 1
       steps:
         - name: Checkout
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
-        - uses: pnpm/action-setup@v2
+        - uses: pnpm/action-setup@v3.0.0
           with:
             version: 8
-        - uses: actions/setup-node@v3
+        - uses: actions/setup-node@v4
           with:
             node-version: 20.x
             cache: "pnpm"
@@ -745,7 +745,7 @@ jobs:
             mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             mkdir -p test/tmp
         - name: "Download runtime"
-          uses: actions/download-artifact@v3.0.2
+          uses: actions/download-artifact@v4
           with:
             name: runtimes
             path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -763,17 +763,17 @@ jobs:
                 chain: ["dancebox"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v3.0.0
               with:
                   version: 8
 
             - name: Setup node
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: "pnpm"
@@ -783,13 +783,13 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: target/release
 
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v3.0.2
+              uses: actions/download-artifact@v4
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
@@ -828,7 +828,7 @@ jobs:
                   MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
                   find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
                   echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-            - uses: actions/upload-artifact@v3.1.2
+            - uses: actions/upload-artifact@v4
               if: failure()
               with:
                   name: failed-node-logs
@@ -843,10 +843,10 @@ jobs:
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
-            - uses: actions/download-artifact@v3.0.2
+            - uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: build
@@ -858,21 +858,21 @@ jobs:
                   echo "tags=${TAGS}" >> $GITHUB_OUTPUT
                   echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
             - name: Set up QEMU
-              uses: docker/setup-qemu-action@v2.1.0
+              uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2.5.0
+              uses: docker/setup-buildx-action@v3
               with:
                   version: latest
                   driver-opts: |
                       image=moby/buildkit:master
             - name: Login to DockerHub
-              uses: docker/login-action@v2.2.0
+              uses: docker/login-action@v3
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: Build and push
               id: docker_build
-              uses: docker/build-push-action@v4
+              uses: docker/build-push-action@v5
               with:
                   context: .
                   file: ./docker/${{matrix.image}}.Dockerfile

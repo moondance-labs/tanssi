@@ -15,7 +15,7 @@ jobs:
         image: ["container-chain-simple-template", "container-chain-evm-template"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Login to DockerHub
