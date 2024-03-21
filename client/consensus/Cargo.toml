@@ -47,10 +47,12 @@ cumulus-relay-chain-interface = { workspace = true }
 
 # Polkadot
 polkadot-node-primitives = { workspace = true }
+polkadot-node-subsystem = { workspace = true }
 polkadot-overseer = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies
+async-backing-primitives = { workspace = true }
 nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
@@ -62,6 +64,7 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
+tokio = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
@@ -76,4 +79,3 @@ sc-network-test = { workspace = true }
 sp-keyring = { workspace = true }
 substrate-test-runtime-client = { workspace = true }
 tempfile = { workspace = true }
-tokio = { workspace = true }
