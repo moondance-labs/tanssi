@@ -757,10 +757,9 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         );
     });
 
-    //TODO: right now this is not going to work because of https://github.com/paritytech/polkadot-sdk/pull/3450
     // I will in any case leave the test ready for when we incorporate this change.
     // Relay execute with to create a block
-    /*Westend::execute_with(|| {
+    Westend::execute_with(|| {
         type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
         assert_expected_events!(
@@ -779,7 +778,6 @@ fn transfer_asset_relay_token_across_tanssi_container() {
                     },
             ]
         );
-
     });
 
     // Let's assert we received them
@@ -808,13 +806,17 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         let charged_tokens =
             container_chain_template_simple_runtime::WeightToFee::weight_to_fee(&outcome_weight);
 
+        // Substract delivery fees
+        // There is no easy way to calculate this, but we know at least they should be more
+        // than the base delivery fee
+        let westend_base_delivery_fee = westend_runtime::xcm_config::BaseDeliveryFee::get();
+
         // Assert empty receiver received funds for relay asset
-        assert_eq!(
+        assert!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 westend_token_asset_id,
                 &SimpleTemplateEmptyReceiver::get(),
-            ),
-            relay_tokens_to_send_simple_template - charged_tokens
+            ) < relay_tokens_to_send_simple_template - charged_tokens - westend_base_delivery_fee
         );
-    });*/
+    });
 }
