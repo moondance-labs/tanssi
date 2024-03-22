@@ -1469,6 +1469,12 @@ impl_runtime_apis! {
             TransactionPayment::length_to_fee(length)
         }
     }
+
+    impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            SLOT_DURATION
+        }
+    }
 }
 
 struct CheckInherents;
