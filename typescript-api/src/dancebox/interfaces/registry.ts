@@ -36,6 +36,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     DanceboxRuntimeTimeUnit,
+    DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchDispatchClass,
@@ -194,6 +195,11 @@ import type {
     PalletUtilityError,
     PalletUtilityEvent,
     PalletXcmCall,
+    PalletXcmCoreBuyerBuyCoreCollatorProof,
+    PalletXcmCoreBuyerCall,
+    PalletXcmCoreBuyerError,
+    PalletXcmCoreBuyerEvent,
+    PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmError,
     PalletXcmEvent,
     PalletXcmOrigin,
@@ -318,6 +324,7 @@ declare module "@polkadot/types/types/registry" {
         DanceboxRuntimeSessionKeys: DanceboxRuntimeSessionKeys;
         DanceboxRuntimeStreamPaymentAssetId: DanceboxRuntimeStreamPaymentAssetId;
         DanceboxRuntimeTimeUnit: DanceboxRuntimeTimeUnit;
+        DanceboxRuntimeXcmConfigRelayChain: DanceboxRuntimeXcmConfigRelayChain;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
@@ -476,6 +483,11 @@ declare module "@polkadot/types/types/registry" {
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;
         PalletXcmCall: PalletXcmCall;
+        PalletXcmCoreBuyerBuyCoreCollatorProof: PalletXcmCoreBuyerBuyCoreCollatorProof;
+        PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
+        PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
+        PalletXcmCoreBuyerEvent: PalletXcmCoreBuyerEvent;
+        PalletXcmCoreBuyerRelayXcmWeightConfigInner: PalletXcmCoreBuyerRelayXcmWeightConfigInner;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
         PalletXcmOrigin: PalletXcmOrigin;

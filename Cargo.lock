@@ -3058,12 +3058,15 @@ dependencies = [
  "pallet-utility",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
+ "pallet-xcm-core-buyer",
  "parachains-common",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "polkadot-service",
+ "rococo-runtime",
+ "rococo-runtime-constants",
  "runtime-common",
  "sc-consensus-grandpa",
  "sc-service",
@@ -3095,6 +3098,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-relay-encoder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
@@ -9499,6 +9503,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-xcm-core-buyer"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections",
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-xcm-executor-utils"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#d377abf69ad58b3a2c7a143b4501f6c3b813d1ed"
@@ -15375,6 +15404,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tanssi-relay-encoder"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "pallet-balances",
+ "parity-scale-codec",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15917,6 +15966,7 @@ dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-std",
 ]
 

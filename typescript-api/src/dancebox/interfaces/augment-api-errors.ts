@@ -542,6 +542,30 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        xcmCoreBuyer: {
+            /** This collator is not assigned to this parathread */
+            CollatorNotAssigned: AugmentedError<ApiType>;
+            ErrorDeliveringXCM: AugmentedError<ApiType>;
+            ErrorValidatingXCM: AugmentedError<ApiType>;
+            /** There are too many in-flight orders, buying cores will not work until some of those orders finish. */
+            InFlightLimitReached: AugmentedError<ApiType>;
+            InvalidProof: AugmentedError<ApiType>;
+            /** There are no collators assigned to this parathread, so no point in buying a core */
+            NoAssignedCollators: AugmentedError<ApiType>;
+            /** The para id is not a parathread */
+            NotAParathread: AugmentedError<ApiType>;
+            /** An order for this para id already exists */
+            OrderAlreadyExists: AugmentedError<ApiType>;
+            /** Converting a multilocation into a relay relative multilocation failed */
+            ReanchorFailed: AugmentedError<ApiType>;
+            /**
+             * The `XcmWeights` storage has not been set. This must have been set by root with the value of the relay chain
+             * xcm call weight and extrinsic weight
+             */
+            XcmWeightStorageNotSet: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         xcmpQueue: {
             /** The execution is already resumed. */
             AlreadyResumed: AugmentedError<ApiType>;
