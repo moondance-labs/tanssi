@@ -48,6 +48,7 @@ pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
+pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/rpc/runtime-api", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }

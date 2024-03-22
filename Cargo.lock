@@ -3043,6 +3043,7 @@ dependencies = [
  "pallet-session",
  "pallet-staking",
  "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -4247,6 +4248,7 @@ dependencies = [
  "pallet-services-payment",
  "pallet-session",
  "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -9231,6 +9233,15 @@ dependencies = [
  "tap",
  "tp-maths",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-stream-payment-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
 ]
 
 [[package]]
