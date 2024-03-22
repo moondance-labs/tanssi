@@ -32,6 +32,7 @@ import type {
     CumulusPalletXcmpQueueQueueConfigData,
     CumulusPrimitivesCoreAggregateMessageOrigin,
     DanceboxRuntimeSessionKeys,
+    DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -1262,6 +1263,13 @@ declare module "@polkadot/api-base/types/storage" {
              * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same parathread.
              */
             inFlightOrders: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * This must be set by root with the value of the relay chain xcm call weight and extrinsic weight limit. This is
+             * a storage item because relay chain weights can change, so we need to be able to adjust them without doing a
+             * runtime upgrade.
+             */
+            relayChain: AugmentedQuery<ApiType, () => Observable<DanceboxRuntimeXcmConfigRelayChain>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * This must be set by root with the value of the relay chain xcm call weight and extrinsic weight limit. This is

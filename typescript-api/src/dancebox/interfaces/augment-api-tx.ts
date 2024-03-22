@@ -22,6 +22,7 @@ import type {
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
+    DanceboxRuntimeXcmConfigRelayChain,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
@@ -2180,6 +2181,20 @@ declare module "@polkadot/api-base/types/submittable" {
             forceBuyCore: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
+            >;
+            /** See [`Pallet::set_relay_chain`]. */
+            setRelayChain: AugmentedSubmittable<
+                (
+                    relayChain:
+                        | Option<DanceboxRuntimeXcmConfigRelayChain>
+                        | null
+                        | Uint8Array
+                        | DanceboxRuntimeXcmConfigRelayChain
+                        | "Westend"
+                        | "Rococo"
+                        | number
+                ) => SubmittableExtrinsic<ApiType>,
+                [Option<DanceboxRuntimeXcmConfigRelayChain>]
             >;
             /** See [`Pallet::set_relay_xcm_weight_config`]. */
             setRelayXcmWeightConfig: AugmentedSubmittable<

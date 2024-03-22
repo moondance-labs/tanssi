@@ -36,6 +36,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     DanceboxRuntimeTimeUnit,
+    DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchDispatchClass,
@@ -323,6 +324,7 @@ declare module "@polkadot/types/types/registry" {
         DanceboxRuntimeSessionKeys: DanceboxRuntimeSessionKeys;
         DanceboxRuntimeStreamPaymentAssetId: DanceboxRuntimeStreamPaymentAssetId;
         DanceboxRuntimeTimeUnit: DanceboxRuntimeTimeUnit;
+        DanceboxRuntimeXcmConfigRelayChain: DanceboxRuntimeXcmConfigRelayChain;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
