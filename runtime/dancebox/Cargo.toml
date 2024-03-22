@@ -166,6 +166,7 @@ std = [
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-core/std",
+	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -256,7 +257,6 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
-	"dp-slot-duration-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)

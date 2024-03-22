@@ -21,9 +21,9 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
-dp-slot-duration-runtime-api = { workspace = true }
 dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
+dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
 
@@ -118,6 +118,7 @@ std = [
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
+	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -178,7 +179,6 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"xcm-primitives/std",
-	"dp-slot-duration-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)

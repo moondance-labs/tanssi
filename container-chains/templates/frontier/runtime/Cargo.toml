@@ -141,6 +141,7 @@ std = [
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
+	"dp-slot-duration-runtime-api/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",
@@ -220,7 +221,6 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"xcm-primitives/std",
-	"dp-slot-duration-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
