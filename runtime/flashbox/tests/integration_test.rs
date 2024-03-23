@@ -16,6 +16,9 @@
 
 #![cfg(test)]
 
+use cumulus_primitives_core::Weight;
+use flashbox_runtime::TransactionPayment;
+use frame_system::ConsumedWeight;
 use {
     common::*,
     cumulus_primitives_core::ParaId,
@@ -3517,5 +3520,46 @@ fn test_max_collators_uses_pending_value() {
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains[&1001u32.into()].len(), 0);
             assert_eq!(assignment.orchestrator_chain.len(), 1);
+        });
+}
+
+fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
+    ExtBuilder::default()
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // If the block is full, the multiplier increases
+            let before_multiplier = TransactionPayment::next_fee_multiplier();
+            run_block_with_operation(|_slot| {
+                let max_block_weights = flashbox_runtime::RuntimeBlockWeights::get();
+                frame_support::storage::unhashed::put(
+                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                    &ConsumedWeight::new(|class| {
+                        max_block_weights
+                            .get(class)
+                            .max_total
+                            .unwrap_or(Weight::MAX)
+                    }),
+                );
+            });
+            let current_multiplier = TransactionPayment::next_fee_multiplier();
+            assert!(current_multiplier.gt(&before_multiplier));
+
+            // If the block is empty, the multiplier decreases
+            let before_multiplier = TransactionPayment::next_fee_multiplier();
+            run_block_with_operation(|_slot| {
+                frame_support::storage::unhashed::put(
+                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                    &ConsumedWeight::new(|_class| Weight::zero()),
+                );
+            });
+            let current_multiplier = TransactionPayment::next_fee_multiplier();
+            assert!(current_multiplier.lt(&before_multiplier));
         });
 }
