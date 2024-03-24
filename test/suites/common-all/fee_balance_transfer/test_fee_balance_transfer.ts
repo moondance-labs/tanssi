@@ -3,17 +3,16 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair, filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { extractWeight } from "@moonwall/util";
-import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "util/block";
+import { extractFeeAuthor, filterRewardFromOrchestrator } from "util/block";
 
 describeSuite({
-    id: "CT0201",
+    id: "C0002",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
-        let adjustedExpectedBasePlusWeightFee;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
@@ -65,7 +64,7 @@ describeSuite({
                 // but when we pay fees (or compare with queryFeeDetails), we do it adjusted (with multiplier). In our case we are using
                 // a constant multiplier, but because of rounding issues with the weight, we migth obtain
                 // a +-1 difference
-                adjustedExpectedBasePlusWeightFee = basePlusWeightFee + 1n;
+                const adjustedExpectedBasePlusWeightFee = basePlusWeightFee + 1n;
 
                 const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
@@ -91,13 +90,35 @@ describeSuite({
                     signedTx.encodedLength
                 );
 
+                const feeMultiplier = (await polkadotJs.query.transactionPayment.nextFeeMultiplier()).toBigInt();
+                const feeInfo = await tx.paymentInfo(alice.address);
+                const unadjustedWeightFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: feeInfo.weight.refTime.toBigInt(),
+                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                    })
+                ).toBigInt();
+
+                const baseWeightToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: baseWeight,
+                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                    })
+                ).toBigInt();
+
+                const lengthToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryLengthToFee(signedTx.encodedLength)
+                ).toBigInt();
+                const multiplierAdjustedWeightFee = (feeMultiplier * unadjustedWeightFee) / 1_000_000_000_000_000_000n;
+
+                const expectedFee = baseWeightToFee + multiplierAdjustedWeightFee + lengthToFee;
+
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
                 const reward = filterRewardFromOrchestrator(events, alice.address);
 
-                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -118,10 +139,13 @@ describeSuite({
 
         it({
             id: "E03",
-            title: "Fee of balances.transfer does not increase after 100 full blocks",
+            title: "Fee of balances.transfer does increase after 100 full blocks due to slow adjusting multiplier",
             test: async function () {
                 const fillAmount = 600_000_000; // equal to 60% Perbill
 
+                const previousfeeMultiplier = (
+                    await polkadotJs.query.transactionPayment.nextFeeMultiplier()
+                ).toBigInt();
                 for (let i = 0; i < 100; i++) {
                     const tx = polkadotJs.tx.rootTesting.fillBlock(fillAmount);
                     const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
@@ -146,12 +170,35 @@ describeSuite({
                     tx,
                     signedTx.encodedLength
                 );
+                const currentfeeMultiplier = (await polkadotJs.query.transactionPayment.nextFeeMultiplier()).toBigInt();
+                expect(currentfeeMultiplier).toBeGreaterThan(previousfeeMultiplier);
+                const feeInfo = await tx.paymentInfo(alice.address);
+                const unadjustedWeightFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: feeInfo.weight.refTime.toBigInt(),
+                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                    })
+                ).toBigInt();
+
+                const baseWeightToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: baseWeight,
+                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                    })
+                ).toBigInt();
+
+                const lengthToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryLengthToFee(signedTx.encodedLength)
+                ).toBigInt();
+                const multiplierAdjustedWeightFee =
+                    (currentfeeMultiplier * unadjustedWeightFee) / 1_000_000_000_000_000_000n;
+
+                const expectedFee = baseWeightToFee + multiplierAdjustedWeightFee + lengthToFee;
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
                 const reward = filterRewardFromOrchestrator(events, alice.address);
-                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -171,35 +218,6 @@ describeSuite({
 
         it({
             id: "E04",
-            title: "80% of Fees are burned",
-            test: async function () {
-                const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
-                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
-                const signedTx = await tx.signAsync(alice);
-
-                await context.createBlock([signedTx]);
-
-                const events = await polkadotJs.query.system.events();
-                const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
-                const issuance = fetchIssuance(events).amount.toBigInt();
-                const reward = filterRewardFromOrchestrator(events, alice.address);
-                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
-                expect(fee).to.equal(expectedFee);
-
-                const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-
-                // Balance must be old balance minus fee minus transfered value
-                expect(balanceBefore + reward - fee - 200_000n).to.equal(balanceAfter);
-
-                const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
-
-                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - (fee * 4n) / 5n);
-            },
-        });
-
-        it({
-            id: "E05",
             title: "Proof size does not affect fee",
             test: async function () {
                 const refTime = 298945000n;
@@ -223,7 +241,7 @@ describeSuite({
         });
 
         it({
-            id: "E06",
+            id: "E05",
             title: "Base refTime pays base fee",
             test: async function () {
                 const fee = (

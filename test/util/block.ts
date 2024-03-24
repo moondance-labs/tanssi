@@ -191,10 +191,10 @@ export function fetchIssuance(events: EventRecord[] = []) {
 
 export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
-    if (reward.accountId.toString() === author) {
-        return reward.balance.toBigInt();
-    } else {
+    if (reward === undefined || reward.accountId.toString() !== author) {
         return 0n;
+    } else {
+        return reward.balance.toBigInt();
     }
 }
 
