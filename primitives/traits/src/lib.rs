@@ -141,6 +141,7 @@ pub trait GetContainerChainAuthor<AccountId> {
 /// Returns the host configuration composed of the amount of collators assigned
 /// to the orchestrator chain, and how many collators are assigned per container chain.
 pub trait GetHostConfiguration<SessionIndex> {
+    fn max_collators(session_index: SessionIndex) -> u32;
     fn min_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;

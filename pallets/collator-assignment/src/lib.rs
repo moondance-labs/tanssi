@@ -41,13 +41,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
 use {
     crate::{
         assignment::{Assignment, ChainNumCollators},
         weights::WeightInfo,
     },
-    dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
@@ -63,6 +61,7 @@ use {
         ShouldRotateAllCollators, Slot,
     },
 };
+pub use {dp_collator_assignment::AssignedCollators, pallet::*};
 
 mod assignment;
 #[cfg(feature = "runtime-benchmarks")]

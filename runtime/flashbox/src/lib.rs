@@ -58,7 +58,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{SlotBeacon, NimbusId},
     pallet_balances::NegativeImbalance,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
@@ -84,8 +84,8 @@ use {
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
-        GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        ShouldRotateAllCollators,
+        GetHostConfiguration, GetSessionContainerChains, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, GetContainerChainAuthor
     },
 };
 pub use {
@@ -553,7 +553,9 @@ impl SessionManager<CollatorId> for CollatorsFromInvulnerables {
         );
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
-        let max_collators = Configuration::config().max_collators;
+        let target_session_index = index.saturating_add(1);
+        let max_collators =
+            <Configuration as GetHostConfiguration<u32>>::max_collators(target_session_index);
         let collators = invulnerables
             .iter()
             .take(max_collators as usize)
@@ -1095,8 +1097,6 @@ parameter_types! {
     // 30% for parachain bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
-
-use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
 
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
