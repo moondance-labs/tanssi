@@ -71,6 +71,10 @@ pub mod pallet {
         /// How to convert a `ParaId` into an `AccountId32`. Used to derive the parathread tank
         /// account in `interior_multilocation`.
         type GetParathreadAccountId: Convert<ParaId, [u8; 32]>;
+        /// The max price that the parathread is willing to pay for a core, in relay chain currency.
+        /// If `None`, defaults to `u128::MAX`, the parathread will pay the market price with no
+        /// upper bound.
+        type GetParathreadMaxCorePrice: Convert<ParaId, Option<u128>>;
         /// Orchestartor chain `ParaId`. Used in `absolute_multilocation` to convert the
         /// `interior_multilocation` into what the relay chain needs to allow to `DepositAsset`.
         type SelfParaId: Get<ParaId>;
@@ -321,7 +325,7 @@ pub mod pallet {
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
             // It should be defined in a storage item somewhere, controllable by the container chain
             // manager.
-            let max_amount = u128::MAX;
+            let max_amount = T::GetParathreadMaxCorePrice::convert(para_id).unwrap_or(u128::MAX);
             let call =
                 T::GetPurchaseCoreCall::get_encoded(RelayChain::<T>::get(), max_amount, para_id);
             let weight_at_most = xcm_weights_storage.weight_at_most;

@@ -40,7 +40,7 @@ use {
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     scale_info::TypeInfo,
     sp_core::ConstU32,
-    sp_runtime::{transaction_validity::TransactionPriority, Perbill},
+    sp_runtime::{traits::Convert, transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
@@ -478,6 +478,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
+    type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
     type MaxParathreads = ConstU32<100>;
@@ -568,5 +569,13 @@ impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
                 call.encode()
             }
         }
+    }
+}
+
+pub struct GetMaxCorePriceFromServicesPayment;
+
+impl Convert<ParaId, Option<u128>> for GetMaxCorePriceFromServicesPayment {
+    fn convert(para_id: ParaId) -> Option<u128> {
+        pallet_services_payment::MaxCorePrice::<Runtime>::get(para_id)
     }
 }
