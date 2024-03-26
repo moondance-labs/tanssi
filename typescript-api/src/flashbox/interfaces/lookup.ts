@@ -616,6 +616,11 @@ export default {
                 paraId: "u32",
                 creditsRemaining: "u32",
             },
+            CollatorAssignmentTipCollected: {
+                paraId: "u32",
+                payer: "AccountId32",
+                tip: "u128",
+            },
             BlockProductionCreditsSet: {
                 paraId: "u32",
                 credits: "u32",
@@ -1569,6 +1574,10 @@ export default {
             set_collator_assignment_credits: {
                 paraId: "u32",
                 freeCollatorAssignmentCredits: "u32",
+            },
+            set_max_tip: {
+                paraId: "u32",
+                maxTip: "u128",
             },
         },
     },

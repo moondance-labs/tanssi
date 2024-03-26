@@ -237,6 +237,8 @@ impl pallet_collator_assignment::Config for Test {
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
     type CollatorAssignmentHook = ();
+    type CollatorAssignmentTip = ();
+    type Currency = ();
     type WeightInfo = ();
 }
 

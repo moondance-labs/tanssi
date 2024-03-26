@@ -48,7 +48,7 @@ use {
         weights::WeightInfo,
     },
     dp_collator_assignment::AssignedCollators,
-    frame_support::pallet_prelude::*,
+    frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
     rand_chacha::ChaCha20Rng,
@@ -58,9 +58,9 @@ use {
     },
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        ShouldRotateAllCollators, Slot,
+        CollatorAssignmentHook, CollatorAssignmentTip, GetContainerChainAuthor,
+        GetHostConfiguration, GetSessionContainerChains, ParaId, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -103,7 +103,9 @@ pub mod pallet {
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
-        type CollatorAssignmentHook: CollatorAssignmentHook;
+        type CollatorAssignmentHook: CollatorAssignmentHook<BalanceOf<Self>>;
+        type Currency: Currency<Self::AccountId>;
+        type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -183,7 +185,7 @@ pub mod pallet {
                 &mut container_chain_ids,
             );
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
-            // as paratherads because they will not be producing blocks on every slot.
+            // as parathreads because they will not be producing blocks on every slot.
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -192,8 +194,6 @@ pub mod pallet {
             if random_seed != [0; 32] {
                 let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
                 collators.shuffle(&mut rng);
-                // TODO: in the future, instead of shuffling the list of para ids, we need to use the priority fee to
-                // determine priority
                 container_chain_ids.shuffle(&mut rng);
                 parathreads.shuffle(&mut rng);
             }
@@ -233,6 +233,14 @@ pub mod pallet {
                     max_collators: collators_per_parathread,
                 });
             }
+
+            // Prioritize paras by tip
+            // This doesn't distinguish between parachains and parathreads
+            chains.sort_by(|a, b| {
+                T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                    .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+            });
+
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let new_assigned =
@@ -287,6 +295,23 @@ pub mod pallet {
                 }
             };
 
+            let mut assigned_containers = new_assigned.container_chains.clone();
+            assigned_containers.retain(|_, v| !v.is_empty());
+
+            // On congestion (not enough collators for all paras) prioritized chains need to pay
+            // the minimum tip of the prioritized chains
+            let maybe_tip: Option<BalanceOf<T>> =
+                if assigned_containers.len() < container_chain_ids.len() + parathreads.len() {
+                    assigned_containers
+                        .into_keys()
+                        .map(T::CollatorAssignmentTip::get_para_tip)
+                        .filter(|o| o.is_some())
+                        .min()
+                        .unwrap_or(None)
+                } else {
+                    None
+                };
+
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
             for para_id in &container_chain_ids {
@@ -296,7 +321,7 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, &maybe_tip);
                 }
             }
 
@@ -307,7 +332,7 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, &maybe_tip);
                 }
             }
 
@@ -425,6 +450,10 @@ pub mod pallet {
         }
     }
 }
+
+/// Balance used by this pallet
+pub type BalanceOf<T> =
+    <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
 

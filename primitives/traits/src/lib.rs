@@ -31,23 +31,35 @@ use {
     sp_std::vec::Vec,
 };
 
-/// The collator-assignment hook to react to collators beign assigned to container chains.
-pub trait CollatorAssignmentHook {
+/// The collator-assignment hook to react to collators being assigned to container chains.
+pub trait CollatorAssignmentHook<Balance> {
     /// This hook is called when collators are assigned to a container
     ///
     /// The hook should never panic and is required to return the weight consumed.
-    fn on_collators_assigned(para_id: ParaId) -> Weight;
+    fn on_collators_assigned(para_id: ParaId, maybe_tip: &Option<Balance>) -> Weight;
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
-impl CollatorAssignmentHook for Tuple {
-    fn on_collators_assigned(p: ParaId) -> Weight {
+impl<Balance> CollatorAssignmentHook<Balance> for Tuple {
+    fn on_collators_assigned(p: ParaId, t: &Option<Balance>) -> Weight {
         let mut weight: Weight = Default::default();
-        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p)); )* );
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p, t)); )* );
         weight
     }
 }
 
+/// Container chains collator assignment tip prioritization on congestion.
+/// Tips paras are willing to pay for collator assignment in case of collators demand
+/// surpasses the offer.
+pub trait CollatorAssignmentTip<Balance> {
+    fn get_para_tip(a: ParaId) -> Option<Balance>;
+}
+
+impl<Balance> CollatorAssignmentTip<Balance> for () {
+    fn get_para_tip(_: ParaId) -> Option<Balance> {
+        None
+    }
+}
 /// The author-noting hook to react to container chains authoring.
 pub trait AuthorNotingHook<AccountId> {
     /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.

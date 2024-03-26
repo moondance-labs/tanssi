@@ -102,12 +102,14 @@ impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
+    type OnChargeForCollatorAssignmentTip = ();
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type SetRefundAddressOrigin = EnsureRoot<AccountId>;
+    type SetMaxTipOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 
