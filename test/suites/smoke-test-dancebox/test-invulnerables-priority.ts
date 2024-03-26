@@ -6,11 +6,13 @@ describeSuite({
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
-        let api: ApiPromise;
+        let api;
         let runtimeVersion;
 
         beforeAll(async () => {
-            api = context.polkadotJs();
+            const atBlockHash="0x45edf89b5048fa29d2b3df548b3f3105195af7964413eb5713e126d13c914e60"
+            const overallApi = context.polkadotJs();
+            api = await overallApi.at(atBlockHash);
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 

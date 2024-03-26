@@ -8,14 +8,22 @@ describeSuite({
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
-        let api: ApiPromise;
+        let api;
         let blocksPerSession;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
+        const atBlockHash="0x0740fec046eccbbde9a63bb859e5a0a170fe6f5449b01074dab012f39f96eb23"
 
-        beforeAll(() => {
-            api = context.polkadotJs();
-            const chain = api.consts.system.version.specName.toString();
+        beforeAll(async () => {
+            const overallApi = context.polkadotJs();
+            const chain = overallApi.consts.system.version.specName.toString();
+            if (chain=="Flashbox") {
+                api = await overallApi.at(atBlockHash);
+            }
+            else {
+                api = overallApi
+            }
+
             blocksPerSession = chain == "Dancebox" ? 300n : 5n;
         });
 
