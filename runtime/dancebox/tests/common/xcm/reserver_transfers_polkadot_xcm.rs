@@ -759,21 +759,14 @@ fn transfer_asset_relay_token_across_tanssi_container() {
 
     Westend::execute_with(|| {
         type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
-        let mut outcome_weight = Weight::default();
         assert_expected_events!(
             Westend,
             vec![
                 RuntimeEvent::MessageQueue(
                     pallet_message_queue::Event::Processed {
                         success: true,
-                        weight_used,
                         ..
-                    }) => {
-                        weight_used: {
-                            outcome_weight = *weight_used;
-                            weight_used.all_gte(Weight::from_parts(0,0))
-                        },
-                    },
+                    }) => {},
             ]
         );
     });
