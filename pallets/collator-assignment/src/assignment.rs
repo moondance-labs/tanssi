@@ -426,7 +426,8 @@ where
             let cs = old_assigned.entry(*para_id).or_default();
 
             while cs.len() < *num_collators as usize {
-                // This error should never happen because we checked that `collators.len() >= required_collators`
+                // This error should never happen because we calculated `needed_new_collators`
+                // using the same algorithm
                 let nc = new_collators
                     .next()
                     .ok_or(AssignmentError::NotEnoughCollators)?;
