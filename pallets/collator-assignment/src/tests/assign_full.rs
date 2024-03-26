@@ -24,15 +24,8 @@ use {
     sp_std::collections::btree_map::BTreeMap,
 };
 
-#[allow(unused_assignments)]
-fn no_shuffle() -> Option<impl FnOnce(&mut Vec<u64>)> {
-    let mut shuffle = Some(move |_collators: &mut Vec<u64>| {
-        // Create an empty closure to allow the compiler to infer the return type
-    });
-    // But don't return that closure, instead return `None`
-    shuffle = None;
-
-    shuffle
+fn no_shuffle() -> Option<fn(&mut Vec<u64>)> {
+    None
 }
 
 #[test]
