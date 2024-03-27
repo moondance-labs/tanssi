@@ -64,7 +64,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::{SlotBeacon, NimbusId},
+    nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
@@ -94,8 +94,8 @@ use {
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
-        GetHostConfiguration, GetSessionContainerChains, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, GetContainerChainAuthor
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits,
     },
 };
 pub use {
