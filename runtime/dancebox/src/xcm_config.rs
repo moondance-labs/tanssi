@@ -32,15 +32,15 @@ use {
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
-        ParaIdIntoAccountTruncating,
+        GetParathreadCollators, GetParathreadMaxCorePrice, GetParathreadParams,
+        GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     scale_info::TypeInfo,
     sp_core::ConstU32,
-    sp_runtime::{traits::Convert, transaction_validity::TransactionPriority, Perbill},
+    sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
@@ -574,8 +574,8 @@ impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
 
 pub struct GetMaxCorePriceFromServicesPayment;
 
-impl Convert<ParaId, Option<u128>> for GetMaxCorePriceFromServicesPayment {
-    fn convert(para_id: ParaId) -> Option<u128> {
+impl GetParathreadMaxCorePrice for GetMaxCorePriceFromServicesPayment {
+    fn get_max_core_price(para_id: ParaId) -> Option<u128> {
         pallet_services_payment::MaxCorePrice::<Runtime>::get(para_id)
     }
 }

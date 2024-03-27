@@ -185,7 +185,7 @@ pub mod pallet {
         /// Set the number of block production credits for this para_id without paying for them.
         /// Can only be called by root.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::set_credits())]
+        #[pallet::weight(T::WeightInfo::set_block_production_credits())]
         pub fn set_block_production_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -245,7 +245,7 @@ pub mod pallet {
         /// Set the number of block production credits for this para_id without paying for them.
         /// Can only be called by root.
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::set_credits())]
+        #[pallet::weight(T::WeightInfo::set_block_production_credits())]
         pub fn set_collator_assignment_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -260,8 +260,7 @@ pub mod pallet {
 
         /// Max core price for parathread in relay chain currency
         #[pallet::call_index(5)]
-        // TODO: weight
-        #[pallet::weight(T::WeightInfo::set_refund_address())]
+        #[pallet::weight(T::WeightInfo::set_max_core_price())]
         pub fn set_max_core_price(
             origin: OriginFor<T>,
             para_id: ParaId,
