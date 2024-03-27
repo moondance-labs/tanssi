@@ -684,6 +684,9 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Max tip for collator assignment on congestion */
+            maxTip: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u128>>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** Refund address */
             refundAddress: AugmentedQuery<
                 ApiType,

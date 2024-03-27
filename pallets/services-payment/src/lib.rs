@@ -37,7 +37,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_io::hashing::blake2_256,
     sp_runtime::traits::TrailingZeroInput,
-    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook},
+    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook, CollatorAssignmentTip},
 };
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -59,11 +59,10 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// Handler for fees
+        /// Handlers for fees
         type OnChargeForBlock: OnUnbalanced<NegativeImbalanceOf<Self>>;
-
-        /// Handler for fees
         type OnChargeForCollatorAssignment: OnUnbalanced<NegativeImbalanceOf<Self>>;
+        type OnChargeForCollatorAssignmentTip: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
@@ -79,6 +78,7 @@ pub mod pallet {
         type FreeCollatorAssignmentCredits: Get<u32>;
         // Who can call set_refund_address?
         type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        type SetMaxTipOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -108,6 +108,11 @@ pub mod pallet {
         CollatorAssignmentCreditBurned {
             para_id: ParaId,
             credits_remaining: u32,
+        },
+        CollatorAssignmentTipCollected {
+            para_id: ParaId,
+            payer: T::AccountId,
+            tip: BalanceOf<T>,
         },
         BlockProductionCreditsSet {
             para_id: ParaId,
@@ -143,6 +148,11 @@ pub mod pallet {
     #[pallet::getter(fn refund_address)]
     pub type RefundAddress<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+
+    /// Max tip for collator assignment on congestion
+    #[pallet::storage]
+    #[pallet::getter(fn max_tip)]
+    pub type MaxTip<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, BalanceOf<T>, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -246,6 +256,24 @@ pub mod pallet {
             ensure_root(origin)?;
 
             Self::set_free_collator_assignment_credits(&para_id, free_collator_assignment_credits);
+
+            Ok(().into())
+        }
+
+        /// Set the maximum tip a container chain is willing to pay to be assigned a collator on congestion.
+        /// Can only be called by container chain manager.
+        #[pallet::call_index(5)]
+        #[pallet::weight(0)]
+        // TODO benchmark
+        // #[pallet::weight(T::WeightInfo::set_max_tip())]
+        pub fn set_max_tip(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            max_tip: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            T::SetMaxTipOrigin::ensure_origin(origin, &para_id)?;
+
+            MaxTip::<T>::insert(para_id, max_tip);
 
             Ok(().into())
         }
@@ -469,8 +497,8 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     }
 }
 
-impl<T: Config> CollatorAssignmentHook for Pallet<T> {
-    fn on_collators_assigned(para_id: ParaId) -> Weight {
+impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
+    fn on_collators_assigned(para_id: ParaId, maybe_tip: &Option<BalanceOf<T>>) -> Weight {
         if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) =
                 T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
@@ -490,7 +518,41 @@ impl<T: Config> CollatorAssignmentHook for Pallet<T> {
                 }
             }
         }
+
+        if let Some(tip) = *maybe_tip {
+            // Only charge the tip to the paras that had a max tip set
+            // (aka were willing to tip for being assigned a collator)
+            if MaxTip::<T>::get(para_id).is_some() {
+                match T::Currency::withdraw(
+                    &Self::parachain_tank(para_id),
+                    tip,
+                    WithdrawReasons::TIP,
+                    ExistenceRequirement::KeepAlive,
+                ) {
+                    Err(e) => log::warn!(
+                        "Failed to withdraw collator assignment tip for container chain {}: {:?}",
+                        u32::from(para_id),
+                        e
+                    ),
+                    Ok(imbalance) => {
+                        T::OnChargeForCollatorAssignmentTip::on_unbalanced(imbalance);
+                        Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
+                            para_id,
+                            payer: Self::parachain_tank(para_id),
+                            tip,
+                        });
+                    }
+                }
+            }
+        }
+
         T::WeightInfo::on_collators_assigned()
+    }
+}
+
+impl<T: Config> CollatorAssignmentTip<BalanceOf<T>> for Pallet<T> {
+    fn get_para_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+        MaxTip::<T>::get(para_id)
     }
 }
 

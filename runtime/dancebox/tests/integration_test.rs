@@ -5527,3 +5527,311 @@ fn test_migration_services_collator_assignment_payment() {
             );
         });
 }
+
+#[test]
+fn test_collator_assignment_tip_priority_on_congestion() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            let para_id = 1003u32;
+            let tank_funds = 100 * UNIT;
+            let max_tip = 1 * UNIT;
+
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().container_chains[&1003u32.into()]
+                    .len(),
+                0
+            );
+
+            // Send funds to tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id.into(),
+                tank_funds,
+            ));
+
+            // Set tip for 1003
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id.into(),
+                max_tip,
+            ));
+
+            run_to_session(Configuration::config().full_rotation_period);
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
+                    .len(),
+                2,
+            );
+        });
+}
+
+#[test]
+fn test_collator_assignment_tip_charged_on_congestion() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            let tank_funds = 100 * UNIT;
+            let max_tip = 1 * UNIT;
+            let para_id = 1003u32;
+
+            // Send funds to tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id.into(),
+                tank_funds,
+            ));
+
+            // Set tip for para_id
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id.into(),
+                max_tip,
+            ));
+
+            run_to_session(1);
+            assert_eq!(
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id.into())),
+                tank_funds - max_tip,
+            );
+        });
+}
+
+#[test]
+fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            let tank_funds = 1 * UNIT;
+            let max_tip = 1 * UNIT;
+            let para_id = 1003u32;
+
+            // Send insufficient funds to tank for tip for 2 sessions
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id.into(),
+                tank_funds,
+            ));
+
+            // Set tip for para_id
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id.into(),
+                max_tip,
+            ));
+
+            run_to_session(1);
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
+                    .len(),
+                0
+            );
+        });
+}
+
+#[test]
+fn test_collator_assignment_tip_only_charge_willing_paras() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(EVE), 100_000 * UNIT),
+            (AccountId::from(FERDIE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            let tank_funds = 100 * UNIT;
+            let max_tip = 1 * UNIT;
+            let para_id_with_tip = 1003u32;
+            let para_id_without_tip = 1001u32;
+
+            // Send funds to tank to both paras
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id_with_tip.into(),
+                tank_funds,
+            ));
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id_without_tip.into(),
+                tank_funds,
+            ));
+
+            // Only set tip for 1003
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id_with_tip.into(),
+                max_tip,
+            ));
+
+            run_to_session(2);
+
+            let assignment = CollatorAssignment::collator_container_chain().container_chains;
+
+            // 2 out of the 3 paras should have collators assigned, with one paying tip to get
+            // prioritized, and the other selected at random that should not be charged any tips
+            assert_eq!(assignment[&para_id_with_tip.into()].len(), 2);
+            assert_eq!(
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_with_tip.into())),
+                tank_funds - max_tip * 2,
+            );
+
+            assert_eq!(assignment[&para_id_without_tip.into()].len(), 2);
+            assert_eq!(
+                Balances::usable_balance(ServicesPayment::parachain_tank(
+                    para_id_without_tip.into()
+                )),
+                tank_funds,
+            );
+        });
+}
+
+#[test]
+fn test_collator_assignment_tip_withdraw_min_tip() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(EVE), 100_000 * UNIT),
+            (AccountId::from(FERDIE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            let tank_funds = 100 * UNIT;
+            let max_tip_1003 = 3 * UNIT;
+            let max_tip_1002 = 2 * UNIT;
+            let para_id_1003 = 1003u32;
+            let para_id_1002 = 1002u32;
+
+            // Send funds to tank to both paras
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id_1003.into(),
+                tank_funds,
+            ));
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                para_id_1002.into(),
+                tank_funds,
+            ));
+
+            // Set tips
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id_1003.into(),
+                max_tip_1003,
+            ));
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                para_id_1002.into(),
+                max_tip_1002,
+            ));
+
+            run_to_session(2);
+
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().container_chains
+                    [&para_id_1003.into()]
+                    .len(),
+                2
+            );
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().container_chains
+                    [&para_id_1002.into()]
+                    .len(),
+                2
+            );
+
+            // Should have withdrawn the lowest tip from both paras
+            assert_eq!(
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1003.into())),
+                tank_funds - max_tip_1002 * 2,
+            );
+
+            assert_eq!(
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1002.into())),
+                tank_funds - max_tip_1002 * 2,
+            );
+        });
+}
