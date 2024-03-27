@@ -9,7 +9,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         it({
             id: "T01",
-            title: "dummy precompile address is created when",
+            title: "dummy precompile address is created when creating the asset and removed when destroyed",
             test: async function () {
                 const assetId = 5;
                 const assetIdAddress = new Uint8Array([

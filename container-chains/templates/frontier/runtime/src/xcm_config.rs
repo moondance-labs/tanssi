@@ -379,10 +379,10 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
-pub struct DummyPrecompileHook;
+pub struct RevertCodePrecompileHook;
 
 impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Runtime>>
-    for DummyPrecompileHook
+    for RevertCodePrecompileHook
 {
     fn on_asset_created(
         _foreign_asset: &MultiLocation,
@@ -397,7 +397,7 @@ impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Run
     }
 }
 
-impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for DummyPrecompileHook {
+impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for RevertCodePrecompileHook {
     fn on_asset_destroyed(_foreign_asset: &MultiLocation, asset_id: &AssetIdOf<Runtime>) {
         let prefix_slice = [255u8; 18];
         let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
@@ -414,8 +414,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
-    type OnForeignAssetCreated = DummyPrecompileHook;
-    type OnForeignAssetDestroyed = DummyPrecompileHook;
+    type OnForeignAssetCreated = RevertCodePrecompileHook;
+    type OnForeignAssetDestroyed = RevertCodePrecompileHook;
 }
 
 impl pallet_asset_rate::Config for Runtime {
