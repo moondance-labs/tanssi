@@ -6,7 +6,7 @@ describeSuite({
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
-        let api;
+        let api: ApiPromise;
         let runtimeVersion;
 
         beforeAll(async () => {
@@ -20,13 +20,22 @@ describeSuite({
             id: "C01",
             title: "Invulnerables have priority over staking candidates",
             test: async function () {
-                if (runtimeVersion < 200) {
+                if (runtimeVersion < 300) {
                     return;
                 }
 
+                const overallApi = context.polkadotJs();
+                const sessionLength = 300;
+                const currentBlock = (await overallApi.rpc.chain.getBlock()).block.header.number.toNumber();
+
+                const blockToCheck = (Math.trunc(currentBlock / sessionLength) - 1) * sessionLength;
+
+                const apiJustBeforeTheSession = await overallApi.at(await overallApi.rpc.chain.getBlockHash(blockToCheck + 1));
+                console.log("Current block:", currentBlock, "Api at block:", blockToCheck + 1);
+
                 // TODO: we should read the invulnerables at the start of this session, because that's when collators are updated
-                const invulnerables = await api.query.invulnerables.invulnerables();
-                const eligibleCandidates = (await api.query.pooledStaking.sortedEligibleCandidates()).map(
+                const invulnerables = await apiJustBeforeTheSession.query.invulnerables.invulnerables();
+                const eligibleCandidates = (await apiJustBeforeTheSession.query.pooledStaking.sortedEligibleCandidates()).map(
                     ({ candidate }) => candidate.toString()
                 );
                 const collators = await api.query.session.validators();
@@ -52,6 +61,9 @@ describeSuite({
                     const collatorsNotInvulnerables = collators
                         .toJSON()
                         .filter((collator) => !invulnerables.toJSON().includes(collator.toString()));
+
+                    console.log("Collators not part of eligible candidates", collatorsNotInvulnerables.filter((collator) => !eligibleCandidates.includes(collator.toString())))
+
                     for (const collator of collatorsNotInvulnerables) {
                         expect(
                             eligibleCandidates.includes(collator.toString()),
