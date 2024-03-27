@@ -3523,6 +3523,7 @@ fn test_max_collators_uses_pending_value() {
         });
 }
 
+#[test]
 fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
     ExtBuilder::default()
         .with_collators(vec![
