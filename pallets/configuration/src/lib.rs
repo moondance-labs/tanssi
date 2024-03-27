@@ -528,6 +528,19 @@ pub mod pallet {
     }
 
     impl<T: Config> GetHostConfiguration<T::SessionIndex> for Pallet<T> {
+        fn max_collators(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.max_collators
+        }
+
         fn collators_per_container(session_index: T::SessionIndex) -> u32 {
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()

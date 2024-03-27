@@ -5527,3 +5527,73 @@ fn test_migration_services_collator_assignment_payment() {
             );
         });
 }
+
+#[test]
+fn test_max_collators_uses_pending_value() {
+    // Start with max_collators = 100, and collators_per_container = 2
+    // Set max_collators = 2, and collators_per_container = 3
+    // It should be impossible to have more than 2 collators per container at any point in time
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![(
+            1001,
+            empty_genesis_data(),
+            vec![],
+            u32::MAX,
+            u32::MAX,
+        )
+            .into()])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Initial assignment: 1 collator in orchestrator chain and 2 collators in container 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 2);
+            assert_eq!(assignment.orchestrator_chain.len(), 1);
+
+            assert_ok!(Configuration::set_max_collators(root_origin(), 2));
+            assert_ok!(Configuration::set_collators_per_container(root_origin(), 3));
+
+            // Check invariant for all intermediate assignments. We set collators_per_container = 3
+            // but we also set max_collators = 2, so no collators will be assigned to container
+            // chains after the change is applied.
+            for session in 1..=4 {
+                run_to_session(session);
+
+                let assignment = CollatorAssignment::collator_container_chain();
+                assert!(
+                    assignment.container_chains[&1001u32.into()].len() <= 2,
+                    "session {}: {} collators assigned to container chain 1001",
+                    session,
+                    assignment.container_chains[&1001u32.into()].len()
+                );
+            }
+
+            // Final assignment: because max_collators = 2, there are only 2 collators, one in
+            // orchestrator chain, and the other one idle
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 0);
+            assert_eq!(assignment.orchestrator_chain.len(), 1);
+        });
+}
