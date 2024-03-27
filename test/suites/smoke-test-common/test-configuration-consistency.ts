@@ -17,7 +17,7 @@ describeSuite({
         beforeAll(async () => {
             const overallApi = context.polkadotJs();
             const chain = overallApi.consts.system.version.specName.toString();
-            if (chain=="Flashbox") {
+            if (chain=="flashbox") {
                 api = await overallApi.at(atBlockHash);
             }
             else {
