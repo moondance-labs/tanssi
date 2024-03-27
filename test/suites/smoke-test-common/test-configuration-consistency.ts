@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
+import { Vec, u32 } from "@polkadot/types-codec";
 import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
@@ -8,7 +9,7 @@ describeSuite({
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
-        let api;
+        let api: ApiPromise;
         let blocksPerSession;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
@@ -17,20 +18,19 @@ describeSuite({
         beforeAll(async () => {
             const overallApi = context.polkadotJs();
             const chain = overallApi.consts.system.version.specName.toString();
-            if (chain=="Flashbox") {
+            if (chain == "flashbox") {
                 api = await overallApi.at(atBlockHash);
-            }
-            else {
-                api = overallApi
+            } else {
+                api = overallApi;
             }
 
-            blocksPerSession = chain == "Dancebox" ? 300n : 5n;
+            blocksPerSession = chain == "dancebox" ? 300n : 5n;
         });
 
         it({
             id: "C01",
             title: "Config orchestrator max collators parameters should be respected",
-            test: async function () {
+            test: async function() {
                 const config = await api.query.configuration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
@@ -39,7 +39,7 @@ describeSuite({
 
                 // We cannot exced max collators
                 expect(authorities.toJSON()["orchestratorChain"].length).to.be.lessThanOrEqual(
-                    config["maxOrchestratorCollators"].toNumber()
+                    config["maxOrchestratorCollators"].toNumber(),
                 );
             },
         });
@@ -47,7 +47,7 @@ describeSuite({
         it({
             id: "C02",
             title: "Config orchestrator min collators parameters should be respected",
-            test: async function () {
+            test: async function() {
                 const config = await api.query.configuration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
@@ -57,7 +57,7 @@ describeSuite({
                 // If we have container chain collators, is because we at least assigned min to orchestrator
                 if (Object.keys(authorities["containerChains"]).length != 0) {
                     expect(authorities["orchestratorChain"].length).to.be.greaterThanOrEqual(
-                        config["minOrchestratorCollators"].toNumber()
+                        config["minOrchestratorCollators"].toNumber(),
                     );
                 }
             },
@@ -66,7 +66,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Config all registered paras should be filled if more than min collators in orchestrator",
-            test: async function () {
+            test: async function() {
                 const config = await api.query.configuration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
@@ -80,12 +80,30 @@ describeSuite({
                 if (
                     Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()
                 ) {
+                    let containersToCompareAgainst: Vec<u32>;
                     const liveContainers = await api.query.registrar.registeredParaIds();
+                    const pendingContainers = await api.query.registrar.pendingParaIds();
 
-                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
+                    if (pendingContainers.length == 0) {
+                        containersToCompareAgainst = liveContainers;
+                    } else {
+                        for (let i = 0; i < pendingContainers.length; i++) {
+                            const entry = pendingContainers[i];
+                            if (entry[0].toNumber() == sessionIndex + 1) {
+                                containersToCompareAgainst = entry[1];
+                                break;
+                            }
+                        }
+
+                        if (containersToCompareAgainst === undefined) {
+                            containersToCompareAgainst = liveContainers;
+                        }
+                    }
+
+                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(containersToCompareAgainst.length);
 
                     // This should be true as long as they have enough credits for getting collators
-                    for (const container of liveContainers) {
+                    for (const container of containersToCompareAgainst) {
                         // we should only check those who have enough credits
                         if (
                             await hasEnoughCredits(api, container, blocksPerSession, 2n, costPerSession, costPerBlock)
