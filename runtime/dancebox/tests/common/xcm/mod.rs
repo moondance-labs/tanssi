@@ -19,6 +19,7 @@ mod core_buyer;
 mod foreign_signed_based_sovereign;
 mod foreign_sovereigns;
 mod mocknets;
+mod reserver_transfers_polkadot_xcm;
 mod token_derivative_reception_container_dancebox;
 mod token_derivative_reception_dancebox_frontier_container;
 mod token_derivative_reception_dancebox_simple_container;
