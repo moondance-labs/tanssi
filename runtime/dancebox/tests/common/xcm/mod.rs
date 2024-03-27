@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
+mod delivery_fees;
 mod foreign_signed_based_sovereign;
 mod foreign_sovereigns;
 mod mocknets;
@@ -31,3 +32,4 @@ mod trap;
 pub use xcm_emulator::{
     assert_expected_events, bx, Parachain as Para, RelayChain as Relay, TestExt,
 };
+pub use paste;
