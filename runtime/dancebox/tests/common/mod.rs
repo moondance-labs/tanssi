@@ -103,7 +103,7 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
     );
 }
 
-pub fn run_block_with_operation(operation_fn: fn(slot: u64)) -> RunSummary {
+pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
     let slot = current_slot() + 1;
 
     insert_authorities_and_slot_digests(slot);

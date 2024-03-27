@@ -3549,7 +3549,7 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
                 );
             });
             let current_multiplier = TransactionPayment::next_fee_multiplier();
-            assert!(current_multiplier.gt(&before_multiplier));
+            assert!(current_multiplier > before_multiplier);
 
             // If the block is empty, the multiplier decreases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
@@ -3560,6 +3560,6 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
                 );
             });
             let current_multiplier = TransactionPayment::next_fee_multiplier();
-            assert!(current_multiplier.lt(&before_multiplier));
+            assert!(current_multiplier < before_multiplier);
         });
 }
