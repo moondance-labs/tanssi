@@ -2,6 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "util/payment";
+import { u32, Vec } from "@polkadot/types-codec";
 
 describeSuite({
     id: "S04",
@@ -72,12 +73,29 @@ describeSuite({
                 if (
                     Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()
                 ) {
+                    let containersToCompareAgainst: Vec<u32>;
+                    // If pending para ids for the session are empty we compare with registered para id, otherwise
+                    // we compare with pending para ids.
                     const liveContainers = await api.query.registrar.registeredParaIds();
+                    const pendingContainers = await api.query.registrar.pendingParaIds();
 
-                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
+                    if (pendingContainers.length == 0) {
+                        containersToCompareAgainst = liveContainers;
+                    } else {
+                        const foundEntry = pendingContainers.find((entry) => entry[0].toNumber() === sessionIndex + 1);
+                        if (foundEntry) {
+                            containersToCompareAgainst = foundEntry[1];
+                        } else {
+                            containersToCompareAgainst = liveContainers;
+                        }
+                    }
+
+                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
+                        containersToCompareAgainst.length
+                    );
 
                     // This should be true as long as they have enough credits for getting collators
-                    for (const container of liveContainers) {
+                    for (const container of containersToCompareAgainst) {
                         // we should only check those who have enough credits
                         if (
                             await hasEnoughCredits(api, container, blocksPerSession, 2n, costPerSession, costPerBlock)

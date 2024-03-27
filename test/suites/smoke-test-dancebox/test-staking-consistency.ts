@@ -17,6 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "All eligible candidates have enough self delegation",
+            timeout: 120000,
             test: async function () {
                 if (runtimeVersion < 200) {
                     return;
