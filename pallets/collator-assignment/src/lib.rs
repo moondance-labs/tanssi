@@ -186,6 +186,7 @@ pub mod pallet {
             // as paratherads because they will not be producing blocks on every slot.
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
+            let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.
             // This should only happen in tests, and in the genesis block.
@@ -196,6 +197,9 @@ pub mod pallet {
                 // determine priority
                 container_chain_ids.shuffle(&mut rng);
                 parathreads.shuffle(&mut rng);
+                shuffle_collators = Some(move |collators: &mut Vec<T::AccountId>| {
+                    collators.shuffle(&mut rng);
+                })
             }
 
             // We read current assigned collators
@@ -253,6 +257,7 @@ pub mod pallet {
                         collators,
                         orchestrator_chain,
                         chains,
+                        shuffle_collators,
                     )
                 } else {
                     log::debug!(
@@ -272,6 +277,7 @@ pub mod pallet {
                         orchestrator_chain,
                         chains,
                         old_assigned.clone(),
+                        shuffle_collators,
                     )
                 };
 

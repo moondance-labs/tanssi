@@ -39,15 +39,25 @@ where
 {
     /// Recompute collator assignment from scratch. If the list of collators and the list of
     /// container chains are shuffled, this returns a random assignment.
-    pub fn assign_collators_rotate_all(
+    pub fn assign_collators_rotate_all<TShuffle>(
         collators: Vec<T::AccountId>,
         orchestrator_chain: ChainNumCollators,
         chains: Vec<ChainNumCollators>,
-    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError> {
+        shuffle: Option<TShuffle>,
+    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError>
+    where
+        TShuffle: FnOnce(&mut Vec<T::AccountId>),
+    {
         // This is just the "always_keep_old" algorithm but with an empty "old"
         let old_assigned = Default::default();
 
-        Self::assign_collators_always_keep_old(collators, orchestrator_chain, chains, old_assigned)
+        Self::assign_collators_always_keep_old(
+            collators,
+            orchestrator_chain,
+            chains,
+            old_assigned,
+            shuffle,
+        )
     }
 
     /// Assign new collators to missing container_chains.
@@ -57,12 +67,23 @@ where
     /// `chains` should be shuffled or at least rotated on every session to ensure
     /// a fair distribution, because the order of that list affects container chain priority:
     /// the first chain on that list will be the first one to get new collators.
-    pub fn assign_collators_always_keep_old(
+    ///
+    /// Similarly, in the `collators` list order means priority, the first collators will be more
+    /// likely to get assigned. Unlike the list of `chains` which should already be shuffled,
+    /// collators will be shuffled using the `shuffle` callback when needed. This allows the
+    /// algorithm to truncate the list of collators and only shuffle the first N. This ensures that
+    /// shuffling doesn't cause a collator with low priority to be assigned instead of a collator
+    /// with higher priority.
+    pub fn assign_collators_always_keep_old<TShuffle>(
         collators: Vec<T::AccountId>,
         orchestrator_chain: ChainNumCollators,
         mut chains: Vec<ChainNumCollators>,
         mut old_assigned: AssignedCollators<T::AccountId>,
-    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError> {
+        shuffle: Option<TShuffle>,
+    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError>
+    where
+        TShuffle: FnOnce(&mut Vec<T::AccountId>),
+    {
         if collators.is_empty() {
             return Err(AssignmentError::ZeroCollators);
         }
@@ -93,7 +114,7 @@ where
         Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
 
         let new_assigned_chains =
-            Self::assign_full(collators, chains_with_collators, old_assigned)?;
+            Self::assign_full(collators, chains_with_collators, old_assigned, shuffle)?;
 
         let mut new_assigned = AssignedCollators {
             container_chains: new_assigned_chains,
@@ -321,6 +342,9 @@ where
     /// assigned to a para_id not present in `chains` may be reassigned to another para_id.
     /// * `chains` `num_collators` can be 0. In that case an empty vec is returned for that para id.
     /// * `old_assigned` must not have duplicate collators.
+    /// * `shuffle` is used to shuffle the list collators. The list will be truncated to only have
+    /// the number of required collators, to ensure that shuffling doesn't cause a collator with low
+    /// priority to be assigned instead of a collator with higher priority.
     ///
     /// # Returns
     ///
@@ -328,11 +352,15 @@ where
     ///
     /// Or an error if the number of collators is not enough to fill all the chains, or if the required number
     /// of collators overflows a `u32`.
-    pub fn assign_full(
+    pub fn assign_full<TShuffle>(
         collators: Vec<T::AccountId>,
         chains: Vec<(ParaId, u32)>,
         mut old_assigned: BTreeMap<ParaId, Vec<T::AccountId>>,
-    ) -> Result<BTreeMap<ParaId, Vec<T::AccountId>>, AssignmentError> {
+        shuffle: Option<TShuffle>,
+    ) -> Result<BTreeMap<ParaId, Vec<T::AccountId>>, AssignmentError>
+    where
+        TShuffle: FnOnce(&mut Vec<T::AccountId>),
+    {
         let mut required_collators = 0usize;
         for (_para_id, num_collators) in chains.iter() {
             let num_collators =
@@ -362,21 +390,44 @@ where
             entry.truncate(*num_collators as usize);
         }
 
+        // Count number of needed new collators. This is equivalent to:
+        // `required_collators - old_assigned.iter().map(|cs| cs.len()).sum()`.
+        let mut needed_new_collators = 0;
+        for (para_id, num_collators) in chains.iter() {
+            let cs = old_assigned.entry(*para_id).or_default();
+            needed_new_collators += (*num_collators as usize).saturating_sub(cs.len());
+        }
+
         let assigned_collators: BTreeSet<T::AccountId> = old_assigned
             .iter()
             .flat_map(|(_para_id, para_collators)| para_collators.iter().cloned())
             .collect();
-        let mut new_collators = collators.into_iter().filter(|x| {
-            // Keep collators not already assigned
-            !assigned_collators.contains(x)
-        });
+
+        // Truncate list of new_collators to `needed_new_collators` and shuffle it.
+        // This has the effect of keeping collator priority (the first collator of that list is more
+        // likely to be assigned to a chain than the last collator of that list), while also
+        // ensuring randomness (the original order does not directly affect which chain the
+        // collators are assigned to).
+        let mut new_collators: Vec<_> = collators
+            .into_iter()
+            .filter(|x| {
+                // Keep collators not already assigned
+                !assigned_collators.contains(x)
+            })
+            .take(needed_new_collators)
+            .collect();
+        if let Some(shuffle) = shuffle {
+            shuffle(&mut new_collators);
+        }
+        let mut new_collators = new_collators.into_iter();
 
         // Fill missing collators
         for (para_id, num_collators) in chains.iter() {
             let cs = old_assigned.entry(*para_id).or_default();
 
             while cs.len() < *num_collators as usize {
-                // This error should never happen because we checked that `collators.len() >= required_collators`
+                // This error should never happen because we calculated `needed_new_collators`
+                // using the same algorithm
                 let nc = new_collators
                     .next()
                     .ok_or(AssignmentError::NotEnoughCollators)?;
