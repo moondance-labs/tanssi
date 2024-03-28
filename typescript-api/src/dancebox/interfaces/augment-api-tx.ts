@@ -1779,6 +1779,14 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, bool]
             >;
+            /** See [`Pallet::set_max_core_price`]. */
+            setMaxCorePrice: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    maxCorePrice: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<u128>]
+            >;
             /** See [`Pallet::set_refund_address`]. */
             setRefundAddress: AugmentedSubmittable<
                 (

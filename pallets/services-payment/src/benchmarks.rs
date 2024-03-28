@@ -145,6 +145,25 @@ mod benchmarks {
     }
 
     #[benchmark]
+    fn set_max_core_price() {
+        let para_id = 1001u32.into();
+
+        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
+            .expect("failed to create SetRefundAddressOrigin");
+
+        let max_price = 100_000_000;
+
+        // Before call: none
+        assert_eq!(crate::MaxCorePrice::<T>::get(para_id), None);
+
+        #[extrinsic_call]
+        Pallet::<T>::set_max_core_price(origin as T::RuntimeOrigin, para_id, Some(max_price));
+
+        // After call: some
+        assert_eq!(crate::MaxCorePrice::<T>::get(para_id), Some(max_price));
+    }
+
+    #[benchmark]
     fn on_container_author_noted() {
         let para_id = 1001u32;
         let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
