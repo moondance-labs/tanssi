@@ -15,11 +15,15 @@ workspace = true
 [dependencies]
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-api = { workspace = true }
+thiserror = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
+	"serde",
 	"sp-api/std",
+	"thiserror",
 ]

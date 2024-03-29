@@ -34,11 +34,13 @@ pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-configuration = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+stream-payment-rpc = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
+
 
 # Nimbus
 nimbus-consensus = { workspace = true }

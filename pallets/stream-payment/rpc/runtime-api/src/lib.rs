@@ -26,6 +26,7 @@ use {
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct StreamPaymentApiStatus<Balance> {
     pub payment: Balance,
     pub deposit_left: Balance,
@@ -35,8 +36,11 @@ pub struct StreamPaymentApiStatus<Balance> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum StreamPaymentApiError {
+    #[cfg_attr(feature = "std", error("Unknown stream id"))]
     UnknownStreamId,
+    #[cfg_attr(feature = "std", error("Other error: {0}"))]
     Other(String),
 }
 
