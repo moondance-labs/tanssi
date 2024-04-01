@@ -263,9 +263,7 @@ pub mod pallet {
         /// Set the maximum tip a container chain is willing to pay to be assigned a collator on congestion.
         /// Can only be called by container chain manager.
         #[pallet::call_index(5)]
-        #[pallet::weight(0)]
-        // TODO benchmark
-        // #[pallet::weight(T::WeightInfo::set_max_tip())]
+        #[pallet::weight(T::WeightInfo::set_max_tip())]
         pub fn set_max_tip(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -498,7 +496,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
-    fn on_collators_assigned(para_id: ParaId, maybe_tip: &Option<BalanceOf<T>>) -> Weight {
+    fn on_collators_assigned(para_id: ParaId, maybe_tip: Option<&BalanceOf<T>>) -> Weight {
         if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) =
                 T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
@@ -519,7 +517,7 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
             }
         }
 
-        if let Some(tip) = *maybe_tip {
+        if let Some(&tip) = maybe_tip {
             // Only charge the tip to the paras that had a max tip set
             // (aka were willing to tip for being assigned a collator)
             if MaxTip::<T>::get(para_id).is_some() {

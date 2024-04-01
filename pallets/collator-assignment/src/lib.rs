@@ -304,10 +304,8 @@ pub mod pallet {
                 if assigned_containers.len() < container_chain_ids.len() + parathreads.len() {
                     assigned_containers
                         .into_keys()
-                        .map(T::CollatorAssignmentTip::get_para_tip)
-                        .filter(|o| o.is_some())
+                        .filter_map(T::CollatorAssignmentTip::get_para_tip)
                         .min()
-                        .unwrap_or(None)
                 } else {
                     None
                 };
@@ -321,7 +319,7 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, &maybe_tip);
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, maybe_tip.as_ref());
                 }
             }
 
@@ -332,7 +330,7 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, &maybe_tip);
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, maybe_tip.as_ref());
                 }
             }
 

@@ -191,9 +191,21 @@ mod benchmarks {
         {
             <Pallet<T> as CollatorAssignmentHook<BalanceOf<T>>>::on_collators_assigned(
                 para_id.into(),
-                &Some(tip.into()),
+                Some(&tip.into()),
             );
         }
+    }
+
+    #[benchmark]
+    fn set_max_tip() {
+        let para_id = 1001u32.into();
+
+        assert!(crate::MaxTip::<T>::get(para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_max_tip(RawOrigin::Root, para_id, 1_000_000u32.into());
+
+        assert!(crate::MaxTip::<T>::get(para_id).is_some());
     }
 
     impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);
