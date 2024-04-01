@@ -17,7 +17,8 @@
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
-        CollatorAssignmentCredits, RefundAddress,
+        CollatorAssignmentCredits, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
+        RefundAddress,
     },
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
@@ -415,5 +416,49 @@ fn set_refund_address_with_none_removes_storage() {
             ));
 
             assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn tip_should_be_charged_on_collators_assignment() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1;
+            let tip = 10u128;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id.into(),
+                5000u128,
+            ));
+
+            assert_ok!(PaymentServices::set_max_tip(
+                RuntimeOrigin::root(),
+                para_id.into(),
+                tip.into(),
+            ));
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                5000u128,
+            );
+
+            PaymentServices::on_container_author_noted(&1, 1, para_id.into());
+
+            PaymentServices::on_collators_assigned(para_id.into(), Some(&tip));
+
+            let (assignment_cost, _weight) =
+                <Test as crate::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(
+                    &para_id.into(),
+                );
+            let (block_cost, _weight) =
+                <Test as crate::Config>::ProvideBlockProductionCost::block_cost(&para_id.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                5000u128 - assignment_cost - block_cost - tip,
+            );
         });
 }

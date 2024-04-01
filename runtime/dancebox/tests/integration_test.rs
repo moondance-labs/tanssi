@@ -5688,7 +5688,7 @@ fn test_collator_assignment_tip_priority_on_congestion() {
                 max_tip,
             ));
 
-            run_to_session(Configuration::config().full_rotation_period);
+            run_to_session(2);
             assert_eq!(
                 CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
                     .len(),
