@@ -437,7 +437,7 @@ fn tip_should_be_charged_on_collators_assignment() {
             assert_ok!(PaymentServices::set_max_tip(
                 RuntimeOrigin::root(),
                 para_id.into(),
-                tip.into(),
+                tip,
             ));
 
             assert_eq!(
