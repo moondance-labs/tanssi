@@ -272,7 +272,7 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
                 100u128
             );
 
-            PaymentServices::on_collators_assigned(1.into(), &None);
+            PaymentServices::on_collators_assigned(1.into(), None);
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
