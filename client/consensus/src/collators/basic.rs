@@ -24,7 +24,7 @@ use {
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
-        relay_chain::{BlockId as RBlockId, Hash as PHash},
+        relay_chain::{BlockId as RBlockId, Hash as PHash, OccupiedCoreAssumption},
         PersistedValidationData,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -158,6 +158,19 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
 
         let parent_hash = parent_header.hash();
 
+        // Evaluate whether we can build on top
+        // The requirement is that the parent_hash is the last included block in the relay
+        let can_build = can_build_upon_included::<Block, _>(
+            parent_hash,
+            &collator.relay_client,
+            params.para_id,
+            *request.relay_parent(),
+        )
+        .await;
+        if !can_build {
+            continue;
+        }
+
         // Check whether we can build upon this block
         if !collator
             .collator_service()
@@ -260,4 +273,32 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
         }
         last_processed_slot = *claim.slot();
     }
+}
+
+// Checks whether we can build upon the last included block
+// Essentially checks that the latest head we are trying to build
+// is the one included in the relay
+async fn can_build_upon_included<Block: BlockT, RClient>(
+    parent_hash: Block::Hash,
+    relay_client: &RClient,
+    para_id: ParaId,
+    relay_parent: PHash,
+) -> bool
+where
+    RClient: RelayChainInterface + Send + Clone + 'static,
+{
+    let included_header = relay_client
+        .persisted_validation_data(relay_parent, para_id, OccupiedCoreAssumption::TimedOut)
+        .await;
+
+    if let Ok(Some(included_header)) = included_header {
+        let decoded = Block::Header::decode(&mut &included_header.parent_head.0[..]).ok();
+        if let Some(decoded_header) = decoded {
+            let included_hash = decoded_header.hash();
+            if parent_hash == included_hash {
+                return true;
+            }
+        }
+    }
+    false
 }

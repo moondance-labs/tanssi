@@ -42,6 +42,7 @@ use {
 
 mod xcm;
 
+use dancebox_runtime::TransactionPayment;
 pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
@@ -102,7 +103,7 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
     );
 }
 
-pub fn run_block() -> RunSummary {
+pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
     let slot = current_slot() + 1;
 
     insert_authorities_and_slot_digests(slot);
@@ -129,16 +130,24 @@ pub fn run_block() -> RunSummary {
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
 
+    // Do any operation needed
+    operation_fn(slot);
+
     // Finalize the block
     CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
+    TransactionPayment::on_finalize(System::block_number());
 
     RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
     }
+}
+
+pub fn run_block() -> RunSummary {
+    run_block_with_operation(|_slot| {})
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which

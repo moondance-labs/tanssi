@@ -18,16 +18,26 @@ describeSuite({
             id: "C01",
             title: "Invulnerables have priority over staking candidates",
             test: async function () {
-                if (runtimeVersion < 200) {
+                if (runtimeVersion < 300) {
                     return;
                 }
 
-                // TODO: we should read the invulnerables at the start of this session, because that's when collators are updated
-                const invulnerables = await api.query.invulnerables.invulnerables();
-                const eligibleCandidates = (await api.query.pooledStaking.sortedEligibleCandidates()).map(
-                    ({ candidate }) => candidate.toString()
-                );
-                const collators = await api.query.session.validators();
+                const sessionLength = 300;
+
+                const currentBlock = await api.rpc.chain.getBlock();
+                const currentBlockNumber = currentBlock.block.header.number.toNumber();
+                const currentBlockApi = await context.polkadotJs().at(currentBlock.block.hash);
+
+                const currentSession = Math.trunc(currentBlockNumber / sessionLength);
+                const blockToCheck = (currentSession - 1) * sessionLength - 1;
+
+                const apiJustBeforeTheSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck));
+
+                const invulnerables = await apiJustBeforeTheSession.query.invulnerables.invulnerables();
+                const eligibleCandidates = (
+                    await apiJustBeforeTheSession.query.pooledStaking.sortedEligibleCandidates()
+                ).map(({ candidate }) => candidate.toString());
+                const collators = await currentBlockApi.query.session.validators();
 
                 if (collators.length <= invulnerables.length) {
                     // Less collators than invulnerables: all collators must be invulnerables
