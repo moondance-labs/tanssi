@@ -16,11 +16,11 @@
 
 use {
     super::{
-        currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
-        Balance, Balances, CollatorAssignment, ForeignAssets, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Registrar,
-        Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, System,
-        WeightToFee, XcmpQueue,
+        currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, CollatorAssignment, ForeignAssets,
+        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
+        PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -37,12 +37,12 @@ use {
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::*,
+    staging_xcm::latest::prelude::{AssetId as XcmAssetId, *},
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
