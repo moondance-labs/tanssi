@@ -32,8 +32,8 @@ use {
     },
     sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
-        ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        SessionContainerChains,
+        CollatorAssignmentTip, ParaId, ParathreadParams, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
@@ -124,6 +124,7 @@ pub struct Mocks {
     pub random_seed: [u8; 32],
     // None means 5
     pub full_rotation_period: Option<u32>,
+    pub apply_tip: bool,
 }
 
 impl mock_data::Config for Test {}
@@ -229,6 +230,19 @@ impl Get<u32> for MockCollatorRotationSessionPeriod {
     }
 }
 
+// Mock the service payment tip as only for 1003
+pub struct MockCollatorAssignmentTip;
+
+impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
+    fn get_para_tip(para_id: ParaId) -> Option<u32> {
+        if MockData::mock().apply_tip && (para_id == 1003u32.into() || para_id == 1004u32.into()) {
+            Some(1_000u32)
+        } else {
+            None
+        }
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
@@ -241,7 +255,7 @@ impl pallet_collator_assignment::Config for Test {
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
     type CollatorAssignmentHook = ();
-    type CollatorAssignmentTip = ();
+    type CollatorAssignmentTip = MockCollatorAssignmentTip;
     type Currency = ();
     type WeightInfo = ();
 }
@@ -312,7 +326,7 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
 pub struct RemoveParaIdsAbove5000;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>, _old_assigned: &Vec<ParaId>) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
     }
 

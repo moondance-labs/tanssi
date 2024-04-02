@@ -496,7 +496,12 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
-    fn on_collators_assigned(para_id: ParaId, maybe_tip: Option<&BalanceOf<T>>) -> Weight {
+    // is_parathread parameter for future use to apply different logic
+    fn on_collators_assigned(
+        para_id: ParaId,
+        maybe_tip: Option<&BalanceOf<T>>,
+        _is_parathread: bool,
+    ) -> Weight {
         if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) =
                 T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);

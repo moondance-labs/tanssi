@@ -189,6 +189,17 @@ export function fetchIssuance(events: EventRecord[] = []) {
     return filtered[0];
 }
 
+export function fetchCollatorAssignmentTip(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "servicesPayment",
+        ["CollatorAssignmentTipCollected"],
+        ({ event }: EventRecord) => event.data as unknown as { paraId: ParaId; payer: AccountId32; tip: u128 }
+    );
+
+    return filtered[0];
+}
+
 export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
     if (reward === undefined || reward.accountId.toString() !== author) {

@@ -179,13 +179,22 @@ pub mod pallet {
                 .into_iter()
                 .map(|(para_id, _)| para_id)
                 .collect();
+
+            // We read current assigned collators
+            let old_assigned = Self::read_assigned_collators();
+            let old_assigned_para_ids = old_assigned.container_chains.clone().into_keys().collect();
+
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
+                &old_assigned_para_ids,
             );
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
             // as parathreads because they will not be producing blocks on every slot.
-            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
+                &mut parathreads,
+                &old_assigned_para_ids,
+            );
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -201,8 +210,6 @@ pub mod pallet {
                 })
             }
 
-            // We read current assigned collators
-            let old_assigned = Self::read_assigned_collators();
             let orchestrator_chain = ChainNumCollators {
                 para_id: T::SelfParaId::get(),
                 min_collators: T::HostConfiguration::min_collators_for_orchestrator(
@@ -238,7 +245,8 @@ pub mod pallet {
             }
 
             // Prioritize paras by tip
-            // This doesn't distinguish between parachains and parathreads
+            // As of now this doesn't distinguish between parachains and parathreads
+            // TODO apply different logic to parathreads
             chains.sort_by(|a, b| {
                 T::CollatorAssignmentTip::get_para_tip(b.para_id)
                     .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
@@ -324,7 +332,11 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, maybe_tip.as_ref());
+                    T::CollatorAssignmentHook::on_collators_assigned(
+                        *para_id,
+                        maybe_tip.as_ref(),
+                        false,
+                    );
                 }
             }
 
@@ -335,7 +347,11 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id, maybe_tip.as_ref());
+                    T::CollatorAssignmentHook::on_collators_assigned(
+                        *para_id,
+                        maybe_tip.as_ref(),
+                        true,
+                    );
                 }
             }
 

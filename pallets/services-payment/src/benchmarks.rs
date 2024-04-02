@@ -192,6 +192,7 @@ mod benchmarks {
             <Pallet<T> as CollatorAssignmentHook<BalanceOf<T>>>::on_collators_assigned(
                 para_id.into(),
                 Some(&tip.into()),
+                false,
             );
         }
     }

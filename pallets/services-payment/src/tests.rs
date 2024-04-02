@@ -273,7 +273,7 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
                 100u128
             );
 
-            PaymentServices::on_collators_assigned(1.into(), None);
+            PaymentServices::on_collators_assigned(1.into(), None, false);
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -447,7 +447,7 @@ fn tip_should_be_charged_on_collators_assignment() {
 
             PaymentServices::on_container_author_noted(&1, 1, para_id.into());
 
-            PaymentServices::on_collators_assigned(para_id.into(), Some(&tip));
+            PaymentServices::on_collators_assigned(para_id.into(), Some(&tip), false);
 
             let (assignment_cost, _weight) =
                 <Test as crate::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(

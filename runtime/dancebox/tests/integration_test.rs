@@ -785,7 +785,7 @@ fn test_paras_registered_but_not_enough_credits() {
                 0
             ));
             // Purchase 1 credit less that what is needed
-            let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
+            let credits_1001 = dancebox_runtime::Period::get() - 1;
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
@@ -869,7 +869,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 0
             ));
             // Purchase only enough credits for 1 session
-            let credits_1001 = dancebox_runtime::Period::get() * 2;
+            let credits_1001 = dancebox_runtime::Period::get();
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
@@ -4778,7 +4778,7 @@ fn test_register_parathread() {
 }
 
 #[test]
-fn test_ed_plus_two_block_credit_sessions_purchase_works() {
+fn test_ed_plus_block_credit_session_purchase_works() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -4828,7 +4828,7 @@ fn test_ed_plus_two_block_credit_sessions_purchase_works() {
                 0
             ));
             let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
+                block_credits_to_required_balance(dancebox_runtime::Period::get(), 1001.into())
                     + dancebox_runtime::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
@@ -4872,6 +4872,192 @@ fn test_ed_plus_two_block_credit_sessions_purchase_works() {
             run_block();
 
             // After this it should not be assigned anymore, since credits are not payable
+            run_to_session(3u32);
+            // Nobody should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+        });
+}
+
+#[test]
+fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
+            let credits_1001 =
+                block_credits_to_required_balance(dancebox_runtime::Period::get(), 1001.into())
+                    + dancebox_runtime::EXISTENTIAL_DEPOSIT
+                    - 1;
+
+            // Fill the tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                credits_1001
+            ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+            // Charlie and Dave should not be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+        });
+}
+
+#[test]
+fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
+            // On reassignment the blocks credits needed should be enough for the current session and the next one
+            let credits_1001 =
+                block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
+                    + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+
+            // Fill the tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                credits_1001
+            ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            run_to_session(2u32);
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            // Simulate block inclusion from container chain 1001
+            let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: 1001.into(),
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
+
+            sproof.items.push(s);
+            set_author_noting_inherent_data(sproof);
+
+            run_block();
+
+            // Session 3 should still be assigned
+            run_to_session(3u32);
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            // After this it should not be assigned anymore, since credits are not payable
             run_to_session(4u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
@@ -4880,7 +5066,7 @@ fn test_ed_plus_two_block_credit_sessions_purchase_works() {
 }
 
 #[test]
-fn test_ed_plus_two_block_credit_sessions_minus_1_purchase_fails() {
+fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -4945,8 +5131,39 @@ fn test_ed_plus_two_block_credit_sessions_minus_1_purchase_fails() {
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
+
             run_to_session(2u32);
-            // Charlie and Dave should not be assigned to para 1001
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            // Simulate block inclusion from container chain 1001
+            let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: 1001.into(),
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
+
+            sproof.items.push(s);
+            set_author_noting_inherent_data(sproof);
+
+            run_block();
+
+            // After this it should not be assigned anymore, since credits are not payable
+            run_to_session(3u32);
+            // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
         });
@@ -5097,7 +5314,7 @@ fn stream_payment_works() {
 }
 
 #[test]
-fn test_ed_plus_two_collator_assignment_sessions_purchase_works() {
+fn test_ed_plus_collator_assignment_session_purchase_works() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -5146,7 +5363,7 @@ fn test_ed_plus_two_collator_assignment_sessions_purchase_works() {
                 1001.into(),
                 0
             ));
-            let credits_1001 = collator_assignment_credits_to_required_balance(2, 1001.into())
+            let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
                 + dancebox_runtime::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
@@ -5197,7 +5414,7 @@ fn test_ed_plus_two_collator_assignment_sessions_purchase_works() {
 }
 
 #[test]
-fn test_ed_plus_two_collator_assignment_credit_sessions_minus_1_purchase_fails() {
+fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -5246,7 +5463,7 @@ fn test_ed_plus_two_collator_assignment_credit_sessions_minus_1_purchase_fails()
                 1001.into(),
                 0
             ));
-            let credits_1001 = collator_assignment_credits_to_required_balance(2, 1001.into())
+            let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
                 + dancebox_runtime::EXISTENTIAL_DEPOSIT
                 - 1;
 
