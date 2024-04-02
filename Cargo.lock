@@ -1771,6 +1771,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "dp-consensus",
  "dp-impl-tanssi-pallets-config",
+ "dp-slot-duration-runtime-api",
  "fp-account",
  "fp-evm",
  "fp-rpc",
@@ -1943,6 +1944,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "dp-consensus",
  "dp-impl-tanssi-pallets-config",
+ "dp-slot-duration-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -3003,6 +3005,7 @@ dependencies = [
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
  "dp-core",
+ "dp-slot-duration-runtime-api",
  "emulated-integration-tests-common",
  "frame-benchmarking",
  "frame-executive",
@@ -3055,6 +3058,7 @@ dependencies = [
  "pallet-utility",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
+ "pallet-xcm-core-buyer",
  "parachains-common",
  "parity-scale-codec",
  "paste",
@@ -3062,6 +3066,8 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "polkadot-service",
+ "rococo-runtime",
+ "rococo-runtime-constants",
  "runtime-common",
  "sc-consensus-grandpa",
  "sc-service",
@@ -3093,6 +3099,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-relay-encoder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
@@ -3426,6 +3433,21 @@ dependencies = [
  "pallet-timestamp",
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "dp-slot-duration-runtime-api"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#d377abf69ad58b3a2c7a143b4501f6c3b813d1ed"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4215,6 +4237,7 @@ dependencies = [
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
  "dp-core",
+ "dp-slot-duration-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -9478,6 +9501,31 @@ dependencies = [
  "sp-std",
  "staging-xcm",
  "staging-xcm-builder",
+]
+
+[[package]]
+name = "pallet-xcm-core-buyer"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections",
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "tp-traits",
 ]
 
 [[package]]
@@ -15287,6 +15335,7 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "dancebox-runtime",
  "dc-orchestrator-chain-interface",
+ "dp-slot-duration-runtime-api",
  "exit-future",
  "flashbox-runtime",
  "flume 0.10.14",
@@ -15353,6 +15402,26 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-container-chain-genesis-data",
  "try-runtime-cli",
+]
+
+[[package]]
+name = "tanssi-relay-encoder"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "pallet-balances",
+ "parity-scale-codec",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -15898,6 +15967,7 @@ dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-std",
 ]
 

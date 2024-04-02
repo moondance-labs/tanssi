@@ -24,6 +24,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub mod xcm_config;
 
+use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -64,7 +65,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
@@ -73,7 +74,7 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::{SessionManager, ShouldEndSession},
-    pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
+    pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
     scale_info::TypeInfo,
     smallvec::smallvec,
@@ -93,7 +94,10 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::{GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
+    tp_traits::{
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+    },
 };
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -462,7 +466,6 @@ where
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
-    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -472,7 +475,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 parameter_types! {
@@ -650,7 +653,9 @@ impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking
         let candidates_staking =
             pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
         // Max number of collators is set in pallet_configuration
-        let max_collators = Configuration::config().max_collators;
+        let target_session_index = index.saturating_add(1);
+        let max_collators =
+            <Configuration as GetHostConfiguration<u32>>::max_collators(target_session_index);
         let collators = invulnerables
             .iter()
             .cloned()
@@ -1341,8 +1346,6 @@ parameter_types! {
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
-use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
-
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
     fn get() -> AccountId32 {
@@ -1660,6 +1663,7 @@ construct_runtime!(
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 56,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 57,
+        XcmCoreBuyer: pallet_xcm_core_buyer = 58,
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
@@ -1695,6 +1699,7 @@ mod benches {
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
         [pallet_assets, ForeignAssets]
@@ -2262,6 +2267,12 @@ impl_runtime_apis! {
 
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            SLOT_DURATION
         }
     }
 }

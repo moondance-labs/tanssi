@@ -23,6 +23,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_services_payment::ProvideCollatorAssignmentCost;
+use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -58,14 +59,14 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
-    pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
+    pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
     scale_info::TypeInfo,
     smallvec::smallvec,
@@ -84,8 +85,8 @@ use {
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
-        GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        ShouldRotateAllCollators,
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
     },
 };
 pub use {
@@ -443,7 +444,6 @@ where
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
-    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -453,7 +453,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -553,7 +553,9 @@ impl SessionManager<CollatorId> for CollatorsFromInvulnerables {
         );
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
-        let max_collators = Configuration::config().max_collators;
+        let target_session_index = index.saturating_add(1);
+        let max_collators =
+            <Configuration as GetHostConfiguration<u32>>::max_collators(target_session_index);
         let collators = invulnerables
             .iter()
             .take(max_collators as usize)
@@ -1095,8 +1097,6 @@ parameter_types! {
     // 30% for parachain bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
-
-use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
 
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
@@ -1826,6 +1826,12 @@ impl_runtime_apis! {
 
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            SLOT_DURATION
         }
     }
 }

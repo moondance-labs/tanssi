@@ -70,8 +70,9 @@ use {
         FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
-    pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
+    pallet_transaction_payment::CurrencyAdapter,
     parity_scale_codec::{Decode, Encode},
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -468,7 +469,6 @@ impl frame_system::Config for Runtime {
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
-    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -478,7 +478,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 parameter_types! {
@@ -1467,6 +1467,12 @@ impl_runtime_apis! {
 
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            SLOT_DURATION
         }
     }
 }

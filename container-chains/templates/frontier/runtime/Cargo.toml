@@ -25,6 +25,7 @@ smallvec = { workspace = true }
 ccp-xcm = { workspace = true }
 dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
+dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
 
@@ -140,6 +141,7 @@ std = [
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
+	"dp-slot-duration-runtime-api/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",

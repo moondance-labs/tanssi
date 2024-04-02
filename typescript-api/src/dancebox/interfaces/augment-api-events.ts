@@ -1291,6 +1291,12 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        xcmCoreBuyer: {
+            /** An XCM message to buy a core for this parathread has been sent to the relay chain. */
+            BuyCoreXcmSent: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         xcmpQueue: {
             /** An HRMP message was sent to a sibling parachain. */
             XcmpMessageSent: AugmentedEvent<ApiType, [messageHash: U8aFixed], { messageHash: U8aFixed }>;

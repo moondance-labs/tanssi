@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use pallet_foreign_asset_creator::{
+    AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
+};
 use {
     super::{
         currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId,
@@ -386,6 +389,33 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
+pub struct RevertCodePrecompileHook;
+
+impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Runtime>>
+    for RevertCodePrecompileHook
+{
+    fn on_asset_created(
+        _foreign_asset: &MultiLocation,
+        asset_id: &AssetIdOf<Runtime>,
+        _min_balance: &AssetBalance<Runtime>,
+    ) {
+        let revert_bytecode = [0x60, 0x00, 0x60, 0x00, 0xFD].to_vec();
+        let prefix_slice = [255u8; 18];
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
+
+        pallet_evm::Pallet::<Runtime>::create_account(account_id.into(), revert_bytecode.clone());
+    }
+}
+
+impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for RevertCodePrecompileHook {
+    fn on_asset_destroyed(_foreign_asset: &MultiLocation, asset_id: &AssetIdOf<Runtime>) {
+        let prefix_slice = [255u8; 18];
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
+
+        pallet_evm::Pallet::<Runtime>::remove_account(&account_id.into());
+    }
+}
+
 impl pallet_foreign_asset_creator::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ForeignAsset = MultiLocation;
@@ -394,8 +424,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
-    type OnForeignAssetCreated = ();
-    type OnForeignAssetDestroyed = ();
+    type OnForeignAssetCreated = RevertCodePrecompileHook;
+    type OnForeignAssetDestroyed = RevertCodePrecompileHook;
 }
 
 impl pallet_asset_rate::Config for Runtime {
@@ -449,3 +479,17 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
 pub type AssetRateAsMultiplier =
     AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
+
+#[test]
+fn test_asset_id_to_account_conversion() {
+    let prefix_slice = [255u8].repeat(18);
+    let asset_ids_to_check = vec![0u16, 123u16, 3453u16, 10000u16, 65535u16];
+    for current_asset_id in asset_ids_to_check {
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), current_asset_id);
+        assert_eq!(
+            account_id.to_string().to_lowercase(),
+            String::from("0xffffffffffffffffffffffffffffffffffff")
+                + format!("{:04x}", current_asset_id).as_str()
+        );
+    }
+}
