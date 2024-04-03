@@ -212,7 +212,7 @@ pub mod pallet {
                             balance: chains_to_reward.rewards_per_chain,
                         });
 
-                        if let Some(weight) = actual_weight {   
+                        if let Some(weight) = actual_weight {
                             total_weight += weight
                         }
                     }
