@@ -87,13 +87,11 @@ parameter_types! {
     pub UniversalLocation: InteriorMultiLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
 
-    pub FeeAssetId: XcmAssetId = Concrete(SelfReserve::get());
-
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
+parameter_types! {  
     pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
 }
 
@@ -251,7 +249,7 @@ pub type PriceForSiblingParachainDelivery =
     ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, XcmpQueue>;
 
 pub type PriceForParentDelivery =
-    ExponentialPrice<FeeAssetId, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;

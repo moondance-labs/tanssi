@@ -12,7 +12,6 @@ describeSuite({
         let alice: KeyringPair;
         let baseDelivery: bigint;
         let chain;
-        const destinationPara = 3000;
         const txByteFee = 1n;
 
         beforeAll(async function () {

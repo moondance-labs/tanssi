@@ -3,7 +3,6 @@ import { KeyringPair, alith } from "@moonwall/util";
 import {
     MultiLocation,
     extractPaidDeliveryFees,
-    getLastSentUmpMessageFee,
     getLastSentHrmpMessageFee,
     XcmFragment,
     mockHrmpChannelExistanceTx,
