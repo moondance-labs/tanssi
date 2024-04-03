@@ -1,8 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
-import { MultiLocation, extractPaidDeliveryFees, getLastSentMessageFee } from "../../../util/xcm";
+import { MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee, XcmFragment } from "../../../util/xcm";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { XcmFragment } from "../../../util/xcm.ts";
 
 describeSuite({
     id: "CX0203",
@@ -13,6 +12,7 @@ describeSuite({
         let alice: KeyringPair;
         let baseDelivery: bigint;
         let chain;
+        const destinationPara = 3000;
         const txByteFee = 1n;
 
         beforeAll(async function () {
@@ -31,8 +31,6 @@ describeSuite({
             id: "T01",
             title: "Should succeed sending a XCM upward",
             test: async function () {
-                // We are going to test that we can receive a transact operation from parachain 1
-                // using descendOrigin first
                 const xcmMessage = new XcmFragment({
                     assets: [],
                 })
@@ -51,7 +49,7 @@ describeSuite({
 
                 await context.createBlock(await txRoot.signAsync(alice), { allowFailures: false });
 
-                const fee = await getLastSentMessageFee(context, baseDelivery, txByteFee);
+                const fee = await getLastSentUmpMessageFee(context, baseDelivery, txByteFee);
                 const paid = await extractPaidDeliveryFees(context);
                 expect(paid).to.be.equal(fee);
             },

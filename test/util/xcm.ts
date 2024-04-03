@@ -930,7 +930,7 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
     return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
 };
 
-export const getLastSentMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
+export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
     const sentXcm = (await context.polkadotJs().query.parachainSystem.upwardMessages())[0];
 
     // We need to slice twice to get to the actual message (version plus something else)
@@ -938,6 +938,24 @@ export const getLastSentMessageFee = async (context: DevModeContext, baseDeliver
 
     let txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
     const deliveryFeeFactor = await context.polkadotJs().query.parachainSystem.upwardDeliveryFeeFactor();
+    const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
+    return fee;
+};
+
+export const getLastSentHrmpMessageFee = async (
+    context: DevModeContext,
+    paraId: number,
+    baseDelivery: bigint,
+    txByteFee: bigint
+) => {
+    // We assume always index 0
+    const sentXcm = await context.polkadotJs().query.xcmpQueue.outboundXcmpMessages(paraId, 0);
+
+    // We need to slice three first bytes to get to the actual message (version plus something else)
+    let messageBytes = sentXcm.toU8a().slice(3);
+
+    let txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
+    const deliveryFeeFactor = await context.polkadotJs().query.xcmpQueue.deliveryFeeFactor(paraId);
     const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
     return fee;
 };
