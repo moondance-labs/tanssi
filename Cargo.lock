@@ -15398,6 +15398,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tokio",
+ "tokio-util",
  "tp-author-noting-inherent",
  "tp-container-chain-genesis-data",
  "try-runtime-cli",
@@ -15492,6 +15493,7 @@ dependencies = [
  "substrate-test-runtime-client",
  "tempfile",
  "tokio",
+ "tokio-util",
  "tracing",
 ]
 
@@ -15774,6 +15776,8 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.14.3",
  "pin-project-lite 0.2.13",
  "tokio",
  "tracing",
