@@ -170,6 +170,7 @@ pub mod pallet {
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
+        #[pallet::constant]
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;

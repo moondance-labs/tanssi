@@ -73,9 +73,11 @@ pub mod pallet {
         type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
         /// The maximum number of block production credits that can be accumulated
+        #[pallet::constant]
         type FreeBlockProductionCredits: Get<BlockNumberFor<Self>>;
 
         /// The maximum number of collator assigment production credits that can be accumulated
+        #[pallet::constant]
         type FreeCollatorAssignmentCredits: Get<u32>;
         // Who can call set_refund_address?
         type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;

@@ -84,6 +84,7 @@ pub mod pallet {
         type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         /// Maximum number of invulnerables.
+        #[pallet::constant]
         type MaxInvulnerables: Get<u32>;
 
         /// A stable ID for a collator.
