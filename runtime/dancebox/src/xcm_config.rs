@@ -42,7 +42,7 @@ use {
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::{AssetId as XcmAssetId, *},
+    staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,

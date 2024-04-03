@@ -37,7 +37,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
-    staging_xcm::latest::prelude::{AssetId as XcmAssetId, *},
+    staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,

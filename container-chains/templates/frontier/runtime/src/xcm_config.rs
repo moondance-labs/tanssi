@@ -46,7 +46,7 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::{AssetId as XcmAssetId, *},
+    staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,
