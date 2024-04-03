@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { DevModeContext, customDevRpcRequest } from "@moonwall/cli";
+import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
@@ -918,4 +918,26 @@ export const expectXcmEventMessage = async (context: DevModeContext, message: st
         .filter((event) => event);
 
     return filteredEvents.length ? filteredEvents[0]!.data.error.toString() === message : false;
+};
+
+export const extractPaidDeliveryFees = async (context: DevModeContext) => {
+    const records = await context.polkadotJs().query.system.events();
+
+    const filteredEvents = records
+        .map(({ event }) => (context.polkadotJs().events.polkadotXcm.FeesPaid.is(event) ? event : undefined))
+        .filter((event) => event);
+
+    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+};
+
+export const getLastSentMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
+    const sentXcm = (await context.polkadotJs().query.parachainSystem.upwardMessages())[0];
+
+    // We need to slice twice to get to the actual message (version plus something else)
+    let messageBytes = sentXcm.toU8a().slice(2);
+
+    let txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
+    const deliveryFeeFactor = await context.polkadotJs().query.parachainSystem.upwardDeliveryFeeFactor();
+    const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
+    return fee;
 };
