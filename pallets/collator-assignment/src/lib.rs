@@ -323,6 +323,8 @@ pub mod pallet {
                     None
                 };
 
+            let mut maybe_assignment_hook_error: Option<DispatchError> = None;
+
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
             for para_id in &container_chain_ids {
@@ -332,11 +334,14 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(
+                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
                         *para_id,
                         maybe_tip.as_ref(),
                         false,
-                    );
+                    ) {
+                        maybe_assignment_hook_error = Some(e);
+                        break;
+                    }
                 }
             }
 
@@ -347,16 +352,29 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(
+                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
                         *para_id,
                         maybe_tip.as_ref(),
                         true,
-                    );
+                    ) {
+                        maybe_assignment_hook_error = Some(e);
+                        break;
+                    }
                 }
             }
 
+            if let Some(e) = maybe_assignment_hook_error {
+                log::warn!(
+                    "CollatorAssignmentHook error! Keeping previous assignment: {:?}",
+                    e
+                )
+            }
+
             let mut pending = PendingCollatorContainerChain::<T>::get();
-            let old_assigned_changed = old_assigned != new_assigned;
+
+            // Keep old assignment if an error happened on_collators_assigned
+            let old_assigned_changed =
+                maybe_assignment_hook_error.is_none() && old_assigned != new_assigned;
             let mut pending_changed = false;
             // Update CollatorContainerChain using last entry of pending, if needed
             if let Some(current) = pending.take() {

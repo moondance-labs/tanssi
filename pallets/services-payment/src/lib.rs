@@ -36,7 +36,7 @@ use {
     scale_info::prelude::vec::Vec,
     serde::{Deserialize, Serialize},
     sp_io::hashing::blake2_256,
-    sp_runtime::traits::TrailingZeroInput,
+    sp_runtime::{traits::TrailingZeroInput, DispatchError},
     tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook, CollatorAssignmentTip},
 };
 
@@ -501,55 +501,39 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
         para_id: ParaId,
         maybe_tip: Option<&BalanceOf<T>>,
         _is_parathread: bool,
-    ) -> Weight {
+    ) -> Result<Weight, DispatchError> {
         if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) =
                 T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
-            match T::Currency::withdraw(
+            let imbalance = T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
                 amount_to_charge,
                 WithdrawReasons::FEE,
                 ExistenceRequirement::KeepAlive,
-            ) {
-                Err(e) => log::warn!(
-                    "Failed to withdraw collator assignment payment for container chain {}: {:?}",
-                    u32::from(para_id),
-                    e
-                ),
-                Ok(imbalance) => {
-                    T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
-                }
-            }
+            )?;
+            T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
         }
 
         if let Some(&tip) = maybe_tip {
             // Only charge the tip to the paras that had a max tip set
             // (aka were willing to tip for being assigned a collator)
             if MaxTip::<T>::get(para_id).is_some() {
-                match T::Currency::withdraw(
+                let imbalance = T::Currency::withdraw(
                     &Self::parachain_tank(para_id),
                     tip,
                     WithdrawReasons::TIP,
                     ExistenceRequirement::KeepAlive,
-                ) {
-                    Err(e) => log::warn!(
-                        "Failed to withdraw collator assignment tip for container chain {}: {:?}",
-                        u32::from(para_id),
-                        e
-                    ),
-                    Ok(imbalance) => {
-                        T::OnChargeForCollatorAssignmentTip::on_unbalanced(imbalance);
-                        Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
-                            para_id,
-                            payer: Self::parachain_tank(para_id),
-                            tip,
-                        });
-                    }
-                }
+                )?;
+                T::OnChargeForCollatorAssignmentTip::on_unbalanced(imbalance);
+                Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
+                    para_id,
+                    payer: Self::parachain_tank(para_id),
+                    tip,
+                });
             }
         }
 
-        T::WeightInfo::on_collators_assigned()
+        Ok(T::WeightInfo::on_collators_assigned())
     }
 }
 

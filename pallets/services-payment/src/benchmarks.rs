@@ -193,7 +193,8 @@ mod benchmarks {
                 para_id.into(),
                 Some(&tip.into()),
                 false,
-            );
+            )
+            .expect("failed on_collators_assigned");
         }
     }
 

@@ -16,6 +16,7 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true }
 sp-std = { workspace = true }
+sp-runtime = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }

@@ -40,15 +40,19 @@ pub trait CollatorAssignmentHook<Balance> {
         para_id: ParaId,
         maybe_tip: Option<&Balance>,
         is_parathread: bool,
-    ) -> Weight;
+    ) -> Result<Weight, sp_runtime::DispatchError>;
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
 impl<Balance> CollatorAssignmentHook<Balance> for Tuple {
-    fn on_collators_assigned(p: ParaId, t: Option<&Balance>, ip: bool) -> Weight {
+    fn on_collators_assigned(
+        p: ParaId,
+        t: Option<&Balance>,
+        ip: bool,
+    ) -> Result<Weight, sp_runtime::DispatchError> {
         let mut weight: Weight = Default::default();
-        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p, t, ip)); )* );
-        weight
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p, t, ip)?); )* );
+        Ok(weight)
     }
 }
 
