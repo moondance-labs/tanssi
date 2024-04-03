@@ -24,9 +24,7 @@ use {
         },
         *,
     },
-    frame_support::{
-        assert_ok,
-    },
+    frame_support::assert_ok,
     paste::paste,
     staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     xcm_emulator::Chain,
