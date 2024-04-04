@@ -1408,7 +1408,9 @@ fn assign_collators_keeps_prev_assignment_hook_fail() {
 
         run_to_block(71);
 
-        assert_eq!(pending_assignment.unwrap(), CollatorContainerChain::<Test>::get());
-
+        assert_eq!(
+            pending_assignment.unwrap(),
+            CollatorContainerChain::<Test>::get()
+        );
     });
 }

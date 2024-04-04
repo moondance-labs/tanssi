@@ -33,8 +33,8 @@ use {
     },
     sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
-        CollatorAssignmentTip, ParaId, ParathreadParams, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, SessionContainerChains, CollatorAssignmentHook,
+        CollatorAssignmentHook, CollatorAssignmentTip, ParaId, ParathreadParams,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
