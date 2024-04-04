@@ -31,8 +31,10 @@ std = [
 	"serde",
 	"serde/std",
 	"sp-std/std",
+	"sp-runtime/std"
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks"
 ]
