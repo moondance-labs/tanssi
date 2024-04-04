@@ -70,7 +70,7 @@ describeSuite({
                     ).toBigInt();
 
                     // auto stake is calculated using this method as the AutoCompoundingSharesHeldStake is not updated with rewards received
-                    // by the candidate, rather the number of shares of candidate increases.
+                    // by the candidate, rather the value of each share of candidate increases.
                     const auto =
                         (autoCompoundingSharesOfCandidate * autoCompoundingSharesTotalStaked) /
                         autoCompoundingSharesSupply;
