@@ -2245,9 +2245,9 @@ impl_runtime_apis! {
         ) -> Result<StreamPaymentApiStatus<Balance>, StreamPaymentApiError> {
             match StreamPayment::stream_payment_status(stream_id, now) {
                 Ok(pallet_stream_payment::StreamPaymentStatus {
-                    payment, deposit_left, inactive
+                    payment, deposit_left, stalled
                 }) => Ok(StreamPaymentApiStatus {
-                    payment, deposit_left, inactive
+                    payment, deposit_left, stalled
                 }),
                 Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
                 => Err(StreamPaymentApiError::UnknownStreamId),

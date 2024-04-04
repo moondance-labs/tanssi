@@ -30,9 +30,9 @@ use {
 pub struct StreamPaymentApiStatus<Balance> {
     pub payment: Balance,
     pub deposit_left: Balance,
-    /// Whenever the stream is inactive, which can occur either when no funds are left or
+    /// Whenever the stream is stalled, which can occur either when no funds are left or
     /// if the time is past a mandatory request deadline.
-    pub inactive: bool,
+    pub stalled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
@@ -52,8 +52,8 @@ sp_api::decl_runtime_apis! {
         Balance: parity_scale_codec::Codec,
     {
         /// Get the stream payment current status, telling how much payment is
-        /// pending, how much deposit will be left and whenever the stream is inactive.
-        /// The stream is considered inactive if no funds are left or if the provided
+        /// pending, how much deposit will be left and whenever the stream is stalled.
+        /// The stream is considered stalled if no funds are left or if the provided
         /// time is past a mandatory request deadline. If the provided `now` is `None`
         /// then the current time will be fetched. Being able to provide a custom `now`
         /// allows to check the status in the future.

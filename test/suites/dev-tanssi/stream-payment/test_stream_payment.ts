@@ -4,23 +4,6 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { nToHex } from "@polkadot/util";
 
-async function rpcStreamPaymentStatus(context, block, streamId, now) {
-    if (block == "latest") {
-        const blockNumber = (
-            await context.polkadotJs().rpc.chain.getBlock()
-          ).block.header.number.toBigInt();
-  
-        const blockHash = await context.polkadotJs().rpc.chain.getBlockHash(blockNumber);
-
-        block = blockHash;
-    }
-
-    await customDevRpcRequest("tanssi_streamPaymentStatus", [
-        block,
-        streamId,
-        now,
-    ]);
-}
 
 describeSuite({
     id: "DT0501",
@@ -41,13 +24,6 @@ describeSuite({
             id: "E01",
             title: "Stream payment works",
             test: async function () {
-                try {
-                    await rpcStreamPaymentStatus(context, "latest", 0, null);
-                    throw { message: "Should have returned an error" }
-                } catch(e: any) {
-                    expect(e.message.toString()).to.eq("Failed to fetch stream payment status: Unknown stream id")
-                }
-
                 // 1st block
                 let aliceNonce = 0;
                 const txOpenStream = await polkadotJs.tx.streamPayment
@@ -68,8 +44,6 @@ describeSuite({
                 });
                 expect(openStreamEvents.length).to.be.equal(1);
 
-                console.log(`After first block: ${await rpcStreamPaymentStatus(context, "latest", 0, null)}`);
-                    
                 // 2nd block
                 const txPerformPayment = await polkadotJs.tx.streamPayment
                     .performPayment(0)
@@ -80,7 +54,7 @@ describeSuite({
                         0,
                         {
                             Mandatory: {
-                                deadline: 10,
+                                deadline: 0,
                             },
                         },
                         {

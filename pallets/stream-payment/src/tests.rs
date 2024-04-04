@@ -18,13 +18,14 @@ use {
     crate::{
         assert_event_emitted, assert_event_not_emitted,
         mock::{
-            roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime, RuntimeOrigin,
-            StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB,
-            CHARLIE, DEFAULT_BALANCE, MEGA,
+            roll_one_block, roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime,
+            RuntimeOrigin, StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit,
+            ALICE, BOB, CHARLIE, DEFAULT_BALANCE, MEGA,
         },
-        ArithmeticError, Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
-        LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId, Party, Stream,
-        StreamConfig, StreamConfigOf, StreamOf, Streams,
+        ArithmeticError, Assets, ChangeKind, ChangeRequest, DepositChange,
+        DispatchResultWithPostInfo, Event, LookupStreamsWithSource, LookupStreamsWithTarget,
+        NextStreamId, Party, Stream, StreamConfig, StreamConfigOf, StreamOf, StreamPaymentStatus,
+        Streams,
     },
     frame_support::{assert_err, assert_ok},
     sp_runtime::TokenError,
@@ -105,7 +106,7 @@ struct PaymentEvent {
     source: AccountId,
     target: AccountId,
     amount: Balance,
-    drained: bool,
+    stalled: bool,
 }
 
 impl Default for PaymentEvent {
@@ -115,7 +116,7 @@ impl Default for PaymentEvent {
             source: ALICE,
             target: BOB,
             amount: 0,
-            drained: false,
+            stalled: false,
         }
     }
 }
@@ -127,14 +128,14 @@ impl From<PaymentEvent> for Event<Runtime> {
             source,
             target,
             amount,
-            drained,
+            stalled,
         } = e;
         Self::StreamPayment {
             stream_id,
             source,
             target,
             amount,
-            drained,
+            stalled,
         }
     }
 }
@@ -473,7 +474,7 @@ mod perform_payment {
 
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
-                drained: true,
+                stalled: true,
                 ..default()
             });
 
@@ -520,7 +521,7 @@ mod perform_payment {
 
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
-                drained: true,
+                stalled: true,
                 ..default()
             });
             assert_eq!(
@@ -540,7 +541,7 @@ mod perform_payment {
     }
 
     #[test]
-    fn payment_matching_deposit_is_considered_drained() {
+    fn payment_matching_deposit_is_considered_stalled() {
         ExtBuilder::default().build().execute_with(|| {
             let config = default_config();
             let open_stream = OpenStream {
@@ -566,7 +567,7 @@ mod perform_payment {
 
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
-                drained: true,
+                stalled: true,
                 ..default()
             });
             assert_eq!(

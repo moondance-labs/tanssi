@@ -252,10 +252,10 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
-        requester: Party,
-        kind: ChangeKind<Balance>,
-        new_config: StreamConfig<Unit, AssetId, Balance>,
-        deposit_change: Option<DepositChange<Balance>>,
+        pub requester: Party,
+        pub kind: ChangeKind<Balance>,
+        pub new_config: StreamConfig<Unit, AssetId, Balance>,
+        pub deposit_change: Option<DepositChange<Balance>>,
     }
 
     pub type StreamOf<T> =
@@ -271,9 +271,9 @@ pub mod pallet {
     pub struct StreamPaymentStatus<Balance> {
         pub payment: Balance,
         pub deposit_left: Balance,
-        /// Whenever the stream is inactive, which can occur either when no funds are left or
+        /// Whenever the stream is stalled, which can occur either when no funds are left or
         /// if the time is past a mandatory request deadline.
-        pub inactive: bool,
+        pub stalled: bool,
     }
 
     /// Store the next available stream id.
@@ -320,6 +320,7 @@ pub mod pallet {
     >;
 
     #[pallet::error]
+    #[derive(Clone, PartialEq, Eq)]
     pub enum Error<T> {
         UnknownStreamId,
         StreamIdOverflow,
@@ -353,7 +354,7 @@ pub mod pallet {
             source: AccountIdOf<T>,
             target: AccountIdOf<T>,
             amount: T::Balance,
-            inactive: bool,
+            stalled: bool,
         },
         StreamConfigChangeRequested {
             stream_id: T::StreamId,
@@ -764,8 +765,8 @@ pub mod pallet {
         }
 
         /// Get the stream payment current status, telling how much payment is
-        /// pending, how much deposit will be left and whenever the stream is inactive.
-        /// The stream is considered inactive if no funds are left or if the provided
+        /// pending, how much deposit will be left and whenever the stream is stalled.
+        /// The stream is considered stalled if no funds are left or if the provided
         /// time is past a mandatory request deadline. If the provided `now` is `None`
         /// then the current time will be fetched. Being able to provide a custom `now`
         /// allows to check the status in the future.
@@ -806,7 +807,7 @@ pub mod pallet {
                 return Ok(StreamPaymentStatus {
                     payment: 0u32.into(),
                     deposit_left: stream.deposit,
-                    inactive: true,
+                    stalled: true,
                 });
             }
 
@@ -816,7 +817,7 @@ pub mod pallet {
                 return Ok(StreamPaymentStatus {
                     payment: 0u32.into(),
                     deposit_left: stream.deposit,
-                    inactive: true,
+                    stalled: true,
                 });
             };
 
@@ -830,7 +831,7 @@ pub mod pallet {
             // We compute the new amount of locked funds. If it underflows it
             // means that there is more to pay that what is left, in which case
             // we pay all that is left.
-            let (deposit_left, inactive) = match stream.deposit.checked_sub(&payment) {
+            let (deposit_left, stalled) = match stream.deposit.checked_sub(&payment) {
                 Some(v) if v.is_zero() => (v, true),
                 Some(v) => (v, false),
                 None => {
@@ -842,7 +843,7 @@ pub mod pallet {
             Ok(StreamPaymentStatus {
                 payment,
                 deposit_left,
-                inactive,
+                stalled,
             })
         }
 
@@ -871,7 +872,7 @@ pub mod pallet {
             let StreamPaymentStatus {
                 payment,
                 deposit_left,
-                inactive,
+                stalled,
             } = Self::stream_payment_status_by_ref(stream, last_time_updated, now)?;
 
             if payment.is_zero() {
@@ -895,7 +896,7 @@ pub mod pallet {
                 source: stream.source.clone(),
                 target: stream.target.clone(),
                 amount: payment,
-                inactive,
+                stalled,
             });
 
             Ok(payment)
