@@ -920,6 +920,10 @@ impl pallet_author_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
+    #[cfg(feature = "runtime-benchmarks")]
+    type AuthorNotingHook = ();
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
