@@ -22,6 +22,7 @@ use {
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU64, Hooks},
+        weights::Weight,
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -33,7 +34,7 @@ use {
     sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
         CollatorAssignmentTip, ParaId, ParathreadParams, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, SessionContainerChains,
+        RemoveParaIdsWithNoCredits, SessionContainerChains, CollatorAssignmentHook,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
@@ -125,6 +126,7 @@ pub struct Mocks {
     // None means 5
     pub full_rotation_period: Option<u32>,
     pub apply_tip: bool,
+    pub assignment_hook_errors: bool,
 }
 
 impl mock_data::Config for Test {}
@@ -242,6 +244,22 @@ impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
         }
     }
 }
+pub struct MockCollatorAssignmentHook;
+
+impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
+    fn on_collators_assigned(
+        _para_id: ParaId,
+        _maybe_tip: Option<&u32>,
+        _is_parathread: bool,
+    ) -> Result<Weight, sp_runtime::DispatchError> {
+        if MockData::mock().assignment_hook_errors {
+            // The error doesn't matter
+            Err(sp_runtime::DispatchError::Unavailable)
+        } else {
+            Ok(Weight::default())
+        }
+    }
+}
 
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -254,7 +272,7 @@ impl pallet_collator_assignment::Config for Test {
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
-    type CollatorAssignmentHook = ();
+    type CollatorAssignmentHook = MockCollatorAssignmentHook;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
     type Currency = ();
     type WeightInfo = ();
