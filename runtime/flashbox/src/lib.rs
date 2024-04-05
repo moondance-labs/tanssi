@@ -371,6 +371,12 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
         expected_author == author
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn get_authors(_slot: &u32) -> Vec<NimbusId> {
+        AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain
+    }
 }
 
 impl pallet_author_inherent::Config for Runtime {
