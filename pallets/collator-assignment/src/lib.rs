@@ -244,13 +244,22 @@ pub mod pallet {
                 });
             }
 
-            // Prioritize paras by tip
+            // Are there enough collators to satisfy the minimum demand?
+            let congestion =
+                T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                    + collators_per_container * container_chain_ids.len() as u32
+                    + collators_per_parathread * parathreads.len() as u32
+                    > collators.len() as u32;
+
+            // Prioritize paras by tip on congestion
             // As of now this doesn't distinguish between parachains and parathreads
             // TODO apply different logic to parathreads
-            chains.sort_by(|a, b| {
-                T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                    .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
-            });
+            if congestion {
+                chains.sort_by(|a, b| {
+                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                });
+            }
 
             // We assign new collators
             // we use the config scheduled at the target_session_index
@@ -311,17 +320,15 @@ pub mod pallet {
             let mut assigned_containers = new_assigned.container_chains.clone();
             assigned_containers.retain(|_, v| !v.is_empty());
 
-            // On congestion (not enough collators for all paras) prioritized chains need to pay
-            // the minimum tip of the prioritized chains
-            let maybe_tip: Option<BalanceOf<T>> =
-                if assigned_containers.len() < container_chain_ids.len() + parathreads.len() {
-                    assigned_containers
-                        .into_keys()
-                        .filter_map(T::CollatorAssignmentTip::get_para_tip)
-                        .min()
-                } else {
-                    None
-                };
+            // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
+            let maybe_tip: Option<BalanceOf<T>> = if congestion {
+                assigned_containers
+                    .into_keys()
+                    .filter_map(T::CollatorAssignmentTip::get_para_tip)
+                    .min()
+            } else {
+                None
+            };
 
             let mut maybe_assignment_hook_error: Option<DispatchError> = None;
 
