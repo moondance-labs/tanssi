@@ -1420,14 +1420,16 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_proxy, Proxy]
         [pallet_utility, Utility]
-        [pallet_treasury, Treasury]
+        [pallet_proxy, Proxy]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
+        [pallet_stream_payment, StreamPayment]
         [pallet_identity, Identity]
+        [pallet_multisig, Multisig]
         [pallet_registrar, Registrar]
         [pallet_configuration, Configuration]
         [pallet_collator_assignment, CollatorAssignment]
@@ -1436,8 +1438,7 @@ mod benches {
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
         [pallet_author_inherent, AuthorInherent]
-        [pallet_multisig, Multisig]
-        [pallet_stream_payment, StreamPayment]
+        [pallet_treasury, Treasury]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }

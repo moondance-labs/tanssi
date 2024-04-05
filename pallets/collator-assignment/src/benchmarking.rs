@@ -49,9 +49,8 @@ fn assert_event_is_present<T: Config>(generic_event: <T as Config>::RuntimeEvent
     let events = frame_system::Pallet::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
-    let event_records: Vec<<T as frame_system::Config>::RuntimeEvent> = events.iter().map(|i| i.event.clone()).collect();
-    let EventRecord { event, .. } = &events[events.len() - 1];
-
+    let event_records: Vec<<T as frame_system::Config>::RuntimeEvent> =
+        events.iter().map(|i| i.event.clone()).collect();
     assert!(event_records.contains(&system_event));
 }
 
@@ -100,7 +99,7 @@ mod benchmarks {
         assert_ne!(<CollatorContainerChain::<T>>::get(), old_assigned);
         // New assignment is not empty
         // If more than one, at least one chain should have gotten collators
-        if x>1 {
+        if x > 1 {
             assert_ne!(
                 <CollatorContainerChain::<T>>::get().container_chains.len(),
                 0

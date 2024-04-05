@@ -690,20 +690,23 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_proxy, Proxy]
         [pallet_utility, Utility]
+        [pallet_proxy, Proxy]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
+        [pallet_multisig, Multisig]
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
-        [pallet_multisig, Multisig]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_message_queue, MessageQueue]
         [pallet_assets, ForeignAssets]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
     );
 }
