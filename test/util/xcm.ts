@@ -931,7 +931,7 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
 };
 
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
-    let upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
+    const upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
     expect(upwardMessages.length > 0, "There is no upward message").to.be.true;
     const sentXcm = upwardMessages[0];
 
@@ -950,7 +950,7 @@ export const getLastSentHrmpMessageFee = async (
     baseDelivery: bigint,
     txByteFee: bigint
 ) => {
-    let sentXcm = await context.polkadotJs().query.xcmpQueue.outboundXcmpMessages(paraId, 0);
+    const sentXcm = await context.polkadotJs().query.xcmpQueue.outboundXcmpMessages(paraId, 0);
     expect(sentXcm.length > 0, `There is no hrmp message for para id ${paraId}`).to.be.true;
     // We need to slice 2 first bytes to get to the actual message (version plus HRMP)
     const messageBytes = sentXcm.slice(2);
