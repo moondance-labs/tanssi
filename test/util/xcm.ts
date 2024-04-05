@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { DevModeContext, customDevRpcRequest } from "@moonwall/cli";
+import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
@@ -931,7 +931,9 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
 };
 
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
-    const sentXcm = (await context.polkadotJs().query.parachainSystem.upwardMessages())[0];
+    let upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
+    expect(upwardMessages.length > 0, "There is no upward message").to.be.true;
+    const sentXcm = upwardMessages[0];
 
     // We need to slice once to get to the actual message (version)
     const messageBytes = sentXcm.slice(1);
@@ -948,9 +950,8 @@ export const getLastSentHrmpMessageFee = async (
     baseDelivery: bigint,
     txByteFee: bigint
 ) => {
-    // We assume always index 0
-    const sentXcm = await context.polkadotJs().query.xcmpQueue.outboundXcmpMessages(paraId, 0);
-
+    let sentXcm = await context.polkadotJs().query.xcmpQueue.outboundXcmpMessages(paraId, 0);
+    expect(sentXcm.length > 0, `There is no hrmp message for para id ${paraId}`).to.be.true;
     // We need to slice 2 first bytes to get to the actual message (version plus HRMP)
     const messageBytes = sentXcm.slice(2);
 
