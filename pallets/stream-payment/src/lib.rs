@@ -569,7 +569,7 @@ pub mod pallet {
                 .account_to_party(origin)
                 .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
-            let Some(request) = stream.pending_request.take() else {
+            let Some(request) = stream.pending_request.clone() else {
                 return Err(Error::<T>::NoPendingRequest.into());
             };
 
@@ -641,6 +641,7 @@ pub mod pallet {
 
             // Update config in storage.
             stream.config = request.new_config;
+            stream.pending_request = None;
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())

@@ -1502,6 +1502,59 @@ mod accept_requested_change {
             ));
         })
     }
+
+    #[test]
+    fn accept_deadline_in_past_doesnt_pay_retroactively() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            // Target requets a change.
+            let change1 = StreamConfig {
+                rate: 101,
+                ..open_stream.config
+            };
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Mandatory { deadline: 10 },
+                change1,
+                None,
+            ));
+
+            // Roll to block after deadline, payment should stop at deadline.
+            let delta = roll_to(11) as u128;
+            let payment = (delta - 1) * open_stream.config.rate;
+
+            assert_ok!(StreamPayment::perform_payment(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+            assert_event_emitted!(PaymentEvent {
+                amount: payment,
+                ..default()
+            });
+
+            // Accepting the request shouldn't not pay retroactively
+            roll_to(20) as u128;
+
+            let deposit_before = Streams::<Runtime>::get(0).unwrap().deposit;
+            let increase = 42;
+            assert_ok!(StreamPayment::accept_requested_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                1,
+                Some(DepositChange::Increase(increase)),
+            ));
+            let deposit_after = Streams::<Runtime>::get(0).unwrap().deposit;
+
+            assert_eq!(
+                deposit_before,
+                deposit_after - increase,
+                "no payment should be performed"
+            );
+        })
+    }
 }
 
 mod cancel_change_request {

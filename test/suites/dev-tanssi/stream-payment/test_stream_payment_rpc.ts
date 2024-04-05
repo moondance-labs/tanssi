@@ -131,24 +131,22 @@ describeSuite({
                     payment: 0,
                 });
 
+                // produce empty block on session change, which cannot contain extrinsics
+                await context.createBlock();
+
                 // 5th block: accept change, resuming stream
                 const txAcceptChange = await polkadotJs.tx.streamPayment
                     .acceptRequestedChange(0, 1, null)
                     .signAsync(bob);
                 newBlock = await context.createBlock([txAcceptChange]);
 
-                console.log((await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
-                }).toString());
-
-                // TODO: Why is the change not accepted?
                 const acceptChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamConfigChanged";
                 });
                 expect(acceptChangeEvents.length).to.be.equal(1);
 
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_800_000,
+                    deposit_left: 9_805_000, // old deposit + increase
                     stalled: false,
                     payment: 0,
                 });
@@ -157,9 +155,9 @@ describeSuite({
                 newBlock = await context.createBlock();
 
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_750_000,
+                    deposit_left: 9_755_000,
                     stalled: false,
-                    payment: 0,
+                    payment: 50_000,
                 });
 
                 // 7th block: close the stream
