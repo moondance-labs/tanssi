@@ -21,38 +21,22 @@ use {
         MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Registrar,
         Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, System,
         WeightToFee, XcmpQueue,
-    },
-    cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
-    frame_support::{
+    }, crate::weights, cumulus_primitives_core::{AggregateMessageOrigin, ParaId}, frame_support::{
         pallet_prelude::Get,
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
-    },
-    frame_system::EnsureRoot,
-    pallet_xcm::XcmPassthrough,
-    pallet_xcm_core_buyer::{
+    }, frame_system::EnsureRoot, pallet_xcm::XcmPassthrough, pallet_xcm_core_buyer::{
         GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
         ParaIdIntoAccountTruncating,
-    },
-    parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    parity_scale_codec::{Decode, Encode},
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
-    scale_info::TypeInfo,
-    sp_core::ConstU32,
-    sp_runtime::{transaction_validity::TransactionPriority, Perbill},
-    sp_std::vec::Vec,
-    staging_xcm::latest::prelude::*,
-    staging_xcm_builder::{
+    }, parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling}, parity_scale_codec::{Decode, Encode}, polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery, scale_info::TypeInfo, sp_core::ConstU32, sp_runtime::{transaction_validity::TransactionPriority, Perbill}, sp_std::vec::Vec, staging_xcm::latest::prelude::*, staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
         SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
         WeightInfoBounds, WithComputedOrigin,
-    },
-    staging_xcm_executor::{traits::JustTry, XcmExecutor},
-    tp_traits::ParathreadParams,
+    }, staging_xcm_executor::{traits::JustTry, XcmExecutor}, tp_traits::ParathreadParams
 };
 
 parameter_types! {
@@ -251,7 +235,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type VersionWrapper = PolkadotXcm;
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
-    type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::cumulus_pallet_xcmp_queue::SubstrateWeight<Runtime>;
     type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
@@ -268,7 +252,7 @@ parameter_types! {
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
@@ -319,7 +303,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type StringLimit = ForeignAssetsAssetsStringLimit;
     type Freezer = ();
     type Extra = ();
-    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_assets::SubstrateWeight<Runtime>;
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
@@ -334,7 +318,7 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
-    type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
     type OnForeignAssetCreated = ();
     type OnForeignAssetDestroyed = ();
 }
@@ -346,7 +330,7 @@ impl pallet_asset_rate::Config for Runtime {
     type Currency = Balances;
     type AssetKind = AssetId;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
@@ -441,7 +425,7 @@ parameter_types! {
 
 impl pallet_message_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_message_queue::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
         cumulus_primitives_core::AggregateMessageOrigin,
