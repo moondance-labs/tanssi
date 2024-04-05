@@ -8,7 +8,7 @@ import "@polkadot/api-base/types/consts";
 import type { ApiTypes, AugmentedConst } from "@polkadot/api-base/types";
 import type { Option, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { Codec } from "@polkadot/types-codec/types";
-import type { Permill } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
 import type {
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
@@ -24,6 +24,11 @@ declare module "@polkadot/api-base/types/consts" {
         asyncBacking: {
             /** Purely informative, but used by mocking tools like chospticks to allow knowing how to mock blocks */
             expectedBlockTime: u64 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        authorityMapping: {
+            sessionRemovalBoundary: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -49,6 +54,17 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        configuration: {
+            sessionDelay: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        dataPreservers: {
+            maxBootNodes: u32 & AugmentedConst<ApiType>;
+            maxBootNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         identity: {
             /** The amount held on deposit for a registered identity. */
             basicDeposit: u128 & AugmentedConst<ApiType>;
@@ -70,6 +86,22 @@ declare module "@polkadot/api-base/types/consts" {
              * size of an account ID plus 32 bytes.
              */
             subAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        inflationRewards: {
+            /** Inflation rate per orchestrator block (proportion of the total issuance) */
+            inflationRate: Perbill & AugmentedConst<ApiType>;
+            /** The account that will store rewards waiting to be paid out */
+            pendingRewardsAccount: AccountId32 & AugmentedConst<ApiType>;
+            /** Proportion of the new supply dedicated to staking */
+            rewardsPortion: Perbill & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        invulnerables: {
+            /** Maximum number of invulnerables. */
+            maxInvulnerables: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -132,6 +164,7 @@ declare module "@polkadot/api-base/types/consts" {
             maxGenesisDataSize: u32 & AugmentedConst<ApiType>;
             /** Max length of para id list */
             maxLengthParaIds: u32 & AugmentedConst<ApiType>;
+            maxLengthTokenSymbol: u32 & AugmentedConst<ApiType>;
             sessionDelay: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
@@ -143,6 +176,14 @@ declare module "@polkadot/api-base/types/consts" {
              * `RelayStorageRoots` mapping.
              */
             maxStorageRoots: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        servicesPayment: {
+            /** The maximum number of block production credits that can be accumulated */
+            freeBlockProductionCredits: u32 & AugmentedConst<ApiType>;
+            /** The maximum number of collator assigment production credits that can be accumulated */
+            freeCollatorAssignmentCredits: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

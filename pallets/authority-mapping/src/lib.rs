@@ -53,6 +53,7 @@ pub mod pallet {
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         // Sessions after which keys should be removed
+        #[pallet::constant]
         type SessionRemovalBoundary: Get<Self::SessionIndex>;
 
         type AuthorityId: Member
