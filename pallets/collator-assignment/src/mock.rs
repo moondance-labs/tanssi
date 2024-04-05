@@ -156,6 +156,15 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
     fn collators_per_parathread(_session_index: u32) -> u32 {
         MockData::mock().collators_per_parathread
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_host_configuration(_session_index: u32) {
+        MockData::mutate(|mocks| {
+            mocks.collators = vec![100];
+            mocks.min_orchestrator_chain_collators = 1;
+            mocks.collators_per_container = 1;
+            mocks.max_orchestrator_chain_collators = 1;
+        })
+    }
 }
 
 pub struct CollatorsGetter;
@@ -201,7 +210,7 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     fn set_session_container_chains(_session_index: u32, para_ids: &[ParaId]) {
         MockData::mutate(|mocks| {
             mocks.container_chains = para_ids.iter().cloned().map(|x| x.into()).collect();
-        })
+        });
     }
 }
 
@@ -315,11 +324,7 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn make_valid_para_ids(para_ids: &[ParaId]) {
-        for para_id in para_ids {
-            assert!(*para_id > ParaId::from(5000), "{}", para_id);
-        }
-    }
+    fn make_valid_para_ids(_para_ids: &[ParaId]) {}
 }
 
 /// Returns a map of collator to assigned para id

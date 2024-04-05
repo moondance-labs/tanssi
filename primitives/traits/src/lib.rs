@@ -146,6 +146,8 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
     fn collators_per_parathread(session_index: SessionIndex) -> u32;
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_host_configuration(_session_index: SessionIndex) {}
 }
 
 /// Returns current session index.
