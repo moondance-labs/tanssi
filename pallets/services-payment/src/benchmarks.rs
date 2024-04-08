@@ -129,8 +129,8 @@ mod benchmarks {
     fn set_refund_address() {
         let para_id = 1001u32.into();
 
-        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
-            .expect("failed to create SetRefundAddressOrigin");
+        let origin = T::ManagerOrigin::try_successful_origin(&para_id)
+            .expect("failed to create ManagerOrigin");
 
         let refund_address = account("sufficient", 0, 1000);
 
@@ -148,8 +148,8 @@ mod benchmarks {
     fn set_max_core_price() {
         let para_id = 1001u32.into();
 
-        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
-            .expect("failed to create SetRefundAddressOrigin");
+        let origin = T::ManagerOrigin::try_successful_origin(&para_id)
+            .expect("failed to create ManagerOrigin");
 
         let max_price = 100_000_000;
 
