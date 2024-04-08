@@ -480,7 +480,7 @@ fn insufficient_balance_for_tip_reimburses_fee_imbalance() {
         .execute_with(|| {
             let para_id = 1;
             let tip = 10u128;
-            // Enough for one assignment but not for tip;
+            // Just enough for one assignment but not for tip;
             let balance = 205u128;
 
             assert_ok!(PaymentServices::purchase_credits(
@@ -495,6 +495,7 @@ fn insufficient_balance_for_tip_reimburses_fee_imbalance() {
                 tip,
             ));
 
+            // it should fail when trying to withdraw the tip
             assert!(
                 PaymentServices::on_collators_assigned(para_id.into(), Some(&tip), false).is_err()
             );
