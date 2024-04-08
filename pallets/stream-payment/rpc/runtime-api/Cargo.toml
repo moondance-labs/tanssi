@@ -23,7 +23,9 @@ thiserror = { workspace = true, optional = true }
 default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
+	"scale-info/std",
 	"serde",
+	"serde?/std",
 	"sp-api/std",
 	"thiserror",
 ]
