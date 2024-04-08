@@ -1,9 +1,7 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall/cli";
+import { describeSuite, beforeAll, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { nToHex } from "@polkadot/util";
-
 
 describeSuite({
     id: "DT0501",

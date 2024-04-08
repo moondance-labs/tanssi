@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { nToHex } from "@polkadot/util";
 
 async function rpcStreamPaymentStatus(context, block, streamId, now) {
     if (block == "latest") {
@@ -118,8 +117,6 @@ describeSuite({
                     stalled: true,
                     payment: 0,
                 });
-
-                let stream = await polkadotJs.query.streamPayment.streams(0);
 
                 // 4th block: create an empty block to check status
                 newBlock = await context.createBlock();
