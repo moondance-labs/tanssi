@@ -107,7 +107,7 @@ impl pallet_services_payment::Config for Test {
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type SetRefundAddressOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 

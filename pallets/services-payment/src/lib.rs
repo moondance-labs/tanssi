@@ -79,8 +79,8 @@ pub mod pallet {
         /// The maximum number of collator assigment production credits that can be accumulated
         #[pallet::constant]
         type FreeCollatorAssignmentCredits: Get<u32>;
-        // Who can call set_refund_address?
-        type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        /// Owner of the container chain, can call some only-owner methods
+        type ManagerOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -228,7 +228,7 @@ pub mod pallet {
             para_id: ParaId,
             refund_address: Option<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
-            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
             if let Some(refund_address) = refund_address.clone() {
                 RefundAddress::<T>::insert(para_id, refund_address.clone());
@@ -268,7 +268,7 @@ pub mod pallet {
             para_id: ParaId,
             max_core_price: Option<u128>,
         ) -> DispatchResultWithPostInfo {
-            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
             if let Some(max_core_price) = max_core_price {
                 MaxCorePrice::<T>::insert(para_id, max_core_price);
