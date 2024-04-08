@@ -22,6 +22,7 @@ import type {
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
+    DanceboxRuntimeXcmConfigRelayChain,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
@@ -32,6 +33,8 @@ import type {
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
+    PalletXcmCoreBuyerBuyCoreCollatorProof,
+    PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
@@ -96,9 +99,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
                     blockNumber: u32 | AnyNumber | Uint8Array,
-                    author: AccountId32 | string | Uint8Array
+                    author: AccountId32 | string | Uint8Array,
+                    latestSlotNumber: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, AccountId32]
+                [u32, u32, AccountId32, u64]
             >;
             /** See [`Pallet::set_latest_author_data`]. */
             setLatestAuthorData: AugmentedSubmittable<
@@ -1462,6 +1466,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -1497,6 +1502,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -1526,6 +1532,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -1559,6 +1566,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1598,6 +1606,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1659,6 +1668,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Balances"
                         | "Registrar"
                         | "SudoRegistrar"
+                        | "SessionKeyManagement"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -2150,6 +2160,54 @@ declare module "@polkadot/api-base/types/submittable" {
                     weight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [Call, SpWeightsWeightV2Weight]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        xcmCoreBuyer: {
+            /** See [`Pallet::buy_core`]. */
+            buyCore: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    proof:
+                        | PalletXcmCoreBuyerBuyCoreCollatorProof
+                        | { account?: any; signature?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, PalletXcmCoreBuyerBuyCoreCollatorProof]
+            >;
+            /** See [`Pallet::force_buy_core`]. */
+            forceBuyCore: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /** See [`Pallet::set_relay_chain`]. */
+            setRelayChain: AugmentedSubmittable<
+                (
+                    relayChain:
+                        | Option<DanceboxRuntimeXcmConfigRelayChain>
+                        | null
+                        | Uint8Array
+                        | DanceboxRuntimeXcmConfigRelayChain
+                        | "Westend"
+                        | "Rococo"
+                        | number
+                ) => SubmittableExtrinsic<ApiType>,
+                [Option<DanceboxRuntimeXcmConfigRelayChain>]
+            >;
+            /** See [`Pallet::set_relay_xcm_weight_config`]. */
+            setRelayXcmWeightConfig: AugmentedSubmittable<
+                (
+                    xcmWeights:
+                        | Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>
+                        | null
+                        | Uint8Array
+                        | PalletXcmCoreBuyerRelayXcmWeightConfigInner
+                        | { buyExecutionCost?: any; weightAtMost?: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [Option<PalletXcmCoreBuyerRelayXcmWeightConfigInner>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

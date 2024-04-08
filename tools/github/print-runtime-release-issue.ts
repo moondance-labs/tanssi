@@ -33,8 +33,10 @@ async function main() {
 ## Release
 - [ ] Check all proxy types.
 - [ ] Re-run all extrinsics/hooks benchmarks.
-- [ ] Tag master with runtime-${newVersion} and push to github
-- [ ] Tag master with runtime-${newVersion}-templates and push to github
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}\`.
+- [ ] Tag \`perm-${newVersion}\` with runtime-${newVersion} and push to github
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-templates\`.
+- [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-templates and push to github
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion} => runtime-${newVersion}
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +

@@ -16,33 +16,43 @@
 
 use {
     super::{
-        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
-        Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
-        RuntimeOrigin, WeightToFee, XcmpQueue,
+        currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, CollatorAssignment, ForeignAssets,
+        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
+        PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
+        pallet_prelude::Get,
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
+    pallet_xcm_core_buyer::{
+        GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
+        ParaIdIntoAccountTruncating,
+    },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    parity_scale_codec::{Decode, Encode},
+    polkadot_runtime_common::xcm_sender::ExponentialPrice,
+    scale_info::TypeInfo,
     sp_core::ConstU32,
-    sp_runtime::Perbill,
+    sp_runtime::{transaction_validity::TransactionPriority, Perbill},
+    sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
-        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin,
+        FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
+        SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin,
     },
-    staging_xcm_executor::XcmExecutor,
+    staging_xcm_executor::{traits::JustTry, XcmExecutor},
+    tp_traits::ParathreadParams,
 };
 
 parameter_types! {
@@ -51,7 +61,7 @@ parameter_types! {
     // a MultiLocation: (Self Balances pallet index)
     // We use the RELATIVE multilocation
     pub SelfReserve: MultiLocation = MultiLocation {
-        parents:0,
+        parents: 0,
         interior: Junctions::X1(
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
         )
@@ -75,6 +85,8 @@ parameter_types! {
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorMultiLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+
+    pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -163,7 +175,7 @@ pub type XcmWeigher =
 /// queues.
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
@@ -235,6 +247,12 @@ impl pallet_xcm::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
+pub type PriceForSiblingParachainDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, XcmpQueue>;
+
+pub type PriceForParentDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
+
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ChannelInfo = ParachainSystem;
@@ -242,7 +260,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
-    type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
@@ -325,6 +343,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type OnForeignAssetCreated = ();
+    type OnForeignAssetDestroyed = ();
 }
 
 impl pallet_asset_rate::Config for Runtime {
@@ -338,12 +358,6 @@ impl pallet_asset_rate::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
-
-use {
-    crate::ForeignAssets,
-    staging_xcm_builder::{FungiblesAdapter, NoChecking},
-    staging_xcm_executor::traits::JustTry,
-};
 
 /// Means for transacting foreign assets from different global consensus.
 pub type ForeignFungiblesTransactor = FungiblesAdapter<
@@ -455,4 +469,112 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+}
+
+parameter_types! {
+    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
+    pub const XcmBuyExecutionDotRococo: u128 = XCM_BUY_EXECUTION_COST_ROCOCO;
+}
+
+pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 50_000_000;
+
+impl pallet_xcm_core_buyer::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+
+    type XcmSender = XcmRouter;
+    type GetPurchaseCoreCall = EncodedCallToBuyCore;
+    type GetBlockNumber = GetBlockNumber;
+    type GetParathreadAccountId = ParaIdIntoAccountTruncating;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type RelayChain = RelayChain;
+    type MaxParathreads = ConstU32<100>;
+    type GetParathreadParams = GetParathreadParamsImpl;
+    type GetAssignedCollators = GetAssignedCollatorsImpl;
+    type UnsignedPriority = ParasUnsignedPriority;
+
+    type WeightInfo = ();
+}
+
+pub struct GetBlockNumber;
+
+impl Get<u32> for GetBlockNumber {
+    fn get() -> u32 {
+        System::block_number()
+    }
+}
+
+pub struct GetParathreadParamsImpl;
+
+impl GetParathreadParams for GetParathreadParamsImpl {
+    fn get_parathread_params(para_id: ParaId) -> Option<ParathreadParams> {
+        Registrar::parathread_params(para_id)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>) {
+        if let Some(parathread_params) = parathread_params {
+            pallet_registrar::ParathreadParams::<Runtime>::insert(para_id, parathread_params);
+        } else {
+            pallet_registrar::ParathreadParams::<Runtime>::remove(para_id);
+        }
+    }
+}
+
+pub struct GetAssignedCollatorsImpl;
+
+impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
+    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId> {
+        // We do not need to check if the para_id is a valid parathread,
+        // because that is already being checked by `GetParathreadParams`.
+        CollatorAssignment::collator_container_chain()
+            .container_chains
+            .get(&para_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
+        use tp_traits::GetContainerChainAuthor;
+        CollatorAssignment::set_authors_for_para_id(para_id, collators);
+    }
+}
+
+/// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
+/// pallet indices for pallet_on_demand_assignment_provider
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo)]
+pub enum RelayChain {
+    #[default]
+    Westend,
+    Rococo,
+}
+
+pub struct EncodedCallToBuyCore;
+
+impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
+    fn get_encoded(relay_chain: RelayChain, max_amount: u128, para_id: ParaId) -> Vec<u8> {
+        match relay_chain {
+            RelayChain::Westend => {
+                let call = tanssi_relay_encoder::westend::RelayCall::OnDemandAssignmentProvider(
+                    tanssi_relay_encoder::westend::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                        max_amount,
+                        para_id,
+                    },
+                );
+
+                call.encode()
+            }
+            RelayChain::Rococo => {
+                let call = tanssi_relay_encoder::rococo::RelayCall::OnDemandAssignmentProvider(
+                    tanssi_relay_encoder::rococo::OnDemandAssignmentProviderCall::PlaceOrderAllowDeath {
+                        max_amount,
+                        para_id,
+                    },
+                );
+
+                call.encode()
+            }
+        }
+    }
 }

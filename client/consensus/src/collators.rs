@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod basic;
+pub mod lookahead;
 
 use {
     crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
@@ -150,6 +151,7 @@ where
     /// The Tanssi Aura pre-digest is set internally.
     ///
     /// This does not announce the collation to the parachain network or the relay chain.
+    #[allow(clippy::cast_precision_loss)]
     pub async fn collate(
         &mut self,
         parent_header: &Block::Header,
@@ -217,9 +219,9 @@ where
             tracing::info!(
                 target: crate::LOG_TARGET,
                 "PoV size {{ header: {}kb, extrinsics: {}kb, storage_proof: {}kb }}",
-                block_data.header().encode().len() as f64 / 1024f64,
-                block_data.extrinsics().encode().len() as f64 / 1024f64,
-                block_data.storage_proof().encode().len() as f64 / 1024f64,
+                block_data.header().encoded_size() as f64 / 1024f64,
+                block_data.extrinsics().encoded_size() as f64 / 1024f64,
+                block_data.storage_proof().encoded_size() as f64 / 1024f64,
             );
 
             if let MaybeCompressedPoV::Compressed(ref pov) = collation.proof_of_validity {
@@ -264,6 +266,7 @@ where
 pub struct SlotClaim<Pub> {
     author_pub: Pub,
     pre_digest: Vec<DigestItem>,
+    slot: Slot,
 }
 
 impl<Pub: Clone> SlotClaim<Pub> {
@@ -276,6 +279,7 @@ impl<Pub: Clone> SlotClaim<Pub> {
         SlotClaim {
             author_pub: author_pub.clone(),
             pre_digest: pre_digest_data::<P>(slot, author_pub),
+            slot,
         }
     }
 
@@ -287,6 +291,11 @@ impl<Pub: Clone> SlotClaim<Pub> {
     /// Get the pre-digest.
     pub fn pre_digest(&self) -> &Vec<DigestItem> {
         &self.pre_digest
+    }
+
+    /// Get the slot assigned to this claim.
+    pub fn slot(&self) -> Slot {
+        self.slot
     }
 }
 

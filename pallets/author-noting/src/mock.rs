@@ -119,7 +119,7 @@ impl mock_data::Config for Test {}
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub container_chains: BoundedVec<ParaId, ConstU32<5>>,
+    pub container_chains: BoundedVec<ParaId, ConstU32<100>>,
 }
 
 impl Default for Mocks {
@@ -144,7 +144,7 @@ impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
 pub struct MockContainerChainGetter;
 
 impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    type MaxContainerChains = ConstU32<5>;
+    type MaxContainerChains = ConstU32<100>;
 
     fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
         MockData::mock().container_chains

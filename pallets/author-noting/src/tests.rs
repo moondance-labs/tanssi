@@ -67,7 +67,8 @@ fn test_author_id_insertion() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into(),
                 })
             );
         });
@@ -106,7 +107,8 @@ fn test_author_id_insertion_real_data() {
                 // Our mock author fetcher will just note the slot
                 Some(ContainerChainBlockInfo {
                     block_number: 3511063,
-                    author: 140006956
+                    author: 140006956,
+                    latest_slot_number: 140006956u64.into()
                 })
             );
         });
@@ -186,7 +188,8 @@ fn test_author_id_insertion_many_paras() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 10u64
+                    author: 10u64,
+                    latest_slot_number: 10u64.into()
                 })
             );
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), None);
@@ -196,14 +199,16 @@ fn test_author_id_insertion_many_paras() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 2,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1002)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 14u64
+                    author: 14u64,
+                    latest_slot_number: 14u64.into()
                 })
             );
         });
@@ -242,7 +247,8 @@ fn test_should_panic_with_invalid_proof_root() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
         });
@@ -284,7 +290,8 @@ fn test_should_panic_with_invalid_proof_state() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
         });
@@ -504,7 +511,8 @@ fn test_set_author() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
             assert_ok!(AuthorNoting::set_author(
@@ -512,12 +520,14 @@ fn test_set_author() {
                 1001.into(),
                 1,
                 14u64,
+                14u64.into()
             ));
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 14u64
+                    author: 14u64,
+                    latest_slot_number: 14u64.into()
                 })
             );
             System::assert_last_event(
@@ -525,6 +535,7 @@ fn test_set_author() {
                     para_id: 1001.into(),
                     block_number: 1,
                     new_author: 14u64,
+                    latest_slot_number: 14u64.into(),
                 }
                 .into(),
             );
@@ -653,7 +664,8 @@ fn weights_assigned_to_extrinsics_are_correct() {
             crate::Call::<Test>::set_author {
                 para_id: 1.into(),
                 block_number: 1,
-                author: 1u64
+                author: 1u64,
+                latest_slot_number: 1u64.into()
             }
             .get_dispatch_info()
             .weight,
@@ -719,7 +731,8 @@ fn test_kill_author_data() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
             assert_ok!(AuthorNoting::kill_author_data(
@@ -770,7 +783,8 @@ fn test_author_id_insertion_not_first_log() {
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: 13u64
+                    author: 13u64,
+                    latest_slot_number: 13u64.into()
                 })
             );
         });

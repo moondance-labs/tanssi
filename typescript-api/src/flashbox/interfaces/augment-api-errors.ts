@@ -134,6 +134,8 @@ declare module "@polkadot/api-base/types/errors" {
             NotInvulnerable: AugmentedError<ApiType>;
             /** There are too many Invulnerables. */
             TooManyInvulnerables: AugmentedError<ApiType>;
+            /** Unable to derive collator id from account id */
+            UnableToDeriveCollatorId: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

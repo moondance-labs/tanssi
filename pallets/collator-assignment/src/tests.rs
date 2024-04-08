@@ -751,18 +751,18 @@ fn assign_collators_rotation() {
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         let shuffled_assignment = BTreeMap::from_iter(vec![
-            (1, 1000),
-            (2, 1002),
+            (1, 1004),
+            (2, 1000),
             (3, 1000),
-            (4, 1004),
-            (5, 1003),
-            (6, 1003),
-            (7, 1000),
+            (4, 1003),
+            (5, 1001),
+            (6, 1000),
+            (7, 1002),
             (8, 1001),
             (9, 1002),
-            (10, 1004),
-            (11, 1000),
-            (12, 1001),
+            (10, 1000),
+            (11, 1003),
+            (12, 1004),
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
@@ -802,7 +802,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 1002), (3, 1000), (4, 1002)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1002), (3, 1002), (4, 1000)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -841,7 +841,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 3002), (3, 1000), (4, 3002)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 3002), (3, 3002), (4, 1000)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -890,14 +890,14 @@ fn assign_collators_rotation_collators_are_shuffled() {
         // and here it is present
         let shuffled_assignment = BTreeMap::from_iter(vec![
             (1, 1000),
-            (3, 1000),
+            (3, 1001),
             (4, 1000),
-            (5, 1001),
-            (6, 1002),
-            (7, 1000),
-            (8, 1001),
+            (5, 1000),
+            (6, 1000),
+            (7, 1002),
+            (8, 1002),
             (9, 1000),
-            (10, 1002),
+            (10, 1001),
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);

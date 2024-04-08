@@ -23,10 +23,12 @@ smallvec = { workspace = true }
 # Local
 dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
+dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
 
 # Moonkit
+async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
@@ -105,6 +107,7 @@ substrate-wasm-builder = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"async-backing-primitives/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
@@ -115,6 +118,7 @@ std = [
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
+	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",

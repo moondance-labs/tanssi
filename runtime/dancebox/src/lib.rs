@@ -24,6 +24,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub mod xcm_config;
 
+use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -33,7 +34,7 @@ pub use sp_runtime::BuildStorage;
 pub mod weights;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
@@ -64,7 +65,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
@@ -74,7 +75,7 @@ use {
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
-    pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
+    pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
     smallvec::smallvec,
@@ -94,7 +95,10 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::{GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
+    tp_traits::{
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+    },
 };
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -107,6 +111,9 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
+
+/// CollatorId type expected by this runtime.
+pub type CollatorId = AccountId;
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
@@ -232,7 +239,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 12000;
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -460,7 +467,6 @@ where
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
-    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -470,7 +476,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 parameter_types! {
@@ -480,7 +486,7 @@ parameter_types! {
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
-pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 3;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
@@ -499,21 +505,26 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 pub struct ParaSlotProvider;
 impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     fn get() -> (Slot, SlotDuration) {
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
     }
 }
 
+parameter_types! {
+    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+}
+
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -622,19 +633,30 @@ impl parachain_info::Config for Runtime {}
 pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 
 /// Play the role of the session manager.
-impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking {
-    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
-        log::info!(
-            "assembling new collators for new session {} at #{:?}",
-            index,
-            <frame_system::Pallet<Runtime>>::block_number(),
-        );
+impl SessionManager<CollatorId> for CollatorsFromInvulnerablesAndThenFromStaking {
+    fn new_session(index: SessionIndex) -> Option<Vec<CollatorId>> {
+        if <frame_system::Pallet<Runtime>>::block_number() == 0 {
+            // Do not show this log in genesis
+            log::debug!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        } else {
+            log::info!(
+                "assembling new collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<Runtime>>::block_number(),
+            );
+        }
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
         let candidates_staking =
             pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
         // Max number of collators is set in pallet_configuration
-        let max_collators = Configuration::config().max_collators;
+        let target_session_index = index.saturating_add(1);
+        let max_collators =
+            <Configuration as GetHostConfiguration<u32>>::max_collators(target_session_index);
         let collators = invulnerables
             .iter()
             .cloned()
@@ -674,7 +696,7 @@ parameter_types! {
 
 impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorId = CollatorId;
     // we don't have stash and controller, thus we don't need the convert as well.
     type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -730,11 +752,11 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
 
 pub struct RemoveInvulnerablesImpl;
 
-impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        collators: &mut Vec<CollatorId>,
         num_invulnerables: usize,
-    ) -> Vec<AccountId> {
+    ) -> Vec<CollatorId> {
         if num_invulnerables == 0 {
             return vec![];
         }
@@ -784,8 +806,8 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
-            let remaining_block_credits_to_pay = (remaining_block_credits as u128).saturating_mul(block_production_costs);
-            let remaining_session_credits_to_pay = (remaining_session_credits as u128).saturating_mul(collator_assignment_costs);
+            let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
             let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
 
             // This should take into account whether we tank goes below ED
@@ -1055,6 +1077,8 @@ pub enum ProxyType {
     Registrar = 6,
     /// Allow extrinsics related to Registrar that needs to be called through Sudo
     SudoRegistrar = 7,
+    /// Allow extrinsics from the Session pallet for key management.
+    SessionKeyManagement = 8,
 }
 
 impl Default for ProxyType {
@@ -1110,6 +1134,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
+            ProxyType::SessionKeyManagement => {
+                matches!(c, RuntimeCall::Session(..))
+            }
         }
     }
 
@@ -1309,18 +1336,16 @@ parameter_types! {
     pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
     // The equation to solve is:
-    // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
-    // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
+    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
-    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
+    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
     // 30% for parachain bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
-
-use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
 
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
@@ -1328,7 +1353,7 @@ impl Get<AccountId32> for GetSelfChainBlockAuthor {
         // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
         // we should also make sure we actually account for the weight of these
         // although most of these should be cached as they are read every block
-        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         let self_para_id = ParachainInfo::get();
         let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
         author.expect("author should be set")
@@ -1641,6 +1666,7 @@ construct_runtime!(
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 56,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 57,
+        XcmCoreBuyer: pallet_xcm_core_buyer = 58,
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
@@ -1676,6 +1702,7 @@ mod benches {
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
         [pallet_assets, ForeignAssets]
@@ -1794,6 +1821,15 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
         }
     }
 
@@ -2253,6 +2289,12 @@ impl_runtime_apis! {
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
             }
+        }
+    }
+
+    impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            SLOT_DURATION
         }
     }
 }

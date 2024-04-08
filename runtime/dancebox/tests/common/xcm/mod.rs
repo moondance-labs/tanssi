@@ -15,9 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
+mod core_buyer;
+mod delivery_fees;
 mod foreign_signed_based_sovereign;
 mod foreign_sovereigns;
 mod mocknets;
+mod reserver_transfers_polkadot_xcm;
 mod token_derivative_reception_container_dancebox;
 mod token_derivative_reception_dancebox_frontier_container;
 mod token_derivative_reception_dancebox_simple_container;
@@ -27,6 +30,7 @@ mod token_derivative_reception_relay_simple_container;
 mod transact;
 mod trap;
 
+pub use paste;
 pub use xcm_emulator::{
     assert_expected_events, bx, Parachain as Para, RelayChain as Relay, TestExt,
 };

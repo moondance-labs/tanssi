@@ -41,13 +41,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
 use {
     crate::{
         assignment::{Assignment, ChainNumCollators},
         weights::WeightInfo,
     },
-    dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
@@ -63,6 +61,7 @@ use {
         ShouldRotateAllCollators, Slot,
     },
 };
+pub use {dp_collator_assignment::AssignedCollators, pallet::*};
 
 mod assignment;
 #[cfg(feature = "runtime-benchmarks")]
@@ -186,6 +185,7 @@ pub mod pallet {
             // as paratherads because they will not be producing blocks on every slot.
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
+            let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.
             // This should only happen in tests, and in the genesis block.
@@ -196,6 +196,9 @@ pub mod pallet {
                 // determine priority
                 container_chain_ids.shuffle(&mut rng);
                 parathreads.shuffle(&mut rng);
+                shuffle_collators = Some(move |collators: &mut Vec<T::AccountId>| {
+                    collators.shuffle(&mut rng);
+                })
             }
 
             // We read current assigned collators
@@ -237,7 +240,7 @@ pub mod pallet {
             // we use the config scheduled at the target_session_index
             let new_assigned =
                 if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
-                    log::info!(
+                    log::debug!(
                         "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
                         current_session_index.encode(),
                         random_seed
@@ -253,9 +256,10 @@ pub mod pallet {
                         collators,
                         orchestrator_chain,
                         chains,
+                        shuffle_collators,
                     )
                 } else {
-                    log::info!(
+                    log::debug!(
                         "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
                         current_session_index.encode(),
                         random_seed
@@ -272,6 +276,7 @@ pub mod pallet {
                         orchestrator_chain,
                         chains,
                         old_assigned.clone(),
+                        shuffle_collators,
                     )
                 };
 

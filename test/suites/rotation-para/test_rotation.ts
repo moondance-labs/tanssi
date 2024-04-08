@@ -90,7 +90,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Set 1 collator per parachain, and full_rotation every 5 sessions",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -186,7 +186,7 @@ describeSuite({
         it({
             id: "T08",
             title: "Test author noting is correct for both containers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
@@ -231,7 +231,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Transactions can be made with ethers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
@@ -249,7 +249,7 @@ describeSuite({
         it({
             id: "T12",
             title: "On session 3 we have 1 collator per chain",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 3);
 
@@ -269,13 +269,13 @@ describeSuite({
         it({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 4);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
+                await context.waitBlock(6, "Tanssi");
                 const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
                 // The assignment is random, so there is a small chance that it will be the same,
                 // and in that case this test shouldn't fail
@@ -324,7 +324,7 @@ describeSuite({
         it({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
@@ -333,7 +333,7 @@ describeSuite({
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
                 // This also serves to check that Tanssi is producing blocks after the rotation
-                await context.waitBlock(3, "Tanssi");
+                await context.waitBlock(6, "Tanssi");
 
                 // First, check that nodes have stopped in their previously assigned chain
                 const oldC2000 = collatorName[assignment3.containerChains[2000][0]];

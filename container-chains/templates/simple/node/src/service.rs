@@ -261,7 +261,7 @@ pub async fn start_dev_node(
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
                 let slot_duration = container_chain_template_simple_runtime::SLOT_DURATION;
 
-                let mut timestamp: u64 = 0u64;
+                let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
                     timestamp = x.clone().take();
                 });
@@ -272,7 +272,7 @@ pub async fn start_dev_node(
 						timestamp.into(),
 						SlotDuration::from_millis(slot_duration),
                     );
-                let relay_slot = u64::from(*relay_slot).saturating_mul(2);
+                let relay_slot = u64::from(*relay_slot);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();

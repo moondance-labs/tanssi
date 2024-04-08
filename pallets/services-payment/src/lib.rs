@@ -14,20 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! # Author Noting Pallet
-//!
-//! This pallet notes the author of the different containerChains that have registered:
-//!
-//! The set of container chains is retrieved thanks to the GetContainerChains trait
-//! For each containerChain, we inspect the Header stored in the relayChain as
-//! a generic header. This is the first requirement for containerChains.
-//!
-//! The second requirement is that an Aura digest with the slot number for the containerChains
-//! needs to exist
-//!  
-//! Using those two requirements we can select who the author was based on the collators assigned
-//! to that containerChain, by simply assigning the slot position.
-
 //! # Services Payment pallet
 //!
 //! This pallet allows for block creation services to be paid for by a
@@ -87,9 +73,11 @@ pub mod pallet {
         type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
         /// The maximum number of block production credits that can be accumulated
+        #[pallet::constant]
         type FreeBlockProductionCredits: Get<BlockNumberFor<Self>>;
 
         /// The maximum number of collator assigment production credits that can be accumulated
+        #[pallet::constant]
         type FreeCollatorAssignmentCredits: Get<u32>;
         // Who can call set_refund_address?
         type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;

@@ -63,7 +63,7 @@ describeSuite({
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const expectedOrchestratorReward = chainRewards / 3n;
+                const expectedOrchestratorReward = chainRewards - (chainRewards * 2n) / 3n;
                 const reward = await fetchRewardAuthorOrchestrator(events);
                 const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
                 const stakingRewardedDelegators = await filterRewardStakingDelegators(
@@ -127,7 +127,7 @@ describeSuite({
                 const reward = await fetchRewardAuthorOrchestrator(events);
 
                 // 20% collator percentage
-                const collatorPercentage = (20n * reward.balance.toBigInt()) / 100n;
+                const collatorPercentage = reward.balance.toBigInt() - (80n * reward.balance.toBigInt()) / 100n;
 
                 // Rounding
                 const delegatorRewards = reward.balance.toBigInt() - collatorPercentage;
@@ -146,15 +146,30 @@ describeSuite({
                     events,
                     reward.accountId.toString()
                 );
-                expect(stakingRewardedDelegators.manualRewards).to.equal(realDistributedManualDelegatorRewards);
-                expect(stakingRewardedDelegators.autoCompoundingRewards).to.equal(delegatorsAutoCompoundRewards);
+
+                // Test ranges, as we can have rounding errors for Perbill manipulation
+                expect(stakingRewardedDelegators.manualRewards).toBeGreaterThanOrEqual(
+                    realDistributedManualDelegatorRewards - 1n
+                );
+                expect(stakingRewardedDelegators.manualRewards).toBeLessThanOrEqual(
+                    realDistributedManualDelegatorRewards + 1n
+                );
+                expect(stakingRewardedDelegators.autoCompoundingRewards).toBeGreaterThanOrEqual(
+                    delegatorsAutoCompoundRewards - 1n
+                );
+                expect(stakingRewardedDelegators.autoCompoundingRewards).toBeLessThanOrEqual(
+                    delegatorsAutoCompoundRewards + 1n
+                );
 
                 // TODO: test better what goes into auto and what goes into manual for collator
                 const delegatorDust =
                     delegatorRewards - realDistributedManualDelegatorRewards - delegatorsAutoCompoundRewards;
-                expect(stakingRewardedCollator.manualRewards + stakingRewardedCollator.autoCompoundingRewards).to.equal(
-                    collatorPercentage + delegatorDust
-                );
+                expect(
+                    stakingRewardedCollator.manualRewards + stakingRewardedCollator.autoCompoundingRewards
+                ).toBeGreaterThanOrEqual(collatorPercentage + delegatorDust - 1n);
+                expect(
+                    stakingRewardedCollator.manualRewards + stakingRewardedCollator.autoCompoundingRewards
+                ).toBeLessThanOrEqual(collatorPercentage + delegatorDust + 1n);
             },
         });
     },

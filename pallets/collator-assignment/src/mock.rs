@@ -137,6 +137,10 @@ parameter_types! {
 }
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn max_collators(_session_index: u32) -> u32 {
+        unimplemented!()
+    }
+
     fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
         MockData::mock().min_orchestrator_chain_collators
     }

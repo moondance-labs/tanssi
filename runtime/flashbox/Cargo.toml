@@ -22,6 +22,7 @@ smallvec = { workspace = true }
 
 # Own
 dp-core = { workspace = true }
+dp-slot-duration-runtime-api = { workspace = true }
 pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-authority-assignment = { workspace = true }
@@ -131,6 +132,7 @@ std = [
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-core/std",
+	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
