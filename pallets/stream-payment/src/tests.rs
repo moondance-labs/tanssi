@@ -18,14 +18,13 @@ use {
     crate::{
         assert_event_emitted, assert_event_not_emitted,
         mock::{
-            roll_one_block, roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime,
-            RuntimeOrigin, StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit,
-            ALICE, BOB, CHARLIE, DEFAULT_BALANCE, MEGA,
+            roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime, RuntimeOrigin,
+            StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB,
+            CHARLIE, DEFAULT_BALANCE, MEGA,
         },
-        ArithmeticError, Assets, ChangeKind, ChangeRequest, DepositChange,
-        DispatchResultWithPostInfo, Event, LookupStreamsWithSource, LookupStreamsWithTarget,
-        NextStreamId, Party, Stream, StreamConfig, StreamConfigOf, StreamOf, StreamPaymentStatus,
-        Streams,
+        ArithmeticError, Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
+        LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId, Party, Stream,
+        StreamConfig, StreamConfigOf, StreamOf, Streams,
     },
     frame_support::{assert_err, assert_ok},
     sp_runtime::TokenError,
@@ -1523,7 +1522,7 @@ mod accept_requested_change {
             ));
 
             // Roll to block after deadline, payment should stop at deadline.
-            let delta = roll_to(11) as u128;
+            let delta = u128::from(roll_to(11));
             let payment = (delta - 1) * open_stream.config.rate;
 
             assert_ok!(StreamPayment::perform_payment(
@@ -1536,7 +1535,7 @@ mod accept_requested_change {
             });
 
             // Accepting the request shouldn't not pay retroactively
-            roll_to(20) as u128;
+            roll_to(20);
 
             let deposit_before = Streams::<Runtime>::get(0).unwrap().deposit;
             let increase = 42;
