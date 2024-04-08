@@ -201,11 +201,14 @@ pub mod westend {
 
 // Rococo
 pub mod rococo {
-    use polkadot_parachain_primitives::primitives::ValidationCode;
-    use polkadot_runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
     use {
-        super::*, cumulus_primitives_core::relay_chain::BlockNumber,
-        polkadot_runtime_parachains::configuration::HostConfiguration,
+        super::*,
+        cumulus_primitives_core::relay_chain::BlockNumber,
+        polkadot_parachain_primitives::primitives::ValidationCode,
+        polkadot_runtime_parachains::{
+            configuration::HostConfiguration,
+            paras::{ParaGenesisArgs, ParaKind},
+        },
         rococo_runtime_constants::currency::UNITS as ROC,
     };
     const ENDOWMENT: u128 = 1_000_000 * ROC;
