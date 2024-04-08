@@ -182,7 +182,7 @@ pub mod pallet {
 
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
-            let old_assigned_para_ids = old_assigned.container_chains.clone().into_keys().collect();
+            let old_assigned_para_ids = old_assigned.container_chains.keys().cloned().collect();
 
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
