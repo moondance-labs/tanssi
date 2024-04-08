@@ -44,7 +44,6 @@
 use {
     crate::{
         assignment::{Assignment, ChainNumCollators},
-        weights::WeightInfo,
     },
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
@@ -67,6 +66,7 @@ mod assignment;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
+pub use weights::WeightInfo;
 
 #[cfg(test)]
 mod mock;

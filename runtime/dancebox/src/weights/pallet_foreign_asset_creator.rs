@@ -54,14 +54,14 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_foreign_asset_creator.
 pub trait WeightInfo {
 	fn create_foreign_asset() -> Weight;
-	fn change_existing_asset_type(x: u32, ) -> Weight;
-	fn remove_existing_asset_type(x: u32, ) -> Weight;
-	fn destroy_foreign_asset(x: u32, ) -> Weight;
+	fn change_existing_asset_type() -> Weight;
+	fn remove_existing_asset_type() -> Weight;
+	fn destroy_foreign_asset() -> Weight;
 }
 
 /// Weights for pallet_foreign_asset_creator using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_foreign_asset_creator::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
@@ -82,34 +82,30 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:2)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn change_existing_asset_type(x: u32, ) -> Weight {
+	fn change_existing_asset_type() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `460 + x * (4 ±0)`
 		//  Estimated: `3913 + x * (5 ±0)`
 		// Minimum execution time: 22_464_000 picoseconds.
 		Weight::from_parts(25_100_728, 3913)
 			// Standard Error: 1_926
-			.saturating_add(Weight::from_parts(79_744, 0).saturating_mul(x.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
-			.saturating_add(Weight::from_parts(0, 5).saturating_mul(x.into()))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn remove_existing_asset_type(x: u32, ) -> Weight {
+	fn remove_existing_asset_type() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `460 + x * (4 ±0)`
 		//  Estimated: `3913 + x * (5 ±0)`
 		// Minimum execution time: 19_819_000 picoseconds.
 		Weight::from_parts(22_111_981, 3913)
 			// Standard Error: 1_843
-			.saturating_add(Weight::from_parts(78_007, 0).saturating_mul(x.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 5).saturating_mul(x.into()))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -118,17 +114,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn destroy_foreign_asset(x: u32, ) -> Weight {
+	fn destroy_foreign_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1014 + x * (9 ±0)`
 		//  Estimated: `4474 + x * (9 ±0)`
 		// Minimum execution time: 29_362_000 picoseconds.
 		Weight::from_parts(32_334_137, 4474)
 			// Standard Error: 2_522
-			.saturating_add(Weight::from_parts(107_900, 0).saturating_mul(x.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
-			.saturating_add(Weight::from_parts(0, 9).saturating_mul(x.into()))
 	}
 }
 
@@ -154,34 +148,30 @@ impl WeightInfo for () {
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:2)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn change_existing_asset_type(x: u32, ) -> Weight {
+	fn change_existing_asset_type() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `460 + x * (4 ±0)`
 		//  Estimated: `3913 + x * (5 ±0)`
 		// Minimum execution time: 22_464_000 picoseconds.
 		Weight::from_parts(25_100_728, 3913)
 			// Standard Error: 1_926
-			.saturating_add(Weight::from_parts(79_744, 0).saturating_mul(x.into()))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
-			.saturating_add(Weight::from_parts(0, 5).saturating_mul(x.into()))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn remove_existing_asset_type(x: u32, ) -> Weight {
+	fn remove_existing_asset_type() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `460 + x * (4 ±0)`
 		//  Estimated: `3913 + x * (5 ±0)`
 		// Minimum execution time: 19_819_000 picoseconds.
 		Weight::from_parts(22_111_981, 3913)
 			// Standard Error: 1_843
-			.saturating_add(Weight::from_parts(78_007, 0).saturating_mul(x.into()))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 5).saturating_mul(x.into()))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -190,16 +180,14 @@ impl WeightInfo for () {
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[5, 100]`.
-	fn destroy_foreign_asset(x: u32, ) -> Weight {
+	fn destroy_foreign_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1014 + x * (9 ±0)`
 		//  Estimated: `4474 + x * (9 ±0)`
 		// Minimum execution time: 29_362_000 picoseconds.
 		Weight::from_parts(32_334_137, 4474)
 			// Standard Error: 2_522
-			.saturating_add(Weight::from_parts(107_900, 0).saturating_mul(x.into()))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
-			.saturating_add(Weight::from_parts(0, 9).saturating_mul(x.into()))
 	}
 }

@@ -59,7 +59,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_timestamp using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_timestamp::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Timestamp::Now` (r:1 w:1)
 	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	/// Storage: `System::Digest` (r:1 w:0)

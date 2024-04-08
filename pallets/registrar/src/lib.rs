@@ -36,11 +36,11 @@ mod tests;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
 pub mod weights;
+pub use weights::WeightInfo;
 
 pub use pallet::*;
 
 use {
-    crate::weights::WeightInfo,
     frame_support::{
         pallet_prelude::*,
         traits::{Currency, ReservableCurrency},

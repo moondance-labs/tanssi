@@ -61,7 +61,7 @@ pub trait WeightInfo {
 
 /// Weights for cumulus_pallet_dmp_queue using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> cumulus_pallet_dmp_queue::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `DmpQueue::MigrationStatus` (r:1 w:1)
 	/// Proof: `DmpQueue::MigrationStatus` (`max_values`: Some(1), `max_size`: Some(1028), added: 1523, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xcd5c1f6df63bc97f4a8ce37f14a50ca754904d6d8c6fe06c4e5965f9b8397421` (r:1 w:0)

@@ -59,7 +59,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_tx_pause using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_tx_pause::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `TxPause::PausedCalls` (r:1 w:1)
 	/// Proof: `TxPause::PausedCalls` (`max_values`: None, `max_size`: Some(532), added: 3007, mode: `MaxEncodedLen`)
 	fn pause() -> Weight {

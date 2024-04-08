@@ -67,7 +67,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_proxy using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_proxy::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Proxy::Proxies` (r:1 w:0)
 	/// Proof: `Proxy::Proxies` (`max_values`: None, `max_size`: Some(1241), added: 3716, mode: `MaxEncodedLen`)
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)

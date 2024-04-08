@@ -60,7 +60,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_author_noting using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `AuthorNoting::DidSetContainerAuthorData` (r:1 w:1)
 	/// Proof: `AuthorNoting::DidSetContainerAuthorData` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)

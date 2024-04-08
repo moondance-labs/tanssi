@@ -60,7 +60,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_asset_rate using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_asset_rate::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `AssetRate::ConversionRateToNative` (r:1 w:1)
 	/// Proof: `AssetRate::ConversionRateToNative` (`max_values`: None, `max_size`: Some(34), added: 2509, mode: `MaxEncodedLen`)
 	fn create() -> Weight {

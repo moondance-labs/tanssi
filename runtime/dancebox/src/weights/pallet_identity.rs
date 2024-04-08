@@ -80,7 +80,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_identity using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_identity::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Identity::Registrars` (r:1 w:1)
 	/// Proof: `Identity::Registrars` (`max_values`: Some(1), `max_size`: Some(1141), added: 1636, mode: `MaxEncodedLen`)
 	/// The range of component `r` is `[1, 19]`.

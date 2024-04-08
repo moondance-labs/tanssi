@@ -64,7 +64,7 @@ pub trait WeightInfo {
 
 /// Weights for cumulus_pallet_xcmp_queue using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `XcmpQueue::QueueConfig` (r:1 w:1)
 	/// Proof: `XcmpQueue::QueueConfig` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn set_config_with_u32() -> Weight {

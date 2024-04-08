@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_collator_assignment using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_collator_assignment::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `CollatorAssignment::Randomness` (r:1 w:1)
 	/// Proof: `CollatorAssignment::Randomness` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Registrar::PendingParaIds` (r:1 w:0)

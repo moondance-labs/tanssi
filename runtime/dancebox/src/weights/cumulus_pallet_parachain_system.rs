@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for cumulus_pallet_parachain_system using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> cumulus_pallet_parachain_system::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ParachainSystem::LastDmqMqcHead` (r:1 w:1)
 	/// Proof: `ParachainSystem::LastDmqMqcHead` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::ProcessedDownwardMessages` (r:0 w:1)

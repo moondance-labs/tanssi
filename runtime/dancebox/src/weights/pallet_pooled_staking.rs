@@ -65,7 +65,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_pooled_staking using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_pooled_staking::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `PooledStaking::Pools` (r:11 w:5)
 	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)

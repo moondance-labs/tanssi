@@ -22,7 +22,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    crate::weights::WeightInfo,
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -48,6 +47,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+pub use weights::WeightInfo;
 
 pub use pallet::*;
 
@@ -177,7 +177,7 @@ pub mod pallet {
         /// Set the number of block production credits for this para_id without paying for them.
         /// Can only be called by root.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::set_credits())]
+        #[pallet::weight(T::WeightInfo::set_block_production_credits())]
         pub fn set_block_production_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -237,7 +237,7 @@ pub mod pallet {
         /// Set the number of block production credits for this para_id without paying for them.
         /// Can only be called by root.
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::set_credits())]
+        #[pallet::weight(T::WeightInfo::set_block_production_credits())]
         pub fn set_collator_assignment_credits(
             origin: OriginFor<T>,
             para_id: ParaId,

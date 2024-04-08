@@ -60,7 +60,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_xcm_core_buyer using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_xcm_core_buyer::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `CollatorAssignment::CollatorContainerChain` (r:1 w:0)
 	/// Proof: `CollatorAssignment::CollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `XcmCoreBuyer::InFlightOrders` (r:1 w:1)
