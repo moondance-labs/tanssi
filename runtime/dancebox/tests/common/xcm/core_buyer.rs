@@ -25,7 +25,7 @@ use {
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{DataPreservers, Registrar, XcmCoreBuyer},
+    dancebox_runtime::{DataPreservers, Registrar, ServicesPayment, XcmCoreBuyer},
     frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
@@ -50,15 +50,12 @@ fn constants() {
     assert_eq!(BUY_EXECUTION_COST, 50_000_000);
 }
 
-// TODO: modify tests to assert that the OnDemandOrderPlaced event was not emitted
-// when it shouldn't
-
 /// The tests in this module all use this function to trigger an XCM message to buy a core.
 ///
 /// Each test has a different value of
 /// * tank_account_balance: the balance of the parachain tank account in the relay chain
 /// * spot_price: the price of a core
-fn do_test(tank_account_balance: u128) {
+fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) {
     Dancebox::execute_with(|| {
         // Register parathread
         let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
@@ -75,11 +72,19 @@ fn do_test(tank_account_balance: u128) {
         ));
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
         assert_ok!(Registrar::mark_valid_for_collating(
-            root_origin,
+            root_origin.clone(),
             PARATHREAD_ID.into()
         ));
 
         run_to_session(2);
+
+        if let Some(max_core_price) = set_max_core_price {
+            assert_ok!(ServicesPayment::set_max_core_price(
+                root_origin,
+                PARATHREAD_ID.into(),
+                Some(max_core_price)
+            ));
+        }
     });
 
     let parathread_tank_in_relay = get_parathread_tank_relay_address();
@@ -166,7 +171,6 @@ fn assert_relay_order_event_not_emitted() {
             _ => (),
         }
     }
-    // OnDemandOrderPlaced
 }
 
 /// Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
@@ -210,7 +214,7 @@ fn xcm_core_buyer_zero_balance() {
     let balance_before = 0;
 
     // Invariant: if balance_before < BUY_EXECUTION_COST, then balance_after == balance_before
-    do_test(balance_before);
+    do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -239,7 +243,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
     // balance_after <= (balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST)
     // In this case the balance_after is 0 because BUY_EXECUTION_REFUND < ROCOCO_ED,
     // so the account gets the refund but it is immediatelly killed.
-    do_test(balance_before);
+    do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -283,7 +287,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
     let spot_price2 = spot_price;
     let balance_before = BUY_EXECUTION_COST + spot_price;
 
-    do_test(balance_before);
+    do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -343,7 +347,7 @@ fn xcm_core_buyer_enough_balance() {
     let spot_price2 = spot_price;
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + spot_price + 1;
 
-    do_test(balance_before);
+    do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -403,7 +407,7 @@ fn xcm_core_buyer_core_too_expensive() {
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + 1;
     set_on_demand_base_fee(balance_before * 2);
 
-    do_test(balance_before);
+    do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -439,6 +443,57 @@ fn xcm_core_buyer_core_too_expensive() {
         assert_eq!(
             balance_after,
             balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST
+        );
+    });
+}
+
+#[test]
+fn xcm_core_buyer_set_max_core_price() {
+    let parathread_tank_in_relay = get_parathread_tank_relay_address();
+    let spot_price = get_on_demand_base_fee();
+    let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + spot_price + 1;
+    // Set max core price lower than spot_price, will result in no core bought even though the
+    // account has enough balance
+    let max_core_price = spot_price / 2;
+
+    Dancebox::execute_with(|| {});
+
+    do_test(balance_before, Some(max_core_price));
+
+    // Receive XCM message in Relay Chain
+    Rococo::execute_with(|| {
+        type RuntimeEvent = <Rococo as Chain>::RuntimeEvent;
+
+        let balance_after =
+            <Rococo as RococoRelayPallet>::System::account(parathread_tank_in_relay.clone())
+                .data
+                .free;
+        assert_expected_events!(
+            Rococo,
+            vec![
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Withdraw {
+                        who,
+                        amount: BUY_EXECUTION_COST,
+                    }
+                ) => {
+                    who: *who == parathread_tank_in_relay,
+                },
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Deposit {
+                        who,
+                        amount: BUY_EXECUTION_REFUND,
+                    }
+                ) => {
+                    who: *who == parathread_tank_in_relay,
+                },
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
+            ]
+        );
+        assert_relay_order_event_not_emitted();
+        assert_eq!(
+            balance_after,
+            ROCOCO_ED + 1 + BUY_EXECUTION_REFUND + spot_price
         );
     });
 }

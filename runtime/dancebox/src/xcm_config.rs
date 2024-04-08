@@ -32,8 +32,8 @@ use {
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
-        ParaIdIntoAccountTruncating,
+        GetParathreadCollators, GetParathreadMaxCorePrice, GetParathreadParams,
+        GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
@@ -486,6 +486,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
+    type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
     type MaxParathreads = ConstU32<100>;
@@ -576,5 +577,13 @@ impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
                 call.encode()
             }
         }
+    }
+}
+
+pub struct GetMaxCorePriceFromServicesPayment;
+
+impl GetParathreadMaxCorePrice for GetMaxCorePriceFromServicesPayment {
+    fn get_max_core_price(para_id: ParaId) -> Option<u128> {
+        pallet_services_payment::MaxCorePrice::<Runtime>::get(para_id)
     }
 }
