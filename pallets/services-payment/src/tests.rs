@@ -473,7 +473,7 @@ fn tip_should_be_charged_on_collators_assignment() {
 }
 
 #[test]
-fn insufficient_balance_for_tip_returns_fee_imbalance() {
+fn insufficient_balance_for_tip_reimburses_fee_imbalance() {
     ExtBuilder::default()
         .with_balances([(ALICE, 2_000_000)].into())
         .build()
@@ -495,11 +495,9 @@ fn insufficient_balance_for_tip_returns_fee_imbalance() {
                 tip,
             ));
 
-            assert!(PaymentServices::on_collators_assigned(
-                para_id.into(),
-                Some(&tip),
-                false
-            ).is_err());
+            assert!(
+                PaymentServices::on_collators_assigned(para_id.into(), Some(&tip), false).is_err()
+            );
 
             // Tank balance shouldn't have changed
             assert_eq!(
