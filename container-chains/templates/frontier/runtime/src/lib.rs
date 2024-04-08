@@ -360,6 +360,8 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 }
 
 /// The existential deposit. Set to 0 because this is an ethereum-like chain
+/// We set this to one for runtime-benchmarks because plenty of the benches we
+/// incorporate from parity assume ED != 0
 #[cfg(feature = "runtime-benchmarks")]
 pub const EXISTENTIAL_DEPOSIT: Balance = 1;
 #[cfg(not(feature = "runtime-benchmarks"))]

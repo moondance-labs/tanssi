@@ -11929,6 +11929,7 @@ dependencies = [
  "pallet-pooled-staking",
  "pallet-registrar",
  "pallet-services-payment",
+ "pallet-treasury",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

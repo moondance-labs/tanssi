@@ -1321,6 +1321,7 @@ parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub const MaxBalance: Balance = Balance::max_value();
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1341,15 +1342,19 @@ impl pallet_treasury::Config for Runtime {
     type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type ProposalBondMaximum = ();
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
+    #[cfg(feature = "runtime-benchmarks")]
+    type SpendOrigin =
+        frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
     type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<AccountId>;
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
     type BalanceConverter = UnityAssetBalanceConversion;
-    type PayoutPeriod = ConstU32<0>;
+    type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
