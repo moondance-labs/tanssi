@@ -29,6 +29,12 @@ else
     OUTPUT_PATH="${OUTPUT_PATH}"
 fi
 
+if [[ -z "${TEMPLATE_PATH}" ]]; then
+    TEMPLATE_PATH="./benchmarking/frame-weight-template.hbs"
+else
+    TEMPLATE_PATH="${TEMPLATE_PATH}"
+fi
+
 STEPS=50
 REPEAT=20
 
@@ -45,7 +51,7 @@ function help {
     echo "EXAMPLES:"
     echo "  ${0}                       " "list all benchmarks and provide a selection to choose from" 
     echo "  ${0} --check               " "list all benchmarks and provide a selection to choose from, runs in 'check' mode (reduced steps and repetitions)" 
-    echo "  ${0} foo \"*\"               " "run all benchmarks for pallet 'foo' (the * must be inside quotes)"
+    echo "  ${0} foo \"*\"             " "run all benchmarks for pallet 'foo' (the * must be inside quotes)"
     echo "  ${0} foo bar               " "run a benchmark for pallet 'foo' and benchmark 'bar'" 
     echo "  ${0} foo bar --check       " "run a benchmark for pallet 'foo' and benchmark 'bar' in 'check' mode (reduced steps and repetitions)" 
     echo "  ${0} foo bar --all         " "run a benchmark for all pallets" 
@@ -94,7 +100,7 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template=./benchmarking/frame-weight-template.hbs \
+            --template="${TEMPLATE_PATH}" \
             --json-file raw.json \
             --output "${OUTPUT}"
         done
@@ -107,7 +113,7 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template=./benchmarking/frame-weight-template.hbs \
+            --template="${TEMPLATE_PATH}" \
             --json-file raw.json \
             --output "${OUTPUT}"
     fi
