@@ -639,8 +639,8 @@ pub async fn start_node_impl_container(
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
         let node_backend = node_builder.backend.clone();
-        // We do not monitor exit of the consensus container
-        let _exit_notification_receiver = start_consensus_container(
+
+        start_consensus_container(
             node_client.clone(),
             node_backend.clone(),
             orchestrator_client.clone(),
@@ -708,7 +708,7 @@ fn start_consensus_container(
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
-) -> futures::channel::oneshot::Receiver<()> {
+) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
         .expect("start_consensus_container: slot duration should exist");
 
@@ -858,12 +858,14 @@ fn start_consensus_container(
         cancellation_token: CancellationToken::new(),
     };
 
-    let (fut, exit_notification_receiver) =
+    let (fut, _exit_notification_receiver) =
         lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura-container", None, fut);
-    exit_notification_receiver
 }
 
+/// Start collator task for orchestrator chain.
+/// Returns a `CancellationToken` that can be used to cancel the collator task,
+/// and a `oneshot::Receiver<()>` that can be used to wait until the task has ended.
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
     backend: Arc<FullBackend>,
@@ -1002,6 +1004,7 @@ fn start_consensus_orchestrator(
     let (fut, exit_notification_receiver) =
         lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura", None, fut);
+
     (cancellation_token, exit_notification_receiver)
 }
 
