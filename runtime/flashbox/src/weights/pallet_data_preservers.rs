@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_data_preservers using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_data_preservers::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
 	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `DataPreservers::BootNodes` (r:0 w:1)

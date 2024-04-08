@@ -65,7 +65,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_stream_payment using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_stream_payment::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `StreamPayment::NextStreamId` (r:1 w:1)
 	/// Proof: `StreamPayment::NextStreamId` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)

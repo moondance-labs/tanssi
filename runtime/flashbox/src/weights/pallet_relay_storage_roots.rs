@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_relay_storage_roots using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_relay_storage_roots::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ParachainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `ParachainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `RelayStorageRoots::RelayStorageRoot` (r:1 w:2)

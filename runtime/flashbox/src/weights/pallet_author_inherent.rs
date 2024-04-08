@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_author_inherent using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_author_inherent::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `System::Digest` (r:1 w:0)
 	/// Proof: `System::Digest` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `AuthorInherent::Author` (r:1 w:0)

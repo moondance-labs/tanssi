@@ -65,7 +65,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_registrar using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_registrar::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Registrar::ParaGenesisData` (r:1 w:1)

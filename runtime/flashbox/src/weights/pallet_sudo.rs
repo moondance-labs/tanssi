@@ -61,7 +61,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_sudo using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_sudo::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Sudo::Key` (r:1 w:1)
 	/// Proof: `Sudo::Key` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	fn set_key() -> Weight {

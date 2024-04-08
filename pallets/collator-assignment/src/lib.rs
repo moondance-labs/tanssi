@@ -42,9 +42,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    crate::{
-        assignment::{Assignment, ChainNumCollators},
-    },
+    crate::assignment::{Assignment, ChainNumCollators},
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},

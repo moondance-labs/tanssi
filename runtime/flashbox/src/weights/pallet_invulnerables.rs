@@ -62,7 +62,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_invulnerables using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_invulnerables::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Session::NextKeys` (r:100 w:0)
 	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `Invulnerables::Invulnerables` (r:0 w:1)
@@ -132,14 +132,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 100]`.
-	fn reward_invulnerable(b: u32, ) -> Weight {
+	fn reward_invulnerable() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `218 + b * (33 ±0)`
 		//  Estimated: `4687`
 		// Minimum execution time: 23_842_000 picoseconds.
 		Weight::from_parts(25_395_631, 4687)
 			// Standard Error: 986
-			.saturating_add(Weight::from_parts(107_603, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}

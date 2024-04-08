@@ -58,7 +58,7 @@ pub trait WeightInfo {
 
 /// Weights for pallet_configuration using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_configuration::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Configuration::PendingConfigs` (r:1 w:1)
 	/// Proof: `Configuration::PendingConfigs` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Configuration::ActiveConfig` (r:1 w:0)
