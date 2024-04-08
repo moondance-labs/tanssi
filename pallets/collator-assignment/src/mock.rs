@@ -248,11 +248,12 @@ pub struct MockCollatorAssignmentHook;
 
 impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
     fn on_collators_assigned(
-        _para_id: ParaId,
+        para_id: ParaId,
         _maybe_tip: Option<&u32>,
         _is_parathread: bool,
     ) -> Result<Weight, sp_runtime::DispatchError> {
-        if MockData::mock().assignment_hook_errors {
+        // Only fail for para 1001
+        if MockData::mock().assignment_hook_errors && para_id == 1001.into() {
             // The error doesn't matter
             Err(sp_runtime::DispatchError::Unavailable)
         } else {

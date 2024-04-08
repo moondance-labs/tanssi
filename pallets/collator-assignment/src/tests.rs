@@ -1342,7 +1342,7 @@ fn assign_collators_prioritizing_tip() {
 }
 
 #[test]
-fn no_pending_assign_collators_if_assignment_hook_fails() {
+fn on_assign_collator_hook_fail_removes_para_from_assignment() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -1352,65 +1352,49 @@ fn no_pending_assign_collators_if_assignment_hook_fails() {
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
-            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
-            m.container_chains = vec![1001, 1002, 1003, 1004];
-            m.assignment_hook_errors = true;
-        });
-        run_to_block(11);
-
-        MockData::mutate(|m| {
-            m.random_seed = [1; 32];
-        });
-
-        run_to_block(20);
-
-        assert!(PendingCollatorContainerChain::<Test>::get().is_none(),);
-
-        run_to_block(21);
-
-        assert!(PendingCollatorContainerChain::<Test>::get().is_none(),);
-    });
-}
-
-#[test]
-fn assign_collators_keeps_prev_assignment_hook_fail() {
-    new_test_ext().execute_with(|| {
-        run_to_block(1);
-
-        MockData::mutate(|m| {
-            m.collators_per_container = 2;
-            m.collators_per_parathread = 2;
-            m.min_orchestrator_chain_collators = 5;
-            m.max_orchestrator_chain_collators = 5;
-
-            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
             m.container_chains = vec![1001, 1002, 1003, 1004];
             m.assignment_hook_errors = false;
         });
-
         run_to_block(11);
 
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                (10, 1003),
+                (11, 1003),
+            ]),
+        );
+
+        // Para 1001 will fail on_assignment_hook
         MockData::mutate(|m| {
-            m.random_seed = [1; 32];
-        });
-
-        run_to_block(16);
-
-        let pending_assignment = PendingCollatorContainerChain::<Test>::get();
-
-        assert!(pending_assignment.is_some(),);
-
-        // Even with a new seed, old assignment should stay
-        MockData::mutate(|m| {
-            m.random_seed = [2; 32];
             m.assignment_hook_errors = true;
         });
 
-        run_to_block(71);
+        run_to_block(21);
 
         assert_eq!(
-            pending_assignment.unwrap(),
-            CollatorContainerChain::<Test>::get()
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
+                (8, 1002),
+                (9, 1002),
+                (10, 1003),
+                (11, 1003),
+            ]),
         );
     });
 }
