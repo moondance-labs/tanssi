@@ -1342,7 +1342,7 @@ fn assign_collators_prioritizing_tip() {
 }
 
 #[test]
-fn on_assign_collator_hook_fail_removes_para_from_assignment() {
+fn on_collators_assigned_hook_failure_removes_para_from_assignment() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
