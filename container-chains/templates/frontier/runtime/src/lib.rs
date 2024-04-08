@@ -28,6 +28,7 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+use xcm_config::SelfReserve;
 
 pub mod migrations;
 mod precompiles;
@@ -359,6 +360,9 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 }
 
 /// The existential deposit. Set to 0 because this is an ethereum-like chain
+#[cfg(feature = "runtime-benchmarks")]
+pub const EXISTENTIAL_DEPOSIT: Balance = 1;
+#[cfg(not(feature = "runtime-benchmarks"))]
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
@@ -1222,7 +1226,7 @@ impl_runtime_apis! {
                     Some((
                         MultiAsset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(Parent.into())
+                            id: Concrete(SelfReserve::get())
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
                     ))

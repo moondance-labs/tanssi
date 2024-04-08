@@ -110,6 +110,13 @@ pub type XcmBarrier = (
     >,
 );
 
+// For benchmarking, we cannot use the describeFamily
+// the benchmark is written to be able to convert an AccountId32, but describeFamily prevents this
+#[cfg(not(feature = "runtime-benchmarks"))]
+type Descriptor = staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>;
+#[cfg(feature = "runtime-benchmarks")]
+type Descriptor = staging_xcm_builder::DescribeAllTerminal;
+
 /// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
 /// `Transact` in order to determine the dispatch Origin.
@@ -121,10 +128,7 @@ pub type LocationToAccountId = (
     // If we receive a MultiLocation of type AccountKey20, just generate a native account
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<
-        AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
-    >,
+    staging_xcm_builder::HashedDescription<AccountId, Descriptor>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
