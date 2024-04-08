@@ -120,7 +120,6 @@ describeSuite({
                 });
 
                 let stream = await polkadotJs.query.streamPayment.streams(0);
-                console.log(stream.toString());
 
                 // 4th block: create an empty block to check status
                 newBlock = await context.createBlock();
@@ -134,7 +133,7 @@ describeSuite({
                 // produce empty block on session change, which cannot contain extrinsics
                 await context.createBlock();
 
-                // 5th block: accept change, resuming stream
+                // 6th block: accept change, resuming stream
                 const txAcceptChange = await polkadotJs.tx.streamPayment
                     .acceptRequestedChange(0, 1, null)
                     .signAsync(bob);
@@ -151,7 +150,7 @@ describeSuite({
                     payment: 0,
                 });
 
-                // 6th block: create an empty block to check status
+                // 7th block: create an empty block to check status
                 newBlock = await context.createBlock();
 
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
@@ -160,7 +159,7 @@ describeSuite({
                     payment: 50_000,
                 });
 
-                // 7th block: close the stream
+                // 8th block: close the stream
                 const txCloseStream = await polkadotJs.tx.streamPayment
                     .closeStream(0)
                     .signAsync(alice, { nonce: aliceNonce++ });
