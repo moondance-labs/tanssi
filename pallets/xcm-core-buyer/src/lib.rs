@@ -87,6 +87,7 @@ pub mod pallet {
             + PartialEq
             + sp_std::fmt::Debug;
         /// Limit how many in-flight XCM requests can be sent to the relay chain in one block.
+        #[pallet::constant]
         type MaxParathreads: Get<u32>;
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
