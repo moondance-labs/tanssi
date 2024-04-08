@@ -502,35 +502,55 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
         maybe_tip: Option<&BalanceOf<T>>,
         _is_parathread: bool,
     ) -> Result<Weight, DispatchError> {
-        if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
-            let (amount_to_charge, _weight) =
-                T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
-            let imbalance = T::Currency::withdraw(
-                &Self::parachain_tank(para_id),
-                amount_to_charge,
-                WithdrawReasons::FEE,
-                ExistenceRequirement::KeepAlive,
-            )?;
-            T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
-        }
+        // Withdraw assignment fee
+        let maybe_assignment_imbalance =
+            if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+                let (amount_to_charge, _weight) =
+                    T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+                Some(T::Currency::withdraw(
+                    &Self::parachain_tank(para_id),
+                    amount_to_charge,
+                    WithdrawReasons::FEE,
+                    ExistenceRequirement::KeepAlive,
+                )?)
+            } else {
+                None
+            };
 
         if let Some(&tip) = maybe_tip {
             // Only charge the tip to the paras that had a max tip set
             // (aka were willing to tip for being assigned a collator)
             if MaxTip::<T>::get(para_id).is_some() {
-                let imbalance = T::Currency::withdraw(
+                match T::Currency::withdraw(
                     &Self::parachain_tank(para_id),
                     tip,
                     WithdrawReasons::TIP,
                     ExistenceRequirement::KeepAlive,
-                )?;
-                T::OnChargeForCollatorAssignmentTip::on_unbalanced(imbalance);
-                Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
-                    para_id,
-                    payer: Self::parachain_tank(para_id),
-                    tip,
-                });
+                ) {
+                    Err(e) => {
+                        // Return assignment imbalance to tank on error
+                        if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+                            T::Currency::resolve_creating(
+                                &Self::parachain_tank(para_id),
+                                assignment_imbalance,
+                            );
+                        }
+                        return Err(e);
+                    }
+                    Ok(tip_imbalance) => {
+                        Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
+                            para_id,
+                            payer: Self::parachain_tank(para_id),
+                            tip,
+                        });
+                        T::OnChargeForCollatorAssignmentTip::on_unbalanced(tip_imbalance);
+                    }
+                }
             }
+        }
+
+        if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+            T::OnChargeForCollatorAssignment::on_unbalanced(assignment_imbalance);
         }
 
         Ok(T::WeightInfo::on_collators_assigned())

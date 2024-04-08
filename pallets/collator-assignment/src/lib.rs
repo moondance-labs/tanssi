@@ -347,7 +347,7 @@ pub mod pallet {
                         // On error remove para from assignment
                         log::warn!(
                             "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
-                            para_id,
+                            u32::from(*para_id),
                             e
                         );
                         new_assigned.container_chains.remove(para_id);
@@ -370,7 +370,7 @@ pub mod pallet {
                         // On error remove para from assignment
                         log::warn!(
                             "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
-                            para_id,
+                            u32::from(*para_id),
                             e
                         );
                         new_assigned.container_chains.remove(para_id);

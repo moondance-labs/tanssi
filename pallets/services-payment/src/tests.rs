@@ -430,11 +430,13 @@ fn tip_should_be_charged_on_collators_assignment() {
         .execute_with(|| {
             let para_id = 1;
             let tip = 10u128;
+            let balance = 5000u128;
+
             // this should give 10 block credit
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 para_id.into(),
-                5000u128,
+                balance,
             ));
 
             assert_ok!(PaymentServices::set_max_tip(
@@ -445,16 +447,16 @@ fn tip_should_be_charged_on_collators_assignment() {
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
-                5000u128,
+                balance,
             );
-
-            PaymentServices::on_container_author_noted(&1, 1, para_id.into());
 
             assert_ok!(PaymentServices::on_collators_assigned(
                 para_id.into(),
                 Some(&tip),
                 false
             ));
+
+            PaymentServices::on_container_author_noted(&1, 1, para_id.into());
 
             let (assignment_cost, _weight) =
                 <Test as crate::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(
@@ -465,7 +467,44 @@ fn tip_should_be_charged_on_collators_assignment() {
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
-                5000u128 - assignment_cost - block_cost - tip,
+                balance - assignment_cost - block_cost - tip,
+            );
+        });
+}
+
+#[test]
+fn insufficient_balance_for_tip_returns_fee_imbalance() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1;
+            let tip = 10u128;
+            // Enough for one assignment but not for tip;
+            let balance = 205u128;
+
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id.into(),
+                balance,
+            ));
+
+            assert_ok!(PaymentServices::set_max_tip(
+                RuntimeOrigin::root(),
+                para_id.into(),
+                tip,
+            ));
+
+            assert!(PaymentServices::on_collators_assigned(
+                para_id.into(),
+                Some(&tip),
+                false
+            ).is_err());
+
+            // Tank balance shouldn't have changed
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                balance,
             );
         });
 }
