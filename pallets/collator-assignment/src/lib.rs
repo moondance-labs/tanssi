@@ -247,7 +247,7 @@ pub mod pallet {
 
             // Are there enough collators to satisfy the minimum demand?
             let enough_collators_for_all_chain = collators.len() as u32
-                > T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
                     .saturating_add(
                         collators_per_container.saturating_mul(container_chain_ids.len() as u32),
                     )
