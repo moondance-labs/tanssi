@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use tokio_util::sync::CancellationToken;
 #[allow(deprecated)]
 use {
     crate::{
@@ -79,10 +80,7 @@ use {
         },
         OrchestratorAuraWorkerAuxData,
     },
-    tokio::sync::{
-        mpsc::{unbounded_channel, UnboundedSender},
-        watch,
-    },
+    tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -372,7 +370,9 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let sync_keystore = node_builder.keystore_container.keystore();
-    let mut collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+    let mut collate_on_tanssi: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    > = Arc::new(move || {
         if validator {
             panic!("Called uninitialized collate_on_tanssi");
         } else {
@@ -406,7 +406,10 @@ async fn start_node_impl(
 
     // This channel allows us to notify the lookahead collator when it should stop.
     // Useful when rotating containers.
-    let (end_lookahead_sender, end_lookahead_receiver) = tokio::sync::watch::channel(());
+    let mut initial_cancellation_token: Option<(
+        CancellationToken,
+        futures::channel::oneshot::Receiver<()>,
+    )> = None;
 
     if validator {
         let collator_key = collator_key
@@ -459,12 +462,11 @@ async fn start_node_impl(
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),
-                    Some(end_lookahead_receiver.clone()),
                 )
             }
         };
         // Start collating now
-        start_collation();
+        initial_cancellation_token = Some(start_collation());
         // And save callback for later, used when collator rotates from container chain back to orchestrator chain
         collate_on_tanssi = Arc::new(start_collation);
     }
@@ -513,13 +515,14 @@ async fn start_node_impl(
             spawn_handle,
             state: Default::default(),
             collate_on_tanssi,
+            collation_cancellation_constructs: initial_cancellation_token,
         };
         let state = container_chain_spawner.state.clone();
 
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx, end_lookahead_sender),
+            container_chain_spawner.rx_loop(cc_spawn_rx),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
@@ -636,6 +639,7 @@ pub async fn start_node_impl_container(
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
         let node_backend = node_builder.backend.clone();
+
         start_consensus_container(
             node_client.clone(),
             node_backend.clone(),
@@ -850,13 +854,18 @@ fn start_consensus_container(
         authoring_duration: Duration::from_millis(500),
         para_backend: backend,
         code_hash_provider,
-        end_lookahead_receiver: None,
+        // This cancellation token is no-op as it is not shared outside.
+        cancellation_token: CancellationToken::new(),
     };
 
-    let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+    let (fut, _exit_notification_receiver) =
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
+/// Start collator task for orchestrator chain.
+/// Returns a `CancellationToken` that can be used to cancel the collator task,
+/// and a `oneshot::Receiver<()>` that can be used to wait until the task has ended.
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
     backend: Arc<FullBackend>,
@@ -872,8 +881,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-    end_lookahead_receiver: Option<watch::Receiver<()>>,
-) {
+) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
 
@@ -898,6 +906,8 @@ fn start_consensus_orchestrator(
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
     };
+
+    let cancellation_token = CancellationToken::new();
 
     let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
@@ -988,11 +998,14 @@ fn start_consensus_orchestrator(
         authoring_duration: Duration::from_millis(500),
         code_hash_provider,
         para_backend: backend,
-        end_lookahead_receiver,
+        cancellation_token: cancellation_token.clone(),
     };
 
-    let fut = lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+    let (fut, exit_notification_receiver) =
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura", None, fut);
+
+    (cancellation_token, exit_notification_receiver)
 }
 
 /// Start a parachain node.

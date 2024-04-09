@@ -21,6 +21,7 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
+use tokio_util::sync::CancellationToken;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -51,14 +52,14 @@ use {
         time::Instant,
     },
     tokio::{
-        sync::{mpsc, oneshot, watch},
+        sync::{mpsc, oneshot},
         time::{sleep, Duration},
     },
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
-#[derive(Clone)]
+
 pub struct ContainerChainSpawner {
     // Start container chain params
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
@@ -78,7 +79,10 @@ pub struct ContainerChainSpawner {
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
 
     // Async callback that enables collation on the orchestrator chain
-    pub collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
+    pub collate_on_tanssi:
+        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
+    pub collation_cancellation_constructs:
+        Option<(CancellationToken, futures::channel::oneshot::Receiver<()>)>,
 }
 
 #[derive(Default)]
@@ -121,7 +125,7 @@ impl ContainerChainSpawner {
         container_chain_para_id: ParaId,
         start_collation: bool,
     ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
-        let ContainerChainSpawner {
+        let (
             orchestrator_chain_interface,
             orchestrator_client,
             mut container_chain_cli,
@@ -135,8 +139,21 @@ impl ContainerChainSpawner {
             validator,
             spawn_handle,
             state,
-            collate_on_tanssi: _,
-        } = self.clone();
+        ) = (
+            self.orchestrator_chain_interface.clone(),
+            self.orchestrator_client.clone(),
+            self.container_chain_cli.clone(),
+            self.tokio_handle.clone(),
+            self.chain_type.clone(),
+            self.relay_chain.clone(),
+            self.relay_chain_interface.clone(),
+            self.collator_key.clone(),
+            self.sync_keystore.clone(),
+            self.orchestrator_para_id,
+            self.validator,
+            self.spawn_handle.clone(),
+            self.state.clone(),
+        );
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
             // Preload genesis data from orchestrator chain storage.
@@ -411,16 +428,11 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(
-        self,
-        mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>,
-        end_lookahead_sender: watch::Sender<()>,
-    ) {
+    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next, &end_lookahead_sender)
-                        .await;
+                    self.handle_update_assignment(current, next).await;
                 }
             }
         }
@@ -432,12 +444,7 @@ impl ContainerChainSpawner {
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(
-        &self,
-        current: Option<ParaId>,
-        next: Option<ParaId>,
-        end_lookahead_sender: &watch::Sender<()>,
-    ) {
+    async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
         let HandleUpdateAssignmentResult {
             call_collate_on,
             chains_to_stop,
@@ -454,8 +461,19 @@ impl ContainerChainSpawner {
         // Call collate_on, to start collation on a chain that was already running before
         if let Some(f) = call_collate_on {
             // End previous tanssi-aura job
-            let _ = end_lookahead_sender.send(());
-            f();
+            let maybe_exit_notification_receiver = self
+                .collation_cancellation_constructs
+                .take()
+                .map(|(cancellation_token, exit_notification_receiver)| {
+                    cancellation_token.cancel();
+                    exit_notification_receiver
+                });
+
+            if let Some(exit_notification_receiver) = maybe_exit_notification_receiver {
+                let _ = exit_notification_receiver.await;
+            }
+
+            self.collation_cancellation_constructs = Some(f());
         }
 
         // Stop all container chains that are no longer needed
@@ -481,7 +499,9 @@ impl ContainerChainSpawner {
 }
 
 struct HandleUpdateAssignmentResult {
-    call_collate_on: Option<Arc<dyn Fn() + Send + Sync>>,
+    call_collate_on: Option<
+        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
+    >,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
     need_to_restart: bool,
@@ -491,7 +511,9 @@ struct HandleUpdateAssignmentResult {
 fn handle_update_assignment_state_change(
     state: &mut ContainerChainSpawnerState,
     orchestrator_para_id: ParaId,
-    collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
+    collate_on_tanssi: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    >,
     current: Option<ParaId>,
     next: Option<ParaId>,
 ) -> HandleUpdateAssignmentResult {
@@ -751,7 +773,9 @@ mod tests {
     struct MockContainerChainSpawner {
         state: Arc<Mutex<ContainerChainSpawnerState>>,
         orchestrator_para_id: ParaId,
-        collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
+        collate_on_tanssi: Arc<
+            dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+        >,
         // Keep track of the last CollateOn message, for tests
         currently_collating_on: Arc<Mutex<Option<ParaId>>>,
     }
@@ -774,8 +798,14 @@ mod tests {
                 );
                 */
                 *cco = Some(orchestrator_para_id);
+                let (_, receiver) = futures::channel::oneshot::channel();
+                (CancellationToken::new(), receiver)
             };
-            let collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
+            let collate_on_tanssi: Arc<
+                dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>)
+                    + Send
+                    + Sync,
+            > = Arc::new(collate_closure);
 
             Self {
                 state: Arc::new(Mutex::new(ContainerChainSpawnerState {
@@ -805,8 +835,14 @@ mod tests {
                 );
                 */
                 *cco = Some(container_chain_para_id);
+                let (_, receiver) = futures::channel::oneshot::channel();
+                (CancellationToken::new(), receiver)
             };
-            let collate_on: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
+            let collate_on: Arc<
+                dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>)
+                    + Send
+                    + Sync,
+            > = Arc::new(collate_closure);
 
             let old = self
                 .state
@@ -827,7 +863,7 @@ mod tests {
             );
 
             if start_collation {
-                collate_on();
+                let (_cancellation_token, _exit_receiver) = collate_on();
             }
         }
 
@@ -897,7 +933,7 @@ mod tests {
 
             // Call collate_on, to start collation on a chain that was already running before
             if let Some(f) = call_collate_on {
-                f();
+                let (_cancellation_token, _exit_notification_receiver) = f();
             }
 
             // Stop all container chains that are no longer needed
