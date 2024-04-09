@@ -149,6 +149,17 @@ pub mod pallet {
 
             Ok(())
         }
+
+        //pub struct BootnodeProfile {
+        //bootnode_url: BoundedVec<u8, T::MaxBootNodeUrlLen>
+        //}
+
+        // force_assignment(para_id, accountId)
+        // add_bootnode_profile(BootnodeProfile) -> profile_id
+        // account->profile_ids (MaxProfileIds)
+
+        // for future
+        // accountId -> nodeKey
     }
 
     impl<T: Config> Pallet<T> {
