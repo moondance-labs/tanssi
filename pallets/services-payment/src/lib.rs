@@ -80,7 +80,6 @@ pub mod pallet {
         type FreeCollatorAssignmentCredits: Get<u32>;
         /// Owner of the container chain, can call some only-owner methods
         type ManagerOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
-        type SetMaxTipOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -303,7 +302,7 @@ pub mod pallet {
             para_id: ParaId,
             max_tip: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            T::SetMaxTipOrigin::ensure_origin(origin, &para_id)?;
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
             MaxTip::<T>::insert(para_id, max_tip);
 

@@ -109,7 +109,6 @@ impl pallet_services_payment::Config for Test {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin = EnsureRoot<AccountId>;
-    type SetMaxTipOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 
