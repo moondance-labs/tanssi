@@ -71,6 +71,10 @@ pub mod pallet {
         /// How to convert a `ParaId` into an `AccountId32`. Used to derive the parathread tank
         /// account in `interior_multilocation`.
         type GetParathreadAccountId: Convert<ParaId, [u8; 32]>;
+        /// The max price that the parathread is willing to pay for a core, in relay chain currency.
+        /// If `None`, defaults to `u128::MAX`, the parathread will pay the market price with no
+        /// upper bound.
+        type GetParathreadMaxCorePrice: GetParathreadMaxCorePrice;
         /// Orchestartor chain `ParaId`. Used in `absolute_multilocation` to convert the
         /// `interior_multilocation` into what the relay chain needs to allow to `DepositAsset`.
         type SelfParaId: Get<ParaId>;
@@ -83,6 +87,7 @@ pub mod pallet {
             + PartialEq
             + sp_std::fmt::Debug;
         /// Limit how many in-flight XCM requests can be sent to the relay chain in one block.
+        #[pallet::constant]
         type MaxParathreads: Get<u32>;
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
@@ -321,7 +326,8 @@ pub mod pallet {
             // TODO: max_amount is the max price of a core that this parathread is willing to pay
             // It should be defined in a storage item somewhere, controllable by the container chain
             // manager.
-            let max_amount = u128::MAX;
+            let max_amount =
+                T::GetParathreadMaxCorePrice::get_max_core_price(para_id).unwrap_or(u128::MAX);
             let call =
                 T::GetPurchaseCoreCall::get_encoded(RelayChain::<T>::get(), max_amount, para_id);
             let weight_at_most = xcm_weights_storage.weight_at_most;
@@ -471,6 +477,16 @@ pub trait GetParathreadCollators<AccountId> {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>);
+}
+
+pub trait GetParathreadMaxCorePrice {
+    fn get_max_core_price(para_id: ParaId) -> Option<u128>;
+}
+
+impl GetParathreadMaxCorePrice for () {
+    fn get_max_core_price(_para_id: ParaId) -> Option<u128> {
+        None
+    }
 }
 
 pub trait GetParathreadParams {

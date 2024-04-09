@@ -16,11 +16,11 @@
 
 use {
     super::{
-        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
-        Balance, Balances, CollatorAssignment, ForeignAssets, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Registrar,
-        Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, System,
-        WeightToFee, XcmpQueue,
+        currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, CollatorAssignment, ForeignAssets,
+        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
+        PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     crate::weights,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
@@ -33,12 +33,12 @@ use {
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadCollators, GetParathreadParams, GetPurchaseCoreCall,
-        ParaIdIntoAccountTruncating,
+        GetParathreadCollators, GetParathreadMaxCorePrice, GetParathreadParams,
+        GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
@@ -86,6 +86,8 @@ parameter_types! {
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorMultiLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+
+    pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -174,7 +176,7 @@ pub type XcmWeigher =
 /// queues.
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
@@ -246,6 +248,12 @@ impl pallet_xcm::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
+pub type PriceForSiblingParachainDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, XcmpQueue>;
+
+pub type PriceForParentDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
+
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ChannelInfo = ParachainSystem;
@@ -253,7 +261,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = weights::cumulus_pallet_xcmp_queue::SubstrateWeight<Runtime>;
-    type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
@@ -479,6 +487,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = GetBlockNumber;
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
+    type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
     type MaxParathreads = ConstU32<100>;
@@ -569,5 +578,13 @@ impl GetPurchaseCoreCall<RelayChain> for EncodedCallToBuyCore {
                 call.encode()
             }
         }
+    }
+}
+
+pub struct GetMaxCorePriceFromServicesPayment;
+
+impl GetParathreadMaxCorePrice for GetMaxCorePriceFromServicesPayment {
+    fn get_max_core_price(para_id: ParaId) -> Option<u128> {
+        pallet_services_payment::MaxCorePrice::<Runtime>::get(para_id)
     }
 }

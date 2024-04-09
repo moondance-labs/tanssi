@@ -73,12 +73,14 @@ pub mod pallet {
         type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
         /// The maximum number of block production credits that can be accumulated
+        #[pallet::constant]
         type FreeBlockProductionCredits: Get<BlockNumberFor<Self>>;
 
         /// The maximum number of collator assigment production credits that can be accumulated
+        #[pallet::constant]
         type FreeCollatorAssignmentCredits: Get<u32>;
-        // Who can call set_refund_address?
-        type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        /// Owner of the container chain, can call some only-owner methods
+        type ManagerOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -117,6 +119,10 @@ pub mod pallet {
             para_id: ParaId,
             refund_address: Option<T::AccountId>,
         },
+        MaxCorePriceUpdated {
+            para_id: ParaId,
+            max_core_price: Option<u128>,
+        },
         CollatorAssignmentCreditsSet {
             para_id: ParaId,
             credits: u32,
@@ -143,6 +149,10 @@ pub mod pallet {
     #[pallet::getter(fn refund_address)]
     pub type RefundAddress<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+
+    /// Max core price for parathread in relay chain currency
+    #[pallet::storage]
+    pub type MaxCorePrice<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, u128, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -218,7 +228,7 @@ pub mod pallet {
             para_id: ParaId,
             refund_address: Option<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
-            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
             if let Some(refund_address) = refund_address.clone() {
                 RefundAddress::<T>::insert(para_id, refund_address.clone());
@@ -246,6 +256,30 @@ pub mod pallet {
             ensure_root(origin)?;
 
             Self::set_free_collator_assignment_credits(&para_id, free_collator_assignment_credits);
+
+            Ok(().into())
+        }
+
+        /// Max core price for parathread in relay chain currency
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::set_max_core_price())]
+        pub fn set_max_core_price(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            max_core_price: Option<u128>,
+        ) -> DispatchResultWithPostInfo {
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
+
+            if let Some(max_core_price) = max_core_price {
+                MaxCorePrice::<T>::insert(para_id, max_core_price);
+            } else {
+                MaxCorePrice::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::<T>::MaxCorePriceUpdated {
+                para_id,
+                max_core_price,
+            });
 
             Ok(().into())
         }

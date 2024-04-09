@@ -249,22 +249,27 @@ pub mod pallet {
         type Balance: Balance + MulDiv;
 
         /// Account holding Currency of all delegators.
+        #[pallet::constant]
         type StakingAccount: Get<Self::AccountId>;
 
         /// When creating the first Shares for a candidate the supply can be arbitrary.
         /// Picking a value too low will make an higher supply, which means each share will get
         /// less rewards, and rewards calculations will have more impactful rounding errors.
         /// Picking a value too high is a barrier of entry for staking.
+        #[pallet::constant]
         type InitialManualClaimShareValue: Get<Self::Balance>;
         /// When creating the first Shares for a candidate the supply can arbitrary.
         /// Picking a value too high is a barrier of entry for staking, which will increase overtime
         /// as the value of each share will increase due to auto compounding.
+        #[pallet::constant]
         type InitialAutoCompoundingShareValue: Get<Self::Balance>;
 
         /// Minimum amount of stake a Candidate must delegate (stake) towards itself. Not reaching
         /// this minimum prevents from being elected.
+        #[pallet::constant]
         type MinimumSelfDelegation: Get<Self::Balance>;
         /// Part of the rewards that will be sent exclusively to the collator.
+        #[pallet::constant]
         type RewardsCollatorCommission: Get<Perbill>;
 
         /// The overarching runtime hold reason.
@@ -279,6 +284,7 @@ pub mod pallet {
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
         /// eligible candidates. One of this top candidates leaving will then not bring the dropped candidate
         /// in the list. An extrinsic is available to manually bring back such dropped candidate.
+        #[pallet::constant]
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;

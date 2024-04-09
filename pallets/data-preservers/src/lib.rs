@@ -99,7 +99,9 @@ pub mod pallet {
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
+        #[pallet::constant]
         type MaxBootNodes: Get<u32>;
+        #[pallet::constant]
         type MaxBootNodeUrlLen: Get<u32>;
 
         type WeightInfo: WeightInfo;
