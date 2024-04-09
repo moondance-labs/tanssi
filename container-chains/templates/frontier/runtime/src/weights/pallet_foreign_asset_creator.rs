@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-template-simple-node
+// target/release/container-chain-template-frontier-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// container-chains/templates/simple/runtime/src/weights/pallet_foreign_asset_creator.rs
+// container-chains/templates/frontier/runtime/src/weights/pallet_foreign_asset_creator.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -57,17 +57,25 @@ impl<T: frame_system::Config> pallet_foreign_asset_creator::WeightInfo for Subst
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(160), added: 2635, mode: `MaxEncodedLen`)
+	/// Storage: `EVM::Suicided` (r:1 w:0)
+	/// Proof: `EVM::Suicided` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `EVM::AccountCodes` (r:1 w:1)
+	/// Proof: `EVM::AccountCodes` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
+	/// Storage: `EVM::AccountCodesMetadata` (r:0 w:1)
+	/// Proof: `EVM::AccountCodesMetadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn create_foreign_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `112`
-		//  Estimated: `3673`
-		// Minimum execution time: 16_286_000 picoseconds.
-		Weight::from_parts(16_902_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `532`
+		//  Estimated: `3997`
+		// Minimum execution time: 32_268_000 picoseconds.
+		Weight::from_parts(33_380_000, 3997)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -77,8 +85,8 @@ impl<T: frame_system::Config> pallet_foreign_asset_creator::WeightInfo for Subst
 		// Proof Size summary in bytes:
 		//  Measured:  `189`
 		//  Estimated: `3654`
-		// Minimum execution time: 13_352_000 picoseconds.
-		Weight::from_parts(13_937_000, 3654)
+		// Minimum execution time: 13_782_000 picoseconds.
+		Weight::from_parts(14_235_000, 3654)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -90,24 +98,32 @@ impl<T: frame_system::Config> pallet_foreign_asset_creator::WeightInfo for Subst
 		// Proof Size summary in bytes:
 		//  Measured:  `189`
 		//  Estimated: `3654`
-		// Minimum execution time: 11_588_000 picoseconds.
-		Weight::from_parts(12_093_000, 3654)
+		// Minimum execution time: 11_934_000 picoseconds.
+		Weight::from_parts(12_311_000, 3654)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssetsCreator::AssetIdToForeignAsset` (r:1 w:1)
 	/// Proof: `ForeignAssetsCreator::AssetIdToForeignAsset` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(160), added: 2635, mode: `MaxEncodedLen`)
+	/// Storage: `EVM::AccountCodes` (r:1 w:1)
+	/// Proof: `EVM::AccountCodes` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
+	/// Storage: `EVM::AccountCodesMetadata` (r:0 w:1)
+	/// Proof: `EVM::AccountCodesMetadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `EVM::Suicided` (r:0 w:1)
+	/// Proof: `EVM::Suicided` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:0 w:1)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn destroy_foreign_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `428`
-		//  Estimated: `3893`
-		// Minimum execution time: 17_314_000 picoseconds.
-		Weight::from_parts(17_932_000, 3893)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `925`
+		//  Estimated: `4390`
+		// Minimum execution time: 33_477_000 picoseconds.
+		Weight::from_parts(34_586_000, 4390)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 }

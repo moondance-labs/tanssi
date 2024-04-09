@@ -19,10 +19,11 @@ use pallet_foreign_asset_creator::{
 };
 use {
     super::{
-        currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId,
-        AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
-        MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
-        RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
+        currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, weights,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
+        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
+        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
+        WeightToFee, XcmpQueue,
     },
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
@@ -245,7 +246,7 @@ impl pallet_xcm::Config for Runtime {
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
-    type WeightInfo = pallet_xcm::TestWeightInfo;
+    type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
@@ -261,7 +262,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type VersionWrapper = PolkadotXcm;
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
-    type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::cumulus_pallet_xcmp_queue::SubstrateWeight<Runtime>;
     type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
@@ -277,7 +278,7 @@ parameter_types! {
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
@@ -288,7 +289,7 @@ parameter_types! {
 
 impl pallet_message_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_message_queue::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
         cumulus_primitives_core::AggregateMessageOrigin,
@@ -383,7 +384,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type StringLimit = ForeignAssetsAssetsStringLimit;
     type Freezer = ();
     type Extra = ();
-    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_assets::SubstrateWeight<Runtime>;
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
@@ -425,7 +426,7 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
-    type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
     type OnForeignAssetCreated = RevertCodePrecompileHook;
     type OnForeignAssetDestroyed = RevertCodePrecompileHook;
 }
@@ -437,7 +438,7 @@ impl pallet_asset_rate::Config for Runtime {
     type Currency = Balances;
     type AssetKind = AssetId;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }

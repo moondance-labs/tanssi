@@ -30,6 +30,7 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 
 pub mod migrations;
+pub mod weights;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
@@ -377,7 +378,7 @@ impl pallet_balances::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<0>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -453,14 +454,14 @@ parameter_types! {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -547,7 +548,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ deposit(0, 68) }>;
-    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 pub struct XcmExecutionManager;
@@ -612,7 +613,7 @@ impl pallet_tx_pause::Config for Runtime {
     type UnpauseOrigin = EnsureRoot<AccountId>;
     type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
-    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
 impl dp_impl_tanssi_pallets_config::Config for Runtime {
@@ -637,7 +638,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -708,6 +709,7 @@ mod benches {
         [pallet_assets, ForeignAssets]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
+        [pallet_xcm_executor_utils, XcmExecutorUtils]
     );
 }
 

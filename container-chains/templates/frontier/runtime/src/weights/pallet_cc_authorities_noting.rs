@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-template-simple-node
+// target/release/container-chain-template-frontier-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// container-chains/templates/simple/runtime/src/weights/pallet_cc_authorities_noting.rs
+// container-chains/templates/frontier/runtime/src/weights/pallet_cc_authorities_noting.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -66,22 +66,20 @@ impl<T: frame_system::Config> pallet_cc_authorities_noting::weights::WeightInfo 
 		// Proof Size summary in bytes:
 		//  Measured:  `141`
 		//  Estimated: `1626`
-		// Minimum execution time: 19_088_000 picoseconds.
-		Weight::from_parts(19_971_000, 1626)
+		// Minimum execution time: 18_814_000 picoseconds.
+		Weight::from_parts(19_280_000, 1626)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `AuthoritiesNoting::Authorities` (r:0 w:1)
 	/// Proof: `AuthoritiesNoting::Authorities` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[0, 10]`.
-	fn set_authorities(x: u32, ) -> Weight {
+	fn set_authorities(_x: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 4_348_000 picoseconds.
-		Weight::from_parts(4_670_343, 0)
-			// Standard Error: 1_286
-			.saturating_add(Weight::from_parts(37_636, 0).saturating_mul(x.into()))
+		// Minimum execution time: 4_346_000 picoseconds.
+		Weight::from_parts(6_111_148, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `AuthoritiesNoting::OrchestratorParaId` (r:0 w:1)
@@ -90,8 +88,8 @@ impl<T: frame_system::Config> pallet_cc_authorities_noting::weights::WeightInfo 
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 4_216_000 picoseconds.
-		Weight::from_parts(4_390_000, 0)
+		// Minimum execution time: 4_071_000 picoseconds.
+		Weight::from_parts(4_376_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }

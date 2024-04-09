@@ -31,6 +31,7 @@ pub use sp_runtime::BuildStorage;
 
 pub mod migrations;
 mod precompiles;
+pub mod weights;
 pub mod xcm_config;
 
 use {
@@ -506,7 +507,7 @@ impl pallet_balances::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<0>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -526,7 +527,7 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_parachain_system::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -568,14 +569,14 @@ parameter_types! {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -662,7 +663,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ deposit(0, 56) }>;
-    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 pub struct XcmExecutionManager;
@@ -833,7 +834,7 @@ impl pallet_tx_pause::Config for Runtime {
     type UnpauseOrigin = EnsureRoot<AccountId>;
     type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
-    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
 impl dp_impl_tanssi_pallets_config::Config for Runtime {
@@ -858,7 +859,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -935,6 +936,7 @@ mod benches {
         [pallet_assets, ForeignAssets]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
+        [pallet_xcm_executor_utils, XcmExecutorUtils]
     );
 }
 
@@ -1222,12 +1224,14 @@ impl_runtime_apis! {
                     use xcm_config::SelfReserve;
                     // AH can reserve transfer native token to some random parachain.
                     let random_para_id = 43211234;
+                    let balance = EXISTENTIAL_DEPOSIT * 10;
+
                     ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
                         random_para_id.into()
                     );
                     Some((
                         MultiAsset {
-                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            fun: Fungible(balance),
                             id: Concrete(SelfReserve::get())
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),

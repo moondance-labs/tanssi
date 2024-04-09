@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-template-simple-node
+// target/release/container-chain-template-frontier-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// container-chains/templates/simple/runtime/src/weights/pallet_multisig.rs
+// container-chains/templates/frontier/runtime/src/weights/pallet_multisig.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -63,50 +63,50 @@ impl<T: frame_system::Config> pallet_multisig::WeightInfo for SubstrateWeight<T>
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 16_231_000 picoseconds.
-		Weight::from_parts(17_100_117, 3997)
-			// Standard Error: 2
-			.saturating_add(Weight::from_parts(382, 0).saturating_mul(z.into()))
+		// Minimum execution time: 15_174_000 picoseconds.
+		Weight::from_parts(15_560_265, 3997)
+			// Standard Error: 14
+			.saturating_add(Weight::from_parts(508, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// The range of component `s` is `[2, 100]`.
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_create(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `296 + s * (2 ±0)`
-		//  Estimated: `6811`
-		// Minimum execution time: 35_394_000 picoseconds.
-		Weight::from_parts(27_832_752, 6811)
-			// Standard Error: 477
-			.saturating_add(Weight::from_parts(92_139, 0).saturating_mul(s.into()))
-			// Standard Error: 4
-			.saturating_add(Weight::from_parts(1_201, 0).saturating_mul(z.into()))
+		//  Measured:  `213`
+		//  Estimated: `5587`
+		// Minimum execution time: 35_305_000 picoseconds.
+		Weight::from_parts(29_081_880, 5587)
+			// Standard Error: 6_799
+			.saturating_add(Weight::from_parts(74_902, 0).saturating_mul(s.into()))
+			// Standard Error: 66
+			.saturating_add(Weight::from_parts(1_376, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// The range of component `s` is `[3, 100]`.
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_approve(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `315`
-		//  Estimated: `6811`
-		// Minimum execution time: 22_893_000 picoseconds.
-		Weight::from_parts(16_345_135, 6811)
-			// Standard Error: 322
-			.saturating_add(Weight::from_parts(76_294, 0).saturating_mul(s.into()))
-			// Standard Error: 3
-			.saturating_add(Weight::from_parts(1_151, 0).saturating_mul(z.into()))
+		//  Measured:  `279`
+		//  Estimated: `5587`
+		// Minimum execution time: 21_495_000 picoseconds.
+		Weight::from_parts(14_898_239, 5587)
+			// Standard Error: 1_222
+			.saturating_add(Weight::from_parts(69_077, 0).saturating_mul(s.into()))
+			// Standard Error: 11
+			.saturating_add(Weight::from_parts(1_267, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
 	/// Proof: `MaintenanceMode::MaintenanceMode` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `TxPause::PausedCalls` (r:1 w:0)
@@ -115,57 +115,57 @@ impl<T: frame_system::Config> pallet_multisig::WeightInfo for SubstrateWeight<T>
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_complete(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `467 + s * (33 ±0)`
-		//  Estimated: `6811 + s * (34 ±0)`
-		// Minimum execution time: 46_644_000 picoseconds.
-		Weight::from_parts(36_490_605, 6811)
-			// Standard Error: 601
-			.saturating_add(Weight::from_parts(119_734, 0).saturating_mul(s.into()))
-			// Standard Error: 5
-			.saturating_add(Weight::from_parts(1_217, 0).saturating_mul(z.into()))
+		//  Measured:  `390 + s * (20 ±0)`
+		//  Estimated: `5587 + s * (21 ±0)`
+		// Minimum execution time: 45_521_000 picoseconds.
+		Weight::from_parts(35_713_373, 5587)
+			// Standard Error: 916
+			.saturating_add(Weight::from_parts(110_120, 0).saturating_mul(s.into()))
+			// Standard Error: 8
+			.saturating_add(Weight::from_parts(1_341, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 34).saturating_mul(s.into()))
+			.saturating_add(Weight::from_parts(0, 21).saturating_mul(s.into()))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// The range of component `s` is `[2, 100]`.
 	fn approve_as_multi_create(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `296 + s * (2 ±0)`
-		//  Estimated: `6811`
-		// Minimum execution time: 24_825_000 picoseconds.
-		Weight::from_parts(26_468_055, 6811)
-			// Standard Error: 621
-			.saturating_add(Weight::from_parts(93_530, 0).saturating_mul(s.into()))
+		//  Measured:  `215`
+		//  Estimated: `5587`
+		// Minimum execution time: 25_543_000 picoseconds.
+		Weight::from_parts(26_719_474, 5587)
+			// Standard Error: 604
+			.saturating_add(Weight::from_parts(84_041, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// The range of component `s` is `[2, 100]`.
 	fn approve_as_multi_approve(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `315`
-		//  Estimated: `6811`
-		// Minimum execution time: 13_735_000 picoseconds.
-		Weight::from_parts(14_628_481, 6811)
-			// Standard Error: 397
-			.saturating_add(Weight::from_parts(73_937, 0).saturating_mul(s.into()))
+		//  Measured:  `279`
+		//  Estimated: `5587`
+		// Minimum execution time: 13_067_000 picoseconds.
+		Weight::from_parts(14_009_914, 5587)
+			// Standard Error: 343
+			.saturating_add(Weight::from_parts(65_834, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
-	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
+	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(2122), added: 4597, mode: `MaxEncodedLen`)
 	/// The range of component `s` is `[2, 100]`.
 	fn cancel_as_multi(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `487 + s * (1 ±0)`
-		//  Estimated: `6811`
-		// Minimum execution time: 26_204_000 picoseconds.
-		Weight::from_parts(27_635_186, 6811)
-			// Standard Error: 569
-			.saturating_add(Weight::from_parts(87_257, 0).saturating_mul(s.into()))
+		//  Measured:  `385`
+		//  Estimated: `5587`
+		// Minimum execution time: 26_725_000 picoseconds.
+		Weight::from_parts(27_979_241, 5587)
+			// Standard Error: 650
+			.saturating_add(Weight::from_parts(83_152, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}

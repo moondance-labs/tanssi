@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-template-simple-node
+// target/release/container-chain-template-frontier-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// container-chains/templates/simple/runtime/src/weights/pallet_utility.rs
+// container-chains/templates/frontier/runtime/src/weights/pallet_utility.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -63,10 +63,10 @@ impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 3_904_000 picoseconds.
-		Weight::from_parts(12_840_180, 3997)
-			// Standard Error: 2_664
-			.saturating_add(Weight::from_parts(5_086_675, 0).saturating_mul(c.into()))
+		// Minimum execution time: 3_976_000 picoseconds.
+		Weight::from_parts(26_292_190, 3997)
+			// Standard Error: 9_324
+			.saturating_add(Weight::from_parts(5_111_734, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
@@ -77,8 +77,8 @@ impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 8_708_000 picoseconds.
-		Weight::from_parts(8_886_000, 3997)
+		// Minimum execution time: 7_921_000 picoseconds.
+		Weight::from_parts(8_218_000, 3997)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
@@ -90,18 +90,18 @@ impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 3_850_000 picoseconds.
-		Weight::from_parts(13_322_784, 3997)
-			// Standard Error: 2_122
-			.saturating_add(Weight::from_parts(5_373_388, 0).saturating_mul(c.into()))
+		// Minimum execution time: 3_981_000 picoseconds.
+		Weight::from_parts(7_306_372, 3997)
+			// Standard Error: 3_721
+			.saturating_add(Weight::from_parts(5_394_837, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	fn dispatch_as() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_954_000 picoseconds.
-		Weight::from_parts(6_233_000, 0)
+		// Minimum execution time: 5_945_000 picoseconds.
+		Weight::from_parts(6_261_000, 0)
 	}
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
 	/// Proof: `MaintenanceMode::MaintenanceMode` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -112,10 +112,10 @@ impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 3_849_000 picoseconds.
-		Weight::from_parts(7_868_762, 3997)
-			// Standard Error: 2_285
-			.saturating_add(Weight::from_parts(5_098_383, 0).saturating_mul(c.into()))
+		// Minimum execution time: 3_841_000 picoseconds.
+		Weight::from_parts(8_487_316, 3997)
+			// Standard Error: 3_726
+			.saturating_add(Weight::from_parts(5_142_055, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 }

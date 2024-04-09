@@ -32,6 +32,6 @@ pub mod pallet_proxy;
 
 pub mod pallet_sudo;
 pub mod pallet_timestamp;
-pub mod utility;
-
-pub mod xcm;
+pub mod pallet_tx_pause;
+pub mod pallet_utility;
+pub mod pallet_xcm;
