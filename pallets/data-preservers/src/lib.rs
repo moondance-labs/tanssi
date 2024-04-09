@@ -60,6 +60,13 @@ pub mod pallet {
         pub _phantom: PhantomData<T>,
     }
 
+    #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+
+    pub enum Assignment {
+        AssignedForFree(ParaId),
+    }
+
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
@@ -98,6 +105,8 @@ pub mod pallet {
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        /// Who can call force_assignment?
+        type ForceAssignmentOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         #[pallet::constant]
         type MaxBootNodes: Get<u32>;
@@ -112,6 +121,8 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// The list of boot_nodes changed.
         BootNodesChanged { para_id: ParaId },
+        /// Assignment was forcefully changed.
+        ForcedAssignment { assignee: T::AccountId },
     }
 
     #[pallet::error]
@@ -129,6 +140,11 @@ pub mod pallet {
         BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn assignment)]
+    pub type Assignments<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, Assignment, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -148,6 +164,22 @@ pub mod pallet {
             BootNodes::<T>::insert(para_id, boot_nodes);
 
             Self::deposit_event(Event::BootNodesChanged { para_id });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::force_assignment())]
+        pub fn force_assignment(
+            origin: OriginFor<T>,
+            assignee: T::AccountId,
+            assignement: Option<Assignment>,
+        ) -> DispatchResult {
+            T::ForceAssignmentOrigin::ensure_origin(origin)?;
+
+            Assignments::<T>::set(assignee.clone(), assignement);
+
+            Self::deposit_event(Event::ForcedAssignment { assignee });
 
             Ok(())
         }

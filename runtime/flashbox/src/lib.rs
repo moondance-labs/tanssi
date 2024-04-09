@@ -22,10 +22,13 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_services_payment::ProvideCollatorAssignmentCost;
-use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+
+use {
+    pallet_services_payment::ProvideCollatorAssignmentCost,
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
+};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -752,11 +755,13 @@ impl pallet_services_payment::Config for Runtime {
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type SetBootNodesOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type ForceAssignmentOrigin = EnsureRoot<AccountId>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;

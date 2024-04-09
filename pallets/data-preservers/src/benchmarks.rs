@@ -18,10 +18,10 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
+    crate::{Assignment, Call, Config, Pallet},
     frame_benchmarking::v2::*,
     frame_support::{
-        traits::{EnsureOriginWithArg, OriginTrait},
+        traits::{EnsureOrigin, EnsureOriginWithArg, OriginTrait},
         BoundedVec,
     },
     frame_system::RawOrigin,
@@ -53,6 +53,29 @@ mod benchmarks {
         Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
 
         assert_eq!(Pallet::<T>::boot_nodes(para_id), boot_nodes);
+    }
+
+    #[benchmark]
+    fn force_assignment() {
+        let origin = T::ForceAssignmentOrigin::try_successful_origin()
+            .expect("failed to create ForceAssignmentOrigin");
+
+        // TODO: Do we want non-root callers?
+        // // Worst case is when caller is not root
+        // let raw_origin = origin.as_system_ref();
+        // assert!(matches!(raw_origin, Some(RawOrigin::Signed(..))));
+
+        let assignee: T::AccountId = account("alice", 0, 0);
+        let assignment = Some(Assignment::AssignedForFree(5.into()));
+
+        #[extrinsic_call]
+        Pallet::<T>::force_assignment(
+            origin as T::RuntimeOrigin,
+            assignee.clone(),
+            assignment.clone(),
+        );
+
+        assert_eq!(Pallet::<T>::assignment(assignee), assignment);
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

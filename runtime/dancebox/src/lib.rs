@@ -909,6 +909,7 @@ impl pallet_data_preservers::Config for Runtime {
     type Currency = Balances;
     type SetBootNodesOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type ForceAssignmentOrigin = EnsureRoot<AccountId>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;

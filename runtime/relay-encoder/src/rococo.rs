@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use cumulus_primitives_core::ParaId;
-use parity_scale_codec::Encode;
+use {cumulus_primitives_core::ParaId, parity_scale_codec::Encode};
 
 pub type Balance = u128;
 
@@ -36,8 +35,9 @@ pub enum OnDemandAssignmentProviderCall {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
+    use {
+        super::*, polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
+    };
 
     #[test]
     fn encode_place_order_allow_death() {
