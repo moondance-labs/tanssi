@@ -78,21 +78,10 @@ async function main(args: any) {
     await fs.mkdir("tmp", { recursive: true });
     const tmpDir = await fs.mkdtemp("tmp/base-path");
     try {
-        // Generate plain chain spec
-        const generateChainSpecCmd = `${binaryPath} build-spec --chain ${args.argv.Chain} > tmp/${args.argv.Chain}.json`;
-        console.log(`🗃️  ${generateChainSpecCmd}`);
-        await spawn(generateChainSpecCmd);
-
-        // Generate raw chain spec
-        const generateRawChainSpecCmd =
-            `${binaryPath} build-spec --chain tmp/${args.argv.Chain}.json ` + `--raw > tmp/${args.argv.Chain}-raw.json`;
-        console.log(`🗃️  ${generateRawChainSpecCmd}`);
-        await spawn(generateRawChainSpecCmd);
-
         // Generate precompiled wasm
         const command =
             `${binaryPath} precompile-wasm --log=wasmtime-runtime --base-path=${tmpDir} ` +
-            `--chain tmp/${args.argv.Chain}-raw.json ${outputDirectory}`;
+            `--chain ${args.argv.Chain} ${outputDirectory}`;
         console.log(`🗃️  ${command}`);
         await spawn(command);
     } finally {
