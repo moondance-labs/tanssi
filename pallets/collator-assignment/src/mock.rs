@@ -31,7 +31,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    sp_std::collections::btree_map::BTreeMap,
+    sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     tp_traits::{
         CollatorAssignmentHook, CollatorAssignmentTip, ParaId, ParathreadParams,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, SessionContainerChains,
@@ -345,7 +345,10 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
 pub struct RemoveParaIdsAbove5000;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>, _old_assigned: &Vec<ParaId>) {
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
+    ) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
     }
 

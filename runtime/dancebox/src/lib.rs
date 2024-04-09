@@ -92,7 +92,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::{marker::PhantomData, prelude::*},
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
@@ -784,7 +784,7 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(
         para_ids: &mut Vec<ParaId>,
-        currently_assigned: &Vec<ParaId>,
+        currently_assigned: &BTreeSet<ParaId>,
     ) {
         let blocks_per_session = Period::get();
 

@@ -54,7 +54,7 @@ use {
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{fmt::Debug, prelude::*, vec},
+    sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
         CollatorAssignmentHook, CollatorAssignmentTip, GetContainerChainAuthor,
         GetHostConfiguration, GetSessionContainerChains, ParaId, RemoveInvulnerables,
@@ -182,7 +182,8 @@ pub mod pallet {
 
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
-            let old_assigned_para_ids = old_assigned.container_chains.keys().cloned().collect();
+            let old_assigned_para_ids: BTreeSet<ParaId> =
+                old_assigned.container_chains.keys().cloned().collect();
 
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(

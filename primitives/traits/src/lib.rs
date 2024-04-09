@@ -28,7 +28,7 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
         BoundedVec,
     },
-    sp_std::vec::Vec,
+    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
@@ -192,7 +192,10 @@ pub trait RemoveInvulnerables<AccountId> {
 pub trait RemoveParaIdsWithNoCredits {
     /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
     /// will be the first one to get collators.
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>, old_assigned: &Vec<ParaId>);
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        currently_assigned: &BTreeSet<ParaId>,
+    );
 
     /// Make those para ids valid by giving them enough credits, for benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
