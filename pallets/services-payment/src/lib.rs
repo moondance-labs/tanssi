@@ -630,5 +630,7 @@ impl<T: Config> Pallet<T> {
         // Clean credits
         BlockProductionCredits::<T>::remove(para_id);
         CollatorAssignmentCredits::<T>::remove(para_id);
+        MaxTip::<T>::remove(para_id);
+        MaxCorePrice::<T>::remove(para_id);
     }
 }
