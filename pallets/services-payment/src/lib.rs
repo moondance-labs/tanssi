@@ -300,11 +300,15 @@ pub mod pallet {
         pub fn set_max_tip(
             origin: OriginFor<T>,
             para_id: ParaId,
-            max_tip: BalanceOf<T>,
+            max_tip: Option<BalanceOf<T>>,
         ) -> DispatchResultWithPostInfo {
             T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
-            MaxTip::<T>::insert(para_id, max_tip);
+            if let Some(max_tip) = max_tip {
+                MaxTip::<T>::insert(para_id, max_tip);
+            } else {
+                MaxTip::<T>::remove(para_id);
+            }
 
             Ok(().into())
         }

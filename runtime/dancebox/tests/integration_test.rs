@@ -5902,7 +5902,7 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id.into(),
-                max_tip,
+                Some(max_tip),
             ));
 
             run_to_session(2);
@@ -5951,7 +5951,7 @@ fn test_collator_assignment_tip_charged_on_congestion() {
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id.into(),
-                max_tip,
+                Some(max_tip),
             ));
 
             run_to_session(1);
@@ -5999,7 +5999,7 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id.into(),
-                max_tip,
+                Some(max_tip),
             ));
 
             run_to_session(1);
@@ -6058,7 +6058,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id_with_tip.into(),
-                max_tip,
+                Some(max_tip),
             ));
 
             run_to_session(2);
@@ -6131,12 +6131,12 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id_1003.into(),
-                max_tip_1003,
+                Some(max_tip_1003),
             ));
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id_1002.into(),
-                max_tip_1002,
+                Some(max_tip_1002),
             ));
 
             run_to_session(2);

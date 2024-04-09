@@ -204,7 +204,7 @@ mod benchmarks {
         assert_ok!(Pallet::<T>::set_max_tip(
             RawOrigin::Root.into(),
             para_id.into(),
-            tip.into()
+            Some(tip.into())
         ));
         #[block]
         {
@@ -224,7 +224,7 @@ mod benchmarks {
         assert!(crate::MaxTip::<T>::get(para_id).is_none());
 
         #[extrinsic_call]
-        Pallet::<T>::set_max_tip(RawOrigin::Root, para_id, 1_000_000u32.into());
+        Pallet::<T>::set_max_tip(RawOrigin::Root, para_id, Some(1_000_000u32.into()));
 
         assert!(crate::MaxTip::<T>::get(para_id).is_some());
     }

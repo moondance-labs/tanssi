@@ -442,7 +442,7 @@ fn tip_should_be_charged_on_collators_assignment() {
             assert_ok!(PaymentServices::set_max_tip(
                 RuntimeOrigin::root(),
                 para_id.into(),
-                tip,
+                Some(tip),
             ));
 
             assert_eq!(
@@ -492,7 +492,7 @@ fn insufficient_balance_for_tip_reimburses_fee_imbalance() {
             assert_ok!(PaymentServices::set_max_tip(
                 RuntimeOrigin::root(),
                 para_id.into(),
-                tip,
+                Some(tip),
             ));
 
             // it should fail when trying to withdraw the tip
