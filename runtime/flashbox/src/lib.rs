@@ -767,7 +767,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type SetRefundAddressOrigin =
+    type ManagerOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type SetMaxTipOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;

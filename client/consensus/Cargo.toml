@@ -65,6 +65,7 @@ futures = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 tokio = { workspace = true }
+tokio-util = { workspace = true, features = [ "rt" ] }
 tracing = { workspace = true }
 
 [dev-dependencies]

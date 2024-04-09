@@ -166,6 +166,7 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
     type GetBlockNumber = ();
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
+    type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
     type MaxParathreads = ConstU32<100>;

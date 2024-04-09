@@ -466,6 +466,11 @@ declare module "@polkadot/api-base/types/events" {
                 [paraId: u32, payer: AccountId32, credit: u128],
                 { paraId: u32; payer: AccountId32; credit: u128 }
             >;
+            MaxCorePriceUpdated: AugmentedEvent<
+                ApiType,
+                [paraId: u32, maxCorePrice: Option<u128>],
+                { paraId: u32; maxCorePrice: Option<u128> }
+            >;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,
                 [paraId: u32, refundAddress: Option<AccountId32>],

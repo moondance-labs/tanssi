@@ -49,13 +49,31 @@ describeSuite({
                         })
                     ).toBigInt();
 
-                    const auto = (
+                    const autoCompoundingSharesTotalStaked = (
                         await api.query.pooledStaking.pools(candidate, {
-                            AutoCompoundingSharesHeldStake: {
+                            AutoCompoundingSharesTotalStaked: {},
+                        })
+                    ).toBigInt();
+
+                    const autoCompoundingSharesSupply = (
+                        await api.query.pooledStaking.pools(candidate, {
+                            AutoCompoundingSharesSupply: {},
+                        })
+                    ).toBigInt();
+
+                    const autoCompoundingSharesOfCandidate = (
+                        await api.query.pooledStaking.pools(candidate, {
+                            AutoCompoundingShares: {
                                 delegator: candidate,
                             },
                         })
                     ).toBigInt();
+
+                    // auto stake is calculated using this method as the AutoCompoundingSharesHeldStake is not updated with rewards received
+                    // by the candidate, rather the value of each share of candidate increases.
+                    const auto =
+                        (autoCompoundingSharesOfCandidate * autoCompoundingSharesTotalStaked) /
+                        autoCompoundingSharesSupply;
 
                     const manual = (
                         await api.query.pooledStaking.pools(candidate, {
