@@ -14,20 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! # Author Noting Pallet
-//!
-//! This pallet notes the author of the different containerChains that have registered:
-//!
-//! The set of container chains is retrieved thanks to the GetContainerChains trait
-//! For each containerChain, we inspect the Header stored in the relayChain as
-//! a generic header. This is the first requirement for containerChains.
-//!
-//! The second requirement is that an Aura digest with the slot number for the containerChains
-//! needs to exist
-//!  
-//! Using those two requirements we can select who the author was based on the collators assigned
-//! to that containerChain, by simply assigning the slot position.
-
 use {
     crate::{
         self as pallet_services_payment, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
@@ -121,7 +107,7 @@ impl pallet_services_payment::Config for Test {
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type SetRefundAddressOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 

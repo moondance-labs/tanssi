@@ -1,6 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
+import { hasEnoughCredits } from "util/payment";
+import { u32, Vec } from "@polkadot/types-codec";
 
 describeSuite({
     id: "S04",
@@ -8,9 +10,14 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let blocksPerSession;
+        const costPerSession = 100_000_000n;
+        const costPerBlock = 1_000_000n;
 
         beforeAll(() => {
             api = context.polkadotJs();
+            const chain = api.consts.system.version.specName.toString();
+            blocksPerSession = chain == "Dancebox" ? 300n : 5n;
         });
 
         it({
@@ -56,21 +63,48 @@ describeSuite({
                 const config = await api.query.configuration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
-                // get current authorities
-                const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
+                // get pending authorities
+                // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
+                const authorities = (
+                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
+                ).toJSON();
 
                 // If we have container chain collators, is because we at least assigned min to orchestrator
                 if (
                     Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()
                 ) {
+                    let containersToCompareAgainst: Vec<u32>;
+                    // If pending para ids for the session are empty we compare with registered para id, otherwise
+                    // we compare with pending para ids.
                     const liveContainers = await api.query.registrar.registeredParaIds();
+                    const pendingContainers = await api.query.registrar.pendingParaIds();
 
-                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
+                    if (pendingContainers.length == 0) {
+                        containersToCompareAgainst = liveContainers;
+                    } else {
+                        const foundEntry = pendingContainers.find((entry) => entry[0].toNumber() === sessionIndex + 1);
+                        if (foundEntry) {
+                            containersToCompareAgainst = foundEntry[1];
+                        } else {
+                            containersToCompareAgainst = liveContainers;
+                        }
+                    }
 
-                    for (const container of liveContainers) {
-                        expect(authorities["containerChains"][container.toString()].length).to.be.equal(
-                            config["collatorsPerContainer"].toNumber()
-                        );
+                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
+                        containersToCompareAgainst.length
+                    );
+
+                    // This should be true as long as they have enough credits for getting collators
+                    for (const container of containersToCompareAgainst) {
+                        // we should only check those who have enough credits
+                        if (
+                            await hasEnoughCredits(api, container, blocksPerSession, 2n, costPerSession, costPerBlock)
+                        ) {
+                            // A different test checks that this number is correct with respect to configuration
+                            // test-collator-number-consistency
+                            // Here we only check that  that we have collators
+                            expect(authorities["containerChains"][container.toString()].length).to.be.greaterThan(0);
+                        }
                     }
                 }
             },

@@ -89,7 +89,7 @@ pub mod pallet {
     /// Data preservers pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
-    pub struct Pallet<T>(core::marker::PhantomData<T>);
+    pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -99,7 +99,9 @@ pub mod pallet {
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
+        #[pallet::constant]
         type MaxBootNodes: Get<u32>;
+        #[pallet::constant]
         type MaxBootNodeUrlLen: Get<u32>;
 
         type WeightInfo: WeightInfo;

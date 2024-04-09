@@ -60,16 +60,7 @@ describeSuite({
             expect(header2001.number.toNumber()).to.be.equal(0);
 
             // Initialize list of all collators, this should match the names from build-spec.sh script
-            allCollators = [
-                "Collator-01",
-                "Collator-02",
-                "Collator-03",
-                "Collator-04",
-                "Collator-05",
-                "Collator-06",
-                "Collator-07",
-                "Collator-08",
-            ];
+            allCollators = ["Collator-01", "Collator-02", "Collator-03", "Collator-04"];
             // Initialize reverse map of collator key to collator name
             collatorName = createCollatorKeyToNameMap(paraApi, allCollators);
             console.log(collatorName);
@@ -87,15 +78,11 @@ describeSuite({
         it({
             id: "T02",
             title: "Disable full_rotation",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-                //const tx2 = await paraApi.tx.configuration.setMinOrchestratorCollators(1);
-                //const tx3 = await paraApi.tx.configuration.setMaxOrchestratorCollators(1);
                 const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(0);
-                //const tx1234 = paraApi.tx.utility.batchAll([tx1, tx2, tx3, tx4]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx4), alice);
             },
         });
@@ -103,7 +90,7 @@ describeSuite({
         it({
             id: "T03a",
             title: "Register parathreads 2000 and 2001",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -195,7 +182,7 @@ describeSuite({
         it({
             id: "T08",
             title: "Test author noting is correct for both containers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
@@ -240,7 +227,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Transactions can be made with ethers",
-            timeout: 60000,
+            timeout: 120000,
             test: async function () {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
@@ -258,7 +245,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Check block frequency of parathreads",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 // Wait 1 session so that parathreads have produced at least a few blocks each
                 await waitSessions(context, paraApi, 2);

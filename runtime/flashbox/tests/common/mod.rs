@@ -17,6 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
+    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     flashbox_runtime::{
         AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
         MaxBootNodes, MaxLengthTokenSymbol,
@@ -37,9 +38,9 @@ use {
     sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
+use flashbox_runtime::TransactionPayment;
 pub use flashbox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
@@ -78,9 +79,7 @@ pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
     summaries
 }
 
-pub fn run_block() -> RunSummary {
-    let slot = current_slot() + 1;
-
+pub fn insert_authorities_and_slot_digests(slot: u64) {
     let authorities =
         Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
 
@@ -99,6 +98,12 @@ pub fn run_block() -> RunSummary {
         &System::parent_hash(),
         &pre_digest,
     );
+}
+
+pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
+    let slot = current_slot() + 1;
+
+    insert_authorities_and_slot_digests(slot);
 
     // Initialize the new block
     CollatorAssignment::on_initialize(System::block_number());
@@ -122,16 +127,24 @@ pub fn run_block() -> RunSummary {
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
 
+    // Do any operation needed
+    operation_fn(slot);
+
     // Finalize the block
     CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
+    TransactionPayment::on_finalize(System::block_number());
 
     RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
     }
+}
+
+pub fn run_block() -> RunSummary {
+    run_block_with_operation(|_slot| {})
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
@@ -485,7 +498,7 @@ pub fn current_author() -> AccountId {
 
 pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
     let block_cost = BlockProductionCost::block_cost(&para_id).0;
-    (number_of_blocks as u128).saturating_mul(block_cost)
+    u128::from(number_of_blocks).saturating_mul(block_cost)
 }
 
 pub fn collator_assignment_credits_to_required_balance(
@@ -493,7 +506,7 @@ pub fn collator_assignment_credits_to_required_balance(
     para_id: ParaId,
 ) -> Balance {
     let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
-    (number_of_sessions as u128).saturating_mul(collator_assignment_cost)
+    u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
 }
 
 pub const ALICE: [u8; 32] = [4u8; 32];

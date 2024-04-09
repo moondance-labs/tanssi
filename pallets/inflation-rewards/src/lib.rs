@@ -57,7 +57,7 @@ pub mod pallet {
     /// Inflation rewards pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
-    pub struct Pallet<T>(core::marker::PhantomData<T>);
+    pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -139,18 +139,21 @@ pub mod pallet {
         type GetSelfChainBlockAuthor: Get<Self::AccountId>;
 
         /// Inflation rate per orchestrator block (proportion of the total issuance)
+        #[pallet::constant]
         type InflationRate: Get<Perbill>;
 
         /// What to do with the new supply not dedicated to staking
         type OnUnbalanced: OnUnbalanced<CreditOf<Self>>;
 
         /// The account that will store rewards waiting to be paid out
+        #[pallet::constant]
         type PendingRewardsAccount: Get<Self::AccountId>;
 
         /// Staking rewards distribution implementation
         type StakingRewardsDistributor: DistributeRewards<Self::AccountId, CreditOf<Self>>;
 
         /// Proportion of the new supply dedicated to staking
+        #[pallet::constant]
         type RewardsPortion: Get<Perbill>;
     }
 

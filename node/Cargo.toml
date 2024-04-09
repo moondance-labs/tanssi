@@ -23,10 +23,12 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
+dp-slot-duration-runtime-api = { workspace = true }
 flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
@@ -52,6 +54,7 @@ sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
+sc-consensus-aura = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
 sc-executor = { workspace = true }
 sc-network = { workspace = true }

@@ -93,6 +93,7 @@ pub trait GetCurrentContainerChains {
 /// tanssi slot time, 12 seconds by default.
 // TODO: this is currently ignored
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
     /// every `x >= 10` slots, but they are not enforced to. If collators produce a block after less than 10
@@ -111,6 +112,7 @@ impl Default for SlotFrequency {
 }
 
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct ParathreadParams {
     pub slot_frequency: SlotFrequency,
 }
@@ -139,6 +141,7 @@ pub trait GetContainerChainAuthor<AccountId> {
 /// Returns the host configuration composed of the amount of collators assigned
 /// to the orchestrator chain, and how many collators are assigned per container chain.
 pub trait GetHostConfiguration<SessionIndex> {
+    fn max_collators(session_index: SessionIndex) -> u32;
     fn min_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;

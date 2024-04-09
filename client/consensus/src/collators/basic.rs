@@ -24,7 +24,7 @@ use {
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
-        relay_chain::{BlockId as RBlockId, Hash as PHash},
+        relay_chain::{BlockId as RBlockId, Hash as PHash, OccupiedCoreAssumption},
         PersistedValidationData,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -130,6 +130,8 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
         collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
     };
 
+    let mut last_processed_slot = 0;
+
     while let Some(request) = collation_requests.next().await {
         macro_rules! reject_with_error {
 				($err:expr) => {{
@@ -155,6 +157,19 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
         ));
 
         let parent_hash = parent_header.hash();
+
+        // Evaluate whether we can build on top
+        // The requirement is that the parent_hash is the last included block in the relay
+        let can_build = can_build_upon_included::<Block, _>(
+            parent_hash,
+            &collator.relay_client,
+            params.para_id,
+            *request.relay_parent(),
+        )
+        .await;
+        if !can_build {
+            continue;
+        }
 
         // Check whether we can build upon this block
         if !collator
@@ -211,6 +226,18 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
             Ok(Some(h)) => h,
         };
 
+        // With async backing this function will be called every relay chain block.
+        //
+        // Most parachains currently run with 12 seconds slots and thus, they would try to
+        // produce multiple blocks per slot which very likely would fail on chain. Thus, we have
+        // this "hack" to only produce on block per slot.
+        //
+        // With https://github.com/paritytech/polkadot-sdk/issues/3168 this implementation will be
+        // obsolete and also the underlying issue will be fixed.
+        if last_processed_slot >= *claim.slot() {
+            continue;
+        }
+
         let (parachain_inherent_data, other_inherent_data) = try_request!(
             collator
                 .create_inherent_data(*request.relay_parent(), validation_data, parent_hash, None,)
@@ -244,5 +271,34 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
             request.complete(None);
             tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
         }
+        last_processed_slot = *claim.slot();
     }
+}
+
+// Checks whether we can build upon the last included block
+// Essentially checks that the latest head we are trying to build
+// is the one included in the relay
+async fn can_build_upon_included<Block: BlockT, RClient>(
+    parent_hash: Block::Hash,
+    relay_client: &RClient,
+    para_id: ParaId,
+    relay_parent: PHash,
+) -> bool
+where
+    RClient: RelayChainInterface + Send + Clone + 'static,
+{
+    let included_header = relay_client
+        .persisted_validation_data(relay_parent, para_id, OccupiedCoreAssumption::TimedOut)
+        .await;
+
+    if let Ok(Some(included_header)) = included_header {
+        let decoded = Block::Header::decode(&mut &included_header.parent_head.0[..]).ok();
+        if let Some(decoded_header) = decoded {
+            let included_hash = decoded_header.hash();
+            if parent_hash == included_hash {
+                return true;
+            }
+        }
+    }
+    false
 }

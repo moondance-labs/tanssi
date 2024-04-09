@@ -346,7 +346,7 @@ describeSuite({
             test: async function () {
                 // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
                 // TODO: don't hardcode the period here
-                const sessionPeriod = 5;
+                const sessionPeriod = 10;
                 // The block range must start and end on session boundaries
                 expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
                 expect(blockNumber2002End % sessionPeriod).to.be.equal(0);
@@ -363,7 +363,7 @@ describeSuite({
 
                 // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
                 // We take from the first block that rotates, otherwise rotation kicks in
-                await countUniqueBlockAuthors(paraApi, sessionPeriod * 5, blockNumber2002End - 1, 2);
+                await countUniqueBlockAuthors(paraApi, sessionPeriod * 10, blockNumber2002End - 1, 2);
 
                 // Need to wait one session because the following blocks don't exist yet
                 await waitSessions(context, paraApi, 1);

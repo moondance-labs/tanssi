@@ -170,6 +170,7 @@ pub mod pallet {
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
+        #[pallet::constant]
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
@@ -528,6 +529,19 @@ pub mod pallet {
     }
 
     impl<T: Config> GetHostConfiguration<T::SessionIndex> for Pallet<T> {
+        fn max_collators(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.max_collators
+        }
+
         fn collators_per_container(session_index: T::SessionIndex) -> u32 {
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()

@@ -16,9 +16,10 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        currency::MICROUNIT, AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances,
+        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
+        PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+        TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -33,7 +34,7 @@ use {
         DefaultTrustPolicy,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
     staging_xcm::latest::prelude::*,
@@ -77,6 +78,8 @@ parameter_types! {
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorMultiLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+
+    pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -164,7 +167,7 @@ pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstruct
 /// queues.
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
@@ -234,6 +237,12 @@ impl pallet_xcm::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
+pub type PriceForSiblingParachainDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, XcmpQueue>;
+
+pub type PriceForParentDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
+
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ChannelInfo = ParachainSystem;
@@ -241,7 +250,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
-    type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
@@ -352,6 +361,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type OnForeignAssetCreated = ();
+    type OnForeignAssetDestroyed = ();
 }
 
 impl pallet_asset_rate::Config for Runtime {

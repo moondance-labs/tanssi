@@ -51,7 +51,7 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {
-        "Parachain Collator Template".into()
+        "Container Chain Simple Node".into()
     }
 
     fn impl_version() -> String {
@@ -60,7 +60,7 @@ impl SubstrateCli for Cli {
 
     fn description() -> String {
         format!(
-            "Parachain Collator Template\n\nThe command-line arguments provided first will be \
+            "Container Chain Simple Node\n\nThe command-line arguments provided first will be \
         passed to the parachain node, while the arguments provided after -- will be passed \
         to the relay chain node.\n\n\
         {} <parachain-args> -- <relay-chain-args>",
@@ -87,7 +87,7 @@ impl SubstrateCli for Cli {
 
 impl SubstrateCli for RelayChainCli {
     fn impl_name() -> String {
-        "Parachain Collator Template".into()
+        "Container Chain Simple Node".into()
     }
 
     fn impl_version() -> String {
@@ -96,7 +96,7 @@ impl SubstrateCli for RelayChainCli {
 
     fn description() -> String {
         format!(
-            "Parachain Collator Template\n\nThe command-line arguments provided first will be \
+            "Container Chain Simple Node\n\nThe command-line arguments provided first will be \
         passed to the parachain node, while the arguments provided after -- will be passed \
         to the relay chain node.\n\n\
         {} <parachain-args> -- <relay-chain-args>",
@@ -286,7 +286,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::RpcProvider(cmd)) => {
             let runner = cli.create_runner(&cli.run.normalize())?;
 
-            runner.run_node_until_exit(|config| async move {
+            runner.run_node_until_exit(|_config| async move {
                 let client: Box<dyn OrchestratorChainInterface>;
                 let mut task_manager;
 
@@ -296,7 +296,7 @@ pub fn run() -> Result<()> {
                     task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
                         .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
-                    client = orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                    client = dc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
                         cmd.orchestrator_endpoints.clone(),
                         &mut task_manager,
                         None,

@@ -21,6 +21,7 @@ use {
         AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
         MaxBootNodes, MaxLengthTokenSymbol,
     },
+    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -37,11 +38,11 @@ use {
     sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
 mod xcm;
 
+use dancebox_runtime::TransactionPayment;
 pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
@@ -102,7 +103,7 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
     );
 }
 
-pub fn run_block() -> RunSummary {
+pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
     let slot = current_slot() + 1;
 
     insert_authorities_and_slot_digests(slot);
@@ -129,16 +130,24 @@ pub fn run_block() -> RunSummary {
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
 
+    // Do any operation needed
+    operation_fn(slot);
+
     // Finalize the block
     CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
+    TransactionPayment::on_finalize(System::block_number());
 
     RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
     }
+}
+
+pub fn run_block() -> RunSummary {
+    run_block_with_operation(|_slot| {})
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
@@ -150,7 +159,7 @@ pub fn set_parachain_inherent_data() {
     let relay_sproof = RelayStateSproofBuilder {
         para_id: 100u32.into(),
         included_para_head: Some(HeadData(vec![1, 2, 3])),
-        current_slot: (current_slot() * 2).into(),
+        current_slot: (current_slot()).into(),
         ..Default::default()
     };
 
@@ -192,7 +201,7 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 
         sproof.para_id = 100u32.into();
         sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
-        sproof.current_slot = (slot * 2).into();
+        sproof.current_slot = (slot).into();
 
         sproof.into_state_root_and_proof()
     };
@@ -563,7 +572,7 @@ pub fn current_author() -> AccountId {
 
 pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
     let block_cost = BlockProductionCost::block_cost(&para_id).0;
-    (number_of_blocks as u128).saturating_mul(block_cost)
+    u128::from(number_of_blocks).saturating_mul(block_cost)
 }
 
 pub fn collator_assignment_credits_to_required_balance(
@@ -571,7 +580,7 @@ pub fn collator_assignment_credits_to_required_balance(
     para_id: ParaId,
 ) -> Balance {
     let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
-    (number_of_sessions as u128).saturating_mul(collator_assignment_cost)
+    u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
 }
 
 pub const ALICE: [u8; 32] = [4u8; 32];

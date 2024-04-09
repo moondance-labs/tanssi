@@ -16,10 +16,10 @@
 
 use {
     super::{
-        precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId, AllPalletsWithSystem,
-        AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue,
-        ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall,
-        RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
+        MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
+        RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
@@ -30,6 +30,9 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
+    pallet_foreign_asset_creator::{
+        AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
+    },
     pallet_xcm::XcmPassthrough,
     pallet_xcm_executor_utils::{
         filters::{IsReserveFilter, IsTeleportFilter},
@@ -39,7 +42,7 @@ use {
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
     },
-    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
+    polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     sp_std::vec::Vec,
@@ -83,6 +86,8 @@ parameter_types! {
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorMultiLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+
+    pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -170,7 +175,7 @@ pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstruct
 /// queues.
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
@@ -240,6 +245,12 @@ impl pallet_xcm::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
+pub type PriceForSiblingParachainDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, XcmpQueue>;
+
+pub type PriceForParentDelivery =
+    ExponentialPrice<SelfReserve, BaseDeliveryFee, TransactionByteFee, ParachainSystem>;
+
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ChannelInfo = ParachainSystem;
@@ -247,7 +258,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
-    type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
+    type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
 }
@@ -376,6 +387,33 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
+pub struct RevertCodePrecompileHook;
+
+impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Runtime>>
+    for RevertCodePrecompileHook
+{
+    fn on_asset_created(
+        _foreign_asset: &MultiLocation,
+        asset_id: &AssetIdOf<Runtime>,
+        _min_balance: &AssetBalance<Runtime>,
+    ) {
+        let revert_bytecode = [0x60, 0x00, 0x60, 0x00, 0xFD].to_vec();
+        let prefix_slice = [255u8; 18];
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
+
+        pallet_evm::Pallet::<Runtime>::create_account(account_id.into(), revert_bytecode.clone());
+    }
+}
+
+impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for RevertCodePrecompileHook {
+    fn on_asset_destroyed(_foreign_asset: &MultiLocation, asset_id: &AssetIdOf<Runtime>) {
+        let prefix_slice = [255u8; 18];
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
+
+        pallet_evm::Pallet::<Runtime>::remove_account(&account_id.into());
+    }
+}
+
 impl pallet_foreign_asset_creator::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ForeignAsset = MultiLocation;
@@ -384,6 +422,8 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type OnForeignAssetCreated = RevertCodePrecompileHook;
+    type OnForeignAssetDestroyed = RevertCodePrecompileHook;
 }
 
 impl pallet_asset_rate::Config for Runtime {
@@ -437,3 +477,17 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
 pub type AssetRateAsMultiplier =
     AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
+
+#[test]
+fn test_asset_id_to_account_conversion() {
+    let prefix_slice = [255u8].repeat(18);
+    let asset_ids_to_check = vec![0u16, 123u16, 3453u16, 10000u16, 65535u16];
+    for current_asset_id in asset_ids_to_check {
+        let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), current_asset_id);
+        assert_eq!(
+            account_id.to_string().to_lowercase(),
+            String::from("0xffffffffffffffffffffffffffffffffffff")
+                + format!("{:04x}", current_asset_id).as_str()
+        );
+    }
+}

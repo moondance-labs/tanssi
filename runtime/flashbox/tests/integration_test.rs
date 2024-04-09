@@ -18,9 +18,12 @@
 
 use {
     common::*,
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{ParaId, Weight},
+    dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
+    flashbox_runtime::TransactionPayment,
     frame_support::{assert_noop, assert_ok, BoundedVec},
+    frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
@@ -39,7 +42,6 @@ use {
     },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     tp_traits::SlotFrequency,
 };
 
@@ -1777,7 +1779,8 @@ fn test_author_noting_not_self_para() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 5.into(),
                 })
             );
         });
@@ -1811,14 +1814,16 @@ fn test_author_noting_set_author_and_kill_author_data() {
                 root_origin(),
                 other_para,
                 1,
-                AccountId::from(DAVE)
+                AccountId::from(DAVE),
+                1.into()
             ));
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 1.into(),
                 })
             );
 
@@ -1857,7 +1862,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
                     origin_of(ALICE.into()),
                     other_para,
                     1,
-                    AccountId::from(DAVE)
+                    AccountId::from(DAVE),
+                    1.into()
                 ),
                 BadOrigin
             );
@@ -1922,7 +1928,8 @@ fn test_author_noting_runtime_api() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE)
+                    author: AccountId::from(DAVE),
+                    latest_slot_number: 5.into(),
                 })
             );
 
@@ -3442,5 +3449,117 @@ fn test_migration_services_collator_assignment_payment() {
                 credits_1002,
                 flashbox_runtime::FreeCollatorAssignmentCredits::get()
             );
+        });
+}
+
+#[test]
+fn test_max_collators_uses_pending_value() {
+    // Start with max_collators = 100, and collators_per_container = 2
+    // Set max_collators = 2, and collators_per_container = 3
+    // It should be impossible to have more than 2 collators per container at any point in time
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![(
+            1001,
+            empty_genesis_data(),
+            vec![],
+            u32::MAX,
+            u32::MAX,
+        )
+            .into()])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Initial assignment: 1 collator in orchestrator chain and 2 collators in container 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 2);
+            assert_eq!(assignment.orchestrator_chain.len(), 1);
+
+            assert_ok!(Configuration::set_max_collators(root_origin(), 2));
+            assert_ok!(Configuration::set_collators_per_container(root_origin(), 3));
+
+            // Check invariant for all intermediate assignments. We set collators_per_container = 3
+            // but we also set max_collators = 2, so no collators will be assigned to container
+            // chains after the change is applied.
+            for session in 1..=4 {
+                run_to_session(session);
+
+                let assignment = CollatorAssignment::collator_container_chain();
+                assert!(
+                    assignment.container_chains[&1001u32.into()].len() <= 2,
+                    "session {}: {} collators assigned to container chain 1001",
+                    session,
+                    assignment.container_chains[&1001u32.into()].len()
+                );
+            }
+
+            // Final assignment: because max_collators = 2, there are only 2 collators, one in
+            // orchestrator chain, and the other one idle
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 0);
+            assert_eq!(assignment.orchestrator_chain.len(), 1);
+        });
+}
+
+#[test]
+fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
+    ExtBuilder::default()
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // If the block is full, the multiplier increases
+            let before_multiplier = TransactionPayment::next_fee_multiplier();
+            run_block_with_operation(|_slot| {
+                let max_block_weights = flashbox_runtime::RuntimeBlockWeights::get();
+                frame_support::storage::unhashed::put(
+                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                    &ConsumedWeight::new(|class| {
+                        max_block_weights
+                            .get(class)
+                            .max_total
+                            .unwrap_or(Weight::MAX)
+                    }),
+                );
+            });
+            let current_multiplier = TransactionPayment::next_fee_multiplier();
+            assert!(current_multiplier > before_multiplier);
+
+            // If the block is empty, the multiplier decreases
+            let before_multiplier = TransactionPayment::next_fee_multiplier();
+            run_block_with_operation(|_slot| {
+                frame_support::storage::unhashed::put(
+                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                    &ConsumedWeight::new(|_class| Weight::zero()),
+                );
+            });
+            let current_multiplier = TransactionPayment::next_fee_multiplier();
+            assert!(current_multiplier < before_multiplier);
         });
 }

@@ -16,13 +16,13 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use tokio_util::sync::CancellationToken;
 #[allow(deprecated)]
 use {
     crate::{
         cli::ContainerChainCli,
         container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
     },
-    core::pin::Pin,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{
@@ -45,8 +45,8 @@ use {
     dc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash, PHeader,
     },
-    futures::Stream,
-    futures::StreamExt,
+    dp_slot_duration_runtime_api::TanssiSlotDurationApi,
+    futures::{Stream, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -68,14 +68,16 @@ use {
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
     sp_consensus::{EnableProofRecording, SyncOracle},
-    sp_consensus_slots::Slot,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{sync::Arc, time::Duration},
+    std::{pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
-        collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+        collators::lookahead::{
+            self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
+        },
         OrchestratorAuraWorkerAuxData,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
@@ -130,7 +132,7 @@ pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =
     TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
-thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
 
 /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
 /// Each call will increment timestamp by slot_duration making Aura think time has passed.
@@ -368,7 +370,9 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let sync_keystore = node_builder.keystore_container.keystore();
-    let mut collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+    let mut collate_on_tanssi: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    > = Arc::new(move || {
         if validator {
             panic!("Called uninitialized collate_on_tanssi");
         } else {
@@ -400,6 +404,13 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
+    // This channel allows us to notify the lookahead collator when it should stop.
+    // Useful when rotating containers.
+    let mut initial_cancellation_token: Option<(
+        CancellationToken,
+        futures::channel::oneshot::Receiver<()>,
+    )> = None;
+
     if validator {
         let collator_key = collator_key
             .clone()
@@ -423,6 +434,7 @@ async fn start_node_impl(
             let node_keystore = node_builder.keystore_container.keystore().clone();
             let node_telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
             let node_client = node_builder.client.clone();
+            let node_backend = node_builder.backend.clone();
             let relay_interface = relay_chain_interface.clone();
             let node_sync_service = node_builder.network.sync_service.clone();
             let overseer = overseer_handle.clone();
@@ -437,6 +449,7 @@ async fn start_node_impl(
             move || {
                 start_consensus_orchestrator(
                     node_client.clone(),
+                    node_backend.clone(),
                     block_import.clone(),
                     node_spawn_handle.clone(),
                     relay_interface.clone(),
@@ -453,7 +466,7 @@ async fn start_node_impl(
             }
         };
         // Start collating now
-        start_collation();
+        initial_cancellation_token = Some(start_collation());
         // And save callback for later, used when collator rotates from container chain back to orchestrator chain
         collate_on_tanssi = Arc::new(start_collation);
     }
@@ -502,6 +515,7 @@ async fn start_node_impl(
             spawn_handle,
             state: Default::default(),
             collate_on_tanssi,
+            collation_cancellation_constructs: initial_cancellation_token,
         };
         let state = container_chain_spawner.state.clone();
 
@@ -624,8 +638,11 @@ pub async fn start_node_impl_container(
 
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
+        let node_backend = node_builder.backend.clone();
+
         start_consensus_container(
             node_client.clone(),
+            node_backend.clone(),
             orchestrator_client.clone(),
             block_import.clone(),
             prometheus_registry.clone(),
@@ -673,6 +690,7 @@ fn build_manual_seal_import_queue(
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
+    backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
@@ -714,11 +732,22 @@ fn start_consensus_container(
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
+    let client_for_cidp = client.clone();
+    let client_for_hash_provider = client.clone();
 
-    let params = BasicTanssiAuraParams {
-        create_inherent_data_providers: move |_block_hash, (relay_parent, _validation_data)| {
+    let code_hash_provider = move |block_hash| {
+        client_for_hash_provider
+            .code_at(block_hash)
+            .ok()
+            .map(polkadot_primitives::ValidationCode)
+            .map(|c| c.hash())
+    };
+
+    let params = LookaheadTanssiAuraParams {
+        create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
+            let client = client_for_cidp.clone();
 
             async move {
                 let authorities_noting_inherent =
@@ -730,7 +759,16 @@ fn start_consensus_container(
                     )
                     .await;
 
-                // TODO: should we still retrieve timestamp and slot?
+                let slot_duration = {
+                    // Default to 12s if runtime API does not exist
+                    let slot_duration_ms = client
+                        .runtime_api()
+                        .slot_duration(block_hash)
+                        .unwrap_or(12_000);
+
+                    SlotDuration::from_millis(slot_duration_ms)
+                };
+
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =
@@ -814,15 +852,23 @@ fn start_consensus_container(
         collator_service,
         // Very limited proposal time.
         authoring_duration: Duration::from_millis(500),
-        collation_request_receiver: None,
+        para_backend: backend,
+        code_hash_provider,
+        // This cancellation token is no-op as it is not shared outside.
+        cancellation_token: CancellationToken::new(),
     };
 
-    let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
+    let (fut, _exit_notification_receiver) =
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
+/// Start collator task for orchestrator chain.
+/// Returns a `CancellationToken` that can be used to cancel the collator task,
+/// and a `oneshot::Receiver<()>` that can be used to wait until the task has ended.
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
+    backend: Arc<FullBackend>,
     block_import: ParachainBlockImport,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
@@ -835,7 +881,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-) {
+) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
 
@@ -851,8 +897,19 @@ fn start_consensus_orchestrator(
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let client_set_aside_for_cidp = client.clone();
     let client_set_aside_for_orch = client.clone();
+    let client_for_hash_provider = client.clone();
 
-    let params = BasicTanssiAuraParams {
+    let code_hash_provider = move |block_hash| {
+        client_for_hash_provider
+            .code_at(block_hash)
+            .ok()
+            .map(polkadot_primitives::ValidationCode)
+            .map(|c| c.hash())
+    };
+
+    let cancellation_token = CancellationToken::new();
+
+    let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
@@ -868,6 +925,13 @@ fn start_consensus_orchestrator(
                         &para_ids,
                     )
                     .await;
+
+                // Fetch duration every block to avoid downtime when passing from 12 to 6s
+                let slot_duration = sc_consensus_aura::standalone::slot_duration_at(
+                    &*client_set_aside_for_cidp.clone(),
+                    block_hash,
+                )
+                .expect("Slot duration should be set");
 
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
@@ -932,11 +996,16 @@ fn start_consensus_orchestrator(
         collator_service,
         // Very limited proposal time.
         authoring_duration: Duration::from_millis(500),
-        collation_request_receiver: None,
+        code_hash_provider,
+        para_backend: backend,
+        cancellation_token: cancellation_token.clone(),
     };
 
-    let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
+    let (fut, exit_notification_receiver) =
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura", None, fut);
+
+    (cancellation_token, exit_notification_receiver)
 }
 
 /// Start a parachain node.
@@ -1042,9 +1111,12 @@ pub fn start_dev_node(
                 let para_head_key = RelayWellKnownKeys::para_head(para_id);
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
 
-                let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client.clone()).expect("Slot duration should be set");
+                let slot_duration = sc_consensus_aura::standalone::slot_duration_at(
+                    &*client.clone(),
+                    block,
+                ).expect("Slot duration should be set");
 
-                let mut timestamp: u64 = 0u64;
+                let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
                     timestamp = x.clone().take();
                 });
@@ -1054,7 +1126,7 @@ pub fn start_dev_node(
 						timestamp.into(),
 						slot_duration,
                     );
-                let relay_slot = u64::from(*relay_slot).saturating_mul(2);
+                let relay_slot = u64::from(*relay_slot);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();

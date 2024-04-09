@@ -51,8 +51,8 @@ declare module "@polkadot/api-base/types/events" {
             /** Latest author changed */
             LatestAuthorChanged: AugmentedEvent<
                 ApiType,
-                [paraId: u32, blockNumber: u32, newAuthor: AccountId32],
-                { paraId: u32; blockNumber: u32; newAuthor: AccountId32 }
+                [paraId: u32, blockNumber: u32, newAuthor: AccountId32, latestSlotNumber: u64],
+                { paraId: u32; blockNumber: u32; newAuthor: AccountId32; latestSlotNumber: u64 }
             >;
             /** Removed author data */
             RemovedAuthorData: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
@@ -1078,6 +1078,11 @@ declare module "@polkadot/api-base/types/events" {
                 [paraId: u32, payer: AccountId32, credit: u128],
                 { paraId: u32; payer: AccountId32; credit: u128 }
             >;
+            MaxCorePriceUpdated: AugmentedEvent<
+                ApiType,
+                [paraId: u32, maxCorePrice: Option<u128>],
+                { paraId: u32; maxCorePrice: Option<u128> }
+            >;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,
                 [paraId: u32, refundAddress: Option<AccountId32>],
@@ -1288,6 +1293,12 @@ declare module "@polkadot/api-base/types/events" {
             ItemCompleted: AugmentedEvent<ApiType, []>;
             /** A single item within a Batch of dispatches has completed with error. */
             ItemFailed: AugmentedEvent<ApiType, [error: SpRuntimeDispatchError], { error: SpRuntimeDispatchError }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        xcmCoreBuyer: {
+            /** An XCM message to buy a core for this parathread has been sent to the relay chain. */
+            BuyCoreXcmSent: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
