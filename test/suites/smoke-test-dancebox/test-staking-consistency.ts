@@ -72,8 +72,10 @@ describeSuite({
                     // auto stake is calculated using this method as the AutoCompoundingSharesHeldStake is not updated with rewards received
                     // by the candidate, rather the value of each share of candidate increases.
                     const auto =
-                        (autoCompoundingSharesOfCandidate * autoCompoundingSharesTotalStaked) /
-                        autoCompoundingSharesSupply;
+                        autoCompoundingSharesSupply == 0n
+                            ? 0n
+                            : (autoCompoundingSharesOfCandidate * autoCompoundingSharesTotalStaked) /
+                              autoCompoundingSharesSupply;
 
                     const manual = (
                         await api.query.pooledStaking.pools(candidate, {
