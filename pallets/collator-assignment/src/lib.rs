@@ -246,16 +246,19 @@ pub mod pallet {
             }
 
             // Are there enough collators to satisfy the minimum demand?
-            let congestion =
-                T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
-                    + collators_per_container * container_chain_ids.len() as u32
-                    + collators_per_parathread * parathreads.len() as u32
-                    > collators.len() as u32;
+            let enough_collators_for_all_chain = collators.len() as u32
+                > T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                    .saturating_add(
+                        collators_per_container.saturating_mul(container_chain_ids.len() as u32),
+                    )
+                    .saturating_add(
+                        collators_per_parathread.saturating_mul(parathreads.len() as u32),
+                    );
 
             // Prioritize paras by tip on congestion
             // As of now this doesn't distinguish between parachains and parathreads
             // TODO apply different logic to parathreads
-            if congestion {
+            if !enough_collators_for_all_chain {
                 chains.sort_by(|a, b| {
                     T::CollatorAssignmentTip::get_para_tip(b.para_id)
                         .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
@@ -322,13 +325,13 @@ pub mod pallet {
             assigned_containers.retain(|_, v| !v.is_empty());
 
             // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
-            let maybe_tip: Option<BalanceOf<T>> = if congestion {
+            let maybe_tip: Option<BalanceOf<T>> = if enough_collators_for_all_chain {
+                None
+            } else {
                 assigned_containers
                     .into_keys()
                     .filter_map(T::CollatorAssignmentTip::get_para_tip)
                     .min()
-            } else {
-                None
             };
 
             // TODO: this probably is asking for a refactor
