@@ -28,7 +28,6 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use xcm_config::SelfReserve;
 
 pub mod migrations;
 mod precompiles;
@@ -1220,6 +1219,7 @@ impl_runtime_apis! {
                 }
 
                 fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    use xcm_config::SelfReserve;
                     // AH can reserve transfer native token to some random parachain.
                     let random_para_id = 43211234;
                     ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
