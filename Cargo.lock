@@ -3049,6 +3049,7 @@ dependencies = [
  "pallet-session",
  "pallet-staking",
  "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -4274,6 +4275,7 @@ dependencies = [
  "pallet-services-payment",
  "pallet-session",
  "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -9258,6 +9260,17 @@ dependencies = [
  "tap",
  "tp-maths",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-stream-payment-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "thiserror",
 ]
 
 [[package]]
@@ -15000,6 +15013,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "stream-payment-rpc"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.30",
+ "jsonrpsee",
+ "pallet-stream-payment-runtime-api",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-runtime",
+ "thiserror",
+]
+
+[[package]]
 name = "strobe-rs"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15394,6 +15421,7 @@ dependencies = [
  "sp-state-machine",
  "sp-timestamp",
  "sp-transaction-pool",
+ "stream-payment-rpc",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",

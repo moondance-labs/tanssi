@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use cumulus_primitives_core::ParaId;
-use parity_scale_codec::Encode;
+use {cumulus_primitives_core::ParaId, parity_scale_codec::Encode};
 
 pub type Balance = u128;
 

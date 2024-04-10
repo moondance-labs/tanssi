@@ -22,10 +22,12 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_services_payment::ProvideCollatorAssignmentCost;
-use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use {
+    pallet_services_payment::ProvideCollatorAssignmentCost,
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
+};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -66,9 +68,10 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
+    pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
-    scale_info::TypeInfo,
+    scale_info::{prelude::format, TypeInfo},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
@@ -1260,9 +1263,11 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     }
 }
 
+type StreamId = u64;
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type StreamId = u64;
+    type StreamId = StreamId;
     type TimeUnit = TimeUnit;
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
@@ -1826,6 +1831,25 @@ impl_runtime_apis! {
 
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl pallet_stream_payment_runtime_api::StreamPaymentApi<Block, StreamId, Balance, Balance>
+    for Runtime {
+        fn stream_payment_status(
+            stream_id: StreamId,
+            now: Option<Balance>,
+        ) -> Result<StreamPaymentApiStatus<Balance>, StreamPaymentApiError> {
+            match StreamPayment::stream_payment_status(stream_id, now) {
+                Ok(pallet_stream_payment::StreamPaymentStatus {
+                    payment, deposit_left, stalled
+                }) => Ok(StreamPaymentApiStatus {
+                    payment, deposit_left, stalled
+                }),
+                Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
+                => Err(StreamPaymentApiError::UnknownStreamId),
+                Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
+            }
         }
     }
 
