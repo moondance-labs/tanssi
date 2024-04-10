@@ -45,16 +45,17 @@ describeSuite({
         });
         it({
             id: "E02",
-            title: "Collators are not assigned when we buy 2 session + ED -1 of block credits",
+            title: "Collators are not assigned when we buy 1 session + ED -1 of block credits",
             test: async function () {
+                // Set half of the needed block production credits as free credits
                 const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(
                     paraId2000,
-                    blocksPerSession
+                    blocksPerSession / 2n
                 );
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
-                // Now, buy some credits for container chain 2000. we only buy ones session -1
-                const purchasedCredits = blocksPerSession * costPerBlock + existentialDeposit - 1n;
+                // Now, buy some credits for container chain 2000. we only the second half of the needed credits - 1
+                const purchasedCredits = blocksPerSession / 2n * costPerBlock + existentialDeposit - 1n;
                 // Check that after 2 sessions, container chain 2000 has not collators
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
                 await context.createBlock([await tx.signAsync(alice)]);
