@@ -428,9 +428,16 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
-        // The node always starts as an orchestrator chain collator
-        self.state.lock().unwrap().assigned_para_id = Some(self.orchestrator_para_id);
+    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
+        // The node always starts as an orchestrator chain collator.
+        // This is because the assignment is detected after importing a new block, so if all
+        // collators stop at the same time, when they start again nobody will produce the new block.
+        // So all nodes start as orchestrator chain collators, until the first block is imported,
+        // then the real assignment is used.
+        if validator {
+            self.handle_update_assignment(Some(self.orchestrator_para_id), None)
+                .await;
+        }
 
         while let Some(msg) = rx.recv().await {
             match msg {
@@ -443,20 +450,20 @@ impl ContainerChainSpawner {
         // The while loop can end if all the senders get dropped, but since this is an
         // essential task we don't want it to stop. So await a future that never completes.
         // This should only happen when starting a full node.
-        std::future::pending().await
+        if !validator {
+            let () = std::future::pending().await;
+        }
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
     async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
         let HandleUpdateAssignmentResult {
-            call_collate_on,
             chains_to_stop,
             chains_to_start,
             need_to_restart,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
             self.orchestrator_para_id,
-            self.collate_on_tanssi.clone(),
             current,
             next,
         );
@@ -474,11 +481,9 @@ impl ContainerChainSpawner {
             if let Some(exit_notification_receiver) = maybe_exit_notification_receiver {
                 let _ = exit_notification_receiver.await;
             }
-        }
-
-        // Call collate_on, to start collation on a chain that was already running before
-        if let Some(f) = call_collate_on {
-            self.collation_cancellation_constructs = Some(f());
+        } else if self.collation_cancellation_constructs.is_none() {
+            // If assigned to orchestrator chain but the collator process is not running, start it
+            self.collation_cancellation_constructs = Some((self.collate_on_tanssi)());
         }
 
         // Stop all container chains that are no longer needed
@@ -504,9 +509,6 @@ impl ContainerChainSpawner {
 }
 
 struct HandleUpdateAssignmentResult {
-    call_collate_on: Option<
-        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
-    >,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
     need_to_restart: bool,
@@ -516,16 +518,12 @@ struct HandleUpdateAssignmentResult {
 fn handle_update_assignment_state_change(
     state: &mut ContainerChainSpawnerState,
     orchestrator_para_id: ParaId,
-    collate_on_tanssi: Arc<
-        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
-    >,
     current: Option<ParaId>,
     next: Option<ParaId>,
 ) -> HandleUpdateAssignmentResult {
     if (state.assigned_para_id, state.next_assigned_para_id) == (current, next) {
         // If nothing changed there is nothing to update
         return HandleUpdateAssignmentResult {
-            call_collate_on: None,
             chains_to_stop: Default::default(),
             chains_to_start: Default::default(),
             need_to_restart: false,
@@ -537,7 +535,6 @@ fn handle_update_assignment_state_change(
     // the difference, and stop and start the required container chains.
     let mut running_chains_before = HashSet::new();
     let mut running_chains_after = HashSet::new();
-    let mut call_collate_on = None;
 
     running_chains_before.extend(state.assigned_para_id);
     running_chains_before.extend(state.next_assigned_para_id);
@@ -555,7 +552,6 @@ fn handle_update_assignment_state_change(
         if let Some(para_id) = current {
             // Check if we get assigned to orchestrator chain
             if para_id == orchestrator_para_id {
-                call_collate_on = Some(collate_on_tanssi);
             } else {
                 // When we get assigned to a different container chain, we don't need to call collate_on because
                 // we will restart that container chain in collation mode.
@@ -607,7 +603,6 @@ fn handle_update_assignment_state_change(
     }
 
     HandleUpdateAssignmentResult {
-        call_collate_on,
         chains_to_stop,
         chains_to_start,
         need_to_restart: need_to_restart_current || need_to_restart_next,
@@ -781,6 +776,7 @@ mod tests {
         collate_on_tanssi: Arc<
             dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
         >,
+        collation_cancellation_constructs: Option<()>,
         // Keep track of the last CollateOn message, for tests
         currently_collating_on: Arc<Mutex<Option<ParaId>>>,
     }
@@ -818,6 +814,8 @@ mod tests {
                 })),
                 orchestrator_para_id,
                 collate_on_tanssi,
+                // Some if collator starts on orchestrator chain
+                collation_cancellation_constructs: Some(()),
                 currently_collating_on,
             }
         }
@@ -893,16 +891,14 @@ mod tests {
             }
         }
 
-        fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>) {
+        fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
             let HandleUpdateAssignmentResult {
-                call_collate_on,
                 chains_to_stop,
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
                 &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
-                self.collate_on_tanssi.clone(),
                 current,
                 next,
             );
@@ -913,6 +909,10 @@ mod tests {
                 if *cco == Some(self.orchestrator_para_id) {
                     *cco = None;
                 }
+                self.collation_cancellation_constructs = None;
+            } else if self.collation_cancellation_constructs.is_none() {
+                let (_cancellation_token, _exit_notification_receiver) = (self.collate_on_tanssi)();
+                self.collation_cancellation_constructs = Some(());
             }
 
             // Assert we never start and stop the same container chain
@@ -938,11 +938,6 @@ mod tests {
             assert!(!chains_to_start.contains(&self.orchestrator_para_id));
             assert!(!chains_to_stop.contains(&self.orchestrator_para_id));
 
-            // Call collate_on, to start collation on a chain that was already running before
-            if let Some(f) = call_collate_on {
-                let (_cancellation_token, _exit_notification_receiver) = f();
-            }
-
             // Stop all container chains that are no longer needed
             for para_id in chains_to_stop {
                 self.stop(para_id);
@@ -960,14 +955,7 @@ mod tests {
             if let Some(para_id) = current {
                 self.assert_collating_on(Some(para_id));
             } else {
-                // If we are not assigned anywhere we may be collating on the orchestrator chain,
-                // or we may not be collating anywhere, or we may be collating on a container chain that is currently in "next"
-                let currently_collating_on = *self.currently_collating_on.lock().unwrap();
-                assert!(
-                    currently_collating_on.is_none()
-                        || currently_collating_on == Some(self.orchestrator_para_id)
-                        || currently_collating_on == Some(next.unwrap())
-                );
+                self.assert_collating_on(None);
             }
         }
 
@@ -996,7 +984,7 @@ mod tests {
 
     #[test]
     fn starts_collating_on_tanssi() {
-        let m = MockContainerChainSpawner::new();
+        let mut m = MockContainerChainSpawner::new();
         m.assert_collating_on(Some(1000.into()));
         m.assert_running_chains(&[]);
 
@@ -1007,7 +995,7 @@ mod tests {
 
     #[test]
     fn assigned_to_orchestrator_chain() {
-        let m = MockContainerChainSpawner::new();
+        let mut m = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(1000.into()), Some(1000.into()));
         m.assert_collating_on(Some(1000.into()));
@@ -1032,7 +1020,7 @@ mod tests {
 
     #[test]
     fn assigned_to_container_chain() {
-        let m = MockContainerChainSpawner::new();
+        let mut m = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), Some(2000.into()));
         m.assert_collating_on(Some(2000.into()));
@@ -1057,7 +1045,7 @@ mod tests {
 
     #[test]
     fn spawn_container_chains() {
-        let m = MockContainerChainSpawner::new();
+        let mut m = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(1000.into()), Some(2000.into()));
         m.assert_collating_on(Some(1000.into()));
@@ -1087,7 +1075,7 @@ mod tests {
     #[test]
     fn swap_current_next() {
         // Going from (2000, 2001) to (2001, 2000) shouldn't start or stop any container chains
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), Some(2001.into()));
         m.assert_collating_on(Some(2000.into()));
@@ -1100,7 +1088,7 @@ mod tests {
 
     #[test]
     fn stop_collating_orchestrator() {
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(1000.into()), Some(1000.into()));
         m.assert_collating_on(Some(1000.into()));
@@ -1121,7 +1109,7 @@ mod tests {
 
     #[test]
     fn stop_collating_container() {
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), None);
         m.assert_collating_on(Some(2000.into()));
@@ -1144,7 +1132,7 @@ mod tests {
 
     #[test]
     fn stop_collating_container_start_immediately() {
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), None);
         m.assert_collating_on(Some(2000.into()));
@@ -1162,7 +1150,7 @@ mod tests {
 
     #[test]
     fn stop_all_chains() {
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), Some(2001.into()));
         m.assert_collating_on(Some(2000.into()));
@@ -1175,7 +1163,7 @@ mod tests {
 
     #[test]
     fn keep_collating_on_container() {
-        let m: MockContainerChainSpawner = MockContainerChainSpawner::new();
+        let mut m: MockContainerChainSpawner = MockContainerChainSpawner::new();
 
         m.handle_update_assignment(Some(2000.into()), None);
         m.assert_collating_on(Some(2000.into()));
