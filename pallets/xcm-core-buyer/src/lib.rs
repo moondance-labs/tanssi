@@ -42,10 +42,11 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::EncodeLike,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
-    sp_std::vec,
-    sp_std::vec::Vec,
-    staging_xcm::prelude::*,
-    staging_xcm::v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Xcm},
+    sp_std::{vec, vec::Vec},
+    staging_xcm::{
+        prelude::*,
+        v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Xcm},
+    },
     tp_traits::ParathreadParams,
 };
 

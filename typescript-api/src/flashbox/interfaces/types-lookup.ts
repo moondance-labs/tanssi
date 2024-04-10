@@ -596,7 +596,7 @@ declare module "@polkadot/types/lookup" {
             readonly source: AccountId32;
             readonly target: AccountId32;
             readonly amount: u128;
-            readonly drained: bool;
+            readonly stalled: bool;
         } & Struct;
         readonly isStreamConfigChangeRequested: boolean;
         readonly asStreamConfigChangeRequested: {

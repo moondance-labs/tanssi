@@ -411,7 +411,7 @@ export default {
                 source: "AccountId32",
                 target: "AccountId32",
                 amount: "u128",
-                drained: "bool",
+                stalled: "bool",
             },
             StreamConfigChangeRequested: {
                 streamId: "u64",

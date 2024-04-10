@@ -37,6 +37,7 @@ use {
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::sync::Arc,
+    stream_payment_rpc::{StreamPayment, StreamPaymentApiServer as _, StreamPaymentRuntimeApi},
 };
 
 /// A type representing all RPC extensions.
@@ -70,6 +71,7 @@ where
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
+    C::Api: StreamPaymentRuntimeApi<Block, u64, u128, u128>,
     P: TransactionPool + Sync + Send + 'static,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -83,7 +85,8 @@ where
         xcm_senders,
     } = deps;
 
-    module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
+    module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+    module.merge(StreamPayment::<_, Block>::new(client).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(

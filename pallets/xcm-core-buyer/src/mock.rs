@@ -28,8 +28,10 @@ use {
     },
     sp_core::H256,
     sp_io::TestExternalities,
-    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
-    sp_runtime::{traits::Convert, BuildStorage},
+    sp_runtime::{
+        traits::{BlakeTwo256, Convert, IdentityLookup},
+        BuildStorage,
+    },
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::latest::{
         MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash,

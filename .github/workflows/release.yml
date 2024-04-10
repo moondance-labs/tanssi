@@ -114,6 +114,9 @@ jobs:
             - name: Setup Rust toolchain
               run: rustup show
 
+            - name: Check for duplicate git dependencies
+              run: ./.github/scripts/check_duplicate_git_dependencies.sh
+
             - name: Find toml files with lints key not set
               run: ./.github/scripts/check_toml_lints.sh
 
