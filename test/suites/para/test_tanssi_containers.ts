@@ -356,7 +356,9 @@ describeSuite({
 
                 // Start from block 1 because block 0 has no author
                 const blockNumber = 1;
-                // Consider two cases: full rotation can happen before 2002 is registered, or while 2002 is registered
+                // Consider 3 cases: full rotation can happen before 2002 is registered, at the same time 2002 is
+                // registered, or while 2002 is registered
+                // Locally blockNumber2002Start = 40 but in CI it can be 40 or 50 depending on server specs.
                 if (fullRotationBlock < blockNumber2002Start) {
                     // Before 2002 registration: 4 authors
                     await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, fullRotationBlock - 1, 4);
@@ -367,6 +369,17 @@ describeSuite({
                         blockNumber2002Start - 1,
                         4
                     );
+                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        blockNumber2002Start,
+                        blockNumber2002End - 1,
+                        2
+                    );
+                } else if (fullRotationBlock == blockNumber2002Start) {
+                    // Before 2002 registration: 4 authors
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
                     // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
                     await countUniqueBlockAuthors(
                         paraApi,
