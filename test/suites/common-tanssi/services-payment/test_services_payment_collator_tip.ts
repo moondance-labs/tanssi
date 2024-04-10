@@ -36,7 +36,7 @@ describeSuite({
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId].length,
-                    `Container chain ${paraId} should have 0 collators`
+                    `Container chain ${paraId} should have 2 collators`
                 ).toBe(2);
 
                 const events = await polkadotJs.query.system.events();
