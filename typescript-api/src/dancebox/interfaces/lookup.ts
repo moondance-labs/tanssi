@@ -2681,7 +2681,7 @@ export default {
             },
             set_max_tip: {
                 paraId: "u32",
-                maxTip: "u128",
+                maxTip: "Option<u128>",
             },
         },
     },

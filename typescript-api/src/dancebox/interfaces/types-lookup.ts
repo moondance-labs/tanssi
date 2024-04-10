@@ -3585,7 +3585,7 @@ declare module "@polkadot/types/lookup" {
         readonly isSetMaxTip: boolean;
         readonly asSetMaxTip: {
             readonly paraId: u32;
-            readonly maxTip: u128;
+            readonly maxTip: Option<u128>;
         } & Struct;
         readonly type:
             | "PurchaseCredits"
