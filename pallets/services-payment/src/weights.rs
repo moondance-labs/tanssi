@@ -60,6 +60,7 @@ pub trait WeightInfo {
 	fn set_max_core_price() -> Weight;
 	fn on_container_author_noted() -> Weight;
 	fn on_collators_assigned() -> Weight;
+	fn set_max_tip() -> Weight;
 }
 
 /// Weights for pallet_services_payment using the Substrate node and recommended hardware.
@@ -148,6 +149,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `ServicesPayment::MaxTip` (r:0 w:1)
+	/// Proof: `ServicesPayment::MaxTip` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
+	fn set_max_tip() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 4_157_000 picoseconds.
+		Weight::from_parts(4_576_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -233,6 +244,16 @@ impl WeightInfo for () {
 		// Minimum execution time: 24_209_000 picoseconds.
 		Weight::from_parts(24_682_000, 3593)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `ServicesPayment::MaxTip` (r:0 w:1)
+	/// Proof: `ServicesPayment::MaxTip` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
+	fn set_max_tip() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 4_157_000 picoseconds.
+		Weight::from_parts(4_576_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

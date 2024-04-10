@@ -17,10 +17,11 @@
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
-        CollatorAssignmentCredits, RefundAddress,
+        CollatorAssignmentCredits, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
+        RefundAddress,
     },
     cumulus_primitives_core::ParaId,
-    frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
+    frame_support::{assert_err, assert_noop, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
     tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
@@ -272,7 +273,10 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
                 100u128
             );
 
-            PaymentServices::on_collators_assigned(1.into());
+            assert_noop!(
+                PaymentServices::on_collators_assigned(1.into(), None, false),
+                pallet_balances::Error::<Test>::InsufficientBalance
+            );
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -415,5 +419,91 @@ fn set_refund_address_with_none_removes_storage() {
             ));
 
             assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn tip_should_be_charged_on_collators_assignment() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1;
+            let tip = 10u128;
+            let balance = 5000u128;
+
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id.into(),
+                balance,
+            ));
+
+            assert_ok!(PaymentServices::set_max_tip(
+                RuntimeOrigin::root(),
+                para_id.into(),
+                Some(tip),
+            ));
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                balance,
+            );
+
+            assert_ok!(PaymentServices::on_collators_assigned(
+                para_id.into(),
+                Some(&tip),
+                false
+            ));
+
+            PaymentServices::on_container_author_noted(&1, 1, para_id.into());
+
+            let (assignment_cost, _weight) =
+                <Test as crate::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(
+                    &para_id.into(),
+                );
+            let (block_cost, _weight) =
+                <Test as crate::Config>::ProvideBlockProductionCost::block_cost(&para_id.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                balance - assignment_cost - block_cost - tip,
+            );
+        });
+}
+
+#[test]
+fn insufficient_balance_for_tip_reimburses_fee_imbalance() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1;
+            let tip = 10u128;
+            // Just enough for one assignment but not for tip;
+            let balance = 205u128;
+
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id.into(),
+                balance,
+            ));
+
+            assert_ok!(PaymentServices::set_max_tip(
+                RuntimeOrigin::root(),
+                para_id.into(),
+                Some(tip),
+            ));
+
+            // it should fail when trying to withdraw the tip
+            assert!(
+                PaymentServices::on_collators_assigned(para_id.into(), Some(&tip), false).is_err()
+            );
+
+            // Tank balance shouldn't have changed
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(para_id.into())),
+                balance,
+            );
         });
 }

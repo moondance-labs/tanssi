@@ -43,7 +43,7 @@
 
 use {
     crate::assignment::{Assignment, ChainNumCollators},
-    frame_support::pallet_prelude::*,
+    frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
     rand_chacha::ChaCha20Rng,
@@ -51,11 +51,11 @@ use {
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{fmt::Debug, prelude::*, vec},
+    sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        ShouldRotateAllCollators, Slot,
+        CollatorAssignmentHook, CollatorAssignmentTip, GetContainerChainAuthor,
+        GetHostConfiguration, GetSessionContainerChains, ParaId, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -100,7 +100,9 @@ pub mod pallet {
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
-        type CollatorAssignmentHook: CollatorAssignmentHook;
+        type CollatorAssignmentHook: CollatorAssignmentHook<BalanceOf<Self>>;
+        type Currency: Currency<Self::AccountId>;
+        type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -175,13 +177,23 @@ pub mod pallet {
                 .into_iter()
                 .map(|(para_id, _)| para_id)
                 .collect();
+
+            // We read current assigned collators
+            let old_assigned = Self::read_assigned_collators();
+            let old_assigned_para_ids: BTreeSet<ParaId> =
+                old_assigned.container_chains.keys().cloned().collect();
+
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
+                &old_assigned_para_ids,
             );
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
-            // as paratherads because they will not be producing blocks on every slot.
-            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
+            // as parathreads because they will not be producing blocks on every slot.
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
+                &mut parathreads,
+                &old_assigned_para_ids,
+            );
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -190,8 +202,6 @@ pub mod pallet {
             if random_seed != [0; 32] {
                 let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
                 collators.shuffle(&mut rng);
-                // TODO: in the future, instead of shuffling the list of para ids, we need to use the priority fee to
-                // determine priority
                 container_chain_ids.shuffle(&mut rng);
                 parathreads.shuffle(&mut rng);
                 shuffle_collators = Some(move |collators: &mut Vec<T::AccountId>| {
@@ -199,8 +209,6 @@ pub mod pallet {
                 })
             }
 
-            // We read current assigned collators
-            let old_assigned = Self::read_assigned_collators();
             let orchestrator_chain = ChainNumCollators {
                 para_id: T::SelfParaId::get(),
                 min_collators: T::HostConfiguration::min_collators_for_orchestrator(
@@ -234,6 +242,27 @@ pub mod pallet {
                     max_collators: collators_per_parathread,
                 });
             }
+
+            // Are there enough collators to satisfy the minimum demand?
+            let enough_collators_for_all_chain = collators.len() as u32
+                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                    .saturating_add(
+                        collators_per_container.saturating_mul(container_chain_ids.len() as u32),
+                    )
+                    .saturating_add(
+                        collators_per_parathread.saturating_mul(parathreads.len() as u32),
+                    );
+
+            // Prioritize paras by tip on congestion
+            // As of now this doesn't distinguish between parachains and parathreads
+            // TODO apply different logic to parathreads
+            if !enough_collators_for_all_chain {
+                chains.sort_by(|a, b| {
+                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                });
+            }
+
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let new_assigned =
@@ -278,7 +307,7 @@ pub mod pallet {
                     )
                 };
 
-            let new_assigned = match new_assigned {
+            let mut new_assigned = match new_assigned {
                 Ok(x) => x,
                 Err(e) => {
                     log::error!(
@@ -290,6 +319,19 @@ pub mod pallet {
                 }
             };
 
+            let mut assigned_containers = new_assigned.container_chains.clone();
+            assigned_containers.retain(|_, v| !v.is_empty());
+
+            // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
+            let maybe_tip: Option<BalanceOf<T>> = if enough_collators_for_all_chain {
+                None
+            } else {
+                assigned_containers
+                    .into_keys()
+                    .filter_map(T::CollatorAssignmentTip::get_para_tip)
+                    .min()
+            };
+
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
             for para_id in &container_chain_ids {
@@ -299,7 +341,19 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
+                        *para_id,
+                        maybe_tip.as_ref(),
+                        false,
+                    ) {
+                        // On error remove para from assignment
+                        log::warn!(
+                            "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
+                            u32::from(*para_id),
+                            e
+                        );
+                        new_assigned.container_chains.remove(para_id);
+                    }
                 }
             }
 
@@ -310,11 +364,24 @@ pub mod pallet {
                     .unwrap_or(&vec![])
                     .is_empty()
                 {
-                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
+                        *para_id,
+                        maybe_tip.as_ref(),
+                        true,
+                    ) {
+                        // On error remove para from assignment
+                        log::warn!(
+                            "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
+                            u32::from(*para_id),
+                            e
+                        );
+                        new_assigned.container_chains.remove(para_id);
+                    }
                 }
             }
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
+
             let old_assigned_changed = old_assigned != new_assigned;
             let mut pending_changed = false;
             // Update CollatorContainerChain using last entry of pending, if needed
@@ -428,6 +495,10 @@ pub mod pallet {
         }
     }
 }
+
+/// Balance used by this pallet
+pub type BalanceOf<T> =
+    <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
 

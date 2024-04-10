@@ -1073,6 +1073,11 @@ declare module "@polkadot/api-base/types/events" {
                 [paraId: u32, credits: u32],
                 { paraId: u32; credits: u32 }
             >;
+            CollatorAssignmentTipCollected: AugmentedEvent<
+                ApiType,
+                [paraId: u32, payer: AccountId32, tip: u128],
+                { paraId: u32; payer: AccountId32; tip: u128 }
+            >;
             CreditsPurchased: AugmentedEvent<
                 ApiType,
                 [paraId: u32, payer: AccountId32, credit: u128],
@@ -1134,8 +1139,8 @@ declare module "@polkadot/api-base/types/events" {
             StreamOpened: AugmentedEvent<ApiType, [streamId: u64], { streamId: u64 }>;
             StreamPayment: AugmentedEvent<
                 ApiType,
-                [streamId: u64, source: AccountId32, target: AccountId32, amount: u128, drained: bool],
-                { streamId: u64; source: AccountId32; target: AccountId32; amount: u128; drained: bool }
+                [streamId: u64, source: AccountId32, target: AccountId32, amount: u128, stalled: bool],
+                { streamId: u64; source: AccountId32; target: AccountId32; amount: u128; stalled: bool }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;

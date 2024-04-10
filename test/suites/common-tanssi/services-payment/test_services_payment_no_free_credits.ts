@@ -55,7 +55,7 @@ describeSuite({
             test: async function () {
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only buy ones session -1
-                const purchasedCredits = 2n * costPerSession + existentialDeposit;
+                const purchasedCredits = costPerSession + existentialDeposit;
                 // Check that after 2 sessions, container chain 2000 has not collators
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
                 await context.createBlock([await tx.signAsync(alice)]);

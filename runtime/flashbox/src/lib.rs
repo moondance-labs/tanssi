@@ -22,10 +22,12 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_services_payment::ProvideCollatorAssignmentCost;
-use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use {
+    pallet_services_payment::ProvideCollatorAssignmentCost,
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
+};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -68,9 +70,10 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
+    pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
-    scale_info::TypeInfo,
+    scale_info::{prelude::format, TypeInfo},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
@@ -84,7 +87,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, RuntimeDebug,
     },
-    sp_std::{marker::PhantomData, prelude::*},
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
@@ -632,32 +635,48 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
 pub struct RemoveParaIdsWithNoCreditsImpl;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        currently_assigned: &BTreeSet<ParaId>,
+    ) {
         let blocks_per_session = Period::get();
-        let block_credits_for_2_sessions = 2 * blocks_per_session;
+
         para_ids.retain(|para_id| {
-            // Check if the container chain has enough credits for producing blocks for 2 sessions
+            // If the para has been assigned collators for this session it must have enough block credits
+            // for the current and the next session.
+            let block_credits_needed = if currently_assigned.contains(para_id) {
+                blocks_per_session * 2
+            } else {
+                blocks_per_session
+            };
+
+            // Check if the container chain has enough credits for producing blocks
             let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            // Check if the container chain has enough credits for 2 session assignments
+            // Check if the container chain has enough credits for a session assignments
             let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
+            // If para's max tip is set it should have enough to pay for one assignment with tip
+            let max_tip = pallet_services_payment::MaxTip::<Runtime>::get(para_id).unwrap_or_default() ;
+
             // Return if we can survive with free credits
-            if free_block_credits >= block_credits_for_2_sessions && free_session_credits >= 2 {
-                return true
+            if free_block_credits >= block_credits_needed && free_session_credits >= 1 {
+                // Max tip should always be checked, as it can be withdrawn even if free credits were used
+                return Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), max_tip).into_result(true).is_ok()
             }
 
-            let remaining_block_credits = block_credits_for_2_sessions.saturating_sub(free_block_credits);
-            let remaining_session_credits = 2u32.saturating_sub(free_session_credits);
+            let remaining_block_credits = block_credits_needed.saturating_sub(free_block_credits);
+            let remaining_session_credits = 1u32.saturating_sub(free_session_credits);
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
             let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
             let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
-            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
+
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay).saturating_add(max_tip);
 
             // This should take into account whether we tank goes below ED
             // The true refers to keepAlive
@@ -709,6 +728,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type CollatorAssignmentHook = ServicesPayment;
+    type CollatorAssignmentTip = ServicesPayment;
+    type Currency = Balances;
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
@@ -746,6 +767,7 @@ impl pallet_services_payment::Config for Runtime {
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
+    type OnChargeForCollatorAssignmentTip = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
@@ -1272,9 +1294,11 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     }
 }
 
+type StreamId = u64;
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type StreamId = u64;
+    type StreamId = StreamId;
     type TimeUnit = TimeUnit;
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
@@ -1844,6 +1868,25 @@ impl_runtime_apis! {
 
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl pallet_stream_payment_runtime_api::StreamPaymentApi<Block, StreamId, Balance, Balance>
+    for Runtime {
+        fn stream_payment_status(
+            stream_id: StreamId,
+            now: Option<Balance>,
+        ) -> Result<StreamPaymentApiStatus<Balance>, StreamPaymentApiError> {
+            match StreamPayment::stream_payment_status(stream_id, now) {
+                Ok(pallet_stream_payment::StreamPaymentStatus {
+                    payment, deposit_left, stalled
+                }) => Ok(StreamPaymentApiStatus {
+                    payment, deposit_left, stalled
+                }),
+                Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
+                => Err(StreamPaymentApiError::UnknownStreamId),
+                Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
+            }
         }
     }
 

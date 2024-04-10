@@ -22,6 +22,7 @@ use {
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU64, Hooks},
+        weights::Weight,
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -30,10 +31,10 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    sp_std::collections::btree_map::BTreeMap,
+    sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     tp_traits::{
-        ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        SessionContainerChains,
+        CollatorAssignmentHook, CollatorAssignmentTip, ParaId, ParathreadParams,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
@@ -124,6 +125,8 @@ pub struct Mocks {
     pub random_seed: [u8; 32],
     // None means 5
     pub full_rotation_period: Option<u32>,
+    pub apply_tip: bool,
+    pub assignment_hook_errors: bool,
 }
 
 impl mock_data::Config for Test {}
@@ -238,6 +241,36 @@ impl Get<u32> for MockCollatorRotationSessionPeriod {
     }
 }
 
+// Mock the service payment tip as only for 1003
+pub struct MockCollatorAssignmentTip;
+
+impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
+    fn get_para_tip(para_id: ParaId) -> Option<u32> {
+        if MockData::mock().apply_tip && (para_id == 1003u32.into() || para_id == 1004u32.into()) {
+            Some(1_000u32)
+        } else {
+            None
+        }
+    }
+}
+pub struct MockCollatorAssignmentHook;
+
+impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
+    fn on_collators_assigned(
+        para_id: ParaId,
+        _maybe_tip: Option<&u32>,
+        _is_parathread: bool,
+    ) -> Result<Weight, sp_runtime::DispatchError> {
+        // Only fail for para 1001
+        if MockData::mock().assignment_hook_errors && para_id == 1001.into() {
+            // The error doesn't matter
+            Err(sp_runtime::DispatchError::Unavailable)
+        } else {
+            Ok(Weight::default())
+        }
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
@@ -249,7 +282,9 @@ impl pallet_collator_assignment::Config for Test {
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
-    type CollatorAssignmentHook = ();
+    type CollatorAssignmentHook = MockCollatorAssignmentHook;
+    type CollatorAssignmentTip = MockCollatorAssignmentTip;
+    type Currency = ();
     type WeightInfo = ();
 }
 
@@ -319,7 +354,10 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
 pub struct RemoveParaIdsAbove5000;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
+    ) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
     }
 

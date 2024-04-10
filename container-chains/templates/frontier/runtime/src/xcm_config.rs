@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use pallet_foreign_asset_creator::{
-    AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
-};
 use {
     super::{
         currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, weights,
@@ -34,6 +31,9 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
+    pallet_foreign_asset_creator::{
+        AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
+    },
     pallet_xcm::XcmPassthrough,
     pallet_xcm_executor_utils::{
         filters::{IsReserveFilter, IsTeleportFilter},
