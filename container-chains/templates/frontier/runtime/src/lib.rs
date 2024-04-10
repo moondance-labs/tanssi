@@ -281,7 +281,7 @@ impl WeightToFeePolynomial for WeightToFee {
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
         // in our template, we map to 1/10 of that, or 1/10 MILLIUNIT
-        let p = MILLIUNIT / 10;
+        let p = currency::MILLIUNIT / 10;
         let q = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
         smallvec![WeightToFeeCoefficient {
             degree: 1,
@@ -346,24 +346,11 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-pub const SUPPLY_FACTOR: Balance = 100;
-
-// Unit = the base number of indivisible units for balances
-pub const UNIT: Balance = 1_000_000_000_000;
-pub const MILLIUNIT: Balance = 1_000_000_000;
-pub const MICROUNIT: Balance = 1_000_000;
-
-pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT * SUPPLY_FACTOR;
-
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-    items as Balance * 100 * MILLIUNIT * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
-}
-
 /// The existential deposit. Set to 0 because this is an ethereum-like chain
 /// We set this to one for runtime-benchmarks because plenty of the benches we
 /// incorporate from parity assume ED != 0
 #[cfg(feature = "runtime-benchmarks")]
-pub const EXISTENTIAL_DEPOSIT: Balance = 1;
+pub const EXISTENTIAL_DEPOSIT: Balance = 1 * currency::MILLIUNIT;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
 
@@ -651,18 +638,18 @@ impl pallet_proxy::Config for Runtime {
     type Currency = Balances;
     type ProxyType = ProxyType;
     // One storage item; key size 32, value size 8
-    type ProxyDepositBase = ConstU128<{ deposit(1, 8) }>;
+    type ProxyDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
     // Additional storage item size of 21 bytes (20 bytes AccountId + 1 byte sizeof(ProxyType)).
-    type ProxyDepositFactor = ConstU128<{ deposit(0, 21) }>;
+    type ProxyDepositFactor = ConstU128<{ currency::deposit(0, 21) }>;
     type MaxProxies = ConstU32<32>;
     type MaxPending = ConstU32<32>;
     type CallHasher = BlakeTwo256;
-    type AnnouncementDepositBase = ConstU128<{ deposit(1, 8) }>;
+    type AnnouncementDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
     // Additional storage item size of 56 bytes:
     // - 20 bytes AccountId
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
-    type AnnouncementDepositFactor = ConstU128<{ deposit(0, 56) }>;
+    type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 56) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
@@ -1140,11 +1127,23 @@ impl_runtime_apis! {
                     System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
                 }
             }
+            use xcm_config::SelfReserve;
+
+            parameter_types! {
+                pub ExistentialDepositAsset: Option<MultiAsset> = Some((
+                    SelfReserve::get(),
+                    ExistentialDeposit::get()
+                ).into());
+            }
 
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                    xcm_config::XcmConfig,
+                    ExistentialDepositAsset,
+                    xcm_config::PriceForParentDelivery,
+                >;
                 fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
                     Ok(MultiLocation::parent())
                 }
@@ -1253,6 +1252,7 @@ impl_runtime_apis! {
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
                     let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
+                    log::info!("setting {:?}", EXISTENTIAL_DEPOSIT);
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );

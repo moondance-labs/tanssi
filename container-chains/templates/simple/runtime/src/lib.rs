@@ -857,11 +857,22 @@ impl_runtime_apis! {
                     System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
                 }
             }
+            use crate::xcm_config::SelfReserve;
+            parameter_types! {
+                pub ExistentialDepositAsset: Option<MultiAsset> = Some((
+                    SelfReserve::get(),
+                    ExistentialDeposit::get()
+                ).into());
+            }
 
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                xcm_config::XcmConfig,
+                ExistentialDepositAsset,
+                xcm_config::PriceForParentDelivery,
+                >;
                 fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
                     Ok(MultiLocation::parent())
                 }
