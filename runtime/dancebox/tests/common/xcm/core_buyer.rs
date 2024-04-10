@@ -17,11 +17,13 @@
 use {
     crate::common::{
         dummy_boot_nodes, empty_genesis_data, run_to_session,
-        xcm::mocknets::{
-            DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
-            RococoRelayPallet, RococoSender,
+        xcm::{
+            mocknets::{
+                DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+                RococoRelayPallet, RococoSender,
+            },
+            *,
         },
-        xcm::*,
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,

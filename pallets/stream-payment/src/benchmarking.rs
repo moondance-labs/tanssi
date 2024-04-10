@@ -161,7 +161,7 @@ mod benchmarks {
                 source,
                 target,
                 amount: rate * delta,
-                drained: false,
+                stalled: false,
             }
             .into(),
         );
