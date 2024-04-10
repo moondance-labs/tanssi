@@ -429,6 +429,9 @@ impl ContainerChainSpawner {
 
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
+        // The node always starts as an orchestrator chain collator
+        self.state.lock().unwrap().assigned_para_id = Some(self.orchestrator_para_id);
+
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
@@ -458,9 +461,8 @@ impl ContainerChainSpawner {
             next,
         );
 
-        // Call collate_on, to start collation on a chain that was already running before
-        if let Some(f) = call_collate_on {
-            // End previous tanssi-aura job
+        if current != Some(self.orchestrator_para_id) {
+            // If not assigned to orchestrator chain anymore, we need to stop the collator process
             let maybe_exit_notification_receiver = self
                 .collation_cancellation_constructs
                 .take()
@@ -472,7 +474,10 @@ impl ContainerChainSpawner {
             if let Some(exit_notification_receiver) = maybe_exit_notification_receiver {
                 let _ = exit_notification_receiver.await;
             }
+        }
 
+        // Call collate_on, to start collation on a chain that was already running before
+        if let Some(f) = call_collate_on {
             self.collation_cancellation_constructs = Some(f());
         }
 
@@ -788,15 +793,12 @@ mod tests {
             let currently_collating_on2 = currently_collating_on.clone();
             let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
-                // TODO: this sometimes fails, see comment in stop_collating_orchestrator
-                /*
                 assert_ne!(
                     *cco,
                     Some(orchestrator_para_id),
                     "Received CollateOn message when we were already collating on this chain: {}",
                     orchestrator_para_id
                 );
-                */
                 *cco = Some(orchestrator_para_id);
                 let (_, receiver) = futures::channel::oneshot::channel();
                 (CancellationToken::new(), receiver)
@@ -810,7 +812,7 @@ mod tests {
             Self {
                 state: Arc::new(Mutex::new(ContainerChainSpawnerState {
                     spawned_container_chains: Default::default(),
-                    assigned_para_id: None,
+                    assigned_para_id: Some(orchestrator_para_id),
                     next_assigned_para_id: None,
                     spawned_containers_monitor: Default::default(),
                 })),
@@ -825,15 +827,12 @@ mod tests {
             let currently_collating_on2 = self.currently_collating_on.clone();
             let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
-                // TODO: this is also wrong, see comment in test keep_collating_on_container
-                /*
                 assert_ne!(
                     *cco,
                     Some(container_chain_para_id),
                     "Received CollateOn message when we were already collating on this chain: {}",
                     container_chain_para_id
                 );
-                */
                 *cco = Some(container_chain_para_id);
                 let (_, receiver) = futures::channel::oneshot::channel();
                 (CancellationToken::new(), receiver)
@@ -907,6 +906,14 @@ mod tests {
                 current,
                 next,
             );
+
+            if current != Some(self.orchestrator_para_id) {
+                // If not assigned to orchestrator chain anymore, we need to stop the collator process
+                let mut cco = self.currently_collating_on.lock().unwrap();
+                if *cco == Some(self.orchestrator_para_id) {
+                    *cco = None;
+                }
+            }
 
             // Assert we never start and stop the same container chain
             for para_id in &chains_to_start {
@@ -994,7 +1001,7 @@ mod tests {
         m.assert_running_chains(&[]);
 
         m.handle_update_assignment(None, None);
-        m.assert_collating_on(Some(1000.into()));
+        m.assert_collating_on(None);
         m.assert_running_chains(&[]);
     }
 
@@ -1011,11 +1018,11 @@ mod tests {
         m.assert_running_chains(&[]);
 
         m.handle_update_assignment(None, None);
-        m.assert_collating_on(Some(1000.into()));
+        m.assert_collating_on(None);
         m.assert_running_chains(&[]);
 
         m.handle_update_assignment(None, Some(1000.into()));
-        m.assert_collating_on(Some(1000.into()));
+        m.assert_collating_on(None);
         m.assert_running_chains(&[]);
 
         m.handle_update_assignment(Some(1000.into()), Some(1000.into()));
@@ -1104,12 +1111,9 @@ mod tests {
         m.assert_running_chains(&[]);
 
         m.handle_update_assignment(None, None);
-        m.assert_collating_on(Some(1000.into()));
+        m.assert_collating_on(None);
         m.assert_running_chains(&[]);
 
-        // TODO: this will send an unneeded CollateOn message, because the ContainerChainSpawner
-        // doesn't remember that the last message has been sent to the orchestrator chain,
-        // which is always running, so it is still collating.
         m.handle_update_assignment(Some(1000.into()), None);
         m.assert_collating_on(Some(1000.into()));
         m.assert_running_chains(&[]);
