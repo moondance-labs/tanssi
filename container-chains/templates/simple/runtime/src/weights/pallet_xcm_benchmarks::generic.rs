@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-template-simple-node
+// target/release/container-chain-template-frontier-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// container-chains/templates/frontier/runtime/src/weights/pallet_xcm_benchmarks::generic.rs
+// container-chains/templates/simple/runtime/src/weights/pallet_xcm_benchmarks::generic.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -63,17 +63,17 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 	/// Storage: `PolkadotXcm::SafeXcmVersion` (r:1 w:0)
 	/// Proof: `PolkadotXcm::SafeXcmVersion` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::HostConfiguration` (r:1 w:0)
 	/// Proof: `ParachainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::PendingUpwardMessages` (r:1 w:1)
 	/// Proof: `ParachainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn report_holding() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `176`
-		//  Estimated: `3641`
-		// Minimum execution time: 47_327_000 picoseconds.
-		Weight::from_parts(49_187_000, 3641)
+		//  Measured:  `166`
+		//  Estimated: `3631`
+		// Minimum execution time: 46_684_000 picoseconds.
+		Weight::from_parts(48_192_000, 3631)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -81,8 +81,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_262_000 picoseconds.
-		Weight::from_parts(2_305_000, 0)
+		// Minimum execution time: 1_794_000 picoseconds.
+		Weight::from_parts(1_901_000, 0)
 	}
 	/// Storage: `PolkadotXcm::Queries` (r:1 w:0)
 	/// Proof: `PolkadotXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -90,8 +90,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `69`
 		//  Estimated: `3534`
-		// Minimum execution time: 8_183_000 picoseconds.
-		Weight::from_parts(8_378_000, 3534)
+		// Minimum execution time: 6_999_000 picoseconds.
+		Weight::from_parts(7_341_000, 3534)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
@@ -102,51 +102,51 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `46`
 		//  Estimated: `3997`
-		// Minimum execution time: 12_500_000 picoseconds.
-		Weight::from_parts(13_014_000, 3997)
+		// Minimum execution time: 11_647_000 picoseconds.
+		Weight::from_parts(12_066_000, 3997)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	fn refund_surplus() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_293_000 picoseconds.
-		Weight::from_parts(2_375_000, 0)
+		// Minimum execution time: 1_913_000 picoseconds.
+		Weight::from_parts(2_006_000, 0)
 	}
 	fn set_error_handler() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_098_000 picoseconds.
-		Weight::from_parts(2_211_000, 0)
+		// Minimum execution time: 1_666_000 picoseconds.
+		Weight::from_parts(1_827_000, 0)
 	}
 	fn set_appendix() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_076_000 picoseconds.
-		Weight::from_parts(2_161_000, 0)
+		// Minimum execution time: 1_728_000 picoseconds.
+		Weight::from_parts(1_798_000, 0)
 	}
 	fn clear_error() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_080_000 picoseconds.
-		Weight::from_parts(2_167_000, 0)
+		// Minimum execution time: 1_665_000 picoseconds.
+		Weight::from_parts(1_741_000, 0)
 	}
 	fn descend_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_587_000 picoseconds.
-		Weight::from_parts(2_680_000, 0)
+		// Minimum execution time: 2_174_000 picoseconds.
+		Weight::from_parts(2_263_000, 0)
 	}
 	fn clear_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_077_000 picoseconds.
-		Weight::from_parts(2_165_000, 0)
+		// Minimum execution time: 1_606_000 picoseconds.
+		Weight::from_parts(1_735_000, 0)
 	}
 	/// Storage: `ParachainSystem::UpwardDeliveryFeeFactor` (r:1 w:0)
 	/// Proof: `ParachainSystem::UpwardDeliveryFeeFactor` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -157,17 +157,17 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 	/// Storage: `PolkadotXcm::SafeXcmVersion` (r:1 w:0)
 	/// Proof: `PolkadotXcm::SafeXcmVersion` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::HostConfiguration` (r:1 w:0)
 	/// Proof: `ParachainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::PendingUpwardMessages` (r:1 w:1)
 	/// Proof: `ParachainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn report_error() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `176`
-		//  Estimated: `3641`
-		// Minimum execution time: 41_566_000 picoseconds.
-		Weight::from_parts(42_866_000, 3641)
+		//  Measured:  `166`
+		//  Estimated: `3631`
+		// Minimum execution time: 39_918_000 picoseconds.
+		Weight::from_parts(41_866_000, 3631)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -177,8 +177,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `126`
 		//  Estimated: `3591`
-		// Minimum execution time: 12_170_000 picoseconds.
-		Weight::from_parts(12_873_000, 3591)
+		// Minimum execution time: 10_956_000 picoseconds.
+		Weight::from_parts(11_318_000, 3591)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -186,8 +186,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_082_000 picoseconds.
-		Weight::from_parts(2_172_000, 0)
+		// Minimum execution time: 1_624_000 picoseconds.
+		Weight::from_parts(1_763_000, 0)
 	}
 	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:1 w:1)
 	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -207,8 +207,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `75`
 		//  Estimated: `3540`
-		// Minimum execution time: 20_093_000 picoseconds.
-		Weight::from_parts(21_338_000, 3540)
+		// Minimum execution time: 18_271_000 picoseconds.
+		Weight::from_parts(19_263_000, 3540)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -218,44 +218,44 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_742_000 picoseconds.
-		Weight::from_parts(3_925_000, 0)
+		// Minimum execution time: 3_374_000 picoseconds.
+		Weight::from_parts(3_543_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn burn_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_163_000 picoseconds.
-		Weight::from_parts(3_230_000, 0)
+		// Minimum execution time: 2_736_000 picoseconds.
+		Weight::from_parts(2_838_000, 0)
 	}
 	fn expect_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_188_000 picoseconds.
-		Weight::from_parts(2_264_000, 0)
+		// Minimum execution time: 1_826_000 picoseconds.
+		Weight::from_parts(2_168_000, 0)
 	}
 	fn expect_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_122_000 picoseconds.
-		Weight::from_parts(2_234_000, 0)
+		// Minimum execution time: 1_716_000 picoseconds.
+		Weight::from_parts(1_842_000, 0)
 	}
 	fn expect_error() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_107_000 picoseconds.
-		Weight::from_parts(2_164_000, 0)
+		// Minimum execution time: 1_673_000 picoseconds.
+		Weight::from_parts(1_794_000, 0)
 	}
 	fn expect_transact_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_268_000 picoseconds.
-		Weight::from_parts(2_376_000, 0)
+		// Minimum execution time: 1_859_000 picoseconds.
+		Weight::from_parts(1_940_000, 0)
 	}
 	/// Storage: `ParachainSystem::UpwardDeliveryFeeFactor` (r:1 w:0)
 	/// Proof: `ParachainSystem::UpwardDeliveryFeeFactor` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -266,17 +266,17 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 	/// Storage: `PolkadotXcm::SafeXcmVersion` (r:1 w:0)
 	/// Proof: `PolkadotXcm::SafeXcmVersion` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::HostConfiguration` (r:1 w:0)
 	/// Proof: `ParachainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::PendingUpwardMessages` (r:1 w:1)
 	/// Proof: `ParachainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn query_pallet() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `176`
-		//  Estimated: `3641`
-		// Minimum execution time: 46_755_000 picoseconds.
-		Weight::from_parts(48_691_000, 3641)
+		//  Measured:  `166`
+		//  Estimated: `3631`
+		// Minimum execution time: 45_892_000 picoseconds.
+		Weight::from_parts(47_635_000, 3631)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -284,8 +284,8 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_313_000 picoseconds.
-		Weight::from_parts(5_488_000, 0)
+		// Minimum execution time: 5_356_000 picoseconds.
+		Weight::from_parts(5_509_000, 0)
 	}
 	/// Storage: `ParachainSystem::UpwardDeliveryFeeFactor` (r:1 w:0)
 	/// Proof: `ParachainSystem::UpwardDeliveryFeeFactor` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -296,17 +296,17 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 	/// Storage: `PolkadotXcm::SafeXcmVersion` (r:1 w:0)
 	/// Proof: `PolkadotXcm::SafeXcmVersion` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::HostConfiguration` (r:1 w:0)
 	/// Proof: `ParachainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::PendingUpwardMessages` (r:1 w:1)
 	/// Proof: `ParachainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn report_transact_status() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `176`
-		//  Estimated: `3641`
-		// Minimum execution time: 40_898_000 picoseconds.
-		Weight::from_parts(43_200_000, 3641)
+		//  Measured:  `166`
+		//  Estimated: `3631`
+		// Minimum execution time: 40_382_000 picoseconds.
+		Weight::from_parts(41_950_000, 3631)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -314,35 +314,35 @@ impl<T: frame_system::Config> pallet_xcm_benchmarks::generic::WeightInfo for Sub
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_138_000 picoseconds.
-		Weight::from_parts(2_216_000, 0)
+		// Minimum execution time: 1_699_000 picoseconds.
+		Weight::from_parts(1_828_000, 0)
 	}
 	fn set_topic() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_077_000 picoseconds.
-		Weight::from_parts(2_124_000, 0)
+		// Minimum execution time: 1_647_000 picoseconds.
+		Weight::from_parts(1_740_000, 0)
 	}
 	fn clear_topic() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_045_000 picoseconds.
-		Weight::from_parts(2_168_000, 0)
+		// Minimum execution time: 1_660_000 picoseconds.
+		Weight::from_parts(1_746_000, 0)
 	}
 	fn set_fees_mode() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_042_000 picoseconds.
-		Weight::from_parts(2_150_000, 0)
+		// Minimum execution time: 1_700_000 picoseconds.
+		Weight::from_parts(1_782_000, 0)
 	}
 	fn unpaid_execution() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_190_000 picoseconds.
-		Weight::from_parts(2_397_000, 0)
+		// Minimum execution time: 1_731_000 picoseconds.
+		Weight::from_parts(1_838_000, 0)
 	}
 }
