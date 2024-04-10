@@ -456,6 +456,11 @@ declare module "@polkadot/api-base/types/events" {
                 [paraId: u32, credits: u32],
                 { paraId: u32; credits: u32 }
             >;
+            CollatorAssignmentTipCollected: AugmentedEvent<
+                ApiType,
+                [paraId: u32, payer: AccountId32, tip: u128],
+                { paraId: u32; payer: AccountId32; tip: u128 }
+            >;
             CreditsPurchased: AugmentedEvent<
                 ApiType,
                 [paraId: u32, payer: AccountId32, credit: u128],

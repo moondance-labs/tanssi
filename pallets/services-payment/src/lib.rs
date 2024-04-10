@@ -36,8 +36,8 @@ use {
     scale_info::prelude::vec::Vec,
     serde::{Deserialize, Serialize},
     sp_io::hashing::blake2_256,
-    sp_runtime::traits::TrailingZeroInput,
-    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook},
+    sp_runtime::{traits::TrailingZeroInput, DispatchError},
+    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook, CollatorAssignmentTip},
 };
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -59,11 +59,10 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// Handler for fees
+        /// Handlers for fees
         type OnChargeForBlock: OnUnbalanced<NegativeImbalanceOf<Self>>;
-
-        /// Handler for fees
         type OnChargeForCollatorAssignment: OnUnbalanced<NegativeImbalanceOf<Self>>;
+        type OnChargeForCollatorAssignmentTip: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
@@ -111,6 +110,11 @@ pub mod pallet {
             para_id: ParaId,
             credits_remaining: u32,
         },
+        CollatorAssignmentTipCollected {
+            para_id: ParaId,
+            payer: T::AccountId,
+            tip: BalanceOf<T>,
+        },
         BlockProductionCreditsSet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
@@ -153,6 +157,11 @@ pub mod pallet {
     /// Max core price for parathread in relay chain currency
     #[pallet::storage]
     pub type MaxCorePrice<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, u128, OptionQuery>;
+
+    /// Max tip for collator assignment on congestion
+    #[pallet::storage]
+    #[pallet::getter(fn max_tip)]
+    pub type MaxTip<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, BalanceOf<T>, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -280,6 +289,26 @@ pub mod pallet {
                 para_id,
                 max_core_price,
             });
+
+            Ok(().into())
+        }
+
+        /// Set the maximum tip a container chain is willing to pay to be assigned a collator on congestion.
+        /// Can only be called by container chain manager.
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::set_max_tip())]
+        pub fn set_max_tip(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            max_tip: Option<BalanceOf<T>>,
+        ) -> DispatchResultWithPostInfo {
+            T::ManagerOrigin::ensure_origin(origin, &para_id)?;
+
+            if let Some(max_tip) = max_tip {
+                MaxTip::<T>::insert(para_id, max_tip);
+            } else {
+                MaxTip::<T>::remove(para_id);
+            }
 
             Ok(().into())
         }
@@ -503,28 +532,71 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     }
 }
 
-impl<T: Config> CollatorAssignmentHook for Pallet<T> {
-    fn on_collators_assigned(para_id: ParaId) -> Weight {
-        if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
-            let (amount_to_charge, _weight) =
-                T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
-            match T::Currency::withdraw(
-                &Self::parachain_tank(para_id),
-                amount_to_charge,
-                WithdrawReasons::FEE,
-                ExistenceRequirement::KeepAlive,
-            ) {
-                Err(e) => log::warn!(
-                    "Failed to withdraw collator assignment payment for container chain {}: {:?}",
-                    u32::from(para_id),
-                    e
-                ),
-                Ok(imbalance) => {
-                    T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
+impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
+    // is_parathread parameter for future use to apply different logic
+    fn on_collators_assigned(
+        para_id: ParaId,
+        maybe_tip: Option<&BalanceOf<T>>,
+        _is_parathread: bool,
+    ) -> Result<Weight, DispatchError> {
+        // Withdraw assignment fee
+        let maybe_assignment_imbalance =
+            if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+                let (amount_to_charge, _weight) =
+                    T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+                Some(T::Currency::withdraw(
+                    &Self::parachain_tank(para_id),
+                    amount_to_charge,
+                    WithdrawReasons::FEE,
+                    ExistenceRequirement::KeepAlive,
+                )?)
+            } else {
+                None
+            };
+
+        if let Some(&tip) = maybe_tip {
+            // Only charge the tip to the paras that had a max tip set
+            // (aka were willing to tip for being assigned a collator)
+            if MaxTip::<T>::get(para_id).is_some() {
+                match T::Currency::withdraw(
+                    &Self::parachain_tank(para_id),
+                    tip,
+                    WithdrawReasons::TIP,
+                    ExistenceRequirement::KeepAlive,
+                ) {
+                    Err(e) => {
+                        // Return assignment imbalance to tank on error
+                        if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+                            T::Currency::resolve_creating(
+                                &Self::parachain_tank(para_id),
+                                assignment_imbalance,
+                            );
+                        }
+                        return Err(e);
+                    }
+                    Ok(tip_imbalance) => {
+                        Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
+                            para_id,
+                            payer: Self::parachain_tank(para_id),
+                            tip,
+                        });
+                        T::OnChargeForCollatorAssignmentTip::on_unbalanced(tip_imbalance);
+                    }
                 }
             }
         }
-        T::WeightInfo::on_collators_assigned()
+
+        if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+            T::OnChargeForCollatorAssignment::on_unbalanced(assignment_imbalance);
+        }
+
+        Ok(T::WeightInfo::on_collators_assigned())
+    }
+}
+
+impl<T: Config> CollatorAssignmentTip<BalanceOf<T>> for Pallet<T> {
+    fn get_para_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+        MaxTip::<T>::get(para_id)
     }
 }
 
@@ -562,5 +634,7 @@ impl<T: Config> Pallet<T> {
         // Clean credits
         BlockProductionCredits::<T>::remove(para_id);
         CollatorAssignmentCredits::<T>::remove(para_id);
+        MaxTip::<T>::remove(para_id);
+        MaxCorePrice::<T>::remove(para_id);
     }
 }
