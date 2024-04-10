@@ -884,6 +884,12 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly creditsRemaining: u32;
         } & Struct;
+        readonly isCollatorAssignmentTipCollected: boolean;
+        readonly asCollatorAssignmentTipCollected: {
+            readonly paraId: u32;
+            readonly payer: AccountId32;
+            readonly tip: u128;
+        } & Struct;
         readonly isBlockProductionCreditsSet: boolean;
         readonly asBlockProductionCreditsSet: {
             readonly paraId: u32;
@@ -908,6 +914,7 @@ declare module "@polkadot/types/lookup" {
             | "CreditsPurchased"
             | "BlockProductionCreditBurned"
             | "CollatorAssignmentCreditBurned"
+            | "CollatorAssignmentTipCollected"
             | "BlockProductionCreditsSet"
             | "RefundAddressUpdated"
             | "MaxCorePriceUpdated"
@@ -2061,13 +2068,19 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly maxCorePrice: Option<u128>;
         } & Struct;
+        readonly isSetMaxTip: boolean;
+        readonly asSetMaxTip: {
+            readonly paraId: u32;
+            readonly maxTip: Option<u128>;
+        } & Struct;
         readonly type:
             | "PurchaseCredits"
             | "SetBlockProductionCredits"
             | "SetGivenFreeCredits"
             | "SetRefundAddress"
             | "SetCollatorAssignmentCredits"
-            | "SetMaxCorePrice";
+            | "SetMaxCorePrice"
+            | "SetMaxTip";
     }
 
     /** @name PalletDataPreserversCall (225) */

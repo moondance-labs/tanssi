@@ -85,7 +85,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, RuntimeDebug,
     },
-    sp_std::{marker::PhantomData, prelude::*},
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
@@ -627,32 +627,48 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
 pub struct RemoveParaIdsWithNoCreditsImpl;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
-    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        currently_assigned: &BTreeSet<ParaId>,
+    ) {
         let blocks_per_session = Period::get();
-        let block_credits_for_2_sessions = 2 * blocks_per_session;
+
         para_ids.retain(|para_id| {
-            // Check if the container chain has enough credits for producing blocks for 2 sessions
+            // If the para has been assigned collators for this session it must have enough block credits
+            // for the current and the next session.
+            let block_credits_needed = if currently_assigned.contains(para_id) {
+                blocks_per_session * 2
+            } else {
+                blocks_per_session
+            };
+
+            // Check if the container chain has enough credits for producing blocks
             let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            // Check if the container chain has enough credits for 2 session assignments
+            // Check if the container chain has enough credits for a session assignments
             let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
+            // If para's max tip is set it should have enough to pay for one assignment with tip
+            let max_tip = pallet_services_payment::MaxTip::<Runtime>::get(para_id).unwrap_or_default() ;
+
             // Return if we can survive with free credits
-            if free_block_credits >= block_credits_for_2_sessions && free_session_credits >= 2 {
-                return true
+            if free_block_credits >= block_credits_needed && free_session_credits >= 1 {
+                // Max tip should always be checked, as it can be withdrawn even if free credits were used
+                return Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), max_tip).into_result(true).is_ok()
             }
 
-            let remaining_block_credits = block_credits_for_2_sessions.saturating_sub(free_block_credits);
-            let remaining_session_credits = 2u32.saturating_sub(free_session_credits);
+            let remaining_block_credits = block_credits_needed.saturating_sub(free_block_credits);
+            let remaining_session_credits = 1u32.saturating_sub(free_session_credits);
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
             let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
             let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
-            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
+
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay).saturating_add(max_tip);
 
             // This should take into account whether we tank goes below ED
             // The true refers to keepAlive
@@ -704,6 +720,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type CollatorAssignmentHook = ServicesPayment;
+    type CollatorAssignmentTip = ServicesPayment;
+    type Currency = Balances;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -741,6 +759,7 @@ impl pallet_services_payment::Config for Runtime {
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
+    type OnChargeForCollatorAssignmentTip = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block

@@ -195,15 +195,38 @@ mod benchmarks {
         let balance_to_purchase = collator_assignment_cost.saturating_mul(max_credit_stored.into());
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
         let existential_deposit = <T::Currency>::minimum_balance();
+        let tip = 1_000_000u32;
         assert_ok!(Pallet::<T>::purchase_credits(
             RawOrigin::Signed(caller.clone()).into(),
             para_id.into(),
-            balance_to_purchase + existential_deposit
+            balance_to_purchase + existential_deposit + tip.into()
+        ));
+        assert_ok!(Pallet::<T>::set_max_tip(
+            RawOrigin::Root.into(),
+            para_id.into(),
+            Some(tip.into())
         ));
         #[block]
         {
-            <Pallet<T> as CollatorAssignmentHook>::on_collators_assigned(para_id.into());
+            <Pallet<T> as CollatorAssignmentHook<BalanceOf<T>>>::on_collators_assigned(
+                para_id.into(),
+                Some(&tip.into()),
+                false,
+            )
+            .expect("failed on_collators_assigned");
         }
+    }
+
+    #[benchmark]
+    fn set_max_tip() {
+        let para_id = 1001u32.into();
+
+        assert!(crate::MaxTip::<T>::get(para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_max_tip(RawOrigin::Root, para_id, Some(1_000_000u32.into()));
+
+        assert!(crate::MaxTip::<T>::get(para_id).is_some());
     }
 
     impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);

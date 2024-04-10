@@ -102,6 +102,7 @@ impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
+    type OnChargeForCollatorAssignmentTip = ();
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
