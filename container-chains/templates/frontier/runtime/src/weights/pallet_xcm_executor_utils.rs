@@ -53,7 +53,7 @@ use sp_std::marker::PhantomData;
 
 /// Weights for pallet_xcm_executor_utils using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> pallet_xcm_executor_utils::WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_xcm_executor_utils::weights::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `XcmExecutorUtils::ReservePolicy` (r:0 w:1)
 	/// Proof: `XcmExecutorUtils::ReservePolicy` (`max_values`: None, `max_size`: Some(603621), added: 606096, mode: `MaxEncodedLen`)
 	fn set_reserve_policy() -> Weight {

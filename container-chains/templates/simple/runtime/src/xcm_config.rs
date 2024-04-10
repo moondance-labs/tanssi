@@ -419,5 +419,5 @@ impl pallet_xcm_executor_utils::Config for Runtime {
     type SetReserveTrustOrigin = EnsureRoot<AccountId>;
     type TeleportDefaultTrustPolicy = AllNativeTrustPolicy;
     type SetTeleportTrustOrigin = EnsureRoot<AccountId>;
-    type WeightInfo = pallet_xcm_executor_utils::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_xcm_executor_utils::SubstrateWeight<Runtime>;
 }

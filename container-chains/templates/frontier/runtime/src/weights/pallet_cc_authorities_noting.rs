@@ -53,7 +53,7 @@ use sp_std::marker::PhantomData;
 
 /// Weights for pallet_cc_authorities_noting using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> pallet_cc_authorities_noting::WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_cc_authorities_noting::weights::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `AuthoritiesNoting::DidSetOrchestratorAuthorityData` (r:1 w:1)
 	/// Proof: `AuthoritiesNoting::DidSetOrchestratorAuthorityData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::ValidationData` (r:1 w:0)
