@@ -426,7 +426,7 @@ where
                     }
                 },
                 _ = params.cancellation_token.cancelled() => {
-                    log::info!("Lookahead collator was already running! Exiting...");
+                    log::info!("Stopping lookahead collator");
                     break;
                 }
             }
