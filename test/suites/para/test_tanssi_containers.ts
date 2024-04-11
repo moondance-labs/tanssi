@@ -401,7 +401,7 @@ describeSuite({
                     );
                     await countUniqueBlockAuthors(paraApi, sessionPeriod, fullRotationBlock, blockNumber2002End - 1, 2);
                 } else {
-                    // Rotation happened after 2002 was registered, this should be impossible
+                    // Rotation happened after 2002 was deregistered, this should be impossible
                     expect(false, `${blockNumber2002End} cannot be less than ${fullRotationBlock}`).to.be.true;
                 }
             },
