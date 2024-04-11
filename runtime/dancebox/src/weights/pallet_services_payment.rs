@@ -137,4 +137,14 @@ impl<T: frame_system::Config> pallet_services_payment::WeightInfo for SubstrateW
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `ServicesPayment::MaxTip` (r:0 w:1)
+	/// Proof: `ServicesPayment::MaxTip` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
+	fn set_max_tip() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 4_157_000 picoseconds.
+		Weight::from_parts(4_576_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
