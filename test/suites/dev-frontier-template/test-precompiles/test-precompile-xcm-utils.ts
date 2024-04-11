@@ -152,7 +152,8 @@ describeSuite({
                 const baseWeight = extractWeight(
                     context.polkadotJs().consts.system.blockWeights.perClass.normal.baseExtrinsic
                 ).toBigInt();
-                const expectedUnitsPerSecond = ((1_000_000_000_000n * 1_000n) / baseWeight) * 1_000n;
+
+                const expectedUnitsPerSecond = ((1_000_000_000_000n * 1_000_000_000n) / baseWeight) * 1_000n;
 
                 expect(
                     await context.readContract!({
