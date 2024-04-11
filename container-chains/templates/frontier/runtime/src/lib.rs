@@ -1272,11 +1272,11 @@ impl_runtime_apis! {
                     );
                     let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
 
-                    assert!(ForeignAssetsCreator::create_foreign_asset(RuntimeOrigin::root(), asset_location, 0, who.clone(), true, 1).is_ok());
+                    assert!(ForeignAssetsCreator::create_foreign_asset(RuntimeOrigin::root(), asset_location, 0, who, true, 1).is_ok());
                     assert!(ForeignAssets::mint(
-                        RuntimeOrigin::signed(who.clone()),
+                        RuntimeOrigin::signed(who),
                         asset_id,
-                        <Runtime as frame_system::Config>::Lookup::unlookup(who.clone()),
+                        <Runtime as frame_system::Config>::Lookup::unlookup(who),
                         initial_asset_amount,
                     )
                     .is_ok());
