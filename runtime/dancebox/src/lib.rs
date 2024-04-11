@@ -2054,8 +2054,8 @@ impl_runtime_apis! {
 
                     assert!(ForeignAssetsCreator::create_foreign_asset(RuntimeOrigin::root(), asset_location, 0, who.clone(), true, 1).is_ok());
                     assert!(ForeignAssets::mint(
-                        RuntimeOrigin::signed(who.clone()).into(),
-                        asset_id.clone(),
+                        RuntimeOrigin::signed(who.clone()),
+                        asset_id,
                         <Runtime as frame_system::Config>::Lookup::unlookup(who.clone()),
                         initial_asset_amount,
                     )
