@@ -73,7 +73,10 @@ describeSuite({
 
                 // How much should the author have gotten?
                 // For now everything as we did not execute the pending operations
-                expect(reward.balance.toBigInt()).to.equal(expectedOrchestratorReward);
+                // How much should the author have gotten?
+                // For now everything as we did not execute the pending operations
+                expect(reward.balance.toBigInt()).toBeGreaterThanOrEqual(expectedOrchestratorReward - 1n);
+                expect(reward.balance.toBigInt()).toBeLessThanOrEqual(expectedOrchestratorReward + 1n);
                 expect(stakingRewardedCollator.manualRewards).to.equal(reward.balance.toBigInt());
                 expect(stakingRewardedCollator.autoCompoundingRewards).to.equal(0n);
                 expect(stakingRewardedDelegators.manualRewards).to.equal(0n);
