@@ -24,6 +24,7 @@ use {
     cumulus_primitives_core::ParaId,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
+    futures::stream::StreamExt,
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
@@ -33,7 +34,7 @@ use {
         NetworkParams, Result, SharedParams, SubstrateCli,
     },
     sc_service::config::{BasePath, PrometheusConfig},
-    sp_core::{hexdisplay::HexDisplay, H256},
+    sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
 };
@@ -307,19 +308,15 @@ pub fn run() -> Result<()> {
                 };
 
                 // POC: Try to fetch some data through the interface.
-                let response = client
-                    .get_storage_by_key(
-                        H256::from_slice(&hex_literal::hex!(
-                            "f6abf6eb1d245e6ecb6e6b598b3a1f302af4cfc0d895abd38b2762e10481915a"
-                        )),
-                        &hex_literal::hex!(
-                            "f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
-                        ),
-                    )
-                    .await
-                    .expect("to fetch requested data");
+                task_manager
+                    .spawn_handle()
+                    .spawn("rpc_provider_exemple", None, async move {
+                        let mut stream = client.new_best_notification_stream().await.unwrap();
 
-                println!("{response:?}");
+                        while let Some(header) = stream.next().await {
+                            println!("New best block: {}", header.hash());
+                        }
+                    });
 
                 Ok(task_manager)
             })
