@@ -81,6 +81,8 @@ pub struct ContainerChainSpawner {
     // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi:
         Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
+    // Stores the cancellation token used to stop the orchestrator chain collator process.
+    // When this is None, the orchestrator collator is not running.
     pub collation_cancellation_constructs:
         Option<(CancellationToken, futures::channel::oneshot::Receiver<()>)>,
 }
@@ -538,7 +540,8 @@ fn handle_update_assignment_state_change(
 
     running_chains_before.extend(state.assigned_para_id);
     running_chains_before.extend(state.next_assigned_para_id);
-    // Ignore orchestrator_para_id because it cannot be stopped or started, it is always running
+    // Ignore orchestrator_para_id because it is handled in a special way, as it does not need to
+    // start one session before in order to sync.
     running_chains_before.remove(&orchestrator_para_id);
 
     running_chains_after.extend(current);
@@ -548,13 +551,10 @@ fn handle_update_assignment_state_change(
     let mut need_to_restart_next = false;
 
     if state.assigned_para_id != current {
-        // If the assigned container chain was already running but not collating, we need to call collate_on
         if let Some(para_id) = current {
-            // Check if we get assigned to orchestrator chain
-            if para_id == orchestrator_para_id {
-            } else {
-                // When we get assigned to a different container chain, we don't need to call collate_on because
-                // we will restart that container chain in collation mode.
+            // If the assigned container chain has changed, we may need to
+            // restart it in collation mode, unless it is the orchestrator chain.
+            if para_id != orchestrator_para_id {
                 need_to_restart_current = true;
             }
         }
