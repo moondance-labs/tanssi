@@ -39,7 +39,10 @@ use {
         pallet,
         pallet_prelude::*,
         storage::types::{StorageDoubleMap, StorageMap},
-        traits::tokens::Balance,
+        traits::{
+            fungible::{Inspect, MutateHold},
+            tokens::{Balance, Precision},
+        },
         Blake2_128Concat,
     },
     frame_system::pallet_prelude::*,
@@ -53,6 +56,9 @@ use {
 };
 
 pub use pallet::*;
+
+type BalanceOf<T> =
+    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// Type able to provide the current time for given unit.
 /// For each unit the returned number should monotonically increase and not
@@ -110,6 +116,13 @@ pub trait Assets<AccountId, AssetId, Balance> {
     fn bench_set_balance(asset_id: &AssetId, account: &AccountId, amount: Balance);
 }
 
+/// Interactions the pallet needs with assets.
+pub trait StreamCreationHook<AccountId, Get, StreamId> {
+    fn stream_opened(stream_id: StreamId, account: &AccountId) -> DispatchResult;
+
+    fn stream_closed(stream_id: StreamId, account: &AccountId) -> DispatchResult;
+}
+
 #[pallet]
 pub mod pallet {
     use super::*;
@@ -144,6 +157,13 @@ pub mod pallet {
 
         /// Provide interaction with assets.
         type Assets: Assets<Self::AccountId, Self::AssetId, Self::Balance>;
+
+        type Currency: Inspect<Self::AccountId, Balance = Self::Balance>
+            + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+
+        type RuntimeHoldReason: From<HoldReason>;
+
+        type OpenStreamHoldAmount: Get<Self::Balance>;
 
         /// Represents which units of time can be used. Designed to be an enum
         /// with a variant for each kind of time source/scale supported.
@@ -289,6 +309,15 @@ pub mod pallet {
         QueryKind = OptionQuery,
     >;
 
+    /// Store each hold made to
+    #[pallet::storage]
+    pub type StreamsHolds<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = T::StreamId,
+        Value = BalanceOf<T>,
+        QueryKind = ValueQuery,
+    >;
+
     /// Lookup for all streams with given source.
     /// To avoid maintaining a growing list of stream ids, they are stored in
     /// the form of an entry (AccountId, StreamId). If such entry exists then
@@ -381,6 +410,7 @@ pub mod pallet {
     #[pallet::composite_enum]
     pub enum HoldReason {
         StreamPayment,
+        StreamOpened,
     }
 
     #[pallet::call]
@@ -425,10 +455,19 @@ pub mod pallet {
             // Unfreeze funds left in the stream.
             T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
 
+            let hold_amount = StreamsHolds::<T>::take(stream_id);
+            T::Currency::release(
+                &HoldReason::StreamOpened.into(),
+                &stream.source,
+                hold_amount,
+                Precision::Exact,
+            )?;
+
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
             LookupStreamsWithSource::<T>::remove(stream.source, stream_id);
             LookupStreamsWithTarget::<T>::remove(stream.target, stream_id);
+
 
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamClosed {
@@ -737,6 +776,11 @@ pub mod pallet {
                 .checked_add(&One::one())
                 .ok_or(Error::<T>::StreamIdOverflow)?;
             NextStreamId::<T>::set(next_stream_id);
+
+            // TODO save the holded amount to storage
+            let hold_amount = T::OpenStreamHoldAmount::get();
+            T::Currency::hold(&HoldReason::StreamOpened.into(), &origin, hold_amount)?;
+            StreamsHolds::<T>::insert(stream_id, hold_amount);
 
             // Freeze initial deposit.
             T::Assets::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
