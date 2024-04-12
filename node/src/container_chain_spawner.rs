@@ -92,16 +92,18 @@ pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
     next_assigned_para_id: Option<ParaId>,
+    failed_para_ids: HashSet<ParaId>,
     // For debugging and detecting errors
     pub spawned_containers_monitor: SpawnedContainersMonitor,
 }
 
 pub struct ContainerChainState {
-    /// Handle that stops the container chain when dropped
+    /// Handle that can be used to stop the container chain
     stop_handle: StopContainerChain,
 }
 
-/// Stops a container chain when dropped
+/// Stops a container chain when signal is sent. The bool means `keep_db`, whether to keep the
+/// container chain database (true) or remove it (false).
 pub struct StopContainerChain {
     signal: oneshot::Sender<bool>,
     id: usize,
@@ -120,7 +122,8 @@ pub enum CcSpawnMsg {
 }
 
 impl ContainerChainSpawner {
-    /// Try to start a new container chain. In case of error, this panics and stops the node.
+    /// Try to start a new container chain. In case of an error, this does not stop the node, and
+    /// the container chain will be attempted to spawn again when the collator is reassigned to it.
     #[must_use]
     fn spawn(
         &self,
@@ -156,6 +159,7 @@ impl ContainerChainSpawner {
             self.spawn_handle.clone(),
             self.state.clone(),
         );
+        let state2 = state.clone();
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
             // Preload genesis data from orchestrator chain storage.
@@ -179,7 +183,7 @@ impl ContainerChainSpawner {
 
             let genesis_data = orchestrator_runtime_api
                 .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .expect("error")
+                .map_err(|e| format!("Failed to call genesis_data runtime api: {}", e))?
                 .ok_or_else(|| {
                     format!(
                         "No genesis data registered for container chain id {}",
@@ -189,7 +193,7 @@ impl ContainerChainSpawner {
 
             let boot_nodes_raw = orchestrator_runtime_api
                 .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .expect("error");
+                .map_err(|e| format!("Failed to call boot_nodes runtime api: {}", e))?;
             if boot_nodes_raw.is_empty() {
                 log::warn!(
                     "No boot nodes registered on-chain for container chain {}",
@@ -255,7 +259,7 @@ impl ContainerChainSpawner {
                 let mut db_path = container_chain_cli_config
                     .database
                     .path()
-                    .unwrap()
+                    .ok_or_else(|| "Failed to get database path".to_string())?
                     .to_owned();
                 db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
                 container_chain_cli_config.database.set_path(&db_path);
@@ -360,14 +364,17 @@ impl ContainerChainSpawner {
 
                 futures::select! {
                     res1 = container_chain_task_manager_future => {
-                        log::error!("Essential task `{}` failed. Shutting down service.", name);
-
-                        // This should do `essential_failed_tx.close()` but we can't get that from
-                        // the parent task manager (it is private), so just panic
-                        match res1 {
-                            Ok(()) => panic!("{} has stopped unexpectedly", name),
-                            Err(e) => panic!("{} failed: {}", name, e),
+                        // An essential task failed or the task manager was stopped unexpectedly
+                        // using `.terminate()`. This should stop the container chain but not the node.
+                        if res1.is_err() {
+                            log::error!("Essential task failed in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
+                        } else {
+                            log::error!("Unexpected shutdown in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
                         }
+                        // Mark this container chain as "failed to stop" to avoid warning in `self.stop()`
+                        let mut state = state.lock().expect("poison error");
+                        state.failed_para_ids.insert(container_chain_para_id);
+                        // Never delete db in this case because it is not a graceful shutdown
                     }
                     stop_unassigned = on_exit_future => {
                         // Graceful shutdown.
@@ -394,7 +401,16 @@ impl ContainerChainSpawner {
             match try_closure().await {
                 Ok(()) => {}
                 Err(e) => {
-                    panic!("Failed to start container chain node: {}", e);
+                    log::error!(
+                        "Failed to start container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    );
+                    // Mark this container chain as "failed to start"
+                    let mut state = state2.lock().expect("poison error");
+                    state
+                        .failed_para_ids
+                        .insert(container_chain_para_id);
                 }
             }
         }
@@ -421,10 +437,14 @@ impl ContainerChainSpawner {
                 let _ = stop_handle.stop_handle.signal.send(keep_db);
             }
             None => {
-                log::warn!(
-                    "Tried to stop a container chain that is not running: {}",
-                    container_chain_para_id
-                );
+                // Do not print the warning message if this is a container chain that has failed to
+                // start, because in that case it will not be running
+                if !state.failed_para_ids.remove(&container_chain_para_id) {
+                    log::warn!(
+                        "Tried to stop a container chain that is not running: {}",
+                        container_chain_para_id
+                    );
+                }
             }
         }
     }
@@ -666,7 +686,7 @@ fn open_and_maybe_delete_db(
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
 ) -> sc_service::error::Result<()> {
-    let temp_cli = NodeConfig::new_builder(&container_chain_cli_config, None).unwrap();
+    let temp_cli = NodeConfig::new_builder(&container_chain_cli_config, None)?;
 
     // Check block diff, only needed if keep-db is false
     if !keep_db {

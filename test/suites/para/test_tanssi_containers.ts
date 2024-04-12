@@ -228,6 +228,29 @@ describeSuite({
 
                 // Read raw chain spec file
                 const spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
+                const emptyGenesisData = () => {
+                    const g = context.polkadotJs().createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
 
                 // Before registering container chain 2002, ensure that it has 0 blocks
                 // Since the RPC doesn't exist at this point, we need to get that from the relay
@@ -237,8 +260,9 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered1.toJSON().includes(2002)).to.be.false;
 
-                const chainSpec2002 = JSON.parse(spec2002);
-                const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
+                //const chainSpec2002 = JSON.parse(spec2002);
+                //const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
+                const containerChainGenesisData = emptyGenesisData();
                 const tx1 = paraApi.tx.registrar.register(2002, containerChainGenesisData);
                 const purchasedCredits = 100000n;
                 const requiredBalance = purchasedCredits * 1_000_000n;
