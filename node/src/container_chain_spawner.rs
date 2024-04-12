@@ -408,9 +408,7 @@ impl ContainerChainSpawner {
                     );
                     // Mark this container chain as "failed to start"
                     let mut state = state2.lock().expect("poison error");
-                    state
-                        .failed_para_ids
-                        .insert(container_chain_para_id);
+                    state.failed_para_ids.insert(container_chain_para_id);
                 }
             }
         }
@@ -830,6 +828,7 @@ mod tests {
                     spawned_container_chains: Default::default(),
                     assigned_para_id: Some(orchestrator_para_id),
                     next_assigned_para_id: None,
+                    failed_para_ids: Default::default(),
                     spawned_containers_monitor: Default::default(),
                 })),
                 orchestrator_para_id,
