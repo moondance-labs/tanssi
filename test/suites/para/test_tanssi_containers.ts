@@ -353,13 +353,18 @@ describeSuite({
                 expect(sessionPeriod < blockNumber2002Start).to.be.true;
                 expect(blockNumber2002Start < blockNumber2002End).to.be.true;
                 const fullRotationBlock = 50;
+                // Returns true if a full collator rotation happens inside the inclusive range defined by start and end.
+                // If the rotation happens exactly at start or exactly at end, this returns false.
+                const fullRotationBetween = (start, end) => {
+                    return fullRotationBlock > start && fullRotationBlock < end;
+                };
 
                 // Start from block 1 because block 0 has no author
                 const blockNumber = 1;
-                // Consider 3 cases: full rotation can happen before 2002 is registered, at the same time 2002 is
-                // registered, or while 2002 is registered
+                // Consider 3 cases: full rotation can happen before 2002 is registered, while 2002 is registered, or
+                // after 2002 is registered.
                 // Locally blockNumber2002Start = 40 but in CI it can be 40 or 50 depending on server specs.
-                if (fullRotationBlock < blockNumber2002Start) {
+                if (fullRotationBetween(blockNumber, blockNumber2002Start - 1)) {
                     // Before 2002 registration: 4 authors
                     await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, fullRotationBlock - 1, 4);
                     await countUniqueBlockAuthors(
@@ -377,18 +382,8 @@ describeSuite({
                         blockNumber2002End - 1,
                         2
                     );
-                } else if (fullRotationBlock == blockNumber2002Start) {
-                    // Before 2002 registration: 4 authors
-                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
-                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-                    await countUniqueBlockAuthors(
-                        paraApi,
-                        sessionPeriod,
-                        blockNumber2002Start,
-                        blockNumber2002End - 1,
-                        2
-                    );
-                } else if (fullRotationBlock < blockNumber2002End) {
+                } else if (fullRotationBetween(blockNumber2002Start, blockNumber2002End - 1)) {
+                    // Rotation happened while 2002 was registered
                     // Before 2002 registration: 4 authors
                     await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
                     // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
@@ -401,8 +396,17 @@ describeSuite({
                     );
                     await countUniqueBlockAuthors(paraApi, sessionPeriod, fullRotationBlock, blockNumber2002End - 1, 2);
                 } else {
-                    // Rotation happened after 2002 was deregistered, this should be impossible
-                    expect(false, `${blockNumber2002End} cannot be less than ${fullRotationBlock}`).to.be.true;
+                    // Rotation happened at the same time as 2002 was registered, or after 2002 was deregistered
+                    // Before 2002 registration: 4 authors
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
+                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        blockNumber2002Start,
+                        blockNumber2002End - 1,
+                        2
+                    );
                 }
             },
         });
