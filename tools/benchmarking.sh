@@ -30,7 +30,7 @@ else
 fi
 
 if [[ -z "${TEMPLATE_PATH}" ]]; then
-    TEMPLATE_PATH="./benchmarking/frame-weight-template.hbs"
+    TEMPLATE_PATH="./benchmarking/frame-weight-pallet-template.hbs"
 else
     TEMPLATE_PATH="${TEMPLATE_PATH}"
 fi
