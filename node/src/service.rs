@@ -196,8 +196,8 @@ pub fn build_check_assigned_para_id(
     );
 }
 
-/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
-/// the para id has changed since the last call to this function.
+/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` to
+/// start or stop the required container chains.
 ///
 /// Checks the assignment for the next block, so if there is a session change on block 15, this will
 /// detect the assignment change after importing block 14.
@@ -404,13 +404,6 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
-    // This channel allows us to notify the lookahead collator when it should stop.
-    // Useful when rotating containers.
-    let mut initial_cancellation_token: Option<(
-        CancellationToken,
-        futures::channel::oneshot::Receiver<()>,
-    )> = None;
-
     if validator {
         let collator_key = collator_key
             .clone()
@@ -465,9 +458,7 @@ async fn start_node_impl(
                 )
             }
         };
-        // Start collating now
-        initial_cancellation_token = Some(start_collation());
-        // And save callback for later, used when collator rotates from container chain back to orchestrator chain
+        // Save callback for later, used when collator rotates from container chain back to orchestrator chain
         collate_on_tanssi = Arc::new(start_collation);
     }
 
@@ -515,14 +506,14 @@ async fn start_node_impl(
             spawn_handle,
             state: Default::default(),
             collate_on_tanssi,
-            collation_cancellation_constructs: initial_cancellation_token,
+            collation_cancellation_constructs: None,
         };
         let state = container_chain_spawner.state.clone();
 
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx),
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
