@@ -80,22 +80,31 @@ mod benchmarks {
     #[benchmark]
     fn request_delegate() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * 3u32.into());
+        let (caller_candidate, _deposit_amount) = create_funded_user::<T>(
+            "candidate",
+            USER_SEED,
+            min_candidate_stk::<T>() * 10u32.into(),
+        );
 
-        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+        let (caller_delegator, _deposit_amount) = create_funded_user::<T>(
+            "delegator",
+            USER_SEED,
+            min_candidate_stk::<T>() * 10u32.into(),
+        );
+
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller_candidate, true);
         // self delegation
         PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
+            RawOrigin::Signed(caller_candidate.clone()).into(),
+            caller_candidate.clone(),
             TargetPool::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
         // self delegation
         PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
+            RawOrigin::Signed(caller_candidate.clone()).into(),
+            caller_candidate.clone(),
             TargetPool::ManualRewards,
             min_candidate_stk::<T>(),
         )?;
@@ -105,43 +114,52 @@ mod benchmarks {
         T::JoiningRequestTimer::skip_to_elapsed();
 
         PooledStaking::<T>::execute_pending_operations(
-            RawOrigin::Signed(caller.clone()).into(),
+            RawOrigin::Signed(caller_candidate.clone()).into(),
             vec![PendingOperationQuery {
-                delegator: caller.clone(),
+                delegator: caller_candidate.clone(),
                 operation: JoiningAutoCompounding {
-                    candidate: caller.clone(),
+                    candidate: caller_candidate.clone(),
                     at: timer.clone(),
                 },
             }],
         )?;
 
         PooledStaking::<T>::execute_pending_operations(
-            RawOrigin::Signed(caller.clone()).into(),
+            RawOrigin::Signed(caller_candidate.clone()).into(),
             vec![PendingOperationQuery {
-                delegator: caller.clone(),
+                delegator: caller_candidate.clone(),
                 operation: JoiningManualRewards {
-                    candidate: caller.clone(),
+                    candidate: caller_candidate.clone(),
                     at: timer.clone(),
                 },
             }],
         )?;
 
+        // self delegation to have something in joining
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller_candidate.clone()).into(),
+            caller_candidate.clone(),
+            TargetPool::ManualRewards,
+            min_candidate_stk::<T>(),
+        )?;
+
         // Worst case scenario is: we have already shares in both pools, and we delegate again
+        // but we delegate with a different account
         #[extrinsic_call]
         _(
-            RawOrigin::Signed(caller.clone()),
-            caller.clone(),
+            RawOrigin::Signed(caller_delegator.clone()),
+            caller_candidate.clone(),
             TargetPool::AutoCompounding,
-            min_candidate_stk::<T>(),
+            min_candidate_stk::<T>() * 2u32.into(),
         );
 
         // assert that it comes out sorted
         assert_last_event::<T>(
             Event::RequestedDelegate {
-                candidate: caller.clone(),
-                delegator: caller,
+                candidate: caller_candidate.clone(),
+                delegator: caller_delegator,
                 pool: TargetPool::AutoCompounding,
-                pending: min_candidate_stk::<T>(),
+                pending: min_candidate_stk::<T>() * 2u32.into(),
             }
             .into(),
         );
