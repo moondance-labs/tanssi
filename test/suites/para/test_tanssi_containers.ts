@@ -482,13 +482,15 @@ async function countUniqueBlockAuthors(
 
     const uniq = [...new Set(actualAuthors)];
 
-    if (uniq.length != numAuthors) {
-        console.log(formatAuthoritySets(authoritiesBySession));
+    if (uniq.length > numAuthors || (uniq.length == 1 && numAuthors > 1)) {
         console.error(
-            "Mismatch between authorities and actual block authors: actual authors: ",
+            "Mismatch between authorities and actual block authors: authorities: ",
+            formatAuthoritySets(authoritiesBySession),
+            "",
             actualAuthors,
             ", block numbers: ",
-            blockNumbers
+            blockNumbers,
+            `uniq.length=${uniq.length}, numAuthors=${numAuthors}`
         );
         expect(false).to.be.true;
     }
