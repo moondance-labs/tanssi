@@ -400,7 +400,7 @@ mod perform_payment {
             let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
@@ -446,7 +446,7 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
@@ -496,7 +496,7 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
@@ -544,7 +544,7 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
@@ -589,9 +589,9 @@ mod perform_payment {
                 deposit: config.rate * 9,
                 ..default()
             };
-            
+
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit,);
 
@@ -638,7 +638,7 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-            
+
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
@@ -681,13 +681,13 @@ mod perform_payment {
                 time_unit: TimeUnit::Decreasing,
                 ..default_config()
             };
-            
+
             assert_ok!(OpenStream {
                 config,
                 ..default()
             }
             .call());
-        
+
             assert_balance_change!(-, ALICE, initial_deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), initial_deposit);
 
