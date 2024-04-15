@@ -161,13 +161,11 @@ describeSuite({
                 // Deregister Collator2000-02, it should delete the db
                 const invuln = (await paraApi.query.invulnerables.invulnerables()).toJSON();
 
-                const newInvuln = invuln.filter((addr) => {
-                    return u8aToHex(decodeAddress(addr)) != getKeyringNimbusIdHex("Collator2000-02");
-                });
-                // It must have changed
-                expect(newInvuln).to.not.deep.equal(invuln);
+                const invulnerable_to_remove = invuln.filter((addr) => {
+                    return u8aToHex(decodeAddress(addr)) == getKeyringNimbusIdHex("Collator2000-02");
+                })[0];
 
-                const tx = paraApi.tx.invulnerables.setInvulnerables(newInvuln);
+                const tx = paraApi.tx.invulnerables.removeInvulnerable(invulnerable_to_remove);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
 
                 await waitSessions(context, paraApi, 2);
