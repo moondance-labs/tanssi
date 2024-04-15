@@ -169,7 +169,8 @@ mod benchmarks {
         let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
             frame_support::BoundedVec::try_from(collator_ids).unwrap();
         <Invulnerables<T>>::put(invulnerables);
-        let to_remove = account_ids.first().unwrap().clone();
+
+        let to_remove = account_ids.last().unwrap().clone();
 
         #[extrinsic_call]
         _(origin as T::RuntimeOrigin, to_remove.clone());
