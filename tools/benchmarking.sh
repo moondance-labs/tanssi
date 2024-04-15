@@ -91,6 +91,9 @@ function bench {
         ))
         echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
         for PALLET in "${ALL_PALLETS[@]}"; do
+            if [[ "$PALLET" == *"pallet_xcm_benchmarks"* ]]; then
+                TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+            fi
             OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
@@ -105,6 +108,9 @@ function bench {
             --output "${OUTPUT}"
         done
     else
+        if [[ "${1}" == *"pallet_xcm_benchmarks"* ]]; then
+            TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+        fi
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \

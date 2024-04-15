@@ -17,9 +17,9 @@
 pub mod pallet_xcm_benchmarks_generic;
 
 use {
-    crate::{weights::xcm::pallet_xcm_benchmarks_generic::WeightInfo, Runtime},
+    crate::Runtime,
     frame_support::weights::Weight,
-    pallet_xcm_benchmarks_generic::SubstrateWeight as XcmGeneric,
+    pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
     staging_xcm::{
         latest::{prelude::*, Weight as XCMWeight},
@@ -133,7 +133,7 @@ where
         _reserve: &MultiLocation,
         _xcm: &Xcm<()>,
     ) -> XCMWeight {
-        XcmGeneric::<Runtime>::initiate_reserve_withdraw()
+        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
     }
     fn initiate_teleport(
         _assets: &MultiAssetFilter,
