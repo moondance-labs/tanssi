@@ -203,7 +203,7 @@ describeSuite({
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
+                await context.waitBlock(6, "Tanssi");
 
                 // Collator2000-02 container chain db should have been deleted
                 expect(await directoryExists(container200002DbPath)).to.be.false;
