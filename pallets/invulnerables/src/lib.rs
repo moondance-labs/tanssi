@@ -175,7 +175,7 @@ pub mod pallet {
         /// Add a new account `who` to the list of `Invulnerables` collators.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
-        #[pallet::call_index(0)]
+        #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::add_invulnerable(
 			T::MaxInvulnerables::get().saturating_sub(1),
 		))]
@@ -216,20 +216,19 @@ pub mod pallet {
         /// be sorted.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
-        #[pallet::call_index(1)]
+        #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::remove_invulnerable(T::MaxInvulnerables::get()))]
         pub fn remove_invulnerable(
             origin: OriginFor<T>,
             who: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
+        ) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             let collator_id = T::CollatorIdOf::convert(who.clone())
                 .ok_or(Error::<T>::UnableToDeriveCollatorId)?;
 
-            let mut pos = 0;
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                pos = invulnerables
+                let pos = invulnerables
                     .iter()
                     .position(|x| x == &collator_id)
                     .ok_or(Error::<T>::NotInvulnerable)?;
@@ -238,8 +237,7 @@ pub mod pallet {
             })?;
 
             Self::deposit_event(Event::InvulnerableRemoved { account_id: who });
-            let actual_weight = T::WeightInfo::remove_invulnerable((pos as u32) + 1);
-            Ok(Some(actual_weight).into())
+            Ok(())
         }
     }
 

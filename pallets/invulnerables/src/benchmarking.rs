@@ -198,7 +198,7 @@ mod benchmarks {
         let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
             invulnerables.into_iter().unzip();
 
-        for account in account_ids.into_iter() {
+        for account in account_ids {
             <InvulnerablesPallet<T>>::add_invulnerable(origin.clone(), account)
                 .expect("add invulnerable failed");
         }
