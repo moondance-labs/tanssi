@@ -16,10 +16,10 @@
 
 use {
     super::{
-        currency::MICROUNIT, weights, AccountId, AllPalletsWithSystem, AssetRate, Balance,
-        Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
-        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
+        currency::MICROUNIT, weights, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
+        MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
+        RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -40,10 +40,11 @@ use {
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,
-        FungibleAdapter, IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
+        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
+        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
+        WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
 };
@@ -161,8 +162,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
-pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
-
+pub type XcmWeigher =
+    WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
 pub type XcmRouter = (

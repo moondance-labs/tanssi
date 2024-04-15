@@ -36,3 +36,4 @@ pub mod pallet_tx_pause;
 pub mod pallet_utility;
 pub mod pallet_xcm;
 pub mod pallet_xcm_executor_utils;
+pub mod xcm;
