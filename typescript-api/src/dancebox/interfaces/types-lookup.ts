@@ -4620,7 +4620,8 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletStreamPaymentHoldReason (367) */
     interface PalletStreamPaymentHoldReason extends Enum {
         readonly isStreamPayment: boolean;
-        readonly type: "StreamPayment";
+        readonly isStreamOpened: boolean;
+        readonly type: "StreamPayment" | "StreamOpened";
     }
 
     /** @name PalletPooledStakingHoldReason (368) */
@@ -4685,6 +4686,7 @@ declare module "@polkadot/types/lookup" {
         readonly source: AccountId32;
         readonly target: AccountId32;
         readonly config: PalletStreamPaymentStreamConfig;
+        readonly openingDeposit: u128;
         readonly deposit: u128;
         readonly lastTimeUpdated: u128;
         readonly requestNonce: u32;

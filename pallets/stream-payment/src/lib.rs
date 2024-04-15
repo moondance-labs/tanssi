@@ -57,9 +57,6 @@ use {
 
 pub use pallet::*;
 
-type BalanceOf<T> =
-    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-
 /// Type able to provide the current time for given unit.
 /// For each unit the returned number should monotonically increase and not
 /// overflow.
@@ -192,6 +189,8 @@ pub mod pallet {
         pub target: AccountId,
         /// Steam config (time unit, asset id, rate)
         pub config: StreamConfig<Unit, AssetId, Balance>,
+        /// One-time opening deposit. Will be released on close.
+        pub opening_deposit: Balance,
         /// How much is deposited to fund this stream.
         pub deposit: Balance,
         /// Last time the stream was updated in `config.time_unit`.
@@ -307,15 +306,6 @@ pub mod pallet {
         Key = T::StreamId,
         Value = StreamOf<T>,
         QueryKind = OptionQuery,
-    >;
-
-    /// Store each hold made to
-    #[pallet::storage]
-    pub type StreamsHolds<T: Config> = StorageMap<
-        Hasher = Blake2_128Concat,
-        Key = T::StreamId,
-        Value = BalanceOf<T>,
-        QueryKind = ValueQuery,
     >;
 
     /// Lookup for all streams with given source.
@@ -455,24 +445,25 @@ pub mod pallet {
             // Unfreeze funds left in the stream.
             T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
 
-            let hold_amount = StreamsHolds::<T>::take(stream_id);
-            T::Currency::release(
-                &HoldReason::StreamOpened.into(),
-                &stream.source,
-                hold_amount,
-                Precision::Exact,
-            )?;
+            // Release opening deposit
+            if stream.opening_deposit > 0u32.into() {
+                T::Currency::release(
+                    &HoldReason::StreamOpened.into(),
+                    &stream.source,
+                    stream.opening_deposit,
+                    Precision::Exact,
+                )?;
+            }
 
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
             LookupStreamsWithSource::<T>::remove(stream.source, stream_id);
             LookupStreamsWithTarget::<T>::remove(stream.target, stream_id);
 
-
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamClosed {
                 stream_id,
-                refunded: stream.deposit,
+                refunded: stream.deposit.saturating_add(stream.opening_deposit),
             });
 
             Ok(().into())
@@ -777,10 +768,8 @@ pub mod pallet {
                 .ok_or(Error::<T>::StreamIdOverflow)?;
             NextStreamId::<T>::set(next_stream_id);
 
-            // TODO save the holded amount to storage
-            let hold_amount = T::OpenStreamHoldAmount::get();
-            T::Currency::hold(&HoldReason::StreamOpened.into(), &origin, hold_amount)?;
-            StreamsHolds::<T>::insert(stream_id, hold_amount);
+            let opening_deposit = T::OpenStreamHoldAmount::get();
+            T::Currency::hold(&HoldReason::StreamOpened.into(), &origin, opening_deposit)?;
 
             // Freeze initial deposit.
             T::Assets::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
@@ -792,6 +781,7 @@ pub mod pallet {
                 source: origin.clone(),
                 target: target.clone(),
                 config,
+                opening_deposit,
                 deposit: initial_deposit,
                 last_time_updated: now,
                 request_nonce: 0,

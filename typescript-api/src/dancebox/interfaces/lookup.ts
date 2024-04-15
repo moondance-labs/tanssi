@@ -3456,7 +3456,7 @@ export default {
     },
     /** Lookup367: pallet_stream_payment::pallet::HoldReason */
     PalletStreamPaymentHoldReason: {
-        _enum: ["StreamPayment"],
+        _enum: ["StreamPayment", "StreamOpened"],
     },
     /** Lookup368: pallet_pooled_staking::pallet::HoldReason */
     PalletPooledStakingHoldReason: {
@@ -3516,6 +3516,7 @@ export default {
         source: "AccountId32",
         target: "AccountId32",
         config: "PalletStreamPaymentStreamConfig",
+        openingDeposit: "u128",
         deposit: "u128",
         lastTimeUpdated: "u128",
         requestNonce: "u32",

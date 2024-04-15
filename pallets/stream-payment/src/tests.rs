@@ -18,9 +18,9 @@ use {
     crate::{
         assert_event_emitted, assert_event_not_emitted,
         mock::{
-            roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime, RuntimeOrigin,
-            StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB,
-            CHARLIE, DEFAULT_BALANCE, MEGA,
+            roll_to, AccountId, Balance, Balances, ExtBuilder, OpenStreamHoldAmount, Runtime,
+            RuntimeOrigin, StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit,
+            ALICE, BOB, CHARLIE, DEFAULT_BALANCE, MEGA,
         },
         ArithmeticError, Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
         LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId, Party, Stream,
@@ -58,6 +58,7 @@ fn default_stream() -> StreamOf<Runtime> {
         target: BOB,
         config: default_config(),
         deposit: 0u32.into(),
+        opening_deposit: OpenStreamHoldAmount::get(),
         last_time_updated: 0u32.into(),
         request_nonce: 0,
         pending_request: None,
@@ -343,6 +344,41 @@ mod open_stream {
             assert_eq!(get_deposit(CHARLIE), 0);
         })
     }
+
+    #[test]
+    fn balance_too_low_for_storage_hold() {
+        ExtBuilder::default()
+            // ED 1 + deposit 1_000_000 + storage hold - 1
+            .with_balances(vec![(ALICE, 1_000_000 + OpenStreamHoldAmount::get())])
+            .build()
+            .execute_with(|| {
+                assert_err!(
+                    OpenStream {
+                        from: ALICE,
+                        deposit: 1_000_000,
+                        ..default()
+                    }
+                    .call(),
+                    TokenError::FundsUnavailable,
+                );
+            })
+    }
+
+    #[test]
+    fn balance_enough_for_storage_hold() {
+        ExtBuilder::default()
+            // ED 1 + deposit 1_000_000 + storage hold 100
+            .with_balances(vec![(ALICE, 1_000_001 + OpenStreamHoldAmount::get())])
+            .build()
+            .execute_with(|| {
+                assert_ok!(OpenStream {
+                    from: ALICE,
+                    deposit: 1_000_000,
+                    ..default()
+                }
+                .call(),);
+            })
+    }
 }
 
 mod perform_payment {
@@ -361,10 +397,11 @@ mod perform_payment {
     #[test]
     fn perform_payment_works() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             let delta = u128::from(roll_to(10));
@@ -392,7 +429,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -400,6 +437,7 @@ mod perform_payment {
     #[test]
     fn perform_payment_works_with_zero_rate() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream {
                 config: StreamConfig {
                     rate: 0,
@@ -408,8 +446,8 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             roll_to(10);
@@ -441,7 +479,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, payment);
         })
     }
@@ -449,6 +487,7 @@ mod perform_payment {
     #[test]
     fn perform_payment_works_with_max_rate() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream {
                 config: StreamConfig {
                     rate: u128::MAX,
@@ -457,8 +496,8 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             roll_to(10);
@@ -488,7 +527,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, payment);
         })
     }
@@ -496,6 +535,7 @@ mod perform_payment {
     #[test]
     fn perform_payment_works_with_overflow() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream {
                 config: StreamConfig {
                     rate: u128::MAX / 10,
@@ -504,8 +544,8 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             roll_to(20);
@@ -534,7 +574,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, payment);
         })
     }
@@ -542,16 +582,17 @@ mod perform_payment {
     #[test]
     fn payment_matching_deposit_is_considered_stalled() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let config = default_config();
             let open_stream = OpenStream {
                 config,
                 deposit: config.rate * 9,
                 ..default()
             };
-
+            
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit,);
 
             roll_to(10);
@@ -580,7 +621,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, payment);
         })
     }
@@ -588,6 +629,7 @@ mod perform_payment {
     #[test]
     fn perform_payment_works_alt_unit() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream {
                 config: StreamConfig {
                     time_unit: TimeUnit::Timestamp,
@@ -596,9 +638,8 @@ mod perform_payment {
                 ..default()
             };
             assert_ok!(open_stream.call());
-
-            assert_balance_change!(-, ALICE, open_stream.deposit
-            );
+            
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             let delta = u128::from(roll_to(10));
@@ -626,7 +667,7 @@ mod perform_payment {
             );
 
             assert_eq!(get_deposit(ALICE), deposit_left);
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, payment);
         })
     }
@@ -634,19 +675,20 @@ mod perform_payment {
     #[test]
     fn protect_from_decreasing_time() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let initial_deposit = 1 * MEGA;
             let config = StreamConfig {
                 time_unit: TimeUnit::Decreasing,
                 ..default_config()
             };
-
+            
             assert_ok!(OpenStream {
                 config,
                 ..default()
             }
             .call());
-
-            assert_balance_change!(-, ALICE, initial_deposit);
+        
+            assert_balance_change!(-, ALICE, initial_deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), initial_deposit);
 
             roll_to(10);
@@ -657,7 +699,7 @@ mod perform_payment {
             ));
 
             assert_eq!(get_deposit(ALICE), initial_deposit);
-            assert_balance_change!(-, ALICE, initial_deposit);
+            assert_balance_change!(-, ALICE, initial_deposit + opening_deposit);
             assert_balance_change!(+, BOB, 0); // no payment
         })
     }
@@ -679,10 +721,11 @@ mod close_stream {
     #[test]
     fn stream_cant_be_closed_by_third_party() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             assert_err!(
@@ -694,10 +737,11 @@ mod close_stream {
 
     fn stream_can_be_closed_by(account: AccountId) {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             assert_ok!(StreamPayment::close_stream(
@@ -706,7 +750,7 @@ mod close_stream {
             ),);
             assert_event_emitted!(Event::<Runtime>::StreamClosed {
                 stream_id: 0,
-                refunded: open_stream.deposit
+                refunded: open_stream.deposit + opening_deposit
             });
             assert_eq!(Streams::<Runtime>::get(0), None);
         })
@@ -725,10 +769,11 @@ mod close_stream {
     #[test]
     fn close_stream_with_payment() {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
             let delta = u128::from(roll_to(10));
@@ -743,7 +788,7 @@ mod close_stream {
             });
             assert_event_emitted!(Event::<Runtime>::StreamClosed {
                 stream_id: 0,
-                refunded: deposit_left
+                refunded: deposit_left + opening_deposit
             });
             assert_eq!(Streams::<Runtime>::get(0), None);
 
@@ -891,6 +936,7 @@ mod request_change {
 
     fn source_can_immediately_change_deposit(change: DepositChange<Balance>) {
         ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
@@ -910,9 +956,9 @@ mod request_change {
             });
 
             assert_balance_change!(-, ALICE, match change {
-                DepositChange::Absolute(amount) => amount,
-                DepositChange::Increase(amount) => open_stream.deposit + amount,
-                DepositChange::Decrease(amount) => open_stream.deposit - amount,
+                DepositChange::Absolute(amount) => amount + opening_deposit,
+                DepositChange::Increase(amount) => open_stream.deposit + opening_deposit + amount,
+                DepositChange::Decrease(amount) => open_stream.deposit + opening_deposit - amount,
             });
         })
     }
