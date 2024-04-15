@@ -252,10 +252,10 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
-        requester: Party,
-        kind: ChangeKind<Balance>,
-        new_config: StreamConfig<Unit, AssetId, Balance>,
-        deposit_change: Option<DepositChange<Balance>>,
+        pub requester: Party,
+        pub kind: ChangeKind<Balance>,
+        pub new_config: StreamConfig<Unit, AssetId, Balance>,
+        pub deposit_change: Option<DepositChange<Balance>>,
     }
 
     pub type StreamOf<T> =
@@ -266,6 +266,15 @@ pub mod pallet {
 
     pub type ChangeRequestOf<T> =
         ChangeRequest<<T as Config>::TimeUnit, AssetIdOf<T>, <T as Config>::Balance>;
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    pub struct StreamPaymentStatus<Balance> {
+        pub payment: Balance,
+        pub deposit_left: Balance,
+        /// Whenever the stream is stalled, which can occur either when no funds are left or
+        /// if the time is past a mandatory request deadline.
+        pub stalled: bool,
+    }
 
     /// Store the next available stream id.
     #[pallet::storage]
@@ -311,6 +320,7 @@ pub mod pallet {
     >;
 
     #[pallet::error]
+    #[derive(Clone, PartialEq, Eq)]
     pub enum Error<T> {
         UnknownStreamId,
         StreamIdOverflow,
@@ -344,7 +354,7 @@ pub mod pallet {
             source: AccountIdOf<T>,
             target: AccountIdOf<T>,
             amount: T::Balance,
-            drained: bool,
+            stalled: bool,
         },
         StreamConfigChangeRequested {
             stream_id: T::StreamId,
@@ -559,7 +569,7 @@ pub mod pallet {
                 .account_to_party(origin)
                 .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
-            let Some(request) = stream.pending_request.take() else {
+            let Some(request) = stream.pending_request.clone() else {
                 return Err(Error::<T>::NoPendingRequest.into());
             };
 
@@ -631,6 +641,7 @@ pub mod pallet {
 
             // Update config in storage.
             stream.config = request.new_config;
+            stream.pending_request = None;
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())
@@ -754,28 +765,32 @@ pub mod pallet {
             Ok(stream_id)
         }
 
-        /// Behavior:
-        /// A stream payment consist of a locked deposit, a rate per unit of time and the
-        /// last time the stream was updated. When updating the stream, **at most**
-        /// `elapsed_time * rate` is unlocked from the source account and transfered to the target
-        /// account. If this amount is greater than the left deposit, the stream is considered
-        /// drained **but not closed**. The source can come back later and refill the stream,
-        /// however there will be no retroactive payment for the time spent as drained.
-        /// If the stream payment is used to rent a service, the target should pause the service
-        /// while the stream is drained, and resume it once it is refilled.
-        fn perform_stream_payment(
+        /// Get the stream payment current status, telling how much payment is
+        /// pending, how much deposit will be left and whenever the stream is stalled.
+        /// The stream is considered stalled if no funds are left or if the provided
+        /// time is past a mandatory request deadline. If the provided `now` is `None`
+        /// then the current time will be fetched. Being able to provide a custom `now`
+        /// allows to check the status in the future.
+        pub fn stream_payment_status(
             stream_id: T::StreamId,
-            stream: &mut StreamOf<T>,
-        ) -> Result<T::Balance, DispatchErrorWithPostInfo> {
-            let mut now = T::TimeProvider::now(&stream.config.time_unit)
-                .ok_or(Error::<T>::CantFetchCurrentTime)?;
+            now: Option<T::Balance>,
+        ) -> Result<StreamPaymentStatus<T::Balance>, Error<T>> {
+            let stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+            let now = match now {
+                Some(v) => v,
+                None => T::TimeProvider::now(&stream.config.time_unit)
+                    .ok_or(Error::<T>::CantFetchCurrentTime)?,
+            };
 
-            // We want to update `stream.last_time_updated` to `now` as soon
-            // as possible to avoid forgetting to do it. We copy the old value
-            // for payment computation.
             let last_time_updated = stream.last_time_updated;
-            stream.last_time_updated = now;
+            Self::stream_payment_status_by_ref(&stream, last_time_updated, now)
+        }
 
+        fn stream_payment_status_by_ref(
+            stream: &StreamOf<T>,
+            last_time_updated: T::Balance,
+            mut now: T::Balance,
+        ) -> Result<StreamPaymentStatus<T::Balance>, Error<T>> {
             // Take into account mandatory change request deadline. Note that
             // while it'll perform payment up to deadline,
             // `stream.last_time_updated` is still the "real now" to avoid
@@ -790,13 +805,21 @@ pub mod pallet {
 
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
             if stream.deposit.is_zero() {
-                return Ok(0u32.into());
+                return Ok(StreamPaymentStatus {
+                    payment: 0u32.into(),
+                    deposit_left: stream.deposit,
+                    stalled: true,
+                });
             }
 
             // Dont perform payment if now is before or equal to `last_time_updated`.
             // It can be before due to the deadline adjustment.
             let Some(delta) = now.checked_sub(&last_time_updated) else {
-                return Ok(0u32.into());
+                return Ok(StreamPaymentStatus {
+                    payment: 0u32.into(),
+                    deposit_left: stream.deposit,
+                    stalled: true,
+                });
             };
 
             // We compute the amount due to the target according to the rate, which may be
@@ -809,7 +832,7 @@ pub mod pallet {
             // We compute the new amount of locked funds. If it underflows it
             // means that there is more to pay that what is left, in which case
             // we pay all that is left.
-            let (new_locked, drained) = match stream.deposit.checked_sub(&payment) {
+            let (deposit_left, stalled) = match stream.deposit.checked_sub(&payment) {
                 Some(v) if v.is_zero() => (v, true),
                 Some(v) => (v, false),
                 None => {
@@ -817,6 +840,41 @@ pub mod pallet {
                     (Zero::zero(), true)
                 }
             };
+
+            Ok(StreamPaymentStatus {
+                payment,
+                deposit_left,
+                stalled,
+            })
+        }
+
+        /// Behavior:
+        /// A stream payment consist of a locked deposit, a rate per unit of time and the
+        /// last time the stream was updated. When updating the stream, **at most**
+        /// `elapsed_time * rate` is unlocked from the source account and transfered to the target
+        /// account. If this amount is greater than the left deposit, the stream is considered
+        /// drained **but not closed**. The source can come back later and refill the stream,
+        /// however there will be no retroactive payment for the time spent as drained.
+        /// If the stream payment is used to rent a service, the target should pause the service
+        /// while the stream is drained, and resume it once it is refilled.
+        fn perform_stream_payment(
+            stream_id: T::StreamId,
+            stream: &mut StreamOf<T>,
+        ) -> Result<T::Balance, DispatchErrorWithPostInfo> {
+            let now = T::TimeProvider::now(&stream.config.time_unit)
+                .ok_or(Error::<T>::CantFetchCurrentTime)?;
+
+            // We want to update `stream.last_time_updated` to `now` as soon
+            // as possible to avoid forgetting to do it. We copy the old value
+            // for payment computation.
+            let last_time_updated = stream.last_time_updated;
+            stream.last_time_updated = now;
+
+            let StreamPaymentStatus {
+                payment,
+                deposit_left,
+                stalled,
+            } = Self::stream_payment_status_by_ref(stream, last_time_updated, now)?;
 
             if payment.is_zero() {
                 return Ok(0u32.into());
@@ -831,7 +889,7 @@ pub mod pallet {
             )?;
 
             // Update stream info.
-            stream.deposit = new_locked;
+            stream.deposit = deposit_left;
 
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamPayment {
@@ -839,7 +897,7 @@ pub mod pallet {
                 source: stream.source.clone(),
                 target: stream.target.clone(),
                 amount: payment,
-                drained,
+                stalled,
             });
 
             Ok(payment)

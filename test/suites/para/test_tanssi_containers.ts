@@ -23,6 +23,7 @@ describeSuite({
         let blockNumber2002Start;
         let blockNumber2002End;
         let ethersSigner: Signer;
+        const sessionPeriod = 10;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -220,7 +221,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Test live registration of container chain 2002",
-            timeout: 240000,
+            timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -275,7 +276,8 @@ describeSuite({
                 expect(registered5.toJSON().includes(2002)).to.be.true;
 
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-                blockNumber2002Start = blockNum;
+                // Round block number to start of session, sometimes the rpc returns the block number of the next block
+                blockNumber2002Start = blockNum - (blockNum % sessionPeriod);
             },
         });
 
@@ -330,7 +332,8 @@ describeSuite({
                     return !registered.toJSON().includes(2002);
                 });
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-                blockNumber2002End = blockNum;
+                // Round block number to start of session, sometimes the rpc returns the block number of the next block
+                blockNumber2002End = blockNum - (blockNum % sessionPeriod);
 
                 // Check that pending para ids removes 2002
                 const registered = await paraApi.query.registrar.registeredParaIds();
@@ -341,35 +344,92 @@ describeSuite({
 
         it({
             id: "T16",
-            title: "Count number of tanssi collators before, during, and after 2002 chain",
-            timeout: 150000,
+            title: "Count number of tanssi collators before and during 2002 chain",
             test: async function () {
                 // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
-                // TODO: don't hardcode the period here
-                const sessionPeriod = 10;
                 // The block range must start and end on session boundaries
                 expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
                 expect(blockNumber2002End % sessionPeriod).to.be.equal(0);
                 expect(sessionPeriod < blockNumber2002Start).to.be.true;
                 expect(blockNumber2002Start < blockNumber2002End).to.be.true;
-                // Start from block 5 because block 0 has no author
-                const blockNumber = sessionPeriod;
-                // Before 2002 registration: 4 authors
-                // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
-                await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
+                const fullRotationBlock = 50;
+                // Returns true if a full collator rotation happens inside the inclusive range defined by start and end.
+                // If the rotation happens exactly at start or exactly at end, this returns false.
+                const fullRotationBetween = (start, end) => {
+                    return fullRotationBlock > start && fullRotationBlock < end;
+                };
 
-                expect(sessionPeriod * 5 < blockNumber2002End, "2002 should have deregistered after first rotation");
-                expect(sessionPeriod * 10 > blockNumber2002End, "2002 should have deregistered before second rotation");
+                // Start from block 1 because block 0 has no author
+                const blockNumber = 1;
+                // Consider 3 cases: full rotation can happen before 2002 is registered, while 2002 is registered, or
+                // after 2002 is registered.
+                // Locally blockNumber2002Start = 40 but in CI it can be 40 or 50 depending on server specs.
+                if (fullRotationBetween(blockNumber, blockNumber2002Start - 1)) {
+                    // Before 2002 registration: 4 authors
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, fullRotationBlock - 1, 4);
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        fullRotationBlock,
+                        blockNumber2002Start - 1,
+                        4
+                    );
+                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        blockNumber2002Start,
+                        blockNumber2002End - 1,
+                        2
+                    );
+                } else if (fullRotationBetween(blockNumber2002Start, blockNumber2002End - 1)) {
+                    // Rotation happened while 2002 was registered
+                    // Before 2002 registration: 4 authors
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
+                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        blockNumber2002Start,
+                        fullRotationBlock - 1,
+                        2
+                    );
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, fullRotationBlock, blockNumber2002End - 1, 2);
+                } else {
+                    // Rotation happened at the same time as 2002 was registered, or after 2002 was deregistered
+                    // Before 2002 registration: 4 authors
+                    await countUniqueBlockAuthors(paraApi, sessionPeriod, blockNumber, blockNumber2002Start - 1, 4);
+                    // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+                    await countUniqueBlockAuthors(
+                        paraApi,
+                        sessionPeriod,
+                        blockNumber2002Start,
+                        blockNumber2002End - 1,
+                        2
+                    );
+                }
+            },
+        });
 
-                // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-                // We take from the first block that rotates, otherwise rotation kicks in
-                await countUniqueBlockAuthors(paraApi, sessionPeriod * 10, blockNumber2002End - 1, 2);
-
-                // Need to wait one session because the following blocks don't exist yet
-                await waitSessions(context, paraApi, 1);
+        it({
+            id: "T17",
+            title: "Count number of tanssi collators after 2002 chain",
+            timeout: 120000,
+            test: async function () {
+                // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
+                const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                if (blockNum < blockNumber2002End + sessionPeriod - 1) {
+                    // Need to wait one session because the following blocks don't exist yet
+                    await waitSessions(context, paraApi, 1);
+                }
                 // After 2002 deregistration: 4 authors
-                // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
-                await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End + sessionPeriod - 1, 4);
+                await countUniqueBlockAuthors(
+                    paraApi,
+                    sessionPeriod,
+                    blockNumber2002End,
+                    blockNumber2002End + sessionPeriod - 1,
+                    4
+                );
             },
         });
     },
@@ -383,13 +443,33 @@ describeSuite({
 /// One session consists of a fixed number of blocks, but a variable number of slots.
 ///
 /// We want to ensure that all the eligible block authors are trying to propose blocks.
-/// Since nodes may fail to propose blocks because of high system load, we cannot easily
-/// test that all the eligible nodes are creating blocks.
-async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors) {
-    // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
-    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-    // TODO: fix once we have types
-    const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
+///
+/// If the authority set changes between `blockStart` and `blockEnd`, this test returns an error.
+async function countUniqueBlockAuthors(
+    paraApi: ApiPromise,
+    sessionPeriod: number,
+    blockStart: number,
+    blockEnd: number,
+    numAuthors: number
+) {
+    expect(blockEnd, "Called countUniqueBlockAuthors with empty block range").toBeGreaterThan(blockStart);
+    // If the expected numAuthors is greater than the session length, it is possible for some authors to never have a
+    // chance to produce a block, in that case this test will fail.
+    // This test can also fail if the values are close, because collators sometimes fail to produce a block.
+    // For optimal results use a value of `numAuthors` that is much smaller than `sessionPeriod`.
+    expect(numAuthors).toBeLessThanOrEqual(sessionPeriod);
+    // If the authority set changes at any point, the assumption that numAuthors == authorities.len is not valid:
+    // we can always have 1 collator assigned to this chain, but if the authority set changes once in the middle of this
+    // test, we will see 2 different block authors. We detect that and return an error, the caller is expected to avoid
+    // this case by passing a different block range.
+    const authoritiesBySession = await fetchAuthoritySetChanges(paraApi, sessionPeriod, blockStart, blockEnd);
+    // If there's more than one set of authorities, it means there was a change
+    expect(
+        authoritiesBySession.size,
+        `Authority set did change in the block range passed to countUniqueBlockAuthors, the results will not be consistent. Authority sets: ${formatAuthoritySets(
+            authoritiesBySession
+        )}`
+    ).toBe(1);
     const actualAuthors = [];
     const blockNumbers = [];
 
@@ -405,12 +485,51 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
     if (uniq.length > numAuthors || (uniq.length == 1 && numAuthors > 1)) {
         console.error(
             "Mismatch between authorities and actual block authors: authorities: ",
-            authorities,
-            ", actual authors: ",
+            formatAuthoritySets(authoritiesBySession),
+            "",
             actualAuthors,
             ", block numbers: ",
-            blockNumbers
+            blockNumbers,
+            `uniq.length=${uniq.length}, numAuthors=${numAuthors}`
         );
         expect(false).to.be.true;
     }
+}
+
+// Returns the initial set of authorities at `blockStart`, and any different sets of authorities if they changed before
+// `blockEnd`, in a map indexed by session number.
+async function fetchAuthoritySetChanges(
+    paraApi: ApiPromise,
+    sessionPeriod: number,
+    blockStart: number,
+    blockEnd: number
+): Promise<Map<number, any>> {
+    const authoritiesBySession = new Map<number, any>();
+    let lastAuthorities: any = null;
+
+    for (let blockNum = blockStart; blockNum <= blockEnd; blockNum += sessionPeriod) {
+        const blockHash = await paraApi.rpc.chain.getBlockHash(blockNum);
+        const apiAt = await paraApi.at(blockHash);
+        const session = (await apiAt.query.session.currentIndex()).toNumber();
+        const authorities = (await apiAt.query.authorityAssignment.collatorContainerChain(session)).toJSON();
+
+        // If this is the first iteration or if the authorities have changed
+        if (!lastAuthorities || JSON.stringify(lastAuthorities) !== JSON.stringify(authorities)) {
+            authoritiesBySession.set(session, authorities);
+        }
+
+        lastAuthorities = authorities;
+    }
+
+    return authoritiesBySession;
+}
+
+function formatAuthoritySets(authoritiesBySession: Map<number, any>): string {
+    let logString = "";
+
+    authoritiesBySession.forEach((authorities, session) => {
+        logString += `Session ${session} authorities:\n${JSON.stringify(authorities, null, 4)}`;
+    });
+
+    return logString;
 }

@@ -401,7 +401,7 @@ export default {
                 source: "AccountId32",
                 target: "AccountId32",
                 amount: "u128",
-                drained: "bool",
+                stalled: "bool",
             },
             StreamConfigChangeRequested: {
                 streamId: "u64",
@@ -615,6 +615,11 @@ export default {
             CollatorAssignmentCreditBurned: {
                 paraId: "u32",
                 creditsRemaining: "u32",
+            },
+            CollatorAssignmentTipCollected: {
+                paraId: "u32",
+                payer: "AccountId32",
+                tip: "u128",
             },
             BlockProductionCreditsSet: {
                 paraId: "u32",
@@ -1577,6 +1582,10 @@ export default {
             set_max_core_price: {
                 paraId: "u32",
                 maxCorePrice: "Option<u128>",
+            },
+            set_max_tip: {
+                paraId: "u32",
+                maxTip: "Option<u128>",
             },
         },
     },
