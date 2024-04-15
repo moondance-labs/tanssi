@@ -170,7 +170,16 @@ describeSuite({
                 const tx = paraApi.tx.invulnerables.setInvulnerables(newInvuln);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
 
-                await waitSessions(context, paraApi, 2);
+                // New collators will be set after 2 sessions, but because `signAndSendAndInclude` waits
+                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
+                // 1 session. So use a callback to wait 1 or 2 sessions.
+                await waitSessions(context, paraApi, 2, async () => {
+                    const allCollators = (
+                        await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+                    ).toJSON();
+                    // Stop waiting if orchestrator chain has 2 collators instead of 3
+                    return allCollators.orchestratorChain.length == 2;
+                });
 
                 // Collator1000-03 should rotate to container chain 2000
 

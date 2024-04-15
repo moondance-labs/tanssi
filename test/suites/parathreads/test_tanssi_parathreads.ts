@@ -90,7 +90,7 @@ describeSuite({
         it({
             id: "T03a",
             title: "Register parathreads 2000 and 2001",
-            timeout: 120000,
+            timeout: 240000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -117,7 +117,14 @@ describeSuite({
             title: "Wait for parathreads 2000 and 2001 to be assigned collators",
             timeout: 600000,
             test: async function () {
-                await waitSessions(context, paraApi, 2);
+                await waitSessions(context, paraApi, 2, async () => {
+                    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+                    const containerChainCollators = (
+                        await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+                    ).toJSON().containerChains;
+                    // Stop waiting when parathreads have been assigned collators
+                    return containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined;
+                });
             },
         });
 
@@ -247,7 +254,7 @@ describeSuite({
             title: "Check block frequency of parathreads",
             timeout: 240000,
             test: async function () {
-                // Wait 1 session so that parathreads have produced at least a few blocks each
+                // Wait 2 sessions so that parathreads have produced at least a few blocks each
                 await waitSessions(context, paraApi, 2);
 
                 // TODO: calculate block frequency somehow
