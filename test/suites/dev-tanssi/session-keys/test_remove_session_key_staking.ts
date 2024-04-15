@@ -4,6 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { DANCE } from "util/constants";
+import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
 
 describeSuite({
     id: "DT0202",
@@ -14,38 +15,24 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         let charlie: KeyringPair;
-        let dave: KeyringPair;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
-            dave = context.keyring.dave;
             polkadotJs = context.polkadotJs();
 
-            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
-            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
-
-            // We need to remove from invulnerables and add to staking
-            // for that we need to remove Alice and Bob from invulnerables first
-
+            // We need to remove all the invulnerables and add to staking
+            // Remove all invulnerables, otherwise they have priority
+            await createBlockAndRemoveInvulnerables(context);
+            
             // We delegate with manual rewards to make sure the candidate does not update position
             // We also need charlie to join staking because the settings for the dev environment are 1 collator for
             // tanssi and 2 collators for containers, so we need 3 collators for bob to be assigned.
+            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
+            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
+            
             await context.createBlock([
-                // Remove all invulnerables, otherwise they have priority
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(alice.address))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(bob.address))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(charlie.address))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(dave.address))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(alice.address, "ManualRewards", 10000n * DANCE)
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
