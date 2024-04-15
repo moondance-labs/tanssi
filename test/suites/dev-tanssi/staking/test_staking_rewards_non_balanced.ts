@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, TECHNICAL_COMMITTEE_MEMBERS } from "@moonwall/cli";
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 import {
