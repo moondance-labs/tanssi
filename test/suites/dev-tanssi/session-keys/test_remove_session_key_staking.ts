@@ -25,13 +25,13 @@ describeSuite({
             // We need to remove all the invulnerables and add to staking
             // Remove all invulnerables, otherwise they have priority
             await createBlockAndRemoveInvulnerables(context);
-            
+
             // We delegate with manual rewards to make sure the candidate does not update position
             // We also need charlie to join staking because the settings for the dev environment are 1 collator for
             // tanssi and 2 collators for containers, so we need 3 collators for bob to be assigned.
             let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
             let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
-            
+
             await context.createBlock([
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(alice.address, "ManualRewards", 10000n * DANCE)

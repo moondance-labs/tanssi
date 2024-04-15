@@ -25,11 +25,11 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
-            
+
             // We need to remove all the invulnerables and add to staking
             // Remove all invulnerables, otherwise they have priority
             await createBlockAndRemoveInvulnerables(context);
-            
+
             // We will make each of them self-delegate the min amount, while
             // we will make each of them delegate the other with 50%
             // Alice autocompounding, Bob will be manual
