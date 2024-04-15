@@ -2697,12 +2697,6 @@ export default {
     /** Lookup294: pallet_invulnerables::pallet::Call<T> */
     PalletInvulnerablesCall: {
         _enum: {
-            set_invulnerables: {
-                _alias: {
-                    new_: "new",
-                },
-                new_: "Vec<AccountId32>",
-            },
             add_invulnerable: {
                 who: "AccountId32",
             },

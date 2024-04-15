@@ -2095,10 +2095,6 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletInvulnerablesCall (229) */
     interface PalletInvulnerablesCall extends Enum {
-        readonly isSetInvulnerables: boolean;
-        readonly asSetInvulnerables: {
-            readonly new_: Vec<AccountId32>;
-        } & Struct;
         readonly isAddInvulnerable: boolean;
         readonly asAddInvulnerable: {
             readonly who: AccountId32;
@@ -2107,7 +2103,7 @@ declare module "@polkadot/types/lookup" {
         readonly asRemoveInvulnerable: {
             readonly who: AccountId32;
         } & Struct;
-        readonly type: "SetInvulnerables" | "AddInvulnerable" | "RemoveInvulnerable";
+        readonly type: "AddInvulnerable" | "RemoveInvulnerable";
     }
 
     /** @name PalletSessionCall (230) */

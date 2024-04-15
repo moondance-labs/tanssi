@@ -566,11 +566,6 @@ declare module "@polkadot/api-base/types/submittable" {
                 (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [AccountId32]
             >;
-            /** See [`Pallet::set_invulnerables`]. */
-            setInvulnerables: AugmentedSubmittable<
-                (updated: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<AccountId32>]
-            >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
