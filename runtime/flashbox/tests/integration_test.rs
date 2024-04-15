@@ -359,12 +359,24 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
                 vec![]
             ));
 
-            // Set new invulnerables
+
+            // Change invulnerables
+            assert_ok!(Invulnerables::remove_invulnerable(
+                root_origin(),
+                ALICE.into()
+            ));
+            assert_ok!(Invulnerables::remove_invulnerable(
+                root_origin(),
+                BOB.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(
                 root_origin(),
                 CHARLIE.into()
             ));
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(), 
+                DAVE.into()
+            ));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
@@ -374,14 +386,11 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             assert!(authorities() == vec![alice_id.clone(), bob_id.clone()]);
 
             // Invulnerables should have triggered on new session authorities change
-            // (However, Charlie and Dave should have been assigned to 1001)
             run_to_session(2u32);
-            assert_eq!(authorities(), vec![alice_id, bob_id]);
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
+            let author_after_changes = get_orchestrator_current_author().unwrap();
+            
+            assert_eq!(current_author(), author_after_changes);
+            assert_eq!(authorities(), vec![charlie_id, dave_id]);
         });
 }
 
