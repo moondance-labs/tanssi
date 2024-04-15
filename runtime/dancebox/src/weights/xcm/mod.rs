@@ -52,11 +52,14 @@ impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for XcmWeight<RuntimeCall>
 where
     Runtime: frame_system::Config,
 {
-    fn withdraw_asset(_assets: &MultiAssets) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000u64, ASSET_BURN_MAX_PROOF_SIZE)
+    fn withdraw_asset(assets: &MultiAssets) -> XCMWeight {
+        assets.weigh_multi_assets(XCMWeight::from_parts(
+            200_000_000u64,
+            ASSET_BURN_MAX_PROOF_SIZE,
+        ))
     }
-    fn reserve_asset_deposited(_assets: &MultiAssets) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000u64, 0)
+    fn reserve_asset_deposited(assets: &MultiAssets) -> XCMWeight {
+        assets.weigh_multi_assets(XCMWeight::from_parts(200_000_000u64, 0))
     }
     fn receive_teleported_asset(_assets: &MultiAssets) -> XCMWeight {
         XCMWeight::MAX
@@ -69,15 +72,21 @@ where
     ) -> XCMWeight {
         XcmGeneric::<Runtime>::query_response()
     }
-    fn transfer_asset(_assets: &MultiAssets, _dest: &MultiLocation) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
+    fn transfer_asset(assets: &MultiAssets, _dest: &MultiLocation) -> XCMWeight {
+        assets.weigh_multi_assets(XCMWeight::from_parts(
+            200_000_000u64,
+            ASSET_TRANSFER_MAX_PROOF_SIZE,
+        ))
     }
     fn transfer_reserve_asset(
-        _assets: &MultiAssets,
+        assets: &MultiAssets,
         _dest: &MultiLocation,
         _xcm: &Xcm<()>,
     ) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
+        assets.weigh_multi_assets(XCMWeight::from_parts(
+            200_000_000u64,
+            ASSET_TRANSFER_MAX_PROOF_SIZE,
+        ))
     }
     fn transact(
         _origin_type: &OriginKind,
@@ -160,8 +169,8 @@ where
     fn clear_error() -> XCMWeight {
         XcmGeneric::<Runtime>::clear_error()
     }
-    fn claim_asset(_assets: &MultiAssets, _ticket: &MultiLocation) -> XCMWeight {
-        XcmGeneric::<Runtime>::claim_asset()
+    fn claim_asset(assets: &MultiAssets, _ticket: &MultiLocation) -> XCMWeight {
+        assets.weigh_multi_assets(XcmGeneric::<Runtime>::claim_asset())
     }
     fn trap(_code: &u64) -> XCMWeight {
         XcmGeneric::<Runtime>::trap()
