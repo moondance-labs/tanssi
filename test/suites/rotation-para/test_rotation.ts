@@ -255,7 +255,7 @@ describeSuite({
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(6, "Tanssi");
+                await context.waitBlock(3, "Tanssi");
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 assignment3 = assignment.toJSON();
                 console.log("assignment session 3:");

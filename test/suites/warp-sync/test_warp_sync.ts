@@ -170,17 +170,7 @@ describeSuite({
                 const tx = paraApi.tx.invulnerables.setInvulnerables(newInvuln);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
 
-                // New collators will be set after 2 sessions, but because `signAndSendAndInclude` waits
-                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
-                // 1 session. So use a callback to wait 1 or 2 sessions.
-                await waitSessions(context, paraApi, 2, async () => {
-                    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                    const allCollators = (
-                        await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                    ).toJSON();
-                    // Stop waiting if orchestrator chain has 2 collators instead of 3
-                    return allCollators.orchestratorChain.length == 2;
-                });
+                await waitSessions(context, paraApi, 2);
 
                 // Collator1000-03 should rotate to container chain 2000
 
@@ -203,7 +193,7 @@ describeSuite({
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(6, "Tanssi");
+                await context.waitBlock(3, "Tanssi");
 
                 // Collator2000-02 container chain db should have been deleted
                 expect(await directoryExists(container200002DbPath)).to.be.false;
