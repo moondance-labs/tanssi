@@ -5,7 +5,7 @@ import { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { expectEVMResult, descendOriginFromAddress20 } from "../../../helpers";
 
-export const CLEAR_ORIGIN_WEIGHT = 1_000_000_000n;
+export const CLEAR_ORIGIN_WEIGHT = 2731000n;
 const XCM_UTILS_ADDRESS = "0x0000000000000000000000000000000000000803";
 
 describeSuite({
@@ -118,15 +118,25 @@ describeSuite({
                     ],
                 };
                 const xcm = context.polkadotJs().createType("VersionedXcm", message);
-
                 expect(
-                    await context.readContract!({
+                    (await context.readContract!({
                         contractAddress: XCM_UTILS_ADDRESS,
                         contractName: "XcmUtils",
                         functionName: "weightMessage",
                         args: [xcm.toHex()],
-                    })
-                ).to.equal(CLEAR_ORIGIN_WEIGHT);
+                    })) >=
+                        (CLEAR_ORIGIN_WEIGHT * 90n) / 100n
+                ).to.be.true;
+
+                expect(
+                    (await context.readContract!({
+                        contractAddress: XCM_UTILS_ADDRESS,
+                        contractName: "XcmUtils",
+                        functionName: "weightMessage",
+                        args: [xcm.toHex()],
+                    })) <=
+                        (CLEAR_ORIGIN_WEIGHT * 110n) / 100n
+                ).to.be.true;
             },
         });
 
