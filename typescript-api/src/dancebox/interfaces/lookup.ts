@@ -2697,6 +2697,7 @@ export default {
     /** Lookup294: pallet_invulnerables::pallet::Call<T> */
     PalletInvulnerablesCall: {
         _enum: {
+            __Unused0: "Null",
             add_invulnerable: {
                 who: "AccountId32",
             },
