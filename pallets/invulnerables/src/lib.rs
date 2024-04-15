@@ -218,10 +218,7 @@ pub mod pallet {
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::remove_invulnerable(T::MaxInvulnerables::get()))]
-        pub fn remove_invulnerable(
-            origin: OriginFor<T>,
-            who: T::AccountId,
-        ) -> DispatchResult {
+        pub fn remove_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             let collator_id = T::CollatorIdOf::convert(who.clone())
