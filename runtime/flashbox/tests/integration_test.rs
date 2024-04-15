@@ -360,24 +360,25 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
             let author = get_orchestrator_current_author().unwrap();
 
             assert_eq!(current_author(), author);
-            assert!(authorities() == vec![alice_id, bob_id]);
+            assert!(authorities() == vec![alice_id.clone(), bob_id.clone()]);
 
             // Invulnerables should have triggered on new session authorities change
+            // (However, Charlie and Dave should have been assigned to 1001)
             run_to_session(2u32);
-            let author_after_changes = get_orchestrator_current_author().unwrap();
-
-            assert_eq!(current_author(), author_after_changes);
-            assert_eq!(authorities(), vec![charlie_id, dave_id]);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
         });
 }
 
@@ -428,10 +429,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
@@ -1211,10 +1210,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
@@ -1264,10 +1261,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             );
 
             // Remove BOB
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::remove_invulnerable(root_origin(), BOB.into()));
 
             run_to_session(3u32);
             assert_eq!(
@@ -1366,10 +1360,8 @@ fn test_consensus_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             run_to_session(2u32);
             assert_eq!(
@@ -1461,10 +1453,8 @@ fn test_consensus_runtime_api_session_changes() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             let session_two_edge = flashbox_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
@@ -1595,10 +1585,8 @@ fn test_consensus_runtime_api_next_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::set_invulnerables(
-                root_origin(),
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
-            ));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             let session_two_edge = flashbox_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first

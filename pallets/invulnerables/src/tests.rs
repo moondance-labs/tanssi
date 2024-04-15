@@ -34,24 +34,6 @@ fn basic_setup_works() {
 }
 
 #[test]
-fn it_should_set_invulnerables() {
-    new_test_ext().execute_with(|| {
-        let new_set = vec![1, 4, 3, 2];
-        assert_ok!(Invulnerables::set_invulnerables(
-            RuntimeOrigin::signed(RootAccount::get()),
-            new_set.clone()
-        ));
-        assert_eq!(Invulnerables::invulnerables(), new_set);
-
-        // cannot set with non-root.
-        assert_noop!(
-            Invulnerables::set_invulnerables(RuntimeOrigin::signed(1), new_set),
-            BadOrigin
-        );
-    });
-}
-
-#[test]
 fn add_invulnerable_works() {
     new_test_ext().execute_with(|| {
         initialize_to_block(1);
@@ -119,17 +101,6 @@ fn invulnerable_limit_works() {
             }
         }
         let expected: Vec<u64> = (1..=20).collect();
-        assert_eq!(Invulnerables::invulnerables(), expected);
-
-        // Cannot set too many Invulnerables
-        let too_many_invulnerables: Vec<u64> = (1..=21).collect();
-        assert_noop!(
-            Invulnerables::set_invulnerables(
-                RuntimeOrigin::signed(RootAccount::get()),
-                too_many_invulnerables
-            ),
-            Error::<Test>::TooManyInvulnerables
-        );
         assert_eq!(Invulnerables::invulnerables(), expected);
     });
 }

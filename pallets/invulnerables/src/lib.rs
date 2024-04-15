@@ -172,55 +172,11 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Set the list of invulnerable (fixed) collators.
-        ///
-        /// Must be called by the `UpdateOrigin`.
-        #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::set_invulnerables(new.len() as u32))]
-        pub fn set_invulnerables(origin: OriginFor<T>, new: Vec<T::AccountId>) -> DispatchResult {
-            T::UpdateOrigin::ensure_origin(origin)?;
-
-            // Will need to check the length again when putting into a bounded vec, but this
-            // prevents the iterator from having too many elements.
-            ensure!(
-                new.len() as u32 <= T::MaxInvulnerables::get(),
-                Error::<T>::TooManyInvulnerables
-            );
-
-            let mut new_with_keys = Vec::new();
-
-            // check if the invulnerables have associated validator keys before they are set
-            for account_id in &new {
-                // don't let one unprepared collator ruin things for everyone.
-                let maybe_collator_id = T::CollatorIdOf::convert(account_id.clone())
-                    .filter(T::CollatorRegistration::is_registered);
-
-                if let Some(collator_id) = maybe_collator_id {
-                    new_with_keys.push(collator_id.clone());
-                } else {
-                    Self::deposit_event(Event::InvalidInvulnerableSkipped {
-                        account_id: account_id.clone(),
-                    });
-                }
-            }
-
-            // should never fail since `new` must be equal to or shorter than `TooManyInvulnerables`
-            let bounded_invulnerables =
-                BoundedVec::<_, T::MaxInvulnerables>::try_from(new_with_keys)
-                    .map_err(|_| Error::<T>::TooManyInvulnerables)?;
-
-            <Invulnerables<T>>::put(&bounded_invulnerables);
-            Self::deposit_event(Event::NewInvulnerables {
-                invulnerables: bounded_invulnerables.to_vec(),
-            });
-
-            Ok(())
-        }
-
+        
         /// Add a new account `who` to the list of `Invulnerables` collators.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
-        #[pallet::call_index(1)]
+        #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::add_invulnerable(
 			T::MaxInvulnerables::get().saturating_sub(1),
 		))]
@@ -261,16 +217,17 @@ pub mod pallet {
         /// be sorted.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
-        #[pallet::call_index(2)]
+        #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::remove_invulnerable(T::MaxInvulnerables::get()))]
-        pub fn remove_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+        pub fn remove_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             let collator_id = T::CollatorIdOf::convert(who.clone())
                 .ok_or(Error::<T>::UnableToDeriveCollatorId)?;
 
+            let mut pos = 0;
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                let pos = invulnerables
+                pos = invulnerables
                     .iter()
                     .position(|x| x == &collator_id)
                     .ok_or(Error::<T>::NotInvulnerable)?;
@@ -279,7 +236,8 @@ pub mod pallet {
             })?;
 
             Self::deposit_event(Event::InvulnerableRemoved { account_id: who });
-            Ok(())
+            let actual_weight = T::WeightInfo::remove_invulnerable((pos as u32) + 1); 
+            Ok(Some(actual_weight).into())
         }
     }
 
