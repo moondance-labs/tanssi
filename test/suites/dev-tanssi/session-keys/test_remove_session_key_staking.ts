@@ -14,11 +14,13 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         let charlie: KeyringPair;
+        let dave: KeyringPair;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
+            dave = context.keyring.dave;
             polkadotJs = context.polkadotJs();
 
             let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
@@ -33,7 +35,16 @@ describeSuite({
             await context.createBlock([
                 // Remove all invulnerables, otherwise they have priority
                 await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.setInvulnerables([]))
+                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(alice.address))
+                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(bob.address))
+                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(charlie.address))
+                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(dave.address))
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(alice.address, "ManualRewards", 10000n * DANCE)
