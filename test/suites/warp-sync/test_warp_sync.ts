@@ -174,6 +174,7 @@ describeSuite({
                 // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
                 // 1 session. So use a callback to wait 1 or 2 sessions.
                 await waitSessions(context, paraApi, 2, async () => {
+                    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                     const allCollators = (
                         await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                     ).toJSON();
