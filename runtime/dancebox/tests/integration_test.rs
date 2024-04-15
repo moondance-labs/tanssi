@@ -371,7 +371,10 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
@@ -440,7 +443,10 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             ));
 
             // Add new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
@@ -1221,7 +1227,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
@@ -1272,7 +1281,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             );
 
             // Remove BOB
-            assert_ok!(Invulnerables::remove_invulnerable(root_origin(), BOB.into()));
+            assert_ok!(Invulnerables::remove_invulnerable(
+                root_origin(),
+                BOB.into()
+            ));
 
             run_to_session(3u32);
             assert_eq!(
@@ -1371,7 +1383,10 @@ fn test_consensus_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             run_to_session(2u32);
@@ -1464,7 +1479,10 @@ fn test_consensus_runtime_api_session_changes() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             let session_two_edge = dancebox_runtime::Period::get() * 2;
@@ -1596,7 +1614,10 @@ fn test_consensus_runtime_api_next_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(Invulnerables::add_invulnerable(root_origin(), CHARLIE.into()));
+            assert_ok!(Invulnerables::add_invulnerable(
+                root_origin(),
+                CHARLIE.into()
+            ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
             let session_two_edge = dancebox_runtime::Period::get() * 2;

@@ -194,8 +194,9 @@ mod benchmarks {
         // now we need to fill up invulnerables
         let mut invulnerables = invulnerables::<T>(r);
         invulnerables.sort();
-        
-        let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) = invulnerables.into_iter().unzip();
+
+        let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+            invulnerables.into_iter().unzip();
 
         for account in account_ids.into_iter() {
             <InvulnerablesPallet<T>>::add_invulnerable(origin.clone(), account)
