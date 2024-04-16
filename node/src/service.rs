@@ -905,13 +905,10 @@ fn start_consensus_orchestrator(
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
-                // Create a storage proof of paras->heads for all registered para ids, and also for
-                // self para id.
-                // TODO: this should be only container chains with assigned collators?
-                let mut para_ids = client_set_aside_for_cidp
+                let para_ids = client_set_aside_for_cidp
                     .runtime_api()
                     .registered_paras(block_hash)?;
-                para_ids.push(para_id);
+                let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
