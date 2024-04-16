@@ -1791,7 +1791,7 @@ fn test_author_noting_not_self_para() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: AccountId::from(DAVE),
-                    latest_slot_number: 5.into(),
+                    latest_slot_number: 0.into(),
                 })
             );
         });
@@ -1940,7 +1940,7 @@ fn test_author_noting_runtime_api() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: AccountId::from(DAVE),
-                    latest_slot_number: 5.into(),
+                    latest_slot_number: 0.into(),
                 })
             );
 

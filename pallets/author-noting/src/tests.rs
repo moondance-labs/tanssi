@@ -68,7 +68,7 @@ fn test_author_id_insertion() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into(),
+                    latest_slot_number: 0u64.into(),
                 })
             );
         });
@@ -108,7 +108,7 @@ fn test_author_id_insertion_real_data() {
                 Some(ContainerChainBlockInfo {
                     block_number: 3511063,
                     author: 140006956,
-                    latest_slot_number: 140006956u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
         });
@@ -189,7 +189,7 @@ fn test_author_id_insertion_many_paras() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 10u64,
-                    latest_slot_number: 10u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), None);
@@ -200,7 +200,7 @@ fn test_author_id_insertion_many_paras() {
                 Some(ContainerChainBlockInfo {
                     block_number: 2,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
             assert_eq!(
@@ -208,7 +208,7 @@ fn test_author_id_insertion_many_paras() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 14u64,
-                    latest_slot_number: 14u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
         });
@@ -248,7 +248,7 @@ fn test_should_panic_with_invalid_proof_root() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
         });
@@ -291,7 +291,7 @@ fn test_should_panic_with_invalid_proof_state() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
         });
@@ -512,7 +512,7 @@ fn test_set_author() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
             assert_ok!(AuthorNoting::set_author(
@@ -665,7 +665,7 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 para_id: 1.into(),
                 block_number: 1,
                 author: 1u64,
-                latest_slot_number: 1u64.into()
+                latest_slot_number: 0u64.into()
             }
             .get_dispatch_info()
             .weight,
@@ -732,7 +732,7 @@ fn test_kill_author_data() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
             assert_ok!(AuthorNoting::kill_author_data(
@@ -784,7 +784,7 @@ fn test_author_id_insertion_not_first_log() {
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
                     author: 13u64,
-                    latest_slot_number: 13u64.into()
+                    latest_slot_number: 0u64.into()
                 })
             );
         });

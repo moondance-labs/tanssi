@@ -388,7 +388,9 @@ impl<T: Config> Pallet<T> {
             Ok(ContainerChainBlockInfo {
                 block_number: author_header.number,
                 author,
-                latest_slot_number: slot,
+                // TODO: this needs to be the tanssi slot, not the container chain slot,
+                // unimplemented for now, will always be 0
+                latest_slot_number: 0.into(),
             })
         } else {
             Err(Error::<T>::NonAuraDigest)
