@@ -314,7 +314,7 @@ pub fn run() -> Result<()> {
                         let mut stream = client.new_best_notification_stream().await.unwrap();
 
                         while let Some(header) = stream.next().await {
-                            println!("New best block: {}", header.hash());
+                            log::info!("New best block: {}", header.hash());
                         }
                     });
 
