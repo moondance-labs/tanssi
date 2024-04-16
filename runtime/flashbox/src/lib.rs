@@ -788,6 +788,7 @@ impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
+    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorNotingHook = (InflationRewards, ServicesPayment);

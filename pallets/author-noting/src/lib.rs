@@ -40,6 +40,7 @@ use {
     dp_core::well_known_keys::PARAS_HEADS_INDEX,
     frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
     frame_system::pallet_prelude::*,
+    nimbus_primitives::SlotBeacon,
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
@@ -76,6 +77,7 @@ pub mod pallet {
         type ContainerChains: GetCurrentContainerChains;
 
         type SelfParaId: Get<ParaId>;
+        type SlotBeacon: SlotBeacon;
 
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
@@ -161,11 +163,16 @@ pub mod pallet {
                 let relay_storage_rooted_proof =
                     GenericStateProof::new(relay_storage_root, relay_storage_proof)
                         .expect("Invalid relay chain state proof");
+                let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
 
                 // TODO: we should probably fetch all authors-containers first
                 // then pass the vector to the hook, this would allow for a better estimation
                 for para_id in registered_para_ids {
-                    match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
+                    match Self::fetch_block_info_from_proof(
+                        &relay_storage_rooted_proof,
+                        para_id,
+                        parent_tanssi_slot,
+                    ) {
                         Ok(block_info) => {
                             LatestAuthor::<T>::mutate(
                                 para_id,
@@ -324,6 +331,7 @@ impl<T: Config> Pallet<T> {
     fn fetch_block_info_from_proof(
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
+        tanssi_slot: Slot,
     ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
@@ -352,7 +360,7 @@ impl<T: Config> Pallet<T> {
         // This is because it is hard to return a `Vec<Error<T>>`.
         let mut first_error = None;
         for aura_digest in author_header.digest().logs() {
-            match Self::author_from_log(aura_digest, para_id, &author_header) {
+            match Self::author_from_log(aura_digest, para_id, &author_header, tanssi_slot) {
                 Ok(x) => return Ok(x),
                 Err(e) => {
                     if first_error.is_none() {
@@ -370,6 +378,7 @@ impl<T: Config> Pallet<T> {
         aura_digest: &DigestItem,
         para_id: ParaId,
         author_header: &sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        tanssi_slot: Slot,
     ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
         // We decode the digest as pre-runtime digest
         let (id, mut data) = aura_digest
@@ -388,9 +397,11 @@ impl<T: Config> Pallet<T> {
             Ok(ContainerChainBlockInfo {
                 block_number: author_header.number,
                 author,
-                // TODO: this needs to be the tanssi slot, not the container chain slot,
-                // unimplemented for now, will always be 0
-                latest_slot_number: 0.into(),
+                // We store the slot number of the current tanssi block to have a time-based notion
+                // of when the last block of a container chain was included.
+                // Note that this is not the slot of the container chain block, and it does not
+                // indicate when that block was created, but when it was included in tanssi.
+                latest_slot_number: tanssi_slot,
             })
         } else {
             Err(Error::<T>::NonAuraDigest)
