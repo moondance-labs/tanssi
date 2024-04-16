@@ -5,9 +5,7 @@ export async function createBlockAndRemoveInvulnerables(context: DevModeContext,
     let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
     const invulnerables = await context.polkadotJs().query.invulnerables.invulnerables();
 
-    const txs = [];
-    invulnerables.forEach((invulnerable) => {
-        txs.push(
+    const txs = invulnerables.map((invulnerable) => {
             context
                 .polkadotJs()
                 .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(invulnerable))
