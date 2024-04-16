@@ -1827,11 +1827,11 @@ export default {
         source: "AccountId32",
         target: "AccountId32",
         config: "PalletStreamPaymentStreamConfig",
-        openingDeposit: "u128",
         deposit: "u128",
         lastTimeUpdated: "u128",
         requestNonce: "u32",
         pendingRequest: "Option<PalletStreamPaymentChangeRequest>",
+        openingDeposit: "u128",
     },
     /**
      * Lookup272: pallet_stream_payment::pallet::ChangeRequest<flashbox_runtime::TimeUnit,

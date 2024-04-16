@@ -2372,11 +2372,11 @@ declare module "@polkadot/types/lookup" {
         readonly source: AccountId32;
         readonly target: AccountId32;
         readonly config: PalletStreamPaymentStreamConfig;
-        readonly openingDeposit: u128;
         readonly deposit: u128;
         readonly lastTimeUpdated: u128;
         readonly requestNonce: u32;
         readonly pendingRequest: Option<PalletStreamPaymentChangeRequest>;
+        readonly openingDeposit: u128;
     }
 
     /** @name PalletStreamPaymentChangeRequest (272) */
