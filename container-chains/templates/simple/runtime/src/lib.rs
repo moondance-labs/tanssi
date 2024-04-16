@@ -581,7 +581,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 /// This can change in the future
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(c: &RuntimeCall) -> bool {
+    fn contains(_c: &RuntimeCall) -> bool {
         true
     }
 }
