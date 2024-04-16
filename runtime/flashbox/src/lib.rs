@@ -1055,21 +1055,10 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-/// We don't allow to create nor mint assets, this for now is disabled
-/// We only allow transfers. For now creation of assets will go through
-/// asset-manager, while minting/burning only happens through xcm messages
-/// This can change in the future
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        // We filter anonymous proxy as they make "reserve" inconsistent
-        // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
-        !matches!(
-            c,
-            RuntimeCall::Proxy(
-                pallet_proxy::Call::create_pure { .. } | pallet_proxy::Call::kill_pure { .. }
-            )
-        )
+        true
     }
 }
 
