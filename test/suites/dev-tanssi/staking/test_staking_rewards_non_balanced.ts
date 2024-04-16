@@ -28,7 +28,10 @@ describeSuite({
 
             // We need to remove all the invulnerables and add to staking
             // Remove all invulnerables, otherwise they have priority
-            await createBlockAndRemoveInvulnerables(context);
+            await createBlockAndRemoveInvulnerables(context, alice);
+
+            const invulnerables = await polkadotJs.query.invulnerables.invulnerables();
+            expect(invulnerables.length).to.be.equal(0);
 
             // We will make each of them self-delegate the min amount, while
             // we will make each of them delegate the other with 50%

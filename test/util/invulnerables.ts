@@ -1,24 +1,19 @@
 import { DevModeContext } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
 
-export async function createBlockAndRemoveInvulnerables(context: DevModeContext) {
-    let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(context.keyring.alice.address)).toNumber();
+export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
+    let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
+    const invulnerables = await context.polkadotJs().query.invulnerables.invulnerables();
 
-    await context.createBlock([
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(context.keyring.alice.address))
-            .signAsync(context.keyring.alice, { nonce: nonce++ }),
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(context.keyring.bob.address))
-            .signAsync(context.keyring.alice, { nonce: nonce++ }),
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(context.keyring.charlie.address))
-            .signAsync(context.keyring.alice, { nonce: nonce++ }),
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(context.keyring.dave.address))
-            .signAsync(context.keyring.alice, { nonce: nonce++ }),
-    ]);
+    const txs = [];
+    invulnerables.forEach((invulnerable) => {
+        txs.push(
+            context
+                .polkadotJs()
+                .tx.sudo.sudo(context.polkadotJs().tx.invulnerables.removeInvulnerable(invulnerable))
+                .signAsync(sudoKey, { nonce: nonce++ })
+        );
+    });
+
+    await context.createBlock(txs);
 }
