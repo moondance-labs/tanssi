@@ -42,6 +42,12 @@ describeSuite({
                 });
                 expect(openStreamEvents.length).to.be.equal(1);
 
+                // Check opening storage hold
+                const openingHold = (await polkadotJs.query.balances.holds(alice.address)).find((h) =>
+                    h.id.value.eq("StreamOpened")
+                );
+                expect(openingHold.amount.toBigInt()).eq(11_730_000_000_000n);
+
                 // 2nd block
                 const txPerformPayment = await polkadotJs.tx.streamPayment
                     .performPayment(0)
@@ -100,6 +106,10 @@ describeSuite({
                     return a.event.method == "StreamClosed";
                 });
                 expect(closeStreamEvents.length).to.be.equal(1);
+
+                // Check all holds have been released
+                const holds = await polkadotJs.query.balances.holds(alice.address);
+                expect(holds.length).toBe(0);
             },
         });
     },
