@@ -33,7 +33,7 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 dp-chain-state-snapshot = { workspace = true }
 dp-core = { workspace = true }
-nimbus-primitives = { workspace = true}
+nimbus-primitives = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -63,6 +63,7 @@ std = [
 	"hex",
 	"hex?/std",
 	"log/std",
+	"nimbus-primitives/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-primitives/std",
@@ -91,6 +92,7 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"hex",
+	"nimbus-primitives/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -100,5 +102,6 @@ try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"nimbus-primitives/try-runtime",
 	"sp-runtime/try-runtime",
 ]
