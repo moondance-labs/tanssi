@@ -21,7 +21,6 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
-use tokio_util::sync::CancellationToken;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -55,6 +54,7 @@ use {
         sync::{mpsc, oneshot},
         time::{sleep, Duration},
     },
+    tokio_util::sync::CancellationToken,
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,

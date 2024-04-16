@@ -10,6 +10,7 @@ import {
     jumpSessions,
 } from "util/block";
 import { DANCE } from "util/constants";
+import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
 
 describeSuite({
     id: "DT0302",
@@ -24,19 +25,22 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
-            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
-            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
-            // We need to remove from invulnerables and add to staking
-            // for that we need to remove Alice and Bob from invulnerables first
+
+            // We need to remove all the invulnerables and add to staking
+            // Remove all invulnerables, otherwise they have priority
+
+            await createBlockAndRemoveInvulnerables(context, alice);
+
+            const invulnerables = await polkadotJs.query.invulnerables.invulnerables();
+            expect(invulnerables.length).to.be.equal(0);
+
             // We will make each of them self-delegate the min amount, while
             // we will make each of them delegate the other with 50%
             // Alice autocompounding, Bob will be manual
+            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
+            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
 
             await context.createBlock([
-                // Remove all invulnerables, otherwise they have priority
-                await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.invulnerables.setInvulnerables([]))
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
                     .requestDelegate(alice.address, "AutoCompounding", 10000n * DANCE)
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
@@ -63,7 +67,8 @@ describeSuite({
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const expectedOrchestratorReward = chainRewards - (chainRewards * 2n) / 3n;
+                const rounding = chainRewards % 3n > 0 ? 1n : 0n;
+                const expectedOrchestratorReward = chainRewards - (chainRewards * 2n) / 3n - rounding;
                 const reward = await fetchRewardAuthorOrchestrator(events);
                 const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
                 const stakingRewardedDelegators = await filterRewardStakingDelegators(
