@@ -113,13 +113,6 @@ pub trait Assets<AccountId, AssetId, Balance> {
     fn bench_set_balance(asset_id: &AssetId, account: &AccountId, amount: Balance);
 }
 
-/// Interactions the pallet needs with assets.
-pub trait StreamCreationHook<AccountId, Get, StreamId> {
-    fn stream_opened(stream_id: StreamId, account: &AccountId) -> DispatchResult;
-
-    fn stream_closed(stream_id: StreamId, account: &AccountId) -> DispatchResult;
-}
-
 #[pallet]
 pub mod pallet {
     use super::*;
