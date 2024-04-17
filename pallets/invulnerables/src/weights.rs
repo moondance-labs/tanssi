@@ -50,7 +50,6 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
 pub trait WeightInfo {
-	fn set_invulnerables(_b: u32) -> Weight;
 	fn add_invulnerable(_b: u32) -> Weight;
 	fn remove_invulnerable(_b: u32) -> Weight;
 	fn new_session(_b: u32) -> Weight;
@@ -60,20 +59,6 @@ pub trait WeightInfo {
 /// Weight functions for `pallet_invulnerables`.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	/// Storage: Invulnerables Invulnerables (r:0 w:1)
-	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
-	/// The range of component `b` is `[1, 100]`.
-	fn set_invulnerables(b: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 3_690_000 picoseconds.
-		Weight::from_parts(4_000_278, 0)
-			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 283
-			.saturating_add(Weight::from_parts(56_720, 0).saturating_mul(b.into()))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
 	/// Storage: `Session::NextKeys` (r:1 w:0)
 	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
@@ -143,20 +128,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
-	/// Storage: Invulnerables Invulnerables (r:0 w:1)
-	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
-	/// The range of component `b` is `[1, 100]`.
-	fn set_invulnerables(b: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 3_690_000 picoseconds.
-		Weight::from_parts(4_000_278, 0)
-			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 283
-			.saturating_add(Weight::from_parts(56_720, 0).saturating_mul(b.into()))
-			.saturating_add(RocksDbWeight::get().writes(1))
-	}
 	/// Storage: `Session::NextKeys` (r:1 w:0)
 	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)

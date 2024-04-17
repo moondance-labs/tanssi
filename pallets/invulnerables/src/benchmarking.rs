@@ -117,31 +117,6 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn set_invulnerables(
-        b: Linear<1, { T::MaxInvulnerables::get() }>,
-    ) -> Result<(), BenchmarkError> {
-        let origin =
-            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
-
-        let new_invulnerables = invulnerables::<T>(b);
-
-        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
-            new_invulnerables.into_iter().unzip();
-
-        #[extrinsic_call]
-        _(origin as T::RuntimeOrigin, account_ids);
-
-        // assert that it comes out sorted
-        assert_last_event::<T>(
-            Event::NewInvulnerables {
-                invulnerables: collator_ids,
-            }
-            .into(),
-        );
-        Ok(())
-    }
-
-    #[benchmark]
     fn add_invulnerable(
         b: Linear<1, { T::MaxInvulnerables::get() - 1 }>,
     ) -> Result<(), BenchmarkError> {
@@ -194,7 +169,8 @@ mod benchmarks {
         let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
             frame_support::BoundedVec::try_from(collator_ids).unwrap();
         <Invulnerables<T>>::put(invulnerables);
-        let to_remove = account_ids.first().unwrap().clone();
+
+        let to_remove = account_ids.last().unwrap().clone();
 
         #[extrinsic_call]
         _(origin as T::RuntimeOrigin, to_remove.clone());
@@ -222,8 +198,10 @@ mod benchmarks {
         let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
             invulnerables.into_iter().unzip();
 
-        <InvulnerablesPallet<T>>::set_invulnerables(origin, account_ids)
-            .expect("set invulnerables failed");
+        for account in account_ids {
+            <InvulnerablesPallet<T>>::add_invulnerable(origin.clone(), account)
+                .expect("add invulnerable failed");
+        }
 
         #[block]
         {
