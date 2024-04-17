@@ -98,6 +98,7 @@ test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit"
 
 # Dancekit (client)
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0" }
+dc-orchestrator-chain-rpc-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0" }
 
 # Moonkit (wasm)
 async-backing-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.6.0", default-features = false }

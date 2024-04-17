@@ -31,8 +31,6 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
-use tokio::select;
-use tokio_util::sync::CancellationToken;
 use {
     crate::{
         collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
@@ -69,6 +67,8 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
     std::{convert::TryFrom, error::Error, sync::Arc, time::Duration},
+    tokio::select,
+    tokio_util::sync::CancellationToken,
 };
 
 /// Parameters for [`run`].
@@ -426,7 +426,7 @@ where
                     }
                 },
                 _ = params.cancellation_token.cancelled() => {
-                    log::info!("Lookahead collator was already running! Exiting...");
+                    log::info!("Stopping lookahead collator");
                     break;
                 }
             }

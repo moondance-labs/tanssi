@@ -54,23 +54,6 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_invulnerables using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_invulnerables::WeightInfo for SubstrateWeight<T> {
-	/// Storage: `Session::NextKeys` (r:100 w:0)
-	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Invulnerables::Invulnerables` (r:0 w:1)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// The range of component `b` is `[1, 100]`.
-	fn set_invulnerables(b: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `287 + b * (78 ±0)`
-		//  Estimated: `1274 + b * (2554 ±0)`
-		// Minimum execution time: 15_519_000 picoseconds.
-		Weight::from_parts(15_500_965, 1274)
-			// Standard Error: 3_771
-			.saturating_add(Weight::from_parts(3_708_720, 0).saturating_mul(b.into()))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_parts(0, 2554).saturating_mul(b.into()))
-	}
 	/// Storage: `Session::NextKeys` (r:1 w:0)
 	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)

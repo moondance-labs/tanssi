@@ -34,7 +34,7 @@ use {
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
-        relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
+        relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
         ParaId,
     },
     cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
@@ -43,7 +43,7 @@ use {
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHeader,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash, PHeader,
     },
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     futures::{Stream, StreamExt},
@@ -196,8 +196,8 @@ pub fn build_check_assigned_para_id(
     );
 }
 
-/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
-/// the para id has changed since the last call to this function.
+/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` to
+/// start or stop the required container chains.
 ///
 /// Checks the assignment for the next block, so if there is a session change on block 15, this will
 /// detect the assignment change after importing block 14.
@@ -404,13 +404,6 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
-    // This channel allows us to notify the lookahead collator when it should stop.
-    // Useful when rotating containers.
-    let mut initial_cancellation_token: Option<(
-        CancellationToken,
-        futures::channel::oneshot::Receiver<()>,
-    )> = None;
-
     if validator {
         let collator_key = collator_key
             .clone()
@@ -465,9 +458,7 @@ async fn start_node_impl(
                 )
             }
         };
-        // Start collating now
-        initial_cancellation_token = Some(start_collation());
-        // And save callback for later, used when collator rotates from container chain back to orchestrator chain
+        // Save callback for later, used when collator rotates from container chain back to orchestrator chain
         collate_on_tanssi = Arc::new(start_collation);
     }
 
@@ -515,14 +506,14 @@ async fn start_node_impl(
             spawn_handle,
             state: Default::default(),
             collate_on_tanssi,
-            collation_cancellation_constructs: initial_cancellation_token,
+            collation_cancellation_constructs: None,
         };
         let state = container_chain_spawner.state.clone();
 
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx),
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
@@ -1279,10 +1270,10 @@ impl OrchestratorChainInProcessInterfaceBuilder {
 
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
-    full_client: Arc<Client>,
-    backend: Arc<FullBackend>,
-    sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
-    overseer_handle: Handle,
+    pub full_client: Arc<Client>,
+    pub backend: Arc<FullBackend>,
+    pub sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+    pub overseer_handle: Handle,
 }
 
 impl<Client> OrchestratorChainInProcessInterface<Client> {
@@ -1349,21 +1340,38 @@ where
         Ok(self.overseer_handle.clone())
     }
 
+    /// Get a stream of import block notifications.
     async fn import_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!();
+        let notification_stream = self
+            .full_client
+            .import_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
     }
 
+    /// Get a stream of new best block notifications.
     async fn new_best_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!();
+        let notifications_stream =
+            self.full_client
+                .import_notification_stream()
+                .filter_map(|notification| async move {
+                    notification.is_new_best.then_some(notification.header)
+                });
+        Ok(Box::pin(notifications_stream))
     }
 
+    /// Get a stream of finality notifications.
     async fn finality_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!();
+        let notification_stream = self
+            .full_client
+            .finality_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
     }
 }

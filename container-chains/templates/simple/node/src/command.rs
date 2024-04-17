@@ -22,11 +22,13 @@ use {
     },
     container_chain_template_simple_runtime::Block,
     cumulus_primitives_core::ParaId,
+    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
+    futures::stream::StreamExt,
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
-    polkadot_service::IdentifyVariant as _,
+    polkadot_service::{IdentifyVariant as _, TaskManager},
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, SharedParams, SubstrateCli,
@@ -280,6 +282,43 @@ pub fn run() -> Result<()> {
                     cmd.run(partials.backend, config.chain_spec),
                     partials.task_manager,
                 ))
+            })
+        }
+        Some(Subcommand::RpcProvider(cmd)) => {
+            let runner = cli.create_runner(&cli.run.normalize())?;
+
+            runner.run_node_until_exit(|_config| async move {
+                let client: Box<dyn OrchestratorChainInterface>;
+                let mut task_manager;
+
+                if cmd.orchestrator_endpoints.is_empty() {
+                    todo!("Start in process node")
+                } else {
+                    task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
+                        .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+
+                    client = dc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                        cmd.orchestrator_endpoints.clone(),
+                        &mut task_manager,
+                        None,
+                    )
+                    .await
+                    .map(Box::new)
+                    .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+                };
+
+                // POC: Try to fetch some data through the interface.
+                task_manager
+                    .spawn_handle()
+                    .spawn("rpc_provider_exemple", None, async move {
+                        let mut stream = client.new_best_notification_stream().await.unwrap();
+
+                        while let Some(header) = stream.next().await {
+                            log::info!("New best block: {}", header.hash());
+                        }
+                    });
+
+                Ok(task_manager)
             })
         }
         None => {
