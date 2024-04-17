@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {clap::Parser, node_common::service::Sealing};
-
 use {
+    clap::Parser,
+    node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
+    url::Url,
 };
 
 /// Sub-commands supported by the collator.
@@ -68,6 +69,10 @@ pub enum Subcommand {
 
     /// Precompile the WASM runtime into native code
     PrecompileWasm(sc_cli::PrecompileWasmCmd),
+
+    /// Starts in RPC provider mode, watching orchestrator chain for assignements to provide
+    /// RPC services for container chains.
+    RpcProvider(RpcProviderSubcommand),
 }
 
 #[derive(Debug, Parser)]
@@ -180,4 +185,17 @@ impl CliConfiguration for BuildSpecCmd {
     fn node_key_params(&self) -> Option<&NodeKeyParams> {
         Some(&self.base.node_key_params)
     }
+}
+
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct RpcProviderSubcommand {
+    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
+    /// If this list is empty, a local embeded orchestrator node is started.
+    #[arg(long)]
+    pub orchestrator_endpoints: Vec<Url>,
+
+    /// Account associated with the node, whose assignements will be followed to provide RPC services.
+    #[arg(long)]
+    pub assignement_account: dp_core::AccountId,
 }
