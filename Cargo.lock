@@ -3165,7 +3165,7 @@ dependencies = [
 name = "dc-orchestrator-chain-rpc-interface"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.6.0#ed1a0f0d7200bedab36f3b6294070c38502d8d87"
-dependencies = [c
+dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "dc-orchestrator-chain-interface",

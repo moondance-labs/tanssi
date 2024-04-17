@@ -56,7 +56,7 @@ pub trait WeightInfo {
 	fn add_invulnerable(_b: u32) -> Weight;
 	fn remove_invulnerable(_b: u32) -> Weight;
 	fn new_session(_b: u32) -> Weight;
-	fn reward_invulnerable() -> Weight;
+	fn reward_invulnerable(_b: u32) -> Weight;
 }
 
 /// Weights for pallet_invulnerables using the Substrate node and recommended hardware.
