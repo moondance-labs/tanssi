@@ -141,6 +141,15 @@ impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
     fn set_authors_for_para_id(_para_id: ParaId, _authors: Vec<AccountId>) {}
 }
 
+pub struct DummyBeacon {}
+impl nimbus_primitives::SlotBeacon for DummyBeacon {
+    fn slot() -> u32 {
+        let block_number = System::block_number();
+
+        block_number as u32
+    }
+}
+
 pub struct MockContainerChainGetter;
 
 impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
@@ -179,12 +188,12 @@ impl RelaychainStateProvider for MockRelayStateProvider {
     }
 }
 
-// Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
+    type SlotBeacon = DummyBeacon;
     type ContainerChains = MockContainerChainGetter;
     type AuthorNotingHook = ();
     type RelayChainStateProvider = MockRelayStateProvider;

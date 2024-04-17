@@ -7755,6 +7755,7 @@ dependencies = [
  "hex",
  "hex-literal 0.3.4",
  "log",
+ "nimbus-primitives",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-primitives",

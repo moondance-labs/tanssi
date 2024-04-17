@@ -411,7 +411,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<1>;
+    type MaxHolds = ConstU32<10>;
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -796,6 +796,7 @@ impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
+    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
@@ -1067,21 +1068,10 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-/// We don't allow to create nor mint assets, this for now is disabled
-/// We only allow transfers. For now creation of assets will go through
-/// asset-manager, while minting/burning only happens through xcm messages
-/// This can change in the future
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(c: &RuntimeCall) -> bool {
-        // We filter anonymous proxy as they make "reserve" inconsistent
-        // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
-        !matches!(
-            c,
-            RuntimeCall::Proxy(
-                pallet_proxy::Call::create_pure { .. } | pallet_proxy::Call::kill_pure { .. }
-            )
-        )
+    fn contains(_c: &RuntimeCall) -> bool {
+        true
     }
 }
 
@@ -1296,6 +1286,11 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
 
 type StreamId = u64;
 
+parameter_types! {
+    // 1 entry, storing 173 bytes on-chain
+    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 173);
+}
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
@@ -1303,6 +1298,9 @@ impl pallet_stream_payment::Config for Runtime {
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
+    type Currency = Balances;
+    type OpenStreamHoldAmount = OpenStreamHoldAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
     type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }

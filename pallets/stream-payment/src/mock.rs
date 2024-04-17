@@ -235,6 +235,10 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     }
 }
 
+parameter_types! {
+    pub const OpenStreamHoldAmount: Balance = 100;
+}
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = u64;
@@ -242,6 +246,9 @@ impl pallet_stream_payment::Config for Runtime {
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
+    type Currency = Balances;
+    type OpenStreamHoldAmount = OpenStreamHoldAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
     type WeightInfo = ();
 }
