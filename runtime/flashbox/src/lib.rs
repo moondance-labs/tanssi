@@ -403,7 +403,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<1>;
+    type MaxHolds = ConstU32<10>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1284,6 +1284,11 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
 
 type StreamId = u64;
 
+parameter_types! {
+    // 1 entry, storing 173 bytes on-chain
+    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 173);
+}
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
@@ -1291,6 +1296,9 @@ impl pallet_stream_payment::Config for Runtime {
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
+    type Currency = Balances;
+    type OpenStreamHoldAmount = OpenStreamHoldAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
     type WeightInfo = ();
 }

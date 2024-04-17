@@ -39,7 +39,10 @@ use {
         pallet,
         pallet_prelude::*,
         storage::types::{StorageDoubleMap, StorageMap},
-        traits::tokens::Balance,
+        traits::{
+            fungible::{Inspect, MutateHold},
+            tokens::{Balance, Precision},
+        },
         Blake2_128Concat,
     },
     frame_system::pallet_prelude::*,
@@ -145,6 +148,16 @@ pub mod pallet {
         /// Provide interaction with assets.
         type Assets: Assets<Self::AccountId, Self::AssetId, Self::Balance>;
 
+        /// Currency for the opening balance hold for the storage used by the Stream.
+        /// NOT to be confused with Assets.
+        type Currency: Inspect<Self::AccountId, Balance = Self::Balance>
+            + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+
+        type RuntimeHoldReason: From<HoldReason>;
+
+        #[pallet::constant]
+        type OpenStreamHoldAmount: Get<Self::Balance>;
+
         /// Represents which units of time can be used. Designed to be an enum
         /// with a variant for each kind of time source/scale supported.
         type TimeUnit: Debug + Clone + FullCodec + TypeInfo + MaxEncodedLen + Eq;
@@ -182,6 +195,8 @@ pub mod pallet {
         pub request_nonce: RequestNonce,
         /// A pending change request if any.
         pub pending_request: Option<ChangeRequest<Unit, AssetId, Balance>>,
+        /// One-time opening deposit. Will be released on close.
+        pub opening_deposit: Balance,
     }
 
     impl<AccountId: PartialEq, Unit, AssetId, Balance> Stream<AccountId, Unit, AssetId, Balance> {
@@ -381,6 +396,7 @@ pub mod pallet {
     #[pallet::composite_enum]
     pub enum HoldReason {
         StreamPayment,
+        StreamOpened,
     }
 
     #[pallet::call]
@@ -396,8 +412,15 @@ pub mod pallet {
             initial_deposit: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
+            let opening_deposit = T::OpenStreamHoldAmount::get();
 
-            let _stream_id = Self::open_stream_returns_id(origin, target, config, initial_deposit)?;
+            let _stream_id = Self::open_stream_returns_id(
+                origin,
+                target,
+                config,
+                initial_deposit,
+                opening_deposit,
+            )?;
 
             Ok(().into())
         }
@@ -425,6 +448,16 @@ pub mod pallet {
             // Unfreeze funds left in the stream.
             T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
 
+            // Release opening deposit
+            if stream.opening_deposit > 0u32.into() {
+                T::Currency::release(
+                    &HoldReason::StreamOpened.into(),
+                    &stream.source,
+                    stream.opening_deposit,
+                    Precision::Exact,
+                )?;
+            }
+
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
             LookupStreamsWithSource::<T>::remove(stream.source, stream_id);
@@ -433,7 +466,7 @@ pub mod pallet {
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamClosed {
                 stream_id,
-                refunded: stream.deposit,
+                refunded: stream.deposit.saturating_add(stream.opening_deposit),
             });
 
             Ok(().into())
@@ -728,6 +761,7 @@ pub mod pallet {
             target: AccountIdOf<T>,
             config: StreamConfigOf<T>,
             initial_deposit: T::Balance,
+            opening_deposit: T::Balance,
         ) -> Result<T::StreamId, DispatchErrorWithPostInfo> {
             ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
 
@@ -737,6 +771,11 @@ pub mod pallet {
                 .checked_add(&One::one())
                 .ok_or(Error::<T>::StreamIdOverflow)?;
             NextStreamId::<T>::set(next_stream_id);
+
+            // Hold opening deposit for the storage used by Stream
+            if opening_deposit > 0u32.into() {
+                T::Currency::hold(&HoldReason::StreamOpened.into(), &origin, opening_deposit)?;
+            }
 
             // Freeze initial deposit.
             T::Assets::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
@@ -752,6 +791,7 @@ pub mod pallet {
                 last_time_updated: now,
                 request_nonce: 0,
                 pending_request: None,
+                opening_deposit,
             };
 
             // Insert stream in storage.

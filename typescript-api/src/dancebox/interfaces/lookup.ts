@@ -3451,7 +3451,7 @@ export default {
     },
     /** Lookup367: pallet_stream_payment::pallet::HoldReason */
     PalletStreamPaymentHoldReason: {
-        _enum: ["StreamPayment"],
+        _enum: ["StreamPayment", "StreamOpened"],
     },
     /** Lookup368: pallet_pooled_staking::pallet::HoldReason */
     PalletPooledStakingHoldReason: {
@@ -3515,6 +3515,7 @@ export default {
         lastTimeUpdated: "u128",
         requestNonce: "u32",
         pendingRequest: "Option<PalletStreamPaymentChangeRequest>",
+        openingDeposit: "u128",
     },
     /**
      * Lookup379: pallet_stream_payment::pallet::ChangeRequest<dancebox_runtime::TimeUnit,

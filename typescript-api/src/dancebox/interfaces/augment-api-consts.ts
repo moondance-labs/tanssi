@@ -265,6 +265,11 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        streamPayment: {
+            openStreamHoldAmount: u128 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         system: {
             /** Maximum number of block number to block hash mappings to keep (oldest pruned first). */
             blockHashCount: u32 & AugmentedConst<ApiType>;

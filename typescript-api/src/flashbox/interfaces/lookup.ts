@@ -1766,7 +1766,7 @@ export default {
     },
     /** Lookup261: pallet_stream_payment::pallet::HoldReason */
     PalletStreamPaymentHoldReason: {
-        _enum: ["StreamPayment"],
+        _enum: ["StreamPayment", "StreamOpened"],
     },
     /** Lookup264: pallet_balances::types::IdAmount<flashbox_runtime::RuntimeFreezeReason, Balance> */
     PalletBalancesIdAmountRuntimeFreezeReason: {
@@ -1826,6 +1826,7 @@ export default {
         lastTimeUpdated: "u128",
         requestNonce: "u32",
         pendingRequest: "Option<PalletStreamPaymentChangeRequest>",
+        openingDeposit: "u128",
     },
     /**
      * Lookup272: pallet_stream_payment::pallet::ChangeRequest<flashbox_runtime::TimeUnit,

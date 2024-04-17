@@ -1530,6 +1530,11 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
 
 type StreamId = u64;
 
+parameter_types! {
+    // 1 entry, storing 173 bytes on-chain
+    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 173);
+}
+
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
@@ -1537,6 +1542,9 @@ impl pallet_stream_payment::Config for Runtime {
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
+    type Currency = Balances;
+    type OpenStreamHoldAmount = OpenStreamHoldAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
     type WeightInfo = ();
 }
