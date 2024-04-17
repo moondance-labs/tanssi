@@ -2,7 +2,7 @@
 This guide explains how to use the benchmarking tool under `tools/benchmarking.sh` for better developer experience
 
 ## Benchmarking pallets vs benchmarking runtimes
-Let's first explain the differente between benchmarking a pallet and benchmarking a runtime. When we benchmark a pallet, a public `trait WeightInfo` is created. The pallet is going to ask for an implementation of this trait in the associated `Config` type. Obviously when we benchmark a pallet this trait is by default implemented for the empty tuple and generic  `substrateWeight` struct. Here is an example:
+Let's first explain the difference between benchmarking a pallet and benchmarking a runtime. When we benchmark a pallet, a public `trait WeightInfo` is created. The pallet is going to ask for an implementation of this trait in the associated `Config` type. Obviously when we benchmark a pallet this trait is by default implemented for the empty tuple and generic  `substrateWeight` struct. Here is an example:
 
 ```
 /// Weight functions needed for pallet_data_preservers.
