@@ -155,6 +155,7 @@ pub mod pallet {
 
         type RuntimeHoldReason: From<HoldReason>;
 
+        #[pallet::constant]
         type OpenStreamHoldAmount: Get<Self::Balance>;
 
         /// Represents which units of time can be used. Designed to be an enum
