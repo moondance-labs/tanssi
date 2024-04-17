@@ -20,7 +20,6 @@ describeSuite({
             alice = context.keyring.alice;
             charlie = context.keyring.charlie;
             polkadotJs = context.polkadotJs();
-            chain = polkadotJs.consts.system.version.specName.toString();
         });
 
         it({
@@ -58,14 +57,15 @@ describeSuite({
                 await context.createBlock();
 
                 // Send some initial balance to pure proxy account
-                const tx1 = polkadotJs.tx.balances.transferAllowDeath(proxyAddress, 200_000);
+                const existentialDeposit = polkadotJs.consts.balances.existentialDeposit.toBigInt();
+                const tx1 = polkadotJs.tx.balances.transferAllowDeath(proxyAddress, existentialDeposit + 200_000n);
                 await context.createBlock([await tx1.signAsync(alice)]);
 
                 // Transfer from pure proxy to charlie
                 const tx = polkadotJs.tx.proxy.proxy(
                     proxyAddress,
                     null,
-                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 100_000)
+                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 100_000n)
                 );
                 await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
