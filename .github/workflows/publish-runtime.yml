@@ -157,7 +157,7 @@ jobs:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: runtime-info
           path: build  
