@@ -780,7 +780,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -789,7 +789,7 @@ impl pallet_data_preservers::Config for Runtime {
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
-    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 }
 
 impl pallet_author_noting::Config for Runtime {
@@ -804,7 +804,7 @@ impl pallet_author_noting::Config for Runtime {
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -823,7 +823,7 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = CollatorId;
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
-    type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -849,7 +849,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
-    type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 pub struct FlashboxRegistrarHooks;
@@ -914,7 +914,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -926,14 +926,14 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxies allowed.
@@ -1043,7 +1043,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
-    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weighst::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1361,7 +1361,7 @@ impl pallet_treasury::Config for Runtime {
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
-    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type ProposalBondMaximum = ();
     #[cfg(not(feature = "runtime-benchmarks"))]

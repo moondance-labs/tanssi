@@ -823,9 +823,9 @@ impl pallet_tx_pause::Config for Runtime {
 
 impl dp_impl_tanssi_pallets_config::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
-    type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
-    type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
-    type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+    type TimestampWeights = weights::pallet_timestamp::SubstrateWeight<Runtime>;
+    type AuthorInherentWeights = weights::pallet_author_inherent::SubstrateWeight<Runtime>;
+    type AuthoritiesNotingWeights = weights::pallet_cc_authorities_noting::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {

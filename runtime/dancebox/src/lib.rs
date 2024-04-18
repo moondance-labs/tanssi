@@ -1599,7 +1599,7 @@ impl pallet_treasury::Config for Runtime {
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
-    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type ProposalBondMaximum = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
