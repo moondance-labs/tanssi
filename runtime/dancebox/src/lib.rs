@@ -705,7 +705,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 /// Read full_rotation_period from pallet_configuration
@@ -1900,7 +1900,7 @@ impl_runtime_apis! {
             use sp_core::storage::TrackedStorageKey;
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             impl cumulus_pallet_session_benchmarking::Config for Runtime {}
-            
+
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);

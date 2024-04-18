@@ -599,7 +599,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -1611,7 +1611,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;    
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
@@ -1640,7 +1640,7 @@ impl_runtime_apis! {
             }
 
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
+            impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number

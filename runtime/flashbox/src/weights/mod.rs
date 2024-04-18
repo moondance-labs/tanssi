@@ -31,6 +31,7 @@ pub mod pallet_proxy;
 pub mod pallet_registrar;
 pub mod pallet_relay_storage_roots;
 pub mod pallet_services_payment;
+pub mod pallet_session;
 pub mod pallet_stream_payment;
 pub mod pallet_sudo;
 pub mod pallet_timestamp;
