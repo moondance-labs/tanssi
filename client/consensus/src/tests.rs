@@ -132,6 +132,7 @@ sp_api::mock_impl_runtime_apis! {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 struct RelayChain(Arc<TestClient>);
 
@@ -251,6 +252,7 @@ impl RelayChainInterface for RelayChain {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 struct DummySpawner(Arc<TestClient>);
 impl SpawnNamed for DummySpawner {
@@ -271,6 +273,7 @@ impl SpawnNamed for DummySpawner {
     }
 }
 
+#[allow(dead_code)]
 struct DummyProposer(u64, Arc<TestClient>);
 
 // This is going to be our block verifier
