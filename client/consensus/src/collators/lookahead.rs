@@ -94,6 +94,11 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH
     pub cancellation_token: CancellationToken,
 }
 
+// Parth: Buying the core: Create an offchain message signed by nimbus id.
+// The runtime xcm-core-buyer need to verify if this collator is assigned to
+// the particular para id it claims to be and it is a parathread.
+// If that is true, we send the xcm message.
+
 /// Run async-backing-friendly for Tanssi Aura.
 pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH>(
     mut params: Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH>,
@@ -192,6 +197,19 @@ where
                     let relay_parent_header = maybe_relay_parent_header.expect("relay_parent_header must exists as we checked for None variant above; qed");
                     let relay_parent = relay_parent_header.hash();
 
+                    // Parth: Check if this is parathread using aux data
+                    // Only if it is parathread: Check if we need to produce the block right now using slot frequency, if not then skip iteration on the loop.
+                    //            If we need to produce the block, check if we are already scheduled or not.
+                    //                   If we are scheduled, continue on the loop.
+                    //                   If we are not scheduled
+                    //                         If we haven't tried to buy it,  buy pay as you go blockspace in one of the parathread core.
+                    //                         Skip this iteration on the loop.
+                    // (This will replace below is_para_scheduled function call.)
+                    // Handle XCM failure
+
+                    // Parth: If it is parachain, check if there is a core with para id if yes return true.
+                    //  If it is parathread, we need to check if it is `Scheduled` otherwise return true.
+                    //  Else return false.
                     if !is_para_scheduled(relay_parent, params.para_id, &mut params.overseer_handle).await {
                         tracing::trace!(
                             target: crate::LOG_TARGET,

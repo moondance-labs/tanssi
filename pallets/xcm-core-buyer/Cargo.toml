@@ -17,6 +17,7 @@ serde = { workspace = true, optional = true }
 tp-traits = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 staging-xcm = { workspace = true }
 
 # Substrate

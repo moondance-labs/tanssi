@@ -42,14 +42,14 @@ const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded.
-const BUY_EXECUTION_REFUND: u128 = 5115980;
+const BUY_EXECUTION_REFUND: u128 = 3659013;
 const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
 #[test]
 fn constants() {
     // If these constants change, some tests may break
     assert_eq!(ROCOCO_ED, 100_000_000 / 3);
-    assert_eq!(BUY_EXECUTION_COST, 50_000_000);
+    assert_eq!(BUY_EXECUTION_COST, 70_000_000 + 1_266_663_99);
 }
 
 /// The tests in this module all use this function to trigger an XCM message to buy a core.

@@ -9551,6 +9551,7 @@ dependencies = [
  "nimbus-primitives",
  "num-traits",
  "pallet-balances",
+ "pallet-xcm",
  "parity-scale-codec",
  "scale-info",
  "serde",

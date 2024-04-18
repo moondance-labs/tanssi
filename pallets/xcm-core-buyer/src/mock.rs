@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use pallet_xcm::Origin;
+use staging_xcm::prelude::{GlobalConsensus, Parachain, X2};
+use staging_xcm::prelude::{InteriorMultiLocation, NetworkId};
 use {
     crate::{
         self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
@@ -161,6 +164,18 @@ parameter_types! {
     pub const ParachainId: ParaId = ParaId::new(1000);
 }
 
+parameter_types! {
+    pub const CoreBuyingXCMQueryTtl: u32 = 100;
+    pub const AdditionalTtlForInflightOrders: u32 = 5;
+    pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(NetworkId::Westend), Parachain(1000));
+}
+
+impl Into<Result<pallet_xcm::Origin, RuntimeOrigin>> for RuntimeOrigin {
+    fn into(self) -> Result<Origin, RuntimeOrigin> {
+        Ok(Origin::Response(MultiLocation::parent()))
+    }
+}
+
 impl pallet_xcm_core_buyer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -171,10 +186,16 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
-    type MaxParathreads = ConstU32<100>;
+    type MaxInFlightOrders = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ();
+    type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
+    type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type UniversalLocation = UniversalLocation;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
+    type XCMNotifier = ();
 
     type WeightInfo = ();
 }
