@@ -614,6 +614,7 @@ pub mod pallet {
         }
 
         #[cfg(feature = "runtime-benchmarks")]
+        #[allow(unused_must_use)]
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> T::AccountId {
             use {
                 frame_benchmarking::account,

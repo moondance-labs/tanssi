@@ -30,6 +30,7 @@ use {
 
 /// Create a funded user.
 /// Used for generating the necessary amount for registering
+#[allow(unused_must_use)]
 fn create_funded_user<T: Config>(
     string: &'static str,
     n: u32,
