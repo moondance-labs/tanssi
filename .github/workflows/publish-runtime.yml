@@ -29,12 +29,12 @@ jobs:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
       - name: Upload scripts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-scripts
           path: scripts
       - name: Upload tools
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-tools
           path: tools
