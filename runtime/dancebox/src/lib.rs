@@ -1723,6 +1723,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
+        [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
         [pallet_pooled_staking, PooledStaking]
         [pallet_treasury, Treasury]
@@ -1880,6 +1881,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
@@ -1896,7 +1898,9 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+            impl cumulus_pallet_session_benchmarking::Config for Runtime {}
+            
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
