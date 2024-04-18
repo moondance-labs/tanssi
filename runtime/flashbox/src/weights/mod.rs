@@ -34,5 +34,6 @@ pub mod pallet_services_payment;
 pub mod pallet_stream_payment;
 pub mod pallet_sudo;
 pub mod pallet_timestamp;
+pub mod pallet_treasury;
 pub mod pallet_tx_pause;
 pub mod pallet_utility;

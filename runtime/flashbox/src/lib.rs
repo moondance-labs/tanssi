@@ -1043,7 +1043,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
-    type WeightInfo = weighst::pallet_proxy::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
