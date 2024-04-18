@@ -42,10 +42,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    crate::{
-        assignment::{Assignment, ChainNumCollators},
-        weights::WeightInfo,
-    },
+    crate::assignment::{Assignment, ChainNumCollators},
     frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
@@ -67,6 +64,7 @@ mod assignment;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
+pub use weights::WeightInfo;
 
 #[cfg(test)]
 mod mock;

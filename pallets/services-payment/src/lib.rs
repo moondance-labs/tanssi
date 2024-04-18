@@ -22,7 +22,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    crate::weights::WeightInfo,
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -48,6 +47,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+pub use weights::WeightInfo;
 
 pub use pallet::*;
 

@@ -119,7 +119,7 @@ fn receive_tokens_from_the_relay_to_simple_template() {
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =
-            container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+            container_chain_template_simple_runtime::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(

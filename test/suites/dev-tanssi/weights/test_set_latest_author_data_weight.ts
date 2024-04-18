@@ -12,8 +12,8 @@ describeSuite({
             id: "E01",
             title: "Weight should be match expected",
             test: async function () {
-                const expectedRefTime = new BN(1_108_762_621);
-                const expectedProofSize = new BN(9_212);
+                const expectedRefTime = new BN(1_134_178_671);
+                const expectedProofSize = new BN(15_236);
 
                 await context.createBlock();
 
