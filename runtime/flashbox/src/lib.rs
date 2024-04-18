@@ -1472,6 +1472,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
+        [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
         [pallet_treasury, Treasury]
         [pallet_relay_storage_roots, RelayStorageRoots]
@@ -1610,6 +1611,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;    
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
@@ -1636,6 +1638,9 @@ impl_runtime_apis! {
                     System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
                 }
             }
+
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
