@@ -244,7 +244,7 @@ impl pallet_xcm::Config for Runtime {
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
-    type WeightInfo = pallet_xcm::TestWeightInfo;
+    type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
@@ -494,8 +494,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ParasUnsignedPriority;
-
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_xcm_core_buyer::SubstrateWeight<Runtime>;
 }
 
 pub struct GetBlockNumber;

@@ -1090,7 +1090,7 @@ parameter_types! {
 impl pallet_relay_storage_roots::Config for Runtime {
     type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type MaxStorageRoots = MaxStorageRoots;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_relay_storage_roots::SubstrateWeight<Runtime>;
 }
 
 impl pallet_root_testing::Config for Runtime {
