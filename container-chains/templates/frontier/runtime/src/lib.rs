@@ -1249,7 +1249,6 @@ impl_runtime_apis! {
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
                     let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
-                    log::info!("setting {:?}", EXISTENTIAL_DEPOSIT);
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );
