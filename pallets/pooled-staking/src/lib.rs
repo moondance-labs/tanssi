@@ -48,8 +48,8 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
-
 use frame_support::pallet;
+pub use weights::WeightInfo;
 
 pub use {candidate::EligibleCandidate, pallet::*};
 

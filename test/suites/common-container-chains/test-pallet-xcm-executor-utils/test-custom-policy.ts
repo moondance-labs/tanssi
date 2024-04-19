@@ -14,7 +14,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: string;
-        const transferredBalance = 10_000_000_000_000n;
+        let transferredBalance;
 
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
@@ -25,6 +25,7 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
+            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
 
             const createForeignAsset = await polkadotJs.tx.sudo.sudo(
                 polkadotJs.tx.utility.batch([

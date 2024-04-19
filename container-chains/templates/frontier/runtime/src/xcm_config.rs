@@ -16,10 +16,11 @@
 
 use {
     super::{
-        currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId,
-        AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
-        MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
-        RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
+        currency::MICROUNIT, precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, weights,
+        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
+        Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
@@ -49,10 +50,10 @@ use {
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,
-        FungibleAdapter, IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
+        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
-        TakeWeightCredit, UsingComponents, WithComputedOrigin,
+        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
 };
@@ -112,6 +113,13 @@ pub type XcmBarrier = (
     >,
 );
 
+// For benchmarking, we cannot use the describeFamily
+// the benchmark is written to be able to convert an AccountId32, but describeFamily prevents this
+#[cfg(not(feature = "runtime-benchmarks"))]
+type Descriptor = staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>;
+#[cfg(feature = "runtime-benchmarks")]
+type Descriptor = staging_xcm_builder::DescribeAllTerminal;
+
 /// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
 /// `Transact` in order to determine the dispatch Origin.
@@ -123,10 +131,7 @@ pub type LocationToAccountId = (
     // If we receive a MultiLocation of type AccountKey20, just generate a native account
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<
-        AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
-    >,
+    staging_xcm_builder::HashedDescription<AccountId, Descriptor>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
@@ -169,7 +174,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
-pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
+pub type XcmWeigher =
+    WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
@@ -241,7 +247,7 @@ impl pallet_xcm::Config for Runtime {
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
-    type WeightInfo = pallet_xcm::TestWeightInfo;
+    type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
@@ -257,7 +263,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type VersionWrapper = PolkadotXcm;
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
-    type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::cumulus_pallet_xcmp_queue::SubstrateWeight<Runtime>;
     type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
@@ -273,7 +279,7 @@ parameter_types! {
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
@@ -284,7 +290,7 @@ parameter_types! {
 
 impl pallet_message_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_message_queue::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
         cumulus_primitives_core::AggregateMessageOrigin,
@@ -379,7 +385,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type StringLimit = ForeignAssetsAssetsStringLimit;
     type Freezer = ();
     type Extra = ();
-    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_assets::SubstrateWeight<Runtime>;
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
@@ -421,7 +427,7 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
     type Fungibles = ForeignAssets;
-    type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
     type OnForeignAssetCreated = RevertCodePrecompileHook;
     type OnForeignAssetDestroyed = RevertCodePrecompileHook;
 }
@@ -433,7 +439,7 @@ impl pallet_asset_rate::Config for Runtime {
     type Currency = Balances;
     type AssetKind = AssetId;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
@@ -449,7 +455,7 @@ impl pallet_xcm_executor_utils::Config for Runtime {
     type SetReserveTrustOrigin = EnsureRoot<AccountId>;
     type TeleportDefaultTrustPolicy = AllNativeTrustPolicy;
     type SetTeleportTrustOrigin = EnsureRoot<AccountId>;
-    type WeightInfo = pallet_xcm_executor_utils::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_xcm_executor_utils::SubstrateWeight<Runtime>;
 }
 
 use {

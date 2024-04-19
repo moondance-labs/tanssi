@@ -299,7 +299,8 @@ where
             }
         } else {
             Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
-            total_weight += Runtime::WeightInfo::reward_invulnerable()
+            total_weight +=
+                Runtime::WeightInfo::reward_invulnerable(Runtime::MaxInvulnerables::get())
         }
         Ok(Some(total_weight).into())
     }

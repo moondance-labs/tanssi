@@ -23,7 +23,7 @@ use {
         },
         *,
     },
-    container_chain_template_frontier_runtime::UNIT as FRONTIER_DEV,
+    container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
     dancebox_runtime::UNIT as DANCE,
     frame_support::{
         assert_ok,

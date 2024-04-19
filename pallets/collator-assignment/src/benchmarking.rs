@@ -45,12 +45,13 @@ fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec
         .collect::<Vec<_>>()
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
+fn assert_event_is_present<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = frame_system::Pallet::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+    let event_records: Vec<<T as frame_system::Config>::RuntimeEvent> =
+        events.iter().map(|i| i.event.clone()).collect();
+    assert!(event_records.contains(&system_event));
 }
 
 #[benchmarks]
@@ -71,19 +72,22 @@ mod benchmarks {
         let session_index = 0u32.into();
         T::ContainerChains::set_session_container_chains(session_index, &container_chains);
         T::RemoveParaIdsWithNoCredits::make_valid_para_ids(&container_chains);
+        T::HostConfiguration::set_host_configuration(session_index);
 
         // Assign random collators to test worst case: when collators need to be checked against existing collators
         // In this case all of the old collators don't exist anymore
-        let old_container_chains: Vec<(ParaId, _)> = (0..20)
+        let old_container_chains: Vec<(ParaId, _)> = (0..y)
             .map(|para_id| (para_id.into(), invulnerables::<T>(10, SEED + 2 + para_id)))
             .collect();
+
         let old_assigned = AssignedCollators {
             orchestrator_chain: invulnerables::<T>(100, SEED + 1),
             container_chains: BTreeMap::from_iter(old_container_chains),
         };
         <CollatorContainerChain<T>>::put(&old_assigned);
         // Do not use [0; 32] because that seed will not shuffle the list of collators
-        let random_seed = [1; 32];
+        // We use a different random seed every time to make sure that the event is included
+        let random_seed = [x as u8; 32];
         <Randomness<T>>::put(random_seed);
 
         #[block]
@@ -94,13 +98,16 @@ mod benchmarks {
         // Assignment changed
         assert_ne!(<CollatorContainerChain::<T>>::get(), old_assigned);
         // New assignment is not empty
-        assert_ne!(
-            <CollatorContainerChain::<T>>::get().container_chains.len(),
-            0
-        );
+        // If more than one, at least one chain should have gotten collators
+        if x > 1 {
+            assert_ne!(
+                <CollatorContainerChain::<T>>::get().container_chains.len(),
+                0
+            );
+        }
 
         // Worst case is `full_rotation: false` because it needs to check the previous assignment
-        assert_last_event::<T>(
+        assert_event_is_present::<T>(
             Event::NewPendingAssignment {
                 random_seed,
                 full_rotation: false,

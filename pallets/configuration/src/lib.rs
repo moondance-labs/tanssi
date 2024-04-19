@@ -36,7 +36,7 @@ mod mock;
 mod tests;
 pub mod weights;
 
-use crate::weights::WeightInfo;
+pub use weights::WeightInfo;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;

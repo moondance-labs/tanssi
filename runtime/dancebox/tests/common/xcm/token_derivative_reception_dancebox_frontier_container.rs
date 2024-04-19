@@ -24,7 +24,7 @@ use {
     },
     frame_support::{
         assert_ok,
-        traits::PalletInfoAccess,
+        traits::{tokens::ConversionToAssetBalance, PalletInfoAccess},
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
@@ -34,7 +34,7 @@ use {
 
 #[allow(unused_assignments)]
 #[test]
-fn receive_tokens_from_tanssi_to_simple_template() {
+fn receive_tokens_from_tanssi_to_frontier_template() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
@@ -85,7 +85,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
             <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
                 root_origin,
                 bx!(1),
-                FixedU128::from_u32(1)
+                FixedU128::from_u32(1_000_000u32)
             )
         );
     });
@@ -128,7 +128,13 @@ fn receive_tokens_from_tanssi_to_simple_template() {
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =
-            container_chain_template_simple_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+            container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+
+        // We need to convert this to asset-balance charged.
+        let asset_balance = <<FrontierTemplate as FrontierTemplateParaPallet>::AssetRate as ConversionToAssetBalance<_,_,_>>::to_asset_balance(
+            native_balance,
+            1
+        ).unwrap();
 
         // Assert empty receiver received funds
         assert_eq!(
@@ -136,7 +142,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
                 dancebox_token_asset_id,
                 &EthereumReceiver::get(),
             ),
-            amount_to_send - native_balance
+            amount_to_send - asset_balance
         );
     });
 }

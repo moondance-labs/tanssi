@@ -50,7 +50,7 @@ describeSuite({
             sendingAddress = originAddress;
 
             // Transfer some tokens to sovereign and derivative accounts for execution costs
-            transferredBalance = 10_000_000_000_000n;
+            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
             polkadotJs = context.polkadotJs();
 
             const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);

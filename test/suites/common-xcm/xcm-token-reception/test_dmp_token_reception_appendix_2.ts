@@ -27,7 +27,7 @@ describeSuite({
                           name: "Alice default",
                       });
 
-            transferredBalance = 10_000_000_000_000n;
+            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
 
             // We register the token
             const txSigned = polkadotJs.tx.sudo.sudo(

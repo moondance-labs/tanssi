@@ -24,6 +24,7 @@ use {
     },
     frame_support::{
         assert_ok,
+        traits::tokens::ConversionToAssetBalance,
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
@@ -77,7 +78,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
             <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
                 root_origin,
                 bx!(1),
-                FixedU128::from_u32(1)
+                FixedU128::from_u32(1_000_000u32)
             )
         );
     });
@@ -121,13 +122,19 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         let native_balance =
             container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(&outcome_weight);
 
+        // We need to convert this to asset-balance charged.
+        let asset_balance = <<FrontierTemplate as FrontierTemplateParaPallet>::AssetRate as ConversionToAssetBalance<_,_,_>>::to_asset_balance(
+            native_balance,
+            1
+        ).unwrap();
+
         // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 westend_token_asset_id,
                 &EthereumReceiver::get(),
             ),
-            amount_to_send - native_balance
+            amount_to_send - asset_balance
         );
     });
 }

@@ -27,12 +27,12 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
+pub use weights::WeightInfo;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
 use {
-    crate::weights::WeightInfo,
     core::cmp::min,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
