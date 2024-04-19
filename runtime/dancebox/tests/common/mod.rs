@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::UNIT,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dancebox_runtime::{
@@ -40,16 +41,15 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-mod xcm;
-
-use dancebox_runtime::TransactionPayment;
 pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
     PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall,
-    ServicesPayment, Session, System,
+    ServicesPayment, Session, System, TransactionPayment,
 };
+
+mod xcm;
 
 pub fn session_to_block(n: u32) -> u32 {
     let block_number = dancebox_runtime::Period::get() * n;
@@ -235,22 +235,6 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
     .dispatch(inherent_origin()));
 }
 
-#[derive(Default)]
-pub struct ExtBuilder {
-    // endowed accounts with balances
-    balances: Vec<(AccountId, Balance)>,
-    // [collator, amount]
-    collators: Vec<(AccountId, Balance)>,
-    // sudo key
-    sudo: Option<AccountId>,
-    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
-    para_ids: Vec<ParaRegistrationParams>,
-    // configuration to apply
-    config: pallet_configuration::HostConfiguration,
-    safe_xcm_version: Option<u32>,
-    own_para_id: Option<ParaId>,
-}
-
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
     para_id: u32,
@@ -284,6 +268,53 @@ impl
             bootnodes: value.2,
             block_production_credits: value.3,
             collator_assignment_credits: value.4,
+        }
+    }
+}
+
+pub fn default_config() -> pallet_configuration::HostConfiguration {
+    pallet_configuration::HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 2,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+        ..Default::default()
+    }
+}
+
+pub struct ExtBuilder {
+    // endowed accounts with balances
+    balances: Vec<(AccountId, Balance)>,
+    // [collator, amount]
+    collators: Vec<(AccountId, Balance)>,
+    // sudo key
+    sudo: Option<AccountId>,
+    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
+    para_ids: Vec<ParaRegistrationParams>,
+    // configuration to apply
+    config: pallet_configuration::HostConfiguration,
+    safe_xcm_version: Option<u32>,
+    own_para_id: Option<ParaId>,
+}
+
+impl Default for ExtBuilder {
+    fn default() -> Self {
+        Self {
+            balances: vec![
+                // Alice gets 10k extra tokens for her mapping deposit
+                (AccountId::from(ALICE), 210_000 * UNIT),
+                (AccountId::from(BOB), 100_000 * UNIT),
+            ],
+            collators: vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ],
+            sudo: Default::default(),
+            para_ids: Default::default(),
+            config: default_config(),
+            safe_xcm_version: Default::default(),
+            own_para_id: Default::default(),
         }
     }
 }
