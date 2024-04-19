@@ -3778,14 +3778,6 @@ fn test_reward_to_staking_candidate() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-            ..Default::default()
-        })
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3893,14 +3885,6 @@ fn test_reward_to_invulnerable() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-            ..Default::default()
-        })
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3991,14 +3975,6 @@ fn test_reward_to_invulnerable_with_key_change() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-            ..Default::default()
-        })
         .build()
         .execute_with(|| {
             run_to_block(2);
