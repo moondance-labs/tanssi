@@ -42,7 +42,8 @@ describeSuite({
                 if (runtimeVersion < 300) {
                     return;
                 }
-                const sessionLength = 300;
+                const sessionLength = runtimeVersion > 500 ? 600 : 300;
+
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 const blockToCheck = Math.trunc(currentBlock / sessionLength) * sessionLength;
