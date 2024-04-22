@@ -829,7 +829,7 @@ impl pallet_invulnerables::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxLengthParaIds: u32 = 200u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
     pub const MaxBootNodes: u32 = 10;
     pub const MaxBootNodeUrlLen: u32 = 200;
