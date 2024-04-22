@@ -1893,6 +1893,15 @@ impl_runtime_apis! {
         }
     }
 
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
+        }
+    }
+
     impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
         fn slot_duration() -> u64 {
             SLOT_DURATION

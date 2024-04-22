@@ -43,6 +43,7 @@ pallet-stream-payment-runtime-api = { workspace = true }
 runtime-common = { workspace = true }
 
 # Moonkit
+async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
@@ -123,6 +124,7 @@ default = [
 	"std",
 ]
 std = [
+	"async-backing-primitives/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-primitives-core/std",
