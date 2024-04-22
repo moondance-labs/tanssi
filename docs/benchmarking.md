@@ -125,13 +125,13 @@ TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=runtime
 ### Benchmarking all pallets for the container-chain-frontier-runtime
 
 ```
-BINARY=target/release/container-chain-template-frontier-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/frontier/runtime/src/weights ./tools/benchmarking.sh "*" "*"
+BINARY=target/release/container-chain-frontier-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/frontier/runtime/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Benchmarking all pallets for the container-chain-simple-runtime
 
 ```
-BINARY=target/release/container-chain-template-simple-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/simple/runtime/src/weights ./tools/benchmarking.sh "*" "*"
+BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/simple/runtime/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Generating weight info trait bound for pallet-pooled-staking
@@ -143,5 +143,5 @@ TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=pallets/
 ### Generating weight info trait bound for pallet-cc-authorities-noting
 
 ```
-BINARY=target/release/container-chain-template-simple-node TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=../dancekit/container-chain-pallets/authorities-noting/src/weights.rs ./tools/benchmarking.sh "pallet_cc_authorities_noting" "*"
+BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=../dancekit/container-chain-pallets/authorities-noting/src/weights.rs ./tools/benchmarking.sh "pallet_cc_authorities_noting" "*"
 ```

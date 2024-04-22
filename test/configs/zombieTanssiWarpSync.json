@@ -83,7 +83,7 @@
                 {
                     "name": "FullNode-2000",
                     "validator": false,
-                    "command": "../target/release/container-chain-template-simple-node",
+                    "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
                     "p2p_port": 33049

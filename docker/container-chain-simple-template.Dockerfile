@@ -21,7 +21,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 
 USER container-chain-template-simple
 
-COPY --chown=container-chain-template-simple build/container-chain-template-simple-node* /container-chain-template-simple
+COPY --chown=container-chain-template-simple build/container-chain-simple-node* /container-chain-template-simple
 RUN chmod uog+x /container-chain-template-simple/container-chain-template-simple*
 
 # 30333 for parachain p2p
@@ -33,4 +33,4 @@ EXPOSE 30333 30334 9933 9944 9615
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/container-chain-template-simple/container-chain-template-simple-node"]
+ENTRYPOINT ["/container-chain-template-simple/container-chain-simple-node"]

@@ -16,8 +16,8 @@ const getCwd = (pid: number) => {
 
 const targetProcessNames = [
     "tanssi-node",
-    "container-chain-template-simple-node",
-    "container-chain-template-frontier-node",
+    "container-chain-simple-node",
+    "container-chain-frontier-node",
     "polkadot",
 ];
 const pattern = targetProcessNames.join("|");

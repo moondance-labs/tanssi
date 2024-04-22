@@ -9,7 +9,7 @@ set -e
 
 # By default we use the tanssi-node release binary
 # However we can use any binary by running the benchmark tool with
-# BINARY=./target/release/container-chain-template-simple-node ./tools/benchmarking.sh
+# BINARY=./target/release/container-chain-simple-node ./tools/benchmarking.sh
 if [[ -z "${BINARY}" ]]; then
     BINARY="./target/release/tanssi-node"
 else
