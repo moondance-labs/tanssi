@@ -96,9 +96,7 @@
         {
             "name": "dev_simple_template",
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains"],
-            "runScripts": [
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c dev"
-            ],
+            "runScripts": ["compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c dev"],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",
