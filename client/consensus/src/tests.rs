@@ -373,9 +373,9 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = BlockBuilderBuilder::new(&*self.1)
-            .on_parent_block(self.1.chain_info().best_hash)
-            .fetch_parent_block_number(&*self.1)
+        let r = BlockBuilderBuilder::new(&*self.0)
+            .on_parent_block(self.0.chain_info().best_hash)
+            .fetch_parent_block_number(&*self.0)
             .unwrap()
             .with_inherent_digests(digests)
             .build()
