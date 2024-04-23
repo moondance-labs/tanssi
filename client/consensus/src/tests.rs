@@ -133,7 +133,7 @@ sp_api::mock_impl_runtime_apis! {
 }
 
 #[derive(Clone)]
-struct RelayChain;
+struct RelayChain(Arc<TestClient>);
 
 #[async_trait]
 impl RelayChainInterface for RelayChain {
@@ -252,7 +252,7 @@ impl RelayChainInterface for RelayChain {
 }
 
 #[derive(Clone)]
-struct DummySpawner;
+struct DummySpawner(Arc<TestClient>);
 impl SpawnNamed for DummySpawner {
     fn spawn_blocking(
         &self,
@@ -271,8 +271,7 @@ impl SpawnNamed for DummySpawner {
     }
 }
 
-#[allow(dead_code)]
-struct DummyProposer(Arc<TestClient>);
+struct DummyProposer(u64, Arc<TestClient>);
 
 // This is going to be our block verifier
 // It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
@@ -356,7 +355,7 @@ impl Environment<TestBlock> for DummyFactory {
     type Error = Error;
 
     fn init(&mut self, parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
-        future::ready(Ok(DummyProposer(self.0.clone())))
+        future::ready(Ok(DummyProposer(parent_header.number + 1, self.0.clone())))
     }
 }
 
@@ -374,9 +373,9 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = BlockBuilderBuilder::new(&*self.0)
-            .on_parent_block(self.0.chain_info().best_hash)
-            .fetch_parent_block_number(&*self.0)
+        let r = BlockBuilderBuilder::new(&*self.1)
+            .on_parent_block(self.1.chain_info().best_hash)
+            .fetch_parent_block_number(&*self.1)
             .unwrap()
             .with_inherent_digests(digests)
             .build()
@@ -563,8 +562,8 @@ async fn collate_returns_correct_block() {
     let peer = net.peer(3);
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
-    let spawner = DummySpawner;
-    let relay_client = RelayChain;
+    let spawner = DummySpawner(client.clone());
+    let relay_client = RelayChain(client.clone());
 
     // Build the collator
     let mut collator = {
