@@ -34,6 +34,7 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use tp_traits::{AuthorNotingHook, BlockNumber};
 use {
     dp_core::ParaId,
     frame_support::{
@@ -80,6 +81,21 @@ pub struct InFlightCoreBuyingOrder<BN> {
     para_id: ParaId,
     query_id: QueryId,
     ttl: BN,
+}
+
+impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    fn on_container_author_noted(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight {
+        let mut pending_block_paraids = PendingBlocks::<T>::get();
+        pending_block_paraids.remove(&para_id);
+
+        PendingBlocks::<T>::set(pending_block_paraids);
+
+        T::DbWeight::get().reads_writes(1, 1)
+    }
 }
 
 #[frame_support::pallet]
@@ -193,6 +209,8 @@ pub mod pallet {
         LocationInversionFailed,
         /// Modifying XCM to report the result of XCM failed
         ReportNotifyingSetupFailed,
+        /// Unexpected XCM response
+        UnexpectedXCMResponse,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
@@ -224,6 +242,10 @@ pub mod pallet {
         BoundedBTreeMap<ParaId, InFlightCoreBuyingOrder<BlockNumberFor<T>>, T::MaxInFlightOrders>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    pub type PendingBlocks<T: Config> =
+        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxInFlightOrders>, ValueQuery>;
 
     /// Mapping of QueryId to ParaId
     #[pallet::storage]
@@ -377,17 +399,27 @@ pub mod pallet {
             ttl_queue.remove(&(order.ttl, query_id));
             in_flight_orders.remove(&para_id);
 
-            // TODO: If response is success then we need to only allow the particular parathread
-            // to be able to buy again once the block number for it increases.
-
             QueryIdToParaId::<T>::put(query_id_to_para_id);
             InFlightOrdersTtl::<T>::put(ttl_queue);
             InFlightOrders::<T>::put(in_flight_orders);
 
-            Self::deposit_event(Event::ReceivedBuyCoreXCMResult {
-                para_id: para_id,
-                response,
-            });
+            match response {
+                Response::ExecutionResult(result) => {
+                    if result.is_none() {
+                        // Success. Add para id to pending block
+                        let mut pending_block_paraids = PendingBlocks::<T>::get();
+                        pending_block_paraids.try_insert(para_id).expect("Length of pending block paraids should not exceed max number of paraids");
+                        PendingBlocks::<T>::set(pending_block_paraids);
+                    }
+                    // We do not add paraid to pending block on failure
+                }
+                _ => {
+                    // Unexpected.
+                    return Err(Error::<T>::UnexpectedXCMResponse.into());
+                }
+            }
+
+            Self::deposit_event(Event::ReceivedBuyCoreXCMResult { para_id, response });
 
             Ok(())
         }
