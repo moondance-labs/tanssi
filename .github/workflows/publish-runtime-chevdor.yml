@@ -20,6 +20,8 @@ on:
           - flashbox-only
           - dancebox-only
           - templates-only
+          - simple-template-only
+          - frontier-template-only
           - run-all
 
 jobs:
@@ -67,6 +69,10 @@ jobs:
             echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "simple-template-only" ]]; then
+            echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
+            echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           fi
