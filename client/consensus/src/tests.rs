@@ -132,9 +132,8 @@ sp_api::mock_impl_runtime_apis! {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
-struct RelayChain(Arc<TestClient>);
+struct RelayChain;
 
 #[async_trait]
 impl RelayChainInterface for RelayChain {
@@ -252,9 +251,8 @@ impl RelayChainInterface for RelayChain {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
-struct DummySpawner(Arc<TestClient>);
+struct DummySpawner;
 impl SpawnNamed for DummySpawner {
     fn spawn_blocking(
         &self,
@@ -273,8 +271,7 @@ impl SpawnNamed for DummySpawner {
     }
 }
 
-#[allow(dead_code)]
-struct DummyProposer(u64, Arc<TestClient>);
+struct DummyProposer(Arc<TestClient>);
 
 // This is going to be our block verifier
 // It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
@@ -358,7 +355,7 @@ impl Environment<TestBlock> for DummyFactory {
     type Error = Error;
 
     fn init(&mut self, parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
-        future::ready(Ok(DummyProposer(parent_header.number + 1, self.0.clone())))
+        future::ready(Ok(DummyProposer(self.0.clone())))
     }
 }
 
@@ -565,8 +562,8 @@ async fn collate_returns_correct_block() {
     let peer = net.peer(3);
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
-    let spawner = DummySpawner(client.clone());
-    let relay_client = RelayChain(client.clone());
+    let spawner = DummySpawner;
+    let relay_client = RelayChain;
 
     // Build the collator
     let mut collator = {

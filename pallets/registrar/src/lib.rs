@@ -614,7 +614,6 @@ pub mod pallet {
         }
 
         #[cfg(feature = "runtime-benchmarks")]
-        #[allow(unused_must_use)]
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> T::AccountId {
             use {
                 frame_benchmarking::account,
@@ -634,7 +633,7 @@ pub mod pallet {
                     const SEED: u32 = 0;
                     let user = account(string, n, SEED);
                     T::Currency::make_free_balance_be(&user, total);
-                    T::Currency::issue(total);
+                    let _ = T::Currency::issue(total);
                     (user, total)
                 }
                 let new_balance =
@@ -650,7 +649,7 @@ pub mod pallet {
             let new_balance =
                 (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
             T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
-            T::Currency::issue(new_balance);
+            let _ = T::Currency::issue(new_balance);
 
             deposit_info.creator
         }
