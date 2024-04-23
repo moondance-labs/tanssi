@@ -31,7 +31,7 @@ use {
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
-    parity_scale_codec::Encode,
+    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_consensus_slots::Slot,
@@ -67,7 +67,20 @@ pub fn run_to_session(n: u32) {
 }
 
 /// Utility function that advances the chain to the desired block number.
+///
+/// After this function returns, the current block number will be `n`, and the block will be "open",
+/// meaning that on_initialize has been executed, but on_finalize has not. To execute on_finalize as
+/// well, for example to test a runtime api, manually call `end_block` after this, run the test, and
+/// call `start_block` to ensure that this function keeps working as expected.
+/// Extrinsics should always be executed before on_finalize.
 pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
+    let current_block_number = System::block_number();
+    assert!(
+        current_block_number < n,
+        "run_to_block called with block {} when current block is {}",
+        n,
+        current_block_number
+    );
     let mut summaries = BTreeMap::new();
 
     while System::block_number() < n {
@@ -100,8 +113,81 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
     );
 }
 
-pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
-    let slot = current_slot() + 1;
+// Used to create the next block inherent data
+#[derive(Clone, Encode, Decode, Default, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
+pub struct MockInherentData {
+    pub random_seed: Option<[u8; 32]>,
+}
+
+fn take_new_inherent_data() -> Option<MockInherentData> {
+    let data: Option<MockInherentData> =
+        frame_support::storage::unhashed::take(b"__mock_new_inherent_data");
+
+    data
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
+enum RunBlockState {
+    Start(u32),
+    End(u32),
+}
+
+impl RunBlockState {
+    fn assert_can_advance(&self, new_state: &RunBlockState) {
+        match self {
+            RunBlockState::Start(n) => {
+                assert_eq!(
+                    new_state,
+                    &RunBlockState::End(*n),
+                    "expected a call to end_block({}), but user called {:?}",
+                    *n,
+                    new_state
+                );
+            }
+            RunBlockState::End(n) => {
+                assert_eq!(
+                    new_state,
+                    &RunBlockState::Start(*n + 1),
+                    "expected a call to start_block({}), but user called {:?}",
+                    *n + 1,
+                    new_state
+                )
+            }
+        }
+    }
+}
+
+fn advance_block_state_machine(new_state: RunBlockState) {
+    if frame_support::storage::unhashed::exists(b"__mock_is_xcm_test") {
+        // Disable this check in XCM tests, because the XCM emulator runs on_initialize and
+        // on_finalize automatically
+        return;
+    }
+    let old_state: RunBlockState =
+        frame_support::storage::unhashed::get(b"__mock_debug_block_state").unwrap_or(
+            // Initial state is expecting a call to start() with block number 1, so old state should be
+            // end of block 0
+            RunBlockState::End(0),
+        );
+    old_state.assert_can_advance(&new_state);
+    frame_support::storage::unhashed::put(b"__mock_debug_block_state", &new_state);
+}
+
+pub fn start_block() -> RunSummary {
+    let block_number = System::block_number();
+    advance_block_state_machine(RunBlockState::Start(block_number + 1));
+    let mut slot = current_slot() + 1;
+    if block_number == 0 {
+        // Hack to avoid breaking all tests. When the current block is 1, the slot number should be
+        // 1. But all of our tests assume it will be 0. So use slot number = block_number - 1.
+        slot = 0;
+    }
+
+    let maybe_mock_inherent = take_new_inherent_data();
+
+    if let Some(mock_inherent_data) = maybe_mock_inherent {
+        Some(set_parachain_inherent_data(mock_inherent_data));
+    }
 
     insert_authorities_and_slot_digests(slot);
 
@@ -121,21 +207,12 @@ pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
 
     frame_support::storage::unhashed::put(
         &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
+        // TODO: this should be 0?
         &(Slot::from(slot), 1),
     );
 
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
-
-    // Do any operation needed
-    operation_fn(slot);
-
-    // Finalize the block
-    CollatorAssignment::on_finalize(System::block_number());
-    Session::on_finalize(System::block_number());
-    Initializer::on_finalize(System::block_number());
-    AuthorInherent::on_finalize(System::block_number());
-    TransactionPayment::on_finalize(System::block_number());
 
     RunSummary {
         author_id,
@@ -143,20 +220,45 @@ pub fn run_block_with_operation<F: FnOnce(u64)>(operation_fn: F) -> RunSummary {
     }
 }
 
+pub fn end_block() {
+    let block_number = System::block_number();
+    advance_block_state_machine(RunBlockState::End(block_number));
+    // Finalize the block
+    CollatorAssignment::on_finalize(System::block_number());
+    Session::on_finalize(System::block_number());
+    Initializer::on_finalize(System::block_number());
+    AuthorInherent::on_finalize(System::block_number());
+    TransactionPayment::on_finalize(System::block_number());
+}
+
 pub fn run_block() -> RunSummary {
-    run_block_with_operation(|_slot| {})
+    end_block();
+    let summary = start_block();
+
+    summary
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
-pub fn set_parachain_inherent_data() {
-    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
+    use {
+        cumulus_primitives_core::relay_chain::well_known_keys,
+        cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    };
 
     let relay_sproof = RelayStateSproofBuilder {
         para_id: 100u32.into(),
         included_para_head: Some(HeadData(vec![1, 2, 3])),
-        current_slot: (current_slot() * 2).into(),
+        current_slot: (current_slot()).into(),
+        additional_key_values: if mock_inherent_data.random_seed.is_some() {
+            vec![(
+                well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
+                Some(mock_inherent_data.random_seed).encode(),
+            )]
+        } else {
+            vec![]
+        },
         ..Default::default()
     };
 
@@ -172,6 +274,15 @@ pub fn set_parachain_inherent_data() {
         downward_messages: Default::default(),
         horizontal_messages: Default::default(),
     };
+
+    // Delete existing flag to avoid error
+    // 'ValidationData must be updated only once in a block'
+    // TODO: this is a hack
+    frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
+        b"ParachainSystem",
+        b"ValidationData",
+    ));
+
     assert_ok!(RuntimeCall::ParachainSystem(
         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
             data: parachain_inherent_data
@@ -403,12 +514,9 @@ impl ExtBuilder {
         let mut ext = sp_io::TestExternalities::new(t);
 
         ext.execute_with(|| {
-            System::set_block_number(1);
-            System::deposit_log(DigestItem::PreRuntime(
-                AURA_ENGINE_ID,
-                (current_slot()).encode(),
-            ));
-            set_parachain_inherent_data();
+            // Start block 1
+            start_block();
+            set_parachain_inherent_data(Default::default());
         });
         ext
     }
