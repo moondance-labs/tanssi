@@ -505,7 +505,7 @@ parameter_types! {
 }
 
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
     type ExpectedBlockTime = ExpectedBlockTime;
@@ -829,7 +829,7 @@ impl pallet_invulnerables::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxLengthParaIds: u32 = 200u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
     pub const MaxBootNodes: u32 = 10;
     pub const MaxBootNodeUrlLen: u32 = 200;
@@ -1890,6 +1890,15 @@ impl_runtime_apis! {
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
             }
+        }
+    }
+
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
         }
     }
 
