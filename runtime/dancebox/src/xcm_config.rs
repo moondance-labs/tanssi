@@ -16,6 +16,7 @@
 
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_xcm_core_buyer::XCMNotifier;
+use staging_xcm_builder::TrailingSetTopicAsId;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -101,7 +102,7 @@ pub type XcmBarrier = (
     // Weight that is paid for may be consumed.
     TakeWeightCredit,
     // Expected responses are OK.
-    AllowKnownQueryResponses<PolkadotXcm>,
+    TrailingSetTopicAsId<AllowKnownQueryResponses<PolkadotXcm>>,
     WithComputedOrigin<
         (
             // If the message is one that immediately attemps to pay for execution, then allow it.
