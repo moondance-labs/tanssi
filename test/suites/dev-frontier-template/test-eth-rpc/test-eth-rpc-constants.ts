@@ -2,7 +2,7 @@ import { describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0501",
+    id: "DF0601",
     title: "RPC Constants",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
