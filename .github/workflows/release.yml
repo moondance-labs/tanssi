@@ -257,8 +257,8 @@ jobs:
               run: |
                   mkdir -p binaries
                   cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-                  cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
-                  cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
             - name: Upload binary
               uses: actions/upload-artifact@v4
               with:
@@ -429,7 +429,7 @@ jobs:
                   pnpm create-local-interfaces
             - name: "Run Frontier tests"
               run: |
-                  chmod uog+x target/release/container-chain-template-frontier-node
+                  chmod uog+x target/release/container-chain-frontier-node
                   cd test
                   pnpm moonwall test dev_frontier_template
       
@@ -463,7 +463,7 @@ jobs:
                   pnpm create-local-interfaces
             - name: "Run Simple Template tests"
               run: |
-                  chmod uog+x target/release/container-chain-template-simple-node
+                  chmod uog+x target/release/container-chain-simple-node
                   cd test
                   pnpm moonwall test dev_simple_template
 
@@ -525,8 +525,8 @@ jobs:
             - name: "Run zombie test"
               run: |
                   chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-template-simple-node
-                  chmod uog+x target/release/container-chain-template-frontier-node
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
 
                   cd test
                   pnpm install
@@ -580,8 +580,8 @@ jobs:
         - name: "Run zombie test"
           run: |
             chmod uog+x target/release/tanssi-node
-            chmod uog+x target/release/container-chain-template-simple-node
-            chmod uog+x target/release/container-chain-template-frontier-node
+            chmod uog+x target/release/container-chain-simple-node
+            chmod uog+x target/release/container-chain-frontier-node
             
             cd test
             pnpm install
@@ -635,8 +635,8 @@ jobs:
             - name: "Run zombie test"
               run: |
                   chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-template-simple-node
-                  chmod uog+x target/release/container-chain-template-frontier-node
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
 
                   cd test
                   pnpm install
@@ -690,8 +690,8 @@ jobs:
             - name: "Run zombie test"
               run: |
                   chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-template-simple-node
-                  chmod uog+x target/release/container-chain-template-frontier-node
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
 
                   cd test
                   pnpm install

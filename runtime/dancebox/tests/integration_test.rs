@@ -1046,7 +1046,6 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
 #[test]
 fn test_configuration_on_session_change() {
     ExtBuilder::default().build().execute_with(|| {
-        run_to_block(1);
         assert_eq!(Configuration::config().max_collators, 100);
         assert_eq!(Configuration::config().min_orchestrator_collators, 2);
         assert_eq!(Configuration::config().collators_per_container, 2);
@@ -1889,6 +1888,7 @@ fn test_collator_assignment_rotation() {
             let rotation_period = Configuration::config().full_rotation_period;
             run_to_session(rotation_period - 2);
             set_parachain_inherent_data_random_seed([1; 32]);
+            run_block();
 
             assert!(CollatorAssignment::pending_collator_container_chain().is_none());
 
@@ -4146,6 +4146,7 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             );
 
             set_parachain_inherent_data_random_seed([1; 32]);
+            run_block();
 
             // Need to trigger new session to update pallet_session
             run_to_session(2);
@@ -5632,31 +5633,32 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
         ])
         .build()
         .execute_with(|| {
+            end_block();
             // If the block is full, the multiplier increases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
-            run_block_with_operation(|_slot| {
-                let max_block_weights = dancebox_runtime::RuntimeBlockWeights::get();
-                frame_support::storage::unhashed::put(
-                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
-                    &ConsumedWeight::new(|class| {
-                        max_block_weights
-                            .get(class)
-                            .max_total
-                            .unwrap_or(Weight::MAX)
-                    }),
-                );
-            });
+            start_block();
+            let max_block_weights = dancebox_runtime::RuntimeBlockWeights::get();
+            frame_support::storage::unhashed::put(
+                &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                &ConsumedWeight::new(|class| {
+                    max_block_weights
+                        .get(class)
+                        .max_total
+                        .unwrap_or(Weight::MAX)
+                }),
+            );
+            end_block();
             let current_multiplier = TransactionPayment::next_fee_multiplier();
             assert!(current_multiplier > before_multiplier);
 
             // If the block is empty, the multiplier decreases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
-            run_block_with_operation(|_slot| {
-                frame_support::storage::unhashed::put(
-                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
-                    &ConsumedWeight::new(|_class| Weight::zero()),
-                );
-            });
+            start_block();
+            frame_support::storage::unhashed::put(
+                &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                &ConsumedWeight::new(|_class| Weight::zero()),
+            );
+            end_block();
             let current_multiplier = TransactionPayment::next_fee_multiplier();
             assert!(current_multiplier < before_multiplier);
         });

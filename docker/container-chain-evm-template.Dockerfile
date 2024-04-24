@@ -21,8 +21,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 
 USER container-chain-template-evm
 
-COPY --chown=container-chain-template-evm build/container-chain-template-frontier-node* /container-chain-template-evm
-RUN chmod uog+x /container-chain-template-evm/container-chain-template-frontier*
+COPY --chown=container-chain-template-evm build/container-chain-frontier-node* /container-chain-template-evm
+RUN chmod uog+x /container-chain-template-evm/container-chain-frontier*
 
 # 30333 for parachain p2p
 # 30334 for relaychain p2p
@@ -33,4 +33,4 @@ EXPOSE 30333 30334 9933 9944 9615
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/container-chain-template-evm/container-chain-template-frontier-node"]
+ENTRYPOINT ["/container-chain-template-evm/container-chain-frontier-node"]

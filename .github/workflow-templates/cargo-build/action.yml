@@ -73,5 +73,5 @@ runs:
       run: |
         mkdir -p binaries
         cp target/release/tanssi-node binaries/tanssi-node;
-        cp target/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
-        cp target/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
+        cp target/release/container-chain-simple-node binaries/container-chain-simple-node;
+        cp target/release/container-chain-frontier-node binaries/container-chain-frontier-node;
