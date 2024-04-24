@@ -453,8 +453,55 @@ pub mod pallet {
             Ok(reanchored)
         }
 
+        fn clean_up_expired_in_flight_orders(n: BlockNumberFor<T>) {
+            let mut ttl_queue = InFlightOrdersTtl::<T>::get();
+            let mut maybe_oldest_entry;
+            let mut oldest_block_number;
+            let mut query_id;
+
+            let mut query_ids_to_remove = vec![];
+
+            loop {
+                maybe_oldest_entry = ttl_queue.first().copied();
+                (oldest_block_number, query_id) = if let Some(oldest_entry) = maybe_oldest_entry {
+                    oldest_entry
+                } else {
+                    break;
+                };
+
+                // No entry at current block number found
+                if oldest_block_number > n {
+                    break;
+                }
+
+                ttl_queue.remove(&(oldest_block_number, query_id));
+
+                query_ids_to_remove.push(query_id);
+            }
+
+            // Return early if there is nothing to remove.
+            if query_ids_to_remove.is_empty() {
+                return;
+            }
+
+            let mut query_to_para_mapping = QueryIdToParaId::<T>::get();
+            let mut in_flight_orders = InFlightOrders::<T>::get();
+
+            for query_id_to_remove in query_ids_to_remove {
+                let para_id = query_to_para_mapping.remove(&query_id_to_remove).expect("If an entry exists in InFlightOrdersTtl then \
+                it must exists on QueryIdToParaId mapping, if not we have storage inconsistency and better to crash; qed.");
+                in_flight_orders.remove(&para_id);
+            }
+
+            InFlightOrdersTtl::<T>::put(ttl_queue);
+            InFlightOrders::<T>::put(in_flight_orders);
+            QueryIdToParaId::<T>::put(query_to_para_mapping);
+        }
+
         /// Send an XCM message to the relay chain to try to buy a core for this para_id.
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
+            Self::clean_up_expired_in_flight_orders(<frame_system::Pallet<T>>::block_number());
+
             let mut in_flight_orders = InFlightOrders::<T>::get();
             if in_flight_orders.contains_key(&para_id) {
                 return Err(Error::<T>::OrderAlreadyExists.into());
@@ -515,13 +562,16 @@ pub mod pallet {
             });
             let notify_call_weight = notify_call.get_dispatch_info().weight;
 
+            let notify_query_ttl =
+                <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();
+
             // Send XCM to relay chain
             let relay_chain = MultiLocation::parent();
             let query_id = T::XCMNotifier::new_notify_query(
                 relay_chain,
                 notify_call,
-                T::CoreBuyingXCMQueryTtl::get(),
-                Here,
+                notify_query_ttl,
+                interior_multilocation,
             );
 
             let message: Xcm<()> = Xcm::builder_unsafe()
@@ -552,9 +602,7 @@ pub mod pallet {
             T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
             Self::deposit_event(Event::BuyCoreXcmSent { para_id });
 
-            let in_flight_order_ttl = <frame_system::Pallet<T>>::block_number()
-                + T::CoreBuyingXCMQueryTtl::get()
-                + T::AdditionalTtlForInflightOrders::get();
+            let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
             in_flight_orders
                 .try_insert(
                     para_id,
@@ -587,63 +635,6 @@ pub mod pallet {
             InFlightOrdersTtl::<T>::put(ttl_queue_set);
 
             Ok(())
-        }
-    }
-
-    #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            let mut weight = Weight::zero();
-
-            weight += T::DbWeight::get().writes((2 * T::MaxInFlightOrders::get() + 3) as u64);
-            weight += T::DbWeight::get().reads(3);
-
-            weight
-        }
-
-        fn on_finalize(n: BlockNumberFor<T>) {
-            let mut ttl_queue = InFlightOrdersTtl::<T>::get();
-            let mut maybe_oldest_entry;
-            let mut oldest_block_number;
-            let mut query_id;
-
-            let mut query_ids_to_remove = vec![];
-
-            loop {
-                maybe_oldest_entry = ttl_queue.first().copied();
-                (oldest_block_number, query_id) = if let Some(oldest_entry) = maybe_oldest_entry {
-                    oldest_entry
-                } else {
-                    break;
-                };
-
-                // No entry at current block number found
-                if oldest_block_number > n {
-                    break;
-                }
-
-                ttl_queue.remove(&(oldest_block_number, query_id));
-
-                query_ids_to_remove.push(query_id);
-            }
-
-            // Return early if there is nothing to remove.
-            if query_ids_to_remove.is_empty() {
-                return;
-            }
-
-            let mut query_to_para_mapping = QueryIdToParaId::<T>::get();
-            let mut in_flight_orders = InFlightOrders::<T>::get();
-
-            for query_id_to_remove in query_ids_to_remove {
-                let para_id = query_to_para_mapping.remove(&query_id_to_remove).expect("If an entry exists in InFlightOrdersTtl then \
-                it must exists on QueryIdToParaId mapping, if not we have storage inconsistency and better to crash; qed.");
-                in_flight_orders.remove(&para_id);
-            }
-
-            InFlightOrdersTtl::<T>::put(ttl_queue);
-            InFlightOrders::<T>::put(in_flight_orders);
-            QueryIdToParaId::<T>::put(query_to_para_mapping);
         }
     }
 
