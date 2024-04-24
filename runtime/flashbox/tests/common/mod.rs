@@ -186,7 +186,7 @@ pub fn start_block() -> RunSummary {
     let maybe_mock_inherent = take_new_inherent_data();
 
     if let Some(mock_inherent_data) = maybe_mock_inherent {
-        Some(set_parachain_inherent_data(mock_inherent_data));
+        set_parachain_inherent_data(mock_inherent_data);
     }
 
     insert_authorities_and_slot_digests(slot);
