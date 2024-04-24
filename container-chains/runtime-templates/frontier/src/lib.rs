@@ -802,11 +802,6 @@ impl pallet_base_fee::Config for Runtime {
     type DefaultElasticity = DefaultElasticity;
 }
 
-impl pallet_hotfix_sufficients::Config for Runtime {
-    type AddressMapping = IdentityAddressMapping;
-    type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
-}
-
 impl pallet_root_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
@@ -879,7 +874,6 @@ construct_runtime!(
         EVM: pallet_evm = 61,
         EVMChainId: pallet_evm_chain_id = 62,
         BaseFee: pallet_base_fee = 64,
-        HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
 
         // XCM
