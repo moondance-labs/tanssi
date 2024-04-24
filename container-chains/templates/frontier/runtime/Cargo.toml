@@ -116,7 +116,6 @@ pallet-evm-chain-id = { workspace = true }
 pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
-pallet-hotfix-sufficients = { workspace = true }
 precompile-utils = { workspace = true }
 
 # Benchmarking
@@ -176,7 +175,6 @@ std = [
 	"pallet-evm-precompileset-assets-erc20/std",
 	"pallet-evm/std",
 	"pallet-foreign-asset-creator/std",
-	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
@@ -249,7 +247,6 @@ runtime-benchmarks = [
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
-	"pallet-hotfix-sufficients/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
@@ -293,7 +290,6 @@ try-runtime = [
 	"pallet-evm-chain-id/try-runtime",
 	"pallet-evm/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
-	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",

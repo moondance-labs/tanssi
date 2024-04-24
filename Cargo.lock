@@ -1806,7 +1806,6 @@ dependencies = [
  "pallet-evm-precompile-xcm-utils",
  "pallet-evm-precompileset-assets-erc20",
  "pallet-foreign-asset-creator",
- "pallet-hotfix-sufficients",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations",
@@ -8587,22 +8586,6 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-hotfix-sufficients"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-v1.6.0#4414529b910e8cf802969b11505a14665e4a55d1"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-evm",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-runtime",
  "sp-std",
 ]
 
