@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use staging_xcm::latest::Response;
 use {
     crate::common::{
         dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
@@ -448,6 +449,25 @@ fn xcm_core_buyer_core_too_expensive() {
         assert_eq!(
             balance_after,
             balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST
+        );
+    });
+
+    // Receive notification on dancebox
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response == Response::ExecutionResult(None),
+                },
+            ]
         );
     });
 }

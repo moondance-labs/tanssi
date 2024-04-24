@@ -72,7 +72,7 @@ fn force_buy_two_messages_in_one_block_fails() {
 }
 
 #[test]
-fn force_buy_two_messages_in_two_consecutive_blocks_works() {
+fn force_buy_two_messages_in_two_consecutive_blocks_failes() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
@@ -86,9 +86,10 @@ fn force_buy_two_messages_in_two_consecutive_blocks_works() {
 
             run_to_block(2);
 
-            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
-
-            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::OrderAlreadyExists
+            );
         });
 }
 
