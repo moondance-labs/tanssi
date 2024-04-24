@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 //! High level node tests, similar to spawning `tanssi-node --dev` and inspecting output logs.
 
 use {
@@ -11,7 +27,7 @@ mod panics;
 
 // Create a runner for tests
 fn create_runner() -> Runner<Cli> {
-    // TODO: set values that make sense for unit tests, probably --dev is enough
+    // tanssi-node args should go here, `--dev` is probably enough
     let cli = Cli::from_iter(["--dev"]);
     let runner = cli.create_runner(&cli.run.normalize()).unwrap();
 
@@ -19,7 +35,7 @@ fn create_runner() -> Runner<Cli> {
 }
 
 // Nice hack from polkadot-sdk to run a unit test in a separate process.
-// We need to use this because create_runner sets up logging a new panic hook, and that is
+// We need to use this because create_runner sets up logging and a new panic hook, and that is
 // global and fails if it was already setup by a previous test.
 // Improved from upstream by using the exact test name, and by never capturing the test output.
 fn run_test_in_another_process(
@@ -96,8 +112,6 @@ fn run_test_in_another_process_works() {
 
     let stderr = dbg!(String::from_utf8(output.stderr).unwrap());
 
-    // TODO: instead of inspecting stderr, why not use proper IPC?
-    // Parent can create a named pipe and pass it as env variable to child.
     assert!(stderr.contains("Child process running, PID: "));
     // Assert child process id is different from parent process id
     assert!(!stderr.contains(&format!("PID: {}.", parent_pid)));
