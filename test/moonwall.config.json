@@ -64,7 +64,7 @@
             ],
             "runScripts": [
                 "pre-build-contracts.ts",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c dev"
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c dev"
             ],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -74,7 +74,7 @@
                 "launchSpec": [
                     {
                         "name": "frontier-template",
-                        "binPath": "../target/release/container-chain-template-frontier-node",
+                        "binPath": "../target/release/container-chain-frontier-node",
                         "options": [
                             "--force-authoring",
                             "--rpc-cors=all",
@@ -96,9 +96,7 @@
         {
             "name": "dev_simple_template",
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains"],
-            "runScripts": [
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c dev"
-            ],
+            "runScripts": ["compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c dev"],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",
@@ -107,7 +105,7 @@
                 "launchSpec": [
                     {
                         "name": "simple-template",
-                        "binPath": "../target/release/container-chain-template-simple-node",
+                        "binPath": "../target/release/container-chain-simple-node",
                         "options": [
                             "--force-authoring",
                             "--rpc-cors=all",
@@ -135,8 +133,8 @@
                 "build-spec.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/template-container-2000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/template-container-2001.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
             ],
             "foundation": {
                 "type": "zombie",
@@ -190,7 +188,7 @@
                 "build-spec-warp-sync.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -224,7 +222,7 @@
                 "build-spec-warp-sync.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -259,8 +257,8 @@
                 "build-spec-parathreads.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/parathreads-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/parathreads-template-container-2000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/parathreads-template-container-2001.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/parathreads-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/parathreads-template-container-2001.json"
             ],
             "foundation": {
                 "type": "zombie",
@@ -309,8 +307,8 @@
                 "build-spec.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/template-container-2000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c specs/template-container-2001.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -359,7 +357,7 @@
                 "build-spec-warp-sync.sh",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {

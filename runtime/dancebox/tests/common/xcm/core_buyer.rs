@@ -16,7 +16,7 @@
 
 use {
     crate::common::{
-        dummy_boot_nodes, empty_genesis_data, run_to_session,
+        dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
         xcm::{
             mocknets::{
                 DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
@@ -78,6 +78,9 @@ fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) {
             PARATHREAD_ID.into()
         ));
 
+        // TODO: xcm emulator breaks with the run_to_session function, but it works if we manually
+        // call on_initialize here...
+        start_block();
         run_to_session(2);
 
         if let Some(max_core_price) = set_max_core_price {
