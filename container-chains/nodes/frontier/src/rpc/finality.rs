@@ -6,12 +6,16 @@ use sp_runtime::traits::Block;
 use std::{marker::PhantomData, sync::Arc};
 
 #[rpc(server)]
-#[async_trait::async_trait]
 pub trait FrontierFinalityApi {
     /// Reports whether a Substrate or Ethereum block is finalized.
     /// Returns false if the block is not found.
     #[method(name = "frnt_isBlockFinalized")]
     fn is_block_finalized(&self, block_hash: H256) -> RpcResult<bool>;
+
+	/// Reports whether an Ethereum transaction is finalized.
+	/// Returns false if the transaction is not found
+	#[method(name = "frnt_isTxFinalized")]
+	fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool>;
 }
 
 pub struct FrontierFinality<B: Block, C> {
@@ -39,6 +43,22 @@ where
         let client = self.client.clone();
         is_block_finalized_inner::<B, C>(self.backend.as_ref(), &client, raw_hash)
     }
+
+	fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool> {
+		let client = self.client.clone();
+
+		if let Some((ethereum_block_hash, _ethereum_index)) =
+			futures::executor::block_on(frontier_backend_client::load_transactions::<B, C>(
+				&client,
+				self.backend.as_ref(),
+				tx_hash,
+				true,
+			))? {
+			is_block_finalized_inner::<B, C>(self.backend.as_ref(), &client, ethereum_block_hash)
+		} else {
+			Ok(false)
+		}
+	}
 }
 
 fn is_block_finalized_inner<B: Block<Hash = H256>, C: HeaderBackend<B> + 'static>(
