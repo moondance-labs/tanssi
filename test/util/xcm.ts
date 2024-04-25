@@ -298,6 +298,21 @@ export class XcmFragment {
         return this;
     }
 
+    // Add a `ReceiveTeleportedAsset` instruction
+    teleported_assets_received(): this {
+        this.instructions.push({
+            ReceiveTeleportedAsset: this.config.assets.map(({ multilocation, fungible }) => {
+                return {
+                    id: {
+                        Concrete: multilocation,
+                    },
+                    fun: { Fungible: fungible },
+                };
+            }, this),
+        });
+        return this;
+    }
+
     // Add a `WithdrawAsset` instruction
     withdraw_asset(): this {
         this.instructions.push({
