@@ -448,7 +448,6 @@ parameter_types! {
     pub const TrustPolicyMaxAssets: u32 = 1000;
     pub const AllNativeTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::AllNative;
     pub const AllNeverTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::Never;
-
 }
 impl pallet_xcm_executor_utils::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
