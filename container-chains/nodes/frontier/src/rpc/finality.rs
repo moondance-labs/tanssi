@@ -29,10 +29,10 @@ pub trait FrontierFinalityApi {
     #[method(name = "frnt_isBlockFinalized")]
     async fn is_block_finalized(&self, block_hash: H256) -> RpcResult<bool>;
 
-	/// Reports whether an Ethereum transaction is finalized.
-	/// Returns false if the transaction is not found
-	#[method(name = "frnt_isTxFinalized")]
-	async fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool>;
+    /// Reports whether an Ethereum transaction is finalized.
+    /// Returns false if the transaction is not found
+    #[method(name = "frnt_isTxFinalized")]
+    async fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool>;
 }
 
 pub struct FrontierFinality<B: Block, C> {
@@ -62,22 +62,24 @@ where
         is_block_finalized_inner::<B, C>(self.backend.as_ref(), &client, raw_hash).await
     }
 
-	async fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool> {
-		let client = self.client.clone();
+    async fn is_tx_finalized(&self, tx_hash: H256) -> RpcResult<bool> {
+        let client = self.client.clone();
 
-		if let Some((ethereum_block_hash, _ethereum_index)) =
-			frontier_backend_client::load_transactions::<B, C>(
-				&client,
-				self.backend.as_ref(),
-				tx_hash,
-				true,
-			).await?
+        if let Some((ethereum_block_hash, _ethereum_index)) =
+            frontier_backend_client::load_transactions::<B, C>(
+                &client,
+                self.backend.as_ref(),
+                tx_hash,
+                true,
+            )
+            .await?
         {
-			is_block_finalized_inner::<B, C>(self.backend.as_ref(), &client, ethereum_block_hash).await
-		} else {
-			Ok(false)
-		}
-	}
+            is_block_finalized_inner::<B, C>(self.backend.as_ref(), &client, ethereum_block_hash)
+                .await
+        } else {
+            Ok(false)
+        }
+    }
 }
 
 async fn is_block_finalized_inner<B: Block<Hash = H256>, C: HeaderBackend<B> + 'static>(
@@ -86,9 +88,7 @@ async fn is_block_finalized_inner<B: Block<Hash = H256>, C: HeaderBackend<B> + '
     raw_hash: H256,
 ) -> RpcResult<bool> {
     let substrate_hash =
-        match frontier_backend_client::load_hash::<B, C>(
-            client, backend, raw_hash,
-        ).await? {
+        match frontier_backend_client::load_hash::<B, C>(client, backend, raw_hash).await? {
             // If we find this hash in the frontier data base, we know it is an eth hash
             Some(hash) => hash,
             // Otherwise, we assume this is a Substrate hash.
