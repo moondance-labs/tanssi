@@ -1,7 +1,7 @@
 import { expect, describeSuite } from "@moonwall/cli";
 
 describeSuite({
-    id: "DF0801",
+    id: "DF1001",
     title: "AuthoritiesNoting - OrchestratorParaId",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
