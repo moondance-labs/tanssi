@@ -26,6 +26,7 @@ use {
         *,
     },
     frame_support::assert_ok,
+    frame_support::traits::EnsureOrigin,
     paste::paste,
     staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     xcm_emulator::Chain,
@@ -97,12 +98,21 @@ macro_rules! assert_delivery_fees_test {
             let xcm = Xcm(vec![
                 RefundSurplus,
             ]);
+
             let versioned_xcm: VersionedXcm<()> = VersionedXcm::V3(xcm.clone());
             let sender_account =  [<$chain Sender>]::get();
 
             let balance_sender_before = <$chain as [<$chain ParaPallet>]>::Balances::free_balance(sender_account.clone());
 
             let origin = <$chain as Chain>::RuntimeOrigin::signed(sender_account.clone());
+            let origin_location = <<$chain as Chain>::Runtime as pallet_xcm::Config>::SendXcmOrigin::ensure_origin(origin.clone()).expect("cannot conver origin into junctions");
+			let interior: Junctions =
+				origin_location.clone().try_into().unwrap();
+
+            let final_xcm: Xcm<()> = Xcm(vec![
+                DescendOrigin(interior),
+                RefundSurplus,
+            ]);
             let dest: VersionedMultiLocation = $dest.into();
 
             assert_ok!(<$chain as [<$chain ParaPallet>]>::PolkadotXcm::send(
@@ -110,11 +120,12 @@ macro_rules! assert_delivery_fees_test {
                 bx!(dest),
                 bx!(versioned_xcm)
             ));
-            let (_, price) = validate_send::<<<$chain as Chain>::Runtime as pallet_xcm::Config>::XcmRouter>(MultiLocation::parent(), xcm.clone()).unwrap();
+            let (_, price) = validate_send::<<<$chain as Chain>::Runtime as pallet_xcm::Config>::XcmRouter>(MultiLocation::parent(), final_xcm.clone()).unwrap();
             let balance_sender_after = <$chain as [<$chain ParaPallet>]>::Balances::free_balance(&sender_account);
             assert!(balance_sender_after < balance_sender_before);
             // assert there is at least an asset
             assert!(!price.is_none());
+
             assert_expected_events!(
                 $chain,
                 vec![
