@@ -47,7 +47,7 @@ fn load_spec(
 ) -> std::result::Result<Box<dyn ChainSpec>, String> {
     let para_id: ParaId = match para_id {
         Some(x) => x.into(),
-        None => 1000.into()
+        None => 1000.into(),
     };
     let container_chains = match container_chains {
         Some(x) => x,
