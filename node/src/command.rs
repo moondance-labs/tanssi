@@ -38,54 +38,62 @@ use {
     std::{io::Write, net::SocketAddr},
 };
 
-fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
+fn load_spec(
+    id: &str,
+    para_id: Option<u32>,
+    container_chains: Option<Vec<String>>,
+    mock_container_chains: Option<Vec<ParaId>>,
+    invulnerables: Option<Vec<String>>,
+) -> std::result::Result<Box<dyn ChainSpec>, String> {
+    let para_id: ParaId = match para_id {
+        Some(x) => x.into(),
+        None => 1000.into()
+    };
+    let container_chains = match container_chains {
+        Some(x) => x,
+        None => vec![],
+    };
+    let mock_container_chains = match mock_container_chains {
+        Some(x) => x,
+        None => vec![2000.into(), 2001.into()],
+    };
+    let invulnerables = match invulnerables {
+        Some(x) => x,
+        None => vec![
+            "Alice".to_string(),
+            "Bob".to_string(),
+            "Charlie".to_string(),
+            "Dave".to_string(),
+        ],
+    };
+
     Ok(match id {
         "dev" | "dancebox_dev" => Box::new(chain_spec::dancebox::development_config(
             para_id,
-            vec![],
-            vec![2000.into(), 2001.into()],
-            vec![
-                "Alice".to_string(),
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-            ],
+            container_chains,
+            mock_container_chains,
+            invulnerables,
         )),
-        "" | "dancebox-local" => Box::new(chain_spec::dancebox::local_dancebox_config(
+        "" | "dancebox_local" => Box::new(chain_spec::dancebox::local_dancebox_config(
             para_id,
-            vec![],
-            vec![2000.into(), 2001.into()],
-            vec![
-                "Alice".to_string(),
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-            ],
+            container_chains,
+            mock_container_chains,
+            invulnerables,
         )),
         "dancebox" => Box::new(chain_spec::RawChainSpec::from_json_bytes(
             &include_bytes!("../../specs/dancebox/dancebox-raw-specs.json")[..],
         )?),
         "flashbox_dev" => Box::new(chain_spec::flashbox::development_config(
             para_id,
-            vec![],
-            vec![2000.into(), 2001.into()],
-            vec![
-                "Alice".to_string(),
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-            ],
+            container_chains,
+            mock_container_chains,
+            invulnerables,
         )),
-        "flashbox-local" => Box::new(chain_spec::flashbox::local_flashbox_config(
+        "flashbox_local" => Box::new(chain_spec::flashbox::local_flashbox_config(
             para_id,
-            vec![],
-            vec![2000.into(), 2001.into()],
-            vec![
-                "Alice".to_string(),
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-            ],
+            container_chains,
+            mock_container_chains,
+            invulnerables,
         )),
         path => Box::new(chain_spec::dancebox::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
@@ -125,7 +133,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, self.para_id.unwrap_or(1000).into())
+        load_spec(id, self.para_id, None, None, None)
     }
 }
 
@@ -269,39 +277,13 @@ pub fn run() -> Result<()> {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let chain_spec = if let Some(para_id) = cmd.parachain_id {
-                    if config.chain_spec.is_dev() {
-                        Box::new(chain_spec::dancebox::development_config(
-                            para_id.into(),
-                            cmd.add_container_chain.clone(),
-                            vec![],
-                            cmd.invulnerable.clone().unwrap_or_else(|| {
-                                vec![
-                                    "Alice".to_string(),
-                                    "Bob".to_string(),
-                                    "Charlie".to_string(),
-                                    "Dave".to_string(),
-                                ]
-                            }),
-                        ))
-                    } else {
-                        Box::new(chain_spec::dancebox::local_dancebox_config(
-                            para_id.into(),
-                            cmd.add_container_chain.clone(),
-                            vec![],
-                            cmd.invulnerable.clone().unwrap_or_else(|| {
-                                vec![
-                                    "Alice".to_string(),
-                                    "Bob".to_string(),
-                                    "Charlie".to_string(),
-                                    "Dave".to_string(),
-                                ]
-                            }),
-                        ))
-                    }
-                } else {
-                    config.chain_spec
-                };
+                let chain_spec = load_spec(
+                    config.chain_spec.id(),
+                    cmd.parachain_id,
+                    Some(cmd.add_container_chain.clone()),
+                    Some(vec![]),
+                    cmd.invulnerable.clone(),
+                )?;
                 cmd.base.run(chain_spec, config.network)
             })
         }
