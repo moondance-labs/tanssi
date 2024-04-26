@@ -17,6 +17,7 @@
 use crate::common::xcm::*;
 
 use {
+    crate::assert_expected_events,
     crate::common::xcm::mocknets::{
         DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
         FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,

@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use staging_xcm::latest::Response;
+use std::fmt;
+use std::fmt::format;
+use staging_xcm::latest::{MaybeErrorCode, Response};
+use crate::assert_expected_events;
 use {
     crate::common::{
         dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
@@ -282,6 +285,24 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
         assert_relay_order_event_not_emitted();
         assert_eq!(balance_after, 0);
     });
+
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response == Response::ExecutionResult(None),
+                },
+            ]
+        );
+    });
 }
 
 #[test]
@@ -404,6 +425,25 @@ fn xcm_core_buyer_enough_balance() {
             ]
         );
         assert_eq!(balance_after, ROCOCO_ED + 1 + BUY_EXECUTION_REFUND);
+    });
+
+    // Receive notification on dancebox
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response == Response::ExecutionResult(None),
+                },
+            ]
+        );
     });
 }
 
