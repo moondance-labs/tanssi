@@ -412,13 +412,14 @@ pub type AssetRateAsMultiplier =
 parameter_types! {
     pub const TrustPolicyMaxAssets: u32 = 1000;
     pub const AllNativeTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::AllNative;
+    pub const AllNeverTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::Never;
 }
 impl pallet_xcm_executor_utils::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type TrustPolicyMaxAssets = TrustPolicyMaxAssets;
     type ReserveDefaultTrustPolicy = AllNativeTrustPolicy;
     type SetReserveTrustOrigin = EnsureRoot<AccountId>;
-    type TeleportDefaultTrustPolicy = AllNativeTrustPolicy;
+    type TeleportDefaultTrustPolicy = AllNeverTrustPolicy;
     type SetTeleportTrustOrigin = EnsureRoot<AccountId>;
     type WeightInfo = weights::pallet_xcm_executor_utils::SubstrateWeight<Runtime>;
 }
