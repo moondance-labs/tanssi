@@ -45,27 +45,15 @@ fn load_spec(
     mock_container_chains: Option<Vec<ParaId>>,
     invulnerables: Option<Vec<String>>,
 ) -> std::result::Result<Box<dyn ChainSpec>, String> {
-    let para_id: ParaId = match para_id {
-        Some(x) => x.into(),
-        None => 1000.into(),
-    };
-    let container_chains = match container_chains {
-        Some(x) => x,
-        None => vec![],
-    };
-    let mock_container_chains = match mock_container_chains {
-        Some(x) => x,
-        None => vec![2000.into(), 2001.into()],
-    };
-    let invulnerables = match invulnerables {
-        Some(x) => x,
-        None => vec![
-            "Alice".to_string(),
-            "Bob".to_string(),
-            "Charlie".to_string(),
-            "Dave".to_string(),
-        ],
-    };
+    let para_id: ParaId = para_id.unwrap_or(1000).into();
+    let container_chains = container_chains.unwrap_or(vec![]);
+    let mock_container_chains = mock_container_chains.unwrap_or(vec![2000.into(), 2001.into()]);
+    let invulnerables = invulnerables.unwrap_or(vec![
+        "Alice".to_string(),
+        "Bob".to_string(),
+        "Charlie".to_string(),
+        "Dave".to_string(),
+    ]);
 
     Ok(match id {
         "dev" | "dancebox_dev" => Box::new(chain_spec::dancebox::development_config(
