@@ -5,7 +5,7 @@ import { Abi, encodeFunctionData } from "viem";
 import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
-    id: "DF0910",
+    id: "DF1104",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
