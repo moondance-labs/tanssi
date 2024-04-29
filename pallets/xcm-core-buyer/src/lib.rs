@@ -179,7 +179,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// An XCM message to buy a core for this parathread has been sent to the relay chain.
-        BuyCoreXcmSent { para_id: ParaId },
+        BuyCoreXcmSent { para_id: ParaId, transaction_status_query_id: QueryId },
         /// We received response for xcm
         ReceivedBuyCoreXCMResult { para_id: ParaId, response: Response },
     }
@@ -602,7 +602,7 @@ pub mod pallet {
                 T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
                     .map_err(|_| Error::<T>::ErrorValidatingXCM)?;
             T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
-            Self::deposit_event(Event::BuyCoreXcmSent { para_id });
+            Self::deposit_event(Event::BuyCoreXcmSent { para_id, transaction_status_query_id: query_id });
 
             let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
             in_flight_orders

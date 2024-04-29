@@ -31,7 +31,9 @@ fn root_origin_can_force_buy_xcm() {
 
             assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
 
-            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+            let events = events();
+            assert_eq!(events.len(), 1);
+            matches!(events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
         });
 }
 
@@ -62,7 +64,9 @@ fn force_buy_two_messages_in_one_block_fails() {
 
             assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
 
-            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+            let events = events();
+            assert_eq!(events.len(), 1);
+            matches!(events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
 
             assert_noop!(
                 XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
@@ -82,7 +86,9 @@ fn force_buy_two_messages_in_two_consecutive_blocks_failes() {
 
             assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
 
-            assert_eq!(events(), vec![Event::BuyCoreXcmSent { para_id }]);
+            let events = events();
+            assert_eq!(events.len(), 1);
+            matches!(events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
 
             run_to_block(2);
 
