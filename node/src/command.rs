@@ -56,18 +56,22 @@ fn load_spec(
     ]);
 
     Ok(match id {
-        "dev" | "dancebox-dev" | "dancebox_dev" => Box::new(chain_spec::dancebox::development_config(
-            para_id,
-            container_chains,
-            mock_container_chains,
-            invulnerables,
-        )),
-        "" | "dancebox-local" | "dancebox_local" => Box::new(chain_spec::dancebox::local_dancebox_config(
-            para_id,
-            container_chains,
-            mock_container_chains,
-            invulnerables,
-        )),
+        "dev" | "dancebox-dev" | "dancebox_dev" => {
+            Box::new(chain_spec::dancebox::development_config(
+                para_id,
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            ))
+        }
+        "" | "dancebox-local" | "dancebox_local" => {
+            Box::new(chain_spec::dancebox::local_dancebox_config(
+                para_id,
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            ))
+        }
         "dancebox" => Box::new(chain_spec::RawChainSpec::from_json_bytes(
             &include_bytes!("../../specs/dancebox/dancebox-raw-specs.json")[..],
         )?),
@@ -77,12 +81,14 @@ fn load_spec(
             mock_container_chains,
             invulnerables,
         )),
-        "flashbox-local" | "flashbox_local" => Box::new(chain_spec::flashbox::local_flashbox_config(
-            para_id,
-            container_chains,
-            mock_container_chains,
-            invulnerables,
-        )),
+        "flashbox-local" | "flashbox_local" => {
+            Box::new(chain_spec::flashbox::local_flashbox_config(
+                para_id,
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            ))
+        }
         path => Box::new(chain_spec::dancebox::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
