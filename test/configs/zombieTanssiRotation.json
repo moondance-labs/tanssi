@@ -35,10 +35,6 @@
             {
                 "name": "charlie",
                 "validator": true
-            },
-            {
-                "name": "dave",
-                "validator": true
             }
         ]
     },
