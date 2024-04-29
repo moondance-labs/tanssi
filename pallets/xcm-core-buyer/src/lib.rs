@@ -404,13 +404,15 @@ pub mod pallet {
             InFlightOrders::<T>::put(in_flight_orders);
 
             match response {
-                Response::ExecutionResult(result) => {
-                    if result.is_none() {
-                        // Success. Add para id to pending block
-                        let mut pending_block_paraids = PendingBlocks::<T>::get();
-                        pending_block_paraids.try_insert(para_id).expect("Length of pending block paraids should not exceed max number of paraids");
-                        PendingBlocks::<T>::set(pending_block_paraids);
-                    }
+                Response::DispatchResult(MaybeErrorCode::Success) => {
+                    // Success. Add para id to pending block
+                    let mut pending_block_paraids = PendingBlocks::<T>::get();
+                    pending_block_paraids.try_insert(para_id).expect(
+                        "Length of pending block paraids should not exceed max number of paraids",
+                    );
+                    PendingBlocks::<T>::set(pending_block_paraids);
+                }
+                Response::DispatchResult(_) => {
                     // We do not add paraid to pending block on failure
                 }
                 _ => {
@@ -581,7 +583,7 @@ pub mod pallet {
                 // Both in case of error and in case of success, we want to refund the unused weight
                 .set_appendix(
                     Xcm::builder_unsafe()
-                        .report_error(QueryResponseInfo {
+                        .report_transact_status(QueryResponseInfo {
                             destination: T::UniversalLocation::get()
                                 .invert_target(&relay_chain)
                                 .map_err(|_| Error::<T>::LocationInversionFailed)?, // This location from the point of view of destination
