@@ -30,7 +30,7 @@ describeSuite({
         : (await paraApi.rpc.chain.getHeader()).number.toNumber();
       apiAt = await paraApi.at(await paraApi.rpc.chain.getBlockHash(atBlockNumber));
 
-      for (;;) {
+          for (;;) {
         const query = await apiAt.query.proxy.proxies.entriesPaged({
           args: [],
           pageSize: limit,
@@ -103,7 +103,6 @@ describeSuite({
       title: "should have a maximum allowed proxies of 32",
       test: async function () {
         const runtimeName = paraApi.runtimeVersion.specName.toString();
-        const networkName = paraApi.runtimeChain.toString();
         const maxProxies = (await paraApi.consts.proxy.maxProxies).toNumber();
 
         switch (runtimeName) {
