@@ -36,7 +36,7 @@
     "parachains": [
         {
             "id": 1000,
-            "chain": "dancebox_local",
+            "chain": "dancebox-local",
             "chain_spec_path": "tmp/dancebox-raw-spec.json",
             "collator": {
                 "name": "Alice",
