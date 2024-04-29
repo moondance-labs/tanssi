@@ -42,12 +42,16 @@ fn load_spec(
     id: &str,
     para_id: Option<u32>,
     container_chains: Option<Vec<String>>,
-    mock_container_chains: Option<Vec<ParaId>>,
+    mock_container_chains: Option<Vec<u32>>,
     invulnerables: Option<Vec<String>>,
 ) -> std::result::Result<Box<dyn ChainSpec>, String> {
     let para_id: ParaId = para_id.unwrap_or(1000).into();
     let container_chains = container_chains.unwrap_or(vec![]);
-    let mock_container_chains = mock_container_chains.unwrap_or(vec![2000.into(), 2001.into()]);
+    let mock_container_chains: Vec<ParaId> = mock_container_chains
+        .unwrap_or(vec![2000, 2001])
+        .iter()
+        .map(|&x| x.into())
+        .collect();
     let invulnerables = invulnerables.unwrap_or(vec![
         "Alice".to_string(),
         "Bob".to_string(),
@@ -275,7 +279,7 @@ pub fn run() -> Result<()> {
                     config.chain_spec.id(),
                     cmd.parachain_id,
                     Some(cmd.add_container_chain.clone()),
-                    Some(vec![]),
+                    cmd.mock_container_chain.clone(),
                     cmd.invulnerable.clone(),
                 )?;
                 cmd.base.run(chain_spec, config.network)
