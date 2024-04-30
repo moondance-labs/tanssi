@@ -268,8 +268,7 @@ async function assertLogsDoNotContain(logFilePath: string, forbiddenLog: string)
 async function waitForNewLogs(logFilePath: string): Promise<void> {
     const initialSize = (await stat(logFilePath)).size;
 
-
-    /* eslint-disable no-constant-condition */
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         const currentSize = (await stat(logFilePath)).size;
         if (currentSize > initialSize) {
