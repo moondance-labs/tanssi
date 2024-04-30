@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::MaxLengthParaIds;
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_xcm_core_buyer::XCMNotifier;
 use staging_xcm_builder::TrailingSetTopicAsId;
@@ -58,7 +59,6 @@ use {
     staging_xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,
 };
-use crate::MaxLengthParaIds;
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
