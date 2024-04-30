@@ -41,17 +41,14 @@ use {
 fn load_spec(
     id: &str,
     para_id: Option<u32>,
-    container_chains: Option<Vec<String>>,
-    mock_container_chains: Option<Vec<u32>>,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<u32>,
     invulnerables: Option<Vec<String>>,
 ) -> std::result::Result<Box<dyn ChainSpec>, String> {
     let para_id: ParaId = para_id.unwrap_or(1000).into();
-    let container_chains = container_chains.unwrap_or(vec![]);
-    let mock_container_chains: Vec<ParaId> = mock_container_chains
-        .unwrap_or(vec![])
-        .iter()
-        .map(|&x| x.into())
-        .collect();
+    let container_chains = container_chains;
+    let mock_container_chains: Vec<ParaId> =
+        mock_container_chains.iter().map(|&x| x.into()).collect();
     let invulnerables = invulnerables.unwrap_or(vec![
         "Alice".to_string(),
         "Bob".to_string(),
@@ -131,7 +128,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, self.para_id, None, Some(vec![2000, 2001]), None)
+        load_spec(id, self.para_id, vec![], vec![2000, 2001], None)
     }
 }
 
@@ -278,8 +275,8 @@ pub fn run() -> Result<()> {
                 let chain_spec = load_spec(
                     &cmd.base.chain_id(cmd.base.is_dev()?)?,
                     cmd.parachain_id,
-                    cmd.add_container_chain.clone(),
-                    cmd.mock_container_chain.clone(),
+                    cmd.add_container_chain.clone().unwrap_or_default(),
+                    cmd.mock_container_chain.clone().unwrap_or_default(),
                     cmd.invulnerable.clone(),
                 )?;
                 cmd.base.run(chain_spec, config.network)
