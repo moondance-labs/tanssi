@@ -58,6 +58,7 @@ use {
     staging_xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,
 };
+use crate::MaxLengthParaIds;
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
@@ -512,6 +513,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
     type MaxInFlightOrders = ConstU32<100>;
+    type MaxNumberOfParaIds = MaxLengthParaIds;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ParasUnsignedPriority;

@@ -186,7 +186,8 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
-    type MaxInFlightOrders = ConstU32<100>;
+    type MaxInFlightOrders = ConstU32<50>;
+    type MaxNumberOfParaIds = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ();

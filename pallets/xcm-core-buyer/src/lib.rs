@@ -140,6 +140,10 @@ pub mod pallet {
         /// Limit how many in-flight XCM requests can be sent to the relay chain.
         #[pallet::constant]
         type MaxInFlightOrders: Get<u32>;
+
+        /// Max number of paraids supported. This must be same as pallet registrar's MaxLengthParaIds.
+        #[pallet::constant]
+        type MaxNumberOfParaIds: Get<u32>;
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
         type GetParathreadParams: GetParathreadParams;
@@ -248,9 +252,10 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    /// Number of pending blocks
     #[pallet::storage]
     pub type PendingBlocks<T: Config> =
-        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxInFlightOrders>, ValueQuery>;
+        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxNumberOfParaIds>, ValueQuery>;
 
     /// Mapping of QueryId to ParaId
     #[pallet::storage]
