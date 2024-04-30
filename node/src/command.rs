@@ -46,7 +46,6 @@ fn load_spec(
     invulnerables: Option<Vec<String>>,
 ) -> std::result::Result<Box<dyn ChainSpec>, String> {
     let para_id: ParaId = para_id.unwrap_or(1000).into();
-    let container_chains = container_chains;
     let mock_container_chains: Vec<ParaId> =
         mock_container_chains.iter().map(|&x| x.into()).collect();
     let invulnerables = invulnerables.unwrap_or(vec![
