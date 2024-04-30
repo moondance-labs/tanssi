@@ -48,7 +48,7 @@ fn load_spec(
     let para_id: ParaId = para_id.unwrap_or(1000).into();
     let container_chains = container_chains.unwrap_or(vec![]);
     let mock_container_chains: Vec<ParaId> = mock_container_chains
-        .unwrap_or(vec![2000, 2001])
+        .unwrap_or(vec![])
         .iter()
         .map(|&x| x.into())
         .collect();
@@ -131,7 +131,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, self.para_id, None, None, None)
+        load_spec(id, self.para_id, None, Some(vec![2000, 2001]), None)
     }
 }
 

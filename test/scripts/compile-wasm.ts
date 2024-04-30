@@ -92,8 +92,9 @@ async function main(args: any) {
             console.log(`🗃️  ${command}`);
             await spawn(command);
         } else {
+            const additionalArgs = args.argv.AdditionalArgs || "";
             // Generate plain chain spec
-            const generateChainSpecCmd = `${binaryPath} build-spec --chain ${args.argv.Chain} ${args.argv.AdditionalArgs} > tmp/${args.argv.Chain}.json`;
+            const generateChainSpecCmd = `${binaryPath} build-spec --chain ${args.argv.Chain} ${additionalArgs} > tmp/${args.argv.Chain}.json`;
             console.log(`🗃️  ${generateChainSpecCmd}`);
             await spawn(generateChainSpecCmd);
 
