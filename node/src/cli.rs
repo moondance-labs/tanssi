@@ -91,7 +91,7 @@ pub struct BuildSpecCmd {
 
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
-    pub add_container_chain: Vec<String>,
+    pub add_container_chain: Option<Vec<String>>,
 
     /// List of container chain chain spec mocks to add to genesis.
     #[arg(long)]

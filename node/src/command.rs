@@ -278,7 +278,7 @@ pub fn run() -> Result<()> {
                 let chain_spec = load_spec(
                     config.chain_spec.id(),
                     cmd.parachain_id,
-                    Some(cmd.add_container_chain.clone()),
+                    cmd.add_container_chain.clone(),
                     cmd.mock_container_chain.clone(),
                     cmd.invulnerable.clone(),
                 )?;
