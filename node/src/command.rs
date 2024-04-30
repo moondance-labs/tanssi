@@ -276,7 +276,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = load_spec(
-                    config.chain_spec.id(),
+                    &cmd.base.chain_id(cmd.base.is_dev()?)?,
                     cmd.parachain_id,
                     cmd.add_container_chain.clone(),
                     cmd.mock_container_chain.clone(),
