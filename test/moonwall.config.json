@@ -250,6 +250,35 @@
             ]
         },
         {
+            "name": "zombie_tanssi_one_node",
+            "timeout": 600000,
+            "testFileDir": ["suites/one-node"],
+            "runScripts": [
+                "build-spec-one-node.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/one-node-tanssi-1000.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieTanssiOneNode.json",
+                    "skipBlockCheck": ["Container2000", "Container2001"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                }
+            ]
+        },
+        {
             "name": "zombie_tanssi_parathreads",
             "timeout": 600000,
             "testFileDir": ["suites/parathreads"],
