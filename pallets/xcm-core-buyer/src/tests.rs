@@ -100,6 +100,121 @@ fn force_buy_two_messages_in_two_consecutive_blocks_failes() {
 }
 
 #[test]
+fn force_buy_two_messages_succeds_after_receiving_order_failure_response() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            let system_events = events();
+            assert_eq!(system_events.len(), 1);
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+            let query_id = match system_events[0] {
+                Event::BuyCoreXcmSent { transaction_status_query_id, .. } => transaction_status_query_id,
+                _ => panic!("We checked for the event variant above; qed")
+            };
+
+            run_to_block(2);
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::OrderAlreadyExists
+            );
+
+            assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Error(BoundedVec::new()))));
+
+            // We should not be adding entry into pending blocks data structure
+            let pending_blocks_entry = PendingBlocks::<Test>::get();
+            assert!(!pending_blocks_entry.contains(&para_id));
+
+            run_to_block(4);
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            let system_events = events();
+            assert_eq!(system_events.len(), 1);
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+        });
+}
+
+#[test]
+fn force_buy_two_messages_fails_after_receiving_order_success_response() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            let system_events = events();
+            assert_eq!(system_events.len(), 1);
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+            let query_id = match system_events[0] {
+                Event::BuyCoreXcmSent { transaction_status_query_id, .. } => transaction_status_query_id,
+                _ => panic!("We checked for the event variant above; qed")
+            };
+
+            run_to_block(2);
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::OrderAlreadyExists
+            );
+
+            assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Success)));
+
+            // We should be adding entry into pending blocks data structure
+            let pending_blocks_entry = PendingBlocks::<Test>::get();
+            assert!(pending_blocks_entry.contains(&para_id));
+
+            run_to_block(4);
+
+            assert_noop!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,), Error::<Test>::BlockProductionPending);
+
+            // Now if the pallet gets notification that pending block for that para id is incremented it is possible to buy again.
+            Pallet::<Test>::on_container_author_noted(&1u64, 5, para_id);
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+        });
+}
+
+#[test]
+fn core_order_expires_after_ttl() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+            let para_id = 3333.into();
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+
+            let system_events = events();
+            assert_eq!(system_events.len(), 1);
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+
+            run_to_block(2);
+
+            assert_noop!(
+                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
+                Error::<Test>::OrderAlreadyExists
+            );
+
+            // We run to the ttl + 1 block, now even without query response received the order should have been expired
+            let in_flight_orders = InFlightOrders::<Test>::get();
+            let ttl = in_flight_orders.get(&para_id).expect("In flight order for para id must be there").ttl;
+            run_to_block(ttl + 1);
+
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
+        });
+}
+
+#[test]
 fn cannot_force_buy_invalid_para_id() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())

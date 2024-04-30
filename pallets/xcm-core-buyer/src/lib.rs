@@ -179,7 +179,10 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// An XCM message to buy a core for this parathread has been sent to the relay chain.
-        BuyCoreXcmSent { para_id: ParaId, transaction_status_query_id: QueryId },
+        BuyCoreXcmSent {
+            para_id: ParaId,
+            transaction_status_query_id: QueryId,
+        },
         /// We received response for xcm
         ReceivedBuyCoreXCMResult { para_id: ParaId, response: Response },
     }
@@ -211,6 +214,8 @@ pub mod pallet {
         ReportNotifyingSetupFailed,
         /// Unexpected XCM response
         UnexpectedXCMResponse,
+        /// Block production is pending for para id with successfully placed order
+        BlockProductionPending,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
@@ -504,6 +509,11 @@ pub mod pallet {
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
             Self::clean_up_expired_in_flight_orders(<frame_system::Pallet<T>>::block_number());
 
+            let pending_blocks = PendingBlocks::<T>::get();
+            if pending_blocks.contains(&para_id) {
+                return Err(Error::<T>::BlockProductionPending.into());
+            }
+
             let mut in_flight_orders = InFlightOrders::<T>::get();
             if in_flight_orders.contains_key(&para_id) {
                 return Err(Error::<T>::OrderAlreadyExists.into());
@@ -602,7 +612,10 @@ pub mod pallet {
                 T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
                     .map_err(|_| Error::<T>::ErrorValidatingXCM)?;
             T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
-            Self::deposit_event(Event::BuyCoreXcmSent { para_id, transaction_status_query_id: query_id });
+            Self::deposit_event(Event::BuyCoreXcmSent {
+                para_id,
+                transaction_status_query_id: query_id,
+            });
 
             let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
             in_flight_orders

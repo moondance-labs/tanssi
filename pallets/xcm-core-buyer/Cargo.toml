@@ -62,6 +62,8 @@ std = [
 	"sp-std/std",
 	"staging-xcm/std",
 	"tp-traits/std",
+	"pallet-xcm/std",
+	"staging-xcm/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",

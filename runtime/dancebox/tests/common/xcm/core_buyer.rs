@@ -213,16 +213,22 @@ fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
     let events = <Dancebox as Chain>::events();
     for event in events {
         match event {
-            RuntimeEvent::XcmCoreBuyer(pallet_xcm_core_buyer::Event::BuyCoreXcmSent { para_id: event_para_id, transaction_status_query_id }) => {
+            RuntimeEvent::XcmCoreBuyer(pallet_xcm_core_buyer::Event::BuyCoreXcmSent {
+                para_id: event_para_id,
+                transaction_status_query_id,
+            }) => {
                 if event_para_id == para_id {
                     return transaction_status_query_id;
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 
-    panic!("We should be able to find query_id for para_id: {:?}", para_id);
+    panic!(
+        "We should be able to find query_id for para_id: {:?}",
+        para_id
+    );
 }
 
 fn assert_query_response_success(para_id: ParaId, query_id: QueryId) {
@@ -237,27 +243,38 @@ fn assert_query_response_not_received(para_id: ParaId, query_id: QueryId) {
     assert_query_response(para_id, query_id, false, false);
 }
 
-
-fn assert_query_response(para_id: ParaId, query_id: QueryId, response_received: bool, is_successful: bool) {
+fn assert_query_response(
+    para_id: ParaId,
+    query_id: QueryId,
+    response_received: bool,
+    is_successful: bool,
+) {
     if is_successful && !response_received {
         panic!("Invalid input: If response is not received it cannot be successful.");
     }
 
-    let query_id_to_para_id = pallet_xcm_core_buyer::QueryIdToParaId::<<Dancebox as Chain>::Runtime>::get();
+    let query_id_to_para_id =
+        pallet_xcm_core_buyer::QueryIdToParaId::<<Dancebox as Chain>::Runtime>::get();
     // Entry should only exists if we have not received response and vice versa.
     if query_id_to_para_id.contains_key(&query_id) == response_received {
-        panic!("There should not be any query_id<->para_id mapping existing for para_id: {:?}", para_id);
+        panic!(
+            "There should not be any query_id<->para_id mapping existing for para_id: {:?}",
+            para_id
+        );
     }
 
-
-    let in_flight_orders = pallet_xcm_core_buyer::InFlightOrders::<<Dancebox as Chain>::Runtime>::get();
+    let in_flight_orders =
+        pallet_xcm_core_buyer::InFlightOrders::<<Dancebox as Chain>::Runtime>::get();
     // Entry should only exists if we have not received response and vice versa.
     if in_flight_orders.contains_key(&para_id) == response_received {
-        panic!("There should not be any para_id<->in_flight_order mapping existing for para_id: {:?}", para_id);
+        panic!(
+            "There should not be any para_id<->in_flight_order mapping existing for para_id: {:?}",
+            para_id
+        );
     }
 
     // Entry should only exists if we have not received response and vice versa.
-    let  mut found_ttl = false;
+    let mut found_ttl = false;
     let ttl_queue = pallet_xcm_core_buyer::InFlightOrdersTtl::<<Dancebox as Chain>::Runtime>::get();
     for (_block_number, query_id_in_queue) in ttl_queue {
         if query_id_in_queue == query_id {
@@ -267,16 +284,26 @@ fn assert_query_response(para_id: ParaId, query_id: QueryId, response_received: 
 
     // Entry should only exists if we have not received response and vice versa.
     if found_ttl == response_received {
-        panic!("There should be a ttl entry for query_id: {:?} with ttl", query_id);
+        panic!(
+            "There should be a ttl entry for query_id: {:?} with ttl",
+            query_id
+        );
     }
 
     // Entry should only exists if we have got successful response and vice versa.
-    let pending_blocks = pallet_xcm_core_buyer::PendingBlocks::<<Dancebox as Chain>::Runtime>::get();
+    let pending_blocks =
+        pallet_xcm_core_buyer::PendingBlocks::<<Dancebox as Chain>::Runtime>::get();
     if pending_blocks.contains(&para_id) != is_successful {
         if is_successful {
-            panic!("There should be a pending block entry for para_id: {:?}", para_id);
+            panic!(
+                "There should be a pending block entry for para_id: {:?}",
+                para_id
+            );
         } else {
-            panic!("There should not be a pending block entry for para_id: {:?}", para_id);
+            panic!(
+                "There should not be a pending block entry for para_id: {:?}",
+                para_id
+            );
         }
     }
 }
