@@ -31,7 +31,7 @@ use {
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
-    sc_executor::NativeElseWasmExecutor,
+    sc_executor::WasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_blockchain::HeaderBackend,
     sp_consensus_slots::{Slot, SlotDuration},
@@ -55,7 +55,7 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 }
 
-type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
+type ParachainExecutor = WasmExecutor<ParachainNativeExecutor>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
