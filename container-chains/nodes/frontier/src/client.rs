@@ -31,19 +31,6 @@ pub type HostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions = ();
 
-pub struct TemplateRuntimeExecutor;
-impl NativeExecutionDispatch for TemplateRuntimeExecutor {
-    type ExtendHostFunctions = HostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        container_chain_template_frontier_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> NativeVersion {
-        container_chain_template_frontier_runtime::native_version()
-    }
-}
-
 /// A set of APIs that every runtimes must implement.
 pub trait BaseRuntimeApiCollection:
     sp_api::ApiExt<Block>
