@@ -33,19 +33,29 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use {
     dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         traits::{
-            fungible::{Balanced, Inspect},
+            fungible::{Balanced, Inspect, MutateHold},
+            tokens::Precision,
             EnsureOriginWithArg,
         },
         DefaultNoBound,
     },
     frame_system::pallet_prelude::*,
-    sp_runtime::traits::Get,
-    sp_std::vec::Vec,
+    sp_runtime::{
+        traits::{CheckedAdd, CheckedSub, Get},
+        ArithmeticError,
+    },
+    sp_std::{
+        ops::{Add, Mul},
+        vec::Vec,
+    },
 };
 
 #[frame_support::pallet]
@@ -95,7 +105,12 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
+
+        type RuntimeHoldReason: From<HoldReason>;
+
+        type Currency: Inspect<Self::AccountId>
+            + Balanced<Self::AccountId>
+            + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
@@ -103,6 +118,11 @@ pub mod pallet {
         type MaxBootNodes: Get<u32>;
         #[pallet::constant]
         type MaxBootNodeUrlLen: Get<u32>;
+        #[pallet::constant]
+        type MaxParaIdsVecLen: Get<u32>;
+
+        /// How much must be deposited to register a profile.
+        type ProfileDeposit: ProfileDeposit<Profile<Self>, BalanceOf<Self>>;
 
         type WeightInfo: WeightInfo;
     }
@@ -112,12 +132,35 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// The list of boot_nodes changed.
         BootNodesChanged { para_id: ParaId },
+        ProfileCreated {
+            account: T::AccountId,
+            profile_id: ProfileId,
+            deposit: BalanceOf<T>,
+        },
+        ProfileUpdated {
+            profile_id: ProfileId,
+            old_deposit: BalanceOf<T>,
+            new_deposit: BalanceOf<T>,
+        },
+        ProfileDeleted {
+            profile_id: ProfileId,
+            released_deposit: BalanceOf<T>,
+        },
     }
 
     #[pallet::error]
     pub enum Error<T> {
         /// This container chain does not have any boot nodes
         NoBootNodes,
+
+        UnknownProfileId,
+        NextProfileIdShouldBeAvailable,
+        CanOnlyModifyOwnProfile,
+    }
+
+    #[pallet::composite_enum]
+    pub enum HoldReason {
+        ProfileDeposit,
     }
 
     #[pallet::storage]
@@ -129,6 +172,77 @@ pub mod pallet {
         BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    pub type Profiles<T: Config> =
+        StorageMap<_, Blake2_128Concat, ProfileId, RegisteredProfile<T>, OptionQuery>;
+
+    #[pallet::storage]
+    pub type NextProfileId<T: Config> = StorageValue<_, ProfileId, ValueQuery>;
+
+    /// Balance used by this pallet
+    pub type BalanceOf<T> =
+        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+
+    pub type ProfileId = u64;
+
+    /// Data preserver profile.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct Profile<T: Config> {
+        url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
+        limited_to_para_ids: Option<BoundedVec<ParaId, T::MaxParaIdsVecLen>>,
+        mode: ProfileMode,
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo,
+    )]
+    pub enum ProfileMode {
+        Bootnode,
+        Rpc { supports_ethereum_rpcs: bool },
+    }
+
+    /// Profile with additional data:
+    /// - the account id which created (and manage) the profile
+    /// - the amount deposited to register the profile
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct RegisteredProfile<T: Config> {
+        pub account: T::AccountId,
+        pub deposit: BalanceOf<T>,
+        pub profile: Profile<T>,
+    }
+
+    pub trait ProfileDeposit<Profile, Balance> {
+        fn profile_deposit(profile: &Profile) -> Balance;
+    }
+
+    pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
+
+    impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
+        for BytesProfileDeposit<BaseCost, ByteCost>
+    where
+        BaseCost: Get<Balance>,
+        ByteCost: Get<Balance>,
+        Profile: Encode,
+        Balance: From<usize> + Add<Balance, Output = Balance> + Mul<Balance, Output = Balance>,
+    {
+        fn profile_deposit(profile: &Profile) -> Balance {
+            let base = BaseCost::get();
+            let byte = ByteCost::get();
+            let size = profile.encoded_size();
+
+            base + byte * size.into()
+        }
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -150,6 +264,119 @@ pub mod pallet {
             Self::deposit_event(Event::BootNodesChanged { para_id });
 
             Ok(())
+        }
+
+        #[pallet::call_index(1)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn create_profile(
+            origin: OriginFor<T>,
+            profile: Profile<T>,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+
+            let deposit = T::ProfileDeposit::profile_deposit(&profile);
+            T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, deposit)?;
+
+            let id = NextProfileId::<T>::get();
+            NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
+
+            ensure!(
+                !Profiles::<T>::contains_key(&id),
+                Error::<T>::NextProfileIdShouldBeAvailable
+            );
+
+            Profiles::<T>::insert(
+                id,
+                RegisteredProfile {
+                    account: origin.clone(),
+                    deposit,
+                    profile,
+                },
+            );
+
+            Self::deposit_event(Event::ProfileCreated { account: origin, profile_id: id, deposit });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(2)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn update_profile(
+            origin: OriginFor<T>,
+            profile_id: ProfileId,
+            profile: Profile<T>,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+
+            let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
+                Err(Error::<T>::UnknownProfileId)?
+            };
+
+            ensure!(
+                existing_profile.account == origin,
+                Error::<T>::CanOnlyModifyOwnProfile
+            );
+
+            // Update deposit
+            let new_deposit = T::ProfileDeposit::profile_deposit(&profile);
+
+            if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
+                T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, diff)?;
+            } else if let Some(diff) = existing_profile.deposit.checked_sub(&new_deposit) {
+                T::Currency::release(
+                    &HoldReason::ProfileDeposit.into(),
+                    &origin,
+                    diff,
+                    Precision::Exact,
+                )?;
+            }
+
+            Profiles::<T>::insert(
+                profile_id,
+                RegisteredProfile {
+                    account: origin,
+                    deposit: new_deposit,
+                    profile,
+                },
+            );
+
+            Self::deposit_event(Event::ProfileUpdated { profile_id, old_deposit: existing_profile.deposit, new_deposit: new_deposit });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(3)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn delete_profile(
+            origin: OriginFor<T>,
+            profile_id: ProfileId,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+
+            let Some(profile) = Profiles::<T>::get(&profile_id) else {
+                Err(Error::<T>::UnknownProfileId)?
+            };
+
+            ensure!(
+                profile.account == origin,
+                Error::<T>::CanOnlyModifyOwnProfile
+            );
+
+            T::Currency::release(
+                &HoldReason::ProfileDeposit.into(),
+                &origin,
+                profile.deposit,
+                Precision::Exact,
+            )?;
+
+            Profiles::<T>::remove(&profile_id);
+
+            Self::deposit_event(Event::ProfileDeleted { profile_id, released_deposit: profile.deposit });
+
+            Ok(().into())
         }
     }
 
