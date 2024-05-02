@@ -15,21 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 // Substrate
-use {
-    sc_executor::{NativeExecutionDispatch, NativeVersion},
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
-};
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 // Local
 use container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index};
 
 use crate::eth::EthCompatRuntimeApiCollection;
-
-/// Only enable the benchmarking host functions when we actually want to benchmark.
-#[cfg(feature = "runtime-benchmarks")]
-pub type HostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-/// Otherwise we use empty host functions for ext host functions.
-#[cfg(not(feature = "runtime-benchmarks"))]
-pub type HostFunctions = ();
 
 /// A set of APIs that every runtimes must implement.
 pub trait BaseRuntimeApiCollection:
