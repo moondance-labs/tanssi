@@ -91,8 +91,6 @@ describeSuite({
 
                 const issuance = await fetchIssuance(events).amount.toBigInt();
 
-                const supplyAfter = (await apiAtIssuanceAfter.query.balances.totalIssuance()).toBigInt();
-
                 // expected issuance block increment in prod
                 const expectedIssuanceIncrement =
                     runtimeVersion > 500 ? (supplyBefore * 9n) / 1_000_000_000n : (supplyBefore * 19n) / 1_000_000_000n;
