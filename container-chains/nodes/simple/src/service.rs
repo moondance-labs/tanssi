@@ -40,22 +40,7 @@ use {
     std::{sync::Arc, time::Duration},
 };
 
-/// Native executor type.
-pub struct ParachainNativeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        container_chain_template_simple_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        container_chain_template_simple_runtime::native_version()
-    }
-}
-
-type ParachainExecutor = WasmExecutor<ParachainNativeExecutor>;
+type ParachainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;

@@ -18,7 +18,6 @@
 
 #[allow(deprecated)]
 use {
-    crate::client::TemplateRuntimeExecutor,
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
@@ -33,7 +32,7 @@ use {
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
-    sc_executor::NativeElseWasmExecutor,
+    sc_executor::WasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_blockchain::HeaderBackend,
     sp_consensus_slots::{Slot, SlotDuration},
@@ -45,7 +44,7 @@ use {
     },
 };
 
-type ParachainExecutor = WasmExecytor<TemplateRuntimeExecutor>;
+type ParachainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<
