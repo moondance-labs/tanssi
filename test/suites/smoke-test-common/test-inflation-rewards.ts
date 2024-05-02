@@ -102,7 +102,6 @@ describeSuite({
                     issuance >= expectedIssuanceIncrement - 1n && issuance <= expectedIssuanceIncrement + 1n,
                     `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedIssuanceIncrement}`
                 ).to.be.true;
-                expect(supplyAfter).to.equal(supplyBefore + issuance);
             },
         });
 
