@@ -288,22 +288,3 @@ fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
         properties: Default::default(),
     }
 }
-
-/// Can be called for a `Configuration` to check if it is a configuration for
-/// the `Tanssi` network.
-pub trait IdentifyVariant {
-    /// Returns `true` if this is a configuration for the `Dancebox` network.
-    fn is_dancebox(&self) -> bool;
-    /// Returns `true` if this is a configuration for a dev network.
-    fn is_dev(&self) -> bool;
-}
-
-impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
-    fn is_dancebox(&self) -> bool {
-        self.id().starts_with("dancebox")
-    }
-
-    fn is_dev(&self) -> bool {
-        self.chain_type() == sc_chain_spec::ChainType::Development
-    }
-}
