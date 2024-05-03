@@ -1909,6 +1909,7 @@ impl_runtime_apis! {
     }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 // TODO: this should be removed but currently if we remove it the relay does not check anything

@@ -1099,6 +1099,7 @@ impl_runtime_apis! {
     }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 #[allow(deprecated)]
