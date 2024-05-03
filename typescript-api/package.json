@@ -1,6 +1,6 @@
 {
     "name": "@tanssi/api-augment",
-    "version": "0.500.0",
+    "version": "0.601.0",
     "type": "module",
     "description": "Tanssi types augment for @polkadot/api",
     "author": "Moondance-labs",
@@ -96,6 +96,7 @@
         "@polkadot/typegen": "^10.11.2",
         "prettier": "^2.8.8",
         "prettier-plugin-jsdoc": "^0.3.38",
+        "rimraf": "^5.0.5",
         "tsx": "^4.7.0",
         "typescript": "^5.3.3"
     }

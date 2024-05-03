@@ -148,12 +148,12 @@ These nodes will only act as full nodes, but not as collators since these are of
 
 ```bash
 # Build the simple-template node
-cargo build -p container-chain-template-simple-node --release
+cargo build -p container-chain-simple-node --release
 ```
 
 ```bash
 # Build the frontier-template node
-cargo build -p container-chain-template-frontier-node --release
+cargo build -p container-chain-frontier-node --release
 ```
 
 ## Run with Zombienet directly

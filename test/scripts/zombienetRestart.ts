@@ -14,12 +14,7 @@ const getCwd = (pid: number) => {
     return readlinkSync(`/proc/${pid}/cwd`);
 };
 
-const targetProcessNames = [
-    "tanssi-node",
-    "container-chain-template-simple-node",
-    "container-chain-template-frontier-node",
-    "polkadot",
-];
+const targetProcessNames = ["tanssi-node", "container-chain-simple-node", "container-chain-frontier-node", "polkadot"];
 const pattern = targetProcessNames.join("|");
 
 const fetchProcesses = async () => {

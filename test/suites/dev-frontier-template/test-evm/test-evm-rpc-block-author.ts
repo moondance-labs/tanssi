@@ -2,7 +2,7 @@ import { expect, describeSuite } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0702",
+    id: "DF0802",
     title: "Pallet EVM - RPC block author",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

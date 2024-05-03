@@ -226,7 +226,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 600,
+    spec_version: 700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -348,7 +348,7 @@ impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
     type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
-    type SystemWeightInfo = ();
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     /// Block & extrinsics weights: base values and limits.
     type BlockWeights = RuntimeBlockWeights;
     /// The maximum length of a block (in bytes).
@@ -369,7 +369,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 pub struct CanAuthor;
@@ -401,7 +401,7 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = dp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_inherent::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -424,7 +424,7 @@ impl pallet_balances::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<10>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
@@ -496,7 +496,7 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_parachain_system::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -705,7 +705,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 /// Read full_rotation_period from pallet_configuration
@@ -871,7 +871,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentHook = ServicesPayment;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
-    type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -921,7 +921,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_data_preservers::Config for Runtime {
@@ -931,7 +931,7 @@ impl pallet_data_preservers::Config for Runtime {
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
-    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 }
 
 impl pallet_author_noting::Config for Runtime {
@@ -941,8 +941,12 @@ impl pallet_author_noting::Config for Runtime {
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
+    #[cfg(feature = "runtime-benchmarks")]
+    type AuthorNotingHook = ();
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -961,7 +965,7 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = <Self as frame_system::Config>::AccountId;
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
-    type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -987,7 +991,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
-    type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 pub struct DanceboxRegistrarHooks;
@@ -1052,7 +1056,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -1064,14 +1068,14 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -1188,7 +1192,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
-    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 pub struct XcmExecutionManager;
@@ -1247,7 +1251,7 @@ parameter_types! {
 impl pallet_relay_storage_roots::Config for Runtime {
     type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type MaxStorageRoots = MaxStorageRoots;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_relay_storage_roots::SubstrateWeight<Runtime>;
 }
 
 impl pallet_root_testing::Config for Runtime {
@@ -1338,7 +1342,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
-    type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1395,7 +1399,7 @@ impl pallet_tx_pause::Config for Runtime {
     type UnpauseOrigin = EnsureRoot<AccountId>;
     type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
-    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
@@ -1536,7 +1540,7 @@ impl pallet_stream_payment::Config for Runtime {
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1570,13 +1574,14 @@ impl pallet_identity::Config for Runtime {
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
-    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub const MaxBalance: Balance = Balance::max_value();
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1594,19 +1599,23 @@ impl pallet_treasury::Config for Runtime {
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
-    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type ProposalBondMaximum = ();
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
+    #[cfg(feature = "runtime-benchmarks")]
+    type SpendOrigin =
+        frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
     type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<AccountId>;
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
     // TODO: implement pallet-asset-rate to allow the treasury to spend other assets
     type BalanceConverter = UnityAssetBalanceConversion;
-    type PayoutPeriod = ConstU32<0>;
+    type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
@@ -1624,7 +1633,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1697,33 +1706,37 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_proxy, Proxy]
         [pallet_utility, Utility]
-        [pallet_treasury, Treasury]
+        [pallet_proxy, Proxy]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
+        [pallet_stream_payment, StreamPayment]
         [pallet_identity, Identity]
+        [pallet_multisig, Multisig]
         [pallet_registrar, Registrar]
         [pallet_configuration, Configuration]
         [pallet_collator_assignment, CollatorAssignment]
         [pallet_author_noting, AuthorNoting]
         [pallet_services_payment, ServicesPayment]
-        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
+        [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
-        [pallet_multisig, Multisig]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
+        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
-        [pallet_xcm_core_buyer, XcmCoreBuyer]
-        [pallet_stream_payment, StreamPayment]
-        [pallet_relay_storage_roots, RelayStorageRoots]
         [pallet_assets, ForeignAssets]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
+        [pallet_message_queue, MessageQueue]
+        [pallet_xcm_core_buyer, XcmCoreBuyer]
+        [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
 
@@ -1868,6 +1881,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
@@ -1884,6 +1898,8 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+            impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
@@ -1897,11 +1913,22 @@ impl_runtime_apis! {
             }
 
             use staging_xcm::latest::prelude::*;
+            use crate::xcm_config::SelfReserve;
+            parameter_types! {
+                pub ExistentialDepositAsset: Option<MultiAsset> = Some((
+                    SelfReserve::get(),
+                    ExistentialDeposit::get()
+                ).into());
+            }
 
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                xcm_config::XcmConfig,
+                ExistentialDepositAsset,
+                xcm_config::PriceForParentDelivery,
+                >;
                 fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
                     Ok(MultiLocation::parent())
                 }
@@ -1978,6 +2005,7 @@ impl_runtime_apis! {
                 }
 
                 fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    use xcm_config::SelfReserve;
                     // AH can reserve transfer native token to some random parachain.
                     let random_para_id = 43211234;
                     ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
@@ -1986,7 +2014,7 @@ impl_runtime_apis! {
                     Some((
                         MultiAsset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(Parent.into())
+                            id: Concrete(SelfReserve::get())
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
                     ))
@@ -1994,13 +2022,14 @@ impl_runtime_apis! {
 
                 fn set_up_complex_asset_transfer(
                 ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                    use xcm_config::SelfReserve;
                     // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
                     // fees using teleported native token.
                     // (We don't care that Relay doesn't accept incoming unknown AH local asset)
                     let dest = Parent.into();
 
                     let fee_amount = EXISTENTIAL_DEPOSIT;
-                    let fee_asset: MultiAsset = (MultiLocation::parent(), fee_amount).into();
+                    let fee_asset: MultiAsset = (SelfReserve::get(), fee_amount).into();
 
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
@@ -2008,19 +2037,18 @@ impl_runtime_apis! {
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );
+
                     // verify initial balance
                     assert_eq!(Balances::free_balance(&who), balance);
 
                     // set up local asset
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
-                    let (asset_id, _, _) = pallet_assets::benchmarking::create_default_minted_asset::<
-                        Runtime,
-                        pallet_assets::Instance1
-                    >(true, initial_asset_amount);
-                    let asset_location = MultiLocation::new(
-                        0,
-                        X2(PalletInstance(50), GeneralIndex(u32::from(asset_id).into()))
+
+                    // inject it into pallet-foreign-asset-creator.
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
+                        initial_asset_amount,
+                        who.clone()
                     );
                     let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
 

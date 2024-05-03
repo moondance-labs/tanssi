@@ -17,6 +17,7 @@ export async function hasEnoughCredits(
     paraApi: ApiPromise,
     paraId: ParaId,
     blocksPerSession: bigint,
+    // TODO: minSessionRequirement should be 2 if the chain had collators in the previous session, and 1 otherwise
     minSessionRequirement: bigint,
     costPerSession: bigint,
     costPerBlock: bigint

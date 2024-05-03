@@ -42,7 +42,7 @@ describeSuite({
             // Generate the parent address constructed by DescendOrigin
             const { originAddress, descendOriginAddress } = descendFunction(context);
             sendingAddress = originAddress;
-            transferredBalance = 10_000_000_000_000n;
+            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
 
             // Send some tokens to the derivative address to cost Transact execution
             const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);

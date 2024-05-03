@@ -6,7 +6,7 @@ import { Abi, encodeFunctionData } from "viem";
 import { mockAssetCreation, relayAssetMetadata, RELAY_SOURCE_LOCATION } from "../../../helpers/assets";
 
 describeSuite({
-    id: "DF0907",
+    id: "DF1108",
     title: "Precompiles - Low Level Transactions",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

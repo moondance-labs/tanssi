@@ -7,7 +7,7 @@ import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.t
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "DF0906",
+    id: "DF1101",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

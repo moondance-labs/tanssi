@@ -3,7 +3,7 @@ import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 import { alith } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0901",
+    id: "DF0201",
     title: "Ethereum asset dummy precompile address creation",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

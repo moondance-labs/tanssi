@@ -1,8 +1,8 @@
 [workspace]
 members = [
 	"client/*",
-	"container-chains/templates/frontier/*",
-	"container-chains/templates/simple/*",
+	"container-chains/nodes/*",
+	"container-chains/runtime-templates/*",
 	"node",
 	"pallets/*",
 	"pallets/collator-assignment/rpc/runtime-api",
@@ -65,8 +65,8 @@ pallet-stream-payment = { path = "pallets/stream-payment", default-features = fa
 pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/rpc/runtime-api", default-features = false }
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
 
-container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
-container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
+container-chain-template-frontier-runtime = { path = "container-chains/runtime-templates/frontier", default-features = false }
+container-chain-template-simple-runtime = { path = "container-chains/runtime-templates/simple", default-features = false }
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
@@ -157,6 +157,7 @@ sp-inherents = { git = "https://github.com/moondance-labs/polkadot-sdk", branch 
 sp-io = { git = "https://github.com/moondance-labs/polkadot-sdk.git", branch = "tanssi-polkadot-v1.6.0", version = "23.0.0", default-features = false }
 sp-keyring = { git = "https://github.com/moondance-labs/polkadot-sdk.git", branch = "tanssi-polkadot-v1.6.0", version = "24.0.0", default-features = false }
 sp-offchain = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
+sp-panic-handler = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 sp-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk.git", branch = "tanssi-polkadot-v1.6.0", version = "24.0.0", default-features = false }
 sp-session = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }
 sp-state-machine = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.6.0", default-features = false }

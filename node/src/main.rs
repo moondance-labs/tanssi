@@ -25,6 +25,8 @@ mod container_chain_monitor;
 mod container_chain_spawner;
 mod rpc;
 mod service;
+#[cfg(test)]
+mod tests;
 
 fn main() -> sc_cli::Result<()> {
     command::run()

@@ -4,7 +4,7 @@ import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
 
 describeSuite({
-    id: "DF1001",
+    id: "DF1201",
     title: "On set latest authorities data weight check",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -12,8 +12,8 @@ describeSuite({
             id: "T01",
             title: "Weight should be match expected",
             test: async function () {
-                const expectedRefTime = new BN(456_622_000);
-                const expectedProofSize = new BN(6_488);
+                const expectedRefTime = new BN(428_360_000);
+                const expectedProofSize = new BN(1626);
 
                 await context.createBlock();
 

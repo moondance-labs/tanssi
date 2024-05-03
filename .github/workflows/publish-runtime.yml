@@ -17,7 +17,11 @@ on:
         default: tanssi-only
         options:
           - tanssi-only
+          - flashbox-only
+          - dancebox-only
           - templates-only
+          - simple-template-only
+          - frontier-template-only
           - run-all
 
 jobs:
@@ -29,12 +33,12 @@ jobs:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
       - name: Upload scripts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-scripts
           path: scripts
       - name: Upload tools
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-tools
           path: tools
@@ -59,6 +63,14 @@ jobs:
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "flashbox-only" ]]; then
+            echo "matrix_tests=[$flashbox]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "dancebox-only" ]]; then
+            echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "simple-template-only" ]]; then
+            echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
+            echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           fi
@@ -126,7 +138,7 @@ jobs:
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: runtime-info
           path: |
@@ -157,7 +169,7 @@ jobs:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: runtime-info
           path: build  
@@ -196,7 +208,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: runtime-info
           path: build    

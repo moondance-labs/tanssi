@@ -44,7 +44,8 @@ describeSuite({
             const sovereign = sovereignFunction(context, 1);
             sendingAddress = originAddress;
 
-            transferredBalance = 10_000_000_000_000n;
+            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
+
             polkadotJs = context.polkadotJs();
 
             const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);

@@ -21,7 +21,7 @@ use {
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    flashbox_runtime::TransactionPayment,
+    flashbox_runtime::{StreamPaymentAssetId, TimeUnit},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -56,6 +56,13 @@ fn genesis_balances() {
             // Alice gets 10k extra tokens for her mapping deposit
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            // Remove ALICE and BOB from collators
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
         ])
         .build()
         .execute_with(|| {
@@ -73,11 +80,6 @@ fn genesis_balances() {
 #[test]
 fn genesis_para_registrar() {
     ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
@@ -91,34 +93,13 @@ fn genesis_para_registrar() {
         });
 }
 
-fn default_config() -> pallet_configuration::HostConfiguration {
-    pallet_configuration::HostConfiguration {
-        max_collators: 100,
-        min_orchestrator_collators: 2,
-        max_orchestrator_collators: 2,
-        collators_per_container: 2,
-        full_rotation_period: 0,
-        ..Default::default()
-    }
-}
-
 #[test]
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -154,20 +135,10 @@ fn genesis_para_registrar_deregister() {
 #[test]
 fn genesis_para_registrar_runtime_api() {
     ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -205,20 +176,10 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
         properties: Default::default(),
     };
     ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, genesis_data_1001.clone(), vec![], u32::MAX, u32::MAX).into(),
             (1002, genesis_data_1002.clone(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -279,20 +240,10 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 #[test]
 fn test_author_collation_aura() {
     ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(5);
@@ -319,15 +270,10 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -400,15 +346,10 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -436,7 +377,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
                 vec![]
             ));
 
-            // Set new invulnerables
+            // Add new invulnerables
             assert_ok!(Invulnerables::add_invulnerable(
                 root_origin(),
                 CHARLIE.into()
@@ -478,7 +419,6 @@ fn test_authors_without_paras() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -526,7 +466,6 @@ fn test_authors_paras_inserted_a_posteriori() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -688,7 +627,6 @@ fn test_paras_registered_but_zero_credits() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -751,7 +689,6 @@ fn test_paras_registered_but_not_enough_credits() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -835,7 +772,6 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -954,7 +890,6 @@ fn test_parachains_deregister_collators_re_assigned() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1017,7 +952,6 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1084,7 +1018,6 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1101,56 +1034,43 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
 
 #[test]
 fn test_configuration_on_session_change() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(1);
-            assert_eq!(Configuration::config().max_collators, 100);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
-            assert_eq!(Configuration::config().collators_per_container, 2);
+    ExtBuilder::default().build().execute_with(|| {
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
 
-            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
-            run_to_session(1u32);
+        assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
+        run_to_session(1u32);
 
-            assert_ok!(
-                Configuration::set_min_orchestrator_collators(root_origin(), 20),
-                ()
-            );
-            assert_eq!(Configuration::config().max_collators, 100);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
-            assert_eq!(Configuration::config().collators_per_container, 2);
+        assert_ok!(
+            Configuration::set_min_orchestrator_collators(root_origin(), 20),
+            ()
+        );
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(2u32);
-            assert_ok!(
-                Configuration::set_collators_per_container(root_origin(), 10),
-                ()
-            );
-            assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
-            assert_eq!(Configuration::config().collators_per_container, 2);
+        run_to_session(2u32);
+        assert_ok!(
+            Configuration::set_collators_per_container(root_origin(), 10),
+            ()
+        );
+        assert_eq!(Configuration::config().max_collators, 50);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(3u32);
+        run_to_session(3u32);
 
-            assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 20);
-            assert_eq!(Configuration::config().collators_per_container, 2);
+        assert_eq!(Configuration::config().max_collators, 50);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 20);
+        assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(4u32);
+        run_to_session(4u32);
 
-            assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 20);
-            assert_eq!(Configuration::config().collators_per_container, 10);
-        });
+        assert_eq!(Configuration::config().max_collators, 50);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 20);
+        assert_eq!(Configuration::config().collators_per_container, 10);
+    });
 }
 
 #[test]
@@ -1163,15 +1083,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1325,15 +1240,10 @@ fn test_consensus_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1421,15 +1331,10 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1538,15 +1443,10 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1705,39 +1605,28 @@ fn test_consensus_runtime_api_next_session() {
 
 #[test]
 fn test_author_noting_self_para_id_not_noting() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .build()
-        .execute_with(|| {
-            let mut sproof = ParaHeaderSproofBuilder::default();
-            let slot: u64 = 5;
-            let self_para = parachain_info::Pallet::<Runtime>::get();
-            let s = ParaHeaderSproofBuilderItem {
-                para_id: self_para,
-                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                    parent_hash: Default::default(),
-                    number: Default::default(),
-                    state_root: Default::default(),
-                    extrinsics_root: Default::default(),
-                    digest: sp_runtime::generic::Digest {
-                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                    },
-                }),
-            };
-            sproof.items.push(s);
+    ExtBuilder::default().build().execute_with(|| {
+        let mut sproof = ParaHeaderSproofBuilder::default();
+        let slot: u64 = 5;
+        let self_para = parachain_info::Pallet::<Runtime>::get();
+        let s = ParaHeaderSproofBuilderItem {
+            para_id: self_para,
+            author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: Default::default(),
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            }),
+        };
+        sproof.items.push(s);
 
-            set_author_noting_inherent_data(sproof);
+        set_author_noting_inherent_data(sproof);
 
-            assert_eq!(AuthorNoting::latest_author(self_para), None);
-        });
+        assert_eq!(AuthorNoting::latest_author(self_para), None);
+    });
 }
 
 #[test]
@@ -1973,15 +1862,10 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2058,15 +1942,10 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2196,11 +2075,6 @@ fn test_proxy_any() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2237,11 +2111,6 @@ fn test_proxy_non_transfer() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2306,12 +2175,7 @@ fn test_proxy_utility() {
                 (AccountId::from(CHARLIE), 100_000 * UNIT),
                 (AccountId::from(DAVE), 100_000 * UNIT),
             ])
-            .with_collators(vec![
-                (AccountId::from(ALICE), 210 * UNIT),
-                (AccountId::from(BOB), 100 * UNIT),
-            ])
             .with_sudo(AccountId::from(ALICE))
-            .with_config(default_config())
             .build()
             .execute_with(|| {
                 assert_ok!(Proxy::add_proxy(
@@ -2400,14 +2264,6 @@ fn test_reward_to_invulnerable() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 0,
-            ..Default::default()
-        })
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2461,14 +2317,6 @@ fn test_reward_to_invulnerable_with_key_change() {
             (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 0,
-            ..Default::default()
-        })
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2522,7 +2370,6 @@ fn test_can_buy_credits_before_registering_para() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2567,7 +2414,6 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2599,7 +2445,6 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2675,7 +2520,6 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2752,7 +2596,6 @@ fn test_register_parathread() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2799,7 +2642,6 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2901,7 +2743,6 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2974,7 +2815,6 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3087,7 +2927,6 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3191,7 +3030,6 @@ fn test_credits_with_purchase_can_be_combined() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3249,6 +3087,74 @@ fn test_credits_with_purchase_can_be_combined() {
             );
         });
 }
+#[test]
+fn stream_payment_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_stream_payment::{ChangeKind, StreamConfig};
+
+            assert_ok!(StreamPayment::open_stream(
+                origin_of(ALICE.into()),
+                BOB.into(),
+                StreamConfig {
+                    rate: 2 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                },
+                1_000 * UNIT,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::perform_payment(origin_of(CHARLIE.into()), 0));
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 2 * UNIT
+            );
+
+            assert_ok!(StreamPayment::request_change(
+                origin_of(ALICE.into()),
+                0,
+                ChangeKind::Suggestion,
+                StreamConfig {
+                    rate: 1 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                },
+                None,
+            ));
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                origin_of(BOB.into()),
+                0,
+                1, // nonce
+                None,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::close_stream(origin_of(BOB.into()), 0));
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 3 * UNIT
+            );
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                100_000 * UNIT - 3 * UNIT
+            );
+        });
+}
 
 #[test]
 fn test_ed_plus_collator_assignment_session_purchase_works() {
@@ -3266,7 +3172,6 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3366,7 +3271,6 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3438,7 +3342,6 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3514,7 +3417,6 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3592,96 +3494,80 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
 
 #[test]
 fn test_migration_services_collator_assignment_payment() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            // Register a new parachain with no credits
-            assert_ok!(Registrar::register(
-                origin_of(ALICE.into()),
-                1001.into(),
-                empty_genesis_data()
-            ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
-            assert_ok!(Registrar::mark_valid_for_collating(
-                root_origin(),
-                1001.into()
-            ));
-            // Register another parachain with no credits, do not mark this as valid for collation
-            assert_ok!(Registrar::register(
-                origin_of(ALICE.into()),
-                1002.into(),
-                empty_genesis_data()
-            ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1002.into(),
-                dummy_boot_nodes()
-            ));
-            assert_ok!(Registrar::mark_valid_for_collating(
-                root_origin(),
-                1002.into()
-            ));
+    ExtBuilder::default().build().execute_with(|| {
+        // Register a new parachain with no credits
+        assert_ok!(Registrar::register(
+            origin_of(ALICE.into()),
+            1001.into(),
+            empty_genesis_data()
+        ));
+        assert_ok!(DataPreservers::set_boot_nodes(
+            origin_of(ALICE.into()),
+            1001.into(),
+            dummy_boot_nodes()
+        ));
+        assert_ok!(Registrar::mark_valid_for_collating(
+            root_origin(),
+            1001.into()
+        ));
+        // Register another parachain with no credits, do not mark this as valid for collation
+        assert_ok!(Registrar::register(
+            origin_of(ALICE.into()),
+            1002.into(),
+            empty_genesis_data()
+        ));
+        assert_ok!(DataPreservers::set_boot_nodes(
+            origin_of(ALICE.into()),
+            1002.into(),
+            dummy_boot_nodes()
+        ));
+        assert_ok!(Registrar::mark_valid_for_collating(
+            root_origin(),
+            1002.into()
+        ));
 
-            // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_collator_assignment_credits(
-                root_origin(),
-                1001.into(),
-                0
-            ));
-            assert_ok!(ServicesPayment::set_collator_assignment_credits(
-                root_origin(),
-                1002.into(),
-                0
-            ));
+        // Need to reset credits to 0 because now parachains are given free credits on register
+        assert_ok!(ServicesPayment::set_collator_assignment_credits(
+            root_origin(),
+            1001.into(),
+            0
+        ));
+        assert_ok!(ServicesPayment::set_collator_assignment_credits(
+            root_origin(),
+            1002.into(),
+            0
+        ));
 
-            let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits_1001, 0);
-            let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                ParaId::from(1002),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits_1002, 0);
+        let credits_1001 =
+            pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1001))
+                .unwrap_or_default();
+        assert_eq!(credits_1001, 0);
+        let credits_1002 =
+            pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1002))
+                .unwrap_or_default();
+        assert_eq!(credits_1002, 0);
 
-            // Apply migration
-            let migration =
-                MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-            migration.migrate(Default::default());
+        // Apply migration
+        let migration =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        migration.migrate(Default::default());
 
-            // Both parachains have been given credits
-            let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(
-                credits_1001,
-                flashbox_runtime::FreeCollatorAssignmentCredits::get()
-            );
-            let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
-                ParaId::from(1002),
-            )
-            .unwrap_or_default();
-            assert_eq!(
-                credits_1002,
-                flashbox_runtime::FreeCollatorAssignmentCredits::get()
-            );
-        });
+        // Both parachains have been given credits
+        let credits_1001 =
+            pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1001))
+                .unwrap_or_default();
+        assert_eq!(
+            credits_1001,
+            flashbox_runtime::FreeCollatorAssignmentCredits::get()
+        );
+        let credits_1002 =
+            pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1002))
+                .unwrap_or_default();
+        assert_eq!(
+            credits_1002,
+            flashbox_runtime::FreeCollatorAssignmentCredits::get()
+        );
+    });
 }
 
 #[test]
@@ -3763,34 +3649,34 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(default_config())
         .build()
         .execute_with(|| {
+            end_block();
             // If the block is full, the multiplier increases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
-            run_block_with_operation(|_slot| {
-                let max_block_weights = flashbox_runtime::RuntimeBlockWeights::get();
-                frame_support::storage::unhashed::put(
-                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
-                    &ConsumedWeight::new(|class| {
-                        max_block_weights
-                            .get(class)
-                            .max_total
-                            .unwrap_or(Weight::MAX)
-                    }),
-                );
-            });
+            start_block();
+            let max_block_weights = flashbox_runtime::RuntimeBlockWeights::get();
+            frame_support::storage::unhashed::put(
+                &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                &ConsumedWeight::new(|class| {
+                    max_block_weights
+                        .get(class)
+                        .max_total
+                        .unwrap_or(Weight::MAX)
+                }),
+            );
+            end_block();
             let current_multiplier = TransactionPayment::next_fee_multiplier();
             assert!(current_multiplier > before_multiplier);
 
             // If the block is empty, the multiplier decreases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
-            run_block_with_operation(|_slot| {
-                frame_support::storage::unhashed::put(
-                    &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
-                    &ConsumedWeight::new(|_class| Weight::zero()),
-                );
-            });
+            start_block();
+            frame_support::storage::unhashed::put(
+                &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
+                &ConsumedWeight::new(|_class| Weight::zero()),
+            );
+            end_block();
             let current_multiplier = TransactionPayment::next_fee_multiplier();
             assert!(current_multiplier < before_multiplier);
         });

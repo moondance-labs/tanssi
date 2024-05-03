@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Tanssi node implementation"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.1.0"
+version = "0.7.0"
 
 [lints]
 workspace = true
@@ -110,6 +110,8 @@ cumulus-client-pov-recovery = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+[dev-dependencies]
+sp-panic-handler = { workspace = true }
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

@@ -32,6 +32,8 @@ use {
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod weights;
+
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -211,7 +213,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 600,
+    spec_version: 700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -334,7 +336,7 @@ impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
     type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
-    type SystemWeightInfo = ();
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     /// Block & extrinsics weights: base values and limits.
     type BlockWeights = RuntimeBlockWeights;
     /// The maximum length of a block (in bytes).
@@ -355,7 +357,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 pub struct CanAuthor;
@@ -374,6 +376,12 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
         expected_author == author
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn get_authors(_slot: &u32) -> Vec<NimbusId> {
+        AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain
+    }
 }
 
 impl pallet_author_inherent::Config for Runtime {
@@ -381,7 +389,7 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = dp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_inherent::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -404,7 +412,7 @@ impl pallet_balances::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<10>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
@@ -470,7 +478,7 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_parachain_system::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -497,7 +505,7 @@ parameter_types! {
 }
 
 impl pallet_async_backing::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
     type ExpectedBlockTime = ExpectedBlockTime;
@@ -591,7 +599,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -722,7 +730,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentHook = ServicesPayment;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
-    type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -772,7 +780,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -781,7 +789,7 @@ impl pallet_data_preservers::Config for Runtime {
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
-    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 }
 
 impl pallet_author_noting::Config for Runtime {
@@ -791,8 +799,12 @@ impl pallet_author_noting::Config for Runtime {
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
+    #[cfg(feature = "runtime-benchmarks")]
+    type AuthorNotingHook = ();
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -800,7 +812,7 @@ parameter_types! {
     pub const MaxCandidates: u32 = 1000;
     pub const MinCandidates: u32 = 5;
     pub const SessionLength: BlockNumber = 5;
-    pub const MaxInvulnerables: u32 = 100;
+    pub const MaxInvulnerables: u32 = 200;
     pub const ExecutiveBody: BodyId = BodyId::Executive;
 }
 
@@ -811,13 +823,13 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = CollatorId;
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
-    type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
 
 parameter_types! {
-    pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxLengthParaIds: u32 = 200u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
     pub const MaxBootNodes: u32 = 10;
     pub const MaxBootNodeUrlLen: u32 = 200;
@@ -837,7 +849,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
-    type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 pub struct FlashboxRegistrarHooks;
@@ -902,7 +914,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -914,14 +926,14 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxies allowed.
@@ -1031,7 +1043,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
-    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1078,7 +1090,7 @@ parameter_types! {
 impl pallet_relay_storage_roots::Config for Runtime {
     type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type MaxStorageRoots = MaxStorageRoots;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_relay_storage_roots::SubstrateWeight<Runtime>;
 }
 
 impl pallet_root_testing::Config for Runtime {
@@ -1149,7 +1161,7 @@ impl pallet_tx_pause::Config for Runtime {
     type UnpauseOrigin = EnsureRoot<AccountId>;
     type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
-    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
@@ -1290,7 +1302,7 @@ impl pallet_stream_payment::Config for Runtime {
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1324,13 +1336,14 @@ impl pallet_identity::Config for Runtime {
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
-    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub const MaxBalance: Balance = Balance::max_value();
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1348,18 +1361,22 @@ impl pallet_treasury::Config for Runtime {
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
-    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type ProposalBondMaximum = ();
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
+    #[cfg(feature = "runtime-benchmarks")]
+    type SpendOrigin =
+        frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
     type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<AccountId>;
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
     type BalanceConverter = UnityAssetBalanceConversion;
-    type PayoutPeriod = ConstU32<0>;
+    type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
@@ -1377,7 +1394,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1438,14 +1455,16 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_proxy, Proxy]
         [pallet_utility, Utility]
-        [pallet_treasury, Treasury]
+        [pallet_proxy, Proxy]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
+        [pallet_stream_payment, StreamPayment]
         [pallet_identity, Identity]
+        [pallet_multisig, Multisig]
         [pallet_registrar, Registrar]
         [pallet_configuration, Configuration]
         [pallet_collator_assignment, CollatorAssignment]
@@ -1453,9 +1472,9 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
+        [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
-        [pallet_multisig, Multisig]
-        [pallet_stream_payment, StreamPayment]
+        [pallet_treasury, Treasury]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
@@ -1592,6 +1611,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
@@ -1618,6 +1638,9 @@ impl_runtime_apis! {
                     System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
                 }
             }
+
+            use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+            impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -1867,6 +1890,15 @@ impl_runtime_apis! {
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
             }
+        }
+    }
+
+    impl async_backing_primitives::UnincludedSegmentApi<Block> for Runtime {
+        fn can_build_upon(
+            included_hash: <Block as BlockT>::Hash,
+            slot: async_backing_primitives::Slot,
+        ) -> bool {
+            ConsensusHook::can_build_upon(included_hash, slot)
         }
     }
 
