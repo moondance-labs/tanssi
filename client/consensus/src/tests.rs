@@ -354,7 +354,7 @@ impl Environment<TestBlock> for DummyFactory {
     type CreateProposer = future::Ready<Result<DummyProposer, Error>>;
     type Error = Error;
 
-    fn init(&mut self, parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
+    fn init(&mut self, _parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
         future::ready(Ok(DummyProposer(self.0.clone())))
     }
 }

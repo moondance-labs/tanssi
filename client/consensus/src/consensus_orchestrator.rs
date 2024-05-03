@@ -22,8 +22,6 @@
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
     crate::{AuthorityId, Pair, Slot},
-    sc_consensus_slots::{SimpleSlotWorker, SlotInfo, SlotResult},
-    sp_consensus::Proposer,
     sp_runtime::traits::Block as BlockT,
 };
 

@@ -464,10 +464,10 @@ where
     // Here we lean on the property that building on an empty unincluded segment must always
     // be legal. Skipping the runtime API query here allows us to seamlessly run this
     // collator against chains which have not yet upgraded their runtime.
-    if parent_header.hash() != included_block {
-        if !runtime_api.can_build_upon(parent_header.hash(), included_block, slot)? {
-            return Ok(None);
-        }
+    if parent_header.hash() != included_block
+        && !runtime_api.can_build_upon(parent_header.hash(), included_block, slot)?
+    {
+        return Ok(None);
     }
 
     slot_claim
