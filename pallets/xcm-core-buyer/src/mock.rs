@@ -29,7 +29,7 @@ use {
     sp_core::H256,
     sp_io::TestExternalities,
     sp_runtime::{
-        traits::{BlakeTwo256, Convert, IdentityLookup},
+        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
     sp_std::collections::btree_map::BTreeMap,
