@@ -150,6 +150,7 @@ pub struct NodeBuilder<
     pub network: SNetwork,
     pub tx_handler_controller: STxHandler,
     pub import_queue_service: SImportQueueService,
+    pub executor: ExecutorOf<T>,
 }
 
 pub struct Network<Block: cumulus_primitives_core::BlockT> {
@@ -243,7 +244,7 @@ where
             sc_service::new_full_parts::<BlockOf<T>, RuntimeApiOf<T>, _>(
                 parachain_config,
                 telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-                executor,
+                executor.clone(),
             )?;
         let client = Arc::new(client);
 
@@ -277,6 +278,7 @@ where
             network: TypeIdentity::from_type(()),
             tx_handler_controller: TypeIdentity::from_type(()),
             import_queue_service: TypeIdentity::from_type(()),
+            executor,
         })
     }
 }
@@ -350,6 +352,7 @@ where
             network: _,
             tx_handler_controller: _,
             import_queue_service: _,
+            executor,
         } = self;
 
         let net_config = FullNetworkConfiguration::new(&parachain_config.network);
@@ -388,6 +391,7 @@ where
             },
             tx_handler_controller,
             import_queue_service,
+            executor,
         })
     }
 
@@ -426,6 +430,7 @@ where
             network: _,
             tx_handler_controller: _,
             import_queue_service: _,
+            executor,
         } = self;
 
         let net_config = FullNetworkConfiguration::new(&parachain_config.network);
@@ -462,6 +467,7 @@ where
             },
             tx_handler_controller,
             import_queue_service,
+            executor,
         })
     }
 
@@ -503,6 +509,7 @@ where
             network,
             tx_handler_controller,
             import_queue_service,
+            executor,
         } = self;
 
         let network = TypeIdentity::into_type(network);
@@ -583,6 +590,7 @@ where
             network: TypeIdentity::from_type(network),
             tx_handler_controller: TypeIdentity::from_type(()),
             import_queue_service,
+            executor,
         })
     }
 
@@ -697,6 +705,7 @@ where
             network,
             tx_handler_controller,
             import_queue_service,
+            executor,
         } = self;
 
         let network = TypeIdentity::into_type(network);
@@ -740,6 +749,7 @@ where
             network: TypeIdentity::from_type(network),
             tx_handler_controller,
             import_queue_service: (),
+            executor,
         })
     }
 
@@ -769,6 +779,7 @@ where
             network,
             tx_handler_controller,
             import_queue_service,
+            executor,
         } = self;
 
         let network = TypeIdentity::into_type(network);
@@ -816,6 +827,7 @@ where
             network: TypeIdentity::from_type(network),
             tx_handler_controller,
             import_queue_service: (),
+            executor,
         })
     }
 
@@ -841,6 +853,7 @@ where
             network,
             tx_handler_controller,
             import_queue_service,
+            executor,
         } = self;
 
         (
@@ -857,6 +870,7 @@ where
                 network,
                 tx_handler_controller,
                 import_queue_service: (),
+                executor,
             },
             import_queue_service,
         )

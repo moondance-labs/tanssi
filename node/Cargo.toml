@@ -10,6 +10,14 @@ version = "0.7.0"
 [lints]
 workspace = true
 
+[[bin]]
+name = "tanssi-execute-worker"
+path = "src/bin/tanssi-execute-worker.rs"
+
+#[[bin]]
+#name = "polkadot-prepare-worker"
+#path = "src/bin/prepare-worker.rs"
+
 [dependencies]
 async-io = { workspace = true }
 async-trait = { workspace = true }
@@ -17,13 +25,16 @@ clap = { workspace = true, features = [ "derive" ] }
 exit-future = { workspace = true }
 flume = { workspace = true }
 futures = { workspace = true }
+futures-timer = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
+rand = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+tracing-gum = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
@@ -44,6 +55,7 @@ tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std"
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
 
+tanssi-core-execute-worker = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
@@ -60,6 +72,7 @@ sc-consensus = { workspace = true }
 sc-consensus-aura = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
 sc-executor = { workspace = true }
+sc-executor-common = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
 sc-network-sync = { workspace = true }
@@ -82,6 +95,7 @@ sp-core = { workspace = true, features = [ "std" ] }
 sp-inherents = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
 sp-keystore = { workspace = true, features = [ "std" ] }
+sp-maybe-compressed-blob = { workspace = true }
 sp-offchain = { workspace = true, features = [ "std" ] }
 sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true, features = [ "std" ] }
@@ -98,6 +112,12 @@ polkadot-cli = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
 polkadot-service = { workspace = true }
+#polkadot-node-core-pvf = { workspace = true }
+#polkadot-node-core-pvf-common = { workspace = true }
+tanssi-worker = { workspace = true }
+tanssi-worker-common = { workspace = true }
+polkadot-node-core-candidate-validation = { workspace = true }
+polkadot-node-subsystem-types = { workspace = true }
 
 # Cumulus
 cumulus-client-cli = { workspace = true }

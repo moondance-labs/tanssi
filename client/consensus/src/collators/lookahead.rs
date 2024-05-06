@@ -31,6 +31,7 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
+use std::time::Instant;
 use {
     crate::{
         collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
@@ -185,6 +186,7 @@ where
         loop {
             select! {
                 maybe_relay_parent_header = import_notifications.next() => {
+                    let collation_start = Instant::now();
                     if maybe_relay_parent_header.is_none() {
                         break;
                     }
@@ -219,6 +221,8 @@ where
                             continue;
                         }
                     };
+
+                    log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
 
                     let parent_search_params = ParentSearchParams {
                         relay_parent,
@@ -284,6 +288,8 @@ where
                     let mut parent_hash = initial_parent.hash;
                     let mut parent_header = initial_parent.header;
                     let overseer_handle = &mut params.overseer_handle;
+
+                    log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
 
                     // This needs to change to support elastic scaling, but for continuously
                     // scheduled chains this ensures that the backlog will grow steadily.
@@ -369,6 +375,7 @@ where
                             }
                             Some(v) => v,
                         };
+                        log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
 
                         match collator
                             .collate(
@@ -386,6 +393,7 @@ where
                             .await
                         {
                             Ok(Some((collation, block_data, new_block_hash))) => {
+                                log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
                                 // Here we are assuming that the import logic protects against equivocations
                                 // and provides sybil-resistance, as it should.
                                 collator
@@ -414,6 +422,7 @@ where
 
                                 parent_hash = new_block_hash;
                                 parent_header = block_data.into_header();
+                                log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
                             }
                             Ok(None) => {
                                 tracing::debug!(target: crate::LOG_TARGET, "Lookahead collator: No block proposal");
@@ -423,7 +432,12 @@ where
                                 break;
                             }
                         }
+
+                        log::error!("COLLATOR DURATION at {}: {}us", line!(), collation_start.elapsed().as_micros());
                     }
+
+                    let elapsed = collation_start.elapsed();
+                    log::error!("COLLATOR DURATION: {}us", elapsed.as_micros());
                 },
                 _ = params.cancellation_token.cancelled() => {
                     log::info!("Stopping lookahead collator");

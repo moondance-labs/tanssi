@@ -1,0 +1,28 @@
+[package]
+name = "tanssi-core-execute-worker"
+authors = { workspace = true }
+description = "Contains the logic for executing untrusted runtime. Used by the tanssi-execute-worker binary."
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+cpu-time = { workspace = true }
+tracing-gum = { workspace = true }
+os_pipe = { workspace = true }
+nix = { workspace = true, features = ["process", "resource"] }
+libc = { workspace = true }
+
+parity-scale-codec = { workspace = true, features = ["derive"] }
+
+tanssi-worker-ancillary = { workspace = true }
+#polkadot-node-core-pvf-common = { workspace = true }
+tanssi-worker-common = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
+polkadot-primitives = { workspace = true }
+
+[features]
+builder = []

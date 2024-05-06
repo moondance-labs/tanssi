@@ -132,6 +132,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anes"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -712,6 +718,17 @@ checksum = "edcdbedc2236483ab103a53415653d6b4442ea6141baf1ffa85df29635e88436"
 dependencies = [
  "nix 0.27.1",
  "rand",
+]
+
+[[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
+dependencies = [
+ "hermit-abi 0.1.19",
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -1329,6 +1346,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd6c0e7b807d60291f42f33f58480c0bfafe28ed08286446f45e463728cf9c1c"
 
 [[package]]
+name = "cast"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
+
+[[package]]
 name = "cc"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1460,6 +1483,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "ciborium"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e"
+dependencies = [
+ "ciborium-io",
+ "ciborium-ll",
+ "serde",
+]
+
+[[package]]
+name = "ciborium-io"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757"
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9"
+dependencies = [
+ "ciborium-io",
+ "half",
+]
+
+[[package]]
 name = "cid"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1514,6 +1564,18 @@ dependencies = [
 
 [[package]]
 name = "clap"
+version = "3.2.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
+dependencies = [
+ "bitflags 1.3.2",
+ "clap_lex 0.2.4",
+ "indexmap 1.9.3",
+ "textwrap",
+]
+
+[[package]]
+name = "clap"
 version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80c21025abd42669a92efc996ef13cfb2c5c627858421ea58d5c3b331a6c134f"
@@ -1530,7 +1592,7 @@ checksum = "458bf1f341769dfcf849846f65dffdf9146daa56bcd2a47cb4e1de9915567c99"
 dependencies = [
  "anstream",
  "anstyle",
- "clap_lex",
+ "clap_lex 0.7.0",
  "strsim",
  "terminal_size",
 ]
@@ -1545,6 +1607,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.49",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
+dependencies = [
+ "os_str_bytes",
 ]
 
 [[package]]
@@ -1670,7 +1741,7 @@ dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
- "clap",
+ "clap 4.5.0",
  "container-chain-template-frontier-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -1762,7 +1833,7 @@ dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
- "clap",
+ "clap 4.5.0",
  "container-chain-template-simple-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -2202,6 +2273,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "criterion"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
+dependencies = [
+ "anes",
+ "atty",
+ "cast",
+ "ciborium",
+ "clap 3.2.25",
+ "criterion-plot",
+ "futures 0.3.30",
+ "itertools 0.10.5",
+ "lazy_static",
+ "num-traits",
+ "oorandom",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
+ "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
+dependencies = [
+ "cast",
+ "itertools 0.10.5",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2308,7 +2415,7 @@ name = "cumulus-client-cli"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#7b16c9ecbe06c53affbbb32991875b0c1e5f59f6"
 dependencies = [
- "clap",
+ "clap 4.5.0",
  "parity-scale-codec",
  "sc-chain-spec",
  "sc-cli",
@@ -4011,7 +4118,7 @@ name = "fc-cli"
 version = "1.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-v1.6.0#4414529b910e8cf802969b11505a14665e4a55d1"
 dependencies = [
- "clap",
+ "clap 4.5.0",
  "ethereum-types",
  "fc-db",
  "fp-rpc",
@@ -4576,7 +4683,7 @@ dependencies = [
  "Inflector",
  "array-bytes 6.2.2",
  "chrono",
- "clap",
+ "clap 4.5.0",
  "comfy-table",
  "frame-benchmarking",
  "frame-support",
@@ -4998,9 +5105,9 @@ checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
 
 [[package]]
 name = "futures-timer"
-version = "3.0.2"
+version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
+checksum = "f288b0a4f20f9a56b5d1da57e2227c661b7b16168e2f72365f57b63326e29b24"
 
 [[package]]
 name = "futures-util"
@@ -5171,6 +5278,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "half"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd08c532ae367adf81c312a4580bc67f1d0fe8bc9c460520283f4c0ff277888"
+dependencies = [
+ "cfg-if",
+ "crunchy",
+]
+
+[[package]]
 name = "handlebars"
 version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5244,6 +5361,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -5641,7 +5767,7 @@ version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eae7b9aee968036d54dce06cebaefd919e4472e753296daccd6d344e3e2df0c2"
 dependencies = [
- "hermit-abi",
+ "hermit-abi 0.3.6",
  "libc",
  "windows-sys 0.48.0",
 ]
@@ -5676,7 +5802,7 @@ version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f23ff5ef2b80d608d61efee834934d862cd92461afc0560dedf493e4c033738b"
 dependencies = [
- "hermit-abi",
+ "hermit-abi 0.3.6",
  "libc",
  "windows-sys 0.52.0",
 ]
@@ -7272,7 +7398,7 @@ version = "0.1.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
- "clap",
+ "clap 4.5.0",
  "core_extensions",
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -7465,7 +7591,7 @@ version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4161fcb6d602d4d2081af7c3a45852d875a03dd337a6bfdd6e06407b61342a43"
 dependencies = [
- "hermit-abi",
+ "hermit-abi 0.3.6",
  "libc",
 ]
 
@@ -7531,6 +7657,12 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+
+[[package]]
+name = "oorandom"
+version = "11.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "opaque-debug"
@@ -7635,6 +7767,22 @@ checksum = "3305af35278dd29f46fcdd139e0b1fbfae2153f0e5928b39b035542dd31e37b7"
 dependencies = [
  "num-traits",
 ]
+
+[[package]]
+name = "os_pipe"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57119c3b893986491ec9aa85056780d3a0f3cf4da7cc09dd3650dbd6c6738fb9"
+dependencies = [
+ "libc",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "os_str_bytes"
+version = "6.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 
 [[package]]
 name = "pallet-asset-conversion"
@@ -10070,7 +10218,7 @@ version = "1.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#7b16c9ecbe06c53affbbb32991875b0c1e5f59f6"
 dependencies = [
  "cfg-if",
- "clap",
+ "clap 4.5.0",
  "frame-benchmarking-cli",
  "futures 0.3.30",
  "log",
@@ -11325,6 +11473,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "procfs"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "731e0d9356b0c25f16f33b5be79b1c57b562f141ebfcdb0ad8ac2c13a24293b4"
+dependencies = [
+ "bitflags 2.4.2",
+ "chrono",
+ "flate2",
+ "hex",
+ "lazy_static",
+ "procfs-core",
+ "rustix 0.38.31",
+]
+
+[[package]]
+name = "procfs-core"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d3554923a69f4ce04c4a754260c338f505ce22642d3830e049a399fc2059a29"
+dependencies = [
+ "bitflags 2.4.2",
+ "chrono",
+ "hex",
+]
+
+[[package]]
 name = "prometheus"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12123,6 +12297,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc183a10b4478d04cbbbfc96d0873219d962dd5accaff2ffbd4ceb7df837f4"
 
 [[package]]
+name = "rusty-fork"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb3dcc6e454c328bb824492db107ab7c0ae8fcffe4ad210136ef014458c1bc4f"
+dependencies = [
+ "fnv",
+ "quick-error",
+ "tempfile",
+ "wait-timeout",
+]
+
+[[package]]
 name = "ruzstd"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12289,7 +12475,7 @@ dependencies = [
  "array-bytes 6.2.2",
  "bip39",
  "chrono",
- "clap",
+ "clap 4.5.0",
  "fdlimit",
  "futures 0.3.30",
  "itertools 0.10.5",
@@ -13216,7 +13402,7 @@ name = "sc-storage-monitor"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#7b16c9ecbe06c53affbbb32991875b0c1e5f59f6"
 dependencies = [
- "clap",
+ "clap 4.5.0",
  "fs4",
  "log",
  "sp-core",
@@ -15389,13 +15575,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "tanssi-core-execute-worker"
+version = "0.1.0"
+dependencies = [
+ "cpu-time",
+ "libc",
+ "nix 0.27.1",
+ "os_pipe",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "tanssi-worker-ancillary",
+ "tanssi-worker-common",
+ "tracing-gum",
+]
+
+[[package]]
 name = "tanssi-node"
 version = "0.7.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
- "clap",
+ "clap 4.5.0",
  "cumulus-client-cli",
  "cumulus-client-collator",
  "cumulus-client-consensus-aura",
@@ -15416,6 +15618,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.30",
+ "futures-timer",
  "jsonrpsee",
  "log",
  "manual-xcm-rpc",
@@ -15428,9 +15631,12 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
+ "polkadot-node-core-candidate-validation",
+ "polkadot-node-subsystem-types",
  "polkadot-parachain-primitives",
  "polkadot-primitives",
  "polkadot-service",
+ "rand",
  "sc-basic-authorship",
  "sc-chain-spec",
  "sc-cli",
@@ -15439,6 +15645,7 @@ dependencies = [
  "sc-consensus-aura",
  "sc-consensus-manual-seal",
  "sc-executor",
+ "sc-executor-common",
  "sc-network",
  "sc-network-common",
  "sc-network-sync",
@@ -15463,6 +15670,7 @@ dependencies = [
  "sp-inherents",
  "sp-io",
  "sp-keystore",
+ "sp-maybe-compressed-blob",
  "sp-offchain",
  "sp-panic-handler",
  "sp-runtime",
@@ -15474,11 +15682,15 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "tanssi-core-execute-worker",
+ "tanssi-worker",
+ "tanssi-worker-common",
  "tc-consensus",
  "tokio",
  "tokio-util",
  "tp-author-noting-inherent",
  "tp-container-chain-genesis-data",
+ "tracing-gum",
  "try-runtime-cli",
 ]
 
@@ -15500,6 +15712,82 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tanssi-worker"
+version = "0.1.0"
+dependencies = [
+ "always-assert",
+ "array-bytes 6.2.2",
+ "assert_matches",
+ "blake3",
+ "cfg-if",
+ "criterion",
+ "futures 0.3.30",
+ "futures-timer",
+ "hex-literal 0.3.4",
+ "is_executable",
+ "libc",
+ "os_pipe",
+ "parity-scale-codec",
+ "pin-project",
+ "polkadot-core-primitives",
+ "polkadot-node-metrics",
+ "polkadot-node-primitives",
+ "polkadot-node-subsystem",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "procfs",
+ "rand",
+ "rococo-runtime",
+ "rusty-fork",
+ "sc-sysinfo",
+ "slotmap",
+ "sp-core",
+ "sp-maybe-compressed-blob",
+ "sp-wasm-interface",
+ "tanssi-core-execute-worker",
+ "tanssi-worker",
+ "tanssi-worker-ancillary",
+ "tanssi-worker-common",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing-gum",
+]
+
+[[package]]
+name = "tanssi-worker-ancillary"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "tanssi-worker-common"
+version = "0.1.0"
+dependencies = [
+ "assert_matches",
+ "cfg-if",
+ "cpu-time",
+ "futures 0.3.30",
+ "landlock",
+ "libc",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "sc-executor",
+ "sc-executor-common",
+ "sc-executor-wasmtime",
+ "seccompiler",
+ "sp-core",
+ "sp-externalities",
+ "sp-io",
+ "sp-tracing",
+ "tempfile",
+ "thiserror",
+ "tracing-gum",
 ]
 
 [[package]]
@@ -15626,6 +15914,12 @@ dependencies = [
  "sp-state-machine",
  "sp-trie",
 ]
+
+[[package]]
+name = "textwrap"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
 
 [[package]]
 name = "thiserror"
@@ -15764,6 +16058,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
 dependencies = [
  "crunchy",
+]
+
+[[package]]
+name = "tinytemplate"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -16243,7 +16547,7 @@ version = "0.10.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#7b16c9ecbe06c53affbbb32991875b0c1e5f59f6"
 dependencies = [
  "async-trait",
- "clap",
+ "clap 4.5.0",
  "frame-remote-externalities",
  "frame-try-runtime",
  "hex",
@@ -16463,6 +16767,15 @@ dependencies = [
  "sha3",
  "thiserror",
  "zeroize",
+]
+
+[[package]]
+name = "wait-timeout"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

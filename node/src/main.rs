@@ -24,6 +24,7 @@ mod command;
 mod container_chain_monitor;
 mod container_chain_spawner;
 mod rpc;
+mod secure_executor;
 mod service;
 #[cfg(test)]
 mod tests;

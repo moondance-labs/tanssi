@@ -1,0 +1,46 @@
+[package]
+name = "tanssi-worker-common"
+authors = { workspace = true }
+description = "Polkadot crate that contains functionality related to PVFs that is shared by the PVF host and the PVF workers."
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+cfg-if = { workspace = true }
+cpu-time = { workspace = true }
+futures = { workspace = true }
+tracing-gum = { workspace = true }
+libc = { workspace = true }
+thiserror = { workspace = true }
+
+parity-scale-codec = { workspace = true }
+#polkadot-node-core-pvf-common = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
+polkadot-primitives = { workspace = true }
+
+sc-executor = { workspace = true }
+sc-executor-common = { workspace = true }
+sc-executor-wasmtime = { workspace = true }
+
+sp-core = { workspace = true }
+sp-externalities = { workspace = true }
+sp-io = { workspace = true }
+sp-tracing = { workspace = true }
+
+# TODO: turn these into workspace deps:
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.3.0"
+seccompiler = "0.4.0"
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+tempfile = { workspace = true }
+
+[features]
+# This feature is used to export test code to other crates without putting it in the production build.
+test-utils = []
+jemalloc-allocator = []

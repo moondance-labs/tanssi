@@ -1,0 +1,13 @@
+[package]
+name = "tanssi-worker-ancillary"
+authors = { workspace = true }
+description = "Contains the logic for executing untrusted runtime. Used by the tanssi-execute-worker binary."
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+libc = { workspace = true }

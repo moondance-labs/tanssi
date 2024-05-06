@@ -60,7 +60,7 @@ use {
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::{BasicQueue, BlockImport, ImportQueue},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
@@ -126,7 +126,7 @@ type ParachainProposerFactory =
     ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
 
 // Container chains types
-type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ContainerChainExecutor = crate::secure_executor::MaybeSecureWasmExecutor;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
 pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =
@@ -529,7 +529,7 @@ async fn start_node_impl(
 // Log string that will be shown for the container chain: `[Container-2000]`.
 // This needs to be a separate function because the `prefix_logs_with` macro
 // has trouble parsing expressions.
-fn container_log_str(para_id: ParaId) -> String {
+pub fn container_log_str(para_id: ParaId) -> String {
     format!("Container-{}", para_id)
 }
 
@@ -552,10 +552,55 @@ pub async fn start_node_impl_container(
     Arc<ContainerChainClient>,
     Arc<ParachainBackend>,
 )> {
+    use polkadot_node_core_candidate_validation::Config as CvConfig;
+
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
+
+    let candidate_validation_config = {
+        let workers_path = None;
+        let workers_names = Some((
+            "polkadot-prepare-worker".to_string(),
+            "tanssi-execute-worker".to_string(),
+        ));
+        // TODO: this disables worker version check
+        let node_version = None;
+        let secure_validator_mode = true;
+        let (prep_worker_path, exec_worker_path) =
+            polkadot_service::workers::determine_workers_paths(
+                workers_path,
+                workers_names,
+                node_version.clone(),
+            )
+            .unwrap();
+        log::info!("🚀 Using prepare-worker binary at: {:?}", prep_worker_path);
+        log::info!("🚀 Using execute-worker binary at: {:?}", exec_worker_path);
+
+        CvConfig {
+            artifacts_cache_path: parachain_config
+                .database
+                .path()
+                .unwrap()
+                .join("pvf-artifacts"),
+            node_version,
+            secure_validator_mode,
+            prep_worker_path,
+            exec_worker_path,
+        }
+    };
+    let (_validation_host, pvf_sender) = crate::secure_executor::spawn_candidate_validation(
+        node_builder.task_manager.spawn_handle(),
+        Default::default(),
+        candidate_validation_config,
+        para_id,
+    )
+    .await?;
+    node_builder
+        .executor
+        .secure_executor
+        .initialize_pvf_tx(pvf_sender);
 
     let (block_import, import_queue) =
         container_chain_import_queue(&parachain_config, &node_builder);
@@ -842,7 +887,12 @@ fn start_consensus_container(
         proposer,
         collator_service,
         // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: if false {
+            Duration::from_millis(500)
+        } else {
+            // TODO: if secure_collator
+            Duration::from_millis(2_000)
+        },
         para_backend: backend,
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
