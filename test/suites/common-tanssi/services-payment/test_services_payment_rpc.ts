@@ -3,12 +3,12 @@ import { describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 
 describeSuite({
     id: "CT0609",
-    title: "Stream payment RPC",
+    title: "Services payment RPC",
     foundationMethods: "dev",
     testCases: ({ it }) => {
         it({
             id: "E01",
-            title: "Stream payment RPC",
+            title: "Services payment RPC",
             test: async function () {
                 try {
                     await customDevRpcRequest("tanssi_servicesPaymentBlockCost", []);
