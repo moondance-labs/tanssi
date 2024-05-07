@@ -1016,6 +1016,8 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
 
         ServicesPayment::para_deregistered(para_id);
 
+        XcmCoreBuyer::para_deregistered(para_id);
+
         Weight::default()
     }
 

@@ -89,12 +89,9 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        let mut pending_block_paraids = PendingBlocks::<T>::get();
-        pending_block_paraids.remove(&para_id);
+        PendingBlocks::<T>::remove(para_id);
 
-        PendingBlocks::<T>::set(pending_block_paraids);
-
-        T::DbWeight::get().reads_writes(1, 1)
+        T::DbWeight::get().writes(1)
     }
 }
 
@@ -137,13 +134,6 @@ pub mod pallet {
             + PartialEq
             + sp_std::fmt::Debug;
 
-        /// Limit how many in-flight XCM requests can be sent to the relay chain.
-        #[pallet::constant]
-        type MaxInFlightOrders: Get<u32>;
-
-        /// Max number of paraids supported. This must be same as pallet registrar's MaxLengthParaIds.
-        #[pallet::constant]
-        type MaxNumberOfParaIds: Get<u32>;
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
         type GetParathreadParams: GetParathreadParams;
@@ -156,11 +146,16 @@ pub mod pallet {
         #[pallet::constant]
         type UnsignedPriority: Get<TransactionPriority>;
 
-        /// TTL for Core buying XCM Status Query
+        /// TTL for pending blocks entry, which prevents anyone to submit another core buying xcm.
+        #[pallet::constant]
+        type PendingBlocksTtl: Get<BlockNumberFor<Self>>;
+
+        /// TTL to be used in xcm's notify query
         #[pallet::constant]
         type CoreBuyingXCMQueryTtl: Get<BlockNumberFor<Self>>;
 
         /// Additional ttl for in flight orders (total would be CoreBuyingXCMQueryTtl + AdditionalTtlForInflightOrders)
+        /// after which the in flight orders can be cleaned up by anyone.
         #[pallet::constant]
         type AdditionalTtlForInflightOrders: Get<BlockNumberFor<Self>>;
 
@@ -189,6 +184,12 @@ pub mod pallet {
         },
         /// We received response for xcm
         ReceivedBuyCoreXCMResult { para_id: ParaId, response: Response },
+
+        /// We cleaned up expired pending blocks entries.
+        CleanedUpExpiredPendingBlocksEntries { para_ids: Vec<ParaId> },
+
+        /// We cleaned up expired in flight orders entries.
+        CleanedUpExpiredInFlightOrderEntries { para_ids: Vec<ParaId> },
     }
 
     #[pallet::error]
@@ -234,33 +235,21 @@ pub mod pallet {
         _signature: (),
     }
 
-    /// In flight orders ttl queue
-    #[pallet::storage]
-    pub type InFlightOrdersTtl<T: Config> = StorageValue<
-        _,
-        BoundedBTreeSet<(BlockNumberFor<T>, QueryId), T::MaxInFlightOrders>,
-        ValueQuery,
-    >;
-
     /// Set of parathreads that have already sent an XCM message to buy a core recently.
     /// Used to avoid 2 collators buying a core at the same time, because it is only possible to buy
     /// 1 core in 1 relay block for the same parathread.
     #[pallet::storage]
-    pub type InFlightOrders<T: Config> = StorageValue<
-        _,
-        BoundedBTreeMap<ParaId, InFlightCoreBuyingOrder<BlockNumberFor<T>>, T::MaxInFlightOrders>,
-        ValueQuery,
-    >;
+    pub type InFlightOrders<T: Config> =
+        StorageMap<_, Twox128, ParaId, InFlightCoreBuyingOrder<BlockNumberFor<T>>, OptionQuery>;
 
     /// Number of pending blocks
     #[pallet::storage]
     pub type PendingBlocks<T: Config> =
-        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxNumberOfParaIds>, ValueQuery>;
+        StorageMap<_, Twox128, ParaId, BlockNumberFor<T>, OptionQuery>;
 
     /// Mapping of QueryId to ParaId
     #[pallet::storage]
-    pub type QueryIdToParaId<T: Config> =
-        StorageValue<_, BoundedBTreeMap<QueryId, ParaId, T::MaxInFlightOrders>, ValueQuery>;
+    pub type QueryIdToParaId<T: Config> = StorageMap<_, Twox128, QueryId, ParaId, OptionQuery>;
 
     /// This must be set by root with the value of the relay chain xcm call weight and extrinsic
     /// weight limit. This is a storage item because relay chain weights can change, so we need to
@@ -301,7 +290,7 @@ pub mod pallet {
         // to spend parachain tank account.
         #[pallet::call_index(0)]
         // TODO: weight
-        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxInFlightOrders::get()))]
+        #[pallet::weight(T::WeightInfo::force_buy_core())]
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -331,7 +320,7 @@ pub mod pallet {
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxInFlightOrders::get()))]
+        #[pallet::weight(T::WeightInfo::force_buy_core())]
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
@@ -381,7 +370,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::set_relay_chain())] //TODO: Proper benchmark
+        #[pallet::weight(T::WeightInfo::query_response())]
         pub fn query_response(
             origin: OriginFor<T>,
             query_id: QueryId,
@@ -389,38 +378,24 @@ pub mod pallet {
         ) -> DispatchResult {
             let _responder = ensure_response(<T as Config>::RuntimeOrigin::from(origin))?;
 
-            let mut query_id_to_para_id = QueryIdToParaId::<T>::get();
-            let maybe_para_id = query_id_to_para_id.get(&query_id);
+            let maybe_para_id = QueryIdToParaId::<T>::get(query_id);
 
             let para_id = if let Some(para_id) = maybe_para_id {
-                *para_id
+                para_id
             } else {
                 // Most probably entry was expired or removed in some other way. Let's return early.
                 return Ok(());
             };
 
-            let mut in_flight_orders = InFlightOrders::<T>::get();
-            let order = in_flight_orders.get(&para_id).expect("If the QueryId->ParaId mapping exists \
-                    then an entry must be present in the InFlightOrders, if not we should crash as that \
-                    indicates storage inconsistency; qed");
-            let mut ttl_queue = InFlightOrdersTtl::<T>::get();
-
-            query_id_to_para_id.remove(&query_id);
-            ttl_queue.remove(&(order.ttl, query_id));
-            in_flight_orders.remove(&para_id);
-
-            QueryIdToParaId::<T>::put(query_id_to_para_id);
-            InFlightOrdersTtl::<T>::put(ttl_queue);
-            InFlightOrders::<T>::put(in_flight_orders);
+            QueryIdToParaId::<T>::remove(query_id);
+            InFlightOrders::<T>::remove(para_id);
 
             match response {
                 Response::DispatchResult(MaybeErrorCode::Success) => {
                     // Success. Add para id to pending block
-                    let mut pending_block_paraids = PendingBlocks::<T>::get();
-                    pending_block_paraids.try_insert(para_id).expect(
-                        "Length of pending block paraids should not exceed max number of paraids",
-                    );
-                    PendingBlocks::<T>::set(pending_block_paraids);
+                    let now = <frame_system::Pallet<T>>::block_number();
+                    let ttl = T::PendingBlocksTtl::get();
+                    PendingBlocks::<T>::set(para_id, Some(now + ttl));
                 }
                 Response::DispatchResult(_) => {
                     // We do not add paraid to pending block on failure
@@ -432,6 +407,65 @@ pub mod pallet {
             }
 
             Self::deposit_event(Event::ReceivedBuyCoreXCMResult { para_id, response });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::clean_up_expired_in_flight_orders(expired_pending_blocks_para_id.len() as u32))]
+        pub fn clean_up_expired_pending_blocks(
+            origin: OriginFor<T>,
+            expired_pending_blocks_para_id: Vec<ParaId>,
+        ) -> DispatchResult {
+            let _ = ensure_signed(origin)?;
+            let now = frame_system::Pallet::<T>::block_number();
+            let mut cleaned_up_para_ids = vec![];
+
+            for para_id in expired_pending_blocks_para_id {
+                let maybe_pending_block_ttl = PendingBlocks::<T>::get(para_id);
+                if let Some(pending_block_ttl) = maybe_pending_block_ttl {
+                    if pending_block_ttl < now {
+                        PendingBlocks::<T>::remove(para_id);
+                        cleaned_up_para_ids.push(para_id);
+                    } else {
+                        // Ignore if not expired
+                    }
+                }
+            }
+
+            Self::deposit_event(Event::CleanedUpExpiredPendingBlocksEntries {
+                para_ids: cleaned_up_para_ids,
+            });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::clean_up_expired_in_flight_orders(expired_in_flight_orders.len() as u32))]
+        pub fn clean_up_expired_in_flight_orders(
+            origin: OriginFor<T>,
+            expired_in_flight_orders: Vec<ParaId>,
+        ) -> DispatchResult {
+            let _ = ensure_signed(origin)?;
+            let now = frame_system::Pallet::<T>::block_number();
+            let mut cleaned_up_para_ids = vec![];
+
+            for para_id in expired_in_flight_orders {
+                let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
+                if let Some(in_flight_order) = maybe_in_flight_order {
+                    if in_flight_order.ttl < now {
+                        InFlightOrders::<T>::remove(para_id);
+                        QueryIdToParaId::<T>::remove(in_flight_order.query_id);
+                        cleaned_up_para_ids.push(para_id);
+                    } else {
+                        // Ignore if not expired
+                    }
+                }
+            }
+
+            Self::deposit_event(Event::CleanedUpExpiredInFlightOrderEntries {
+                para_ids: cleaned_up_para_ids,
+            });
 
             Ok(())
         }
@@ -465,63 +499,28 @@ pub mod pallet {
             Ok(reanchored)
         }
 
-        fn clean_up_expired_in_flight_orders(n: BlockNumberFor<T>) {
-            let mut ttl_queue = InFlightOrdersTtl::<T>::get();
-            let mut maybe_oldest_entry;
-            let mut oldest_block_number;
-            let mut query_id;
-
-            let mut query_ids_to_remove = vec![];
-
-            loop {
-                maybe_oldest_entry = ttl_queue.first().copied();
-                (oldest_block_number, query_id) = if let Some(oldest_entry) = maybe_oldest_entry {
-                    oldest_entry
-                } else {
-                    break;
-                };
-
-                // No entry at current block number found
-                if oldest_block_number > n {
-                    break;
-                }
-
-                ttl_queue.remove(&(oldest_block_number, query_id));
-
-                query_ids_to_remove.push(query_id);
-            }
-
-            // Return early if there is nothing to remove.
-            if query_ids_to_remove.is_empty() {
-                return;
-            }
-
-            let mut query_to_para_mapping = QueryIdToParaId::<T>::get();
-            let mut in_flight_orders = InFlightOrders::<T>::get();
-
-            for query_id_to_remove in query_ids_to_remove {
-                let para_id = query_to_para_mapping.remove(&query_id_to_remove).expect("If an entry exists in InFlightOrdersTtl then \
-                it must exists on QueryIdToParaId mapping, if not we have storage inconsistency and better to crash; qed.");
-                in_flight_orders.remove(&para_id);
-            }
-
-            InFlightOrdersTtl::<T>::put(ttl_queue);
-            InFlightOrders::<T>::put(in_flight_orders);
-            QueryIdToParaId::<T>::put(query_to_para_mapping);
-        }
-
         /// Send an XCM message to the relay chain to try to buy a core for this para_id.
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
-            Self::clean_up_expired_in_flight_orders(<frame_system::Pallet<T>>::block_number());
-
-            let pending_blocks = PendingBlocks::<T>::get();
-            if pending_blocks.contains(&para_id) {
-                return Err(Error::<T>::BlockProductionPending.into());
+            // If an in flight order is pending (i.e we did not receive the notification yet) and our
+            // record is not expired yet, we should not allow the collator to buy another core.
+            let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
+            if let Some(in_flight_order) = maybe_in_flight_order {
+                if in_flight_order.ttl < <frame_system::Pallet<T>>::block_number() {
+                    InFlightOrders::<T>::remove(para_id);
+                } else {
+                    return Err(Error::<T>::OrderAlreadyExists.into());
+                }
             }
 
-            let mut in_flight_orders = InFlightOrders::<T>::get();
-            if in_flight_orders.contains_key(&para_id) {
-                return Err(Error::<T>::OrderAlreadyExists.into());
+            // If a block production is pending and our record is not expired yet, we should not allow
+            // the collator to buy another core yet.
+            let maybe_pending_blocks_ttl = PendingBlocks::<T>::get(para_id);
+            if let Some(pending_blocks_ttl) = maybe_pending_blocks_ttl {
+                if pending_blocks_ttl < <frame_system::Pallet<T>>::block_number() {
+                    PendingBlocks::<T>::remove(para_id);
+                } else {
+                    return Err(Error::<T>::BlockProductionPending.into());
+                }
             }
 
             // Check that the para id is a parathread
@@ -623,38 +622,30 @@ pub mod pallet {
             });
 
             let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
-            in_flight_orders
-                .try_insert(
+            InFlightOrders::<T>::set(
+                para_id,
+                Some(InFlightCoreBuyingOrder {
                     para_id,
-                    InFlightCoreBuyingOrder {
-                        para_id,
-                        query_id,
-                        ttl: in_flight_order_ttl,
-                    },
-                )
-                .map_err(|_| Error::<T>::InFlightLimitReached)?;
-
-            let mut query_to_para_mapping = QueryIdToParaId::<T>::get();
-            query_to_para_mapping.try_insert(query_id, para_id).expect(
-                "The number of entries in \
-            QueryToParaId mapping must be same as InFlightOrders, if not we should crash as that \
-            indicates storage inconsistency; qed",
+                    query_id,
+                    ttl: in_flight_order_ttl,
+                }),
             );
 
-            let mut ttl_queue_set = InFlightOrdersTtl::<T>::get();
-            ttl_queue_set
-                .try_insert((in_flight_order_ttl, query_id))
-                .expect(
-                    "The number of entries in \
-            QueryToParaId mapping must be same as InFlightOrders, if not we should crash as that \
-            indicates storage inconsistency; qed",
-                );
-
-            InFlightOrders::<T>::put(in_flight_orders);
-            QueryIdToParaId::<T>::put(query_to_para_mapping);
-            InFlightOrdersTtl::<T>::put(ttl_queue_set);
+            QueryIdToParaId::<T>::set(query_id, Some(para_id));
 
             Ok(())
+        }
+
+        pub fn para_deregistered(para_id: ParaId) {
+            // If para is deregistered we need to clean up in flight order, query id mapping
+            let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
+            if let Some(in_flight_order) = maybe_in_flight_order {
+                InFlightOrders::<T>::remove(para_id);
+                QueryIdToParaId::<T>::remove(in_flight_order.query_id);
+            }
+
+            // We need to clean the pending block entry if any
+            PendingBlocks::<T>::remove(para_id);
         }
     }
 

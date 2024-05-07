@@ -57,6 +57,20 @@ frame_support::construct_runtime!(
     }
 );
 
+/// Only needed for benchmark test suite
+impl From<pallet_xcm::Origin> for RuntimeOrigin {
+    fn from(_value: Origin) -> Self {
+        RuntimeOrigin::root()
+    }
+}
+
+/// Only needed for benchmark test suite
+impl From<RuntimeOrigin> for Result<pallet_xcm::Origin, RuntimeOrigin> {
+    fn from(_value: RuntimeOrigin) -> Self {
+        Ok(Origin::Response(MultiLocation::parent()))
+    }
+}
+
 impl frame_system::Config for Test {
     type BaseCallFilter = Everything;
     type Block = Block;
@@ -165,15 +179,10 @@ parameter_types! {
 }
 
 parameter_types! {
+    pub const PendingBlocksTtl: u32 = 5;
     pub const CoreBuyingXCMQueryTtl: u32 = 100;
     pub const AdditionalTtlForInflightOrders: u32 = 5;
     pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(NetworkId::Westend), Parachain(1000));
-}
-
-impl Into<Result<pallet_xcm::Origin, RuntimeOrigin>> for RuntimeOrigin {
-    fn into(self) -> Result<Origin, RuntimeOrigin> {
-        Ok(Origin::Response(MultiLocation::parent()))
-    }
 }
 
 impl pallet_xcm_core_buyer::Config for Test {
@@ -186,11 +195,10 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
-    type MaxInFlightOrders = ConstU32<50>;
-    type MaxNumberOfParaIds = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ();
+    type PendingBlocksTtl = PendingBlocksTtl;
     type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
     type UniversalLocation = UniversalLocation;

@@ -45,10 +45,10 @@ const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND: u128 = 3668107;
+const BUY_EXECUTION_REFUND: u128 = 3334777;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1334797;
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
 
 const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
@@ -253,47 +253,30 @@ fn assert_query_response(
         panic!("Invalid input: If response is not received it cannot be successful.");
     }
 
-    let query_id_to_para_id =
-        pallet_xcm_core_buyer::QueryIdToParaId::<<Dancebox as Chain>::Runtime>::get();
+    let maybe_query_id =
+        pallet_xcm_core_buyer::QueryIdToParaId::<<Dancebox as Chain>::Runtime>::get(query_id);
     // Entry should only exists if we have not received response and vice versa.
-    if query_id_to_para_id.contains_key(&query_id) == response_received {
+    if maybe_query_id.is_some() == response_received {
         panic!(
             "There should not be any query_id<->para_id mapping existing for para_id: {:?}",
             para_id
         );
     }
 
-    let in_flight_orders =
-        pallet_xcm_core_buyer::InFlightOrders::<<Dancebox as Chain>::Runtime>::get();
+    let maybe_in_flight_order =
+        pallet_xcm_core_buyer::InFlightOrders::<<Dancebox as Chain>::Runtime>::get(para_id);
     // Entry should only exists if we have not received response and vice versa.
-    if in_flight_orders.contains_key(&para_id) == response_received {
+    if maybe_in_flight_order.is_some() == response_received {
         panic!(
             "There should not be any para_id<->in_flight_order mapping existing for para_id: {:?}",
             para_id
         );
     }
 
-    // Entry should only exists if we have not received response and vice versa.
-    let mut found_ttl = false;
-    let ttl_queue = pallet_xcm_core_buyer::InFlightOrdersTtl::<<Dancebox as Chain>::Runtime>::get();
-    for (_block_number, query_id_in_queue) in ttl_queue {
-        if query_id_in_queue == query_id {
-            found_ttl = true
-        }
-    }
-
-    // Entry should only exists if we have not received response and vice versa.
-    if found_ttl == response_received {
-        panic!(
-            "There should be a ttl entry for query_id: {:?} with ttl",
-            query_id
-        );
-    }
-
     // Entry should only exists if we have got successful response and vice versa.
-    let pending_blocks =
-        pallet_xcm_core_buyer::PendingBlocks::<<Dancebox as Chain>::Runtime>::get();
-    if pending_blocks.contains(&para_id) != is_successful {
+    let maybe_pending_blocks_entry =
+        pallet_xcm_core_buyer::PendingBlocks::<<Dancebox as Chain>::Runtime>::get(para_id);
+    if maybe_pending_blocks_entry.is_some() != is_successful {
         if is_successful {
             panic!(
                 "There should be a pending block entry for para_id: {:?}",

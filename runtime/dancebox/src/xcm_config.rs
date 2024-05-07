@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::MaxLengthParaIds;
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_xcm_core_buyer::XCMNotifier;
 use staging_xcm_builder::TrailingSetTopicAsId;
@@ -499,6 +498,7 @@ impl XCMNotifier<Runtime> for XCMNotifierImpl {
 parameter_types! {
     pub const CoreBuyingXCMQueryTtl: BlockNumber = 100;
     pub const AdditionalTtlForInflightOrders: BlockNumber = 5;
+    pub const PendingBlockTtl: BlockNumber = 10;
 }
 
 impl pallet_xcm_core_buyer::Config for Runtime {
@@ -512,12 +512,11 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
-    type MaxInFlightOrders = ConstU32<100>;
-    type MaxNumberOfParaIds = MaxLengthParaIds;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ParasUnsignedPriority;
-    type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
+    type PendingBlocksTtl = PendingBlockTtl;
+    type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
     type UniversalLocation = UniversalLocation;
     type RuntimeOrigin = RuntimeOrigin;
