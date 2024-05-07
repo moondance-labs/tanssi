@@ -1,13 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import { describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 
 describeSuite({
     id: "CT0609",
     title: "Stream payment RPC",
     foundationMethods: "dev",
-    testCases: ({ it, context }) => {
+    testCases: ({ it }) => {
         it({
             id: "E01",
             title: "Stream payment RPC",
