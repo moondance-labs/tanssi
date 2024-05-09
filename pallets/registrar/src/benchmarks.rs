@@ -18,9 +18,9 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks},
+    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks, EnsureSignedByManager},
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::Currency,
+    frame_support::traits::{Currency, EnsureOriginWithArg},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -452,7 +452,7 @@ mod benchmarks {
     fn set_para_manager() {
         let para_id = 1001u32.into();
 
-        let origin = T::ManagerOrigin::try_successful_origin(&para_id)
+        let origin = EnsureSignedByManager::<T>::try_successful_origin(&para_id)
             .expect("failed to create ManagerOrigin");
 
         let manager_address = account("sufficient", 0, 1000);

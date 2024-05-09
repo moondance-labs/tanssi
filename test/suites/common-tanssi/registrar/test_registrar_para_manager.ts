@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
 
 describeSuite({
     id: "CT0502",
@@ -25,11 +24,6 @@ describeSuite({
             title: "Checking that registering paraIds is possible",
             test: async function () {
                 await context.createBlock();
-
-                const currentSesssion = await polkadotJs.query.session.currentIndex();
-                const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
-                const expectedScheduledOnboarding =
-                    BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
@@ -55,9 +49,6 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const bootNodes = [
-                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-                ];
 
                 await context.createBlock([
                     await polkadotJs.tx.registrar.register(paraId, containerChainGenesisData).signAsync(alice),
