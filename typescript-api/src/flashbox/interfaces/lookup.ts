@@ -574,6 +574,10 @@ export default {
             ParathreadParamsChanged: {
                 paraId: "u32",
             },
+            ParaManagerChanged: {
+                paraId: "u32",
+                managerAddress: "Option<AccountId32>",
+            },
         },
     },
     /** Lookup62: pallet_collator_assignment::pallet::Event<T> */
@@ -1403,6 +1407,10 @@ export default {
             set_parathread_params: {
                 paraId: "u32",
                 slotFrequency: "TpTraitsSlotFrequency",
+            },
+            set_para_manager: {
+                paraId: "u32",
+                managerAddress: "Option<AccountId32>",
             },
         },
     },

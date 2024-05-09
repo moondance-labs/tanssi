@@ -1041,6 +1041,12 @@ declare module "@polkadot/api-base/types/events" {
             ParaIdUnpaused: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A new para id is now valid for collating. [para_id] */
             ParaIdValidForCollating: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            /** Para manager has changed */
+            ParaManagerChanged: AugmentedEvent<
+                ApiType,
+                [paraId: u32, managerAddress: Option<AccountId32>],
+                { paraId: u32; managerAddress: Option<AccountId32> }
+            >;
             /** Parathread params changed */
             ParathreadParamsChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** Generic event */

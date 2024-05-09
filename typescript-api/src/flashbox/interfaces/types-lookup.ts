@@ -830,13 +830,19 @@ declare module "@polkadot/types/lookup" {
         readonly asParathreadParamsChanged: {
             readonly paraId: u32;
         } & Struct;
+        readonly isParaManagerChanged: boolean;
+        readonly asParaManagerChanged: {
+            readonly paraId: u32;
+            readonly managerAddress: Option<AccountId32>;
+        } & Struct;
         readonly type:
             | "ParaIdRegistered"
             | "ParaIdDeregistered"
             | "ParaIdValidForCollating"
             | "ParaIdPaused"
             | "ParaIdUnpaused"
-            | "ParathreadParamsChanged";
+            | "ParathreadParamsChanged"
+            | "ParaManagerChanged";
     }
 
     /** @name PalletCollatorAssignmentEvent (62) */
@@ -1910,6 +1916,11 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly slotFrequency: TpTraitsSlotFrequency;
         } & Struct;
+        readonly isSetParaManager: boolean;
+        readonly asSetParaManager: {
+            readonly paraId: u32;
+            readonly managerAddress: Option<AccountId32>;
+        } & Struct;
         readonly type:
             | "Register"
             | "Deregister"
@@ -1917,7 +1928,8 @@ declare module "@polkadot/types/lookup" {
             | "PauseContainerChain"
             | "UnpauseContainerChain"
             | "RegisterParathread"
-            | "SetParathreadParams";
+            | "SetParathreadParams"
+            | "SetParaManager";
     }
 
     /** @name TpContainerChainGenesisDataContainerChainGenesisData (210) */

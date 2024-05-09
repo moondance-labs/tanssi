@@ -1714,6 +1714,14 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
             >;
+            /** See [`Pallet::set_para_manager`]. */
+            setParaManager: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    managerAddress: Option<AccountId32> | null | Uint8Array | AccountId32 | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<AccountId32>]
+            >;
             /** See [`Pallet::set_parathread_params`]. */
             setParathreadParams: AugmentedSubmittable<
                 (
