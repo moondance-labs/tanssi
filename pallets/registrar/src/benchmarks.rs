@@ -448,5 +448,24 @@ mod benchmarks {
         );
     }
 
+    #[benchmark]
+    fn set_para_manager() {
+        let para_id = 1001u32.into();
+
+        let origin = T::ManagerOrigin::try_successful_origin(&para_id)
+            .expect("failed to create ManagerOrigin");
+
+        let manager_address = account("sufficient", 0, 1000);
+
+        // Before call: no manager
+        assert!(crate::ParaManager::<T>::get(para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, Some(manager_address));
+
+        // After call: para manager
+        assert!(crate::ParaManager::<T>::get(para_id).is_some());
+    }
+
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
 }

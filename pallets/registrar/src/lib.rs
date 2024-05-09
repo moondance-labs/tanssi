@@ -18,7 +18,7 @@
 //!
 //! This pallet is in charge of registering containerChains (identified by their Id)
 //! that have to be served by the orchestrator chain. Parachains registrations and de-
-//! registrations are not immediatly applied, but rather they take T::SessionDelay sessions
+//! registrations are not immediately applied, but rather they take T::SessionDelay sessions
 //! to be applied.
 //!
 //! Registered container chains are stored in the PendingParaIds storage item until the session
@@ -43,7 +43,7 @@ pub use pallet::*;
 use {
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, EnsureOriginWithArg, ReservableCurrency},
         DefaultNoBound, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
@@ -229,6 +229,10 @@ pub mod pallet {
     #[pallet::getter(fn registrar_deposit)]
     pub type RegistrarDeposit<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, DepositInfo<T>>;
 
+    #[pallet::storage]
+    pub type ParaManager<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -244,6 +248,11 @@ pub mod pallet {
         ParaIdUnpaused { para_id: ParaId },
         /// Parathread params changed
         ParathreadParamsChanged { para_id: ParaId },
+        /// Para manager has changed
+        ParaManagerChanged {
+            para_id: ParaId,
+            manager_address: Option<T::AccountId>,
+        },
     }
 
     #[pallet::error]
@@ -585,6 +594,29 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(0)]
+        pub fn set_para_manager(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            manager_address: Option<T::AccountId>,
+        ) -> DispatchResult {
+            EnsureSignedByManager::<T>::ensure_origin(origin, &para_id)?;
+
+            if let Some(manager_address) = manager_address.clone() {
+                ParaManager::<T>::insert(para_id, manager_address.clone());
+            } else {
+                ParaManager::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::<T>::ParaManagerChanged {
+                para_id,
+                manager_address,
+            });
+
+            Ok(())
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
@@ -595,14 +627,17 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
+        pub fn is_para_manager(para_id: &ParaId, account: T::AccountId) -> bool {
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
-            // * The deposit creator is the signed_account
-            RegistrarDeposit::<T>::get(para_id)
+            // * The signed_account is either the deposit creator or the para manager
+            let is_creator = RegistrarDeposit::<T>::get(para_id)
                 .map(|deposit_info| deposit_info.creator)
                 .as_ref()
-                == Some(account)
+                == Some(&account);
+
+            // Short circuit to avoid a DB read if is_creator
+            is_creator || ParaManager::<T>::get(para_id) == Some(account)
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -1112,8 +1147,7 @@ impl RegistrarHooks for () {}
 
 pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
 
-impl<T> frame_support::traits::EnsureOriginWithArg<T::RuntimeOrigin, ParaId>
-    for EnsureSignedByManager<T>
+impl<T> EnsureOriginWithArg<T::RuntimeOrigin, ParaId> for EnsureSignedByManager<T>
 where
     T: Config,
 {
@@ -1126,7 +1160,7 @@ where
         let signed_account =
             <frame_system::EnsureSigned<_> as EnsureOrigin<_>>::try_origin(o.clone())?;
 
-        if !Pallet::<T>::is_para_manager(para_id, &signed_account) {
+        if !Pallet::<T>::is_para_manager(para_id, signed_account.clone()) {
             return Err(frame_system::RawOrigin::Signed(signed_account).into());
         }
 

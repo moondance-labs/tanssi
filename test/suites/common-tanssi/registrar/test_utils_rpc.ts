@@ -4,7 +4,7 @@ import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainS
 import "@polkadot/api-augment";
 
 describeSuite({
-    id: "CT0503",
+    id: "CT0507",
     title: "Test ContainerChainGenesisData utils",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
