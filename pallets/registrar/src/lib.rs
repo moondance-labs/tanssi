@@ -596,7 +596,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::set_para_manager())]
         pub fn set_para_manager(
             origin: OriginFor<T>,
             para_id: ParaId,
