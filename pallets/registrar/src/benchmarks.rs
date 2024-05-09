@@ -18,7 +18,7 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks, EnsureSignedByManager},
+    crate::{Call, Config, DepositBalanceOf, EnsureSignedByManager, Pallet, RegistrarHooks},
     frame_benchmarking::{account, v2::*},
     frame_support::traits::{Currency, EnsureOriginWithArg},
     frame_system::RawOrigin,
