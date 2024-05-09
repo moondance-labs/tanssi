@@ -21,7 +21,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Checking that registering paraIds is possible",
+            title: "Para manager can be set and is recognized as ManagerOrigin",
             test: async function () {
                 await context.createBlock();
 
