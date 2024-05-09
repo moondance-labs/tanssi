@@ -122,6 +122,12 @@ precompile-utils = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 
+[dev-dependencies]
+cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-test-relay-sproof-builder = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
+sp-io = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -136,8 +142,10 @@ std = [
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
+	"cumulus-primitives-parachain-inherent/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
+	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
 	"dp-slot-duration-runtime-api/std",
@@ -208,6 +216,7 @@ std = [
 	"sp-debug-derive/std",
 	"sp-genesis-builder/std",
 	"sp-inherents/std",
+	"sp-io/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
 	"sp-session/std",
@@ -218,6 +227,7 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
+	"test-relay-sproof-builder/std",
 	"xcm-primitives/std",
 ]
 

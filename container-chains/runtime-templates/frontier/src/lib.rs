@@ -43,7 +43,7 @@ use {
     fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
-        dispatch::{DispatchClass, GetDispatchInfo},
+        dispatch::{DispatchClass, GetDispatchInfo, RawOrigin},
         genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -67,7 +67,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressOrigin,
         FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
@@ -734,6 +734,31 @@ parameter_types! {
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
     pub SuicideQuickClearLimit: u32 = 0;
+    pub AllowedAddresses: Vec<H160> = vec![H160::from([4u8;20]), H160::from([5u8;20])];
+}
+
+pub struct EnsureAllowedAddressOrRoot<AddressGetter>(sp_std::marker::PhantomData<AddressGetter>);
+
+impl<OuterOrigin, AddressGetter> EnsureAddressOrigin<OuterOrigin>
+    for EnsureAllowedAddressOrRoot<AddressGetter>
+where
+    OuterOrigin: Into<Result<RawOrigin<AccountId>, OuterOrigin>> + From<RawOrigin<AccountId>>,
+    AddressGetter: Get<Vec<H160>>,
+{
+    type Success = AccountId;
+
+    fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
+        origin.into().and_then(|o| match o {
+            RawOrigin::Root => Ok(AccountId::from(address.clone())),
+            RawOrigin::Signed(who)
+                if who == AccountId::from(address.clone())
+                    && AddressGetter::get().contains(address) =>
+            {
+                Ok(who)
+            }
+            r => Err(OuterOrigin::from(r)),
+        })
+    }
 }
 
 impl_on_charge_evm_transaction!();
@@ -742,7 +767,7 @@ impl pallet_evm::Config for Runtime {
     type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
     type WeightPerGas = WeightPerGas;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-    type CallOrigin = EnsureAddressRoot<AccountId>;
+    type CallOrigin = EnsureAllowedAddressOrRoot<AllowedAddresses>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
     type Currency = Balances;

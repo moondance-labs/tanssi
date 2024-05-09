@@ -1848,8 +1848,10 @@ dependencies = [
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "cumulus-test-relay-sproof-builder",
  "dp-consensus",
  "dp-impl-tanssi-pallets-config",
  "dp-slot-duration-runtime-api",
@@ -1919,6 +1921,7 @@ dependencies = [
  "sp-debug-derive",
  "sp-genesis-builder",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -1931,6 +1934,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "test-relay-sproof-builder",
  "xcm-primitives",
 ]
 
