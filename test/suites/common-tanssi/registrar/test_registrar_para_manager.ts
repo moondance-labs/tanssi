@@ -65,7 +65,7 @@ describeSuite({
 
                 // Bob still not a manager, extrinsic requiring ManagerOrigin should fail
                 const { result } = await context.createBlock(
-                    await polkadotJs.tx.servicesPayment.setRefundAddress(paraId, bob.address).signAsync(bob),
+                    await polkadotJs.tx.servicesPayment.setRefundAddress(paraId, bob.address).signAsync(bob)
                 );
                 expect(result.successful).to.be.false;
 
@@ -76,11 +76,10 @@ describeSuite({
 
                 // Extrinsic should succeed now
                 const { result: result2 } = await context.createBlock(
-                    await polkadotJs.tx.servicesPayment.setRefundAddress(paraId, bob.address).signAsync(bob),
+                    await polkadotJs.tx.servicesPayment.setRefundAddress(paraId, bob.address).signAsync(bob)
                 );
 
                 expect(result2.successful).to.be.true;
-
             },
         });
     },
