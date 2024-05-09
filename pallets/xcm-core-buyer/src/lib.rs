@@ -229,9 +229,6 @@ pub mod pallet {
     pub struct BuyCoreCollatorProof<T: Config> {
         account: T::AccountId,
         // TODO
-        // Parth: The signature would be signed using nimbus id. We need to get the author data in this pallet and
-        // verify the collator and its assignment.
-        // Read latest container assignment
         _signature: (),
     }
 
@@ -281,13 +278,6 @@ pub mod pallet {
         // Note that the collators that will be calling this function are parathread collators, not
         // tanssi collators. So we cannot force them to provide a complex proof, e.g. against relay
         // state.
-
-        // Parth: One approach to prevent duplicate order (previous order is in claims queue) is to note it
-        // in tanssi runtime and only clear it when
-        // we see that that particular parathread has block produced. This can be achieved by hooking into
-        // author noting pallet.
-        // This can prevent the un-necessary purchase. This disallows malicious client code
-        // to spend parachain tank account.
         #[pallet::call_index(0)]
         // TODO: weight
         #[pallet::weight(T::WeightInfo::force_buy_core())]
@@ -395,7 +385,7 @@ pub mod pallet {
                     // Success. Add para id to pending block
                     let now = <frame_system::Pallet<T>>::block_number();
                     let ttl = T::PendingBlocksTtl::get();
-                    PendingBlocks::<T>::set(para_id, Some(now + ttl));
+                    PendingBlocks::<T>::insert(para_id, now + ttl);
                 }
                 Response::DispatchResult(_) => {
                     // We do not add paraid to pending block on failure
@@ -622,24 +612,23 @@ pub mod pallet {
             });
 
             let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
-            InFlightOrders::<T>::set(
+            InFlightOrders::<T>::insert(
                 para_id,
-                Some(InFlightCoreBuyingOrder {
+                InFlightCoreBuyingOrder {
                     para_id,
                     query_id,
                     ttl: in_flight_order_ttl,
-                }),
+                },
             );
 
-            QueryIdToParaId::<T>::set(query_id, Some(para_id));
+            QueryIdToParaId::<T>::insert(query_id, para_id);
 
             Ok(())
         }
 
         pub fn para_deregistered(para_id: ParaId) {
             // If para is deregistered we need to clean up in flight order, query id mapping
-            let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
-            if let Some(in_flight_order) = maybe_in_flight_order {
+            if let Some(in_flight_order) = InFlightOrders::<T>::take(para_id) {
                 InFlightOrders::<T>::remove(para_id);
                 QueryIdToParaId::<T>::remove(in_flight_order.query_id);
             }

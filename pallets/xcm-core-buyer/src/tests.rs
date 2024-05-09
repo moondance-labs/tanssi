@@ -420,7 +420,7 @@ fn paraid_data_is_cleaned_up_at_deregistration() {
             assert_storage_noop!(XcmCoreBuyer::para_deregistered(para_id));
 
             // Adding a dummy pending block entry for para id
-            PendingBlocks::<Test>::set(para_id, Some(1u32.into()));
+            PendingBlocks::<Test>::insert(para_id, 1u64);
 
             XcmCoreBuyer::para_deregistered(para_id);
 
