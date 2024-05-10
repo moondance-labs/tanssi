@@ -627,7 +627,7 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn is_para_manager(para_id: &ParaId, account: T::AccountId) -> bool {
+        pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
             // * The signed_account is either the deposit creator or the para manager
@@ -637,7 +637,7 @@ pub mod pallet {
                 == Some(&account);
 
             // Short circuit to avoid a DB read if is_creator
-            is_creator || ParaManager::<T>::get(para_id) == Some(account)
+            is_creator || ParaManager::<T>::get(para_id).as_ref() == Some(account)
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -1034,6 +1034,8 @@ pub mod pallet {
                 T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
             }
 
+            ParaManager::<T>::remove(para_id);
+
             T::RegistrarHooks::para_deregistered(para_id);
         }
 
@@ -1160,7 +1162,7 @@ where
         let signed_account =
             <frame_system::EnsureSigned<_> as EnsureOrigin<_>>::try_origin(o.clone())?;
 
-        if !Pallet::<T>::is_para_manager(para_id, signed_account.clone()) {
+        if !Pallet::<T>::is_para_manager(para_id, &signed_account) {
             return Err(frame_system::RawOrigin::Signed(signed_account).into());
         }
 
