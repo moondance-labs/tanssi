@@ -634,7 +634,7 @@ pub mod pallet {
             let is_creator = RegistrarDeposit::<T>::get(para_id)
                 .map(|deposit_info| deposit_info.creator)
                 .as_ref()
-                == Some(&account);
+                == Some(account);
 
             // Short circuit to avoid a DB read if is_creator
             is_creator || ParaManager::<T>::get(para_id).as_ref() == Some(account)
