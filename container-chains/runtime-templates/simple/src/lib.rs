@@ -634,6 +634,12 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+impl pallet_worker_registration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+	type AuthorityId = pallet_worker_registration::crypto::ClusterStatusAuthId;
+}
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -676,7 +682,9 @@ construct_runtime!(
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
-
+        
+        // Cyborg Core
+        WorkerRegistration: pallet_worker_registration,
     }
 );
 

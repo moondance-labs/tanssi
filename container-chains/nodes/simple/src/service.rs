@@ -156,6 +156,50 @@ pub async fn start_parachain_node(
         })
     };
 
+    // let sc_service::PartialComponents {
+	// 	client,
+	// 	backend,
+	// 	mut task_manager,
+	// 	import_queue,
+	// 	keystore_container,
+	// 	select_chain,
+	// 	transaction_pool,
+	// 	other: (block_import, grandpa_link, mut telemetry),
+	// } = new_partial(&config)?;
+
+	// if parachain_config.offchain_worker.enabled {
+	// 	task_manager.spawn_handle().spawn(
+	// 		"offchain-workers-runner",
+	// 		"offchain-worker",
+	// 		sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+	// 			runtime_api_provider: client.clone(),
+	// 			is_validator: config.role.is_authority(),
+	// 			keystore: Some(keystore_container.keystore()),
+	// 			offchain_db: backend.offchain_storage(),
+	// 			transaction_pool: Some(OffchainTransactionPoolFactory::new(
+	// 				transaction_pool.clone(),
+	// 			)),
+	// 			network_provider: network.clone(),
+	// 			enable_http_requests: true,
+	// 			custom_extensions: |_| vec![],
+	// 		})
+	// 			.run(client.clone(), task_manager.spawn_handle())
+	// 			.boxed(),
+	// 	);
+	// 	// Initialize seed for signing transaction using off-chain workers. This is a convenience
+	// 	// so learners can see the transactions submitted simply running the node.
+	// 	// Typically these keys should be inserted with RPC calls to `author_insertKey`.
+	// 	#[cfg(feature = "ocw")]
+	// 	{
+	// 	sp_keystore::Keystore::sr25519_generate_new(
+	// 		&*keystore,
+	// 		cyborg_runtime::pallet_worker_registration::KEY_TYPE,
+	// 		Some("//Charlie"),
+	// 	)
+	// 	.expect("Creating key with account Alice should succeed.");
+	// 	}
+	// }
+
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     let relay_chain_slot_duration = Duration::from_secs(6);
