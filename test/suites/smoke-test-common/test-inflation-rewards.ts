@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
 import { ApiPromise } from "@polkadot/api";
+
+import { ApiDecoration } from "@polkadot/api/types";
 import { getAuthorFromDigest } from "util/author";
 import { fetchIssuance, filterRewardFromOrchestrator, fetchRewardAuthorContainers } from "util/block";
 import { PARACHAIN_BOND } from "util/constants";
@@ -10,11 +11,19 @@ describeSuite({
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
+        let apiAt: ApiDecoration<"promise">;
         let api: ApiPromise;
+
         let runtimeVersion;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             api = context.polkadotJs();
+            const latestBlock = await api.rpc.chain.getBlock();
+            const latestBlockHash = latestBlock.block.hash;
+
+            // ApiAt to evaluate rewards, otherwise orchestrator reward might not be correct
+            apiAt = await api.at(latestBlockHash);
+
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
@@ -25,16 +34,18 @@ describeSuite({
                 if (runtimeVersion < 300) {
                     return;
                 }
-                const author = await getAuthorFromDigest(api);
+
+                const author = await getAuthorFromDigest(apiAt);
+                const events = await apiAt.query.system.events();
+
                 // Fetch current session
-                const currentSession = await api.query.session.currentIndex();
-                const keys = await api.query.authorityMapping.authorityIdMapping(currentSession);
+                const currentSession = await apiAt.query.session.currentIndex();
+                const keys = await apiAt.query.authorityMapping.authorityIdMapping(currentSession);
                 const account = keys.toJSON()[author];
                 // 70% is distributed across all rewards
-                const events = await api.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const numberOfChains = await api.query.registrar.registeredParaIds();
+                const numberOfChains = await apiAt.query.registrar.registeredParaIds();
                 const expectedOrchestratorReward = chainRewards / BigInt(numberOfChains.length + 1);
                 const reward = await filterRewardFromOrchestrator(events, account);
                 // we know there might be rounding errors, so we always check it is in the range +-1
@@ -53,10 +64,10 @@ describeSuite({
                     return;
                 }
                 // 70% is distributed across all rewards
-                const events = await api.query.system.events();
+                const events = await apiAt.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const numberOfChains = await api.query.registrar.registeredParaIds();
+                const numberOfChains = await apiAt.query.registrar.registeredParaIds();
                 const expectedChainReward = chainRewards / BigInt(numberOfChains.length + 1);
                 const rewardEvents = await fetchRewardAuthorContainers(events);
                 for (const index in rewardEvents) {
