@@ -24,7 +24,7 @@ const BOB: u64 = 2;
 
 #[test]
 fn set_boot_nodes_bad_origin() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Para 1001 has no manager, Alice cannot set boot nodes
         assert_noop!(DataPreservers::set_boot_nodes(
             RuntimeOrigin::signed(ALICE),
@@ -40,7 +40,7 @@ fn set_boot_nodes_bad_origin() {
 
 #[test]
 fn set_boot_nodes_by_root_no_manager() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Para 1001 has no manager, root can set boot nodes
         let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
             b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
@@ -61,7 +61,7 @@ fn set_boot_nodes_by_root_no_manager() {
 
 #[test]
 fn set_boot_nodes_by_root_with_manager() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Set ALICE as manager of para 1002
         MockData::mutate(|m| {
             m.container_chain_managers.insert(1002.into(), Some(ALICE));
@@ -86,7 +86,7 @@ fn set_boot_nodes_by_root_with_manager() {
 
 #[test]
 fn set_boot_nodes_by_para_id_registrar() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Set ALICE as manager of para 1002
         MockData::mutate(|m| {
             m.container_chain_managers.insert(1002.into(), Some(ALICE));
@@ -111,7 +111,7 @@ fn set_boot_nodes_by_para_id_registrar() {
 
 #[test]
 fn set_boot_nodes_by_invalid_user_no_manager() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Para 1001 has no manager
         MockData::mutate(|m| {
             m.container_chain_managers.insert(1002.into(), Some(ALICE));
@@ -131,7 +131,7 @@ fn set_boot_nodes_by_invalid_user_no_manager() {
 
 #[test]
 fn set_boot_nodes_by_invalid_user() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Set ALICE as manager of para 1002
         MockData::mutate(|m| {
             m.container_chain_managers.insert(1002.into(), Some(ALICE));
@@ -161,7 +161,7 @@ fn set_boot_nodes_by_invalid_user() {
 
 #[test]
 fn set_boot_nodes_by_invalid_user_bad_para_id() {
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Para 1003 does not exist, only root can set bootnodes
         assert_noop!(DataPreservers::set_boot_nodes(
             RuntimeOrigin::signed(BOB),
@@ -179,7 +179,7 @@ fn set_boot_nodes_by_invalid_user_bad_para_id() {
 fn set_boot_nodes_bad_para_id() {
     // Para 1003 does not exist, only root can set bootnodes
     // This is allowed in case we want to set bootnodes before registering the chain
-    new_test_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
             b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
@@ -195,4 +195,44 @@ fn set_boot_nodes_bad_para_id() {
         ));
         assert_eq!(DataPreservers::boot_nodes(ParaId::from(1003)), boot_nodes);
     });
+}
+
+mod create_profile {
+    use super::*;
+
+    #[test]
+    fn can_create_profile() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone()
+                ));
+
+                assert_eq!(Profiles::<Test>::get(0), Some(RegisteredProfile {
+                    account: ALICE,
+                    deposit: 1_357, // 1_000 base deposit + 51 * 7 bytes deposit
+                    profile
+                }));
+
+                assert_eq!(NextProfileId::<Test>::get(), 1);
+
+                assert_eq!(
+                    events(),
+                    vec![Event::ProfileCreated {
+                        account: ALICE,
+                        profile_id: 0,
+                        deposit: 1_357,
+                    }]
+                );
+            });
+    }
 }

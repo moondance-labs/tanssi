@@ -39,6 +39,7 @@ use serde::{Deserialize, Serialize};
 use {
     dp_core::ParaId,
     frame_support::{
+        dispatch::DispatchErrorWithPostInfo,
         pallet_prelude::*,
         traits::{
             fungible::{Balanced, Inspect, MutateHold},
@@ -49,7 +50,7 @@ use {
     },
     frame_system::pallet_prelude::*,
     sp_runtime::{
-        traits::{CheckedAdd, CheckedSub, Get},
+        traits::{CheckedAdd, CheckedMul, CheckedSub, Get},
         ArithmeticError,
     },
     sp_std::{
@@ -193,15 +194,13 @@ pub mod pallet {
     )]
     #[scale_info(skip_type_params(T))]
     pub struct Profile<T: Config> {
-        url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
-        limited_to_para_ids: Option<BoundedVec<ParaId, T::MaxParaIdsVecLen>>,
-        mode: ProfileMode,
+        pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
+        pub limited_to_para_ids: Option<BoundedVec<ParaId, T::MaxParaIdsVecLen>>,
+        pub mode: ProfileMode,
     }
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo,
-    )]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub enum ProfileMode {
         Bootnode,
         Rpc { supports_ethereum_rpcs: bool },
@@ -222,7 +221,7 @@ pub mod pallet {
     }
 
     pub trait ProfileDeposit<Profile, Balance> {
-        fn profile_deposit(profile: &Profile) -> Balance;
+        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
     }
 
     pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
@@ -233,14 +232,23 @@ pub mod pallet {
         BaseCost: Get<Balance>,
         ByteCost: Get<Balance>,
         Profile: Encode,
-        Balance: From<usize> + Add<Balance, Output = Balance> + Mul<Balance, Output = Balance>,
+        Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
     {
-        fn profile_deposit(profile: &Profile) -> Balance {
+        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
             let base = BaseCost::get();
             let byte = ByteCost::get();
-            let size = profile.encoded_size();
+            let size: Balance = profile
+                .encoded_size()
+                .try_into()
+                .map_err(|_| ArithmeticError::Overflow)?;
 
-            base + byte * size.into()
+            let deposit = byte
+                .checked_mul(&size)
+                .ok_or(ArithmeticError::Overflow)?
+                .checked_add(&base)
+                .ok_or(ArithmeticError::Overflow)?;
+
+            Ok(deposit)
         }
     }
 
@@ -275,7 +283,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
 
-            let deposit = T::ProfileDeposit::profile_deposit(&profile);
+            let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
             T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, deposit)?;
 
             let id = NextProfileId::<T>::get();
@@ -295,7 +303,11 @@ pub mod pallet {
                 },
             );
 
-            Self::deposit_event(Event::ProfileCreated { account: origin, profile_id: id, deposit });
+            Self::deposit_event(Event::ProfileCreated {
+                account: origin,
+                profile_id: id,
+                deposit,
+            });
 
             Ok(().into())
         }
@@ -320,7 +332,7 @@ pub mod pallet {
             );
 
             // Update deposit
-            let new_deposit = T::ProfileDeposit::profile_deposit(&profile);
+            let new_deposit = T::ProfileDeposit::profile_deposit(&profile)?;
 
             if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
                 T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, diff)?;
@@ -342,7 +354,11 @@ pub mod pallet {
                 },
             );
 
-            Self::deposit_event(Event::ProfileUpdated { profile_id, old_deposit: existing_profile.deposit, new_deposit: new_deposit });
+            Self::deposit_event(Event::ProfileUpdated {
+                profile_id,
+                old_deposit: existing_profile.deposit,
+                new_deposit: new_deposit,
+            });
 
             Ok(().into())
         }
@@ -374,7 +390,10 @@ pub mod pallet {
 
             Profiles::<T>::remove(&profile_id);
 
-            Self::deposit_event(Event::ProfileDeleted { profile_id, released_deposit: profile.deposit });
+            Self::deposit_event(Event::ProfileDeleted {
+                profile_id,
+                released_deposit: profile.deposit,
+            });
 
             Ok(().into())
         }
