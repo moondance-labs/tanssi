@@ -18,18 +18,18 @@ use scale_info::{prelude::vec::Vec, prelude::{string::String, format}, TypeInfo}
 use sp_core::crypto::KeyTypeId;
 use frame_system::{
 	self as system,
-	// offchain::{
-	// 	AppCrypto, CreateSignedTransaction, SendSignedTransaction, SendUnsignedTransaction,
-	// 	SignedPayload, Signer, SigningTypes, SubmitTransaction,
-	// },
+	offchain::{
+		AppCrypto, CreateSignedTransaction, SendSignedTransaction, SendUnsignedTransaction,
+		SignedPayload, Signer, SigningTypes, SubmitTransaction,
+	},
 	pallet_prelude::BlockNumberFor,
 };
 use sp_runtime::{
-	// offchain::{
-	// 	http,
-	// 	storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
-	// 	Duration,
-	// },
+	offchain::{
+		http,
+		storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
+		Duration,
+	},
 	traits::Zero,
 	transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
 	RuntimeDebug, BoundedVec,
@@ -394,11 +394,11 @@ pub mod pallet {
 			// The value is written in byte form, so we need to encode/decode it when writting/reading
 			// a number to/from this memory space.
 			
-			let key = Self::derived_key(frame_system::Pallet::<T>::block_number(), "ping");
-			log::info!("Offchain worker key: {:?}", key.clone());
+			// let key = Self::derived_key(frame_system::Pallet::<T>::block_number(), "ping");
+			// log::info!("Offchain worker key: {:?}", key.clone());
 			
-			let data: IndexingData = IndexingData(b"registered_cluster_ping".to_vec(), cid);
-			offchain_index::set(&key, &data.encode());
+			// let data: IndexingData = IndexingData(b"registered_cluster_ping".to_vec(), cid);
+			// offchain_index::set(&key, &data.encode());
 
 			// Emit an event.
 			Self::deposit_event(Event::WorkerRegistered { creator });

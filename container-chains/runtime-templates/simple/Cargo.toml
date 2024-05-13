@@ -26,6 +26,7 @@ dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
+pallet-worker-registration = { verson = "0.1.0", default-features = false, path = "../../../pallets/worker-registration" }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
