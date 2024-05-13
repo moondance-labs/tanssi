@@ -73,13 +73,13 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Should be called when a new session occurs. If `queued` is `None`,
     /// the `validators` are considered queued.
-    fn on_new_session<'a, I: 'a>(
+    fn on_new_session<'a, I>(
         changed: bool,
         session_index: T::SessionIndex,
         validators: I,
         queued: Option<I>,
     ) where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)> + 'a,
     {
         let validators: Vec<_> = validators.map(|(k, v)| (k.clone(), v)).collect();
         let queued: Vec<_> = if let Some(queued) = queued {
@@ -93,9 +93,9 @@ impl<T: Config> Pallet<T> {
 
     /// Should be called when a new session occurs. Buffers the session notification to be applied
     /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
-    fn on_genesis_session<'a, I: 'a>(validators: I)
+    fn on_genesis_session<'a, I>(validators: I)
     where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)> + 'a,
     {
         <Pallet<T>>::on_new_session(false, 0u32.into(), validators, None);
     }
@@ -103,13 +103,13 @@ impl<T: Config> Pallet<T> {
     // Allow to trigger `on_new_session` in tests, this is needed as long as `pallet_session` is not
     // implemented in mock.
     #[cfg(any(test, feature = "runtime-benchmarks"))]
-    pub(crate) fn test_trigger_on_new_session<'a, I: 'a>(
+    pub(crate) fn test_trigger_on_new_session<'a, I>(
         changed: bool,
         session_index: T::SessionIndex,
         validators: I,
         queued: Option<I>,
     ) where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)> + 'a,
     {
         Self::on_new_session(changed, session_index, validators, queued)
     }
@@ -122,16 +122,16 @@ impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
 impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pallet<T> {
     type Key = T::AuthorityId;
 
-    fn on_genesis_session<'a, I: 'a>(validators: I)
+    fn on_genesis_session<'a, I>(validators: I)
     where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
     {
         <Pallet<T>>::on_genesis_session(validators);
     }
 
-    fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued: I)
+    fn on_new_session<'a, I>(changed: bool, validators: I, queued: I)
     where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
     {
         let session_index = <pallet_session::Pallet<T>>::current_index();
         <Pallet<T>>::on_new_session(changed, session_index.into(), validators, Some(queued));

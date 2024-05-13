@@ -29,7 +29,7 @@ use {
     sp_core::H256,
     sp_io::TestExternalities,
     sp_runtime::{
-        traits::{BlakeTwo256, Convert, IdentityLookup},
+        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
     sp_std::collections::btree_map::BTreeMap,
@@ -225,26 +225,6 @@ impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
         MockData::mutate(|m| {
             m.container_chain_collators.insert(para_id, collators);
         })
-    }
-}
-
-pub struct GetBlockNumber;
-
-impl Get<u32> for GetBlockNumber {
-    fn get() -> u32 {
-        System::block_number() as u32
-    }
-}
-
-pub struct ParaIdToAccount32;
-
-impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
-    fn convert(para_id: ParaId) -> [u8; 32] {
-        let mut res = [0; 32];
-
-        res[..4].copy_from_slice(&u32::from(para_id).to_le_bytes());
-
-        res
     }
 }
 

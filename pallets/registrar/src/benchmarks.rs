@@ -40,7 +40,7 @@ fn create_funded_user<T: Config>(
     let min_reserve_amount = T::DepositAmount::get();
     let total = min_reserve_amount + extra;
     T::Currency::make_free_balance_be(&user, total);
-    T::Currency::issue(total);
+    let _ = T::Currency::issue(total);
     (user, total)
 }
 
