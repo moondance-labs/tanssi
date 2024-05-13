@@ -22,7 +22,7 @@ describeSuite({
                     return;
                 }
 
-                const sessionLength = 300;
+                const sessionLength = 600;
 
                 const currentBlock = await api.rpc.chain.getBlock();
                 const currentBlockNumber = currentBlock.block.header.number.toNumber();
