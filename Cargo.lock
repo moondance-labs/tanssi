@@ -3051,6 +3051,7 @@ dependencies = [
  "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
  "pallet-stream-payment",
@@ -4310,6 +4311,7 @@ dependencies = [
  "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-stream-payment",
  "pallet-stream-payment-runtime-api",
@@ -9134,6 +9136,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-services-payment-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+]
+
+[[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#7b16c9ecbe06c53affbbb32991875b0c1e5f59f6"
@@ -13635,6 +13645,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "services-payment-rpc"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.30",
+ "jsonrpsee",
+ "pallet-services-payment-runtime-api",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15428,6 +15451,7 @@ dependencies = [
  "sc-transaction-pool-api",
  "serde",
  "serde_json",
+ "services-payment-rpc",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
