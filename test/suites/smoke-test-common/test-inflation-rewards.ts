@@ -3,7 +3,7 @@ import { ApiPromise } from "@polkadot/api";
 
 import { ApiDecoration } from "@polkadot/api/types";
 import { getAuthorFromDigest } from "util/author";
-import { fetchIssuance, filterRewardFromOrchestrator, fetchRewardAuthorContainers } from "util/block";
+import { fetchIssuance, filterRewardFromOrchestratorWithFailure, fetchRewardAuthorContainers } from "util/block";
 import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
@@ -47,7 +47,7 @@ describeSuite({
                 const chainRewards = (issuance * 7n) / 10n;
                 const numberOfChains = await apiAt.query.registrar.registeredParaIds();
                 const expectedOrchestratorReward = chainRewards / BigInt(numberOfChains.length + 1);
-                const reward = await filterRewardFromOrchestrator(events, account);
+                const reward = await filterRewardFromOrchestratorWithFailure(events, account);
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
                     reward >= expectedOrchestratorReward - 1n && reward <= expectedOrchestratorReward + 1n,
