@@ -14,13 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_system::pallet_prelude::BlockNumberFor;
+use pallet_xcm_core_buyer::XCMNotifier;
+use staging_xcm_builder::TrailingSetTopicAsId;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
-        AllPalletsWithSystem, AssetRate, Balance, Balances, CollatorAssignment, ForeignAssets,
-        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
-        PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
-        RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, BlockNumber, CollatorAssignment,
+        ForeignAssets, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
+        RuntimeEvent, RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     crate::weights,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
@@ -99,7 +102,7 @@ pub type XcmBarrier = (
     // Weight that is paid for may be consumed.
     TakeWeightCredit,
     // Expected responses are OK.
-    AllowKnownQueryResponses<PolkadotXcm>,
+    TrailingSetTopicAsId<AllowKnownQueryResponses<PolkadotXcm>>,
     WithComputedOrigin<
         (
             // If the message is one that immediately attemps to pay for execution, then allow it.
@@ -477,7 +480,26 @@ parameter_types! {
     pub const XcmBuyExecutionDotRococo: u128 = XCM_BUY_EXECUTION_COST_ROCOCO;
 }
 
-pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 50_000_000;
+pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 70_000_000 + 1_266_663_99;
+
+pub struct XCMNotifierImpl;
+
+impl XCMNotifier<Runtime> for XCMNotifierImpl {
+    fn new_notify_query(
+        responder: impl Into<MultiLocation>,
+        notify: impl Into<RuntimeCall>,
+        timeout: BlockNumberFor<Runtime>,
+        match_querier: impl Into<MultiLocation>,
+    ) -> u64 {
+        pallet_xcm::Pallet::<Runtime>::new_notify_query(responder, notify, timeout, match_querier)
+    }
+}
+
+parameter_types! {
+    pub const CoreBuyingXCMQueryTtl: BlockNumber = 100;
+    pub const AdditionalTtlForInflightOrders: BlockNumber = 5;
+    pub const PendingBlockTtl: BlockNumber = 10;
+}
 
 impl pallet_xcm_core_buyer::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -490,10 +512,16 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
-    type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ParasUnsignedPriority;
+    type PendingBlocksTtl = PendingBlockTtl;
+    type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
+    type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type UniversalLocation = UniversalLocation;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
+    type XCMNotifier = XCMNotifierImpl;
     type WeightInfo = weights::pallet_xcm_core_buyer::SubstrateWeight<Runtime>;
 }
 

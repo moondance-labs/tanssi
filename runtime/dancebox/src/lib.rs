@@ -945,7 +945,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1015,6 +1015,8 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
         DataPreservers::para_deregistered(para_id);
 
         ServicesPayment::para_deregistered(para_id);
+
+        XcmCoreBuyer::para_deregistered(para_id);
 
         Weight::default()
     }

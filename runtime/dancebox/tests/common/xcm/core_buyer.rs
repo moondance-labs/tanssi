@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::assert_expected_events;
+use staging_xcm::latest::{MaybeErrorCode, Response};
+use staging_xcm::v3::QueryId;
 use {
     crate::common::{
         dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
@@ -41,15 +44,19 @@ const PARATHREAD_ID: u32 = 3333;
 const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
-// message, gets refunded.
-const BUY_EXECUTION_REFUND: u128 = 5115980;
+// message, gets refunded on successful execution of core buying extrinsic.
+const BUY_EXECUTION_REFUND: u128 = 3334777;
+// Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
+// message, gets refunded on un-successful execution of core buying extrinsic.
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
+
 const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
 #[test]
 fn constants() {
     // If these constants change, some tests may break
     assert_eq!(ROCOCO_ED, 100_000_000 / 3);
-    assert_eq!(BUY_EXECUTION_COST, 50_000_000);
+    assert_eq!(BUY_EXECUTION_COST, 70_000_000 + 1_266_663_99);
 }
 
 /// The tests in this module all use this function to trigger an XCM message to buy a core.
@@ -57,7 +64,9 @@ fn constants() {
 /// Each test has a different value of
 /// * tank_account_balance: the balance of the parachain tank account in the relay chain
 /// * spot_price: the price of a core
-fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) {
+fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) -> QueryId {
+    let mut query_id = QueryId::MAX;
+
     Dancebox::execute_with(|| {
         // Register parathread
         let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
@@ -153,13 +162,17 @@ fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) {
             Dancebox,
             vec![
                 RuntimeEvent::XcmCoreBuyer(
-                    pallet_xcm_core_buyer::Event::BuyCoreXcmSent { para_id }
+                    pallet_xcm_core_buyer::Event::BuyCoreXcmSent { para_id, .. }
                 ) => {
                     para_id: *para_id == ParaId::from(PARATHREAD_ID),
                 },
             ]
         );
+
+        query_id = find_query_id_for_para_id(ParaId::from(PARATHREAD_ID));
     });
+
+    query_id
 }
 
 fn assert_relay_order_event_not_emitted() {
@@ -174,6 +187,106 @@ fn assert_relay_order_event_not_emitted() {
                 panic!("Event should not have been emitted: {:?}", event);
             }
             _ => (),
+        }
+    }
+}
+
+fn assert_xcm_notification_event_not_emitted() {
+    type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+
+    let events = <Dancebox as Chain>::events();
+    for event in events {
+        match event {
+            RuntimeEvent::XcmCoreBuyer(
+                pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult { .. },
+            ) => {
+                panic!("Event should not have been emitted: {:?}", event);
+            }
+            _ => (),
+        }
+    }
+}
+
+fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
+    type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+
+    let events = <Dancebox as Chain>::events();
+    for event in events {
+        match event {
+            RuntimeEvent::XcmCoreBuyer(pallet_xcm_core_buyer::Event::BuyCoreXcmSent {
+                para_id: event_para_id,
+                transaction_status_query_id,
+            }) => {
+                if event_para_id == para_id {
+                    return transaction_status_query_id;
+                }
+            }
+            _ => (),
+        }
+    }
+
+    panic!(
+        "We should be able to find query_id for para_id: {:?}",
+        para_id
+    );
+}
+
+fn assert_query_response_success(para_id: ParaId, query_id: QueryId) {
+    assert_query_response(para_id, query_id, true, true);
+}
+
+fn assert_query_response_failure(para_id: ParaId, query_id: QueryId) {
+    assert_query_response(para_id, query_id, true, false);
+}
+
+fn assert_query_response_not_received(para_id: ParaId, query_id: QueryId) {
+    assert_query_response(para_id, query_id, false, false);
+}
+
+fn assert_query_response(
+    para_id: ParaId,
+    query_id: QueryId,
+    response_received: bool,
+    is_successful: bool,
+) {
+    if is_successful && !response_received {
+        panic!("Invalid input: If response is not received it cannot be successful.");
+    }
+
+    let maybe_query_id =
+        pallet_xcm_core_buyer::QueryIdToParaId::<<Dancebox as Chain>::Runtime>::get(query_id);
+    // Entry should only exists if we have not received response and vice versa.
+    if maybe_query_id.is_some() == response_received {
+        panic!(
+            "There should not be any query_id<->para_id mapping existing for para_id: {:?}",
+            para_id
+        );
+    }
+
+    let maybe_in_flight_order =
+        pallet_xcm_core_buyer::InFlightOrders::<<Dancebox as Chain>::Runtime>::get(para_id);
+    // Entry should only exists if we have not received response and vice versa.
+    if maybe_in_flight_order.is_some() == response_received {
+        panic!(
+            "There should not be any para_id<->in_flight_order mapping existing for para_id: {:?}",
+            para_id
+        );
+    }
+
+    // Entry should only exists if we have got successful response and vice versa.
+    let maybe_pending_blocks_entry =
+        pallet_xcm_core_buyer::PendingBlocks::<<Dancebox as Chain>::Runtime>::get(para_id);
+    if maybe_pending_blocks_entry.is_some() != is_successful {
+        if is_successful {
+            panic!(
+                "There should be a pending block entry for para_id: {:?}",
+                para_id
+            );
+        } else {
+            panic!(
+                "There should not be a pending block entry for para_id: {:?}",
+                para_id
+            );
         }
     }
 }
@@ -219,7 +332,7 @@ fn xcm_core_buyer_zero_balance() {
     let balance_before = 0;
 
     // Invariant: if balance_before < BUY_EXECUTION_COST, then balance_after == balance_before
-    do_test(balance_before, None);
+    let query_id = do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -237,6 +350,11 @@ fn xcm_core_buyer_zero_balance() {
         assert_relay_order_event_not_emitted();
         assert_eq!(balance_before, balance_after);
     });
+
+    Dancebox::execute_with(|| {
+        assert_xcm_notification_event_not_emitted();
+        assert_query_response_not_received(ParaId::from(PARATHREAD_ID), query_id);
+    });
 }
 
 #[test]
@@ -248,7 +366,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
     // balance_after <= (balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST)
     // In this case the balance_after is 0 because BUY_EXECUTION_REFUND < ROCOCO_ED,
     // so the account gets the refund but it is immediatelly killed.
-    do_test(balance_before, None);
+    let query_id = do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -281,6 +399,25 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
         assert_relay_order_event_not_emitted();
         assert_eq!(balance_after, 0);
     });
+
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response != Response::DispatchResult(MaybeErrorCode::Success),
+                },
+            ]
+        );
+        assert_query_response_failure(ParaId::from(PARATHREAD_ID), query_id);
+    });
 }
 
 #[test]
@@ -292,7 +429,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
     let spot_price2 = spot_price;
     let balance_before = BUY_EXECUTION_COST + spot_price;
 
-    do_test(balance_before, None);
+    let query_id = do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -343,6 +480,25 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
         );
         assert_eq!(balance_after, 0);
     });
+
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response == Response::DispatchResult(MaybeErrorCode::Success),
+                },
+            ]
+        );
+        assert_query_response_success(ParaId::from(PARATHREAD_ID), query_id);
+    });
 }
 
 #[test]
@@ -352,7 +508,7 @@ fn xcm_core_buyer_enough_balance() {
     let spot_price2 = spot_price;
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + spot_price + 1;
 
-    do_test(balance_before, None);
+    let query_id = do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -404,6 +560,27 @@ fn xcm_core_buyer_enough_balance() {
         );
         assert_eq!(balance_after, ROCOCO_ED + 1 + BUY_EXECUTION_REFUND);
     });
+
+    // Receive notification on dancebox
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response == Response::DispatchResult(MaybeErrorCode::Success),
+                },
+            ]
+        );
+
+        assert_query_response_success(ParaId::from(PARATHREAD_ID), query_id);
+    });
 }
 
 #[test]
@@ -412,7 +589,7 @@ fn xcm_core_buyer_core_too_expensive() {
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + 1;
     set_on_demand_base_fee(balance_before * 2);
 
-    do_test(balance_before, None);
+    let query_id = do_test(balance_before, None);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -436,7 +613,7 @@ fn xcm_core_buyer_core_too_expensive() {
                 RuntimeEvent::Balances(
                     pallet_balances::Event::Deposit {
                         who,
-                        amount: BUY_EXECUTION_REFUND,
+                        amount: BUY_EXECUTION_REFUND_ON_FAILURE,
                     }
                 ) => {
                     who: *who == parathread_tank_in_relay,
@@ -447,8 +624,29 @@ fn xcm_core_buyer_core_too_expensive() {
         assert_relay_order_event_not_emitted();
         assert_eq!(
             balance_after,
-            balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST
+            balance_before + BUY_EXECUTION_REFUND_ON_FAILURE - BUY_EXECUTION_COST
         );
+    });
+
+    // Receive notification on dancebox
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response != Response::DispatchResult(MaybeErrorCode::Success),
+                },
+            ]
+        );
+
+        assert_query_response_failure(ParaId::from(PARATHREAD_ID), query_id);
     });
 }
 
@@ -463,7 +661,7 @@ fn xcm_core_buyer_set_max_core_price() {
 
     Dancebox::execute_with(|| {});
 
-    do_test(balance_before, Some(max_core_price));
+    let query_id = do_test(balance_before, Some(max_core_price));
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -487,7 +685,7 @@ fn xcm_core_buyer_set_max_core_price() {
                 RuntimeEvent::Balances(
                     pallet_balances::Event::Deposit {
                         who,
-                        amount: BUY_EXECUTION_REFUND,
+                        amount: BUY_EXECUTION_REFUND_ON_FAILURE,
                     }
                 ) => {
                     who: *who == parathread_tank_in_relay,
@@ -498,7 +696,27 @@ fn xcm_core_buyer_set_max_core_price() {
         assert_relay_order_event_not_emitted();
         assert_eq!(
             balance_after,
-            ROCOCO_ED + 1 + BUY_EXECUTION_REFUND + spot_price
+            ROCOCO_ED + 1 + BUY_EXECUTION_REFUND_ON_FAILURE + spot_price
         );
+    });
+
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::XcmCoreBuyer(
+                    pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult {
+                        para_id,
+                        response,
+                    }
+                ) => {
+                    para_id: *para_id == ParaId::from(PARATHREAD_ID),
+                    response: *response != Response::DispatchResult(MaybeErrorCode::Success),
+                },
+            ]
+        );
+
+        assert_query_response_failure(ParaId::from(PARATHREAD_ID), query_id);
     });
 }
