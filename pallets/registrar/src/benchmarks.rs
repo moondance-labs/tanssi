@@ -457,14 +457,14 @@ mod benchmarks {
 
         let manager_address = account("sufficient", 0, 1000);
 
-        // Before call: no manager
-        assert!(crate::ParaManager::<T>::get(para_id).is_none());
+        // Before call: not set as manager
+        assert_ne!(crate::ParaManager::<T>::get(para_id).as_ref(), Some(&manager_address));
 
         #[extrinsic_call]
-        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, manager_address);
+        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, manager_address.clone());
 
         // After call: para manager
-        assert!(crate::ParaManager::<T>::get(para_id).is_some());
+        assert_eq!(crate::ParaManager::<T>::get(para_id).as_ref(), Some(&manager_address));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
