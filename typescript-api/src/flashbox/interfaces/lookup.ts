@@ -576,7 +576,7 @@ export default {
             },
             ParaManagerChanged: {
                 paraId: "u32",
-                managerAddress: "Option<AccountId32>",
+                managerAddress: "AccountId32",
             },
         },
     },
@@ -1410,7 +1410,7 @@ export default {
             },
             set_para_manager: {
                 paraId: "u32",
-                managerAddress: "Option<AccountId32>",
+                managerAddress: "AccountId32",
             },
         },
     },
@@ -1962,6 +1962,7 @@ export default {
             "ParaIdNotInPendingVerification",
             "NotSufficientDeposit",
             "NotAParathread",
+            "NotParaCreator",
         ],
     },
     /** Lookup307: pallet_configuration::HostConfiguration */

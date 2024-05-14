@@ -1718,9 +1718,9 @@ declare module "@polkadot/api-base/types/submittable" {
             setParaManager: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    managerAddress: Option<AccountId32> | null | Uint8Array | AccountId32 | string
+                    managerAddress: AccountId32 | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, Option<AccountId32>]
+                [u32, AccountId32]
             >;
             /** See [`Pallet::set_parathread_params`]. */
             setParathreadParams: AugmentedSubmittable<

@@ -833,7 +833,7 @@ declare module "@polkadot/types/lookup" {
         readonly isParaManagerChanged: boolean;
         readonly asParaManagerChanged: {
             readonly paraId: u32;
-            readonly managerAddress: Option<AccountId32>;
+            readonly managerAddress: AccountId32;
         } & Struct;
         readonly type:
             | "ParaIdRegistered"
@@ -1919,7 +1919,7 @@ declare module "@polkadot/types/lookup" {
         readonly isSetParaManager: boolean;
         readonly asSetParaManager: {
             readonly paraId: u32;
-            readonly managerAddress: Option<AccountId32>;
+            readonly managerAddress: AccountId32;
         } & Struct;
         readonly type:
             | "Register"
@@ -2571,6 +2571,7 @@ declare module "@polkadot/types/lookup" {
         readonly isParaIdNotInPendingVerification: boolean;
         readonly isNotSufficientDeposit: boolean;
         readonly isNotAParathread: boolean;
+        readonly isNotParaCreator: boolean;
         readonly type:
             | "ParaIdAlreadyRegistered"
             | "ParaIdNotRegistered"
@@ -2581,7 +2582,8 @@ declare module "@polkadot/types/lookup" {
             | "GenesisDataTooBig"
             | "ParaIdNotInPendingVerification"
             | "NotSufficientDeposit"
-            | "NotAParathread";
+            | "NotAParathread"
+            | "NotParaCreator";
     }
 
     /** @name PalletConfigurationHostConfiguration (307) */

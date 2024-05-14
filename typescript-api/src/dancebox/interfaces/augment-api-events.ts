@@ -1044,8 +1044,8 @@ declare module "@polkadot/api-base/types/events" {
             /** Para manager has changed */
             ParaManagerChanged: AugmentedEvent<
                 ApiType,
-                [paraId: u32, managerAddress: Option<AccountId32>],
-                { paraId: u32; managerAddress: Option<AccountId32> }
+                [paraId: u32, managerAddress: AccountId32],
+                { paraId: u32; managerAddress: AccountId32 }
             >;
             /** Parathread params changed */
             ParathreadParamsChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
