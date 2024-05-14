@@ -461,7 +461,8 @@ mod benchmarks {
         assert!(crate::ParaManager::<T>::get(para_id).is_none());
 
         #[extrinsic_call]
-        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, Some(manager_address));
+        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, manager_address);
+        
 
         // After call: para manager
         assert!(crate::ParaManager::<T>::get(para_id).is_some());
