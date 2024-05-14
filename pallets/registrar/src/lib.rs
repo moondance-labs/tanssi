@@ -251,7 +251,7 @@ pub mod pallet {
         /// Para manager has changed
         ParaManagerChanged {
             para_id: ParaId,
-            manager_address: Option<T::AccountId>,
+            manager_address: T::AccountId,
         },
     }
 
@@ -277,6 +277,8 @@ pub mod pallet {
         NotSufficientDeposit,
         /// Tried to change parathread params for a para id that is not a registered parathread
         NotAParathread,
+        /// Attempted to execute an extrinsic meant only for the para creator
+        NotParaCreator,
     }
 
     #[pallet::hooks]
@@ -600,15 +602,16 @@ pub mod pallet {
         pub fn set_para_manager(
             origin: OriginFor<T>,
             para_id: ParaId,
-            manager_address: Option<T::AccountId>,
+            manager_address: T::AccountId,
         ) -> DispatchResult {
-            EnsureSignedByManager::<T>::ensure_origin(origin, &para_id)?;
+            let origin = ensure_signed(origin)?;
 
-            if let Some(manager_address) = manager_address.clone() {
-                ParaManager::<T>::insert(para_id, manager_address.clone());
-            } else {
-                ParaManager::<T>::remove(para_id);
-            }
+            let creator =
+                RegistrarDeposit::<T>::get(para_id).map(|deposit_info| deposit_info.creator);
+
+            ensure!(Some(origin) == creator, Error::<T>::NotParaCreator);
+
+            ParaManager::<T>::insert(para_id, manager_address.clone());
 
             Self::deposit_event(Event::<T>::ParaManagerChanged {
                 para_id,
@@ -630,14 +633,8 @@ pub mod pallet {
         pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
-            // * The signed_account is either the deposit creator or the para manager
-            let is_creator = RegistrarDeposit::<T>::get(para_id)
-                .map(|deposit_info| deposit_info.creator)
-                .as_ref()
-                == Some(account);
-
-            // Short circuit to avoid a DB read if is_creator
-            is_creator || ParaManager::<T>::get(para_id).as_ref() == Some(account)
+            // * The signed_account is the para manager
+            ParaManager::<T>::get(para_id).as_ref() == Some(account)
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -728,11 +725,13 @@ pub mod pallet {
             RegistrarDeposit::<T>::insert(
                 para_id,
                 DepositInfo {
-                    creator: account,
+                    creator: account.clone(),
                     deposit,
                 },
             );
             ParaGenesisData::<T>::insert(para_id, genesis_data);
+
+            ParaManager::<T>::insert(para_id, account);
 
             Ok(())
         }
