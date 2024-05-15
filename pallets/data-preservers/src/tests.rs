@@ -17,6 +17,7 @@
 use {
     crate::{mock::*, *},
     frame_support::{assert_noop, assert_ok, pallet_prelude::*},
+    sp_runtime::TokenError,
 };
 
 const ALICE: u64 = 1;
@@ -201,7 +202,7 @@ mod create_profile {
     use super::*;
 
     #[test]
-    fn can_create_profile() {
+    fn create_profile_works() {
         ExtBuilder::default()
             .with_balances(vec![(ALICE, 1_000_000_000_000)])
             .build()
@@ -214,14 +215,18 @@ mod create_profile {
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
-                    profile.clone()
+                    profile.clone(),
+                    None,
                 ));
 
-                assert_eq!(Profiles::<Test>::get(0), Some(RegisteredProfile {
-                    account: ALICE,
-                    deposit: 1_357, // 1_000 base deposit + 51 * 7 bytes deposit
-                    profile
-                }));
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: ALICE,
+                        deposit: 1_357, // 1_000 base deposit + 51 * 7 bytes deposit
+                        profile
+                    })
+                );
 
                 assert_eq!(NextProfileId::<Test>::get(), 1);
 
@@ -232,6 +237,579 @@ mod create_profile {
                         profile_id: 0,
                         deposit: 1_357,
                     }]
+                );
+            });
+    }
+
+    #[test]
+    fn insufficient_balance_for_deposit() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_356)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_noop!(
+                    DataPreservers::create_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        profile.clone(),
+                        None
+                    ),
+                    TokenError::FundsUnavailable
+                );
+
+                assert_eq!(Profiles::<Test>::get(0), None);
+                assert_eq!(NextProfileId::<Test>::get(), 0);
+                assert_eq!(events(), vec![],);
+            });
+    }
+
+    #[test]
+    fn protection_for_existing_profile() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                // Set some profile at next id. (this shouldn't occur but we protect from it
+                // anyway)
+                Profiles::<Test>::insert(
+                    0,
+                    RegisteredProfile {
+                        account: ALICE,
+                        deposit: 0,
+                        profile: profile.clone(),
+                    },
+                );
+
+                assert_noop!(
+                    DataPreservers::create_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        profile.clone(),
+                        None
+                    ),
+                    Error::<Test>::NextProfileIdShouldBeAvailable
+                );
+            });
+    }
+
+    #[test]
+    fn forced_create_profile_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::root(),
+                    profile.clone(),
+                    Some(ALICE),
+                ));
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: ALICE,
+                        deposit: 0, // no deposit when forced
+                        profile
+                    })
+                );
+
+                assert_eq!(NextProfileId::<Test>::get(), 1);
+
+                assert_eq!(
+                    events(),
+                    vec![Event::ProfileCreated {
+                        account: ALICE,
+                        profile_id: 0,
+                        deposit: 0, // no deposit when forced
+                    }]
+                );
+            });
+    }
+
+    #[test]
+    fn forced_create_profile_filter() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_noop!(
+                    DataPreservers::create_profile(
+                        RuntimeOrigin::signed(BOB),
+                        profile.clone(),
+                        Some(ALICE),
+                    ),
+                    sp_runtime::DispatchError::BadOrigin
+                );
+            });
+    }
+}
+
+mod update_profile {
+    use super::*;
+
+    #[test]
+    fn update_profile_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_ok!(DataPreservers::update_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    profile2.clone(),
+                    false,
+                ));
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: ALICE,
+                        deposit: 1_714, // 1_000 base deposit + 51 * 14 bytes deposit
+                        profile: profile2
+                    })
+                );
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: ALICE,
+                            profile_id: 0,
+                            deposit: 1_357,
+                        },
+                        Event::ProfileUpdated {
+                            profile_id: 0,
+                            old_deposit: 1_357,
+                            new_deposit: 1_714,
+                        }
+                    ]
+                );
+            });
+    }
+
+    #[test]
+    fn unknown_profile_id() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_400)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_noop!(
+                    DataPreservers::update_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        1, // wrong profile id
+                        profile2.clone(),
+                        false,
+                    ),
+                    Error::<Test>::UnknownProfileId
+                );
+            });
+    }
+
+    #[test]
+    fn wrong_user() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_400)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_noop!(
+                    DataPreservers::update_profile(
+                        RuntimeOrigin::signed(BOB), // not the profile's owner
+                        0,
+                        profile2.clone(),
+                        false,
+                    ),
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+            });
+    }
+
+    #[test]
+    fn insufficient_balance_for_new_deposit() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_400)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_noop!(
+                    DataPreservers::update_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        0,
+                        profile2.clone(),
+                        false,
+                    ),
+                    TokenError::FundsUnavailable
+                );
+            });
+    }
+
+    #[test]
+    fn forced_update_profile_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_ok!(DataPreservers::update_profile(
+                    RuntimeOrigin::root(),
+                    0,
+                    profile2.clone(),
+                    true,
+                ));
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: ALICE,
+                        deposit: 0, // forced update release deposit
+                        profile: profile2
+                    })
+                );
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: ALICE,
+                            profile_id: 0,
+                            deposit: 1_357,
+                        },
+                        Event::ProfileUpdated {
+                            profile_id: 0,
+                            old_deposit: 1_357,
+                            new_deposit: 0,
+                        }
+                    ]
+                );
+            });
+    }
+
+    #[test]
+    fn forced_update_profile_filter() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                let profile2 = Profile {
+                    url: b"test2".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                };
+
+                assert_noop!(
+                    DataPreservers::update_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        0,
+                        profile2.clone(),
+                        true,
+                    ),
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+            });
+    }
+}
+
+mod delete_profile {
+    use super::*;
+
+    #[test]
+    fn delete_profile_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                assert_ok!(DataPreservers::delete_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    false,
+                ));
+
+                assert_eq!(Profiles::<Test>::get(0), None);
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: ALICE,
+                            profile_id: 0,
+                            deposit: 1_357,
+                        },
+                        Event::ProfileDeleted {
+                            profile_id: 0,
+                            released_deposit: 1_357,
+                        }
+                    ]
+                );
+            });
+    }
+
+    #[test]
+    fn unknown_profile_id() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_400)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                assert_noop!(
+                    DataPreservers::delete_profile(
+                        RuntimeOrigin::signed(ALICE),
+                        1, // wrong profile id
+                        false,
+                    ),
+                    Error::<Test>::UnknownProfileId
+                );
+            });
+    }
+
+    #[test]
+    fn wrong_user() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_400)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                assert_noop!(
+                    DataPreservers::delete_profile(
+                        RuntimeOrigin::signed(BOB), // not the profile's owner
+                        0,
+                        false,
+                    ),
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+            });
+    }
+
+    #[test]
+    fn forced_delete_profile_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                assert_ok!(DataPreservers::delete_profile(
+                    RuntimeOrigin::root(),
+                    0,
+                    true,
+                ));
+
+                assert_eq!(Profiles::<Test>::get(0), None);
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: ALICE,
+                            profile_id: 0,
+                            deposit: 1_357,
+                        },
+                        Event::ProfileDeleted {
+                            profile_id: 0,
+                            released_deposit: 1_357,
+                        }
+                    ]
+                );
+            });
+    }
+
+    #[test]
+    fn forced_delete_profile_filter() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    limited_to_para_ids: None,
+                    mode: ProfileMode::Bootnode,
+                };
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(ALICE),
+                    profile.clone(),
+                    None
+                ));
+
+                assert_noop!(
+                    DataPreservers::delete_profile(RuntimeOrigin::signed(ALICE), 0, true,),
+                    sp_runtime::DispatchError::BadOrigin,
                 );
             });
     }

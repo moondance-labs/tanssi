@@ -220,6 +220,7 @@ impl pallet_data_preservers::Config for Test {
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
+    type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxBootNodes = ConstU32<10>;
     type MaxBootNodeUrlLen = ConstU32<200>;
     type MaxParaIdsVecLen = ConstU32<20>;
@@ -249,7 +250,9 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        let mut ext: sp_io::TestExternalities = t.into();
+        ext.execute_with(|| System::set_block_number(1));
+        ext
     }
 }
 

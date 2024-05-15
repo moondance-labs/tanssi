@@ -50,13 +50,10 @@ use {
     },
     frame_system::pallet_prelude::*,
     sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, CheckedSub, Get},
+        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero},
         ArithmeticError,
     },
-    sp_std::{
-        ops::{Add, Mul},
-        vec::Vec,
-    },
+    sp_std::vec::Vec,
 };
 
 #[frame_support::pallet]
@@ -115,6 +112,8 @@ pub mod pallet {
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
+        type ForceSetProfileOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
         #[pallet::constant]
         type MaxBootNodes: Get<u32>;
         #[pallet::constant]
@@ -156,7 +155,6 @@ pub mod pallet {
 
         UnknownProfileId,
         NextProfileIdShouldBeAvailable,
-        CanOnlyModifyOwnProfile,
     }
 
     #[pallet::composite_enum]
@@ -280,11 +278,24 @@ pub mod pallet {
         pub fn create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
+            forced_for: Option<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
-            let origin = ensure_signed(origin)?;
+            let account = match forced_for.clone() {
+                Some(account) => {
+                    T::ForceSetProfileOrigin::ensure_origin(origin)?;
+                    account
+                }
+                None => ensure_signed(origin)?,
+            };
 
-            let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
-            T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, deposit)?;
+            let deposit = match forced_for {
+                Some(_) => Zero::zero(), // don't deposit anything if forced
+                None => {
+                    let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+                    T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
+                    deposit
+                }
+            };
 
             let id = NextProfileId::<T>::get();
             NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
@@ -297,14 +308,14 @@ pub mod pallet {
             Profiles::<T>::insert(
                 id,
                 RegisteredProfile {
-                    account: origin.clone(),
+                    account: account.clone(),
                     deposit,
                     profile,
                 },
             );
 
             Self::deposit_event(Event::ProfileCreated {
-                account: origin,
+                account,
                 profile_id: id,
                 deposit,
             });
@@ -319,27 +330,44 @@ pub mod pallet {
             origin: OriginFor<T>,
             profile_id: ProfileId,
             profile: Profile<T>,
+            force: bool,
         ) -> DispatchResultWithPostInfo {
-            let origin = ensure_signed(origin)?;
+            let account = if force {
+                T::ForceSetProfileOrigin::ensure_origin(origin)?;
+                None
+            } else {
+                Some(ensure_signed(origin)?)
+            };
 
             let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
-            ensure!(
-                existing_profile.account == origin,
-                Error::<T>::CanOnlyModifyOwnProfile
-            );
+            if let Some(account) = account {
+                ensure!(
+                    existing_profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+            }
 
             // Update deposit
-            let new_deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+            // If forced update we release the previous deposit
+            let new_deposit = if force {
+                Zero::zero()
+            } else {
+                T::ProfileDeposit::profile_deposit(&profile)?
+            };
 
             if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
-                T::Currency::hold(&HoldReason::ProfileDeposit.into(), &origin, diff)?;
+                T::Currency::hold(
+                    &HoldReason::ProfileDeposit.into(),
+                    &existing_profile.account,
+                    diff,
+                )?;
             } else if let Some(diff) = existing_profile.deposit.checked_sub(&new_deposit) {
                 T::Currency::release(
                     &HoldReason::ProfileDeposit.into(),
-                    &origin,
+                    &existing_profile.account,
                     diff,
                     Precision::Exact,
                 )?;
@@ -348,7 +376,7 @@ pub mod pallet {
             Profiles::<T>::insert(
                 profile_id,
                 RegisteredProfile {
-                    account: origin,
+                    account: existing_profile.account,
                     deposit: new_deposit,
                     profile,
                 },
@@ -369,21 +397,29 @@ pub mod pallet {
         pub fn delete_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
+            force: bool,
         ) -> DispatchResultWithPostInfo {
-            let origin = ensure_signed(origin)?;
+            let account = if force {
+                T::ForceSetProfileOrigin::ensure_origin(origin)?;
+                None
+            } else {
+                Some(ensure_signed(origin)?)
+            };
 
             let Some(profile) = Profiles::<T>::get(&profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
-            ensure!(
-                profile.account == origin,
-                Error::<T>::CanOnlyModifyOwnProfile
-            );
+            if let Some(account) = account {
+                ensure!(
+                    profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+            }
 
             T::Currency::release(
                 &HoldReason::ProfileDeposit.into(),
-                &origin,
+                &profile.account,
                 profile.deposit,
                 Precision::Exact,
             )?;
