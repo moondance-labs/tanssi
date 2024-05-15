@@ -216,7 +216,6 @@ mod create_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None,
                 ));
 
                 assert_eq!(
@@ -254,11 +253,7 @@ mod create_profile {
                 };
 
                 assert_noop!(
-                    DataPreservers::create_profile(
-                        RuntimeOrigin::signed(ALICE),
-                        profile.clone(),
-                        None
-                    ),
+                    DataPreservers::create_profile(RuntimeOrigin::signed(ALICE), profile.clone(),),
                     TokenError::FundsUnavailable
                 );
 
@@ -292,11 +287,7 @@ mod create_profile {
                 );
 
                 assert_noop!(
-                    DataPreservers::create_profile(
-                        RuntimeOrigin::signed(ALICE),
-                        profile.clone(),
-                        None
-                    ),
+                    DataPreservers::create_profile(RuntimeOrigin::signed(ALICE), profile.clone(),),
                     Error::<Test>::NextProfileIdShouldBeAvailable
                 );
             });
@@ -314,10 +305,10 @@ mod create_profile {
                     mode: ProfileMode::Bootnode,
                 };
 
-                assert_ok!(DataPreservers::create_profile(
+                assert_ok!(DataPreservers::force_create_profile(
                     RuntimeOrigin::root(),
                     profile.clone(),
-                    Some(ALICE),
+                    ALICE,
                 ));
 
                 assert_eq!(
@@ -355,10 +346,10 @@ mod create_profile {
                 };
 
                 assert_noop!(
-                    DataPreservers::create_profile(
+                    DataPreservers::force_create_profile(
                         RuntimeOrigin::signed(BOB),
                         profile.clone(),
-                        Some(ALICE),
+                        ALICE,
                     ),
                     sp_runtime::DispatchError::BadOrigin
                 );
@@ -384,7 +375,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -399,7 +389,6 @@ mod update_profile {
                     RuntimeOrigin::signed(ALICE),
                     0,
                     profile2.clone(),
-                    false,
                 ));
 
                 assert_eq!(
@@ -444,7 +433,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -460,7 +448,6 @@ mod update_profile {
                         RuntimeOrigin::signed(ALICE),
                         1, // wrong profile id
                         profile2.clone(),
-                        false,
                     ),
                     Error::<Test>::UnknownProfileId
                 );
@@ -482,7 +469,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -498,7 +484,6 @@ mod update_profile {
                         RuntimeOrigin::signed(BOB), // not the profile's owner
                         0,
                         profile2.clone(),
-                        false,
                     ),
                     sp_runtime::DispatchError::BadOrigin,
                 );
@@ -520,7 +505,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -536,7 +520,6 @@ mod update_profile {
                         RuntimeOrigin::signed(ALICE),
                         0,
                         profile2.clone(),
-                        false,
                     ),
                     TokenError::FundsUnavailable
                 );
@@ -558,7 +541,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -569,11 +551,10 @@ mod update_profile {
                     },
                 };
 
-                assert_ok!(DataPreservers::update_profile(
+                assert_ok!(DataPreservers::force_update_profile(
                     RuntimeOrigin::root(),
                     0,
                     profile2.clone(),
-                    true,
                 ));
 
                 assert_eq!(
@@ -618,7 +599,6 @@ mod update_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 let profile2 = Profile {
@@ -630,11 +610,10 @@ mod update_profile {
                 };
 
                 assert_noop!(
-                    DataPreservers::update_profile(
+                    DataPreservers::force_update_profile(
                         RuntimeOrigin::signed(ALICE),
                         0,
                         profile2.clone(),
-                        true,
                     ),
                     sp_runtime::DispatchError::BadOrigin,
                 );
@@ -660,13 +639,11 @@ mod delete_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 assert_ok!(DataPreservers::delete_profile(
                     RuntimeOrigin::signed(ALICE),
                     0,
-                    false,
                 ));
 
                 assert_eq!(Profiles::<Test>::get(0), None);
@@ -703,14 +680,12 @@ mod delete_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 assert_noop!(
                     DataPreservers::delete_profile(
                         RuntimeOrigin::signed(ALICE),
                         1, // wrong profile id
-                        false,
                     ),
                     Error::<Test>::UnknownProfileId
                 );
@@ -732,14 +707,12 @@ mod delete_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 assert_noop!(
                     DataPreservers::delete_profile(
                         RuntimeOrigin::signed(BOB), // not the profile's owner
                         0,
-                        false,
                     ),
                     sp_runtime::DispatchError::BadOrigin,
                 );
@@ -761,13 +734,11 @@ mod delete_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
-                assert_ok!(DataPreservers::delete_profile(
+                assert_ok!(DataPreservers::force_delete_profile(
                     RuntimeOrigin::root(),
                     0,
-                    true,
                 ));
 
                 assert_eq!(Profiles::<Test>::get(0), None);
@@ -804,11 +775,10 @@ mod delete_profile {
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
                     profile.clone(),
-                    None
                 ));
 
                 assert_noop!(
-                    DataPreservers::delete_profile(RuntimeOrigin::signed(ALICE), 0, true,),
+                    DataPreservers::force_delete_profile(RuntimeOrigin::signed(ALICE), 0),
                     sp_runtime::DispatchError::BadOrigin,
                 );
             });

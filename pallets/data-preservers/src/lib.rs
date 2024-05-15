@@ -278,24 +278,11 @@ pub mod pallet {
         pub fn create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
-            forced_for: Option<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
-            let account = match forced_for.clone() {
-                Some(account) => {
-                    T::ForceSetProfileOrigin::ensure_origin(origin)?;
-                    account
-                }
-                None => ensure_signed(origin)?,
-            };
+            let account = ensure_signed(origin)?;
 
-            let deposit = match forced_for {
-                Some(_) => Zero::zero(), // don't deposit anything if forced
-                None => {
-                    let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
-                    T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
-                    deposit
-                }
-            };
+            let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+            T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
 
             let id = NextProfileId::<T>::get();
             NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
@@ -330,33 +317,20 @@ pub mod pallet {
             origin: OriginFor<T>,
             profile_id: ProfileId,
             profile: Profile<T>,
-            force: bool,
         ) -> DispatchResultWithPostInfo {
-            let account = if force {
-                T::ForceSetProfileOrigin::ensure_origin(origin)?;
-                None
-            } else {
-                Some(ensure_signed(origin)?)
-            };
+            let account = ensure_signed(origin)?;
 
             let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
-            if let Some(account) = account {
-                ensure!(
-                    existing_profile.account == account,
-                    sp_runtime::DispatchError::BadOrigin,
-                );
-            }
+            ensure!(
+                existing_profile.account == account,
+                sp_runtime::DispatchError::BadOrigin,
+            );
 
             // Update deposit
-            // If forced update we release the previous deposit
-            let new_deposit = if force {
-                Zero::zero()
-            } else {
-                T::ProfileDeposit::profile_deposit(&profile)?
-            };
+            let new_deposit = T::ProfileDeposit::profile_deposit(&profile)?;
 
             if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
                 T::Currency::hold(
@@ -397,25 +371,123 @@ pub mod pallet {
         pub fn delete_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
-            force: bool,
         ) -> DispatchResultWithPostInfo {
-            let account = if force {
-                T::ForceSetProfileOrigin::ensure_origin(origin)?;
-                None
-            } else {
-                Some(ensure_signed(origin)?)
-            };
+            let account = ensure_signed(origin)?;
 
             let Some(profile) = Profiles::<T>::get(&profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
-            if let Some(account) = account {
-                ensure!(
-                    profile.account == account,
-                    sp_runtime::DispatchError::BadOrigin,
-                );
-            }
+            ensure!(
+                profile.account == account,
+                sp_runtime::DispatchError::BadOrigin,
+            );
+
+            T::Currency::release(
+                &HoldReason::ProfileDeposit.into(),
+                &profile.account,
+                profile.deposit,
+                Precision::Exact,
+            )?;
+
+            Profiles::<T>::remove(&profile_id);
+
+            Self::deposit_event(Event::ProfileDeleted {
+                profile_id,
+                released_deposit: profile.deposit,
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(4)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn force_create_profile(
+            origin: OriginFor<T>,
+            profile: Profile<T>,
+            for_account: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            let id = NextProfileId::<T>::get();
+            NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
+
+            ensure!(
+                !Profiles::<T>::contains_key(&id),
+                Error::<T>::NextProfileIdShouldBeAvailable
+            );
+
+            Profiles::<T>::insert(
+                id,
+                RegisteredProfile {
+                    account: for_account.clone(),
+                    deposit: Zero::zero(),
+                    profile,
+                },
+            );
+
+            Self::deposit_event(Event::ProfileCreated {
+                account: for_account,
+                profile_id: id,
+                deposit: Zero::zero(),
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(5)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn force_update_profile(
+            origin: OriginFor<T>,
+            profile_id: ProfileId,
+            profile: Profile<T>,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
+                Err(Error::<T>::UnknownProfileId)?
+            };
+
+            // We release the previous deposit
+            T::Currency::release(
+                &HoldReason::ProfileDeposit.into(),
+                &existing_profile.account,
+                existing_profile.deposit,
+                Precision::Exact,
+            )?;
+
+            Profiles::<T>::insert(
+                profile_id,
+                RegisteredProfile {
+                    account: existing_profile.account,
+                    deposit: Zero::zero(),
+                    profile,
+                },
+            );
+
+            Self::deposit_event(Event::ProfileUpdated {
+                profile_id,
+                old_deposit: existing_profile.deposit,
+                new_deposit: Zero::zero(),
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(6)]
+        // TODO: Benchmark
+        #[pallet::weight(0)]
+        pub fn force_delete_profile(
+            origin: OriginFor<T>,
+            profile_id: ProfileId,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            let Some(profile) = Profiles::<T>::get(&profile_id) else {
+                Err(Error::<T>::UnknownProfileId)?
+            };
 
             T::Currency::release(
                 &HoldReason::ProfileDeposit.into(),
