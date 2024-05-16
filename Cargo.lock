@@ -9460,6 +9460,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
+ "sp-application-crypto",
  "sp-core",
  "sp-io",
  "sp-runtime",
