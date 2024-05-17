@@ -1,19 +1,10 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
-import { getAuthorFromDigest } from "util/author";
 import {
-    fetchIssuance,
-    filterRewardFromOrchestrator,
-    fetchRewardAuthorContainers,
     fetchWithdrawnAmount,
     fetchDepositedAmount,
 } from "util/block";
-import { PARACHAIN_BOND } from "util/constants";
-
-const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 2 * 60 * 60 * 1000;
-const hours = (timePeriod / (1000 * 60 * 60)).toFixed(2);
-const atBlock = process.env.AT_BLOCK ? Number(process.env.AT_BLOCK) : -1;
 
 describeSuite({
     id: "S08",
@@ -26,23 +17,6 @@ describeSuite({
         beforeAll(() => {
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
-            const getBlockData = async (blockNum: number) => {
-                log(`Collecting ${hours} hours worth of block data`);
-                const blockHash = await api.rpc.chain.getBlockHash(blockNum);
-                const signedBlock = await api.rpc.chain.getBlock(blockHash);
-                const apiAt = await api.at(blockHash);
-                const weights = await apiAt.query.system.blockWeight();
-                const receipts = (await apiAt.query.ethereum.currentReceipts()).unwrapOr([]);
-                const events = await apiAt.query.system.events();
-                return {
-                    blockNum: blockNum,
-                    nextFeeMultiplier: await apiAt.query.transactionPayment.nextFeeMultiplier(),
-                    extrinsics: signedBlock.block.extrinsics,
-                    weights,
-                    receipts,
-                    events,
-                };
-            };
         });
 
         it({
