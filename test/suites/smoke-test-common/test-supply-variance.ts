@@ -2,7 +2,13 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
 import { getAuthorFromDigest } from "util/author";
-import { fetchIssuance, filterRewardFromOrchestrator, fetchRewardAuthorContainers, fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
+import {
+    fetchIssuance,
+    filterRewardFromOrchestrator,
+    fetchRewardAuthorContainers,
+    fetchWithdrawnAmount,
+    fetchDepositedAmount,
+} from "util/block";
 import { PARACHAIN_BOND } from "util/constants";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 2 * 60 * 60 * 1000;
