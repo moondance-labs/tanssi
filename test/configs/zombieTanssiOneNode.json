@@ -1,0 +1,64 @@
+{
+    "settings": {
+        "timeout": 1000,
+        "provider": "native"
+    },
+    "relaychain": {
+        "chain": "rococo-local",
+        "default_command": "tmp/polkadot",
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "genesis": {
+            "runtimeGenesis": {
+                "patch": {
+                    "configuration": {
+                        "config": {
+                            "async_backing_params": {
+                                "allowed_ancestry_len": 2,
+                                "max_candidate_depth": 3
+                            },
+                            "scheduling_lookahead": 2
+                        }
+                    }
+                }
+            }
+        },
+        "nodes": [
+            {
+                "name": "alice",
+                "ws_port": "9947",
+                "validator": true
+            },
+            {
+                "name": "bob",
+                "validator": true
+            }
+        ]
+    },
+    "parachains": [
+        {
+            "id": 1000,
+            "chain_spec_path": "specs/one-node-tanssi-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-one-node.sh`",
+            "collators": [
+                {
+                    "name": "Collator-01",
+                    "ws_port": "9948",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                }
+            ]
+        }
+    ],
+    "types": {
+        "Header": {
+            "number": "u64",
+            "parent_hash": "Hash",
+            "post_state": "Hash"
+        }
+    }
+}

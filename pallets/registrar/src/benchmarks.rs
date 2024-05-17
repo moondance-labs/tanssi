@@ -40,7 +40,7 @@ fn create_funded_user<T: Config>(
     let min_reserve_amount = T::DepositAmount::get();
     let total = min_reserve_amount + extra;
     T::Currency::make_free_balance_be(&user, total);
-    T::Currency::issue(total);
+    let _ = T::Currency::issue(total);
     (user, total)
 }
 
@@ -59,6 +59,11 @@ mod benchmarks {
             extensions: Default::default(),
             properties: Default::default(),
         }
+    }
+
+    // Returns number of para ids in pending verification (registered but not marked as valid)
+    fn pending_verification_len<T: Config>() -> usize {
+        crate::PendingVerification::<T>::iter_keys().count()
     }
 
     #[benchmark]
@@ -84,7 +89,7 @@ mod benchmarks {
         }
 
         // We should have registered y-1
-        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
 
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
@@ -93,7 +98,7 @@ mod benchmarks {
         Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage);
 
         // verification code
-        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
     }
 
@@ -116,14 +121,14 @@ mod benchmarks {
         }
 
         // We should have registered y
-        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
         #[extrinsic_call]
         Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
-        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
     }
 
@@ -217,14 +222,14 @@ mod benchmarks {
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
 
         // We should have registered y
-        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), y as usize);
         T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
 
         #[extrinsic_call]
         Pallet::<T>::mark_valid_for_collating(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
-        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
     }
 
     #[benchmark]
@@ -380,7 +385,7 @@ mod benchmarks {
         }
 
         // We should have registered y-1
-        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
 
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
@@ -394,7 +399,7 @@ mod benchmarks {
         );
 
         // verification code
-        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
     }
 

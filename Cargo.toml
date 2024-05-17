@@ -61,6 +61,7 @@ pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = fa
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
+pallet-services-payment-runtime-api = { path = "pallets/services-payment/rpc/runtime-api", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/rpc/runtime-api", default-features = false }
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
@@ -73,6 +74,7 @@ flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 runtime-common = { path = "runtime/common", default-features = false }
+services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
 tc-consensus = { path = "client/consensus" }

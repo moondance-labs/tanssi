@@ -1231,7 +1231,6 @@ impl_runtime_apis! {
                 fn set_up_complex_asset_transfer(
                 ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
                     use xcm_config::SelfReserve;
-                    use sp_runtime::traits::StaticLookup;
                     // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
                     // fees using teleported native token.
                     // (We don't care that Relay doesn't accept incoming unknown AH local asset)
@@ -1253,23 +1252,13 @@ impl_runtime_apis! {
                     // set up local asset
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
-                    let asset_id = 0;
 
-                    // inject it into pallet-foreign-asset-creator.
-                    let asset_location = MultiLocation::new(
-                        0,
-                        X2(PalletInstance(50), GeneralIndex(u32::from(asset_id).into()))
-                    );
-                    let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
-
-                    assert!(ForeignAssetsCreator::create_foreign_asset(RuntimeOrigin::root(), asset_location, 0, who, true, 1).is_ok());
-                    assert!(ForeignAssets::mint(
-                        RuntimeOrigin::signed(who),
-                        asset_id,
-                        <Runtime as frame_system::Config>::Lookup::unlookup(who),
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
                         initial_asset_amount,
-                    )
-                    .is_ok());
+                        who
+                    );
+
+                    let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
 
                     let assets: MultiAssets = vec![fee_asset.clone(), transfer_asset].into();
                     let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
@@ -1535,6 +1524,7 @@ impl_runtime_apis! {
     }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 // TODO: this should be removed but currently if we remove it the relay does not check anything

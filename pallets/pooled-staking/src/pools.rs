@@ -30,6 +30,7 @@ use {
     tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
 };
 
+#[allow(dead_code)]
 pub trait Pool<T: Config> {
     /// Get the amount of shares a delegator have for given candidate.
     fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T::Balance>;

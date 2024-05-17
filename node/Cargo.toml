@@ -36,6 +36,7 @@ pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-configuration = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }

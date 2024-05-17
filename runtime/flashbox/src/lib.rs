@@ -812,7 +812,7 @@ parameter_types! {
     pub const MaxCandidates: u32 = 1000;
     pub const MinCandidates: u32 = 5;
     pub const SessionLength: BlockNumber = 5;
-    pub const MaxInvulnerables: u32 = 100;
+    pub const MaxInvulnerables: u32 = 200;
     pub const ExecutiveBody: BodyId = BodyId::Executive;
 }
 
@@ -1907,8 +1907,21 @@ impl_runtime_apis! {
             SLOT_DURATION
         }
     }
+
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+        fn block_cost(para_id: ParaId) -> Balance {
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
+            block_production_costs
+        }
+
+        fn collator_assignment_cost(para_id: ParaId) -> Balance {
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+            collator_assignment_costs
+        }
+    }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 // TODO: this should be removed but currently if we remove it the relay does not check anything

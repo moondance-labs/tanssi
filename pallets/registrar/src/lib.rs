@@ -173,7 +173,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn pending_verification)]
     pub type PendingVerification<T: Config> =
-        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn paused)]
@@ -279,7 +279,7 @@ pub mod pallet {
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
             para_ids.extend(RegisteredParaIds::<T>::get());
-            para_ids.extend(PendingVerification::<T>::get());
+            para_ids.extend(PendingVerification::<T>::iter_keys());
             para_ids.extend(Paused::<T>::get());
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
@@ -343,7 +343,6 @@ pub mod pallet {
                 );
             }
             assert_is_sorted_and_unique(&RegisteredParaIds::<T>::get(), "RegisteredParaIds");
-            assert_is_sorted_and_unique(&PendingVerification::<T>::get(), "PendingVerification");
             assert_is_sorted_and_unique(&Paused::<T>::get(), "Paused");
             for (i, (_session_index, x)) in PendingParaIds::<T>::get().into_iter().enumerate() {
                 assert_is_sorted_and_unique(&x, &format!("PendingParaIds[{}]", i));
@@ -410,10 +409,8 @@ pub mod pallet {
 
             // Check if the para id is in "PendingVerification".
             // This is a special case because then we can remove it immediately, instead of waiting 2 sessions.
-            let mut para_ids = PendingVerification::<T>::get();
-            if let Ok(index) = para_ids.binary_search(&para_id) {
-                para_ids.remove(index);
-                PendingVerification::<T>::put(para_ids);
+            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
+            if is_pending_verification {
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
@@ -454,14 +451,10 @@ pub mod pallet {
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            let mut pending_verification = PendingVerification::<T>::get();
-
-            match pending_verification.binary_search(&para_id) {
-                Ok(i) => {
-                    pending_verification.remove(i);
-                }
-                Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
-            };
+            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
+            if !is_pending_verification {
+                return Err(Error::<T>::ParaIdNotInPendingVerification.into());
+            }
 
             Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
@@ -481,7 +474,6 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            PendingVerification::<T>::put(pending_verification);
             T::RegistrarHooks::check_valid_for_collating(para_id)?;
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
@@ -625,7 +617,7 @@ pub mod pallet {
 
                 /// Create a funded user.
                 /// Used for generating the necessary amount for registering
-                fn create_funded_user<T: crate::Config>(
+                fn create_funded_user<T: Config>(
                     string: &'static str,
                     n: u32,
                     total: DepositBalanceOf<T>,
@@ -633,7 +625,7 @@ pub mod pallet {
                     const SEED: u32 = 0;
                     let user = account(string, n, SEED);
                     T::Currency::make_free_balance_be(&user, total);
-                    T::Currency::issue(total);
+                    let _ = T::Currency::issue(total);
                     (user, total)
                 }
                 let new_balance =
@@ -649,7 +641,7 @@ pub mod pallet {
             let new_balance =
                 (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
             T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
-            T::Currency::issue(new_balance);
+            let _ = T::Currency::issue(new_balance);
 
             deposit_info.creator
         }
@@ -671,17 +663,14 @@ pub mod pallet {
                 return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
 
-            // Insert para id into PendingVerification
-            let mut pending_verification = PendingVerification::<T>::get();
-            match pending_verification.binary_search(&para_id) {
-                // This Ok is unreachable
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(index) => {
-                    pending_verification
-                        .try_insert(index, para_id)
-                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                }
+            // Check if the para id is already in PendingVerification (unreachable)
+            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
+            if is_pending_verification {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
+
+            // Insert para id into PendingVerification
+            PendingVerification::<T>::insert(para_id, ());
 
             // The actual registration takes place 2 sessions after the call to
             // `mark_valid_for_collating`, but the genesis data is inserted now.
@@ -709,7 +698,6 @@ pub mod pallet {
                 },
             );
             ParaGenesisData::<T>::insert(para_id, genesis_data);
-            PendingVerification::<T>::put(pending_verification);
 
             Ok(())
         }

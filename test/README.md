@@ -141,10 +141,7 @@ The Tanssi Chopsticks config files are in `configs/dancebox.yml` and `configs/st
 For example, to re-run a block:
 
 ```sh
-pnpm chopsticks run-block --config=./configs/stagenet-dancebox.yml --block 6490 --html --open
-# TODO: that actually doesn't work, but it works if you run an http server and open the file manually instead of using `--open`:
-cd previews
-python3 -m http.server
+pnpm chopsticks run-block --config=./configs/stagenet-dancebox.yml --block 6490 --html --open --runtime-log-level 5
 ```
 
 You can override the runtime WASM using chopsticks. This is very useful to add some debug logs or asserts.
@@ -158,7 +155,15 @@ and compile with `--features=force-debug` to get useful debug information instea
 
 ```sh
 cargo build --release --features=force-debug
+# Do NOT use --features=fast-runtime
 ```
+
+Even with `force-debug` some data such as AccountId may not be printed, the workaround is to convert it to hex or call `.encode()` and print the encoded bytes.
+
+Remember to compile the correct runtime version. The one in master will always
+be a future version, so it doesn't make sense to use it to replay past blocks.
+Check the version of the runtime in polkadot js, and compile from the corresponding branch.
+For example, for runtime `dancebox/600`, use the branch `perm-runtime-600`.
 
 To use the new runtime, you can edit the yml file or pass it as a CLI argument, either is fine:
 
@@ -169,11 +174,20 @@ db: ./tmp/db_mba.sqlite
 wasm-override: "../target/release/wbuild/dancebox-runtime/dancebox_runtime.wasm"
 ```
 
-And to actually see the logs, you need to increase the log level in the chopsticks command:
+Or simply pass it as a CLI argument:
 
 ```sh
---runtime-log-level 5
+pnpm chopsticks run-block --config=./configs/dancebox.yml --wasm-override ../target/release/wbuild/dancebox-runtime/dancebox_runtime.wasm --block 1981800 --html --open --runtime-log-level 5
 ```
+
+### How to find session start?
+
+Sometimes you will need to replay the first block of a new session, because many things happen on session changes.
+The easiest way to find out the block number of the last session change is to use a block explorer, such as:
+
+<https://dancebox.subscan.io/event?module=session&event_id=NewSession>
+
+If testing a network with no available block explorer, you can either try to guess by finding the highest multiple of the session length smaller than the current block number (so with session length 600 and block number 10_000, open python and run `10000 // 600 * 600`); or you can add a log somewhere in the runtime that logs the next session start and the session length, and calculate the previous session start from that.
 
 # Spawns Tanssi and container-chains with zombienet
 You can directly use the zombieTanssi.json file and pass it to zombienet to spawn yourself the network. From the test directory you can do:

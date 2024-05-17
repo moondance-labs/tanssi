@@ -22,8 +22,6 @@
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
     crate::{AuthorityId, Pair, Slot},
-    sc_consensus_slots::{SimpleSlotWorker, SlotInfo, SlotResult},
-    sp_consensus::Proposer,
     sp_runtime::traits::Block as BlockT,
 };
 
@@ -62,18 +60,4 @@ where
 {
     pub authorities: Vec<AuthorityId<P>>,
     pub min_slot_freq: Option<Slot>,
-}
-
-#[async_trait::async_trait]
-pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
-    /// Called when a new slot is triggered.
-    ///
-    /// Returns a future that resolves to a [`SlotResult`] iff a block was successfully built in
-    /// the slot. Otherwise `None` is returned.
-    /// Accepts the orchestrator header as an input
-    async fn tanssi_on_slot(
-        &mut self,
-        slot_info: SlotInfo<B>,
-        aux_data: Self::AuxData,
-    ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
 }
