@@ -18,10 +18,15 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
+    crate::{
+        Call, Config, Pallet, Profile, ProfileDeposit, ProfileMode, Profiles, RegisteredProfile,
+    },
     frame_benchmarking::v2::*,
     frame_support::{
-        traits::{EnsureOriginWithArg, OriginTrait},
+        traits::{
+            fungible::{Inspect, Mutate},
+            EnsureOrigin, EnsureOriginWithArg, OriginTrait,
+        },
         BoundedVec,
     },
     frame_system::RawOrigin,
@@ -29,7 +34,21 @@ use {
     tp_traits::ParaId,
 };
 
-#[benchmarks]
+const SEED: u32 = 0;
+
+fn create_funded_user<T: Config>(string: &'static str, n: u32, balance_factor: u32) -> T::AccountId
+where
+    T::Currency: Mutate<T::AccountId>,
+{
+    let user = account(string, n, SEED);
+    let balance = <T::Currency>::minimum_balance() * balance_factor.into();
+    let _ = <T::Currency>::set_balance(&user, balance);
+    user
+}
+
+#[benchmarks(
+    where T::Currency: Mutate<T::AccountId>
+)]
 mod benchmarks {
     use super::*;
 
@@ -53,6 +72,198 @@ mod benchmarks {
         Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
 
         assert_eq!(Pallet::<T>::boot_nodes(para_id), boot_nodes);
+    }
+
+    #[benchmark]
+    fn create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
+        // x: url len, y: para ids len
+        let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        #[extrinsic_call]
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()), profile.clone());
+
+        assert_eq!(
+            Profiles::<T>::get(0),
+            Some(RegisteredProfile {
+                account: caller,
+                deposit,
+                profile
+            })
+        );
+    }
+
+    #[benchmark]
+    fn force_create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
+        // x: url len, y: para ids len
+        let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let owner = create_funded_user::<T>("owner", 1, 1_000_000_000u32);
+        let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
+            .expect("failed to create ForceSetProfileOrigin");
+
+        #[extrinsic_call]
+        Pallet::<T>::force_create_profile(
+            origin_force as T::RuntimeOrigin,
+            profile.clone(),
+            owner.clone(),
+        );
+
+        assert_eq!(
+            Profiles::<T>::get(0),
+            Some(RegisteredProfile {
+                account: owner,
+                deposit: 0u32.into(),
+                profile
+            })
+        );
+    }
+
+    #[benchmark]
+    fn update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        // x: url len, y: para ids len
+        let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+
+        #[extrinsic_call]
+        Pallet::<T>::update_profile(RawOrigin::Signed(caller.clone()), 0, profile.clone());
+
+        assert_eq!(
+            Profiles::<T>::get(0),
+            Some(RegisteredProfile {
+                account: caller,
+                deposit,
+                profile
+            })
+        );
+    }
+
+    #[benchmark]
+    fn force_update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        // x: url len, y: para ids len
+        let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
+            .expect("failed to create ForceSetProfileOrigin");
+
+        #[extrinsic_call]
+        Pallet::<T>::force_update_profile(origin_force as T::RuntimeOrigin, 0, profile.clone());
+
+        assert_eq!(
+            Profiles::<T>::get(0),
+            Some(RegisteredProfile {
+                account: caller,
+                deposit: 0u32.into(),
+                profile
+            })
+        );
+    }
+
+    #[benchmark]
+    fn delete_profile() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        #[extrinsic_call]
+        Pallet::<T>::delete_profile(RawOrigin::Signed(caller.clone()), 0);
+
+        assert_eq!(Profiles::<T>::get(0), None);
+    }
+
+    #[benchmark]
+    fn force_delete_profile() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+
+        let profile = Profile {
+            url,
+            limited_to_para_ids: Some(para_ids),
+            mode: ProfileMode::Bootnode,
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
+            .expect("failed to create ForceSetProfileOrigin");
+
+        #[extrinsic_call]
+        Pallet::<T>::force_delete_profile(origin_force as T::RuntimeOrigin, 0);
+
+        assert_eq!(Profiles::<T>::get(0), None);
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

@@ -273,8 +273,10 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::create_profile(
+            profile.url.len() as u32,
+            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+        ))]
         pub fn create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
@@ -288,7 +290,7 @@ pub mod pallet {
             NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
 
             ensure!(
-                !Profiles::<T>::contains_key(&id),
+                !Profiles::<T>::contains_key(id),
                 Error::<T>::NextProfileIdShouldBeAvailable
             );
 
@@ -311,8 +313,10 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::update_profile(
+            profile.url.len() as u32,
+            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+        ))]
         pub fn update_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
@@ -320,7 +324,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
+            let Some(existing_profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
@@ -359,22 +363,21 @@ pub mod pallet {
             Self::deposit_event(Event::ProfileUpdated {
                 profile_id,
                 old_deposit: existing_profile.deposit,
-                new_deposit: new_deposit,
+                new_deposit,
             });
 
             Ok(().into())
         }
 
         #[pallet::call_index(3)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::delete_profile())]
         pub fn delete_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let Some(profile) = Profiles::<T>::get(&profile_id) else {
+            let Some(profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
@@ -390,7 +393,7 @@ pub mod pallet {
                 Precision::Exact,
             )?;
 
-            Profiles::<T>::remove(&profile_id);
+            Profiles::<T>::remove(profile_id);
 
             Self::deposit_event(Event::ProfileDeleted {
                 profile_id,
@@ -401,8 +404,10 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::force_create_profile(
+            profile.url.len() as u32,
+            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+        ))]
         pub fn force_create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
@@ -414,7 +419,7 @@ pub mod pallet {
             NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
 
             ensure!(
-                !Profiles::<T>::contains_key(&id),
+                !Profiles::<T>::contains_key(id),
                 Error::<T>::NextProfileIdShouldBeAvailable
             );
 
@@ -437,8 +442,10 @@ pub mod pallet {
         }
 
         #[pallet::call_index(5)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::force_update_profile(
+            profile.url.len() as u32,
+            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+        ))]
         pub fn force_update_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
@@ -446,7 +453,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
 
-            let Some(existing_profile) = Profiles::<T>::get(&profile_id) else {
+            let Some(existing_profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
@@ -477,15 +484,14 @@ pub mod pallet {
         }
 
         #[pallet::call_index(6)]
-        // TODO: Benchmark
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::force_delete_profile())]
         pub fn force_delete_profile(
             origin: OriginFor<T>,
             profile_id: ProfileId,
         ) -> DispatchResultWithPostInfo {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
 
-            let Some(profile) = Profiles::<T>::get(&profile_id) else {
+            let Some(profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
@@ -496,7 +502,7 @@ pub mod pallet {
                 Precision::Exact,
             )?;
 
-            Profiles::<T>::remove(&profile_id);
+            Profiles::<T>::remove(profile_id);
 
             Self::deposit_event(Event::ProfileDeleted {
                 profile_id,

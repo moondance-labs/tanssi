@@ -68,6 +68,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_data_preservers::BytesProfileDeposit,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
@@ -156,9 +157,10 @@ pub mod currency {
     pub const KILODANCE: Balance = 1_000_000_000_000_000;
 
     pub const STORAGE_BYTE_FEE: Balance = 100 * MICRODANCE * SUPPLY_FACTOR;
+    pub const STORAGE_ITEM_FEE: Balance = 100 * MILLIDANCE * SUPPLY_FACTOR;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 100 * MILLIDANCE * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+        items as Balance * STORAGE_ITEM_FEE + (bytes as Balance) * STORAGE_BYTE_FEE
     }
 }
 
@@ -924,14 +926,26 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const ProfileDepositBaseFee: Balance = currency::STORAGE_ITEM_FEE;
+    pub const ProfileDepositByteFee: Balance = currency::STORAGE_BYTE_FEE;
+}
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
+
+    type ProfileDeposit = BytesProfileDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+
     type SetBootNodesOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type ForceSetProfileOrigin = EnsureRoot<AccountId>;
+
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
-    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
+    type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
 impl pallet_author_noting::Config for Runtime {

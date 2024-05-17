@@ -73,4 +73,28 @@ impl<T: frame_system::Config> pallet_data_preservers::WeightInfo for SubstrateWe
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+
+	fn create_profile(x: u32, y: u32, ) -> Weight {
+		todo!()
+	}
+
+	fn force_create_profile(x: u32, y: u32, ) -> Weight {
+		todo!()
+	}
+
+	fn update_profile(x: u32, y: u32, ) -> Weight {
+		todo!()
+	}
+
+	fn force_update_profile(x: u32, y: u32, ) -> Weight {
+		todo!()
+	}
+
+	fn delete_profile() -> Weight {
+		todo!()
+	}
+	
+	fn force_delete_profile() -> Weight {
+		todo!()
+	}
 }
