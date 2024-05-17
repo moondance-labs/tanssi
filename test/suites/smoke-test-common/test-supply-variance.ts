@@ -1,22 +1,17 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
-import {
-    fetchWithdrawnAmount,
-    fetchDepositedAmount,
-} from "util/block";
+import { fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
 
 describeSuite({
     id: "S08",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
 
         beforeAll(() => {
             api = context.polkadotJs();
-            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
@@ -38,7 +33,6 @@ describeSuite({
                 const depositAmount = await fetchDepositedAmount(events);
 
                 const supplyAfter = (await apiAtIssuanceAfter.query.balances.totalIssuance()).toBigInt();
-                // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(supplyAfter).to.equal(supplyBefore + depositAmount - withdrawnAmount);
             },
         });

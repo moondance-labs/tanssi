@@ -198,7 +198,7 @@ export function fetchWithdrawnAmount(events: EventRecord[] = []) {
         ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
     );
 
-    for (let event of filtered) {
+    for (const event of filtered) {
         withdrawnAmount += event.amount.toBigInt();
     }
     return withdrawnAmount;
@@ -213,7 +213,7 @@ export function fetchDepositedAmount(events: EventRecord[] = []) {
         ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
     );
 
-    for (let event of filtered) {
+    for (const event of filtered) {
         depositAmount += event.amount.toBigInt();
     }
     return depositAmount;
