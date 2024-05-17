@@ -25,9 +25,11 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 pub mod xcm_config;
 
 use polkadot_runtime_common::SlowAdjustingFeeUpdate;
+use sp_core::H256;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
+use sp_runtime::traits::Convert;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
@@ -1042,6 +1044,14 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
     }
 }
 
+pub struct RelayStorageRootProvider;
+
+impl Convert<u32, Option<H256>> for RelayStorageRootProvider {
+    fn convert(block_number: u32) -> Option<H256> {
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(block_number)
+    }
+}
+
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
     pub const MaxLengthTokenSymbol: u32 = 255;
@@ -1052,6 +1062,8 @@ impl pallet_registrar::Config for Runtime {
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type AllowRegisterWithRelayProof = ConstBool<true>;
+    type RelayStorageRootProvider = RelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;

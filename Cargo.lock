@@ -9030,19 +9030,24 @@ dependencies = [
 name = "pallet-registrar"
 version = "0.1.0"
 dependencies = [
+ "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "hex-literal 0.3.4",
  "log",
  "pallet-balances",
  "pallet-configuration",
  "parity-scale-codec",
+ "polkadot-runtime-common",
  "scale-info",
  "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-trie",
  "tp-container-chain-genesis-data",
  "tp-traits",
 ]

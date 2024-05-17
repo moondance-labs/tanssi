@@ -17,6 +17,7 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
+cumulus-primitives-core = { workspace = true }
 pallet-configuration = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
@@ -24,8 +25,12 @@ serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
+sp-trie = { workspace = true }
 tp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
+dp-chain-state-snapshot = { workspace = true }
+hex-literal = { workspace = true }
+polkadot-runtime-common = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }

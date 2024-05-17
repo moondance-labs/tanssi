@@ -40,11 +40,16 @@ pub use weights::WeightInfo;
 
 pub use pallet::*;
 
+use dp_chain_state_snapshot::GenericStateProof;
+use dp_chain_state_snapshot::ReadEntryErr;
+use sp_core::H256;
+use sp_runtime::traits::Convert;
+use sp_runtime::traits::Verify;
 use {
     frame_support::{
         pallet_prelude::*,
         traits::{Currency, ReservableCurrency},
-        DefaultNoBound, LOG_TARGET,
+        DefaultNoBound, Hashable, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
@@ -53,13 +58,13 @@ use {
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, SlotFrequency,
+        ParathreadParams as ParathreadParamsTy, SessionContainerChains, SlotFrequency,
     },
 };
 
 #[frame_support::pallet]
 pub mod pallet {
-    use {super::*, tp_traits::SessionContainerChains};
+    use super::*;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -129,6 +134,12 @@ pub mod pallet {
 
         #[pallet::constant]
         type MaxLengthTokenSymbol: Get<u32>;
+
+        #[pallet::constant]
+        type AllowRegisterWithRelayProof: Get<bool>;
+
+        // TODO: proper trait
+        type RelayStorageRootProvider: Convert<u32, Option<H256>>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -268,6 +279,10 @@ pub mod pallet {
         NotSufficientDeposit,
         /// Tried to change parathread params for a para id that is not a registered parathread
         NotAParathread,
+        /// register_with_relay_proof disabled in config
+        RegisterWithRelayProofDisabledInConfig,
+        /// The relay storage root for the corresponding block number could not be retrieved
+        RelayStorageRootNotFound,
     }
 
     #[pallet::hooks]
@@ -407,40 +422,7 @@ pub mod pallet {
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            // Check if the para id is in "PendingVerification".
-            // This is a special case because then we can remove it immediately, instead of waiting 2 sessions.
-            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
-            if is_pending_verification {
-                Self::deposit_event(Event::ParaIdDeregistered { para_id });
-                // Cleanup immediately
-                Self::cleanup_deregistered_para_id(para_id);
-            } else {
-                Self::schedule_paused_parachain_change(|para_ids, paused| {
-                    // We have to find out where, in the sorted vec the para id is, if anywhere.
-
-                    match para_ids.binary_search(&para_id) {
-                        Ok(index) => {
-                            para_ids.remove(index);
-                        }
-                        Err(_) => {
-                            // If the para id is not registered, it may be paused. In that case, remove it from there
-                            match paused.binary_search(&para_id) {
-                                Ok(index) => {
-                                    paused.remove(index);
-                                }
-                                Err(_) => {
-                                    return Err(Error::<T>::ParaIdNotRegistered.into());
-                                }
-                            }
-                        }
-                    }
-
-                    Ok(())
-                })?;
-                // Mark this para id for cleanup later
-                Self::schedule_parachain_cleanup(para_id)?;
-                Self::deposit_event(Event::ParaIdDeregistered { para_id });
-            }
+            Self::do_deregister(para_id)?;
 
             Ok(())
         }
@@ -451,34 +433,7 @@ pub mod pallet {
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
-            if !is_pending_verification {
-                return Err(Error::<T>::ParaIdNotInPendingVerification.into());
-            }
-
-            Self::schedule_parachain_change(|para_ids| {
-                // We don't want to add duplicate para ids, so we check whether the potential new
-                // para id is already present in the list. Because the list is always ordered, we can
-                // leverage the binary search which makes this check O(log n).
-
-                match para_ids.binary_search(&para_id) {
-                    // This Ok is unreachable
-                    Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                    Err(index) => {
-                        para_ids
-                            .try_insert(index, para_id)
-                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                    }
-                }
-
-                Ok(())
-            })?;
-
-            T::RegistrarHooks::check_valid_for_collating(para_id)?;
-
-            Self::deposit_event(Event::ParaIdValidForCollating { para_id });
-
-            T::RegistrarHooks::para_marked_valid_for_collating(para_id);
+            Self::do_mark_valid_for_collating(para_id)?;
 
             Ok(())
         }
@@ -582,6 +537,152 @@ pub mod pallet {
 
                 Ok(())
             })?;
+
+            Ok(())
+        }
+
+        /// Register parachain or parathread
+        #[pallet::call_index(8)]
+        // TODO: weight
+        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        pub fn register_with_relay_proof(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            parathread_params: Option<ParathreadParamsTy>,
+            relay_proof_block_number: u32,
+            relay_storage_proof: sp_trie::StorageProof,
+            manager_signature: cumulus_primitives_core::relay_chain::Signature,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            if !T::AllowRegisterWithRelayProof::get() {
+                return Err(Error::<T>::RegisterWithRelayProofDisabledInConfig.into());
+            }
+            let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
+                .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+            let relay_state_proof =
+                GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
+                    relay_storage_root,
+                    relay_storage_proof,
+                )
+                .expect("Invalid relay chain state proof");
+
+            // TODO: move constant to utils:
+            pub const REGISTRAR_PARAS_INDEX: &[u8] = &hex_literal::hex![
+                "3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"
+            ];
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            // TODO: we don't even need to decode the value, only check if it exists
+            let relay_para_info = relay_state_proof
+                .read_entry::<ParaInfo<
+                    cumulus_primitives_core::relay_chain::AccountId,
+                    cumulus_primitives_core::relay_chain::Balance,
+                >>(key.as_slice(), None)
+                .map_err(|e| match e {
+                    ReadEntryErr::Proof => panic!("Invalid proof provided for registrar paras key"),
+                    e => panic!("Invalid proof provided for registrar paras key: {:?}", e),
+                })
+                .unwrap();
+            let relay_manager = relay_para_info.manager;
+
+            // Verify manager signature
+            // Should include:
+            // * para_id, in case the manager has more than 1 para in the relay
+            // * accountid in tanssi, to ensure that the creator role is assigned to the desired account
+            // * relay_proof_block_number or something time based, to make the signature expiring
+            //   ^ this can make UX very bad, but maybe we can check a conservative range and not the
+            //   exact block number? eg by using (relay_proof_block_number / 128) as the signature msg
+            // * parathread_params, to avoid registering a parathread as parachain and viceversa
+            //   ^ maybe not needed, the relay manager should trust the tanssi creator
+            // * also don't need genesis_data as part of the signature
+            let signature_msg: Vec<u8> = (para_id, &account, relay_proof_block_number).encode();
+
+            if !manager_signature.verify(&*signature_msg, &relay_manager) {
+                panic!("invalid signature")
+            }
+
+            Self::do_register(account, para_id, genesis_data)?;
+            // Insert parathread params
+            // TODO: need a separate proof that this para id is a parathread or parachain?
+            if let Some(parathread_params) = parathread_params {
+                ParathreadParams::<T>::insert(para_id, parathread_params);
+            }
+            Self::deposit_event(Event::ParaIdRegistered { para_id });
+
+            // Paras that are registered using this method do not need to be manually marked as valid
+            Self::do_mark_valid_for_collating(para_id)?;
+
+            Ok(())
+        }
+
+        /// Deregister a parachain that no longer exists in the relay chain. The origin of this
+        /// extrinsic will be rewarded with the parachain deposit.
+        #[pallet::call_index(9)]
+        // TODO: weight
+        #[pallet::weight(T::WeightInfo::deregister_immediate(
+            T::MaxGenesisDataSize::get(),
+            T::MaxLengthParaIds::get()
+        ).max(T::WeightInfo::deregister_scheduled(
+            T::MaxGenesisDataSize::get(),
+            T::MaxLengthParaIds::get()
+        )))]
+        pub fn deregister_with_relay_proof(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            relay_proof_block_number: u32,
+            relay_storage_proof: sp_trie::StorageProof,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            if !T::AllowRegisterWithRelayProof::get() {
+                return Err(Error::<T>::RegisterWithRelayProofDisabledInConfig.into());
+            }
+
+            let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
+                .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+            let relay_state_proof =
+                GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
+                    relay_storage_root,
+                    relay_storage_proof,
+                )
+                .expect("Invalid relay chain state proof");
+
+            // TODO: move constant to utils:
+            pub const REGISTRAR_PARAS_INDEX: &[u8] = &hex_literal::hex![
+                "3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"
+            ];
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            // TODO: we don't even need to decode the value, only check if it exists
+            let relay_para_info = relay_state_proof
+                .read_optional_entry::<ParaInfo<
+                    cumulus_primitives_core::relay_chain::AccountId,
+                    cumulus_primitives_core::relay_chain::Balance,
+                >>(key.as_slice())
+                .map_err(|e| match e {
+                    ReadEntryErr::Proof => panic!("Invalid proof provided for registrar paras key"),
+                    e => panic!("Invalid proof provided for registrar paras key: {:?}", e),
+                })
+                .unwrap();
+            if relay_para_info.is_some() {
+                panic!("Cannot deregister chain that still exists in relay")
+            }
+
+            // Take the deposit immediately and give it to origin account
+            if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
+                // Slash deposit from parachain creator
+                let (slashed_deposit, _not_slashed_deposit) =
+                    T::Currency::slash_reserved(&asset_info.creator, asset_info.deposit);
+                // _not_slashed_deposit can be greater than 0 if the account does not have enough reserved balance
+                // Should never happen but if it does, we just drop it
+                // TODO: is that the same as burning? Or as doing nothing? Either seems fine.
+
+                // Give deposit to origin account
+                // TODO: error handling
+                let _ = T::Currency::resolve_into_existing(&account, slashed_deposit);
+            }
+
+            Self::do_deregister(para_id)?;
 
             Ok(())
         }
@@ -698,6 +799,79 @@ pub mod pallet {
                 },
             );
             ParaGenesisData::<T>::insert(para_id, genesis_data);
+
+            Ok(())
+        }
+
+        fn do_deregister(para_id: ParaId) -> DispatchResult {
+            // Check if the para id is in "PendingVerification".
+            // This is a special case because then we can remove it immediately, instead of waiting 2 sessions.
+            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
+            if is_pending_verification {
+                Self::deposit_event(Event::ParaIdDeregistered { para_id });
+                // Cleanup immediately
+                Self::cleanup_deregistered_para_id(para_id);
+            } else {
+                Self::schedule_paused_parachain_change(|para_ids, paused| {
+                    // We have to find out where, in the sorted vec the para id is, if anywhere.
+
+                    match para_ids.binary_search(&para_id) {
+                        Ok(index) => {
+                            para_ids.remove(index);
+                        }
+                        Err(_) => {
+                            // If the para id is not registered, it may be paused. In that case, remove it from there
+                            match paused.binary_search(&para_id) {
+                                Ok(index) => {
+                                    paused.remove(index);
+                                }
+                                Err(_) => {
+                                    return Err(Error::<T>::ParaIdNotRegistered.into());
+                                }
+                            }
+                        }
+                    }
+
+                    Ok(())
+                })?;
+                // Mark this para id for cleanup later
+                Self::schedule_parachain_cleanup(para_id)?;
+                Self::deposit_event(Event::ParaIdDeregistered { para_id });
+            }
+
+            Ok(())
+        }
+
+        fn do_mark_valid_for_collating(para_id: ParaId) -> DispatchResult {
+            let is_pending_verification =
+                crate::pallet::PendingVerification::<T>::take(para_id).is_some();
+            if !is_pending_verification {
+                return Err(Error::<T>::ParaIdNotInPendingVerification.into());
+            }
+
+            Self::schedule_parachain_change(|para_ids| {
+                // We don't want to add duplicate para ids, so we check whether the potential new
+                // para id is already present in the list. Because the list is always ordered, we can
+                // leverage the binary search which makes this check O(log n).
+
+                match para_ids.binary_search(&para_id) {
+                    // This Ok is unreachable
+                    Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                    Err(index) => {
+                        para_ids
+                            .try_insert(index, para_id)
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                    }
+                }
+
+                Ok(())
+            })?;
+
+            T::RegistrarHooks::check_valid_for_collating(para_id)?;
+
+            Self::deposit_event(Event::ParaIdValidForCollating { para_id });
+
+            T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
             Ok(())
         }
@@ -1139,4 +1313,18 @@ where
 
         Ok(frame_system::RawOrigin::Signed(manager).into())
     }
+}
+
+// Need to copy ParaInfo from
+// polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
+// Because its fields are not public...
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo)]
+pub struct ParaInfo<Account, Balance> {
+    /// The account that has placed a deposit for registering this para.
+    manager: Account,
+    /// The amount reserved by the `manager` account for the registration.
+    deposit: Balance,
+    /// Whether the para registration should be locked from being controlled by the manager.
+    /// None means the lock had not been explicitly set, and should be treated as false.
+    locked: Option<bool>,
 }
