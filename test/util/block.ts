@@ -189,6 +189,36 @@ export function fetchIssuance(events: EventRecord[] = []) {
     return filtered[0];
 }
 
+export function fetchWithdrawnAmount(events: EventRecord[] = []) {
+    let withdrawnAmount = 0n;
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Withdraw"],
+        ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
+    );
+
+    for( let event of filtered) {
+        withdrawnAmount += event.amount.toBigInt()
+    }
+    return withdrawnAmount;
+}
+
+export function fetchDepositedAmount(events: EventRecord[] = []) {
+    let depositAmount = 0n;
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Deposit"],
+        ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
+    );
+
+    for( let event of filtered) {
+        depositAmount += event.amount.toBigInt()
+    }
+    return depositAmount;
+}
+
 export function fetchCollatorAssignmentTip(events: EventRecord[] = []) {
     const filtered = filterAndApply(
         events,
