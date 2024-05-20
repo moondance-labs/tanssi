@@ -412,6 +412,34 @@ where
     }
 }
 
+pub struct RegistrarParaManagerMigration<T>(pub PhantomData<T>);
+impl<T> Migration for RegistrarParaManagerMigration<T>
+where
+    T: pallet_registrar::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_RegistrarParaManagerMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        for (para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
+            pallet_registrar::ParaManager::<T>::insert(para_id, deposit.creator);
+        }
+
+        Weight::default()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -433,6 +461,8 @@ where
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
         let migrate_registrar_pending_verification =
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        let migrate_registrar_manager =
+            RegistrarParaManagerMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -443,6 +473,7 @@ where
             Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
             Box::new(migrate_registrar_pending_verification),
+            Box::new(migrate_registrar_manager),
         ]
     }
 }
@@ -479,6 +510,9 @@ where
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         let migrate_registrar_pending_verification =
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        let migrate_registrar_manager =
+            RegistrarParaManagerMigration::<Runtime>(Default::default());
+
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -500,6 +534,7 @@ where
             Box::new(migrate_add_collator_assignment_credits),
             Box::new(migrate_xcmp_queue_v4),
             Box::new(migrate_registrar_pending_verification),
+            Box::new(migrate_registrar_manager),
         ]
     }
 }

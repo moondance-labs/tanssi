@@ -633,8 +633,15 @@ pub mod pallet {
         pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
-            // * The signed_account is the para manager
-            ParaManager::<T>::get(para_id).as_ref() == Some(account)
+            // * The signed_account is the para manager (or creator if None)
+            if let Some(manager) = ParaManager::<T>::get(para_id) {
+                manager == *account
+            } else {
+                RegistrarDeposit::<T>::get(para_id)
+                    .map(|deposit_info| deposit_info.creator)
+                    .as_ref()
+                    == Some(account)
+            }
         }
 
         #[cfg(feature = "runtime-benchmarks")]
