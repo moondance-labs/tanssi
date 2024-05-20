@@ -15415,6 +15415,7 @@ dependencies = [
  "flume 0.10.14",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "fs2",
  "futures 0.3.30",
  "jsonrpsee",
  "log",
