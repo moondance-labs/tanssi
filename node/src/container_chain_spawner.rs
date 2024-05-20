@@ -862,6 +862,7 @@ fn check_paritydb_lock_held(db_path: &Path) -> Result<bool, std::io::Error> {
         .create(true)
         .read(true)
         .write(true)
+        .truncate(true)
         .open(lock_path.as_path())?;
     // Check if the lock file is busy by trying to lock it.
     // Returns err if failed to adquire the lock.
