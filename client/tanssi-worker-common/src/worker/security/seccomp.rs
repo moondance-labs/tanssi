@@ -127,13 +127,10 @@ fn try_restrict() -> Result<()> {
 
     // Restrict the creation of sockets.
     blacklisted_rules.insert(libc::SYS_socketpair, vec![]);
-    // TODO: Also need to disable this for IpcExt
-    //blacklisted_rules.insert(libc::SYS_socket, vec![]);
+    blacklisted_rules.insert(libc::SYS_socket, vec![]);
 
     // Prevent connecting to sockets for extra safety.
-    // Need this for the IpcExt socket
-    // TODO: enabling this also enables TCP sockets...
-    //blacklisted_rules.insert(libc::SYS_connect, vec![]);
+    blacklisted_rules.insert(libc::SYS_connect, vec![]);
 
     // Restrict io_uring.
     blacklisted_rules.insert(libc::SYS_io_uring_setup, vec![]);
