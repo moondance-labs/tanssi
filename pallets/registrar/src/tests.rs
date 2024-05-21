@@ -15,17 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, Error, Event},
-    frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec},
-    parity_scale_codec::Encode,
+    crate::{mock::*, Error, Event, ParaInfo, REGISTRAR_PARAS_INDEX},
+    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec, Hashable},
+    parity_scale_codec::{Decode, Encode},
     sp_core::Get,
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, SlotFrequency},
 };
-
-const ALICE: u64 = 1;
-//const BOB: u64 = 2;
 
 #[test]
 fn register_para_id_42() {
@@ -1307,6 +1305,225 @@ fn parathread_register_deregister_change_params() {
         run_to_session(3);
         assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_none());
     });
+}
+
+mod register_with_relay_proof {
+    use super::*;
+
+    #[test]
+    fn cannot_register_para_if_relay_root_not_stored() {
+        // Check that storage proof is invalid when the relay storage root provider returns `None`.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_ok!(ParaRegistrar::mark_valid_for_collating(
+                RuntimeOrigin::root(),
+                42.into(),
+            ));
+
+            // Intentionally don't store the storage root in Mock
+            let (_relay_parent_storage_root, proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+            // TODO: find a way to mock signatures or generate and hardcode one
+            let signature_encoded = vec![0u8];
+            let signature = cumulus_primitives_core::relay_chain::Signature::decode(
+                &mut signature_encoded.as_slice(),
+            )
+            .unwrap();
+
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(BOB),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::RelayStorageRootNotFound
+            );
+        });
+    }
+}
+
+mod deregister_with_relay_proof {
+    use super::*;
+
+    #[test]
+    fn can_deregister_with_empty_relay_state() {
+        // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_ok!(ParaRegistrar::mark_valid_for_collating(
+                RuntimeOrigin::root(),
+                42.into(),
+            ));
+
+            let alice_balance_before = System::account(ALICE).data;
+            let bob_balance_before = System::account(BOB).data;
+
+            let (relay_parent_storage_root, proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            // Can deregister para because it does not exist in the relay chain
+            assert_ok!(ParaRegistrar::deregister_with_relay_proof(
+                RuntimeOrigin::signed(BOB),
+                42.into(),
+                1,
+                proof,
+            ));
+            System::assert_last_event(Event::ParaIdDeregistered { para_id: 42.into() }.into());
+
+            // Check that Bob is given Alice deposit
+            let alice_balance_after = System::account(ALICE).data;
+            let bob_balance_after = System::account(BOB).data;
+            // Alice free balance has not increased
+            assert_eq!(alice_balance_after.free, alice_balance_before.free);
+            // Bob gained exactly Alice reserve
+            assert_eq!(
+                bob_balance_after.free,
+                bob_balance_before.free + alice_balance_before.reserved
+            );
+            // Alice no longer has any reserved balance
+            assert_eq!(alice_balance_after.reserved, 0);
+        });
+    }
+
+    #[test]
+    fn cannot_deregister_para_if_relay_root_not_stored() {
+        // Check that storage proof is invalid when the relay storage root provider returns `None`.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_ok!(ParaRegistrar::mark_valid_for_collating(
+                RuntimeOrigin::root(),
+                42.into(),
+            ));
+
+            // Intentionally don't store the storage root in Mock
+            let (_relay_parent_storage_root, proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+            assert_noop!(
+                ParaRegistrar::deregister_with_relay_proof(
+                    RuntimeOrigin::signed(BOB),
+                    42.into(),
+                    1,
+                    proof,
+                ),
+                Error::<Test>::RelayStorageRootNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_deregister_para_still_present_in_relay() {
+        // Create a relay state proof where a parachain is still registered there.
+        // Check that it cannot be deregistered.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_ok!(ParaRegistrar::mark_valid_for_collating(
+                RuntimeOrigin::root(),
+                42.into(),
+            ));
+
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: cumulus_primitives_core::relay_chain::AccountId::from([0; 32]),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            assert_noop!(
+                ParaRegistrar::deregister_with_relay_proof(
+                    RuntimeOrigin::signed(BOB),
+                    42.into(),
+                    1,
+                    proof,
+                ),
+                Error::<Test>::ParaStillExistsInRelay
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_deregister_invalid_storage_proof() {
+        // Passing an invalid storage proof returns an error, even if the para id could be
+        // deregistered with a real proof.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_ok!(ParaRegistrar::mark_valid_for_collating(
+                RuntimeOrigin::root(),
+                42.into(),
+            ));
+
+            let (relay_parent_storage_root, _actual_proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            // Instead of using the actual proof, just pass some random bytes
+            let proof =
+                sp_trie::StorageProof::new([b"A".to_vec(), b"AA".to_vec(), b"AAA".to_vec()]);
+
+            assert_noop!(
+                ParaRegistrar::deregister_with_relay_proof(
+                    RuntimeOrigin::signed(BOB),
+                    42.into(),
+                    1,
+                    proof,
+                ),
+                Error::<Test>::InvalidRelayStorageProof
+            );
+        });
+    }
 }
 
 #[test]

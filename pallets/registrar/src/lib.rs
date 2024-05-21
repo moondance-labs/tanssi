@@ -41,9 +41,6 @@ pub use weights::WeightInfo;
 pub use pallet::*;
 
 use dp_chain_state_snapshot::GenericStateProof;
-use dp_chain_state_snapshot::ReadEntryErr;
-use sp_core::H256;
-use sp_runtime::traits::Convert;
 use sp_runtime::traits::Verify;
 use {
     frame_support::{
@@ -58,7 +55,8 @@ use {
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, SessionContainerChains, SlotFrequency,
+        ParathreadParams as ParathreadParamsTy, RelayStorageRootProvider, SessionContainerChains,
+        SlotFrequency,
     },
 };
 
@@ -124,6 +122,9 @@ pub mod pallet {
         /// Origin that is allowed to call register and deregister
         type RegistrarOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
+        /// Origin that is allowed to call mark_valid_for_collating
+        type MarkValidForCollatingOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
         /// Max length of para id list
         #[pallet::constant]
         type MaxLengthParaIds: Get<u32>;
@@ -140,8 +141,7 @@ pub mod pallet {
             Success = Self::AccountId,
         >;
 
-        // TODO: proper trait
-        type RelayStorageRootProvider: Convert<u32, Option<H256>>;
+        type RelayStorageRootProvider: RelayStorageRootProvider;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -283,6 +283,12 @@ pub mod pallet {
         NotAParathread,
         /// The relay storage root for the corresponding block number could not be retrieved
         RelayStorageRootNotFound,
+        /// The provided relay storage proof is not valid
+        InvalidRelayStorageProof,
+        /// The provided signature from the parachain manager in the relay is not valid
+        InvalidRelayManagerSignature,
+        /// Tried to deregister a parachain that was not deregistered from the relay chain
+        ParaStillExistsInRelay,
     }
 
     #[pallet::hooks]
@@ -431,7 +437,7 @@ pub mod pallet {
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::mark_valid_for_collating(T::MaxLengthParaIds::get()))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            T::MarkValidForCollatingOrigin::ensure_origin(origin)?;
 
             Self::do_mark_valid_for_collating(para_id)?;
 
@@ -555,36 +561,27 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
-            let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
-                .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+            let relay_storage_root =
+                T::RelayStorageRootProvider::get_relay_storage_root(relay_proof_block_number)
+                    .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
             let relay_state_proof =
                 GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
                     relay_storage_root,
                     relay_storage_proof,
                 )
-                .expect("Invalid relay chain state proof");
+                .map_err(|_| Error::<T>::InvalidRelayStorageProof)?;
 
-            // TODO: move constant to utils:
-            pub const REGISTRAR_PARAS_INDEX: &[u8] = &hex_literal::hex![
-                "3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"
-            ];
             let bytes = para_id.twox_64_concat();
             let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
-            // TODO: we don't even need to decode the value, only check if it exists
             let relay_para_info = relay_state_proof
                 .read_entry::<ParaInfo<
                     cumulus_primitives_core::relay_chain::AccountId,
                     cumulus_primitives_core::relay_chain::Balance,
                 >>(key.as_slice(), None)
-                .map_err(|e| match e {
-                    ReadEntryErr::Proof => panic!("Invalid proof provided for registrar paras key"),
-                    e => panic!("Invalid proof provided for registrar paras key: {:?}", e),
-                })
-                .unwrap();
+                .map_err(|_| Error::<T>::InvalidRelayStorageProof)?;
             let relay_manager = relay_para_info.manager;
 
-            // Verify manager signature
-            // Should include:
+            // Verify manager signature. Includes:
             // * para_id, in case the manager has more than 1 para in the relay
             // * accountid in tanssi, to ensure that the creator role is assigned to the desired account
             // * relay_storage_root, to make the signature network-specific, and also make it expire
@@ -592,7 +589,7 @@ pub mod pallet {
             let signature_msg: Vec<u8> = (para_id, &account, relay_storage_root).encode();
 
             if !manager_signature.verify(&*signature_msg, &relay_manager) {
-                panic!("invalid signature")
+                return Err(Error::<T>::InvalidRelayManagerSignature.into());
             }
 
             Self::do_register(account, para_id, genesis_data)?;
@@ -602,9 +599,6 @@ pub mod pallet {
                 ParathreadParams::<T>::insert(para_id, parathread_params);
             }
             Self::deposit_event(Event::ParaIdRegistered { para_id });
-
-            // Paras that are registered using this method do not need to be manually marked as valid
-            Self::do_mark_valid_for_collating(para_id)?;
 
             Ok(())
         }
@@ -628,34 +622,28 @@ pub mod pallet {
         ) -> DispatchResult {
             let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
 
-            let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
-                .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+            let relay_storage_root =
+                T::RelayStorageRootProvider::get_relay_storage_root(relay_proof_block_number)
+                    .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
             let relay_state_proof =
                 GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
                     relay_storage_root,
                     relay_storage_proof,
                 )
-                .expect("Invalid relay chain state proof");
+                .map_err(|_| Error::<T>::InvalidRelayStorageProof)?;
 
-            // TODO: move constant to utils:
-            pub const REGISTRAR_PARAS_INDEX: &[u8] = &hex_literal::hex![
-                "3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"
-            ];
             let bytes = para_id.twox_64_concat();
             let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
             // TODO: we don't even need to decode the value, only check if it exists
+            // Need to add exists_storage method to dancekit
             let relay_para_info = relay_state_proof
                 .read_optional_entry::<ParaInfo<
                     cumulus_primitives_core::relay_chain::AccountId,
                     cumulus_primitives_core::relay_chain::Balance,
                 >>(key.as_slice())
-                .map_err(|e| match e {
-                    ReadEntryErr::Proof => panic!("Invalid proof provided for registrar paras key"),
-                    e => panic!("Invalid proof provided for registrar paras key: {:?}", e),
-                })
-                .unwrap();
+                .map_err(|_| Error::<T>::InvalidRelayStorageProof)?;
             if relay_para_info.is_some() {
-                panic!("Cannot deregister chain that still exists in relay")
+                return Err(Error::<T>::ParaStillExistsInRelay.into());
             }
 
             // Take the deposit immediately and give it to origin account
@@ -833,8 +821,7 @@ pub mod pallet {
         }
 
         fn do_mark_valid_for_collating(para_id: ParaId) -> DispatchResult {
-            let is_pending_verification =
-                crate::pallet::PendingVerification::<T>::take(para_id).is_some();
+            let is_pending_verification = PendingVerification::<T>::take(para_id).is_some();
             if !is_pending_verification {
                 return Err(Error::<T>::ParaIdNotInPendingVerification.into());
             }
@@ -1305,9 +1292,14 @@ where
     }
 }
 
+// TODO: move constant to dp_core:
+pub const REGISTRAR_PARAS_INDEX: &[u8] =
+    &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"];
+
 // Need to copy ParaInfo from
 // polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
 // Because its fields are not public...
+// TODO: move this to some utils crate
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo)]
 pub struct ParaInfo<Account, Balance> {
     /// The account that has placed a deposit for registering this para.

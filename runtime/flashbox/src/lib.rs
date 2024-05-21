@@ -22,7 +22,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use sp_core::H256;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {
@@ -30,7 +29,6 @@ use {
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
-use sp_runtime::traits::Convert;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
@@ -79,7 +77,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -93,7 +91,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
+        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        ShouldRotateAllCollators,
     },
 };
 pub use {
@@ -899,11 +898,11 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
         pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
-pub struct RelayStorageRootProvider;
+pub struct PalletRelayStorageRootProvider;
 
-impl Convert<u32, Option<H256>> for RelayStorageRootProvider {
-    fn convert(block_number: u32) -> Option<H256> {
-        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(block_number)
+impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(relay_block_number)
     }
 }
 
@@ -914,11 +913,12 @@ parameter_types! {
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
-    type RelayStorageRootProvider = RelayStorageRootProvider;
+    type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;

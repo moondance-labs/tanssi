@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_runtime::traits::Convert;
-use tp_container_chain_genesis_data::ContainerChainGenesisData;
-
 use {
     crate::{self as pallet_registrar, RegistrarHooks},
     frame_support::{
@@ -30,7 +27,8 @@ use {
         BuildStorage,
     },
     std::collections::BTreeMap,
-    tp_traits::ParaId,
+    tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_traits::{ParaId, RelayStorageRootProvider},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -106,9 +104,9 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 
 pub struct MockRelayStorageRootProvider;
 
-impl Convert<u32, Option<H256>> for MockRelayStorageRootProvider {
-    fn convert(_relay_block_number: u32) -> Option<H256> {
-        None
+impl RelayStorageRootProvider for MockRelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+        Mock::mock().relay_storage_roots.get(&relay_block_number).copied()
     }
 }
 
@@ -119,6 +117,7 @@ parameter_types! {
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
+    type MarkValidForCollatingOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
@@ -213,6 +212,7 @@ impl mock_data::Config for Test {}
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub called_hooks: Vec<HookCall>,
+    pub relay_storage_roots: BTreeMap<u32, H256>,
 }
 
 impl Drop for Mocks {
@@ -258,7 +258,8 @@ impl Mocks {
     }
 }
 
-const ALICE: u64 = 1;
+pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -267,7 +268,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(ALICE, 1_000)],
+        balances: vec![(ALICE, 1_000), (BOB, 1_000)],
     }
     .assimilate_storage(&mut t)
     .unwrap();

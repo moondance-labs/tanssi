@@ -13,13 +13,16 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+cumulus-primitives-core = { workspace = true }
+dp-chain-state-snapshot = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+hex-literal = { workspace = true }
 log = { workspace = true }
-cumulus-primitives-core = { workspace = true }
 pallet-configuration = { workspace = true }
 parity-scale-codec = { workspace = true }
+polkadot-runtime-common = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
@@ -28,11 +31,9 @@ sp-std = { workspace = true }
 sp-trie = { workspace = true }
 tp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
-dp-chain-state-snapshot = { workspace = true }
-hex-literal = { workspace = true }
-polkadot-runtime-common = { workspace = true }
 
 [dev-dependencies]
+cumulus-test-relay-sproof-builder = { workspace = true }
 pallet-balances = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
@@ -41,6 +42,8 @@ sp-runtime = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"cumulus-primitives-core/std",
+	"dp-chain-state-snapshot/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -48,22 +51,26 @@ std = [
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"parity-scale-codec/std",
+	"polkadot-runtime-common/std",
 	"scale-info/std",
 	"serde/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"sp-trie/std",
 	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
+	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
@@ -72,5 +79,6 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-configuration/try-runtime",
+	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 ]

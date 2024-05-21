@@ -9031,6 +9031,7 @@ name = "pallet-registrar"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "cumulus-test-relay-sproof-builder",
  "dp-chain-state-snapshot",
  "frame-benchmarking",
  "frame-support",
@@ -16054,6 +16055,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
+ "sp-core",
  "sp-runtime",
  "sp-std",
 ]
