@@ -23,6 +23,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     DanceboxRuntimeXcmConfigRelayChain,
+    PalletDataPreserversProfile,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
@@ -41,7 +42,6 @@ import type {
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsSlotFrequency,
-    XcmV3Response,
     XcmV3WeightLimit,
     XcmVersionedMultiAssets,
     XcmVersionedMultiLocation,
@@ -287,6 +287,51 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         dataPreservers: {
+            /** See [`Pallet::create_profile`]. */
+            createProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile]
+            >;
+            /** See [`Pallet::delete_profile`]. */
+            deleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_create_profile`]. */
+            forceCreateProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | string
+                        | Uint8Array,
+                    forAccount: AccountId32 | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile, AccountId32]
+            >;
+            /** See [`Pallet::force_delete_profile`]. */
+            forceDeleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_update_profile`]. */
+            forceUpdateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
+            >;
             /** See [`Pallet::set_boot_nodes`]. */
             setBootNodes: AugmentedSubmittable<
                 (
@@ -294,6 +339,18 @@ declare module "@polkadot/api-base/types/submittable" {
                     bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Vec<Bytes>]
+            >;
+            /** See [`Pallet::update_profile`]. */
+            updateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2189,39 +2246,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, PalletXcmCoreBuyerBuyCoreCollatorProof]
             >;
-            /** See [`Pallet::clean_up_expired_in_flight_orders`]. */
-            cleanUpExpiredInFlightOrders: AugmentedSubmittable<
-                (expiredInFlightOrders: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<u32>]
-            >;
-            /** See [`Pallet::clean_up_expired_pending_blocks`]. */
-            cleanUpExpiredPendingBlocks: AugmentedSubmittable<
-                (
-                    expiredPendingBlocksParaId: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]
-                ) => SubmittableExtrinsic<ApiType>,
-                [Vec<u32>]
-            >;
             /** See [`Pallet::force_buy_core`]. */
             forceBuyCore: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
-            >;
-            /** See [`Pallet::query_response`]. */
-            queryResponse: AugmentedSubmittable<
-                (
-                    queryId: u64 | AnyNumber | Uint8Array,
-                    response:
-                        | XcmV3Response
-                        | { Null: any }
-                        | { Assets: any }
-                        | { ExecutionResult: any }
-                        | { Version: any }
-                        | { PalletsInfo: any }
-                        | { DispatchResult: any }
-                        | string
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u64, XcmV3Response]
             >;
             /** See [`Pallet::set_relay_chain`]. */
             setRelayChain: AugmentedSubmittable<

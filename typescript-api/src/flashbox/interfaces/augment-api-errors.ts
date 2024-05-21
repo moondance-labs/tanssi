@@ -64,8 +64,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
+            NextProfileIdShouldBeAvailable: AugmentedError<ApiType>;
             /** This container chain does not have any boot nodes */
             NoBootNodes: AugmentedError<ApiType>;
+            UnknownProfileId: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

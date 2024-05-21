@@ -77,6 +77,10 @@ import type {
     PalletDataPreserversCall,
     PalletDataPreserversError,
     PalletDataPreserversEvent,
+    PalletDataPreserversHoldReason,
+    PalletDataPreserversProfile,
+    PalletDataPreserversProfileMode,
+    PalletDataPreserversRegisteredProfile,
     PalletIdentityAuthorityProperties,
     PalletIdentityCall,
     PalletIdentityError,
@@ -257,6 +261,10 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversCall: PalletDataPreserversCall;
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
+        PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversProfile: PalletDataPreserversProfile;
+        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
+        PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletIdentityAuthorityProperties: PalletIdentityAuthorityProperties;
         PalletIdentityCall: PalletIdentityCall;
         PalletIdentityError: PalletIdentityError;

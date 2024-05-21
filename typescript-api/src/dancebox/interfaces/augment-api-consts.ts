@@ -16,7 +16,6 @@ import type {
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
-    XcmV3Junctions,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -64,6 +63,7 @@ declare module "@polkadot/api-base/types/consts" {
         dataPreservers: {
             maxBootNodes: u32 & AugmentedConst<ApiType>;
             maxBootNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -373,16 +373,8 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         xcmCoreBuyer: {
-            /**
-             * Additional ttl for in flight orders (total would be CoreBuyingXCMQueryTtl + AdditionalTtlForInflightOrders)
-             * after which the in flight orders can be cleaned up by anyone.
-             */
-            additionalTtlForInflightOrders: u32 & AugmentedConst<ApiType>;
-            /** TTL to be used in xcm's notify query */
-            coreBuyingXCMQueryTtl: u32 & AugmentedConst<ApiType>;
-            /** TTL for pending blocks entry, which prevents anyone to submit another core buying xcm. */
-            pendingBlocksTtl: u32 & AugmentedConst<ApiType>;
-            universalLocation: XcmV3Junctions & AugmentedConst<ApiType>;
+            /** Limit how many in-flight XCM requests can be sent to the relay chain in one block. */
+            maxParathreads: u32 & AugmentedConst<ApiType>;
             /**
              * A configuration for base priority of unsigned transactions.
              *

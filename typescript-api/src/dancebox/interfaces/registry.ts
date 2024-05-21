@@ -104,6 +104,10 @@ import type {
     PalletDataPreserversCall,
     PalletDataPreserversError,
     PalletDataPreserversEvent,
+    PalletDataPreserversHoldReason,
+    PalletDataPreserversProfile,
+    PalletDataPreserversProfileMode,
+    PalletDataPreserversRegisteredProfile,
     PalletForeignAssetCreatorCall,
     PalletForeignAssetCreatorError,
     PalletForeignAssetCreatorEvent,
@@ -199,7 +203,6 @@ import type {
     PalletXcmCoreBuyerCall,
     PalletXcmCoreBuyerError,
     PalletXcmCoreBuyerEvent,
-    PalletXcmCoreBuyerInFlightCoreBuyingOrder,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmError,
     PalletXcmEvent,
@@ -393,6 +396,10 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversCall: PalletDataPreserversCall;
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
+        PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversProfile: PalletDataPreserversProfile;
+        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
+        PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletForeignAssetCreatorCall: PalletForeignAssetCreatorCall;
         PalletForeignAssetCreatorError: PalletForeignAssetCreatorError;
         PalletForeignAssetCreatorEvent: PalletForeignAssetCreatorEvent;
@@ -488,7 +495,6 @@ declare module "@polkadot/types/types/registry" {
         PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
         PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
         PalletXcmCoreBuyerEvent: PalletXcmCoreBuyerEvent;
-        PalletXcmCoreBuyerInFlightCoreBuyingOrder: PalletXcmCoreBuyerInFlightCoreBuyingOrder;
         PalletXcmCoreBuyerRelayXcmWeightConfigInner: PalletXcmCoreBuyerRelayXcmWeightConfigInner;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
