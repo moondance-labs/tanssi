@@ -12,22 +12,19 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-// Local
-use container_chain_template_frontier_runtime::opaque::Block;
+//! Runtime API for Services Payment pallet
 
-/// A set of APIs that ethereum-compatible runtimes must implement.
-pub trait EthCompatRuntimeApiCollection:
-    sp_api::ApiExt<Block>
-    + fp_rpc::EthereumRuntimeRPCApi<Block>
-    + fp_rpc::ConvertTransactionRuntimeApi<Block>
-{
-}
+#![cfg_attr(not(feature = "std"), no_std)]
 
-impl<Api> EthCompatRuntimeApiCollection for Api where
-    Api: sp_api::ApiExt<Block>
-        + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + fp_rpc::ConvertTransactionRuntimeApi<Block>
-{
+sp_api::decl_runtime_apis! {
+    pub trait ServicesPaymentApi<Balance, ParaId>
+    where
+        Balance: parity_scale_codec::Codec,
+        ParaId: parity_scale_codec::Codec,
+    {
+        fn block_cost(para_id: ParaId) -> Balance;
+        fn collator_assignment_cost(para_id: ParaId) -> Balance;
+    }
 }

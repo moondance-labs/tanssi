@@ -126,10 +126,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .into()
 }
 
-pub trait GetCollators<AccountId, SessionIndex> {
-    fn collators(session_index: SessionIndex) -> Vec<AccountId>;
-}
-
 pub const SESSION_LEN: u64 = 5;
 
 pub fn run_to_session(n: u32) {

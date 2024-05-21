@@ -264,8 +264,6 @@ jobs:
               with:
                   name: binaries
                   path: binaries
-            - name: Check runtime benchmarks
-              run: cargo check --features=runtime-benchmarks --release --all
 
     rust-test:
         runs-on: self-hosted

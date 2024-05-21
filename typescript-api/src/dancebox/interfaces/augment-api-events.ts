@@ -1309,7 +1309,21 @@ declare module "@polkadot/api-base/types/events" {
         };
         xcmCoreBuyer: {
             /** An XCM message to buy a core for this parathread has been sent to the relay chain. */
-            BuyCoreXcmSent: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            BuyCoreXcmSent: AugmentedEvent<
+                ApiType,
+                [paraId: u32, transactionStatusQueryId: u64],
+                { paraId: u32; transactionStatusQueryId: u64 }
+            >;
+            /** We cleaned up expired in flight orders entries. */
+            CleanedUpExpiredInFlightOrderEntries: AugmentedEvent<ApiType, [paraIds: Vec<u32>], { paraIds: Vec<u32> }>;
+            /** We cleaned up expired pending blocks entries. */
+            CleanedUpExpiredPendingBlocksEntries: AugmentedEvent<ApiType, [paraIds: Vec<u32>], { paraIds: Vec<u32> }>;
+            /** We received response for xcm */
+            ReceivedBuyCoreXCMResult: AugmentedEvent<
+                ApiType,
+                [paraId: u32, response: XcmV3Response],
+                { paraId: u32; response: XcmV3Response }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

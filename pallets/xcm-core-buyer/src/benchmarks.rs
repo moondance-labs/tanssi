@@ -24,21 +24,25 @@ use {
     },
     core::marker::PhantomData,
     frame_benchmarking::{account, v2::*},
-    frame_support::{assert_ok, pallet_prelude::Weight, BoundedBTreeSet},
+    frame_support::{assert_ok, pallet_prelude::Weight, BoundedVec},
     frame_system::RawOrigin,
-    sp_std::{collections::btree_set::BTreeSet, vec},
+    sp_std::vec,
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
 pub const BUY_EXECUTION_COST: u128 = 50_000_000;
 pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
-#[benchmarks]
+#[benchmarks(where <T as frame_system::Config>::RuntimeOrigin: From<pallet_xcm::Origin>)]
 mod benchmarks {
     use super::*;
+    use crate::{InFlightCoreBuyingOrder, PendingBlocks, QueryIdToParaId};
+    use frame_system::pallet_prelude::BlockNumberFor;
+    use staging_xcm::latest::{MaybeErrorCode, QueryId};
+    use staging_xcm::v3::{MultiLocation, Response};
 
     #[benchmark]
-    fn force_buy_core(x: Linear<1, 99>) {
+    fn force_buy_core() {
         assert_ok!(Pallet::<T>::set_relay_xcm_weight_config(
             RawOrigin::Root.into(),
             Some(RelayXcmWeightConfigInner {
@@ -48,15 +52,24 @@ mod benchmarks {
             }),
         ));
 
-        let para_id = ParaId::from(x + 1);
-        assert_eq!(InFlightOrders::<T>::get(), BTreeSet::new());
+        let x = 1000u32;
 
-        // Mock `x` xcm messages already sent in this block
-        let bbs: BoundedBTreeSet<ParaId, _> = BTreeSet::from_iter((0..x).map(ParaId::from))
-            .try_into()
-            .expect("x is greater than MaxParathreads");
-        InFlightOrders::<T>::put(bbs);
-        assert!(!InFlightOrders::<T>::get().contains(&para_id));
+        let para_id = ParaId::from(x + 1);
+        for i in 0..=x {
+            InFlightOrders::<T>::set(
+                ParaId::from(i),
+                Some(InFlightCoreBuyingOrder {
+                    para_id: ParaId::from(i),
+                    query_id: QueryId::from(i),
+                    ttl: <frame_system::Pallet<T>>::block_number()
+                        + BlockNumberFor::<T>::from(100u32),
+                }),
+            );
+
+            QueryIdToParaId::<T>::set(QueryId::from(i), Some(ParaId::from(i)));
+        }
+
+        assert!(InFlightOrders::<T>::get(para_id).is_none());
 
         // For the extrinsic to succeed, we need to ensure that:
         // * the para_id is a parathread
@@ -73,7 +86,98 @@ mod benchmarks {
         #[extrinsic_call]
         Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);
 
-        assert!(InFlightOrders::<T>::get().contains(&para_id));
+        assert!(InFlightOrders::<T>::get(para_id).is_some());
+    }
+
+    #[benchmark]
+    fn query_response() {
+        let x = 1000u32;
+
+        let para_id = ParaId::from(x);
+        for i in 0..=x {
+            InFlightOrders::<T>::set(
+                ParaId::from(i),
+                Some(InFlightCoreBuyingOrder {
+                    para_id: ParaId::from(i),
+                    query_id: QueryId::from(i),
+                    ttl: <frame_system::Pallet<T>>::block_number()
+                        + BlockNumberFor::<T>::from(100u32),
+                }),
+            );
+
+            QueryIdToParaId::<T>::set(QueryId::from(i), Some(ParaId::from(i)));
+        }
+
+        assert!(InFlightOrders::<T>::get(para_id).is_some());
+
+        let response = if x % 2 == 0 {
+            Response::DispatchResult(MaybeErrorCode::Success)
+        } else {
+            Response::DispatchResult(MaybeErrorCode::Error(BoundedVec::default()))
+        };
+        let xcm_origin = pallet_xcm::Origin::Response(MultiLocation::here());
+
+        #[extrinsic_call]
+        Pallet::<T>::query_response(xcm_origin, QueryId::from(x), response);
+
+        assert!(InFlightOrders::<T>::get(para_id).is_none());
+        assert!(QueryIdToParaId::<T>::get(QueryId::from(x)).is_none());
+
+        if x % 2 == 0 {
+            assert!(PendingBlocks::<T>::get(para_id).is_some());
+        } else {
+            assert!(PendingBlocks::<T>::get(para_id).is_none());
+        }
+    }
+
+    #[benchmark]
+    fn clean_up_expired_in_flight_orders(x: Linear<1, 1000>) {
+        let caller: T::AccountId = whitelisted_caller();
+        for i in 0..=x {
+            InFlightOrders::<T>::set(
+                ParaId::from(i),
+                Some(InFlightCoreBuyingOrder {
+                    para_id: ParaId::from(i),
+                    query_id: QueryId::from(i),
+                    ttl: BlockNumberFor::<T>::from(0u32),
+                }),
+            );
+
+            QueryIdToParaId::<T>::set(QueryId::from(i), Some(ParaId::from(i)));
+        }
+
+        let para_ids_to_clean_up = (0..=x).map(ParaId::from).collect();
+
+        #[extrinsic_call]
+        Pallet::<T>::clean_up_expired_in_flight_orders(
+            RawOrigin::Signed(caller),
+            para_ids_to_clean_up,
+        );
+
+        for i in 0..=x {
+            assert!(InFlightOrders::<T>::get(ParaId::from(i)).is_none());
+            assert!(QueryIdToParaId::<T>::get(QueryId::from(i)).is_none());
+        }
+    }
+
+    #[benchmark]
+    fn clean_up_expired_pending_blocks(x: Linear<1, 1000>) {
+        let caller: T::AccountId = whitelisted_caller();
+        for i in 0..=x {
+            PendingBlocks::<T>::set(ParaId::from(i), Some(BlockNumberFor::<T>::from(0u32)));
+        }
+
+        let para_ids_to_clean_up = (0..=x).map(ParaId::from).collect();
+
+        #[extrinsic_call]
+        Pallet::<T>::clean_up_expired_pending_blocks(
+            RawOrigin::Signed(caller),
+            para_ids_to_clean_up,
+        );
+
+        for i in 0..=x {
+            assert!(PendingBlocks::<T>::get(ParaId::from(i)).is_none());
+        }
     }
 
     #[benchmark]

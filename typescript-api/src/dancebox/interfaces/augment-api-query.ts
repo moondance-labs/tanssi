@@ -70,6 +70,7 @@ import type {
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
+    PalletXcmCoreBuyerInFlightCoreBuyingOrder,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
@@ -1282,8 +1283,26 @@ declare module "@polkadot/api-base/types/storage" {
              * Set of parathreads that have already sent an XCM message to buy a core recently. Used to avoid 2 collators
              * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same parathread.
              */
-            inFlightOrders: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
+            inFlightOrders: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletXcmCoreBuyerInFlightCoreBuyingOrder>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Number of pending blocks */
+            pendingBlocks: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Mapping of QueryId to ParaId */
+            queryIdToParaId: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /**
              * This must be set by root with the value of the relay chain xcm call weight and extrinsic weight limit. This is
              * a storage item because relay chain weights can change, so we need to be able to adjust them without doing a

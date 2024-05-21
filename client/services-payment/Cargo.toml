@@ -1,0 +1,22 @@
+[package]
+name = "services-payment-rpc"
+authors = { workspace = true }
+description = "RPC interface for the Services Payment pallet"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+jsonrpsee = { workspace = true }
+pallet-services-payment-runtime-api = { workspace = true, features = [ "std" ] }
+parity-scale-codec = { workspace = true }
+sc-client-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
+sp-runtime = { workspace = true, features = [ "std" ] }

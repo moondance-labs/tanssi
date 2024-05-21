@@ -27,12 +27,15 @@ use {
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
-    sc_client_api::AuxStore,
+    sc_client_api::{AuxStore, UsageProvider},
     sc_consensus_manual_seal::{
         rpc::{ManualSeal, ManualSealApiServer},
         EngineCommand,
     },
     sc_transaction_pool_api::TransactionPool,
+    services_payment_rpc::{
+        ServicesPayment, ServicesPaymentApiServer as _, ServicesPaymentRuntimeApi,
+    },
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
@@ -68,10 +71,12 @@ where
         + HeaderMetadata<Block, Error = BlockChainError>
         + Send
         + Sync
+        + UsageProvider<Block>
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
     C::Api: StreamPaymentRuntimeApi<Block, u64, u128, u128>,
+    C::Api: ServicesPaymentRuntimeApi<Block, u128, ParaId>,
     P: TransactionPool + Sync + Send + 'static,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -86,7 +91,8 @@ where
     } = deps;
 
     module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-    module.merge(StreamPayment::<_, Block>::new(client).into_rpc())?;
+    module.merge(StreamPayment::<_, Block>::new(client.clone()).into_rpc())?;
+    module.merge(ServicesPayment::<_, Block>::new(client).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(

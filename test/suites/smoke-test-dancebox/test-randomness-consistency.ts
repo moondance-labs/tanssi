@@ -22,7 +22,7 @@ describeSuite({
                 if (runtimeVersion < 300) {
                     return;
                 }
-                const sessionLength = 300;
+                const sessionLength = 600;
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
                 const randomness = await api.query.collatorAssignment.randomness();
 

@@ -945,7 +945,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1015,6 +1015,8 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
         DataPreservers::para_deregistered(para_id);
 
         ServicesPayment::para_deregistered(para_id);
+
+        XcmCoreBuyer::para_deregistered(para_id);
 
         Weight::default()
     }
@@ -2342,8 +2344,21 @@ impl_runtime_apis! {
             SLOT_DURATION
         }
     }
+
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+        fn block_cost(para_id: ParaId) -> Balance {
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
+            block_production_costs
+        }
+
+        fn collator_assignment_cost(para_id: ParaId) -> Balance {
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+            collator_assignment_costs
+        }
+    }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 // TODO: this should be removed but currently if we remove it the relay does not check anything
