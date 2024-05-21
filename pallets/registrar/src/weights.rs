@@ -61,6 +61,7 @@ pub trait WeightInfo {
 	fn unpause_container_chain(y: u32, ) -> Weight;
 	fn register_parathread(x: u32, y: u32, z: u32, ) -> Weight;
 	fn set_parathread_params(y: u32, ) -> Weight;
+	fn set_para_manager() -> Weight;
 }
 
 /// Weights for pallet_registrar using the Substrate node and recommended hardware.
@@ -263,6 +264,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::ParaManager` (r:0 w:1)
+	/// Proof: `Registrar::ParaManager` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	fn set_para_manager() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `204`
+		//  Estimated: `3669`
+		// Minimum execution time: 12_741_000 picoseconds.
+		Weight::from_parts(13_119_000, 3669)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -462,6 +476,19 @@ impl WeightInfo for () {
 		// Minimum execution time: 19_970_000 picoseconds.
 		Weight::from_parts(23_219_566, 3948)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::ParaManager` (r:0 w:1)
+	/// Proof: `Registrar::ParaManager` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	fn set_para_manager() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `204`
+		//  Estimated: `3669`
+		// Minimum execution time: 12_741_000 picoseconds.
+		Weight::from_parts(13_119_000, 3669)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

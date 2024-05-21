@@ -18,9 +18,9 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks},
+    crate::{Call, Config, DepositBalanceOf, EnsureSignedByManager, Pallet, RegistrarHooks},
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::Currency,
+    frame_support::traits::{Currency, EnsureOriginWithArg},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -445,6 +445,31 @@ mod benchmarks {
         assert_eq!(
             Pallet::<T>::parathread_params(ParaId::from(y - 1)).map(|x| x.slot_frequency),
             Some(new_slot_frequency)
+        );
+    }
+
+    #[benchmark]
+    fn set_para_manager() {
+        let para_id = 1001u32.into();
+
+        let origin = EnsureSignedByManager::<T>::try_successful_origin(&para_id)
+            .expect("failed to create ManagerOrigin");
+
+        let manager_address = account("sufficient", 0, 1000);
+
+        // Before call: not set as manager
+        assert_ne!(
+            crate::ParaManager::<T>::get(para_id).as_ref(),
+            Some(&manager_address)
+        );
+
+        #[extrinsic_call]
+        Pallet::<T>::set_para_manager(origin as T::RuntimeOrigin, para_id, manager_address.clone());
+
+        // After call: para manager
+        assert_eq!(
+            crate::ParaManager::<T>::get(para_id).as_ref(),
+            Some(&manager_address)
         );
     }
 

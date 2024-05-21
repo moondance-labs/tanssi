@@ -236,6 +236,8 @@ declare module "@polkadot/api-base/types/errors" {
             GenesisDataTooBig: AugmentedError<ApiType>;
             /** Tried to change parathread params for a para id that is not a registered parathread */
             NotAParathread: AugmentedError<ApiType>;
+            /** Attempted to execute an extrinsic meant only for the para creator */
+            NotParaCreator: AugmentedError<ApiType>;
             /** Tried to register a ParaId with an account that did not have enough balance for the deposit */
             NotSufficientDeposit: AugmentedError<ApiType>;
             /** Attempted to deregister a ParaId that is already being deregistered */
