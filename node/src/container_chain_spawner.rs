@@ -742,14 +742,48 @@ fn open_and_maybe_delete_db(
     Ok(())
 }
 
-// TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
-// but we want to delete everything under
-//     Collator2002-01/data/containers/chains/simple_container_2002
+/// Remove the container chain database folder. This is called with db_path:
+///     `Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002`
+/// but we want to delete everything under
+///     `Collator2002-01/data/containers/chains/simple_container_2002`
+/// So we use `delete_empty_folders_recursive` to try to remove 2 parent folders as well, but only
+/// if they are empty. This is to avoid removing any secret keys or other important data.
 fn delete_container_chain_db(db_path: &Path) {
-    if db_path.exists() {
-        std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
+    // Remove folder `full-container-2002`
+    let _ = std::fs::remove_dir_all(db_path);
+    if let Some(parent) = db_path.parent() {
+        // Remove folder `paritydb` if empty
+        let _ = delete_empty_folders_recursive(parent);
+        if let Some(parent2) = parent.parent() {
+            // Remove folder `simple_container_2002` if empty
+            let _ = delete_empty_folders_recursive(parent2);
+        }
     }
+}
+
+/// Removes all empty folders in `path`, recursively. Then, if `path` is empty, it removes it as well.
+/// Ignores any IO errors.
+fn delete_empty_folders_recursive(path: &Path) {
+    let entry_iter = std::fs::read_dir(path);
+    let entry_iter = match entry_iter {
+        Ok(x) => x,
+        Err(_e) => return,
+    };
+
+    for entry in entry_iter {
+        let entry = match entry {
+            Ok(x) => x,
+            Err(_e) => continue,
+        };
+
+        let path = entry.path();
+        if path.is_dir() {
+            let _ = delete_empty_folders_recursive(&path);
+        }
+    }
+
+    // Try to remove dir. Returns an error if the directory is not empty, but we ignore it.
+    let _ = std::fs::remove_dir(path);
 }
 
 /// Parse a list of boot nodes in `Vec<u8>` format. Invalid boot nodes are filtered out.
