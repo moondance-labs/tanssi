@@ -15,13 +15,16 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::assert_expected_events,
-    crate::common::xcm::{
-        mocknets::{
-            EthereumReceiver, FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
-            WestendRelay as Westend, WestendRelayPallet, WestendSender,
+    crate::{
+        assert_expected_events,
+        common::xcm::{
+            mocknets::{
+                EthereumReceiver, FrontierTemplatePara as FrontierTemplate,
+                FrontierTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet,
+                WestendSender,
+            },
+            *,
         },
-        *,
     },
     frame_support::{
         assert_ok,

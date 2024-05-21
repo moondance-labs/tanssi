@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::Currency;
-use pallet_treasury::ArgumentsFactory;
-use sp_std::marker::PhantomData;
+use {
+    frame_support::traits::Currency, pallet_treasury::ArgumentsFactory, sp_std::marker::PhantomData,
+};
 pub struct TreasurtBenchmarkHelper<T>(PhantomData<T>);
 
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasurtBenchmarkHelper<T>

@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::assert_expected_events;
-use staging_xcm::latest::{MaybeErrorCode, Response};
-use staging_xcm::v3::QueryId;
 use {
-    crate::common::{
-        dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
-        xcm::{
-            mocknets::{
-                DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
-                RococoRelayPallet, RococoSender,
+    crate::{
+        assert_expected_events,
+        common::{
+            dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
+            xcm::{
+                mocknets::{
+                    DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+                    RococoRelayPallet, RococoSender,
+                },
+                *,
             },
-            *,
         },
     },
     core::marker::PhantomData,
@@ -35,6 +35,10 @@ use {
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
     sp_runtime::AccountId32,
+    staging_xcm::{
+        latest::{MaybeErrorCode, Response},
+        v3::QueryId,
+    },
     staging_xcm_executor::traits::ConvertLocation,
     tp_traits::{ParaId, SlotFrequency},
     xcm_emulator::{Chain, RelayChain},

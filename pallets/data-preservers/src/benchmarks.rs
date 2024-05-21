@@ -266,5 +266,9 @@ mod benchmarks {
         assert_eq!(Profiles::<T>::get(0), None);
     }
 
-    impl_benchmark_test_suite!(Pallet, crate::mock::ExtBuilder::default().build(), crate::mock::Test);
+    impl_benchmark_test_suite!(
+        Pallet,
+        crate::mock::ExtBuilder::default().build(),
+        crate::mock::Test
+    );
 }

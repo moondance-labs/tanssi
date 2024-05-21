@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use fc_rpc::frontier_backend_client::{self, is_canon};
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
-use sp_blockchain::HeaderBackend;
-use sp_core::H256;
-use sp_runtime::traits::Block;
-use std::{marker::PhantomData, sync::Arc};
+use {
+    fc_rpc::frontier_backend_client::{self, is_canon},
+    jsonrpsee::{core::RpcResult, proc_macros::rpc},
+    sp_blockchain::HeaderBackend,
+    sp_core::H256,
+    sp_runtime::traits::Block,
+    std::{marker::PhantomData, sync::Arc},
+};
 
 #[rpc(server)]
 #[async_trait::async_trait]

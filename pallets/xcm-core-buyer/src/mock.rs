@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use pallet_xcm::Origin;
-use staging_xcm::prelude::{GlobalConsensus, Parachain, X2};
-use staging_xcm::prelude::{InteriorMultiLocation, NetworkId};
 use {
     crate::{
         self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
@@ -29,6 +26,7 @@ use {
         parameter_types,
         traits::{ConstU64, Everything},
     },
+    pallet_xcm::Origin,
     sp_core::H256,
     sp_io::TestExternalities,
     sp_runtime::{
@@ -36,8 +34,9 @@ use {
         BuildStorage,
     },
     sp_std::collections::btree_map::BTreeMap,
-    staging_xcm::latest::{
-        MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash,
+    staging_xcm::{
+        latest::{MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash},
+        prelude::{GlobalConsensus, InteriorMultiLocation, NetworkId, Parachain, X2},
     },
     tp_traits::{ParathreadParams, SlotFrequency},
 };
