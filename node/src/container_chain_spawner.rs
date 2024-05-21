@@ -746,18 +746,14 @@ fn open_and_maybe_delete_db(
 ///     `Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002`
 /// but we want to delete everything under
 ///     `Collator2002-01/data/containers/chains/simple_container_2002`
-/// So we use `delete_empty_folders_recursive` to try to remove 2 parent folders as well, but only
+/// So we use `delete_empty_folders_recursive` to try to remove the parent folders as well, but only
 /// if they are empty. This is to avoid removing any secret keys or other important data.
 fn delete_container_chain_db(db_path: &Path) {
     // Remove folder `full-container-2002`
     let _ = std::fs::remove_dir_all(db_path);
-    if let Some(parent) = db_path.parent() {
-        // Remove folder `paritydb` if empty
+    // Remove all the empty folders inside `simple_container_2002`, including self
+    if let Some(parent) = db_path.ancestors().nth(2) {
         let _ = delete_empty_folders_recursive(parent);
-        if let Some(parent2) = parent.parent() {
-            // Remove folder `simple_container_2002` if empty
-            let _ = delete_empty_folders_recursive(parent2);
-        }
     }
 }
 
@@ -820,6 +816,7 @@ fn parse_boot_nodes_ignore_invalid(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
@@ -1250,5 +1247,19 @@ mod tests {
             parse_boot_nodes_ignore_invalid(vec![bootnode1], para_id).len(),
             1
         );
+    }
+
+    #[test]
+    fn path_ancestors() {
+        // Test the implementation of `delete_container_chain_db`
+        let db_path = PathBuf::from("/tmp/zombienet/Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002");
+        let parent = db_path.ancestors().nth(2).unwrap();
+
+        assert_eq!(
+            parent,
+            PathBuf::from(
+                "/tmp/zombienet/Collator2002-01/data/containers/chains/simple_container_2002"
+            )
+        )
     }
 }
