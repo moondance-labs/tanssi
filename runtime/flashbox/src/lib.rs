@@ -63,7 +63,7 @@ use {
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
-        EnsureRoot,
+        EnsureNever, EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
@@ -917,7 +917,7 @@ impl pallet_registrar::Config for Runtime {
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
-    type AllowRegisterWithRelayProof = ConstBool<false>;
+    type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
     type RelayStorageRootProvider = RelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_runtime::traits::Convert;
 use tp_container_chain_genesis_data::ContainerChainGenesisData;
 
 use {
@@ -103,6 +104,14 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     }
 }
 
+pub struct MockRelayStorageRootProvider;
+
+impl Convert<u32, Option<H256>> for MockRelayStorageRootProvider {
+    fn convert(_relay_block_number: u32) -> Option<H256> {
+        None
+    }
+}
+
 parameter_types! {
     pub const DepositAmount: Balance = 100;
     pub const MaxLengthTokenSymbol: u32 = 255;
@@ -113,6 +122,8 @@ impl pallet_registrar::Config for Test {
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type RegisterWithRelayProofOrigin = frame_system::EnsureSigned<u64>;
+    type RelayStorageRootProvider = MockRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;

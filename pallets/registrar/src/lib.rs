@@ -135,8 +135,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxLengthTokenSymbol: Get<u32>;
 
-        #[pallet::constant]
-        type AllowRegisterWithRelayProof: Get<bool>;
+        type RegisterWithRelayProofOrigin: EnsureOrigin<
+            Self::RuntimeOrigin,
+            Success = Self::AccountId,
+        >;
 
         // TODO: proper trait
         type RelayStorageRootProvider: Convert<u32, Option<H256>>;
@@ -279,8 +281,6 @@ pub mod pallet {
         NotSufficientDeposit,
         /// Tried to change parathread params for a para id that is not a registered parathread
         NotAParathread,
-        /// register_with_relay_proof disabled in config
-        RegisterWithRelayProofDisabledInConfig,
         /// The relay storage root for the corresponding block number could not be retrieved
         RelayStorageRootNotFound,
     }
@@ -554,10 +554,7 @@ pub mod pallet {
             manager_signature: cumulus_primitives_core::relay_chain::Signature,
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
-            let account = ensure_signed(origin)?;
-            if !T::AllowRegisterWithRelayProof::get() {
-                return Err(Error::<T>::RegisterWithRelayProofDisabledInConfig.into());
-            }
+            let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
             let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
                 .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
             let relay_state_proof =
@@ -590,13 +587,9 @@ pub mod pallet {
             // Should include:
             // * para_id, in case the manager has more than 1 para in the relay
             // * accountid in tanssi, to ensure that the creator role is assigned to the desired account
-            // * relay_proof_block_number or something time based, to make the signature expiring
-            //   ^ this can make UX very bad, but maybe we can check a conservative range and not the
-            //   exact block number? eg by using (relay_proof_block_number / 128) as the signature msg
-            // * parathread_params, to avoid registering a parathread as parachain and viceversa
-            //   ^ maybe not needed, the relay manager should trust the tanssi creator
-            // * also don't need genesis_data as part of the signature
-            let signature_msg: Vec<u8> = (para_id, &account, relay_proof_block_number).encode();
+            // * relay_storage_root, to make the signature network-specific, and also make it expire
+            //     when the relay storage root expires.
+            let signature_msg: Vec<u8> = (para_id, &account, relay_storage_root).encode();
 
             if !manager_signature.verify(&*signature_msg, &relay_manager) {
                 panic!("invalid signature")
@@ -633,10 +626,7 @@ pub mod pallet {
             relay_proof_block_number: u32,
             relay_storage_proof: sp_trie::StorageProof,
         ) -> DispatchResult {
-            let account = ensure_signed(origin)?;
-            if !T::AllowRegisterWithRelayProof::get() {
-                return Err(Error::<T>::RegisterWithRelayProofDisabledInConfig.into());
-            }
+            let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
 
             let relay_storage_root = T::RelayStorageRootProvider::convert(relay_proof_block_number)
                 .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
