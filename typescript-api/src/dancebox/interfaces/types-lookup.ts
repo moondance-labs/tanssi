@@ -832,13 +832,19 @@ declare module "@polkadot/types/lookup" {
         readonly asParathreadParamsChanged: {
             readonly paraId: u32;
         } & Struct;
+        readonly isParaManagerChanged: boolean;
+        readonly asParaManagerChanged: {
+            readonly paraId: u32;
+            readonly managerAddress: AccountId32;
+        } & Struct;
         readonly type:
             | "ParaIdRegistered"
             | "ParaIdDeregistered"
             | "ParaIdValidForCollating"
             | "ParaIdPaused"
             | "ParaIdUnpaused"
-            | "ParathreadParamsChanged";
+            | "ParathreadParamsChanged"
+            | "ParaManagerChanged";
     }
 
     /** @name PalletCollatorAssignmentEvent (62) */
@@ -3442,6 +3448,11 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly slotFrequency: TpTraitsSlotFrequency;
         } & Struct;
+        readonly isSetParaManager: boolean;
+        readonly asSetParaManager: {
+            readonly paraId: u32;
+            readonly managerAddress: AccountId32;
+        } & Struct;
         readonly type:
             | "Register"
             | "Deregister"
@@ -3449,7 +3460,8 @@ declare module "@polkadot/types/lookup" {
             | "PauseContainerChain"
             | "UnpauseContainerChain"
             | "RegisterParathread"
-            | "SetParathreadParams";
+            | "SetParathreadParams"
+            | "SetParaManager";
     }
 
     /** @name TpContainerChainGenesisDataContainerChainGenesisData (276) */
@@ -4911,6 +4923,7 @@ declare module "@polkadot/types/lookup" {
         readonly isParaIdNotInPendingVerification: boolean;
         readonly isNotSufficientDeposit: boolean;
         readonly isNotAParathread: boolean;
+        readonly isNotParaCreator: boolean;
         readonly type:
             | "ParaIdAlreadyRegistered"
             | "ParaIdNotRegistered"
@@ -4921,7 +4934,8 @@ declare module "@polkadot/types/lookup" {
             | "GenesisDataTooBig"
             | "ParaIdNotInPendingVerification"
             | "NotSufficientDeposit"
-            | "NotAParathread";
+            | "NotAParathread"
+            | "NotParaCreator";
     }
 
     /** @name PalletConfigurationHostConfiguration (414) */
