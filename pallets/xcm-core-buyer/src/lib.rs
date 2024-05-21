@@ -20,6 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::{Deserialize, Serialize};
 pub use pallet::*;
 
 #[cfg(test)]
@@ -33,9 +34,11 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use tp_traits::{AuthorNotingHook, BlockNumber};
 use {
     dp_core::ParaId,
     frame_support::{
+        dispatch::GetDispatchInfo,
         pallet_prelude::*,
         traits::fungible::{Balanced, Inspect},
     },
@@ -43,6 +46,7 @@ use {
     parity_scale_codec::EncodeLike,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
+    staging_xcm::v3::Response,
     staging_xcm::{
         prelude::*,
         v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Xcm},
@@ -50,9 +54,51 @@ use {
     tp_traits::ParathreadParams,
 };
 
+pub trait XCMNotifier<T: Config> {
+    fn new_notify_query(
+        responder: impl Into<MultiLocation>,
+        notify: impl Into<<T as Config>::RuntimeCall>,
+        timeout: BlockNumberFor<T>,
+        match_querier: impl Into<MultiLocation>,
+    ) -> u64;
+}
+
+/// Dummy implementation. Should only be used for testing.
+impl<T: Config> XCMNotifier<T> for () {
+    fn new_notify_query(
+        _responder: impl Into<MultiLocation>,
+        _notify: impl Into<<T as Config>::RuntimeCall>,
+        _timeout: BlockNumberFor<T>,
+        _match_querier: impl Into<MultiLocation>,
+    ) -> u64 {
+        0
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+pub struct InFlightCoreBuyingOrder<BN> {
+    para_id: ParaId,
+    query_id: QueryId,
+    ttl: BN,
+}
+
+impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    fn on_container_author_noted(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight {
+        PendingBlocks::<T>::remove(para_id);
+
+        T::DbWeight::get().writes(1)
+    }
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    use pallet_xcm::ensure_response;
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
@@ -87,9 +133,7 @@ pub mod pallet {
             + Clone
             + PartialEq
             + sp_std::fmt::Debug;
-        /// Limit how many in-flight XCM requests can be sent to the relay chain in one block.
-        #[pallet::constant]
-        type MaxParathreads: Get<u32>;
+
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
         type GetParathreadParams: GetParathreadParams;
@@ -102,6 +146,31 @@ pub mod pallet {
         #[pallet::constant]
         type UnsignedPriority: Get<TransactionPriority>;
 
+        /// TTL for pending blocks entry, which prevents anyone to submit another core buying xcm.
+        #[pallet::constant]
+        type PendingBlocksTtl: Get<BlockNumberFor<Self>>;
+
+        /// TTL to be used in xcm's notify query
+        #[pallet::constant]
+        type CoreBuyingXCMQueryTtl: Get<BlockNumberFor<Self>>;
+
+        /// Additional ttl for in flight orders (total would be CoreBuyingXCMQueryTtl + AdditionalTtlForInflightOrders)
+        /// after which the in flight orders can be cleaned up by anyone.
+        #[pallet::constant]
+        type AdditionalTtlForInflightOrders: Get<BlockNumberFor<Self>>;
+
+        #[pallet::constant]
+        type UniversalLocation: Get<InteriorMultiLocation>;
+
+        type RuntimeOrigin: Into<Result<pallet_xcm::Origin, <Self as Config>::RuntimeOrigin>>
+            + From<<Self as frame_system::Config>::RuntimeOrigin>;
+
+        /// The overarching call type
+        type RuntimeCall: From<Call<Self>> + Encode + GetDispatchInfo;
+
+        /// Outcome notifier implements functionality to enable reporting back the outcome
+        type XCMNotifier: XCMNotifier<Self>;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -109,7 +178,18 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// An XCM message to buy a core for this parathread has been sent to the relay chain.
-        BuyCoreXcmSent { para_id: ParaId },
+        BuyCoreXcmSent {
+            para_id: ParaId,
+            transaction_status_query_id: QueryId,
+        },
+        /// We received response for xcm
+        ReceivedBuyCoreXCMResult { para_id: ParaId, response: Response },
+
+        /// We cleaned up expired pending blocks entries.
+        CleanedUpExpiredPendingBlocksEntries { para_ids: Vec<ParaId> },
+
+        /// We cleaned up expired in flight orders entries.
+        CleanedUpExpiredInFlightOrderEntries { para_ids: Vec<ParaId> },
     }
 
     #[pallet::error]
@@ -133,6 +213,14 @@ pub mod pallet {
         XcmWeightStorageNotSet,
         /// Converting a multilocation into a relay relative multilocation failed
         ReanchorFailed,
+        /// Inverting location from destination point of view failed
+        LocationInversionFailed,
+        /// Modifying XCM to report the result of XCM failed
+        ReportNotifyingSetupFailed,
+        /// Unexpected XCM response
+        UnexpectedXCMResponse,
+        /// Block production is pending for para id with successfully placed order
+        BlockProductionPending,
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
@@ -149,7 +237,16 @@ pub mod pallet {
     /// 1 core in 1 relay block for the same parathread.
     #[pallet::storage]
     pub type InFlightOrders<T: Config> =
-        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxParathreads>, ValueQuery>;
+        StorageMap<_, Twox128, ParaId, InFlightCoreBuyingOrder<BlockNumberFor<T>>, OptionQuery>;
+
+    /// Number of pending blocks
+    #[pallet::storage]
+    pub type PendingBlocks<T: Config> =
+        StorageMap<_, Twox128, ParaId, BlockNumberFor<T>, OptionQuery>;
+
+    /// Mapping of QueryId to ParaId
+    #[pallet::storage]
+    pub type QueryIdToParaId<T: Config> = StorageMap<_, Twox128, QueryId, ParaId, OptionQuery>;
 
     /// This must be set by root with the value of the relay chain xcm call weight and extrinsic
     /// weight limit. This is a storage item because relay chain weights can change, so we need to
@@ -183,7 +280,7 @@ pub mod pallet {
         // state.
         #[pallet::call_index(0)]
         // TODO: weight
-        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
+        #[pallet::weight(T::WeightInfo::force_buy_core())]
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -213,7 +310,7 @@ pub mod pallet {
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::force_buy_core(T::MaxParathreads::get()))]
+        #[pallet::weight(T::WeightInfo::force_buy_core())]
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
@@ -261,6 +358,107 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::query_response())]
+        pub fn query_response(
+            origin: OriginFor<T>,
+            query_id: QueryId,
+            response: Response,
+        ) -> DispatchResult {
+            let _responder = ensure_response(<T as Config>::RuntimeOrigin::from(origin))?;
+
+            let maybe_para_id = QueryIdToParaId::<T>::get(query_id);
+
+            let para_id = if let Some(para_id) = maybe_para_id {
+                para_id
+            } else {
+                // Most probably entry was expired or removed in some other way. Let's return early.
+                return Ok(());
+            };
+
+            QueryIdToParaId::<T>::remove(query_id);
+            InFlightOrders::<T>::remove(para_id);
+
+            match response {
+                Response::DispatchResult(MaybeErrorCode::Success) => {
+                    // Success. Add para id to pending block
+                    let now = <frame_system::Pallet<T>>::block_number();
+                    let ttl = T::PendingBlocksTtl::get();
+                    PendingBlocks::<T>::insert(para_id, now + ttl);
+                }
+                Response::DispatchResult(_) => {
+                    // We do not add paraid to pending block on failure
+                }
+                _ => {
+                    // Unexpected.
+                    return Err(Error::<T>::UnexpectedXCMResponse.into());
+                }
+            }
+
+            Self::deposit_event(Event::ReceivedBuyCoreXCMResult { para_id, response });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::clean_up_expired_in_flight_orders(expired_pending_blocks_para_id.len() as u32))]
+        pub fn clean_up_expired_pending_blocks(
+            origin: OriginFor<T>,
+            expired_pending_blocks_para_id: Vec<ParaId>,
+        ) -> DispatchResult {
+            let _ = ensure_signed(origin)?;
+            let now = frame_system::Pallet::<T>::block_number();
+            let mut cleaned_up_para_ids = vec![];
+
+            for para_id in expired_pending_blocks_para_id {
+                let maybe_pending_block_ttl = PendingBlocks::<T>::get(para_id);
+                if let Some(pending_block_ttl) = maybe_pending_block_ttl {
+                    if pending_block_ttl < now {
+                        PendingBlocks::<T>::remove(para_id);
+                        cleaned_up_para_ids.push(para_id);
+                    } else {
+                        // Ignore if not expired
+                    }
+                }
+            }
+
+            Self::deposit_event(Event::CleanedUpExpiredPendingBlocksEntries {
+                para_ids: cleaned_up_para_ids,
+            });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::clean_up_expired_in_flight_orders(expired_in_flight_orders.len() as u32))]
+        pub fn clean_up_expired_in_flight_orders(
+            origin: OriginFor<T>,
+            expired_in_flight_orders: Vec<ParaId>,
+        ) -> DispatchResult {
+            let _ = ensure_signed(origin)?;
+            let now = frame_system::Pallet::<T>::block_number();
+            let mut cleaned_up_para_ids = vec![];
+
+            for para_id in expired_in_flight_orders {
+                let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
+                if let Some(in_flight_order) = maybe_in_flight_order {
+                    if in_flight_order.ttl < now {
+                        InFlightOrders::<T>::remove(para_id);
+                        QueryIdToParaId::<T>::remove(in_flight_order.query_id);
+                        cleaned_up_para_ids.push(para_id);
+                    } else {
+                        // Ignore if not expired
+                    }
+                }
+            }
+
+            Self::deposit_event(Event::CleanedUpExpiredInFlightOrderEntries {
+                para_ids: cleaned_up_para_ids,
+            });
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -293,13 +491,27 @@ pub mod pallet {
 
         /// Send an XCM message to the relay chain to try to buy a core for this para_id.
         fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
-            let mut in_flight_orders = InFlightOrders::<T>::get();
-            if in_flight_orders.contains(&para_id) {
-                return Err(Error::<T>::OrderAlreadyExists.into());
+            // If an in flight order is pending (i.e we did not receive the notification yet) and our
+            // record is not expired yet, we should not allow the collator to buy another core.
+            let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
+            if let Some(in_flight_order) = maybe_in_flight_order {
+                if in_flight_order.ttl < <frame_system::Pallet<T>>::block_number() {
+                    InFlightOrders::<T>::remove(para_id);
+                } else {
+                    return Err(Error::<T>::OrderAlreadyExists.into());
+                }
             }
-            in_flight_orders
-                .try_insert(para_id)
-                .map_err(|_| Error::<T>::InFlightLimitReached)?;
+
+            // If a block production is pending and our record is not expired yet, we should not allow
+            // the collator to buy another core yet.
+            let maybe_pending_blocks_ttl = PendingBlocks::<T>::get(para_id);
+            if let Some(pending_blocks_ttl) = maybe_pending_blocks_ttl {
+                if pending_blocks_ttl < <frame_system::Pallet<T>>::block_number() {
+                    PendingBlocks::<T>::remove(para_id);
+                } else {
+                    return Err(Error::<T>::BlockProductionPending.into());
+                }
+            }
 
             // Check that the para id is a parathread
             let parathread_params = T::GetParathreadParams::get_parathread_params(para_id);
@@ -349,6 +561,25 @@ pub mod pallet {
             // We use `descend_origin` instead of wrapping the transact call in `utility.as_derivative`
             // because with `descend_origin` the parathread tank account will pay for fees, while
             // `utility.as_derivative` will make the tanssi sovereign account pay for fees.
+
+            let notify_call = <T as Config>::RuntimeCall::from(Call::<T>::query_response {
+                query_id: 0,
+                response: Default::default(),
+            });
+            let notify_call_weight = notify_call.get_dispatch_info().weight;
+
+            let notify_query_ttl =
+                <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();
+
+            // Send XCM to relay chain
+            let relay_chain = MultiLocation::parent();
+            let query_id = T::XCMNotifier::new_notify_query(
+                relay_chain,
+                notify_call,
+                notify_query_ttl,
+                interior_multilocation,
+            );
+
             let message: Xcm<()> = Xcm::builder_unsafe()
                 .descend_origin(interior_multilocation)
                 .withdraw_asset(MultiAssets::from(vec![relay_asset_total.clone()]))
@@ -356,6 +587,13 @@ pub mod pallet {
                 // Both in case of error and in case of success, we want to refund the unused weight
                 .set_appendix(
                     Xcm::builder_unsafe()
+                        .report_transact_status(QueryResponseInfo {
+                            destination: T::UniversalLocation::get()
+                                .invert_target(&relay_chain)
+                                .map_err(|_| Error::<T>::LocationInversionFailed)?, // This location from the point of view of destination
+                            query_id,
+                            max_weight: notify_call_weight,
+                        })
                         .refund_surplus()
                         .deposit_asset(refund_asset_filter, derived_account)
                         .build(),
@@ -363,42 +601,40 @@ pub mod pallet {
                 .transact(origin, weight_at_most, call.into())
                 .build();
 
-            // Send XCM to relay chain
-            let relay_chain = MultiLocation::parent();
             // We intentionally do not charge any fees
             let (ticket, _price) =
                 T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
                     .map_err(|_| Error::<T>::ErrorValidatingXCM)?;
             T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
-            Self::deposit_event(Event::BuyCoreXcmSent { para_id });
-            InFlightOrders::<T>::put(in_flight_orders);
+            Self::deposit_event(Event::BuyCoreXcmSent {
+                para_id,
+                transaction_status_query_id: query_id,
+            });
+
+            let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
+            InFlightOrders::<T>::insert(
+                para_id,
+                InFlightCoreBuyingOrder {
+                    para_id,
+                    query_id,
+                    ttl: in_flight_order_ttl,
+                },
+            );
+
+            QueryIdToParaId::<T>::insert(query_id, para_id);
 
             Ok(())
         }
-    }
 
-    #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            let mut weight = Weight::zero();
+        pub fn para_deregistered(para_id: ParaId) {
+            // If para is deregistered we need to clean up in flight order, query id mapping
+            if let Some(in_flight_order) = InFlightOrders::<T>::take(para_id) {
+                InFlightOrders::<T>::remove(para_id);
+                QueryIdToParaId::<T>::remove(in_flight_order.query_id);
+            }
 
-            // 1 write in on_finalize
-            weight += T::DbWeight::get().writes(1);
-
-            weight
-        }
-
-        fn on_finalize(_: BlockNumberFor<T>) {
-            // We clear this storage item because we only need it to prevent collators from buying
-            // more than one core for the same parathread in the same relay block
-            // TODO: with async backing, it is possible that two tanssi blocks are included in the
-            // same relay block, so this kill is not correct, should only kill the storage if the
-            // relay block number has changed
-            // TODO: this allows collators to send N consecutive messages to buy 1 core for the same
-            // parathread, as long as the parathread block is not included in pallet_author_noting.
-            // So a malicious collator could drain the parathread tank account by buying cores on
-            // every tanssi block but not actually producing any block.
-            InFlightOrders::<T>::kill();
+            // We need to clean the pending block entry if any
+            PendingBlocks::<T>::remove(para_id);
         }
     }
 

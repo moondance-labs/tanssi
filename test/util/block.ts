@@ -200,6 +200,16 @@ export function fetchCollatorAssignmentTip(events: EventRecord[] = []) {
     return filtered[0];
 }
 
+export function filterRewardFromOrchestratorWithFailure(events: EventRecord[] = [], author: string) {
+    const reward = fetchRewardAuthorOrchestrator(events);
+    expect(reward, `orchestrator rewards event not found`).not.toBe(undefined);
+    expect(
+        reward.accountId.toString() === author,
+        `orchestrator author  ${reward.accountId.toString()} does not match expected author  ${author}`
+    ).to.be.true;
+    return reward.balance.toBigInt();
+}
+
 export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
     if (reward === undefined || reward.accountId.toString() !== author) {

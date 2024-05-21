@@ -69,6 +69,7 @@ where
 
 mod eth;
 pub use eth::*;
+mod finality;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi, BE> {
@@ -132,6 +133,7 @@ where
     C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
 {
+    use finality::{FrontierFinality, FrontierFinalityApiServer};
     use {
         fc_rpc::{
             Eth, EthApiServer, EthFilter, EthFilterApiServer, EthPubSub, EthPubSubApiServer, Net,
@@ -259,7 +261,7 @@ where
         io.merge(
             EthFilter::new(
                 client.clone(),
-                frontier_backend,
+                frontier_backend.clone(),
                 graph,
                 filter_pool,
                 500_usize, // max stored filters
@@ -311,6 +313,8 @@ where
             .into_rpc(),
         )?;
     }
+
+    io.merge(FrontierFinality::new(client.clone(), frontier_backend.clone()).into_rpc())?;
 
     Ok(io)
 }

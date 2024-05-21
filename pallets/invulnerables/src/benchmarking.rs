@@ -112,6 +112,7 @@ pub(crate) fn currency_issue<T: Config + frame_system::Config>(
     <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 
+#[allow(clippy::multiple_bound_locations)]
 #[benchmarks(where T: session::Config + pallet_balances::Config, BalanceOf<T>: AtLeast32BitUnsigned)]
 mod benchmarks {
     use super::*;

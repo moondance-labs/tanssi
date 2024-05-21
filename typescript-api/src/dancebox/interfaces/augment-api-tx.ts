@@ -41,6 +41,7 @@ import type {
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsSlotFrequency,
+    XcmV3Response,
     XcmV3WeightLimit,
     XcmVersionedMultiAssets,
     XcmVersionedMultiLocation,
@@ -2188,10 +2189,39 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, PalletXcmCoreBuyerBuyCoreCollatorProof]
             >;
+            /** See [`Pallet::clean_up_expired_in_flight_orders`]. */
+            cleanUpExpiredInFlightOrders: AugmentedSubmittable<
+                (expiredInFlightOrders: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
+                [Vec<u32>]
+            >;
+            /** See [`Pallet::clean_up_expired_pending_blocks`]. */
+            cleanUpExpiredPendingBlocks: AugmentedSubmittable<
+                (
+                    expiredPendingBlocksParaId: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<u32>]
+            >;
             /** See [`Pallet::force_buy_core`]. */
             forceBuyCore: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
+            >;
+            /** See [`Pallet::query_response`]. */
+            queryResponse: AugmentedSubmittable<
+                (
+                    queryId: u64 | AnyNumber | Uint8Array,
+                    response:
+                        | XcmV3Response
+                        | { Null: any }
+                        | { Assets: any }
+                        | { ExecutionResult: any }
+                        | { Version: any }
+                        | { PalletsInfo: any }
+                        | { DispatchResult: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, XcmV3Response]
             >;
             /** See [`Pallet::set_relay_chain`]. */
             setRelayChain: AugmentedSubmittable<

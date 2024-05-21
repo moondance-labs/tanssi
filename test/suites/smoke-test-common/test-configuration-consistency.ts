@@ -17,7 +17,7 @@ describeSuite({
         beforeAll(() => {
             api = context.polkadotJs();
             const chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain == "Dancebox" ? 300n : 5n;
+            blocksPerSession = chain == "Dancebox" ? 600n : 50n;
         });
 
         it({
@@ -90,9 +90,7 @@ describeSuite({
                         }
                     }
 
-                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
-                        containersToCompareAgainst.length
-                    );
+                    let numWithNoCredits = 0;
 
                     // This should be true as long as they have enough credits for getting collators
                     for (const container of containersToCompareAgainst) {
@@ -104,8 +102,14 @@ describeSuite({
                             // test-collator-number-consistency
                             // Here we only check that  that we have collators
                             expect(authorities["containerChains"][container.toString()].length).to.be.greaterThan(0);
+                        } else {
+                            numWithNoCredits += 1;
                         }
                     }
+
+                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
+                        containersToCompareAgainst.length - numWithNoCredits
+                    );
                 }
             },
         });

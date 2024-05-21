@@ -38,6 +38,7 @@
 use frame_support::ensure;
 
 use {
+    cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::GetStorageVersion,
         traits::{OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
@@ -377,6 +378,40 @@ where
     }
 }
 
+pub struct RegistrarPendingVerificationValueToMap<T>(pub PhantomData<T>);
+impl<T> Migration for RegistrarPendingVerificationValueToMap<T>
+where
+    T: pallet_registrar::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_RegistrarPendingVerificationValueToMap"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        let para_ids: Vec<ParaId> = frame_support::storage::unhashed::take(
+            &frame_support::storage::storage_prefix(b"Registrar", b"PendingVerification"),
+        )
+        .unwrap_or_default();
+
+        for para_id in para_ids {
+            pallet_registrar::PendingVerification::<T>::insert(para_id, ());
+        }
+
+        Weight::default()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -396,6 +431,8 @@ where
 
         let migrate_add_collator_assignment_credits =
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        let migrate_registrar_pending_verification =
+            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -405,6 +442,7 @@ where
             // Applied in runtime 400
             Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
+            Box::new(migrate_registrar_pending_verification),
         ]
     }
 }
@@ -439,6 +477,8 @@ where
         let migrate_add_collator_assignment_credits =
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        let migrate_registrar_pending_verification =
+            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -459,6 +499,7 @@ where
             Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
             Box::new(migrate_xcmp_queue_v4),
+            Box::new(migrate_registrar_pending_verification),
         ]
     }
 }

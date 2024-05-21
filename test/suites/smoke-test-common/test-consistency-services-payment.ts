@@ -18,7 +18,7 @@ describeSuite({
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
             const chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain == "Dancebox" ? 300n : 5n;
+            blocksPerSession = chain == "Dancebox" ? 600n : 50n;
         });
 
         it({

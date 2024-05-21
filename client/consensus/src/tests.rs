@@ -133,7 +133,7 @@ sp_api::mock_impl_runtime_apis! {
 }
 
 #[derive(Clone)]
-struct RelayChain(Arc<TestClient>);
+struct RelayChain;
 
 #[async_trait]
 impl RelayChainInterface for RelayChain {
@@ -252,7 +252,7 @@ impl RelayChainInterface for RelayChain {
 }
 
 #[derive(Clone)]
-struct DummySpawner(Arc<TestClient>);
+struct DummySpawner;
 impl SpawnNamed for DummySpawner {
     fn spawn_blocking(
         &self,
@@ -271,7 +271,7 @@ impl SpawnNamed for DummySpawner {
     }
 }
 
-struct DummyProposer(u64, Arc<TestClient>);
+struct DummyProposer(Arc<TestClient>);
 
 // This is going to be our block verifier
 // It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
@@ -354,8 +354,8 @@ impl Environment<TestBlock> for DummyFactory {
     type CreateProposer = future::Ready<Result<DummyProposer, Error>>;
     type Error = Error;
 
-    fn init(&mut self, parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
-        future::ready(Ok(DummyProposer(parent_header.number + 1, self.0.clone())))
+    fn init(&mut self, _parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
+        future::ready(Ok(DummyProposer(self.0.clone())))
     }
 }
 
@@ -373,9 +373,9 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = BlockBuilderBuilder::new(&*self.1)
-            .on_parent_block(self.1.chain_info().best_hash)
-            .fetch_parent_block_number(&*self.1)
+        let r = BlockBuilderBuilder::new(&*self.0)
+            .on_parent_block(self.0.chain_info().best_hash)
+            .fetch_parent_block_number(&*self.0)
             .unwrap()
             .with_inherent_digests(digests)
             .build()
@@ -562,8 +562,8 @@ async fn collate_returns_correct_block() {
     let peer = net.peer(3);
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
-    let spawner = DummySpawner(client.clone());
-    let relay_client = RelayChain(client.clone());
+    let spawner = DummySpawner;
+    let relay_client = RelayChain;
 
     // Build the collator
     let mut collator = {

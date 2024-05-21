@@ -2,7 +2,7 @@ import { describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0401",
+    id: "DF0501",
     title: "Transaction Cost discards",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

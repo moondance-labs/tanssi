@@ -30,7 +30,10 @@ mod token_derivative_reception_relay_simple_container;
 mod transact;
 mod trap;
 
+#[macro_use]
+mod expected_event_checker;
+
 pub use {
     paste,
-    xcm_emulator::{assert_expected_events, bx, Parachain as Para, RelayChain as Relay, TestExt},
+    xcm_emulator::{bx, Parachain as Para, RelayChain as Relay, TestExt},
 };

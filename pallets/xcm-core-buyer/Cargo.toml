@@ -17,6 +17,7 @@ serde = { workspace = true, optional = true }
 tp-traits = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 staging-xcm = { workspace = true }
 
 # Substrate
@@ -51,6 +52,7 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"pallet-balances/std",
+	"pallet-xcm/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
@@ -59,6 +61,7 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"staging-xcm/std",
 	"staging-xcm/std",
 	"tp-traits/std",
 ]
@@ -69,6 +72,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
@@ -77,5 +81,6 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-xcm/try-runtime",
 	"sp-runtime/try-runtime",
 ]

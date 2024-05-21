@@ -959,7 +959,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1029,6 +1029,8 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
         DataPreservers::para_deregistered(para_id);
 
         ServicesPayment::para_deregistered(para_id);
+
+        XcmCoreBuyer::para_deregistered(para_id);
 
         Weight::default()
     }
@@ -2037,7 +2039,6 @@ impl_runtime_apis! {
                 fn set_up_complex_asset_transfer(
                 ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
                     use xcm_config::SelfReserve;
-                    use sp_runtime::traits::StaticLookup;
                     // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
                     // fees using teleported native token.
                     // (We don't care that Relay doesn't accept incoming unknown AH local asset)
@@ -2059,23 +2060,13 @@ impl_runtime_apis! {
                     // set up local asset
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
-                    let asset_id = 0;
 
                     // inject it into pallet-foreign-asset-creator.
-                    let asset_location = MultiLocation::new(
-                        0,
-                        X2(PalletInstance(50), GeneralIndex(u32::from(asset_id).into()))
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
+                        initial_asset_amount,
+                        who.clone()
                     );
                     let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
-
-                    assert!(ForeignAssetsCreator::create_foreign_asset(RuntimeOrigin::root(), asset_location, 0, who.clone(), true, 1).is_ok());
-                    assert!(ForeignAssets::mint(
-                        RuntimeOrigin::signed(who.clone()),
-                        asset_id,
-                        <Runtime as frame_system::Config>::Lookup::unlookup(who.clone()),
-                        initial_asset_amount,
-                    )
-                    .is_ok());
 
                     let assets: MultiAssets = vec![fee_asset.clone(), transfer_asset].into();
                     let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
@@ -2367,8 +2358,21 @@ impl_runtime_apis! {
             SLOT_DURATION
         }
     }
+
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+        fn block_cost(para_id: ParaId) -> Balance {
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
+            block_production_costs
+        }
+
+        fn collator_assignment_cost(para_id: ParaId) -> Balance {
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+            collator_assignment_costs
+        }
+    }
 }
 
+#[allow(dead_code)]
 struct CheckInherents;
 
 // TODO: this should be removed but currently if we remove it the relay does not check anything

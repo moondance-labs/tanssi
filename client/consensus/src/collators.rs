@@ -363,7 +363,7 @@ where
 }
 
 /// Attempt to claim a slot using a keystore.
-pub fn claim_slot_inner<P: Pair>(
+pub fn claim_slot_inner<P>(
     slot: Slot,
     authorities: &Vec<AuthorityId<P>>,
     keystore: &KeystorePtr,

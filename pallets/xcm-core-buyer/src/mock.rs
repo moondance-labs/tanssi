@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use pallet_xcm::Origin;
+use staging_xcm::prelude::{GlobalConsensus, Parachain, X2};
+use staging_xcm::prelude::{InteriorMultiLocation, NetworkId};
 use {
     crate::{
         self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
@@ -29,7 +32,7 @@ use {
     sp_core::H256,
     sp_io::TestExternalities,
     sp_runtime::{
-        traits::{BlakeTwo256, Convert, IdentityLookup},
+        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
     sp_std::collections::btree_map::BTreeMap,
@@ -53,6 +56,20 @@ frame_support::construct_runtime!(
         MockData: mock_data,
     }
 );
+
+/// Only needed for benchmark test suite
+impl From<pallet_xcm::Origin> for RuntimeOrigin {
+    fn from(_value: Origin) -> Self {
+        RuntimeOrigin::root()
+    }
+}
+
+/// Only needed for benchmark test suite
+impl From<RuntimeOrigin> for Result<pallet_xcm::Origin, RuntimeOrigin> {
+    fn from(_value: RuntimeOrigin) -> Self {
+        Ok(Origin::Response(MultiLocation::parent()))
+    }
+}
 
 impl frame_system::Config for Test {
     type BaseCallFilter = Everything;
@@ -161,6 +178,13 @@ parameter_types! {
     pub const ParachainId: ParaId = ParaId::new(1000);
 }
 
+parameter_types! {
+    pub const PendingBlocksTtl: u32 = 5;
+    pub const CoreBuyingXCMQueryTtl: u32 = 100;
+    pub const AdditionalTtlForInflightOrders: u32 = 5;
+    pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(NetworkId::Westend), Parachain(1000));
+}
+
 impl pallet_xcm_core_buyer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -171,10 +195,16 @@ impl pallet_xcm_core_buyer::Config for Test {
     type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
-    type MaxParathreads = ConstU32<100>;
     type GetParathreadParams = GetParathreadParamsImpl;
     type GetAssignedCollators = GetAssignedCollatorsImpl;
     type UnsignedPriority = ();
+    type PendingBlocksTtl = PendingBlocksTtl;
+    type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
+    type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type UniversalLocation = UniversalLocation;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
+    type XCMNotifier = ();
 
     type WeightInfo = ();
 }
@@ -225,26 +255,6 @@ impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
         MockData::mutate(|m| {
             m.container_chain_collators.insert(para_id, collators);
         })
-    }
-}
-
-pub struct GetBlockNumber;
-
-impl Get<u32> for GetBlockNumber {
-    fn get() -> u32 {
-        System::block_number() as u32
-    }
-}
-
-pub struct ParaIdToAccount32;
-
-impl Convert<ParaId, [u8; 32]> for ParaIdToAccount32 {
-    fn convert(para_id: ParaId) -> [u8; 32] {
-        let mut res = [0; 32];
-
-        res[..4].copy_from_slice(&u32::from(para_id).to_le_bytes());
-
-        res
     }
 }
 

@@ -43,6 +43,7 @@ use {
     parity_scale_codec::Encode,
     runtime_common::migrations::{
         MigrateConfigurationParathreads, MigrateServicesPaymentAddCollatorAssignmentCredits,
+        RegistrarPendingVerificationValueToMap,
     },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -4066,6 +4067,35 @@ fn test_migration_config_full_rotation_period() {
             ];
             assert_eq!(Configuration::pending_configs(), expected_pending);
         });
+}
+
+#[test]
+fn test_migration_registrar_pending_verification() {
+    ExtBuilder::default().build().execute_with(|| {
+        const REGISTRAR_PENDING_VERIFICATION_KEY: &[u8] =
+            &hex_literal::hex!("3fba98689ebed1138735e0e7a5a790ab57a35de516113188134ad8e43c6d55ec");
+
+        // Modify active config
+        let para_ids: Vec<ParaId> = vec![2000.into(), 2001.into(), 2002.into(), 3000.into()];
+        frame_support::storage::unhashed::put(REGISTRAR_PENDING_VERIFICATION_KEY, &para_ids);
+
+        let migration = RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        let empty_key =
+            frame_support::storage::unhashed::get_raw(REGISTRAR_PENDING_VERIFICATION_KEY);
+        assert_eq!(empty_key, None);
+
+        for para_id in para_ids {
+            let exists_in_map =
+                pallet_registrar::PendingVerification::<Runtime>::get(para_id).is_some();
+            assert!(
+                exists_in_map,
+                "After migration, para id {:?} does not exist in storage map",
+                para_id
+            );
+        }
+    });
 }
 
 #[test]

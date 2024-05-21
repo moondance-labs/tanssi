@@ -751,21 +751,21 @@ fn assign_collators_rotation() {
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         let shuffled_assignment = BTreeMap::from_iter(vec![
-            (1, 1004),
+            (1, 1003),
             (2, 1000),
-            (3, 1000),
+            (3, 1001),
             (4, 1003),
-            (5, 1001),
+            (5, 1000),
             (6, 1000),
-            (7, 1002),
-            (8, 1001),
-            (9, 1002),
-            (10, 1000),
-            (11, 1003),
-            (12, 1004),
+            (7, 1001),
+            (8, 1000),
+            (9, 1004),
+            (10, 1004),
+            (11, 1002),
+            (12, 1002),
         ]);
 
-        assert_eq!(assigned_collators(), shuffled_assignment,);
+        assert_eq!(assigned_collators(), shuffled_assignment);
     });
 }
 
@@ -794,7 +794,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
 
         MockData::mutate(|m| {
             // Seed chosen manually to see the case where container 1002 is given priority
-            m.random_seed = [2; 32];
+            m.random_seed = [1; 32];
         });
 
         run_to_block(26);
@@ -802,7 +802,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 1002), (3, 1002), (4, 1000)]);
+            BTreeMap::from_iter(vec![(1, 1002), (2, 1000), (3, 1000), (4, 1002)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -833,7 +833,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
 
         MockData::mutate(|m| {
             // Seed chosen manually to see the case where parathread 3002 is given priority
-            m.random_seed = [2; 32];
+            m.random_seed = [1; 32];
         });
 
         run_to_block(26);
@@ -841,7 +841,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 3002), (3, 3002), (4, 1000)]);
+            BTreeMap::from_iter(vec![(1, 3002), (2, 1000), (3, 1000), (4, 3002)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -886,18 +886,20 @@ fn assign_collators_rotation_collators_are_shuffled() {
         run_to_block(26);
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
-        // Test that collators are shuffled because collator 10 should be the last one to be assigned,
-        // and here it is present
+        // Test that collators are shuffled and the collators of each container chain are not
+        // consecutive in order. For example, if collators 8 and 9 are both assigned to chain 1002,
+        // change the random seed until they are on different chains.
+        // Collator 10 will never be assigned because of the collator priority.
         let shuffled_assignment = BTreeMap::from_iter(vec![
             (1, 1000),
-            (3, 1001),
+            (2, 1001),
+            (3, 1000),
             (4, 1000),
-            (5, 1000),
-            (6, 1000),
-            (7, 1002),
+            (5, 1002),
+            (6, 1001),
+            (7, 1000),
             (8, 1002),
             (9, 1000),
-            (10, 1001),
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
@@ -1395,6 +1397,33 @@ fn on_collators_assigned_hook_failure_removes_para_from_assignment() {
                 (10, 1003),
                 (11, 1003),
             ]),
+        );
+    });
+}
+
+#[test]
+fn assign_collators_truncates_before_shuffling() {
+    // Check that if there are more collators than needed, we only assign the first collators
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            // Need 5 collators in total, 3 for orchestrator and 2 for 1 container chain
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 3;
+            m.max_orchestrator_chain_collators = 3;
+
+            // Have 10 collators in total, but only the first 5 will be assigned, in random order
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            m.container_chains = vec![1001];
+            m.random_seed = [1; 32];
+        });
+
+        run_to_block(11);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001), (5, 1000),])
         );
     });
 }
