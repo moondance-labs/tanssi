@@ -16,6 +16,7 @@ async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 exit-future = { workspace = true }
 flume = { workspace = true }
+fs2 = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
