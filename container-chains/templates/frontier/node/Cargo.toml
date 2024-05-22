@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Frontier container chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.6.2"
+version = "0.6.3"
 
 [lints]
 workspace = true
