@@ -18,7 +18,8 @@ export async function hasEnoughCredits(
     paraId: ParaId,
     blocksPerSession: bigint,
     // TODO: minSessionRequirement should be 2 if the chain had collators in the previous session, and 1 otherwise
-    minSessionRequirement: bigint,
+    minCollatorSessionRequirement: bigint,
+    minBlockSessionRequirement: bigint,
     costPerSession: bigint,
     costPerBlock: bigint
 ): Promise<boolean> {
@@ -32,11 +33,13 @@ export async function hasEnoughCredits(
 
     // We need, combined, at least credits for 2 session coverage + blocks
     const neededBlockPaymentAfterCredits =
-        minSessionRequirement * blocksPerSession - freeBlockCredits < 0n
+        minBlockSessionRequirement * blocksPerSession - freeBlockCredits < 0n
             ? 0n
-            : minSessionRequirement * blocksPerSession - freeBlockCredits;
+            : minBlockSessionRequirement * blocksPerSession - freeBlockCredits;
     const neededCollatorAssignmentPaymentAfterCredits =
-        minSessionRequirement - freeSessionCredits < 0n ? 0n : minSessionRequirement - freeSessionCredits;
+        minCollatorSessionRequirement - freeSessionCredits < 0n
+            ? 0n
+            : minCollatorSessionRequirement - freeSessionCredits;
 
     if (neededBlockPaymentAfterCredits > 0n || neededCollatorAssignmentPaymentAfterCredits > 0n) {
         const neededTankMoney =

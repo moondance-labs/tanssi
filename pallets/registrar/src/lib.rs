@@ -18,7 +18,7 @@
 //!
 //! This pallet is in charge of registering containerChains (identified by their Id)
 //! that have to be served by the orchestrator chain. Parachains registrations and de-
-//! registrations are not immediatly applied, but rather they take T::SessionDelay sessions
+//! registrations are not immediately applied, but rather they take T::SessionDelay sessions
 //! to be applied.
 //!
 //! Registered container chains are stored in the PendingParaIds storage item until the session
@@ -45,7 +45,7 @@ use sp_runtime::traits::Verify;
 use {
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, EnsureOriginWithArg, ReservableCurrency},
         DefaultNoBound, Hashable, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
@@ -242,6 +242,10 @@ pub mod pallet {
     #[pallet::getter(fn registrar_deposit)]
     pub type RegistrarDeposit<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, DepositInfo<T>>;
 
+    #[pallet::storage]
+    pub type ParaManager<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -257,6 +261,11 @@ pub mod pallet {
         ParaIdUnpaused { para_id: ParaId },
         /// Parathread params changed
         ParathreadParamsChanged { para_id: ParaId },
+        /// Para manager has changed
+        ParaManagerChanged {
+            para_id: ParaId,
+            manager_address: T::AccountId,
+        },
     }
 
     #[pallet::error]
@@ -281,6 +290,8 @@ pub mod pallet {
         NotSufficientDeposit,
         /// Tried to change parathread params for a para id that is not a registered parathread
         NotAParathread,
+        /// Attempted to execute an extrinsic meant only for the para creator
+        NotParaCreator,
         /// The relay storage root for the corresponding block number could not be retrieved
         RelayStorageRootNotFound,
         /// The provided relay storage proof is not valid
@@ -547,8 +558,32 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Register parachain or parathread
         #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::set_para_manager())]
+        pub fn set_para_manager(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            manager_address: T::AccountId,
+        ) -> DispatchResult {
+            let origin = ensure_signed(origin)?;
+
+            let creator =
+                RegistrarDeposit::<T>::get(para_id).map(|deposit_info| deposit_info.creator);
+
+            ensure!(Some(origin) == creator, Error::<T>::NotParaCreator);
+
+            ParaManager::<T>::insert(para_id, manager_address.clone());
+
+            Self::deposit_event(Event::<T>::ParaManagerChanged {
+                para_id,
+                manager_address,
+            });
+
+            Ok(())
+        }
+
+        /// Register parachain or parathread
+        #[pallet::call_index(9)]
         // TODO: weight
         #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
         pub fn register_with_relay_proof(
@@ -605,7 +640,7 @@ pub mod pallet {
 
         /// Deregister a parachain that no longer exists in the relay chain. The origin of this
         /// extrinsic will be rewarded with the parachain deposit.
-        #[pallet::call_index(9)]
+        #[pallet::call_index(10)]
         // TODO: weight
         #[pallet::weight(T::WeightInfo::deregister_immediate(
             T::MaxGenesisDataSize::get(),
@@ -677,11 +712,15 @@ pub mod pallet {
         pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
-            // * The deposit creator is the signed_account
-            RegistrarDeposit::<T>::get(para_id)
-                .map(|deposit_info| deposit_info.creator)
-                .as_ref()
-                == Some(account)
+            // * The signed_account is the para manager (or creator if None)
+            if let Some(manager) = ParaManager::<T>::get(para_id) {
+                manager == *account
+            } else {
+                RegistrarDeposit::<T>::get(para_id)
+                    .map(|deposit_info| deposit_info.creator)
+                    .as_ref()
+                    == Some(account)
+            }
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -772,11 +811,13 @@ pub mod pallet {
             RegistrarDeposit::<T>::insert(
                 para_id,
                 DepositInfo {
-                    creator: account,
+                    creator: account.clone(),
                     deposit,
                 },
             );
             ParaGenesisData::<T>::insert(para_id, genesis_data);
+
+            ParaManager::<T>::insert(para_id, account);
 
             Ok(())
         }
@@ -1150,6 +1191,8 @@ pub mod pallet {
                 T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
             }
 
+            ParaManager::<T>::remove(para_id);
+
             T::RegistrarHooks::para_deregistered(para_id);
         }
 
@@ -1263,8 +1306,7 @@ impl RegistrarHooks for () {}
 
 pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
 
-impl<T> frame_support::traits::EnsureOriginWithArg<T::RuntimeOrigin, ParaId>
-    for EnsureSignedByManager<T>
+impl<T> EnsureOriginWithArg<T::RuntimeOrigin, ParaId> for EnsureSignedByManager<T>
 where
     T: Config,
 {

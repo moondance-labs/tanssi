@@ -106,7 +106,10 @@ pub struct MockRelayStorageRootProvider;
 
 impl RelayStorageRootProvider for MockRelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
-        Mock::mock().relay_storage_roots.get(&relay_block_number).copied()
+        Mock::mock()
+            .relay_storage_roots
+            .get(&relay_block_number)
+            .copied()
     }
 }
 

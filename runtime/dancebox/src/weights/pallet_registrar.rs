@@ -264,4 +264,17 @@ impl<T: frame_system::Config> pallet_registrar::WeightInfo for SubstrateWeight<T
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 			.saturating_add(Weight::from_parts(0, 11).saturating_mul(y.into()))
 	}
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::ParaManager` (r:0 w:1)
+	/// Proof: `Registrar::ParaManager` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	fn set_para_manager() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `204`
+		//  Estimated: `3669`
+		// Minimum execution time: 7_683_000 picoseconds.
+		Weight::from_parts(8_047_000, 3669)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
