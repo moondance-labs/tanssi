@@ -641,8 +641,12 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, []>;
             pendingToRemove: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            pendingVerification: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
+            pendingVerification: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<Null>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             registeredParaIds: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**

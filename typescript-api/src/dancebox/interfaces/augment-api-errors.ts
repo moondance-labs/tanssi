@@ -545,6 +545,8 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         xcmCoreBuyer: {
+            /** Block production is pending for para id with successfully placed order */
+            BlockProductionPending: AugmentedError<ApiType>;
             /** This collator is not assigned to this parathread */
             CollatorNotAssigned: AugmentedError<ApiType>;
             ErrorDeliveringXCM: AugmentedError<ApiType>;
@@ -552,6 +554,8 @@ declare module "@polkadot/api-base/types/errors" {
             /** There are too many in-flight orders, buying cores will not work until some of those orders finish. */
             InFlightLimitReached: AugmentedError<ApiType>;
             InvalidProof: AugmentedError<ApiType>;
+            /** Inverting location from destination point of view failed */
+            LocationInversionFailed: AugmentedError<ApiType>;
             /** There are no collators assigned to this parathread, so no point in buying a core */
             NoAssignedCollators: AugmentedError<ApiType>;
             /** The para id is not a parathread */
@@ -560,6 +564,10 @@ declare module "@polkadot/api-base/types/errors" {
             OrderAlreadyExists: AugmentedError<ApiType>;
             /** Converting a multilocation into a relay relative multilocation failed */
             ReanchorFailed: AugmentedError<ApiType>;
+            /** Modifying XCM to report the result of XCM failed */
+            ReportNotifyingSetupFailed: AugmentedError<ApiType>;
+            /** Unexpected XCM response */
+            UnexpectedXCMResponse: AugmentedError<ApiType>;
             /**
              * The `XcmWeights` storage has not been set. This must have been set by root with the value of the relay chain
              * xcm call weight and extrinsic weight

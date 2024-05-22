@@ -203,6 +203,7 @@ import type {
     PalletXcmCoreBuyerCall,
     PalletXcmCoreBuyerError,
     PalletXcmCoreBuyerEvent,
+    PalletXcmCoreBuyerInFlightCoreBuyingOrder,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmError,
     PalletXcmEvent,
@@ -495,6 +496,7 @@ declare module "@polkadot/types/types/registry" {
         PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
         PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
         PalletXcmCoreBuyerEvent: PalletXcmCoreBuyerEvent;
+        PalletXcmCoreBuyerInFlightCoreBuyingOrder: PalletXcmCoreBuyerInFlightCoreBuyingOrder;
         PalletXcmCoreBuyerRelayXcmWeightConfigInner: PalletXcmCoreBuyerRelayXcmWeightConfigInner;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
