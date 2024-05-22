@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Exit on any error
+set -e
+
+# Always run the commands from the project dir
+cd "$(dirname "$0")/.."
+
 # mkdir just in case as the benchmarking fails if they don't exist
 mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights
 
