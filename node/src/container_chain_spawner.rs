@@ -742,14 +742,44 @@ fn open_and_maybe_delete_db(
     Ok(())
 }
 
-// TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
-// but we want to delete everything under
-//     Collator2002-01/data/containers/chains/simple_container_2002
+/// Remove the container chain database folder. This is called with db_path:
+///     `Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002`
+/// but we want to delete everything under
+///     `Collator2002-01/data/containers/chains/simple_container_2002`
+/// So we use `delete_empty_folders_recursive` to try to remove the parent folders as well, but only
+/// if they are empty. This is to avoid removing any secret keys or other important data.
 fn delete_container_chain_db(db_path: &Path) {
-    if db_path.exists() {
-        std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
+    // Remove folder `full-container-2002`
+    let _ = std::fs::remove_dir_all(db_path);
+    // Remove all the empty folders inside `simple_container_2002`, including self
+    if let Some(parent) = db_path.ancestors().nth(2) {
+        let _ = delete_empty_folders_recursive(parent);
     }
+}
+
+/// Removes all empty folders in `path`, recursively. Then, if `path` is empty, it removes it as well.
+/// Ignores any IO errors.
+fn delete_empty_folders_recursive(path: &Path) {
+    let entry_iter = std::fs::read_dir(path);
+    let entry_iter = match entry_iter {
+        Ok(x) => x,
+        Err(_e) => return,
+    };
+
+    for entry in entry_iter {
+        let entry = match entry {
+            Ok(x) => x,
+            Err(_e) => continue,
+        };
+
+        let path = entry.path();
+        if path.is_dir() {
+            let _ = delete_empty_folders_recursive(&path);
+        }
+    }
+
+    // Try to remove dir. Returns an error if the directory is not empty, but we ignore it.
+    let _ = std::fs::remove_dir(path);
 }
 
 /// Parse a list of boot nodes in `Vec<u8>` format. Invalid boot nodes are filtered out.
@@ -786,6 +816,7 @@ fn parse_boot_nodes_ignore_invalid(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
@@ -1216,5 +1247,19 @@ mod tests {
             parse_boot_nodes_ignore_invalid(vec![bootnode1], para_id).len(),
             1
         );
+    }
+
+    #[test]
+    fn path_ancestors() {
+        // Test the implementation of `delete_container_chain_db`
+        let db_path = PathBuf::from("/tmp/zombienet/Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002");
+        let parent = db_path.ancestors().nth(2).unwrap();
+
+        assert_eq!(
+            parent,
+            PathBuf::from(
+                "/tmp/zombienet/Collator2002-01/data/containers/chains/simple_container_2002"
+            )
+        )
     }
 }
