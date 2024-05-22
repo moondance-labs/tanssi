@@ -61,7 +61,6 @@ describeSuite({
             log(`Retrieved ${count} total proxies`);
         }, 30_000);
 
-        // TEMPLATE: Give details about what you are testing
         it({
             id: "C100",
             title: "should have no more than the maximum allowed proxies",
