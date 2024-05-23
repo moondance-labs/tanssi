@@ -43,6 +43,7 @@ sp-runtime = { workspace = true }
 default = [ "std" ]
 std = [
 	"cumulus-primitives-core/std",
+	"cumulus-test-relay-sproof-builder/std",
 	"dp-chain-state-snapshot/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
