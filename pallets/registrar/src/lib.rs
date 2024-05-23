@@ -587,8 +587,7 @@ pub mod pallet {
 
         /// Register parachain or parathread
         #[pallet::call_index(9)]
-        // TODO: weight
-        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        #[pallet::weight(T::WeightInfo::register_with_relay_proof(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
         pub fn register_with_relay_proof(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -638,11 +637,10 @@ pub mod pallet {
         /// Deregister a parachain that no longer exists in the relay chain. The origin of this
         /// extrinsic will be rewarded with the parachain deposit.
         #[pallet::call_index(10)]
-        // TODO: weight
-        #[pallet::weight(T::WeightInfo::deregister_immediate(
+        #[pallet::weight(T::WeightInfo::deregister_with_relay_proof_immediate(
             T::MaxGenesisDataSize::get(),
             T::MaxLengthParaIds::get()
-        ).max(T::WeightInfo::deregister_scheduled(
+        ).max(T::WeightInfo::deregister_with_relay_proof_scheduled(
             T::MaxGenesisDataSize::get(),
             T::MaxLengthParaIds::get()
         )))]

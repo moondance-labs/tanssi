@@ -14,7 +14,6 @@ workspace = true
 
 [dependencies]
 cumulus-primitives-core = { workspace = true }
-cumulus-test-relay-sproof-builder = { workspace = true, optional = true }
 dp-chain-state-snapshot = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
@@ -66,7 +65,6 @@ std = [
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
-	"cumulus-test-relay-sproof-builder",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",

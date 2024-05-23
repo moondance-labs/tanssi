@@ -909,11 +909,18 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
     fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
         pallet_relay_storage_roots::pallet::RelayStorageRootKeys::<Runtime>::mutate(|x| {
             if storage_root.is_some() {
+                if x.is_full() {
+                    let key = x.remove(0);
+                    pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::remove(key);
+                }
                 let pos = x.iter().position(|x| *x >= relay_block_number);
                 if let Some(pos) = pos {
                     if x[pos] != relay_block_number {
-                        x.insert(pos, relay_block_number);
+                        x.try_insert(pos, relay_block_number).unwrap();
                     }
+                } else {
+                    // Push at end
+                    x.try_push(relay_block_number).unwrap();
                 }
             } else {
                 let pos = x.iter().position(|x| *x == relay_block_number);
