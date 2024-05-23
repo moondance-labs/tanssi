@@ -18,8 +18,8 @@ use {
     crate::{mock::*, Error, Event, ParaInfo, REGISTRAR_PARAS_INDEX},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec, Hashable},
-    parity_scale_codec::{Decode, Encode},
-    sp_core::Get,
+    parity_scale_codec::Encode,
+    sp_core::{Get, Pair},
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, SlotFrequency},
@@ -1311,31 +1311,214 @@ mod register_with_relay_proof {
     use super::*;
 
     #[test]
+    fn can_register_using_relay_manager_signature() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
+
+            assert_ok!(ParaRegistrar::register_with_relay_proof(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                None,
+                1,
+                proof,
+                signature,
+                empty_genesis_data(),
+            ));
+
+            System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
+        });
+    }
+
+    #[test]
     fn cannot_register_para_if_relay_root_not_stored() {
         // Check that storage proof is invalid when the relay storage root provider returns `None`.
         new_test_ext().execute_with(|| {
             run_to_block(1);
-            assert_ok!(ParaRegistrar::register(
-                RuntimeOrigin::signed(ALICE),
-                42.into(),
-                empty_genesis_data()
-            ));
-            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
-            assert_ok!(ParaRegistrar::mark_valid_for_collating(
-                RuntimeOrigin::root(),
-                42.into(),
-            ));
 
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
             // Intentionally don't store the storage root in Mock
-            let (_relay_parent_storage_root, proof) =
-                RelayStateSproofBuilder::default().into_state_root_and_proof();
-            // TODO: find a way to mock signatures or generate and hardcode one
-            let signature_encoded = vec![0u8];
-            let signature = cumulus_primitives_core::relay_chain::Signature::decode(
-                &mut signature_encoded.as_slice(),
-            )
-            .unwrap();
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
 
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(ALICE),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::RelayStorageRootNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_register_invalid_storage_proof() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, _actual_proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
+            // Instead of using the actual proof, just pass some random bytes
+            let proof =
+                sp_trie::StorageProof::new([b"A".to_vec(), b"AA".to_vec(), b"AAA".to_vec()]);
+
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(ALICE),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::InvalidRelayStorageProof
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_register_if_not_registered_in_relay() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let (relay_parent_storage_root, proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let para_id: ParaId = 42.into();
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
+
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(ALICE),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::InvalidRelayStorageProof
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_register_signature_for_a_different_account() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
+
+            // Signature is for ALICE, we use origin BOB
             assert_noop!(
                 ParaRegistrar::register_with_relay_proof(
                     RuntimeOrigin::signed(BOB),
@@ -1346,7 +1529,105 @@ mod register_with_relay_proof {
                     signature,
                     empty_genesis_data(),
                 ),
-                Error::<Test>::RelayStorageRootNotFound
+                Error::<Test>::InvalidRelayManagerSignature
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_register_signature_for_a_different_para_id() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 43.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                pairs[0].sign(&signature_msg).into();
+
+            // The signature and the storage proof are for para id 43, registering 42 should fail
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(ALICE),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::InvalidRelayStorageProof
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_register_invalid_signature() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let pairs = get_ed25519_pairs(1);
+            let mut sproof = RelayStateSproofBuilder::default();
+            let para_id: ParaId = 42.into();
+            let bytes = para_id.twox_64_concat();
+            let key = [REGISTRAR_PARAS_INDEX, bytes.as_slice()].concat();
+            let para_info: ParaInfo<
+                cumulus_primitives_core::relay_chain::AccountId,
+                cumulus_primitives_core::relay_chain::Balance,
+            > = ParaInfo {
+                manager: pairs[0].public().into(),
+                deposit: Default::default(),
+                locked: None,
+            };
+            sproof.additional_key_values = vec![(key, para_info.encode())];
+            let (relay_parent_storage_root, proof) = sproof.into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            let account = ALICE;
+            let relay_storage_root = relay_parent_storage_root;
+            let signature_msg =
+                ParaRegistrar::relay_signature_msg(para_id, &account, relay_storage_root);
+            let mut signature_ed25519 = pairs[0].sign(&signature_msg);
+            // Flip one bit in the signature to make it invalid
+            signature_ed25519.0[30] ^= 0x01;
+            let signature: cumulus_primitives_core::relay_chain::Signature =
+                signature_ed25519.into();
+
+            assert_noop!(
+                ParaRegistrar::register_with_relay_proof(
+                    RuntimeOrigin::signed(ALICE),
+                    42.into(),
+                    None,
+                    1,
+                    proof,
+                    signature,
+                    empty_genesis_data(),
+                ),
+                Error::<Test>::InvalidRelayManagerSignature
             );
         });
     }

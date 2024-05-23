@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_core::{ed25519, Pair};
 use {
     crate::{self as pallet_registrar, RegistrarHooks},
     frame_support::{
@@ -323,4 +324,19 @@ pub fn run_to_block(n: u64) {
             ParaRegistrar::initializer_on_new_session(&session_index);
         }
     }
+}
+
+pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {
+    let seed: u128 = 12345678901234567890123456789012;
+    let mut pairs = Vec::new();
+    for i in 0..num {
+        pairs.push(ed25519::Pair::from_seed(
+            (seed.clone() + i as u128)
+                .to_string()
+                .as_bytes()
+                .try_into()
+                .unwrap(),
+        ))
+    }
+    pairs
 }

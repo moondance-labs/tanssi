@@ -40,9 +40,8 @@ pub use weights::WeightInfo;
 
 pub use pallet::*;
 
-use dp_chain_state_snapshot::GenericStateProof;
-use sp_runtime::traits::Verify;
 use {
+    dp_chain_state_snapshot::GenericStateProof,
     frame_support::{
         pallet_prelude::*,
         traits::{Currency, EnsureOriginWithArg, ReservableCurrency},
@@ -50,7 +49,11 @@ use {
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
-    sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
+    sp_core::H256,
+    sp_runtime::{
+        traits::{AtLeast32BitUnsigned, Verify},
+        Saturating,
+    },
     sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
@@ -616,13 +619,8 @@ pub mod pallet {
                 .map_err(|_| Error::<T>::InvalidRelayStorageProof)?;
             let relay_manager = relay_para_info.manager;
 
-            // Verify manager signature. Includes:
-            // * para_id, in case the manager has more than 1 para in the relay
-            // * accountid in tanssi, to ensure that the creator role is assigned to the desired account
-            // * relay_storage_root, to make the signature network-specific, and also make it expire
-            //     when the relay storage root expires.
-            let signature_msg: Vec<u8> = (para_id, &account, relay_storage_root).encode();
-
+            // Verify manager signature
+            let signature_msg = Self::relay_signature_msg(para_id, &account, relay_storage_root);
             if !manager_signature.verify(&*signature_msg, &relay_manager) {
                 return Err(Error::<T>::InvalidRelayManagerSignature.into());
             }
@@ -630,6 +628,7 @@ pub mod pallet {
             Self::do_register(account, para_id, genesis_data)?;
             // Insert parathread params
             // TODO: need a separate proof that this para id is a parathread or parachain?
+            // Does registrar->paras even include parathreads? If not this should always be None
             if let Some(parathread_params) = parathread_params {
                 ParathreadParams::<T>::insert(para_id, parathread_params);
             }
@@ -892,6 +891,19 @@ pub mod pallet {
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
             Ok(())
+        }
+
+        /// Relay parachain manager signature message. Includes:
+        /// * para_id, in case the manager has more than 1 para in the relay
+        /// * accountid in tanssi, to ensure that the creator role is assigned to the desired account
+        /// * relay_storage_root, to make the signature network-specific, and also make it expire
+        ///     when the relay storage root expires.
+        pub fn relay_signature_msg(
+            para_id: ParaId,
+            tanssi_account: &T::AccountId,
+            relay_storage_root: H256,
+        ) -> Vec<u8> {
+            (para_id, tanssi_account, relay_storage_root).encode()
         }
 
         fn schedule_parachain_change(
