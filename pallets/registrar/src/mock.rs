@@ -331,7 +331,7 @@ pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {
     let mut pairs = Vec::new();
     for i in 0..num {
         pairs.push(ed25519::Pair::from_seed(
-            (seed.clone() + i as u128)
+            (seed + u128::from(i))
                 .to_string()
                 .as_bytes()
                 .try_into()

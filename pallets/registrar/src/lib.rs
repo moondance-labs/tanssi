@@ -601,7 +601,7 @@ pub mod pallet {
             let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
             let relay_storage_root =
                 T::RelayStorageRootProvider::get_relay_storage_root(relay_proof_block_number)
-                    .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+                    .ok_or(Error::<T>::RelayStorageRootNotFound)?;
             let relay_state_proof =
                 GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
                     relay_storage_root,
@@ -658,7 +658,7 @@ pub mod pallet {
 
             let relay_storage_root =
                 T::RelayStorageRootProvider::get_relay_storage_root(relay_proof_block_number)
-                    .ok_or_else(|| Error::<T>::RelayStorageRootNotFound)?;
+                    .ok_or(Error::<T>::RelayStorageRootNotFound)?;
             let relay_state_proof =
                 GenericStateProof::<cumulus_primitives_core::relay_chain::Block>::new(
                     relay_storage_root,
