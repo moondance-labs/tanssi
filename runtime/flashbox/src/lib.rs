@@ -796,6 +796,7 @@ impl pallet_data_preservers::Config for Runtime {
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
+    type ProfileId = u64;
     type ProfileDeposit = BytesProfileDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
 
     type SetBootNodesOrigin =

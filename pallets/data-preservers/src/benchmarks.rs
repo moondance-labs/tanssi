@@ -19,7 +19,8 @@
 //! Benchmarking
 use {
     crate::{
-        Call, Config, Pallet, Profile, ProfileDeposit, ProfileMode, Profiles, RegisteredProfile,
+        Call, Config, Pallet, ParaIdsFilter, Profile, ProfileDeposit, ProfileMode, Profiles,
+        RegisteredProfile,
     },
     frame_benchmarking::v2::*,
     frame_support::{
@@ -82,7 +83,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -111,7 +112,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -143,7 +144,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -158,7 +159,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -184,7 +185,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -199,7 +200,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -226,7 +227,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 
@@ -248,7 +249,7 @@ mod benchmarks {
 
         let profile = Profile {
             url,
-            limited_to_para_ids: Some(para_ids),
+            para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
         };
 

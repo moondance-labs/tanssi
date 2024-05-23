@@ -2743,8 +2743,16 @@ export default {
     /** Lookup295: pallet_data_preservers::pallet::Profile<T> */
     PalletDataPreserversProfile: {
         url: "Bytes",
-        limitedToParaIds: "Option<Vec<u32>>",
+        paraIds: "PalletDataPreserversParaIdsFilter",
         mode: "PalletDataPreserversProfileMode",
+    },
+    /** Lookup296: pallet_data_preservers::pallet::ParaIdsFilter<T> */
+    PalletDataPreserversParaIdsFilter: {
+        _enum: {
+            AnyParaId: "Null",
+            Whitelist: "Vec<u32>",
+            Blacklist: "Vec<u32>",
+        },
     },
     /** Lookup298: pallet_data_preservers::pallet::ProfileMode */
     PalletDataPreserversProfileMode: {

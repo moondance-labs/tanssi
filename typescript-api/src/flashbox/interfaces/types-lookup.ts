@@ -2147,8 +2147,18 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletDataPreserversProfile (229) */
     interface PalletDataPreserversProfile extends Struct {
         readonly url: Bytes;
-        readonly limitedToParaIds: Option<Vec<u32>>;
+        readonly paraIds: PalletDataPreserversParaIdsFilter;
         readonly mode: PalletDataPreserversProfileMode;
+    }
+
+    /** @name PalletDataPreserversParaIdsFilter (230) */
+    interface PalletDataPreserversParaIdsFilter extends Enum {
+        readonly isAnyParaId: boolean;
+        readonly isWhitelist: boolean;
+        readonly asWhitelist: Vec<u32>;
+        readonly isBlacklist: boolean;
+        readonly asBlacklist: Vec<u32>;
+        readonly type: "AnyParaId" | "Whitelist" | "Blacklist";
     }
 
     /** @name PalletDataPreserversProfileMode (233) */

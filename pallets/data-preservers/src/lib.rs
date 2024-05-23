@@ -50,10 +50,12 @@ use {
     },
     frame_system::pallet_prelude::*,
     sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero},
+        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero, One},
         ArithmeticError,
     },
     sp_std::vec::Vec,
+    parity_scale_codec::FullCodec,
+    core::fmt::Debug,
 };
 
 #[frame_support::pallet]
@@ -109,6 +111,9 @@ pub mod pallet {
         type Currency: Inspect<Self::AccountId>
             + Balanced<Self::AccountId>
             + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+
+        type ProfileId: Default + FullCodec + TypeInfo + Copy + Clone + Debug + Eq + CheckedAdd + One;
+
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
@@ -134,16 +139,16 @@ pub mod pallet {
         BootNodesChanged { para_id: ParaId },
         ProfileCreated {
             account: T::AccountId,
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
             deposit: BalanceOf<T>,
         },
         ProfileUpdated {
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
             old_deposit: BalanceOf<T>,
             new_deposit: BalanceOf<T>,
         },
         ProfileDeleted {
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
             released_deposit: BalanceOf<T>,
         },
     }
@@ -174,16 +179,14 @@ pub mod pallet {
 
     #[pallet::storage]
     pub type Profiles<T: Config> =
-        StorageMap<_, Blake2_128Concat, ProfileId, RegisteredProfile<T>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::ProfileId, RegisteredProfile<T>, OptionQuery>;
 
     #[pallet::storage]
-    pub type NextProfileId<T: Config> = StorageValue<_, ProfileId, ValueQuery>;
+    pub type NextProfileId<T: Config> = StorageValue<_, T::ProfileId, ValueQuery>;
 
     /// Balance used by this pallet
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-
-    pub type ProfileId = u64;
 
     /// Data preserver profile.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -193,8 +196,28 @@ pub mod pallet {
     #[scale_info(skip_type_params(T))]
     pub struct Profile<T: Config> {
         pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
-        pub limited_to_para_ids: Option<BoundedVec<ParaId, T::MaxParaIdsVecLen>>,
+        pub para_ids: ParaIdsFilter<T>,
         pub mode: ProfileMode,
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub enum ParaIdsFilter<T: Config> {
+        AnyParaId,
+        Whitelist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
+        Blacklist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
+    }
+
+    impl<T: Config> ParaIdsFilter<T> {
+        pub fn len(&self) -> usize {
+            match self {
+                Self::AnyParaId => 0,
+                Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
+            }
+        }
     }
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -218,10 +241,12 @@ pub mod pallet {
         pub profile: Profile<T>,
     }
 
+    /// Computes the deposit cost of a profile.
     pub trait ProfileDeposit<Profile, Balance> {
         fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
     }
 
+    /// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
     pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
 
     impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
@@ -275,7 +300,7 @@ pub mod pallet {
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::create_profile(
             profile.url.len() as u32,
-            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+            profile.para_ids.len() as u32,
         ))]
         pub fn create_profile(
             origin: OriginFor<T>,
@@ -287,7 +312,7 @@ pub mod pallet {
             T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
 
             let id = NextProfileId::<T>::get();
-            NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
+            NextProfileId::<T>::set(id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?);
 
             ensure!(
                 !Profiles::<T>::contains_key(id),
@@ -315,11 +340,11 @@ pub mod pallet {
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::update_profile(
             profile.url.len() as u32,
-            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+            profile.para_ids.len() as u32,
         ))]
         pub fn update_profile(
             origin: OriginFor<T>,
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
             profile: Profile<T>,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
@@ -373,7 +398,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::delete_profile())]
         pub fn delete_profile(
             origin: OriginFor<T>,
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
@@ -406,7 +431,7 @@ pub mod pallet {
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::force_create_profile(
             profile.url.len() as u32,
-            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+            profile.para_ids.len() as u32,
         ))]
         pub fn force_create_profile(
             origin: OriginFor<T>,
@@ -416,7 +441,7 @@ pub mod pallet {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
 
             let id = NextProfileId::<T>::get();
-            NextProfileId::<T>::set(id.checked_add(1).ok_or(ArithmeticError::Overflow)?);
+            NextProfileId::<T>::set(id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?);
 
             ensure!(
                 !Profiles::<T>::contains_key(id),
@@ -444,11 +469,11 @@ pub mod pallet {
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::force_update_profile(
             profile.url.len() as u32,
-            profile.limited_to_para_ids.as_ref().map(|v| v.len() as u32).unwrap_or(0)
+            profile.para_ids.len() as u32,
         ))]
         pub fn force_update_profile(
             origin: OriginFor<T>,
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
             profile: Profile<T>,
         ) -> DispatchResultWithPostInfo {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
@@ -487,7 +512,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_delete_profile())]
         pub fn force_delete_profile(
             origin: OriginFor<T>,
-            profile_id: ProfileId,
+            profile_id: T::ProfileId,
         ) -> DispatchResultWithPostInfo {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
 

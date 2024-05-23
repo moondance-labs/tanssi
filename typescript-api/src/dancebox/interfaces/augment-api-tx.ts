@@ -293,7 +293,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -309,7 +309,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any }
                         | string
                         | Uint8Array,
                     forAccount: AccountId32 | string | Uint8Array
@@ -327,7 +327,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -347,7 +347,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; limitedToParaIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,

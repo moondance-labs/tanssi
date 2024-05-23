@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
-import { hexToString } from "viem";
 
 describeSuite({
     id: "CT1001",
@@ -27,7 +26,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -41,9 +40,9 @@ describeSuite({
                     deposit: 10_190_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
             },
         });
@@ -54,7 +53,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -68,15 +67,15 @@ describeSuite({
                     deposit: 10_190_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
 
                 const profile2 = {
                     url: "exemple2",
-                    limitedToParaIds: [42, 43],
-                    mode: { "Rpc": { supportsEthereumRpcs: false }},
+                    paraIds: { whitelist: [42, 43] },
+                    mode: { Rpc: { supportsEthereumRpcs: false } },
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.updateProfile(profileId, profile2);
@@ -89,9 +88,9 @@ describeSuite({
                     deposit: 10_210_000_000_000,
                     profile: {
                         url: "0x6578656d706c6532",
-                        limitedToParaIds: [42, 43],
-                        mode: { "rpc": { supportsEthereumRpcs: false } }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { rpc: { supportsEthereumRpcs: false } },
+                    },
                 });
             },
         });
@@ -102,7 +101,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -116,9 +115,9 @@ describeSuite({
                     deposit: 10_190_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.deleteProfile(profileId);
@@ -136,7 +135,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -150,9 +149,9 @@ describeSuite({
                     deposit: 0,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
             },
         });
@@ -163,7 +162,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -177,15 +176,15 @@ describeSuite({
                     deposit: 10_190_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
 
                 const profile2 = {
                     url: "exemple2",
-                    limitedToParaIds: [42, 43],
-                    mode: { "Rpc": { supportsEthereumRpcs: false }},
+                    paraIds: { whitelist: [42, 43] },
+                    mode: { Rpc: { supportsEthereumRpcs: false } },
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceUpdateProfile(profileId, profile2);
@@ -198,9 +197,9 @@ describeSuite({
                     deposit: 0,
                     profile: {
                         url: "0x6578656d706c6532",
-                        limitedToParaIds: [42, 43],
-                        mode: { "rpc": { supportsEthereumRpcs: false } }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { rpc: { supportsEthereumRpcs: false } },
+                    },
                 });
             },
         });
@@ -211,7 +210,7 @@ describeSuite({
             test: async function () {
                 const profile = {
                     url: "exemple",
-                    limitedToParaIds: [42, 43],
+                    paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
                 };
 
@@ -225,13 +224,14 @@ describeSuite({
                     deposit: 10_190_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
-                        limitedToParaIds: [42, 43],
-                        mode: { "bootnode": null }
-                    }
+                        paraIds: { whitelist: [42, 43] },
+                        mode: { bootnode: null },
+                    },
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceDeleteProfile(profileId);
                 const signedTx2 = await polkadotJs.tx.sudo.sudo(tx2).signAsync(sudo_alice);
+                await context.createBlock(); // session boundary block cannot contain tx
                 await context.createBlock([signedTx2]);
 
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);

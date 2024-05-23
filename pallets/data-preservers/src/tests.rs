@@ -209,7 +209,7 @@ mod create_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -248,7 +248,7 @@ mod create_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -271,7 +271,7 @@ mod create_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -301,7 +301,7 @@ mod create_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -341,7 +341,7 @@ mod create_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -368,7 +368,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -379,7 +379,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -426,7 +426,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -437,7 +437,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -462,7 +462,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -473,7 +473,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -498,7 +498,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -509,7 +509,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -534,7 +534,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -545,7 +545,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -592,7 +592,7 @@ mod update_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -603,7 +603,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: Some(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -632,7 +632,7 @@ mod delete_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -673,7 +673,7 @@ mod delete_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -700,7 +700,7 @@ mod delete_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -727,7 +727,7 @@ mod delete_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
@@ -768,7 +768,7 @@ mod delete_profile {
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
-                    limited_to_para_ids: None,
+                    para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
                 };
 
