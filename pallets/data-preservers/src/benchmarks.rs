@@ -31,6 +31,7 @@ use {
         BoundedVec,
     },
     frame_system::RawOrigin,
+    sp_runtime::traits::Zero,
     sp_std::vec,
     tp_traits::ParaId,
 };
@@ -48,7 +49,7 @@ where
 }
 
 #[benchmarks(
-    where T::Currency: Mutate<T::AccountId>
+    where T::Currency: Mutate<T::AccountId>, T::ProfileId: Zero
 )]
 mod benchmarks {
     use super::*;
@@ -95,7 +96,7 @@ mod benchmarks {
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()), profile.clone());
 
         assert_eq!(
-            Profiles::<T>::get(0),
+            Profiles::<T>::get(T::ProfileId::zero()),
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
@@ -128,7 +129,7 @@ mod benchmarks {
         );
 
         assert_eq!(
-            Profiles::<T>::get(0),
+            Profiles::<T>::get(T::ProfileId::zero()),
             Some(RegisteredProfile {
                 account: owner,
                 deposit: 0u32.into(),
@@ -166,10 +167,14 @@ mod benchmarks {
         let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
 
         #[extrinsic_call]
-        Pallet::<T>::update_profile(RawOrigin::Signed(caller.clone()), 0, profile.clone());
+        Pallet::<T>::update_profile(
+            RawOrigin::Signed(caller.clone()),
+            T::ProfileId::zero(),
+            profile.clone(),
+        );
 
         assert_eq!(
-            Profiles::<T>::get(0),
+            Profiles::<T>::get(T::ProfileId::zero()),
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
@@ -208,10 +213,14 @@ mod benchmarks {
             .expect("failed to create ForceSetProfileOrigin");
 
         #[extrinsic_call]
-        Pallet::<T>::force_update_profile(origin_force as T::RuntimeOrigin, 0, profile.clone());
+        Pallet::<T>::force_update_profile(
+            origin_force as T::RuntimeOrigin,
+            T::ProfileId::zero(),
+            profile.clone(),
+        );
 
         assert_eq!(
-            Profiles::<T>::get(0),
+            Profiles::<T>::get(T::ProfileId::zero()),
             Some(RegisteredProfile {
                 account: caller,
                 deposit: 0u32.into(),
@@ -237,9 +246,9 @@ mod benchmarks {
             .expect("to create profile");
 
         #[extrinsic_call]
-        Pallet::<T>::delete_profile(RawOrigin::Signed(caller.clone()), 0);
+        Pallet::<T>::delete_profile(RawOrigin::Signed(caller.clone()), T::ProfileId::zero());
 
-        assert_eq!(Profiles::<T>::get(0), None);
+        assert_eq!(Profiles::<T>::get(T::ProfileId::zero()), None);
     }
 
     #[benchmark]
@@ -262,9 +271,9 @@ mod benchmarks {
             .expect("failed to create ForceSetProfileOrigin");
 
         #[extrinsic_call]
-        Pallet::<T>::force_delete_profile(origin_force as T::RuntimeOrigin, 0);
+        Pallet::<T>::force_delete_profile(origin_force as T::RuntimeOrigin, T::ProfileId::zero());
 
-        assert_eq!(Profiles::<T>::get(0), None);
+        assert_eq!(Profiles::<T>::get(T::ProfileId::zero()), None);
     }
 
     impl_benchmark_test_suite!(

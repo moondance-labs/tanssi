@@ -37,6 +37,7 @@ pub use weights::WeightInfo;
 use serde::{Deserialize, Serialize};
 
 use {
+    core::fmt::Debug,
     dp_core::ParaId,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -49,13 +50,12 @@ use {
         DefaultNoBound,
     },
     frame_system::pallet_prelude::*,
+    parity_scale_codec::FullCodec,
     sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero, One},
+        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
         ArithmeticError,
     },
     sp_std::vec::Vec,
-    parity_scale_codec::FullCodec,
-    core::fmt::Debug,
 };
 
 #[frame_support::pallet]
@@ -112,7 +112,15 @@ pub mod pallet {
             + Balanced<Self::AccountId>
             + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 
-        type ProfileId: Default + FullCodec + TypeInfo + Copy + Clone + Debug + Eq + CheckedAdd + One;
+        type ProfileId: Default
+            + FullCodec
+            + TypeInfo
+            + Copy
+            + Clone
+            + Debug
+            + Eq
+            + CheckedAdd
+            + One;
 
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
@@ -312,7 +320,10 @@ pub mod pallet {
             T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
 
             let id = NextProfileId::<T>::get();
-            NextProfileId::<T>::set(id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?);
+            NextProfileId::<T>::set(
+                id.checked_add(&One::one())
+                    .ok_or(ArithmeticError::Overflow)?,
+            );
 
             ensure!(
                 !Profiles::<T>::contains_key(id),
@@ -441,7 +452,10 @@ pub mod pallet {
             T::ForceSetProfileOrigin::ensure_origin(origin)?;
 
             let id = NextProfileId::<T>::get();
-            NextProfileId::<T>::set(id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?);
+            NextProfileId::<T>::set(
+                id.checked_add(&One::one())
+                    .ok_or(ArithmeticError::Overflow)?,
+            );
 
             ensure!(
                 !Profiles::<T>::contains_key(id),
