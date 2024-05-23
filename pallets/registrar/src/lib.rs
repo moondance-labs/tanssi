@@ -627,8 +627,6 @@ pub mod pallet {
 
             Self::do_register(account, para_id, genesis_data)?;
             // Insert parathread params
-            // TODO: need a separate proof that this para id is a parathread or parachain?
-            // Does registrar->paras even include parathreads? If not this should always be None
             if let Some(parathread_params) = parathread_params {
                 ParathreadParams::<T>::insert(para_id, parathread_params);
             }

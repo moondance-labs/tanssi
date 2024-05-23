@@ -904,6 +904,29 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
         pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(relay_block_number)
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
+        pallet_relay_storage_roots::pallet::RelayStorageRootKeys::<Runtime>::mutate(|x| {
+            if storage_root.is_some() {
+                let pos = x.iter().position(|x| *x >= relay_block_number);
+                if let Some(pos) = pos {
+                    if x[pos] != relay_block_number {
+                        x.insert(pos, relay_block_number);
+                    }
+                }
+            } else {
+                let pos = x.iter().position(|x| *x == relay_block_number);
+                if let Some(pos) = pos {
+                    x.remove(pos);
+                }
+            }
+        });
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::set(
+            relay_block_number,
+            storage_root,
+        );
+    }
 }
 
 parameter_types! {

@@ -112,6 +112,18 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
             .get(&relay_block_number)
             .copied()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
+        Mock::mutate(|m| {
+            if let Some(storage_root) = storage_root {
+                m.relay_storage_roots
+                    .insert(relay_block_number, storage_root);
+            } else {
+                m.relay_storage_roots.remove(&relay_block_number);
+            }
+        })
+    }
 }
 
 parameter_types! {

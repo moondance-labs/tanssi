@@ -207,4 +207,7 @@ pub trait RemoveParaIdsWithNoCredits {
 
 pub trait RelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>);
 }
