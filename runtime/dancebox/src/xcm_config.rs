@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_system::pallet_prelude::BlockNumberFor;
-use pallet_xcm_core_buyer::XCMNotifier;
-use staging_xcm_builder::TrailingSetTopicAsId;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -33,11 +30,11 @@ use {
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
-    frame_system::EnsureRoot,
+    frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
         GetParathreadCollators, GetParathreadMaxCorePrice, GetParathreadParams,
-        GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
+        GetPurchaseCoreCall, ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
@@ -52,8 +49,8 @@ use {
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
         SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
-        WeightInfoBounds, WithComputedOrigin,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     staging_xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,

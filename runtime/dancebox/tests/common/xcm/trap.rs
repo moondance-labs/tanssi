@@ -17,9 +17,11 @@
 use crate::common::xcm::*;
 
 use {
-    crate::assert_expected_events,
-    crate::common::xcm::mocknets::{
-        DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
+    crate::{
+        assert_expected_events,
+        common::xcm::mocknets::{
+            DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
+        },
     },
     frame_support::{
         assert_ok,

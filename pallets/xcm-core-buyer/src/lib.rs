@@ -34,7 +34,6 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use tp_traits::{AuthorNotingHook, BlockNumber};
 use {
     dp_core::ParaId,
     frame_support::{
@@ -46,12 +45,11 @@ use {
     parity_scale_codec::EncodeLike,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
-    staging_xcm::v3::Response,
     staging_xcm::{
         prelude::*,
-        v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Xcm},
+        v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Response, Xcm},
     },
-    tp_traits::ParathreadParams,
+    tp_traits::{AuthorNotingHook, BlockNumber, ParathreadParams},
 };
 
 pub trait XCMNotifier<T: Config> {
@@ -97,8 +95,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use pallet_xcm::ensure_response;
+    use {super::*, pallet_xcm::ensure_response};
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);

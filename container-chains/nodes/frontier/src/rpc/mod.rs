@@ -133,12 +133,12 @@ where
     C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
 {
-    use finality::{FrontierFinality, FrontierFinalityApiServer};
     use {
         fc_rpc::{
             Eth, EthApiServer, EthFilter, EthFilterApiServer, EthPubSub, EthPubSubApiServer, Net,
             NetApiServer, Web3, Web3ApiServer,
         },
+        finality::{FrontierFinality, FrontierFinalityApiServer},
         substrate_frame_rpc_system::{System, SystemApiServer},
     };
 

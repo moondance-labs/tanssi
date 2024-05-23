@@ -124,6 +124,21 @@ declare module "@polkadot/api-base/types/events" {
         dataPreservers: {
             /** The list of boot_nodes changed. */
             BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            ProfileCreated: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, profileId: u64, deposit: u128],
+                { account: AccountId32; profileId: u64; deposit: u128 }
+            >;
+            ProfileDeleted: AugmentedEvent<
+                ApiType,
+                [profileId: u64, releasedDeposit: u128],
+                { profileId: u64; releasedDeposit: u128 }
+            >;
+            ProfileUpdated: AugmentedEvent<
+                ApiType,
+                [profileId: u64, oldDeposit: u128, newDeposit: u128],
+                { profileId: u64; oldDeposit: u128; newDeposit: u128 }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

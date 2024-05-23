@@ -15,14 +15,17 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::assert_expected_events,
-    crate::common::xcm::{
-        mocknets::{
-            DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver, EthereumSender,
-            FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
-            WestendEmptyReceiver, WestendRelay as Westend, WestendRelayPallet, WestendSender,
+    crate::{
+        assert_expected_events,
+        common::xcm::{
+            mocknets::{
+                DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver,
+                EthereumSender, FrontierTemplatePara as FrontierTemplate,
+                FrontierTemplateParaPallet, WestendEmptyReceiver, WestendRelay as Westend,
+                WestendRelayPallet, WestendSender,
+            },
+            *,
         },
-        *,
     },
     container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
     frame_support::{

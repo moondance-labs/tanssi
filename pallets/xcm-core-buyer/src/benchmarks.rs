@@ -35,11 +35,15 @@ pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000,
 
 #[benchmarks(where <T as frame_system::Config>::RuntimeOrigin: From<pallet_xcm::Origin>)]
 mod benchmarks {
-    use super::*;
-    use crate::{InFlightCoreBuyingOrder, PendingBlocks, QueryIdToParaId};
-    use frame_system::pallet_prelude::BlockNumberFor;
-    use staging_xcm::latest::{MaybeErrorCode, QueryId};
-    use staging_xcm::v3::{MultiLocation, Response};
+    use {
+        super::*,
+        crate::{InFlightCoreBuyingOrder, PendingBlocks, QueryIdToParaId},
+        frame_system::pallet_prelude::BlockNumberFor,
+        staging_xcm::{
+            latest::{MaybeErrorCode, QueryId},
+            v3::{MultiLocation, Response},
+        },
+    };
 
     #[benchmark]
     fn force_buy_core() {

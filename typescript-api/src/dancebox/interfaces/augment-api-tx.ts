@@ -23,6 +23,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     DanceboxRuntimeXcmConfigRelayChain,
+    PalletDataPreserversProfile,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
@@ -287,6 +288,51 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         dataPreservers: {
+            /** See [`Pallet::create_profile`]. */
+            createProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile]
+            >;
+            /** See [`Pallet::delete_profile`]. */
+            deleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_create_profile`]. */
+            forceCreateProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array,
+                    forAccount: AccountId32 | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile, AccountId32]
+            >;
+            /** See [`Pallet::force_delete_profile`]. */
+            forceDeleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_update_profile`]. */
+            forceUpdateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
+            >;
             /** See [`Pallet::set_boot_nodes`]. */
             setBootNodes: AugmentedSubmittable<
                 (
@@ -294,6 +340,18 @@ declare module "@polkadot/api-base/types/submittable" {
                     bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Vec<Bytes>]
+            >;
+            /** See [`Pallet::update_profile`]. */
+            updateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
