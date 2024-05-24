@@ -168,7 +168,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn register_with_proof(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
+    fn register_with_relay_proof(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
         let mut data = vec![];
         // Number of keys
         for _i in 1..z {

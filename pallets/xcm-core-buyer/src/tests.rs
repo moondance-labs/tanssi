@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::assert_storage_noop;
 use {
     crate::{mock::*, *},
-    frame_support::{assert_noop, assert_ok},
+    frame_support::{assert_noop, assert_ok, assert_storage_noop},
     sp_runtime::traits::BadOrigin,
 };
 

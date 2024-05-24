@@ -62,6 +62,7 @@ declare module "@polkadot/api-base/types/consts" {
         dataPreservers: {
             maxBootNodes: u32 & AugmentedConst<ApiType>;
             maxBootNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

@@ -53,6 +53,7 @@ import type {
     PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
+    PalletDataPreserversRegisteredProfile,
     PalletIdentityAuthorityProperties,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
@@ -294,6 +295,13 @@ declare module "@polkadot/api-base/types/storage" {
         dataPreservers: {
             bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
                 QueryableStorageEntry<ApiType, [u32]>;
+            nextProfileId: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            profiles: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletDataPreserversRegisteredProfile>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

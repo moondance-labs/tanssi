@@ -64,8 +64,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
+            NextProfileIdShouldBeAvailable: AugmentedError<ApiType>;
             /** This container chain does not have any boot nodes */
             NoBootNodes: AugmentedError<ApiType>;
+            UnknownProfileId: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
@@ -234,10 +236,6 @@ declare module "@polkadot/api-base/types/errors" {
         registrar: {
             /** Attempted to register a ParaId with a genesis data size greater than the limit */
             GenesisDataTooBig: AugmentedError<ApiType>;
-            /** The provided signature from the parachain manager in the relay is not valid */
-            InvalidRelayManagerSignature: AugmentedError<ApiType>;
-            /** The provided relay storage proof is not valid */
-            InvalidRelayStorageProof: AugmentedError<ApiType>;
             /** Tried to change parathread params for a para id that is not a registered parathread */
             NotAParathread: AugmentedError<ApiType>;
             /** Attempted to execute an extrinsic meant only for the para creator */
@@ -258,10 +256,6 @@ declare module "@polkadot/api-base/types/errors" {
             ParaIdNotPaused: AugmentedError<ApiType>;
             /** Attempted to deregister a ParaId that is not registered */
             ParaIdNotRegistered: AugmentedError<ApiType>;
-            /** Tried to deregister a parachain that was not deregistered from the relay chain */
-            ParaStillExistsInRelay: AugmentedError<ApiType>;
-            /** The relay storage root for the corresponding block number could not be retrieved */
-            RelayStorageRootNotFound: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

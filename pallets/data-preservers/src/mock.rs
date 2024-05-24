@@ -20,7 +20,7 @@ use {
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything},
+        traits::{ConstU128, ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything},
     },
     frame_system::{EnsureRoot, EnsureSigned, RawOrigin},
     sp_core::H256,
@@ -88,7 +88,7 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type RuntimeHoldReason = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = ();
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
@@ -217,24 +217,56 @@ where
 
 impl pallet_data_preservers::Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
+    type ProfileId = u64;
     type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
+    type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxBootNodes = ConstU32<10>;
     type MaxBootNodeUrlLen = ConstU32<200>;
+    type MaxParaIdsVecLen = ConstU32<20>;
+    type ProfileDeposit = crate::BytesProfileDeposit<ConstU128<1000>, ConstU128<51>>;
     type WeightInfo = ();
 }
 
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::<Test>::default()
-        .build_storage()
-        .unwrap();
+#[derive(Default)]
+pub struct ExtBuilder {
+    balances: Vec<(AccountId, Balance)>,
+}
 
-    let balances = vec![(0, 10_000)];
+impl ExtBuilder {
+    pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
+        self.balances = balances;
+        self
+    }
 
-    pallet_balances::GenesisConfig::<Test> { balances }
+    pub fn build(self) -> sp_io::TestExternalities {
+        let mut t = frame_system::GenesisConfig::<Test>::default()
+            .build_storage()
+            .unwrap();
+
+        pallet_balances::GenesisConfig::<Test> {
+            balances: self.balances,
+        }
         .assimilate_storage(&mut t)
         .unwrap();
 
-    t.into()
+        let mut ext: sp_io::TestExternalities = t.into();
+        ext.execute_with(|| System::set_block_number(1));
+        ext
+    }
+}
+
+pub(crate) fn events() -> Vec<crate::Event<Test>> {
+    System::events()
+        .into_iter()
+        .map(|r| r.event)
+        .filter_map(|e| {
+            if let RuntimeEvent::DataPreservers(inner) = e {
+                Some(inner)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
 }

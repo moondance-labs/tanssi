@@ -97,7 +97,7 @@ impl<T: frame_system::Config> pallet_registrar::WeightInfo for SubstrateWeight<T
 	/// The range of component `x` is `[5, 3000000]`.
 	/// The range of component `y` is `[1, 50]`.
 	/// The range of component `z` is `[1, 10]`.
-	fn register_with_proof(x: u32, y: u32, z: u32, ) -> Weight {
+	fn register_with_relay_proof(x: u32, y: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `577 + y * (17 ±0)`
 		//  Estimated: `3973 + y * (18 ±0) + z * (6 ±4)`

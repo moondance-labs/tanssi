@@ -23,6 +23,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     DanceboxRuntimeXcmConfigRelayChain,
+    PalletDataPreserversProfile,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
@@ -36,12 +37,10 @@ import type {
     PalletXcmCoreBuyerBuyCoreCollatorProof,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     SpRuntimeMultiSignature,
-    SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
-    TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     XcmV3Response,
     XcmV3WeightLimit,
@@ -289,6 +288,51 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         dataPreservers: {
+            /** See [`Pallet::create_profile`]. */
+            createProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile]
+            >;
+            /** See [`Pallet::delete_profile`]. */
+            deleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_create_profile`]. */
+            forceCreateProfile: AugmentedSubmittable<
+                (
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array,
+                    forAccount: AccountId32 | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletDataPreserversProfile, AccountId32]
+            >;
+            /** See [`Pallet::force_delete_profile`]. */
+            forceDeleteProfile: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::force_update_profile`]. */
+            forceUpdateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
+            >;
             /** See [`Pallet::set_boot_nodes`]. */
             setBootNodes: AugmentedSubmittable<
                 (
@@ -296,6 +340,18 @@ declare module "@polkadot/api-base/types/submittable" {
                     bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Vec<Bytes>]
+            >;
+            /** See [`Pallet::update_profile`]. */
+            updateProfile: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    profile:
+                        | PalletDataPreserversProfile
+                        | { url?: any; paraIds?: any; mode?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, PalletDataPreserversProfile]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -1682,15 +1738,6 @@ declare module "@polkadot/api-base/types/submittable" {
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
-            /** See [`Pallet::deregister_with_relay_proof`]. */
-            deregisterWithRelayProof: AugmentedSubmittable<
-                (
-                    paraId: u32 | AnyNumber | Uint8Array,
-                    relayProofBlockNumber: u32 | AnyNumber | Uint8Array,
-                    relayStorageProof: SpTrieStorageProof | { trieNodes?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, SpTrieStorageProof]
-            >;
             /** See [`Pallet::mark_valid_for_collating`]. */
             markValidForCollating: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -1725,41 +1772,6 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
-            >;
-            /** See [`Pallet::register_with_relay_proof`]. */
-            registerWithRelayProof: AugmentedSubmittable<
-                (
-                    paraId: u32 | AnyNumber | Uint8Array,
-                    parathreadParams:
-                        | Option<TpTraitsParathreadParams>
-                        | null
-                        | Uint8Array
-                        | TpTraitsParathreadParams
-                        | { slotFrequency?: any }
-                        | string,
-                    relayProofBlockNumber: u32 | AnyNumber | Uint8Array,
-                    relayStorageProof: SpTrieStorageProof | { trieNodes?: any } | string | Uint8Array,
-                    managerSignature:
-                        | SpRuntimeMultiSignature
-                        | { Ed25519: any }
-                        | { Sr25519: any }
-                        | { Ecdsa: any }
-                        | string
-                        | Uint8Array,
-                    genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
-                        | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
-                        | string
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [
-                    u32,
-                    Option<TpTraitsParathreadParams>,
-                    u32,
-                    SpTrieStorageProof,
-                    SpRuntimeMultiSignature,
-                    TpContainerChainGenesisDataContainerChainGenesisData
-                ]
             >;
             /** See [`Pallet::set_para_manager`]. */
             setParaManager: AugmentedSubmittable<
