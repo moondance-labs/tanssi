@@ -25,10 +25,10 @@ DOCKER_TAG_TANSSI="moondancelabs/tanssi:sha-$LATEST_RT_SHA8"
 
 docker rm -f tanssi_container 2> /dev/null | true
 docker create --name tanssi_container $DOCKER_TAG_TANSSI bash
-docker cp tanssi_container:tanssi/tanssi-node tmp/tanssi
+docker cp tanssi_container:tanssi/tanssi-node tmp/tanssi-node
 docker rm -f tanssi_container
 chmod uog+x ../target/release/tanssi-node
-chmod uog+x tmp/tanssi
+chmod uog+x tmp/tanssi-node
 
 DOCKER_TAG_CONTAINER_SIMPLE="moondancelabs/container-chain-simple-template:sha-$LATEST_RT_SHA8"
 RUNTIME_VER=$(echo $LATEST_RUNTIME_RELEASE | tr -d -c 0-9)
