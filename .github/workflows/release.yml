@@ -835,6 +835,48 @@ jobs:
                   name: failed-node-logs
                   path: ${{ env.NODE_LOGS_ZIP }}
 
+    zombienet-test-upgrade-containers:
+        runs-on: self-hosted
+        needs: ["set-tags", "build"]
+        strategy:
+            matrix:
+                chains: [
+                  { chain: "frontier_template", runtime: "container-chain-template-frontier" },
+                  { chain: "simple_template", runtime: "container-chain-template-simple" },
+                ]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+
+            - name: Pnpm
+              uses: pnpm/action-setup@v3.0.0
+              with:
+                  version: 8
+
+            - name: Setup node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+
+            - name: Create local folders
+              run: |
+                mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+                mkdir -p test/tmp
+            - name: "Download runtime"
+              uses: actions/download-artifact@v4
+              with:
+                name: runtimes
+                path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+
+            - name: "Install and run upgrade test"
+              run: |
+                cd test
+                pnpm install
+                pnpm moonwall test zombie_${{ matrix.chains.chain }}_template_upgrade
+
     docker-tanssi:
         runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
