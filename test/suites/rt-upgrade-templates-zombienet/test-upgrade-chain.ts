@@ -1,29 +1,32 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import { alith } from "@moonwall/util";
+
 import fs from "node:fs";
 
 describeSuite({
     id: "R01",
-    title: "Zombie Dancebox Upgrade Test",
+    title: "Zombie Container Template Upgrade Test",
     foundationMethods: "zombie",
     testCases: function ({ it, context, log }) {
         let paraApi: ApiPromise;
+        let alice_or_alith: KeyringPair;
+        let tanssiApi: ApiPromise;
         let relayApi: ApiPromise;
-        let alice: KeyringPair;
-
         beforeAll(async () => {
-            const keyring = new Keyring({ type: "sr25519" });
-            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+            tanssiApi = context.polkadotJs("Tanssi");
+            relayApi = context.polkadotJs("Relay");
             paraApi = context.polkadotJs("parachain");
-            relayApi = context.polkadotJs("relaychain");
-
-            const relayNetwork = relayApi.consts.system.version.specName.toString();
-            expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
-
-            const paraNetwork = paraApi.consts.system.version.specName.toString();
-            expect(paraNetwork, "Para API incorrect").to.contain("dancebox");
-
+            const container2001Network = paraApi.consts.system.version.specName.toString();
+            if (container2001Network.includes("frontier-template")) {
+                alice_or_alith = alith;
+            }
+            else  {
+                const keyring = new Keyring({ type: "sr25519" });
+                alice_or_alith = keyring.addFromUri("//Alice", { name: "Alice default" });
+            }
             const currentBlock = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
             expect(currentBlock, "Parachain not producing blocks").to.be.greaterThan(0);
         }, 120000);
@@ -45,10 +48,10 @@ describeSuite({
                 const blockNumberBefore = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 const currentCode = await paraApi.rpc.state.getStorage(":code");
                 const codeString = currentCode.toString();
+                const rtBefore = paraApi.consts.system.version.specVersion.toNumber();
 
                 const wasm = fs.readFileSync((await MoonwallContext.getContext()).rtUpgradePath);
                 const rtHex = `0x${wasm.toString("hex")}`;
-                const rtBefore = paraApi.consts.system.version.specVersion.toNumber();
 
                 if (rtHex === codeString) {
                     log("Runtime already upgraded, skipping test");
@@ -59,7 +62,7 @@ describeSuite({
                     log("New runtime hash: " + codeString.slice(0, 10) + "..." + codeString.slice(-10));
                 }
 
-                await context.upgradeRuntime({ from: alice, logger: log });
+                await context.upgradeRuntime({ from: alice_or_alith, logger: log });
                 await context.waitBlock(2);
                 const rtafter = paraApi.consts.system.version.specVersion.toNumber();
                 if (rtBefore === rtafter) {
