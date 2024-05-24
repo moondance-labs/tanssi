@@ -1344,14 +1344,14 @@ where
     }
 }
 
-// TODO: move constant to dp_core:
+// TODO: import this from dancekit
 pub const REGISTRAR_PARAS_INDEX: &[u8] =
     &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"];
 
 // Need to copy ParaInfo from
 // polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
 // Because its fields are not public...
-// TODO: move this to some utils crate
+// TODO: import this from dancekit
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo)]
 pub struct ParaInfo<Account, Balance> {
     /// The account that has placed a deposit for registering this para.

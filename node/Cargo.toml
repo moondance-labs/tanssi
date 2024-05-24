@@ -18,6 +18,7 @@ exit-future = { workspace = true }
 flume = { workspace = true }
 fs2 = { workspace = true }
 futures = { workspace = true }
+hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
@@ -53,6 +54,7 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
+frame-support = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
