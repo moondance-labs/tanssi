@@ -12,11 +12,7 @@ describeSuite({
     testCases: function ({ it, context, log }) {
         let paraApi: ApiPromise;
         let alice_or_alith: KeyringPair;
-        let tanssiApi: ApiPromise;
-        let relayApi: ApiPromise;
         beforeAll(async () => {
-            tanssiApi = context.polkadotJs("Tanssi");
-            relayApi = context.polkadotJs("Relay");
             paraApi = context.polkadotJs("parachain");
             const container2001Network = paraApi.consts.system.version.specName.toString();
             if (container2001Network.includes("frontier-template")) {
