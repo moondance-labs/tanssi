@@ -15,15 +15,13 @@ describeSuite({
         let tanssiApi: ApiPromise;
         let relayApi: ApiPromise;
         beforeAll(async () => {
-
             tanssiApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
             paraApi = context.polkadotJs("parachain");
             const container2001Network = paraApi.consts.system.version.specName.toString();
             if (container2001Network.includes("frontier-template")) {
                 alice_or_alith = alith;
-            }
-            else  {
+            } else {
                 const keyring = new Keyring({ type: "sr25519" });
                 alice_or_alith = keyring.addFromUri("//Alice", { name: "Alice default" });
             }

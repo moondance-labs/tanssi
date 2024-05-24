@@ -418,9 +418,7 @@
         {
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-zombienet"],
-            "runScripts": [
-                "download-polkadot.sh"
-            ],
+            "runScripts": ["download-polkadot.sh"],
             "timeout": 600000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
