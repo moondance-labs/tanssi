@@ -875,7 +875,7 @@ jobs:
               run: |
                 cd test
                 pnpm install
-                pnpm moonwall test zombie_${{ matrix.chains.chain }}_template_upgrade
+                pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
 
     docker-tanssi:
         runs-on: ubuntu-latest
