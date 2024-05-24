@@ -34,6 +34,8 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use tp_traits::{AuthorNotingHook, BlockNumber, SlotFrequency};
+
 use {
     dp_core::ParaId,
     frame_support::{
@@ -43,13 +45,15 @@ use {
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::EncodeLike,
+    sp_consensus_aura::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
     staging_xcm::{
         prelude::*,
         v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Response, Xcm},
     },
-    tp_traits::{AuthorNotingHook, BlockNumber, ParathreadParams},
+    tp_traits::LatestAuthorInfoFetcher,
+    tp_traits::ParathreadParams,
 };
 
 pub trait XCMNotifier<T: Config> {
@@ -81,6 +85,25 @@ pub struct InFlightCoreBuyingOrder<BN> {
     ttl: BN,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub enum BuyingError<BlockNumber> {
+    OrderAlreadyExists {
+        ttl: BlockNumber,
+        current_block_number: BlockNumber,
+    },
+    BlockProductionPending {
+        ttl: BlockNumber,
+        current_block_number: BlockNumber,
+    },
+    NotAParathread,
+    NotAllowedToProduceBlockRightNow {
+        slot_frequency: SlotFrequency,
+        max_slot_earlier_core_buying_permitted: Slot,
+        last_block_production_slot: Slot,
+    },
+}
+
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_author_noted(
         _author: &T::AccountId,
@@ -95,7 +118,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use {super::*, pallet_xcm::ensure_response};
+    use super::*;
+    use nimbus_primitives::SlotBeacon;
+    use pallet_xcm::ensure_response;
+    use sp_runtime::RuntimeAppPublic;
+
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
@@ -110,8 +137,6 @@ pub mod pallet {
         /// Get encoded call to buy a core in the relay chain. This will be passed to the XCM
         /// `Transact` instruction.
         type GetPurchaseCoreCall: GetPurchaseCoreCall<Self::RelayChain>;
-        /// Get current block number, used in `validate_unsigned`.
-        type GetBlockNumber: Get<u32>;
         /// How to convert a `ParaId` into an `AccountId32`. Used to derive the parathread tank
         /// account in `interior_multilocation`.
         type GetParathreadAccountId: Convert<ParaId, [u8; 32]>;
@@ -134,8 +159,9 @@ pub mod pallet {
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
         type GetParathreadParams: GetParathreadParams;
-        /// Get a list of collators assigned to this parathread. Used to verify the collator proof.
-        type GetAssignedCollators: GetParathreadCollators<Self::AccountId>;
+        /// Validate if particular account id and public key pair belongs to a collator and the collator
+        /// is selected to collate for particular para id.
+        type CheckCollatorValidity: CheckCollatorValidity<Self::AccountId, Self::CollatorPublicKey>;
         /// A configuration for base priority of unsigned transactions.
         ///
         /// This is exposed so that it can be tuned for particular runtime, when
@@ -167,6 +193,18 @@ pub mod pallet {
 
         /// Outcome notifier implements functionality to enable reporting back the outcome
         type XCMNotifier: XCMNotifier<Self>;
+
+        type LatestAuthorInfoFetcher: LatestAuthorInfoFetcher<Self::AccountId>;
+
+        type SlotBeacon: SlotBeacon;
+
+        /// A PublicKey can be converted into an `AccountId`. This is required in order to verify
+        /// the collator signature
+        type CollatorPublicKey: Member
+            + Parameter
+            + RuntimeAppPublic
+            + MaybeSerializeDeserialize
+            + MaxEncodedLen;
 
         type WeightInfo: WeightInfo;
     }
@@ -218,15 +256,46 @@ pub mod pallet {
         UnexpectedXCMResponse,
         /// Block production is pending for para id with successfully placed order
         BlockProductionPending,
+        /// Block production is not allowed for current slot
+        NotAllowedToProduceBlockRightNow,
+        /// Collator signature nonce is incorrect
+        IncorrectCollatorSignatureNonce,
+        /// Collator signature is invalid
+        InvalidCollatorSignature,
+    }
+
+    impl<T: Config> From<BuyingError<BlockNumberFor<T>>> for Error<T> {
+        fn from(value: BuyingError<BlockNumberFor<T>>) -> Self {
+            match value {
+                BuyingError::OrderAlreadyExists { .. } => Error::<T>::OrderAlreadyExists,
+                BuyingError::BlockProductionPending { .. } => Error::<T>::BlockProductionPending,
+                BuyingError::NotAParathread => Error::<T>::NotAParathread,
+                BuyingError::NotAllowedToProduceBlockRightNow { .. } => {
+                    Error::<T>::NotAllowedToProduceBlockRightNow
+                }
+            }
+        }
     }
 
     /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
     #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
-    #[scale_info(skip_type_params(T))]
-    pub struct BuyCoreCollatorProof<T: Config> {
-        account: T::AccountId,
-        // TODO
-        _signature: (),
+    pub struct BuyCoreCollatorProof<PublicKey>
+    where
+        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
+    {
+        nonce: u64,
+        public_key: PublicKey,
+        signature: PublicKey::Signature,
+    }
+
+    impl<PublicKey> BuyCoreCollatorProof<PublicKey>
+    where
+        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
+    {
+        fn verify_signature(&self, para_id: ParaId) -> bool {
+            let payload = (self.nonce, para_id).encode();
+            self.public_key.verify(&payload, &self.signature)
+        }
     }
 
     /// Set of parathreads that have already sent an XCM message to buy a core recently.
@@ -251,6 +320,10 @@ pub mod pallet {
     #[pallet::storage]
     pub type RelayXcmWeightConfig<T: Config> =
         StorageValue<_, RelayXcmWeightConfigInner<T>, OptionQuery>;
+
+    /// Collator signature nonce for reply protection
+    #[pallet::storage]
+    pub type CollatorSignatureNonce<T: Config> = StorageMap<_, Twox128, ParaId, u64, ValueQuery>;
 
     #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
     #[scale_info(skip_type_params(T))]
@@ -281,28 +354,24 @@ pub mod pallet {
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
-            // since signature verification is done in `validate_unsigned`
-            // we can skip doing it here again.
-            proof: BuyCoreCollatorProof<T>,
+            collator_account_id: T::AccountId,
+            proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
         ) -> DispatchResult {
-            // Signature verification is done in `validate_unsigned`.
-            // We use `ensure_none` here because this can only be called by collators, and we do not
-            // want collators to pay fees.
             ensure_none(origin)?;
 
-            let assigned_collators = T::GetAssignedCollators::get_parathread_collators(para_id);
-            if assigned_collators.is_empty() {
-                return Err(Error::<T>::NoAssignedCollators.into());
-            }
-
-            if !assigned_collators.contains(&proof.account) {
+            let is_valid_collator = T::CheckCollatorValidity::is_valid_collator(
+                para_id,
+                collator_account_id,
+                proof.public_key.clone(),
+            );
+            if !is_valid_collator {
                 return Err(Error::<T>::CollatorNotAssigned.into());
             }
 
-            // TODO: implement proof validation
-            return Err(Error::<T>::InvalidProof.into());
+            let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
+            CollatorSignatureNonce::<T>::set(para_id, current_nonce + 1);
 
-            //Self::on_collator_instantaneous_core_requested(para_id)
+            Self::on_collator_instantaneous_core_requested(para_id)
         }
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
@@ -310,14 +379,6 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_buy_core())]
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
-
-            // Check that at least one collator could buy a core for this parathread.
-            // Even though this extrinsic is called `force`, it should only be possible
-            // to use it when an equivalent non-force call can be created.
-            let assigned_collators = T::GetAssignedCollators::get_parathread_collators(para_id);
-            if assigned_collators.is_empty() {
-                return Err(Error::<T>::NoAssignedCollators.into());
-            }
 
             Self::on_collator_instantaneous_core_requested(para_id)
         }
@@ -486,8 +547,9 @@ pub mod pallet {
             Ok(reanchored)
         }
 
-        /// Send an XCM message to the relay chain to try to buy a core for this para_id.
-        fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
+        pub fn is_core_buying_allowed(
+            para_id: ParaId,
+        ) -> Result<(), BuyingError<BlockNumberFor<T>>> {
             // If an in flight order is pending (i.e we did not receive the notification yet) and our
             // record is not expired yet, we should not allow the collator to buy another core.
             let maybe_in_flight_order = InFlightOrders::<T>::get(para_id);
@@ -495,7 +557,10 @@ pub mod pallet {
                 if in_flight_order.ttl < <frame_system::Pallet<T>>::block_number() {
                     InFlightOrders::<T>::remove(para_id);
                 } else {
-                    return Err(Error::<T>::OrderAlreadyExists.into());
+                    return Err(BuyingError::OrderAlreadyExists {
+                        ttl: in_flight_order.ttl,
+                        current_block_number: <frame_system::Pallet<T>>::block_number(),
+                    });
                 }
             }
 
@@ -506,17 +571,45 @@ pub mod pallet {
                 if pending_blocks_ttl < <frame_system::Pallet<T>>::block_number() {
                     PendingBlocks::<T>::remove(para_id);
                 } else {
-                    return Err(Error::<T>::BlockProductionPending.into());
+                    return Err(BuyingError::BlockProductionPending {
+                        ttl: pending_blocks_ttl,
+                        current_block_number: <frame_system::Pallet<T>>::block_number(),
+                    });
                 }
             }
 
             // Check that the para id is a parathread
-            let parathread_params = T::GetParathreadParams::get_parathread_params(para_id);
-            if parathread_params.is_none() {
-                return Err(Error::<T>::NotAParathread.into());
+            let maybe_parathread_params = T::GetParathreadParams::get_parathread_params(para_id);
+            let parathread_params = if let Some(parathread_params) = maybe_parathread_params {
+                parathread_params
+            } else {
+                return Err(BuyingError::NotAParathread);
+            };
+
+            let maybe_latest_author_info =
+                T::LatestAuthorInfoFetcher::get_latest_author_info(para_id);
+            if let Some(latest_author_info) = maybe_latest_author_info {
+                let current_slot = T::SlotBeacon::slot();
+                if !parathread_params.slot_frequency.should_parathread_buy_core(
+                    Slot::from(current_slot as u64),
+                    Slot::from(2u64),
+                    latest_author_info.latest_slot_number,
+                ) {
+                    // TODO: Take max slots to produce a block from config
+                    return Err(BuyingError::NotAllowedToProduceBlockRightNow {
+                        slot_frequency: parathread_params.slot_frequency,
+                        max_slot_earlier_core_buying_permitted: Slot::from(2u64),
+                        last_block_production_slot: latest_author_info.latest_slot_number,
+                    });
+                }
             }
 
-            // TODO: also compare the latest slot from pallet_author_noting with parathread_params.slot_frequency
+            Ok(())
+        }
+
+        /// Send an XCM message to the relay chain to try to buy a core for this para_id.
+        fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
+            Self::is_core_buying_allowed(para_id).map_err(Into::<Error<T>>::into)?;
 
             let xcm_weights_storage =
                 RelayXcmWeightConfig::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;
@@ -640,44 +733,31 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if let Call::buy_core { para_id, proof } = call {
-                /*
-                if <Pallet<T>>::is_online(heartbeat.authority_index) {
-                    // we already received a heartbeat for this authority
-                    return InvalidTransaction::Stale.into()
+            if let Call::buy_core {
+                para_id,
+                collator_account_id,
+                proof,
+            } = call
+            {
+                let block_number = <frame_system::Pallet<T>>::block_number();
+
+                let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
+                if proof.nonce != current_nonce {
+                    return InvalidTransaction::Call.into();
                 }
 
-                // check if session index from heartbeat is recent
-                let current_session = T::ValidatorSet::session_index();
-                if heartbeat.session_index != current_session {
-                    return InvalidTransaction::Stale.into()
+                let is_valid_collator = T::CheckCollatorValidity::is_valid_collator(
+                    *para_id,
+                    collator_account_id.clone(),
+                    proof.public_key.clone(),
+                );
+                if !is_valid_collator {
+                    return InvalidTransaction::Call.into();
                 }
 
-                // verify that the incoming (unverified) pubkey is actually an authority id
-                let keys = Keys::<T>::get();
-                if keys.len() as u32 != heartbeat.validators_len {
-                    return InvalidTransaction::Custom(INVALID_VALIDATORS_LEN).into()
+                if !proof.verify_signature(*para_id) {
+                    return InvalidTransaction::Call.into();
                 }
-                let authority_id = match keys.get(heartbeat.authority_index as usize) {
-                    Some(id) => id,
-                    None => return InvalidTransaction::BadProof.into(),
-                };
-
-                // check signature (this is expensive so we do it last).
-                let signature_valid = heartbeat.using_encoded(|encoded_heartbeat| {
-                    authority_id.verify(&encoded_heartbeat, signature)
-                });
-
-                if !signature_valid {
-                    return InvalidTransaction::BadProof.into()
-                }
-                */
-
-                // TODO: read session or block number
-                let block_number = T::GetBlockNumber::get();
-
-                // TODO: validate proof
-                let _ = proof;
 
                 ValidTransaction::with_tag_prefix("XcmCoreBuyer")
                     .priority(T::UnsignedPriority::get())
@@ -706,11 +786,11 @@ pub trait GetPurchaseCoreCall<RelayChain> {
     fn get_encoded(relay_chain: RelayChain, max_amount: u128, para_id: ParaId) -> Vec<u8>;
 }
 
-pub trait GetParathreadCollators<AccountId> {
-    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId>;
+pub trait CheckCollatorValidity<AccountId, PublicKey> {
+    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey) -> bool;
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>);
+    fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey);
 }
 
 pub trait GetParathreadMaxCorePrice {

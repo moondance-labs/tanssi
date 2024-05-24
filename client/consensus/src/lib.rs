@@ -122,13 +122,11 @@ where
 {
     let runtime_api = client.runtime_api();
 
-    let min_slot_freq = runtime_api.min_slot_freq(*parent_hash, para_id).ok()?;
-    log::debug!(
-        "min_slot_freq for para {:?} is {:?}",
-        para_id,
-        min_slot_freq
-    );
-    min_slot_freq
+    let slot_frequency = runtime_api
+        .parathread_slot_frequency(*parent_hash, para_id)
+        .ok()?;
+    log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
+    slot_frequency.map(|slot_frequency| (slot_frequency.min as u64).into())
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};

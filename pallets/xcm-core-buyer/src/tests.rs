@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use nimbus_primitives::NimbusId;
+use sp_runtime::RuntimeAppPublic;
 use {
     crate::{mock::*, *},
     frame_support::{assert_noop, assert_ok, assert_storage_noop},
@@ -439,7 +441,8 @@ fn cannot_force_buy_invalid_para_id() {
 
             MockData::mutate(|m| {
                 // Mock para_id 2000 as a container chain with collators, but not a parathread
-                m.container_chain_collators.insert(2000.into(), vec![ALICE]);
+                m.container_chain_collators
+                    .insert(2000.into(), vec![(ALICE, NimbusId::generate_pair(None))]);
             });
 
             assert_noop!(
@@ -450,7 +453,7 @@ fn cannot_force_buy_invalid_para_id() {
 }
 
 #[test]
-fn cannot_force_buy_para_id_with_no_collators() {
+fn able_to_force_buy_para_id_with_no_collators() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
@@ -461,10 +464,7 @@ fn cannot_force_buy_para_id_with_no_collators() {
                 m.container_chain_collators = Default::default();
             });
 
-            assert_noop!(
-                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
-                Error::<Test>::NoAssignedCollators
-            );
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id));
         });
 }
 

@@ -19,14 +19,13 @@
 //! Benchmarking
 use {
     crate::{
-        Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
-        RelayXcmWeightConfig, RelayXcmWeightConfigInner,
+        Call, Config, GetParathreadParams, InFlightOrders, Pallet, RelayXcmWeightConfig,
+        RelayXcmWeightConfigInner,
     },
     core::marker::PhantomData,
-    frame_benchmarking::{account, v2::*},
+    frame_benchmarking::v2::*,
     frame_support::{assert_ok, pallet_prelude::Weight, BoundedVec},
     frame_system::RawOrigin,
-    sp_std::vec,
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
@@ -84,8 +83,6 @@ mod benchmarks {
                 slot_frequency: SlotFrequency { min: 10, max: 10 },
             }),
         );
-        let author: T::AccountId = account("account id", 0u32, 0u32);
-        T::GetAssignedCollators::set_parathread_collators(para_id, vec![author]);
 
         #[extrinsic_call]
         Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);

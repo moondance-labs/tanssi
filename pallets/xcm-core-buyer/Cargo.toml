@@ -18,6 +18,8 @@ tp-traits = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-keystore = { workspace = true }
 staging-xcm = { workspace = true }
 
 # Substrate
@@ -64,6 +66,8 @@ std = [
 	"staging-xcm/std",
 	"staging-xcm/std",
 	"tp-traits/std",
+	"sp-keystore/std",
+	"sp-consensus-aura/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",

@@ -46,7 +46,10 @@ use {
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
-    tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{
+        AuthorNotingHook, ContainerChainBlockInfo, GetContainerChainAuthor,
+        GetCurrentContainerChains,
+    },
 };
 
 #[cfg(test)]
@@ -63,6 +66,7 @@ mod benchmarks;
 mod mock_proof;
 
 pub use pallet::*;
+use tp_traits::LatestAuthorInfoFetcher;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -175,7 +179,9 @@ pub mod pallet {
                         Ok(block_info) => {
                             LatestAuthor::<T>::mutate(
                                 para_id,
-                                |maybe_old_block_info: &mut Option<ContainerChainBlockInfo<T>>| {
+                                |maybe_old_block_info: &mut Option<
+                                    ContainerChainBlockInfo<T::AccountId>,
+                                >| {
                                     if let Some(ref mut old_block_info) = maybe_old_block_info {
                                         if block_info.block_number > old_block_info.block_number {
                                             // We only reward author if the block increases
@@ -277,18 +283,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
-        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T>, OptionQuery>;
-
-    /// Information extracted from the latest container chain header
-    #[derive(
-        Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct ContainerChainBlockInfo<T: Config> {
-        pub block_number: BlockNumber,
-        pub author: T::AccountId,
-        pub latest_slot_number: Slot,
-    }
+        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T::AccountId>, OptionQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -331,7 +326,7 @@ impl<T: Config> Pallet<T> {
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
         tanssi_slot: Slot,
-    ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
+    ) -> Result<ContainerChainBlockInfo<T::AccountId>, Error<T>> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
         let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
@@ -378,7 +373,7 @@ impl<T: Config> Pallet<T> {
         para_id: ParaId,
         author_header: &sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
         tanssi_slot: Slot,
-    ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
+    ) -> Result<ContainerChainBlockInfo<T::AccountId>, Error<T>> {
         // We decode the digest as pre-runtime digest
         let (id, mut data) = aura_digest
             .as_pre_runtime()
@@ -431,5 +426,11 @@ impl InherentError {
         } else {
             None
         }
+    }
+}
+
+impl<T: Config> LatestAuthorInfoFetcher<T::AccountId> for Pallet<T> {
+    fn get_latest_author_info(para_id: ParaId) -> Option<ContainerChainBlockInfo<T::AccountId>> {
+        LatestAuthor::<T>::get(para_id)
     }
 }
