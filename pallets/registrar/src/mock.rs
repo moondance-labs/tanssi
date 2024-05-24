@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_core::{ed25519, Pair};
 use {
     crate::{self as pallet_registrar, RegistrarHooks},
     frame_support::{
@@ -22,7 +21,7 @@ use {
         weights::Weight,
     },
     parity_scale_codec::{Decode, Encode},
-    sp_core::{parameter_types, ConstU32, H256},
+    sp_core::{ed25519, parameter_types, ConstU32, Pair, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,

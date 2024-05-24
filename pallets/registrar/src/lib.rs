@@ -34,6 +34,8 @@ mod mock;
 mod tests;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmark_blob;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
