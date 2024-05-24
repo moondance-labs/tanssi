@@ -501,7 +501,7 @@
                 {
                     "name": "parachain",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9950"]
+                    "endpoints": ["ws://127.0.0.1:9949"]
                 }
             ]
         },
