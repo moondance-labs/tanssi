@@ -92,7 +92,6 @@ sp-timestamp = { workspace = true, features = [ "std" ] }
 sp-transaction-pool = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
-try-runtime-cli = { workspace = true, optional = true }
 
 # Polkadot
 polkadot-cli = { workspace = true }
@@ -134,6 +133,6 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
-try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime" ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]

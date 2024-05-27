@@ -70,7 +70,6 @@ sp-timestamp = { workspace = true, features = [ "std" ] }
 sp-transaction-pool = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
-try-runtime-cli = { workspace = true, optional = true }
 
 # Polkadot
 polkadot-cli = { workspace = true }

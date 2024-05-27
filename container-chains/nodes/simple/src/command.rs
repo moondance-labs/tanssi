@@ -262,18 +262,6 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
-        #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(_)) => {
-            Err("Substrate's `try-runtime` subcommand has been migrated \
-            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
-                .into())
-        }
-        #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => {
-            Err("Substrate's `try-runtime` subcommand has been migrated \
-            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
-                .into())
-        }
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
