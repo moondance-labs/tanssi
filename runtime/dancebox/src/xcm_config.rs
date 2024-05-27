@@ -20,6 +20,8 @@ use pallet_session::ShouldEndSession;
 use pallet_xcm_core_buyer::CheckCollatorValidity;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
+#[cfg(feature = "runtime-benchmarks")]
+use tp_traits::GetContainerChainAuthor;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,

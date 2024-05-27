@@ -296,6 +296,33 @@ pub mod pallet {
             let payload = (self.nonce, para_id).encode();
             self.public_key.verify(&payload, &self.signature)
         }
+
+        #[cfg(any(test, feature = "runtime-benchmarks"))]
+        pub fn new(nonce: u64, para_id: ParaId, public_key: PublicKey) -> Option<Self> {
+            let payload = (nonce, para_id).encode();
+            public_key
+                .sign(&payload)
+                .map(|signature| BuyCoreCollatorProof {
+                    nonce,
+                    public_key,
+                    signature,
+                })
+        }
+
+        #[cfg(test)]
+        pub fn set_nonce(&mut self, nonce: u64) {
+            self.nonce = nonce;
+        }
+
+        #[cfg(test)]
+        pub fn set_public_key(&mut self, public_key: PublicKey) {
+            self.public_key = public_key;
+        }
+
+        #[cfg(test)]
+        pub fn set_signature(&mut self, signature: PublicKey::Signature) {
+            self.signature = signature;
+        }
     }
 
     /// Set of parathreads that have already sent an XCM message to buy a core recently.
@@ -349,8 +376,7 @@ pub mod pallet {
         // tanssi collators. So we cannot force them to provide a complex proof, e.g. against relay
         // state.
         #[pallet::call_index(0)]
-        // TODO: weight
-        #[pallet::weight(T::WeightInfo::force_buy_core())]
+        #[pallet::weight(T::WeightInfo::buy_core())]
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,

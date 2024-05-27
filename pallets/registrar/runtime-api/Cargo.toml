@@ -30,4 +30,5 @@ std = [
 	"scale-info/std",
 	"sp-api/std",
 	"tp-container-chain-genesis-data/std",
+	"tp-traits/std",
 ]

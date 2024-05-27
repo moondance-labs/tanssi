@@ -67,6 +67,7 @@ import type {
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    NimbusPrimitivesNimbusCryptoSignature,
     PalletAssetRateCall,
     PalletAssetRateError,
     PalletAssetRateEvent,
@@ -83,7 +84,6 @@ import type {
     PalletAuthorInherentCall,
     PalletAuthorInherentError,
     PalletAuthorNotingCall,
-    PalletAuthorNotingContainerChainBlockInfo,
     PalletAuthorNotingError,
     PalletAuthorNotingEvent,
     PalletAuthorityAssignmentCall,
@@ -246,6 +246,7 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     XcmDoubleEncoded,
@@ -361,6 +362,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
         NimbusPrimitivesNimbusCryptoPublic: NimbusPrimitivesNimbusCryptoPublic;
+        NimbusPrimitivesNimbusCryptoSignature: NimbusPrimitivesNimbusCryptoSignature;
         PalletAssetRateCall: PalletAssetRateCall;
         PalletAssetRateError: PalletAssetRateError;
         PalletAssetRateEvent: PalletAssetRateEvent;
@@ -377,7 +379,6 @@ declare module "@polkadot/types/types/registry" {
         PalletAuthorInherentCall: PalletAuthorInherentCall;
         PalletAuthorInherentError: PalletAuthorInherentError;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
-        PalletAuthorNotingContainerChainBlockInfo: PalletAuthorNotingContainerChainBlockInfo;
         PalletAuthorNotingError: PalletAuthorNotingError;
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
         PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
@@ -540,6 +541,7 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         XcmDoubleEncoded: XcmDoubleEncoded;

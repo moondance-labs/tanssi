@@ -14,20 +14,22 @@ workspace = true
 
 [dependencies]
 frame-support = { workspace = true }
+pallet-xcm-core-buyer = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-api = { workspace = true }
 thiserror = { workspace = true, optional = true }
-pallet-xcm-core-buyer = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
-    "parity-scale-codec/std",
-    "scale-info/std",
-    "serde",
-    "serde?/std",
-    "sp-api/std",
-    "thiserror",
+	"frame-support/std",
+	"pallet-xcm-core-buyer/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde",
+	"serde?/std",
+	"sp-api/std",
+	"thiserror",
 ]

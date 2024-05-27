@@ -2247,13 +2247,14 @@ declare module "@polkadot/api-base/types/submittable" {
             buyCore: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
+                    collatorAccountId: AccountId32 | string | Uint8Array,
                     proof:
                         | PalletXcmCoreBuyerBuyCoreCollatorProof
-                        | { account?: any; signature?: any }
+                        | { nonce?: any; publicKey?: any; signature?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, PalletXcmCoreBuyerBuyCoreCollatorProof]
+                [u32, AccountId32, PalletXcmCoreBuyerBuyCoreCollatorProof]
             >;
             /** See [`Pallet::clean_up_expired_in_flight_orders`]. */
             cleanUpExpiredInFlightOrders: AugmentedSubmittable<

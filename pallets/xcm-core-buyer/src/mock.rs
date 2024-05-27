@@ -169,7 +169,8 @@ pub struct Mocks {
 
 impl Default for Mocks {
     fn default() -> Self {
-        let nimbus_id = NimbusId::generate_pair(None);
+        let seed = b"//ALICE";
+        let nimbus_id = NimbusId::generate_pair(Some(seed.to_vec()));
 
         Self {
             latest_author_info: BTreeMap::from_iter([(
@@ -274,12 +275,31 @@ pub struct CheckCollatorValidityImpl;
 
 impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
     fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) -> bool {
-        let collators = MockData::mock()
+        MockData::mock()
             .container_chain_collators
             .get(&para_id)
-            .cloned()
-            .unwrap_or_default();
-        collators.contains(&(account_id, public_key))
+            .is_some_and(|collators| collators.contains(&(account_id, public_key)))
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) {
+        let mock_data = MockData::mock();
+        let mut maybe_para_id_collators =
+            mock_data.container_chain_collators.get(&para_id).cloned();
+
+        let new_para_id_collators =
+            if let Some(mut para_id_collators) = maybe_para_id_collators.take() {
+                para_id_collators.push((account_id, public_key));
+                para_id_collators.clone()
+            } else {
+                vec![(account_id, public_key)]
+            };
+
+        MockData::mutate(|mocks| {
+            mocks
+                .container_chain_collators
+                .insert(para_id, new_para_id_collators);
+        });
     }
 }
 

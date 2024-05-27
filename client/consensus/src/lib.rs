@@ -126,7 +126,7 @@ where
         .parathread_slot_frequency(*parent_hash, para_id)
         .ok()?;
     log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
-    slot_frequency.map(|slot_frequency| (slot_frequency.min as u64).into())
+    slot_frequency.map(|slot_frequency| u64::from(slot_frequency.min).into())
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};

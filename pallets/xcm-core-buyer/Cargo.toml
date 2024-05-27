@@ -59,15 +59,15 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-io/std",
+	"sp-keystore/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"staging-xcm/std",
 	"staging-xcm/std",
 	"tp-traits/std",
-	"sp-keystore/std",
-	"sp-consensus-aura/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",

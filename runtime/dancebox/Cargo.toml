@@ -225,6 +225,7 @@ std = [
 	"pallet-tx-pause/std",
 	"pallet-utility/std",
 	"pallet-xcm-benchmarks?/std",
+	"pallet-xcm-core-buyer-runtime-api/std",
 	"pallet-xcm-core-buyer/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
