@@ -127,10 +127,58 @@ describeSuite({
             id: "E03",
             title: "Sudo can forceBuyCore",
             test: async function () {
+                const paraId = 2003;
+
+                const relayChainWeightSetTx = polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
+                        buyExecutionCost: 1000000,
+                        weightAtMost: {
+                            refTime: 1000000,
+                            proofSize: 10000,
+                        },
+                    })
+                );
+                await context.createBlock([await relayChainWeightSetTx.signAsync(alice)]);
+
+                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                    min: 1,
+                    max: 1,
+                });
+                const emptyGenesisData = () => {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
+                const containerChainGenesisData = emptyGenesisData();
+
+                const registrationTx = polkadotJs.tx.registrar.registerParathread(
+                    2003,
+                    slotFrequency,
+                    containerChainGenesisData
+                );
+                await context.createBlock([await registrationTx.signAsync(alice)]);
+
                 const encodedMsgBefore = await polkadotJs.query.parachainSystem.upwardMessages();
                 expect(encodedMsgBefore.length).to.be.eq(0);
 
-                const paraId = 2002;
                 const tx = polkadotJs.tx.sudo.sudo(polkadotJs.tx.xcmCoreBuyer.forceBuyCore(paraId));
                 await context.createBlock([await tx.signAsync(alice)]);
 
