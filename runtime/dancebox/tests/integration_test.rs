@@ -4461,9 +4461,9 @@ fn test_sudo_can_register_foreign_assets_and_manager_change_paremeters() {
         .execute_with(|| {
 
             // We register the asset with Alice as manager
-            assert_ok!(ForeignAssetsCreator::create_foreign_asset(root_origin(), MultiLocation::parent(), 1, AccountId::from(ALICE), true, 1), ());
-            assert_eq!(ForeignAssetsCreator::foreign_asset_for_id(1), Some(MultiLocation::parent()));
-            assert_eq!(ForeignAssetsCreator::asset_id_for_foreign(MultiLocation::parent()), Some(1));
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(root_origin(), Location::parent(), 1, AccountId::from(ALICE), true, 1), ());
+            assert_eq!(ForeignAssetsCreator::foreign_asset_for_id(1), Some(Location::parent()));
+            assert_eq!(ForeignAssetsCreator::asset_id_for_foreign(Location::parent()), Some(1));
 
             // Alice now can change parameters like metadata from the asset
             assert_ok!(ForeignAssets::set_metadata(origin_of(ALICE.into()), 1, b"xcDot".to_vec(), b"xcDot".to_vec(), 12));
@@ -4507,7 +4507,7 @@ fn test_assets_cannot_be_created_from_signed_origins() {
             assert_noop!(
                 ForeignAssetsCreator::create_foreign_asset(
                     origin_of(ALICE.into()),
-                    MultiLocation::parent(),
+                    Location::parent(),
                     1,
                     AccountId::from(ALICE),
                     true,

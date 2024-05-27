@@ -54,9 +54,9 @@ use {
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
-    // a MultiLocation: (Self Balances pallet index)
+    // a Location: (Self Balances pallet index)
     // We use the RELATIVE multilocation
-    pub SelfReserve: MultiLocation = MultiLocation {
+    pub SelfReserve: Location = Location {
         parents:0,
         interior: Junctions::X1(
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
@@ -79,7 +79,7 @@ parameter_types! {
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorMultiLocation =
+    pub UniversalLocation: InteriorLocation =
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
@@ -87,7 +87,7 @@ parameter_types! {
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-    pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+    pub ReachableDest: Option<Location> = Some(Parent.into());
 }
 
 pub type XcmBarrier = (
@@ -107,7 +107,7 @@ pub type XcmBarrier = (
     >,
 );
 
-/// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
+/// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
 /// `Transact` in order to determine the dispatch Origin.
 pub type LocationToAccountId = (
@@ -115,7 +115,7 @@ pub type LocationToAccountId = (
     ParentIsPreset<AccountId>,
     // Sibling parachain origins convert to AccountId via the `ParaId::into`.
     SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
-    // If we receive a MultiLocation of type AccountKey20, just generate a native account
+    // If we receive a Location of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     staging_xcm_builder::HashedDescription<
@@ -133,7 +133,7 @@ pub type CurrencyTransactor = FungibleAdapter<
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
     IsConcrete<SelfReserve>,
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,
@@ -358,7 +358,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 
 impl pallet_foreign_asset_creator::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ForeignAsset = MultiLocation;
+    type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
@@ -392,7 +392,7 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
     ForeignAssets,
     // Use this currency when it is a fungible asset matching the given location or name:
     (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,

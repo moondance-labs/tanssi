@@ -41,7 +41,7 @@ mod benchmarks {
         frame_system::pallet_prelude::BlockNumberFor,
         staging_xcm::{
             latest::{MaybeErrorCode, QueryId},
-            v3::{MultiLocation, Response},
+            v3::{Location, Response},
         },
     };
 
@@ -119,7 +119,7 @@ mod benchmarks {
         } else {
             Response::DispatchResult(MaybeErrorCode::Error(BoundedVec::default()))
         };
-        let xcm_origin = pallet_xcm::Origin::Response(MultiLocation::here());
+        let xcm_origin = pallet_xcm::Origin::Response(Location::here());
 
         #[extrinsic_call]
         Pallet::<T>::query_response(xcm_origin, QueryId::from(x), response);

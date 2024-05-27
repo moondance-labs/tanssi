@@ -32,7 +32,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation},
+    staging_xcm::{latest::prelude::*, VersionedLocation},
     xcm_emulator::Chain,
 };
 
@@ -42,13 +42,13 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedMultiLocation = MultiLocation {
+    let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
         interior: X1(Parachain(2001u32)),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
         interior: X1(AccountKey20 {
             network: None,
@@ -59,7 +59,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
 
     let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
-    let assets: MultiAssets = (Here, amount_to_send).into();
+    let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
@@ -70,7 +70,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 EthereumReceiver::get(),
                 true,
@@ -148,13 +148,13 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedMultiLocation = MultiLocation {
+    let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
         interior: X1(Parachain(2001u32)),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
         interior: X1(AccountKey20 {
             network: None,
@@ -165,7 +165,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
 
     let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
-    let assets: MultiAssets = (Here, amount_to_send).into();
+    let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
@@ -176,7 +176,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 EthereumReceiver::get(),
                 true,
@@ -231,13 +231,13 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedMultiLocation = MultiLocation {
+    let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
         interior: X1(Parachain(2001u32)),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
         interior: X1(AccountKey20 {
             network: None,
@@ -248,7 +248,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
 
     let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
-    let assets: MultiAssets = (Here, amount_to_send).into();
+    let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 

@@ -32,7 +32,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation},
+    staging_xcm::{latest::prelude::*, VersionedLocation},
     xcm_emulator::Chain,
 };
 
@@ -44,13 +44,13 @@ fn receive_tokens_from_the_container_to_tanssi() {
         <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
 
     // Parents 1 this time
-    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 1,
         interior: X1(Parachain(2000u32)),
     }
     .into();
 
-    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
         interior: X1(AccountId32 {
             network: None,
@@ -65,7 +65,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
     let simple_template_pallet_info_junction = PalletInstance(
         <<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let assets: MultiAssets = (X1(simple_template_pallet_info_junction), amount_to_send).into();
+    let assets: Assets = (X1(simple_template_pallet_info_junction), amount_to_send).into();
     let fee_asset_item = 0;
     let simple_template_token_asset_id = 1u16;
 
@@ -76,7 +76,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
         assert_ok!(
             <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation {
+                Location {
                     parents: 1,
                     interior: X2(Parachain(2002), simple_template_pallet_info_junction)
                 },

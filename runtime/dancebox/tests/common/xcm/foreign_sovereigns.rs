@@ -32,7 +32,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
+    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
     staging_xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
     xcm_emulator::Chain,
@@ -42,14 +42,14 @@ use {
 fn using_sovereign_works_from_tanssi() {
     // XcmPallet send arguments
     let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
-    let relay_destination: VersionedMultiLocation = MultiLocation::parent().into();
+    let relay_destination: VersionedLocation = Location::parent().into();
 
     let buy_execution_fee_amount = westend_runtime_constants::fee::WeightToFee::weight_to_fee(
         &Weight::from_parts(10_000_000_000, 300_000),
     );
 
-    let buy_execution_fee = MultiAsset {
-        id: Concrete(MultiLocation::here()),
+    let buy_execution_fee = Asset {
+        id: Concrete(Location::here()),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -72,7 +72,7 @@ fn using_sovereign_works_from_tanssi() {
     Westend::execute_with(|| {
         // We also need to transfer first sufficient amount to the sovereign
         let sovereign_account =
-            westend_runtime::xcm_config::LocationConverter::convert_location(&MultiLocation {
+            westend_runtime::xcm_config::LocationConverter::convert_location(&Location {
                 parents: 0,
                 interior: X1(Parachain(2000u32)),
             })
@@ -142,7 +142,7 @@ fn using_sovereign_works_from_tanssi() {
 fn using_sovereign_works_from_tanssi_frontier_template() {
     // XcmPallet send arguments
     let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
-    let frontier_destination: VersionedMultiLocation = MultiLocation {
+    let frontier_destination: VersionedLocation = Location {
         parents: 1,
         interior: X1(Parachain(2001)),
     }
@@ -154,7 +154,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
             300_000,
         ));
 
-    let buy_execution_fee = MultiAsset {
+    let buy_execution_fee = Asset {
         id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
         fun: Fungible(buy_execution_fee_amount),
     };
@@ -178,7 +178,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     FrontierTemplate::execute_with(|| {
         // We also need to transfer first sufficient amount to the sovereign
         let sovereign_account =
-            container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&MultiLocation {
+            container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&Location {
                 parents: 1,
                 interior: X1(Parachain(2000u32)),
             })
