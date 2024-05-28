@@ -63,9 +63,9 @@ parameter_types! {
     // We use the RELATIVE multilocation
     pub SelfReserve: Location = Location {
         parents: 0,
-        interior: Junctions::X1(
+        interior: [
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
-        )
+        ].into()
     };
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
@@ -85,7 +85,7 @@ parameter_types! {
 
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorLocation =
-    X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+    [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
 }
@@ -219,6 +219,10 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
+    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type HrmpNewChannelOpenRequestHandler = ();
+    type HrmpChannelAcceptedHandler = ();
+    type HrmpChannelClosingHandler = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -390,14 +394,12 @@ pub struct NativeAssetReserve;
 impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
     fn contains(asset: &Asset, origin: &Location) -> bool {
         log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if let Concrete(location) = &asset.id {
-            if location.parents == 0 && !matches!(location.first_interior(), Some(Parachain(_))) {
-                Some(Location::here())
-            } else {
-                location.chain_part()
-            }
+        let reserve = if asset.id.0.parents == 0
+            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
+        {
+            Some(Location::here())
         } else {
-            None
+            asset.id.0.chain_part()
         };
 
         if let Some(ref reserve) = reserve {
@@ -421,17 +423,17 @@ impl Parse for Location {
     fn chain_part(&self) -> Option<Location> {
         match (self.parents, self.first_interior()) {
             // sibling parachain
-            (1, Some(Parachain(id))) => Some(Location::new(1, X1(Parachain(*id)))),
+            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
             // parent
             (1, _) => Some(Location::parent()),
             // children parachain
-            (0, Some(Parachain(id))) => Some(Location::new(0, X1(Parachain(*id)))),
+            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
             _ => None,
         }
     }
 
     fn non_chain_part(&self) -> Option<Location> {
-        let mut junctions = *self.interior();
+        let mut junctions = self.interior().clone();
         while matches!(junctions.first(), Some(Parachain(_))) {
             let _ = junctions.take_first();
         }
@@ -470,6 +472,7 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+    type IdleMaxServiceWeight = MessageQueueServiceWeight;
 }
 
 parameter_types! {

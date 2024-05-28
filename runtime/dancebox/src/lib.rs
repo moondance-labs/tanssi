@@ -34,7 +34,7 @@ pub use sp_runtime::BuildStorage;
 pub mod weights;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider, RelaychainStateProvider},
     cumulus_primitives_core::{
         relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
@@ -42,7 +42,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
-        genesis_builder_helper::{build_config, create_default_config},
+        genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
@@ -361,6 +361,11 @@ impl frame_system::Config for Runtime {
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type RuntimeTask = RuntimeTask;
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -425,7 +430,6 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<10>;
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -531,11 +535,10 @@ impl pallet_async_backing::Config for Runtime {
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
 fn relay_chain_state_proof() -> RelayChainStateProof {
-    let relay_storage_root = ParachainSystem::validation_data()
-        .expect("set in `set_validation_data`")
-        .relay_parent_storage_root;
+    let relay_storage_root = 
+        RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
     let relay_chain_state =
-        ParachainSystem::relay_state_proof().expect("set in `set_validation_data`");
+        RelaychainDataProvider::<Runtime>::current_relay_state_proof().expect("set in `set_validation_data`");
     RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
         .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
 }
@@ -545,8 +548,9 @@ impl BabeCurrentBlockRandomnessGetter {
     fn get_block_randomness() -> Option<Hash> {
         if cfg!(feature = "runtime-benchmarks") {
             // storage reads as per actual reads
-            let _relay_storage_root = ParachainSystem::validation_data();
-            let _relay_chain_state = ParachainSystem::relay_state_proof();
+            let _relay_storage_root = RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
+
+            let _relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof();
             let benchmarking_babe_output = Hash::default();
             return Some(benchmarking_babe_output);
         }
@@ -1791,7 +1795,7 @@ impl_runtime_apis! {
             Executive::execute_block(block)
         }
 
-        fn initialize_block(header: &<Block as BlockT>::Header) {
+        fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
         }
     }
@@ -1881,12 +1885,16 @@ impl_runtime_apis! {
     }
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
-        fn create_default_config() -> Vec<u8> {
-            create_default_config::<RuntimeGenesisConfig>()
+        fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
-            build_config::<RuntimeGenesisConfig>(config)
+        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+        }
+
+        fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
+            vec![]
         }
     }
 
@@ -2015,7 +2023,7 @@ impl_runtime_apis! {
                     Some((
                         Asset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(Parent.into())
+                            id: Parent.into()
                         },
                         Parent.into(),
                     ))
