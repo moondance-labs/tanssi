@@ -146,4 +146,11 @@ impl<T: frame_system::Config> pallet_balances::WeightInfo for SubstrateWeight<T>
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(u.into())))
 			.saturating_add(Weight::from_parts(0, 2591).saturating_mul(u.into()))
 	}
+	fn force_adjust_total_issuance() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 6_265_000 picoseconds.
+		Weight::from_parts(6_594_000, 0)
+	}
 }

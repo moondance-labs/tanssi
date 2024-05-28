@@ -34,7 +34,10 @@ pub use sp_runtime::BuildStorage;
 pub mod weights;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider, RelaychainStateProvider},
+    cumulus_pallet_parachain_system::{
+        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
+        RelaychainStateProvider,
+    },
     cumulus_primitives_core::{
         relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
@@ -535,10 +538,10 @@ impl pallet_async_backing::Config for Runtime {
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
 fn relay_chain_state_proof() -> RelayChainStateProof {
-    let relay_storage_root = 
+    let relay_storage_root =
         RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
-    let relay_chain_state =
-        RelaychainDataProvider::<Runtime>::current_relay_state_proof().expect("set in `set_validation_data`");
+    let relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof()
+        .expect("set in `set_validation_data`");
     RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
         .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
 }
@@ -548,7 +551,8 @@ impl BabeCurrentBlockRandomnessGetter {
     fn get_block_randomness() -> Option<Hash> {
         if cfg!(feature = "runtime-benchmarks") {
             // storage reads as per actual reads
-            let _relay_storage_root = RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
+            let _relay_storage_root =
+                RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
 
             let _relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof();
             let benchmarking_babe_output = Hash::default();

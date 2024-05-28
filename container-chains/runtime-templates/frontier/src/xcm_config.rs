@@ -32,7 +32,6 @@ use {
         weights::Weight,
     },
     frame_system::EnsureRoot,
-    pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
     pallet_foreign_asset_creator::{
         AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
     },
@@ -58,6 +57,7 @@ use {
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
+    xcm_primitives::AccountIdAssetIdConversion,
 };
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
@@ -66,9 +66,9 @@ parameter_types! {
     // We use the RELATIVE multilocation
     pub SelfReserve: Location = Location {
         parents:0,
-        interior: Junctions::X1(
+        interior: [
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
-        )
+        ].into()
     };
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
@@ -87,8 +87,8 @@ parameter_types! {
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorLocation =
-    X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+    pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
+
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 }
@@ -224,6 +224,10 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
+    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type HrmpNewChannelOpenRequestHandler = ();
+    type HrmpChannelAcceptedHandler = ();
+    type HrmpChannelClosingHandler = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -312,6 +316,7 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+    type IdleMaxServiceWeight = MessageQueueServiceWeight;
 }
 
 parameter_types! {
