@@ -21,7 +21,8 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
-        build_relay_chain_interface, CollatorSybilResistance, StartFullNodeParams,
+        build_relay_chain_interface, CollatorSybilResistance, ParachainHostFunctions,
+        StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -165,8 +166,8 @@ pub trait TanssiExecutorExt {
     fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self;
 }
 
-impl TanssiExecutorExt for WasmExecutor<sp_io::SubstrateHostFunctions> {
-    type HostFun = sp_io::SubstrateHostFunctions;
+impl TanssiExecutorExt for WasmExecutor<ParachainHostFunctions> {
+    type HostFun = ParachainHostFunctions;
 
     fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
         wasm_executor

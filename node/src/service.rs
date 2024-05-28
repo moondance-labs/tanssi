@@ -31,7 +31,8 @@ use {
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{
-        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
+        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, ParachainHostFunctions,
+        StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
@@ -89,7 +90,7 @@ type FullBackend = TFullBackend<Block>;
 pub struct ParachainNativeExecutor;
 
 impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+    type ExtendHostFunctions = ParachainHostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         dancebox_runtime::api::dispatch(method, data)
@@ -126,7 +127,7 @@ type ParachainProposerFactory =
     ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
 
 // Container chains types
-type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
 pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =

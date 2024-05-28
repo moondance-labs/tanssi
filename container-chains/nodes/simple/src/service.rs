@@ -22,7 +22,7 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
-    cumulus_client_service::prepare_node_config,
+    cumulus_client_service::{prepare_node_config, ParachainHostFunctions},
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
     nimbus_primitives::NimbusId,
     node_common::service::ManualSealConfiguration,
@@ -40,7 +40,7 @@ use {
     std::{sync::Arc, time::Duration},
 };
 
-type ParachainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
