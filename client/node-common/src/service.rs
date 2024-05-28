@@ -153,7 +153,7 @@ pub struct NodeBuilder<
 }
 
 pub struct Network<Block: cumulus_primitives_core::BlockT> {
-    pub network: Arc<NetworkService<Block, Block::Hash>>,
+    pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
     pub start_network: NetworkStarter,
     pub sync_service: Arc<SyncingService<Block>>,
@@ -317,7 +317,7 @@ where
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
-    pub async fn build_cumulus_network<RCInterface>(
+    pub async fn build_cumulus_network<RCInterface, Net>(
         self,
         parachain_config: &Configuration,
         para_id: ParaId,
@@ -336,6 +336,7 @@ where
         STxHandler: TypeIdentity<Type = ()>,
         SImportQueueService: TypeIdentity<Type = ()>,
         RCInterface: RelayChainInterface + Clone + 'static,
+        Net: sc_network::service::traits::NetworkBackend<BlockOf<T>, BlockHashOf<T>>,
     {
         let Self {
             client,
@@ -352,7 +353,8 @@ where
             import_queue_service: _,
         } = self;
 
-        let net_config = FullNetworkConfiguration::new(&parachain_config.network);
+        let net_config = FullNetworkConfiguration::<_, _, Net>::new(&parachain_config.network);
+
         let import_queue_service = import_queue.service();
         let spawn_handle = task_manager.spawn_handle();
 
@@ -396,7 +398,7 @@ where
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
-    pub fn build_substrate_network(
+    pub fn build_substrate_network<Net>(
         self,
         parachain_config: &Configuration,
         import_queue: impl ImportQueue<BlockOf<T>> + 'static,
@@ -412,6 +414,7 @@ where
         SNetwork: TypeIdentity<Type = ()>,
         STxHandler: TypeIdentity<Type = ()>,
         SImportQueueService: TypeIdentity<Type = ()>,
+        Net: sc_network::service::traits::NetworkBackend<BlockOf<T>, BlockHashOf<T>>,
     {
         let Self {
             client,
@@ -428,7 +431,15 @@ where
             import_queue_service: _,
         } = self;
 
-        let net_config = FullNetworkConfiguration::new(&parachain_config.network);
+        let net_config = FullNetworkConfiguration::<_, _, Net>::new(&parachain_config.network);
+
+        let metrics = Net::register_notification_metrics(
+            parachain_config
+                .prometheus_config
+                .as_ref()
+                .map(|cfg| &cfg.registry),
+        );
+
         let import_queue_service = import_queue.service();
 
         let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
@@ -442,6 +453,7 @@ where
                 block_announce_validator_builder: None,
                 net_config,
                 block_relay: None,
+                metrics,
             })?;
 
         Ok(NodeBuilder {
@@ -521,7 +533,7 @@ where
                     transaction_pool: Some(OffchainTransactionPoolFactory::new(
                         transaction_pool.clone(),
                     )),
-                    network_provider: network.network.clone(),
+                    network_provider: Arc::new(network.network.clone()),
                     is_validator: parachain_config.role.is_authority(),
                     enable_http_requests: false,
                     custom_extensions: move |_| vec![],

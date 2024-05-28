@@ -225,14 +225,19 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+
             // Switch on the concrete benchmark sub-command-
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ()>(config))
+                        runner.sync_run(|config| {
+                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(
+                                config.chain_spec,
+                            ))
+                        })
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
-                    You can enable it with `--features runtime-benchmarks`."
+			  You can enable it with `--features runtime-benchmarks`."
                             .into())
                     }
                 }

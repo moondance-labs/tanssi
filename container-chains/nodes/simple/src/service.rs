@@ -131,7 +131,7 @@ pub async fn start_parachain_node(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -197,7 +197,11 @@ pub async fn start_dev_node(
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
-    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
+    let mut node_builder = node_builder
+        .build_substrate_network::<sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            import_queue,
+        )?;
 
     let mut command_sink = None;
     let mut xcm_senders = None;

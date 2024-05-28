@@ -338,7 +338,7 @@ async fn start_node_impl(
     let force_authoring = parachain_config.force_authoring;
 
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -563,7 +563,7 @@ pub async fn start_node_impl_container(
 
     log::info!("are we collators? {:?}", collator);
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -1051,7 +1051,11 @@ pub fn start_dev_node(
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
-    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
+    let mut node_builder = node_builder
+        .build_substrate_network::<sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            import_queue,
+        )?;
 
     // If we're running a collator dev node we must install manual seal block
     // production.
