@@ -121,6 +121,7 @@ precompile-utils = { workspace = true }
 # Benchmarking
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
+primitive-types = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -190,6 +191,7 @@ std = [
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm-executor-utils/std",
 	"pallet-xcm/std",
+	"primitive-types/std",
 	"parachain-info/std",
 	"parachains-common/std",
 	"parity-scale-codec/std",

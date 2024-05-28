@@ -292,6 +292,7 @@ fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "ta
 fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # General (wasm)
+primitive-types = { version = "0.12.2", default-features = false, features = [ "byteorder" ] }
 bounded-collections = { version = "0.1.8", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"

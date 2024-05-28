@@ -96,6 +96,7 @@ cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 parachains-common = { workspace = true }
+primitive-types = { workspace = true }
 
 # Benchmarking
 frame-benchmarking = { workspace = true, optional = true }
@@ -151,6 +152,7 @@ std = [
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm-executor-utils/std",
 	"pallet-xcm/std",
+	"primitive-types/std",
 	"parachain-info/std",
 	"parachains-common/std",
 	"parity-scale-codec/std",
