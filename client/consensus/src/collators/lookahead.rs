@@ -44,7 +44,10 @@ use {
         ParentSearchParams,
     },
     cumulus_client_consensus_proposer::ProposerInterface,
-    cumulus_primitives_core::{relay_chain::{AsyncBackingParams, CoreIndex, CoreState, Hash as PHash}, PersistedValidationData},
+    cumulus_primitives_core::{
+        relay_chain::{AsyncBackingParams, CoreIndex, CoreState, Hash as PHash},
+        PersistedValidationData,
+    },
     cumulus_relay_chain_interface::RelayChainInterface,
     futures::{channel::oneshot, prelude::*},
     parity_scale_codec::{Codec, Encode},
@@ -151,7 +154,7 @@ where
             &mut params.overseer_handle,
             params.collator_key,
             params.para_id,
-            true
+            true,
         )
         .await;
 
@@ -192,10 +195,10 @@ where
 
                     let relay_parent_header = maybe_relay_parent_header.expect("relay_parent_header must exists as we checked for None variant above; qed");
                     let relay_parent = relay_parent_header.hash();
-                    
+
                     // TODO: Currently we use just the first core here, but for elastic scaling
-			// we iterate and build on all of the cores returned.
-			// More info: https://github.com/paritytech/polkadot-sdk/issues/1829
+            // we iterate and build on all of the cores returned.
+            // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
                     let core_index = if let Some(core_index) = cores_scheduled_for_para(
                         relay_parent,
                         params.para_id,
@@ -520,90 +523,90 @@ async fn max_ancestry_lookback(
 //
 // Falls back to `false` in case of an error.
 async fn cores_scheduled_for_para(
-	relay_parent: PHash,
-	para_id: ParaId,
-	overseer_handle: &mut OverseerHandle,
-	relay_client: &impl RelayChainInterface,
+    relay_parent: PHash,
+    para_id: ParaId,
+    overseer_handle: &mut OverseerHandle,
+    relay_client: &impl RelayChainInterface,
 ) -> Vec<CoreIndex> {
-	let (tx, rx) = oneshot::channel();
-	let request = RuntimeApiRequest::AvailabilityCores(tx);
-	overseer_handle
-		.send_msg(
-			RuntimeApiMessage::Request(relay_parent, request),
-			"LookaheadCollator",
-		)
-		.await;
+    let (tx, rx) = oneshot::channel();
+    let request = RuntimeApiRequest::AvailabilityCores(tx);
+    overseer_handle
+        .send_msg(
+            RuntimeApiMessage::Request(relay_parent, request),
+            "LookaheadCollator",
+        )
+        .await;
 
-	let max_candidate_depth = async_backing_params(relay_parent, relay_client)
-		.await
-		.map(|c| c.max_candidate_depth)
-		.unwrap_or(0);
+    let max_candidate_depth = async_backing_params(relay_parent, relay_client)
+        .await
+        .map(|c| c.max_candidate_depth)
+        .unwrap_or(0);
 
-	let cores = match rx.await {
-		Ok(Ok(cores)) => cores,
-		Ok(Err(error)) => {
-			tracing::error!(
-				target: crate::LOG_TARGET,
-				?error,
-				?relay_parent,
-				"Failed to query availability cores runtime API",
-			);
-			return Vec::new();
-		}
-		Err(oneshot::Canceled) => {
-			tracing::error!(
-				target: crate::LOG_TARGET,
-				?relay_parent,
-				"Sender for availability cores runtime request dropped",
-			);
-			return Vec::new();
-		}
-	};
+    let cores = match rx.await {
+        Ok(Ok(cores)) => cores,
+        Ok(Err(error)) => {
+            tracing::error!(
+                target: crate::LOG_TARGET,
+                ?error,
+                ?relay_parent,
+                "Failed to query availability cores runtime API",
+            );
+            return Vec::new();
+        }
+        Err(oneshot::Canceled) => {
+            tracing::error!(
+                target: crate::LOG_TARGET,
+                ?relay_parent,
+                "Sender for availability cores runtime request dropped",
+            );
+            return Vec::new();
+        }
+    };
 
-	cores
-		.iter()
-		.enumerate()
-		.filter_map(|(index, core)| {
-			let core_para_id = match core {
-				CoreState::Scheduled(scheduled_core) => Some(scheduled_core.para_id),
-				CoreState::Occupied(occupied_core) if max_candidate_depth >= 1 => occupied_core
-					.next_up_on_available
-					.as_ref()
-					.map(|scheduled_core| scheduled_core.para_id),
-				CoreState::Free | CoreState::Occupied(_) => None,
-			};
+    cores
+        .iter()
+        .enumerate()
+        .filter_map(|(index, core)| {
+            let core_para_id = match core {
+                CoreState::Scheduled(scheduled_core) => Some(scheduled_core.para_id),
+                CoreState::Occupied(occupied_core) if max_candidate_depth >= 1 => occupied_core
+                    .next_up_on_available
+                    .as_ref()
+                    .map(|scheduled_core| scheduled_core.para_id),
+                CoreState::Free | CoreState::Occupied(_) => None,
+            };
 
-			if core_para_id == Some(para_id) {
-				Some(CoreIndex(index as u32))
-			} else {
-				None
-			}
-		})
-		.collect()
+            if core_para_id == Some(para_id) {
+                Some(CoreIndex(index as u32))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Reads async backing parameters from the relay chain storage at the given relay parent.
 async fn async_backing_params(
-	relay_parent: PHash,
-	relay_client: &impl RelayChainInterface,
+    relay_parent: PHash,
+    relay_client: &impl RelayChainInterface,
 ) -> Option<AsyncBackingParams> {
-	match load_abridged_host_configuration(relay_parent, relay_client).await {
-		Ok(Some(config)) => Some(config.async_backing_params),
-		Ok(None) => {
-			tracing::error!(
-				target: crate::LOG_TARGET,
-				"Active config is missing in relay chain storage",
-			);
-			None
-		}
-		Err(err) => {
-			tracing::error!(
-				target: crate::LOG_TARGET,
-				?err,
-				?relay_parent,
-				"Failed to read active config from relay chain client",
-			);
-			None
-		}
-	}
+    match load_abridged_host_configuration(relay_parent, relay_client).await {
+        Ok(Some(config)) => Some(config.async_backing_params),
+        Ok(None) => {
+            tracing::error!(
+                target: crate::LOG_TARGET,
+                "Active config is missing in relay chain storage",
+            );
+            None
+        }
+        Err(err) => {
+            tracing::error!(
+                target: crate::LOG_TARGET,
+                ?err,
+                ?relay_parent,
+                "Failed to read active config from relay chain client",
+            );
+            None
+        }
+    }
 }
