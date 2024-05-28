@@ -3069,7 +3069,6 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "polkadot-service",
- "primitive-types",
  "rococo-runtime",
  "rococo-runtime-constants",
  "runtime-common",

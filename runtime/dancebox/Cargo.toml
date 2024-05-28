@@ -233,7 +233,6 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
-	"primitive-types/std",
 	"rococo-runtime-constants/std",
 	"rococo-runtime/std",
 	"runtime-common/std",
