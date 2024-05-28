@@ -125,7 +125,7 @@ parachains-common = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-primitive-types = { version = "0.12.1", default-features = false, features = ["byteorder"] }
+primitive-types = { version = "0.12.1", default-features = false, features = [ "byteorder" ] }
 
 [dev-dependencies]
 assets-common = { workspace = true }
@@ -233,6 +233,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
+	"primitive-types/std",
 	"rococo-runtime-constants/std",
 	"rococo-runtime/std",
 	"runtime-common/std",
