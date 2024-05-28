@@ -39,7 +39,7 @@ use {
         HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, RuntimeVersionOf,
         WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
     },
-    sc_network::{config::FullNetworkConfiguration, NetworkBlock, NetworkService},
+    sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor},
