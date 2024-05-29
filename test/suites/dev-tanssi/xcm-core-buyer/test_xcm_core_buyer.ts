@@ -1,8 +1,12 @@
 import "@tanssi/api-augment";
 import { describeSuite, beforeAll, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block.ts";
+import { u64 } from "@polkadot/types-codec";
+import { ParaId } from "@polkadot/types/interfaces";
+import { ITuple } from "@polkadot/types-codec/types";
+import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
     id: "DT0601",
@@ -11,10 +15,17 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let keyring: Keyring;
+        let collatorNimbusKey: KeyringPair;
+        let collatorAccountKey: KeyringPair;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
             polkadotJs = context.polkadotJs();
+            keyring = new Keyring({ type: "sr25519" });
+            collatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
+            // Collator key of Dave
+            collatorAccountKey = keyring.addFromUri("//" + "Dave", { name: "COLLATOR" + " ACCOUNT" });
         });
 
         it({
@@ -48,8 +59,8 @@ describeSuite({
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
                 const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 5,
-                    max: 5,
+                    min: 1,
+                    max: 1,
                 });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
@@ -127,54 +138,7 @@ describeSuite({
             id: "E03",
             title: "Sudo can forceBuyCore",
             test: async function () {
-                const paraId = 2003;
-
-                const relayChainWeightSetTx = polkadotJs.tx.sudo.sudo(
-                    polkadotJs.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
-                        buyExecutionCost: 1000000,
-                        weightAtMost: {
-                            refTime: 1000000,
-                            proofSize: 10000,
-                        },
-                    })
-                );
-                await context.createBlock([await relayChainWeightSetTx.signAsync(alice)]);
-
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
-
-                const registrationTx = polkadotJs.tx.registrar.registerParathread(
-                    2003,
-                    slotFrequency,
-                    containerChainGenesisData
-                );
-                await context.createBlock([await registrationTx.signAsync(alice)]);
+                const paraId = 2002;
 
                 const encodedMsgBefore = await polkadotJs.query.parachainSystem.upwardMessages();
                 expect(encodedMsgBefore.length).to.be.eq(0);
@@ -190,6 +154,130 @@ describeSuite({
                 // Check that the XCM message has been sent. This returns an encoded message
                 const encodedMsg = await polkadotJs.query.parachainSystem.upwardMessages();
                 expect(encodedMsg.length).to.be.eq(1);
+            },
+        });
+
+        it({
+            id: "E04",
+            title: "Collator can call buyCore",
+            test: async function () {
+                const paraId = 2002;
+
+                const nimbusPublicKey = collatorNimbusKey.publicKey;
+
+                const collatorAccountId = context.polkadotJs().createType("AccountId", collatorAccountKey.publicKey);
+
+                // Let's disable all other parachains and set parathread collator to 4
+                // this will make every collator including the one we are registering being assigned to our parathread
+                const tx1 = polkadotJs.tx.configuration.setFullRotationPeriod(0);
+                const tx2 = polkadotJs.tx.registrar.deregister(2000);
+                const tx3 = polkadotJs.tx.registrar.deregister(2001);
+                const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
+                await context.createBlock([
+                    await polkadotJs.tx.sudo.sudo(tx1).signAsync(alice, { nonce }),
+                    await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: nonce.addn(1) }),
+                    await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice, { nonce: nonce.addn(2) }),
+                ]);
+
+                await jumpSessions(context, 4);
+
+                await polkadotJs.tx.session.setKeys(u8aToHex(nimbusPublicKey), []).signAndSend(collatorAccountKey);
+
+                await context.createBlock();
+                // Check key is reflected in next key
+                // But its not yet in queued
+                const queuedKeys = await polkadotJs.query.session.queuedKeys();
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == nimbusPublicKey);
+                expect(result).is.empty;
+                const nextKey = await polkadotJs.query.session.nextKeys(collatorAccountKey.address);
+                expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(nimbusPublicKey));
+
+                // Let's jump one session
+                await jumpSessions(context, 2);
+
+                const addInvulnerablesTx = polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.invulnerables.addInvulnerable(collatorAccountId)
+                );
+                await context.createBlock([await addInvulnerablesTx.signAsync(alice)]);
+
+                await jumpSessions(context, 3);
+
+                // The change should have been applied, and now both nimbus and authorityMapping should reflect
+                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                expect(collators.toJSON().containerChains["2002"]).to.contain(collatorAccountId.toHuman());
+
+                const dataToEncode: ITuple<[u64, ParaId]> = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
+                const signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
+                const proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                    nonce: 0,
+                    publicKey: u8aToHex(nimbusPublicKey),
+                    signature: signature,
+                });
+
+                const tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                await tx.send();
+
+                await context.createBlock();
+
+                const events = (await polkadotJs.query.system.events()).filter((a) => {
+                    return a.event.method == "BuyCoreXcmSent";
+                });
+                expect(events.length).to.be.equal(1);
+            },
+        });
+
+        it({
+            id: "E04",
+            title: "buyCore nonce works properly",
+            test: async function () {
+                const paraId = 2002;
+
+                const nimbusPublicKey = collatorNimbusKey.publicKey;
+
+                const collatorAccountId = context.polkadotJs().createType("AccountId", collatorAccountKey.publicKey);
+
+                // Older nonce will not work
+                let dataToEncode: ITuple<[u64, ParaId]> = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
+                let signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
+                let proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                    nonce: 0,
+                    publicKey: u8aToHex(nimbusPublicKey),
+                    signature: signature,
+                });
+                let tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
+
+                // Passing different nonce while signing and creating proof object is rejected
+                dataToEncode = polkadotJs.createType("(u64, ParaId)", [1, paraId]);
+                signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
+                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                    nonce: 0,
+                    publicKey: u8aToHex(nimbusPublicKey),
+                    signature: signature,
+                });
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
+
+                dataToEncode = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
+                signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
+                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                    nonce: 1,
+                    publicKey: u8aToHex(nimbusPublicKey),
+                    signature: signature,
+                });
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
+
+                // Correct nonce should be successful
+                dataToEncode = polkadotJs.createType("(u64, ParaId)", [1, paraId]);
+                signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
+                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                    nonce: 1,
+                    publicKey: u8aToHex(nimbusPublicKey),
+                    signature: signature,
+                });
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                await tx.send();
             },
         });
     },
