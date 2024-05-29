@@ -19,16 +19,16 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::{CloneNoBound, DebugNoBound};
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
+use frame_support::{CloneNoBound, DebugNoBound};
 use sp_runtime::RuntimeAppPublic;
 use tp_traits::ParaId;
 
 /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
 #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
 pub struct BuyCoreCollatorProof<PublicKey>
-    where
-        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
+where
+    PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
 {
     pub nonce: u64,
     pub public_key: PublicKey,
@@ -36,14 +36,13 @@ pub struct BuyCoreCollatorProof<PublicKey>
 }
 
 impl<PublicKey> BuyCoreCollatorProof<PublicKey>
-    where
-        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
+where
+    PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
 {
     pub fn verify_signature(&self, para_id: ParaId) -> bool {
         let payload = (self.nonce, para_id).encode();
         self.public_key.verify(&payload, &self.signature)
     }
-
 
     pub fn new(nonce: u64, para_id: ParaId, public_key: PublicKey) -> Option<Self> {
         let payload = (nonce, para_id).encode();

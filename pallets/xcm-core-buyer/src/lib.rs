@@ -54,7 +54,7 @@ use {
     },
     tp_traits::LatestAuthorInfoFetcher,
     tp_traits::ParathreadParams,
-    tp_xcm_core_buyer::BuyCoreCollatorProof
+    tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
 pub trait XCMNotifier<T: Config> {
@@ -550,7 +550,8 @@ pub mod pallet {
             }
 
             // Check that the para id is a parathread
-            let parathread_params = T::GetParathreadParams::get_parathread_params(para_id).ok_or(BuyingError::NotAParathread)?;
+            let parathread_params = T::GetParathreadParams::get_parathread_params(para_id)
+                .ok_or(BuyingError::NotAParathread)?;
 
             let maybe_latest_author_info =
                 T::LatestAuthorInfoFetcher::get_latest_author_info(para_id);
