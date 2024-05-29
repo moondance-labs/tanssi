@@ -28,23 +28,14 @@ importers:
         version: 0.1.6
     devDependencies:
       '@acala-network/chopsticks':
-        specifier: npm:@tanssi/chopsticks@^0.9.10-b
-        version: /@tanssi/chopsticks@0.9.10-b(debug@4.3.4)
-      '@acala-network/chopsticks-core':
-        specifier: npm:@tanssi/chopsticks-core@^0.9.10-b
-        version: /@tanssi/chopsticks-core@0.9.10-b
-      '@acala-network/chopsticks-db':
-        specifier: npm:@tanssi/chopsticks-db@^0.9.10-b
-        version: /@tanssi/chopsticks-db@0.9.10-b
-      '@acala-network/chopsticks-executor':
-        specifier: npm:@tanssi/chopsticks-executor@^0.9.10-b
-        version: /@tanssi/chopsticks-executor@0.9.10
+        specifier: 0.11.0
+        version: 0.11.0(debug@4.3.4)
       '@moonbeam-network/api-augment':
         specifier: 0.2801.0
         version: 0.2801.0
       '@moonwall/cli':
         specifier: 5.1.1
-        version: 5.1.1(@polkadot/api@10.12.4)(@tanssi/chopsticks@0.9.10-b)(@types/node@20.11.30)(@vitest/ui@1.4.0)(typescript@5.4.2)(vitest@1.4.0)
+        version: 5.1.1(@acala-network/chopsticks@0.11.0)(@polkadot/api@10.12.4)(@types/node@20.11.30)(@vitest/ui@1.4.0)(typescript@5.4.2)(vitest@1.4.0)
       '@moonwall/util':
         specifier: 5.1.1
         version: 5.1.1(@polkadot/api@10.12.4)(typescript@5.4.2)(vitest@1.4.0)
@@ -208,6 +199,112 @@ packages:
   /@aashutoshrathi/word-wrap@1.2.6:
     resolution: {integrity: sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==}
     engines: {node: '>=0.10.0'}
+    dev: true
+
+  /@acala-network/chopsticks-core@0.11.0:
+    resolution: {integrity: sha512-3+ensuinkesviDh2EI97XUv/M2gOAovUdOGQEeB/xC3ynNBP0t9zVi39C+L9fuW0PGjr2bqZlM30JXI0VQVXqA==}
+    dependencies:
+      '@acala-network/chopsticks-executor': 0.11.0
+      '@polkadot/rpc-provider': 10.12.4
+      '@polkadot/types': 10.12.4
+      '@polkadot/types-codec': 10.12.4
+      '@polkadot/types-known': 10.12.4
+      '@polkadot/util': 12.6.2
+      '@polkadot/util-crypto': 12.6.2(@polkadot/util@12.6.2)
+      comlink: 4.4.1
+      eventemitter3: 5.0.1
+      lodash: 4.17.21
+      lru-cache: 10.2.0
+      pino: 8.19.0
+      pino-pretty: 11.1.0
+      rxjs: 7.8.1
+      zod: 3.22.4
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: true
+
+  /@acala-network/chopsticks-db@0.11.0:
+    resolution: {integrity: sha512-egKySQ29Az4CCTwStZBgs6Lpg1c7IlE3e/dVMA2wIG65u7TqAdRxirjPLFRdayTVrvAgCPYbH3pQVpmUbh2yfg==}
+    dependencies:
+      '@acala-network/chopsticks-core': 0.11.0
+      '@polkadot/util': 12.6.2
+      idb: 8.0.0
+      sqlite3: 5.1.7
+      typeorm: 0.3.20(sqlite3@5.1.7)
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - bluebird
+      - bufferutil
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+      - utf-8-validate
+    dev: true
+
+  /@acala-network/chopsticks-executor@0.11.0:
+    resolution: {integrity: sha512-1rRf5NghiaAexM9RvJITB1P92wPwaQunLp9svggBacRA6EYlgEgjJ7Sp2lo1QXmr2kjTQQs2mmGsMeQksrbkcg==}
+    dependencies:
+      '@polkadot/util': 12.6.2
+      '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
+    dev: true
+
+  /@acala-network/chopsticks@0.11.0(debug@4.3.4):
+    resolution: {integrity: sha512-D40P8mgZDGWa/QePiiSzT371v7cPln2jpmfiLJ1k8SmpU9wQndophDBxGccDWjU4N7JtCCZEE5NpoAqs+3UO/A==}
+    hasBin: true
+    dependencies:
+      '@acala-network/chopsticks-core': 0.11.0
+      '@acala-network/chopsticks-db': 0.11.0
+      '@pnpm/npm-conf': 2.2.2
+      '@polkadot/api-augment': 10.12.4
+      '@polkadot/types': 10.12.4
+      '@polkadot/util': 12.6.2
+      '@polkadot/util-crypto': 12.6.2(@polkadot/util@12.6.2)
+      axios: 1.6.8(debug@4.3.4)
+      dotenv: 16.4.5
+      global-agent: 3.0.0
+      js-yaml: 4.1.0
+      jsondiffpatch: 0.5.0
+      lodash: 4.17.21
+      ws: 8.16.0
+      yargs: 17.7.2
+      zod: 3.22.4
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - bluebird
+      - bufferutil
+      - debug
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+      - utf-8-validate
     dev: true
 
   /@adraffy/ens-normalize@1.10.0:
@@ -970,7 +1067,7 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: true
 
-  /@moonwall/cli@5.1.1(@polkadot/api@10.12.4)(@tanssi/chopsticks@0.9.10-b)(@types/node@20.11.30)(@vitest/ui@1.4.0)(typescript@5.4.2)(vitest@1.4.0):
+  /@moonwall/cli@5.1.1(@acala-network/chopsticks@0.11.0)(@polkadot/api@10.12.4)(@types/node@20.11.30)(@vitest/ui@1.4.0)(typescript@5.4.2)(vitest@1.4.0):
     resolution: {integrity: sha512-cgNQvH4mXiwzpld/5oGKLg69/mP2IJZKI5kUm8pQZrv+PDCKmK9Cs29sXq+vcan/UejXEqm7hr/jjh/+Cndd4A==}
     engines: {node: '>=20', pnpm: '>=7'}
     hasBin: true
@@ -980,7 +1077,7 @@ packages:
       '@vitest/ui': 1.2.2
       vitest: 1.2.2
     dependencies:
-      '@acala-network/chopsticks': /@tanssi/chopsticks@0.9.10-b(debug@4.3.4)
+      '@acala-network/chopsticks': 0.11.0(debug@4.3.4)
       '@moonbeam-network/api-augment': 0.2801.0
       '@moonwall/types': 5.1.1(@polkadot/api@10.12.4)(typescript@5.4.2)
       '@moonwall/util': 5.1.1(@polkadot/api@10.12.4)(typescript@5.4.2)(vitest@1.4.0)
@@ -2174,112 +2271,6 @@ packages:
   /@substrate/ss58-registry@1.44.0:
     resolution: {integrity: sha512-7lQ/7mMCzVNSEfDS4BCqnRnKCFKpcOaPrxMeGTXHX1YQzM/m2BBHjbK2C3dJvjv7GYxMiaTq/HdWQj1xS6ss+A==}
 
-  /@tanssi/chopsticks-core@0.9.10-b:
-    resolution: {integrity: sha512-5sBlEpdwqz+rNkgoOQTeZGrWK5zRl9oBJagomPf1YF7x/eRdFvRLBnTdiZse46kcF6J+zFH3m3tfT9FDjOcexg==}
-    dependencies:
-      '@polkadot/rpc-provider': 10.12.4
-      '@polkadot/types': 10.12.4
-      '@polkadot/types-codec': 10.12.4
-      '@polkadot/types-known': 10.12.4
-      '@polkadot/util': 12.6.2
-      '@polkadot/util-crypto': 12.6.2(@polkadot/util@12.6.2)
-      '@tanssi/chopsticks-executor': 0.9.10
-      comlink: 4.4.1
-      eventemitter3: 5.0.1
-      lodash: 4.17.21
-      lru-cache: 10.2.0
-      pino: 8.19.0
-      pino-pretty: 10.3.1
-      rxjs: 7.8.1
-      zod: 3.22.4
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-    dev: true
-
-  /@tanssi/chopsticks-db@0.9.10-b:
-    resolution: {integrity: sha512-z58nJJxmUnRO6gzFm3HaQfEtv5g3eXp9Dv7z0bkwfJ8tSjip21NKByMOKOuTEAXwq/HMj7uBTa9f6NZ2P9po/w==}
-    dependencies:
-      '@polkadot/util': 12.6.2
-      '@tanssi/chopsticks-core': 0.9.10-b
-      idb: 8.0.0
-      sqlite3: 5.1.7
-      typeorm: 0.3.20(sqlite3@5.1.7)
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - bluebird
-      - bufferutil
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-      - utf-8-validate
-    dev: true
-
-  /@tanssi/chopsticks-executor@0.9.10:
-    resolution: {integrity: sha512-bLrWgiS8ARhA337Jl1Qx+KRca7r30GurGi85ZtO11QZB9TDw+ZTLmF2VQ92Eo9aQPXQoEeo4w0+buq3Jbd9VyA==}
-    dependencies:
-      '@polkadot/util': 12.6.2
-      '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
-    dev: true
-
-  /@tanssi/chopsticks@0.9.10-b(debug@4.3.4):
-    resolution: {integrity: sha512-7uWWwCLg5uvJq34UXUgj2sWDLgEUr6OaKhJ2ZnTPqV0A8Tf1zB+t1QwS0uzpAgUIV2l60LMYzoDex2fp2sgUDA==}
-    hasBin: true
-    dependencies:
-      '@pnpm/npm-conf': 2.2.2
-      '@polkadot/api-augment': 10.12.4
-      '@polkadot/types': 10.12.4
-      '@polkadot/util': 12.6.2
-      '@polkadot/util-crypto': 12.6.2(@polkadot/util@12.6.2)
-      '@tanssi/chopsticks-core': 0.9.10-b
-      '@tanssi/chopsticks-db': 0.9.10-b
-      axios: 1.6.8(debug@4.3.4)
-      dotenv: 16.4.5
-      global-agent: 3.0.0
-      js-yaml: 4.1.0
-      jsondiffpatch: 0.5.0
-      lodash: 4.17.21
-      ws: 8.16.0
-      yargs: 17.7.2
-      zod: 3.22.4
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - bluebird
-      - bufferutil
-      - debug
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-      - utf-8-validate
-    dev: true
-
   /@tootallnate/once@1.1.2:
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
@@ -2783,6 +2774,7 @@ packages:
   /are-we-there-yet@3.0.1:
     resolution: {integrity: sha512-QZW4EDmGwlYur0Yyf/b2uGucHQMa8aFUP7eu9ddR73vvhFyt4V0Vl3QHPcTNJ8l6qYOBdxgXdnBXQrHilfRQBg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
+    deprecated: This package is no longer supported.
     requiresBuild: true
     dependencies:
       delegates: 1.0.0
@@ -3986,6 +3978,7 @@ packages:
   /gauge@4.0.4:
     resolution: {integrity: sha512-f9m+BEN5jkg6a0fZjleidjN51VE1X+mPFQ2DJ0uv1V39oCLCbsGe6yjbBnp7eK7z/+GAon99a3nHuqbuuthyPg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
+    deprecated: This package is no longer supported.
     requiresBuild: true
     dependencies:
       aproba: 2.0.0
@@ -4721,7 +4714,6 @@ packages:
       chalk: 3.0.0
       diff-match-patch: 1.0.5
     dev: true
-    bundledDependencies: []
 
   /jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
@@ -5505,6 +5497,7 @@ packages:
   /npmlog@6.0.2:
     resolution: {integrity: sha512-/vBvz5Jfr9dT/aFWd0FIRf+T/Q2WBsLENygUaFUqstqsycmZAP/t5BvFJTK0viFmSUxiUKTUplWy5vt+rvKIxg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
+    deprecated: This package is no longer supported.
     requiresBuild: true
     dependencies:
       are-we-there-yet: 3.0.1
@@ -5744,8 +5737,8 @@ packages:
       split2: 4.2.0
     dev: true
 
-  /pino-pretty@10.3.1:
-    resolution: {integrity: sha512-az8JbIYeN/1iLj2t0jR9DV48/LQ3RC6hZPpapKPkb84Q+yTidMCpgWxIT3N0flnBDilyBQ1luWNpOeJptjdp/g==}
+  /pino-pretty@11.1.0:
+    resolution: {integrity: sha512-PjBzFL7IMSl1YkS9cSVWC+4gONmW0Fi+fvUzy74zK6RJHk4RkfW+e22NydRrGEtBRa5n6/oPNLPqjUeQrzqcLQ==}
     hasBin: true
     dependencies:
       colorette: 2.0.20
@@ -5760,7 +5753,7 @@ packages:
       pump: 3.0.0
       readable-stream: 4.5.2
       secure-json-parse: 2.7.0
-      sonic-boom: 3.8.0
+      sonic-boom: 4.0.1
       strip-json-comments: 3.1.1
     dev: true
 
@@ -6014,6 +6007,7 @@ packages:
 
   /reflect-metadata@0.2.1:
     resolution: {integrity: sha512-i5lLI6iw9AU3Uu4szRNPPEkomnkjRTaVt9hy/bn5g/oSzekBSMeLZblcjP74AW0vBabqERLLIrz+gR8QYR54Tw==}
+    deprecated: This version has a critical bug in fallback handling. Please upgrade to reflect-metadata@0.2.2 or newer.
     dev: true
 
   /regexp.prototype.flags@1.5.2:
@@ -6381,6 +6375,12 @@ packages:
 
   /sonic-boom@3.8.0:
     resolution: {integrity: sha512-ybz6OYOUjoQQCQ/i4LU8kaToD8ACtYP+Cj5qd2AO36bwbdewxWJ3ArmJ2cr6AvxlL2o0PqnCcPGUgkILbfkaCA==}
+    dependencies:
+      atomic-sleep: 1.0.0
+    dev: true
+
+  /sonic-boom@4.0.1:
+    resolution: {integrity: sha512-hTSD/6JMLyT4r9zeof6UtuBDpjJ9sO08/nmS5djaA9eozT9oOlNdpXSnzcgj4FTqpk3nkLrs61l4gip9r1HCrQ==}
     dependencies:
       atomic-sleep: 1.0.0
     dev: true
