@@ -30,6 +30,7 @@ mod tests;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
+
 pub mod weights;
 pub use weights::WeightInfo;
 
@@ -61,6 +62,144 @@ use {
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+
+    #[cfg(feature = "std")]
+    pub trait SerdeIfStd: serde::Serialize + serde::de::DeserializeOwned {}
+    #[cfg(feature = "std")]
+    impl<T: serde::Serialize + serde::de::DeserializeOwned> SerdeIfStd for T {}
+
+    #[cfg(not(feature = "std"))]
+    pub trait SerdeIfStd {}
+    #[cfg(not(feature = "std"))]
+    impl<T> SerdeIfStd for T {}
+
+    /// Balance used by this pallet
+    pub type BalanceOf<T> =
+        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+
+    pub type ProviderRequestOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::ProviderRequest;
+
+    pub type AssignerParameterOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::AssignerParameter;
+
+    pub type AssignmentWitnessOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::AssignmentWitness;
+
+    /// Data preserver profile.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct Profile<T: Config> {
+        pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
+        pub para_ids: ParaIdsFilter<T>,
+        pub mode: ProfileMode,
+        pub assignment_request: ProviderRequestOf<T>,
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub enum ParaIdsFilter<T: Config> {
+        AnyParaId,
+        Whitelist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
+        Blacklist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
+    }
+
+    impl<T: Config> ParaIdsFilter<T> {
+        pub fn len(&self) -> usize {
+            match self {
+                Self::AnyParaId => 0,
+                Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
+            }
+        }
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    pub enum ProfileMode {
+        Bootnode,
+        Rpc { supports_ethereum_rpcs: bool },
+    }
+
+    /// Profile with additional data:
+    /// - the account id which created (and manage) the profile
+    /// - the amount deposited to register the profile
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(
+        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct RegisteredProfile<T: Config> {
+        pub account: T::AccountId,
+        pub deposit: BalanceOf<T>,
+        pub profile: Profile<T>,
+        pub assignment: Option<(ParaId, AssignmentWitnessOf<T>)>,
+    }
+
+    /// Computes the deposit cost of a profile.
+    pub trait ProfileDeposit<Profile, Balance> {
+        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
+    }
+
+    /// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
+    pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
+
+    impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
+        for BytesProfileDeposit<BaseCost, ByteCost>
+    where
+        BaseCost: Get<Balance>,
+        ByteCost: Get<Balance>,
+        Profile: Encode,
+        Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
+    {
+        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
+            let base = BaseCost::get();
+            let byte = ByteCost::get();
+            let size: Balance = profile
+                .encoded_size()
+                .try_into()
+                .map_err(|_| ArithmeticError::Overflow)?;
+
+            let deposit = byte
+                .checked_mul(&size)
+                .ok_or(ArithmeticError::Overflow)?
+                .checked_add(&base)
+                .ok_or(ArithmeticError::Overflow)?;
+
+            Ok(deposit)
+        }
+    }
+
+    /// Allows to process various kinds of payment options for assignments.
+    pub trait AssignmentPayment<AccountId> {
+        /// Providers requests which kind of payment it accepts.
+        type ProviderRequest: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+        /// Extra parameter the assigner provides.
+        type AssignerParameter: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+        /// Represents the succesful outcome of the assignment.
+        type AssignmentWitness: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+
+        fn try_start_assignment(
+            assigner: AccountId,
+            provider: AccountId,
+            request: &Self::ProviderRequest,
+            extra: Self::AssignerParameter,
+        ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo>;
+
+        fn try_stop_assignment(
+            assigner: AccountId,
+            provider: AccountId,
+            witness: Self::AssignmentWitness,
+        ) -> Result<(), DispatchErrorWithPostInfo>;
+    }
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
@@ -125,6 +264,14 @@ pub mod pallet {
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
+        // Who can call start_assignment/stop_assignment?
+        type AssignmentOrigin: EnsureOriginWithArg<
+            Self::RuntimeOrigin,
+            ParaId,
+            Success = Self::AccountId,
+        >;
+
+        // Who can call force_X?
         type ForceSetProfileOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         #[pallet::constant]
@@ -136,6 +283,8 @@ pub mod pallet {
 
         /// How much must be deposited to register a profile.
         type ProfileDeposit: ProfileDeposit<Profile<Self>, BalanceOf<Self>>;
+
+        type AssignmentPayment: AssignmentPayment<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -159,6 +308,14 @@ pub mod pallet {
             profile_id: T::ProfileId,
             released_deposit: BalanceOf<T>,
         },
+        AssignmentStarted {
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        },
+        AssignmentStopped {
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        },
     }
 
     #[pallet::error]
@@ -168,6 +325,15 @@ pub mod pallet {
 
         UnknownProfileId,
         NextProfileIdShouldBeAvailable,
+
+        /// Made for `AssignmentPayment` implementors to report a mismatch between
+        /// `ProviderRequest` and `AssignerParameter`.
+        AssignmentPaymentRequestParameterMismatch,
+
+        ProfileAlreadyAssigned,
+        ProfileNotAssigned,
+        ProfileIsNotElligibleForParaId,
+        WrongParaId,
     }
 
     #[pallet::composite_enum]
@@ -192,96 +358,16 @@ pub mod pallet {
     #[pallet::storage]
     pub type NextProfileId<T: Config> = StorageValue<_, T::ProfileId, ValueQuery>;
 
-    /// Balance used by this pallet
-    pub type BalanceOf<T> =
-        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-
-    /// Data preserver profile.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct Profile<T: Config> {
-        pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
-        pub para_ids: ParaIdsFilter<T>,
-        pub mode: ProfileMode,
-    }
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub enum ParaIdsFilter<T: Config> {
-        AnyParaId,
-        Whitelist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
-        Blacklist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
-    }
-
-    impl<T: Config> ParaIdsFilter<T> {
-        pub fn len(&self) -> usize {
-            match self {
-                Self::AnyParaId => 0,
-                Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
-            }
-        }
-    }
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub enum ProfileMode {
-        Bootnode,
-        Rpc { supports_ethereum_rpcs: bool },
-    }
-
-    /// Profile with additional data:
-    /// - the account id which created (and manage) the profile
-    /// - the amount deposited to register the profile
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct RegisteredProfile<T: Config> {
-        pub account: T::AccountId,
-        pub deposit: BalanceOf<T>,
-        pub profile: Profile<T>,
-    }
-
-    /// Computes the deposit cost of a profile.
-    pub trait ProfileDeposit<Profile, Balance> {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
-    }
-
-    /// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
-    pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
-
-    impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
-        for BytesProfileDeposit<BaseCost, ByteCost>
-    where
-        BaseCost: Get<Balance>,
-        ByteCost: Get<Balance>,
-        Profile: Encode,
-        Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
-    {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
-            let base = BaseCost::get();
-            let byte = ByteCost::get();
-            let size: Balance = profile
-                .encoded_size()
-                .try_into()
-                .map_err(|_| ArithmeticError::Overflow)?;
-
-            let deposit = byte
-                .checked_mul(&size)
-                .ok_or(ArithmeticError::Overflow)?
-                .checked_add(&base)
-                .ok_or(ArithmeticError::Overflow)?;
-
-            Ok(deposit)
-        }
-    }
+    #[pallet::storage]
+    pub type Assignments<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        Blake2_128Concat,
+        T::ProfileId,
+        (),
+        OptionQuery,
+    >;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -336,6 +422,7 @@ pub mod pallet {
                     account: account.clone(),
                     deposit,
                     profile,
+                    assignment: None,
                 },
             );
 
@@ -390,9 +477,9 @@ pub mod pallet {
             Profiles::<T>::insert(
                 profile_id,
                 RegisteredProfile {
-                    account: existing_profile.account,
                     deposit: new_deposit,
                     profile,
+                    ..existing_profile
                 },
             );
 
@@ -468,6 +555,7 @@ pub mod pallet {
                     account: for_account.clone(),
                     deposit: Zero::zero(),
                     profile,
+                    assignment: None,
                 },
             );
 
@@ -510,6 +598,7 @@ pub mod pallet {
                     account: existing_profile.account,
                     deposit: Zero::zero(),
                     profile,
+                    assignment: None,
                 },
             );
 
@@ -546,6 +635,93 @@ pub mod pallet {
             Self::deposit_event(Event::ProfileDeleted {
                 profile_id,
                 released_deposit: profile.deposit,
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(0)]
+        pub fn start_assignment(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+            assigner_param: AssignerParameterOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let assigner = T::AssignmentOrigin::ensure_origin(origin, &para_id)?;
+
+            let mut profile = Profiles::<T>::get(profile_id).ok_or(Error::<T>::UnknownProfileId)?;
+
+            if profile.assignment.is_some() {
+                Err(Error::<T>::ProfileAlreadyAssigned)?
+            }
+
+            match &profile.profile.para_ids {
+                ParaIdsFilter::AnyParaId => (),
+                ParaIdsFilter::Whitelist(list) => {
+                    if !list.contains(&para_id) {
+                        Err(Error::<T>::ProfileIsNotElligibleForParaId)?
+                    }
+                }
+                ParaIdsFilter::Blacklist(list) => {
+                    if list.contains(&para_id) {
+                        Err(Error::<T>::ProfileIsNotElligibleForParaId)?
+                    }
+                }
+            }
+
+            // TODO: Check Ethereum RPC?
+
+            let witness = T::AssignmentPayment::try_start_assignment(
+                assigner,
+                profile.account.clone(),
+                &profile.profile.assignment_request,
+                assigner_param,
+            )?;
+
+            profile.assignment = Some((para_id, witness));
+            Profiles::<T>::insert(profile_id, profile);
+            Assignments::<T>::insert(para_id, profile_id, ());
+
+            Self::deposit_event(Event::AssignmentStarted {
+                profile_id,
+                para_id,
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(0)]
+        pub fn stop_assignment(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        ) -> DispatchResultWithPostInfo {
+            let assigner = T::AssignmentOrigin::ensure_origin(origin, &para_id)?;
+
+            let mut profile = Profiles::<T>::get(profile_id).ok_or(Error::<T>::UnknownProfileId)?;
+
+            let Some((assignment_para_id, assignment_witness)) = profile.assignment.take() else {
+                Err(Error::<T>::ProfileNotAssigned)?
+            };
+
+            if assignment_para_id != para_id {
+                Err(Error::<T>::WrongParaId)?
+            }
+
+            T::AssignmentPayment::try_stop_assignment(
+                assigner,
+                profile.account.clone(),
+                assignment_witness,
+            )?;
+
+            Profiles::<T>::insert(profile_id, profile);
+            Assignments::<T>::remove(para_id, profile_id);
+
+            Self::deposit_event(Event::AssignmentStopped {
+                profile_id,
+                para_id,
             });
 
             Ok(().into())
