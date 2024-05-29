@@ -46,6 +46,8 @@ declare module "@polkadot/api-base/types/errors" {
         balances: {
             /** Beneficiary account must pre-exist. */
             DeadAccount: AugmentedError<ApiType>;
+            /** The delta cannot be zero. */
+            DeltaZero: AugmentedError<ApiType>;
             /** Value too low to create account due to existential deposit. */
             ExistentialDeposit: AugmentedError<ApiType>;
             /** A vesting schedule already exists for this account. */
@@ -54,11 +56,13 @@ declare module "@polkadot/api-base/types/errors" {
             Expendability: AugmentedError<ApiType>;
             /** Balance too low to send value. */
             InsufficientBalance: AugmentedError<ApiType>;
+            /** The issuance cannot be modified since it is already deactivated. */
+            IssuanceDeactivated: AugmentedError<ApiType>;
             /** Account liquidity restrictions prevent withdrawal. */
             LiquidityRestrictions: AugmentedError<ApiType>;
             /** Number of freezes exceed `MaxFreezes`. */
             TooManyFreezes: AugmentedError<ApiType>;
-            /** Number of holds exceed `MaxHolds`. */
+            /** Number of holds exceed `VariantCountOf<T::RuntimeHoldReason>`. */
             TooManyHolds: AugmentedError<ApiType>;
             /** Number of named reserves exceed `MaxReserves`. */
             TooManyReserves: AugmentedError<ApiType>;
@@ -323,7 +327,7 @@ declare module "@polkadot/api-base/types/errors" {
             CannotCheckOutTeleport: AugmentedError<ApiType>;
             /** Could not re-anchor the assets to declare the fees for the destination chain. */
             CannotReanchor: AugmentedError<ApiType>;
-            /** The destination `MultiLocation` provided cannot be inverted. */
+            /** The destination `Location` provided cannot be inverted. */
             DestinationNotInvertible: AugmentedError<ApiType>;
             /** The assets to be sent are empty. */
             Empty: AugmentedError<ApiType>;
@@ -333,8 +337,6 @@ declare module "@polkadot/api-base/types/errors" {
             Filtered: AugmentedError<ApiType>;
             /** The unlock operation cannot succeed because there are still consumers of the lock. */
             InUse: AugmentedError<ApiType>;
-            /** Invalid non-concrete asset. */
-            InvalidAssetNotConcrete: AugmentedError<ApiType>;
             /** Invalid asset, reserve chain could not be determined for it. */
             InvalidAssetUnknownReserve: AugmentedError<ApiType>;
             /** Invalid asset, do not support remote asset reserves with different fees reserves. */
@@ -488,6 +490,8 @@ declare module "@polkadot/api-base/types/errors" {
             FailedToExtractRuntimeVersion: AugmentedError<ApiType>;
             /** The name of specification does not match between the current runtime and the new runtime. */
             InvalidSpecName: AugmentedError<ApiType>;
+            /** A multi-block migration is ongoing and prevents the current code from being replaced. */
+            MultiBlockMigrationsOngoing: AugmentedError<ApiType>;
             /** Suicide called when the account has non-default composite data. */
             NonDefaultComposite: AugmentedError<ApiType>;
             /** There is a non-zero reference count preventing the account from being purged. */

@@ -45,11 +45,17 @@ declare module "@polkadot/api-base/types/consts" {
             existentialDeposit: u128 & AugmentedConst<ApiType>;
             /** The maximum number of individual freeze locks that can exist on an account at any time. */
             maxFreezes: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of holds that can exist on an account at any time. */
-            maxHolds: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation. */
+            /**
+             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation.
+             *
+             * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             maxLocks: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of named reserves that can exist on an account. */
+            /**
+             * The maximum number of named reserves that can exist on an account.
+             *
+             * Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             maxReserves: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
@@ -71,7 +77,7 @@ declare module "@polkadot/api-base/types/consts" {
             basicDeposit: u128 & AugmentedConst<ApiType>;
             /** The amount held on deposit per encoded byte for a registered identity. */
             byteDeposit: u128 & AugmentedConst<ApiType>;
-            /** Maxmimum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
+            /** Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
             maxRegistrars: u32 & AugmentedConst<ApiType>;
             /** The maximum number of sub-accounts allowed per identified account. */
             maxSubAccounts: u32 & AugmentedConst<ApiType>;
@@ -122,6 +128,12 @@ declare module "@polkadot/api-base/types/consts" {
             depositFactor: u128 & AugmentedConst<ApiType>;
             /** The maximum amount of signatories allowed in the multisig. */
             maxSignatories: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        parachainSystem: {
+            /** Returns the parachain ID we are running with. */
+            selfParaId: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -209,7 +221,7 @@ declare module "@polkadot/api-base/types/consts" {
              * about the prefix in order to make use of it as an identifier of the chain.
              */
             ss58Prefix: u16 & AugmentedConst<ApiType>;
-            /** Get the chain's current version. */
+            /** Get the chain's in-code version. */
             version: SpVersionRuntimeVersion & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
