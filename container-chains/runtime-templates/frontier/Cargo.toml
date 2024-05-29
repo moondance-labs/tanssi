@@ -37,8 +37,8 @@ pallet-author-inherent = { workspace = true }
 pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
-pallet-evm-precompile-xcm-utils = { workspace = true }
 pallet-evm-precompile-xcm = { workspace = true }
+pallet-evm-precompile-xcm-utils = { workspace = true }
 pallet-evm-precompileset-assets-erc20 = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
@@ -247,6 +247,7 @@ runtime-benchmarks = [
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
+	"pallet-evm-precompile-xcm/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
