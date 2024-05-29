@@ -504,13 +504,13 @@ fn xcm_locations() {
             assert_eq!(interior_mloc.len(), 1);
             assert_eq!(absolute_mloc.len(), 2);
 
-            let (rest, first) = absolute_mloc.interior.split_first();
+            let (rest, first) = absolute_mloc.interior.clone().split_first();
             assert_eq!(first, Some(Parachain(1000)));
             assert_eq!(rest, interior_mloc);
 
             // Print debug representation for informative purposes
             // The account id is `concat(b"para", u32::from(3333).to_le_bytes(), [0; 32 - 8])`
-            assert_eq!(format!("{:?}", interior_mloc), "X1(AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] })");
-            assert_eq!(format!("{:?}", absolute_mloc), "Location { parents: 0, interior: X2(Parachain(1000), AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }) }");
+            assert_eq!(format!("{:?}", interior_mloc), "X1([AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }])");
+            assert_eq!(format!("{:?}", absolute_mloc), "Location { parents: 0, interior: X2([Parachain(1000), AccountId32 { network: None, id: [112, 97, 114, 97, 5, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }]) }");
         });
 }

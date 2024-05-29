@@ -36,7 +36,7 @@ use {
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::{
         latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
-        prelude::{GlobalConsensus, InteriorLocation, NetworkId, Parachain, X2},
+        prelude::{GlobalConsensus, InteriorLocation, NetworkId, Parachain, Junctions::X2},
     },
     tp_traits::{ParathreadParams, SlotFrequency},
 };
@@ -185,7 +185,7 @@ parameter_types! {
     pub const PendingBlocksTtl: u32 = 5;
     pub const CoreBuyingXCMQueryTtl: u32 = 100;
     pub const AdditionalTtlForInflightOrders: u32 = 5;
-    pub UniversalLocation: InteriorLocation = X2(GlobalConsensus(NetworkId::Westend), Parachain(1000));
+    pub UniversalLocation: InteriorLocation = X2([GlobalConsensus(NetworkId::Westend), Parachain(1000)].into());
 }
 
 impl pallet_xcm_core_buyer::Config for Test {
