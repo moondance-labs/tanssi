@@ -106,7 +106,6 @@ parachain-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-primitive-types = { workspace = true }
 
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
@@ -186,7 +185,6 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
-	"primitive-types/std",
 	"runtime-common/std",
 	"scale-info/std",
 	"serde",

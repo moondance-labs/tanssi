@@ -298,7 +298,6 @@ impl-trait-for-tuples = "0.2.2"
 impls = "1.0.3"
 log = { version = "0.4.21", default-features = false }
 num_enum = { version = "0.7.1", default-features = false }
-primitive-types = { version = "0.12.2", default-features = false, features = [ "byteorder" ] }
 rand_chacha = { version = "0.3.1", default-features = false }
 serde = { version = "1.0.197", default-features = false }
 smallvec = "1.10.0"
