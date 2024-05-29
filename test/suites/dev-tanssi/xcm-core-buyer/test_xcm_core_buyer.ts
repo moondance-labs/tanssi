@@ -208,7 +208,7 @@ describeSuite({
 
                 const dataToEncode: ITuple<[u64, ParaId]> = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
                 const signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
-                const proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                const proof = polkadotJs.createType("TpXcmCoreBuyerBuyCoreCollatorProof", {
                     nonce: 0,
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
@@ -239,7 +239,7 @@ describeSuite({
                 // Older nonce will not work
                 let dataToEncode: ITuple<[u64, ParaId]> = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
                 let signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
-                let proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                let proof = polkadotJs.createType("TpXcmCoreBuyerBuyCoreCollatorProof", {
                     nonce: 0,
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
@@ -250,7 +250,7 @@ describeSuite({
                 // Passing different nonce while signing and creating proof object is rejected
                 dataToEncode = polkadotJs.createType("(u64, ParaId)", [1, paraId]);
                 signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
-                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                proof = polkadotJs.createType("TpXcmCoreBuyerBuyCoreCollatorProof", {
                     nonce: 0,
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
@@ -260,7 +260,7 @@ describeSuite({
 
                 dataToEncode = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
                 signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
-                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                proof = polkadotJs.createType("TpXcmCoreBuyerBuyCoreCollatorProof", {
                     nonce: 1,
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
@@ -271,7 +271,7 @@ describeSuite({
                 // Correct nonce should be successful
                 dataToEncode = polkadotJs.createType("(u64, ParaId)", [1, paraId]);
                 signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
-                proof = polkadotJs.createType("PalletXcmCoreBuyerBuyCoreCollatorProof", {
+                proof = polkadotJs.createType("TpXcmCoreBuyerBuyCoreCollatorProof", {
                     nonce: 1,
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,

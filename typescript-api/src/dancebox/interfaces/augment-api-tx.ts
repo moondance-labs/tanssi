@@ -34,7 +34,6 @@ import type {
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
-    PalletXcmCoreBuyerBuyCoreCollatorProof,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
@@ -42,6 +41,7 @@ import type {
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsSlotFrequency,
+    TpXcmCoreBuyerBuyCoreCollatorProof,
     XcmV3Response,
     XcmV3WeightLimit,
     XcmVersionedMultiAssets,
@@ -2249,12 +2249,12 @@ declare module "@polkadot/api-base/types/submittable" {
                     paraId: u32 | AnyNumber | Uint8Array,
                     collatorAccountId: AccountId32 | string | Uint8Array,
                     proof:
-                        | PalletXcmCoreBuyerBuyCoreCollatorProof
+                        | TpXcmCoreBuyerBuyCoreCollatorProof
                         | { nonce?: any; publicKey?: any; signature?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, AccountId32, PalletXcmCoreBuyerBuyCoreCollatorProof]
+                [u32, AccountId32, TpXcmCoreBuyerBuyCoreCollatorProof]
             >;
             /** See [`Pallet::clean_up_expired_in_flight_orders`]. */
             cleanUpExpiredInFlightOrders: AugmentedSubmittable<

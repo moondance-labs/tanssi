@@ -4568,7 +4568,7 @@ declare module "@polkadot/types/lookup" {
         readonly asBuyCore: {
             readonly paraId: u32;
             readonly collatorAccountId: AccountId32;
-            readonly proof: PalletXcmCoreBuyerBuyCoreCollatorProof;
+            readonly proof: TpXcmCoreBuyerBuyCoreCollatorProof;
         } & Struct;
         readonly isForceBuyCore: boolean;
         readonly asForceBuyCore: {
@@ -4605,8 +4605,8 @@ declare module "@polkadot/types/lookup" {
             | "CleanUpExpiredInFlightOrders";
     }
 
-    /** @name PalletXcmCoreBuyerBuyCoreCollatorProof (342) */
-    interface PalletXcmCoreBuyerBuyCoreCollatorProof extends Struct {
+    /** @name TpXcmCoreBuyerBuyCoreCollatorProof (342) */
+    interface TpXcmCoreBuyerBuyCoreCollatorProof extends Struct {
         readonly nonce: u64;
         readonly publicKey: NimbusPrimitivesNimbusCryptoPublic;
         readonly signature: NimbusPrimitivesNimbusCryptoSignature;

@@ -3386,7 +3386,7 @@ export default {
             buy_core: {
                 paraId: "u32",
                 collatorAccountId: "AccountId32",
-                proof: "PalletXcmCoreBuyerBuyCoreCollatorProof",
+                proof: "TpXcmCoreBuyerBuyCoreCollatorProof",
             },
             force_buy_core: {
                 paraId: "u32",
@@ -3409,8 +3409,8 @@ export default {
             },
         },
     },
-    /** Lookup342: pallet_xcm_core_buyer::pallet::BuyCoreCollatorProof<nimbus_primitives::nimbus_crypto::Public> */
-    PalletXcmCoreBuyerBuyCoreCollatorProof: {
+    /** Lookup342: tp_xcm_core_buyer::BuyCoreCollatorProof<nimbus_primitives::nimbus_crypto::Public> */
+    TpXcmCoreBuyerBuyCoreCollatorProof: {
         nonce: "u64",
         publicKey: "NimbusPrimitivesNimbusCryptoPublic",
         signature: "NimbusPrimitivesNimbusCryptoSignature",
