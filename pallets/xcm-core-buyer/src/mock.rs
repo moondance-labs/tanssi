@@ -36,7 +36,7 @@ use {
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::{
         latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
-        prelude::{GlobalConsensus, InteriorLocation, NetworkId, Parachain, Junctions::X2},
+        prelude::{GlobalConsensus, InteriorLocation, Junctions::X2, NetworkId, Parachain},
     },
     tp_traits::{ParathreadParams, SlotFrequency},
 };
