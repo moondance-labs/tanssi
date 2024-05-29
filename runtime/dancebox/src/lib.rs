@@ -50,7 +50,10 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
-            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
+            tokens::{
+                imbalance::ResolveTo, PayFromAccount, Precision, Preservation,
+                UnityAssetBalanceConversion,
+            },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
@@ -453,16 +456,16 @@ where
             let treasury_percentage = 20;
 
             let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
+            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
             // We need to convert the new Credit type to a negative imbalance
-            let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-            <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
-
+            //let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
+            //<pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_nonzero_unbalanced(imbalance.into());
             // handle tip if there is one
             if let Some(tip) = fees_then_tips.next() {
                 let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
                 let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-                <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
+                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             }
         }
     }
@@ -476,7 +479,7 @@ where
 
         let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
         let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-        <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
+        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
     }
 }
 
