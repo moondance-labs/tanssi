@@ -16,7 +16,9 @@
                                 "allowed_ancestry_len": 2,
                                 "max_candidate_depth": 3
                             },
-                            "scheduling_lookahead": 2
+                            "scheduler_params": {
+                                "scheduling_lookahead": 2
+			    }
                         }
                     }
                 }
