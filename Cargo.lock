@@ -9576,6 +9576,7 @@ dependencies = [
  "sp-std",
  "staging-xcm",
  "tp-traits",
+ "tp-xcm-core-buyer",
 ]
 
 [[package]]
@@ -16069,6 +16070,17 @@ dependencies = [
  "serde",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tp-xcm-core-buyer"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "tp-traits",
 ]
 
 [[package]]

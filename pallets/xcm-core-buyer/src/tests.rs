@@ -187,7 +187,7 @@ fn core_buying_proof_is_validated_correctly() {
             // If we change the public key in the proof, it should not work
             let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
                 .expect("creating collator proof must succeed");
-            proof.set_public_key(NimbusId::generate_pair(None));
+            proof.public_key = NimbusId::generate_pair(None);
 
             let call = Call::buy_core {
                 para_id,
@@ -210,7 +210,7 @@ fn core_buying_proof_is_validated_correctly() {
                 .1
                 .sign(&vec![1, 2, 3])
                 .expect("signature creation must succeed.");
-            proof.set_signature(incorrect_signature);
+            proof.signature = incorrect_signature;
             let call = Call::buy_core {
                 para_id,
                 collator_account_id: collator.0,
@@ -228,7 +228,7 @@ fn core_buying_proof_is_validated_correctly() {
             // If we change the nonce, it should not work
             let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
                 .expect("creating collator proof must succeed");
-            proof.set_nonce(12);
+            proof.nonce = 12;
             let call = Call::buy_core {
                 para_id,
                 collator_account_id: collator.0,

@@ -54,6 +54,7 @@ use {
     },
     tp_traits::LatestAuthorInfoFetcher,
     tp_traits::ParathreadParams,
+    tp_xcm_core_buyer::BuyCoreCollatorProof
 };
 
 pub trait XCMNotifier<T: Config> {
@@ -277,54 +278,6 @@ pub mod pallet {
         }
     }
 
-    /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
-    #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
-    pub struct BuyCoreCollatorProof<PublicKey>
-    where
-        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
-    {
-        nonce: u64,
-        public_key: PublicKey,
-        signature: PublicKey::Signature,
-    }
-
-    impl<PublicKey> BuyCoreCollatorProof<PublicKey>
-    where
-        PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
-    {
-        fn verify_signature(&self, para_id: ParaId) -> bool {
-            let payload = (self.nonce, para_id).encode();
-            self.public_key.verify(&payload, &self.signature)
-        }
-
-        #[cfg(any(test, feature = "runtime-benchmarks"))]
-        pub fn new(nonce: u64, para_id: ParaId, public_key: PublicKey) -> Option<Self> {
-            let payload = (nonce, para_id).encode();
-            public_key
-                .sign(&payload)
-                .map(|signature| BuyCoreCollatorProof {
-                    nonce,
-                    public_key,
-                    signature,
-                })
-        }
-
-        #[cfg(test)]
-        pub fn set_nonce(&mut self, nonce: u64) {
-            self.nonce = nonce;
-        }
-
-        #[cfg(test)]
-        pub fn set_public_key(&mut self, public_key: PublicKey) {
-            self.public_key = public_key;
-        }
-
-        #[cfg(test)]
-        pub fn set_signature(&mut self, signature: PublicKey::Signature) {
-            self.signature = signature;
-        }
-    }
-
     /// Set of parathreads that have already sent an XCM message to buy a core recently.
     /// Used to avoid 2 collators buying a core at the same time, because it is only possible to buy
     /// 1 core in 1 relay block for the same parathread.
@@ -380,19 +333,11 @@ pub mod pallet {
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
-            collator_account_id: T::AccountId,
-            proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
+            // Below parameter are already validated during `validate_unsigned` call
+            _collator_account_id: T::AccountId,
+            _proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
         ) -> DispatchResult {
             ensure_none(origin)?;
-
-            let is_valid_collator = T::CheckCollatorValidity::is_valid_collator(
-                para_id,
-                collator_account_id,
-                proof.public_key.clone(),
-            );
-            if !is_valid_collator {
-                return Err(Error::<T>::CollatorNotAssigned.into());
-            }
 
             let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
             CollatorSignatureNonce::<T>::set(para_id, current_nonce + 1);
@@ -605,12 +550,7 @@ pub mod pallet {
             }
 
             // Check that the para id is a parathread
-            let maybe_parathread_params = T::GetParathreadParams::get_parathread_params(para_id);
-            let parathread_params = if let Some(parathread_params) = maybe_parathread_params {
-                parathread_params
-            } else {
-                return Err(BuyingError::NotAParathread);
-            };
+            let parathread_params = T::GetParathreadParams::get_parathread_params(para_id).ok_or(BuyingError::NotAParathread)?;
 
             let maybe_latest_author_info =
                 T::LatestAuthorInfoFetcher::get_latest_author_info(para_id);

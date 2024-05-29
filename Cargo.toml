@@ -84,6 +84,7 @@ tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-d
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
 
 # Dancekit (wasm)
 ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }
