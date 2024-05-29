@@ -59,13 +59,14 @@ describeSuite({
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee(info2.weight)
                 ).toBigInt();
 
+
                 // These values are: 1000000 for base fee plus fee coming from the weight of the extrinsic
                 // We allow variance of 10%
                 const expectedBaseFee = context.isEthereumChain ? 1000000000000n : 1000000n;
 
                 const expectedbasePlusWeightFee = context.isEthereumChain
-                    ? expectedBaseFee + 1525568000000n
-                    : expectedBaseFee + 1525568n;
+                    ? expectedBaseFee + 2770822000000n
+                    : expectedBaseFee + 2770822n;
 
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
