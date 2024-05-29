@@ -59,7 +59,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_transaction_payment::CurrencyAdapter,
+    pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
@@ -392,7 +392,7 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // This will burn the fees
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;

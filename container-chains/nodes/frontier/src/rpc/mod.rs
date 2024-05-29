@@ -41,7 +41,6 @@ use {
         AuxStore, BlockOf, StorageProvider,
     },
     sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
-    sc_network::NetworkService,
     sc_network_sync::SyncingService,
     sc_service::TaskManager,
     sc_transaction_pool::{ChainApi, Pool},
