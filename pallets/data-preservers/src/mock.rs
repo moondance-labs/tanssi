@@ -18,11 +18,13 @@ use {
     crate::{self as pallet_data_preservers},
     dp_core::ParaId,
     frame_support::{
+        dispatch::DispatchErrorWithPostInfo,
         pallet_prelude::*,
         parameter_types,
         traits::{ConstU128, ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything},
     },
     frame_system::{EnsureRoot, EnsureSigned, RawOrigin},
+    serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
@@ -215,11 +217,166 @@ where
     }
 }
 
+pub struct MockContainerChainManager<T> {
+    _phantom: PhantomData<T>,
+}
+
+impl<O, T> EnsureOriginWithArg<O, ParaId> for MockContainerChainManager<T>
+where
+    T: crate::Config,
+    O: From<RawOrigin<T::AccountId>>,
+    Result<RawOrigin<T::AccountId>, O>: From<O>,
+    u64: From<T::AccountId>,
+    T::AccountId: From<u64>,
+    O: Clone,
+{
+    type Success = T::AccountId;
+
+    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
+        let origin = <EnsureSigned<T::AccountId> as EnsureOriginWithArg<O, ParaId>>::try_origin(
+            o.clone(),
+            para_id,
+        )?;
+
+        // This check will only pass if both are true:
+        // * The para_id has a deposit in pallet_registrar
+        // * The deposit creator is the signed_account
+        MockData::get()
+            .container_chain_managers
+            .get(para_id)
+            .and_then(|inner| *inner)
+            .and_then(|manager| {
+                if manager != u64::from(origin.clone()) {
+                    None
+                } else {
+                    Some(())
+                }
+            })
+            .ok_or(o)?;
+
+        Ok(origin)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
+        // Return container chain manager, or register container chain as ALICE if it does not exist
+        MockData::mutate(|m| {
+            m.container_chain_managers
+                .entry(*para_id)
+                .or_insert_with(move || {
+                    const ALICE: u64 = 1;
+
+                    Some(ALICE)
+                });
+        });
+
+        // This panics if the container chain was registered by root (None)
+        let o = MockData::get()
+            .container_chain_managers
+            .get(para_id)
+            .unwrap()
+            .unwrap();
+
+        Ok(O::from(RawOrigin::Signed(o.into())))
+    }
+}
+
+#[derive(
+    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+)]
+pub enum ProviderRequest {
+    Free,
+    SomeKindOfPayment {
+        // in this mock the provider requests a fixed amount
+        amount: Balance,
+    },
+}
+
+#[derive(
+    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+)]
+pub enum AssignerParameter {
+    Free,
+    SomeKindOfPayment {
+        // in this mock the assigner can add funds to the requested amount
+        extra: Balance,
+    },
+}
+
+#[derive(
+    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+)]
+pub enum AssignmentWitness {
+    Free,
+    SomeKindOfPayment {
+        // in this mock we store requested + extra to ensure `AssignmentPayment` is called
+        // properly.
+        payed: Balance,
+    },
+}
+
+pub struct AssignmentPayment;
+
+impl pallet_data_preservers::AssignmentPayment<AccountId> for AssignmentPayment {
+    /// Providers requests which kind of payment it accepts.
+    type ProviderRequest = ProviderRequest;
+    /// Extra parameter the assigner provides.
+    type AssignerParameter = AssignerParameter;
+    /// Represents the succesful outcome of the assignment.
+    type AssignmentWitness = AssignmentWitness;
+
+    fn try_start_assignment(
+        assigner: AccountId,
+        provider: AccountId,
+        request: &Self::ProviderRequest,
+        extra: Self::AssignerParameter,
+    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
+        let witness = match (request, extra) {
+            (ProviderRequest::Free, AssignerParameter::Free) => AssignmentWitness::Free,
+            (
+                ProviderRequest::SomeKindOfPayment { amount },
+                AssignerParameter::SomeKindOfPayment { extra },
+            ) => {
+                let total_amount = amount + extra;
+                Balances::transfer_allow_death(
+                    RuntimeOrigin::signed(assigner),
+                    provider,
+                    total_amount,
+                )?;
+                AssignmentWitness::SomeKindOfPayment {
+                    payed: total_amount,
+                }
+            }
+            _ => Err(crate::Error::<Test>::AssignmentPaymentRequestParameterMismatch)?,
+        };
+
+        Ok(witness)
+    }
+
+    fn try_stop_assignment(
+        assigner: AccountId,
+        provider: AccountId,
+        witness: Self::AssignmentWitness,
+    ) -> Result<(), DispatchErrorWithPostInfo> {
+        // for testing purposes there is also a payment at the end of the assignment
+        match witness {
+            AssignmentWitness::Free => (),
+            AssignmentWitness::SomeKindOfPayment { payed } => {
+                Balances::transfer_allow_death(RuntimeOrigin::signed(assigner), provider, payed)?;
+            }
+        };
+
+        Ok(())
+    }
+}
+
 impl pallet_data_preservers::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type ProfileId = u64;
+    type AssignmentPayment = AssignmentPayment;
+    type AssignmentOrigin = MockContainerChainManager<Test>;
     type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxBootNodes = ConstU32<10>;

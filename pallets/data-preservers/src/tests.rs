@@ -23,6 +23,11 @@ use {
 const ALICE: u64 = 1;
 const BOB: u64 = 2;
 
+fn profile_deposit(profile: &Profile<Test>) -> BalanceOf<Test> {
+    <Test as Config>::ProfileDeposit::profile_deposit(profile)
+        .expect("profile_deposit shouldn't fail")
+}
+
 #[test]
 fn set_boot_nodes_bad_origin() {
     ExtBuilder::default().build().execute_with(|| {
@@ -211,7 +216,11 @@ mod create_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408); // 1_000 base deposit + 51 * 8 bytes deposit
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -222,8 +231,9 @@ mod create_profile {
                     Profiles::<Test>::get(0),
                     Some(RegisteredProfile {
                         account: ALICE,
-                        deposit: 1_357, // 1_000 base deposit + 51 * 7 bytes deposit
-                        profile
+                        deposit,
+                        profile,
+                        assignment: None,
                     })
                 );
 
@@ -234,7 +244,7 @@ mod create_profile {
                     vec![Event::ProfileCreated {
                         account: ALICE,
                         profile_id: 0,
-                        deposit: 1_357,
+                        deposit,
                     }]
                 );
             });
@@ -250,6 +260,7 @@ mod create_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -273,6 +284,7 @@ mod create_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 // Set some profile at next id. (this shouldn't occur but we protect from it
@@ -283,6 +295,7 @@ mod create_profile {
                         account: ALICE,
                         deposit: 0,
                         profile: profile.clone(),
+                        assignment: None,
                     },
                 );
 
@@ -303,6 +316,7 @@ mod create_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::force_create_profile(
@@ -316,7 +330,8 @@ mod create_profile {
                     Some(RegisteredProfile {
                         account: ALICE,
                         deposit: 0, // no deposit when forced
-                        profile
+                        profile,
+                        assignment: None,
                     })
                 );
 
@@ -343,6 +358,7 @@ mod create_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -369,8 +385,12 @@ mod update_profile {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
+                    assignment_request: ProviderRequest::Free,
                     mode: ProfileMode::Bootnode,
                 };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -383,7 +403,11 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
+
+                let deposit2 = profile_deposit(&profile2);
+                assert_eq!(deposit2, 1_765);
 
                 assert_ok!(DataPreservers::update_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -395,8 +419,9 @@ mod update_profile {
                     Profiles::<Test>::get(0),
                     Some(RegisteredProfile {
                         account: ALICE,
-                        deposit: 1_714, // 1_000 base deposit + 51 * 14 bytes deposit
-                        profile: profile2
+                        deposit: deposit2,
+                        profile: profile2,
+                        assignment: None,
                     })
                 );
 
@@ -406,12 +431,12 @@ mod update_profile {
                         Event::ProfileCreated {
                             account: ALICE,
                             profile_id: 0,
-                            deposit: 1_357,
+                            deposit,
                         },
                         Event::ProfileUpdated {
                             profile_id: 0,
-                            old_deposit: 1_357,
-                            new_deposit: 1_714,
+                            old_deposit: deposit,
+                            new_deposit: deposit2,
                         }
                     ]
                 );
@@ -421,13 +446,14 @@ mod update_profile {
     #[test]
     fn unknown_profile_id() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_400)])
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
             .build()
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -441,6 +467,7 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -457,13 +484,14 @@ mod update_profile {
     #[test]
     fn wrong_user() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_400)])
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
             .build()
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -477,6 +505,7 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -493,13 +522,14 @@ mod update_profile {
     #[test]
     fn insufficient_balance_for_new_deposit() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_400)])
+            .with_balances(vec![(ALICE, 1_410)]) // `profile`
             .build()
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -513,6 +543,7 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -536,7 +567,11 @@ mod update_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -549,6 +584,7 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::force_update_profile(
@@ -562,7 +598,8 @@ mod update_profile {
                     Some(RegisteredProfile {
                         account: ALICE,
                         deposit: 0, // forced update release deposit
-                        profile: profile2
+                        profile: profile2,
+                        assignment: None,
                     })
                 );
 
@@ -572,11 +609,11 @@ mod update_profile {
                         Event::ProfileCreated {
                             account: ALICE,
                             profile_id: 0,
-                            deposit: 1_357,
+                            deposit,
                         },
                         Event::ProfileUpdated {
                             profile_id: 0,
-                            old_deposit: 1_357,
+                            old_deposit: deposit,
                             new_deposit: 0,
                         }
                     ]
@@ -594,6 +631,7 @@ mod update_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -607,6 +645,7 @@ mod update_profile {
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_noop!(
@@ -634,7 +673,11 @@ mod delete_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -654,11 +697,11 @@ mod delete_profile {
                         Event::ProfileCreated {
                             account: ALICE,
                             profile_id: 0,
-                            deposit: 1_357,
+                            deposit,
                         },
                         Event::ProfileDeleted {
                             profile_id: 0,
-                            released_deposit: 1_357,
+                            released_deposit: deposit,
                         }
                     ]
                 );
@@ -668,13 +711,14 @@ mod delete_profile {
     #[test]
     fn unknown_profile_id() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_400)])
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
             .build()
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -695,13 +739,14 @@ mod delete_profile {
     #[test]
     fn wrong_user() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_400)])
+            .with_balances(vec![(ALICE, 1_000_000_000_000)])
             .build()
             .execute_with(|| {
                 let profile = Profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -729,7 +774,11 @@ mod delete_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -749,11 +798,11 @@ mod delete_profile {
                         Event::ProfileCreated {
                             account: ALICE,
                             profile_id: 0,
-                            deposit: 1_357,
+                            deposit,
                         },
                         Event::ProfileDeleted {
                             profile_id: 0,
-                            released_deposit: 1_357,
+                            released_deposit: deposit,
                         }
                     ]
                 );
@@ -770,6 +819,7 @@ mod delete_profile {
                     url: b"test".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
                 };
 
                 assert_ok!(DataPreservers::create_profile(
@@ -780,6 +830,605 @@ mod delete_profile {
                 assert_noop!(
                     DataPreservers::force_delete_profile(RuntimeOrigin::signed(ALICE), 0),
                     sp_runtime::DispatchError::BadOrigin,
+                );
+            });
+    }
+}
+
+mod start_assignment {
+    use super::*;
+
+    #[test]
+    fn start_assignment_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: BOB,
+                            profile_id: 0,
+                            deposit,
+                        },
+                        Event::AssignmentStarted {
+                            profile_id: 0,
+                            para_id,
+                        }
+                    ]
+                );
+
+                assert_eq!(
+                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
+                    vec![(0, ())]
+                );
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: BOB,
+                        deposit,
+                        profile,
+                        assignment: Some((para_id, AssignmentWitness::Free)),
+                    })
+                );
+            });
+    }
+
+    #[test]
+    fn start_assignment_works_with_payment() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 2_224);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::SomeKindOfPayment { extra: 42 }
+                ));
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: BOB,
+                            profile_id: 0,
+                            deposit,
+                        },
+                        Event::AssignmentStarted {
+                            profile_id: 0,
+                            para_id,
+                        }
+                    ]
+                );
+
+                assert_eq!(
+                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
+                    vec![(0, ())]
+                );
+
+                let payed = 1337 + 42;
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: BOB,
+                        deposit,
+                        profile,
+                        assignment: Some((para_id, AssignmentWitness::SomeKindOfPayment { payed })),
+                    })
+                );
+
+                assert_eq!(Balances::free_balance(ALICE), 1_000_000_000_000 - payed);
+                assert_eq!(
+                    Balances::free_balance(BOB),
+                    1_000_000_000_000 - deposit + payed
+                );
+            });
+    }
+
+    #[test]
+    fn no_profile() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let para_id = ParaId::from(1002);
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+
+                assert_noop!(
+                    DataPreservers::start_assignment(
+                        RuntimeOrigin::signed(ALICE),
+                        0,
+                        para_id,
+                        AssignerParameter::Free
+                    ),
+                    Error::<Test>::UnknownProfileId
+                );
+            });
+    }
+
+    #[test]
+    fn not_para_manager() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_noop!(
+                    DataPreservers::start_assignment(
+                        RuntimeOrigin::signed(BOB),
+                        0,
+                        para_id,
+                        AssignerParameter::Free
+                    ),
+                    DispatchError::BadOrigin
+                );
+            });
+    }
+
+    #[test]
+    fn request_param_mismatch() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_noop!(
+                    DataPreservers::start_assignment(
+                        RuntimeOrigin::signed(ALICE),
+                        0,
+                        para_id,
+                        AssignerParameter::SomeKindOfPayment { extra: 42 }
+                    ),
+                    Error::<Test>::AssignmentPaymentRequestParameterMismatch
+                );
+            });
+    }
+
+    #[test]
+    fn payment_failure() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_300), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 2_224);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_noop!(
+                    DataPreservers::start_assignment(
+                        RuntimeOrigin::signed(ALICE),
+                        0,
+                        para_id,
+                        AssignerParameter::SomeKindOfPayment { extra: 42 }
+                    ),
+                    TokenError::FundsUnavailable
+                );
+            });
+    }
+}
+
+mod stop_assignment {
+    use super::*;
+
+    #[test]
+    fn stop_assignment_works() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_ok!(DataPreservers::stop_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                ));
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: BOB,
+                            profile_id: 0,
+                            deposit,
+                        },
+                        Event::AssignmentStarted {
+                            profile_id: 0,
+                            para_id,
+                        },
+                        Event::AssignmentStopped {
+                            profile_id: 0,
+                            para_id,
+                        }
+                    ]
+                );
+
+                assert_eq!(
+                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
+                    vec![]
+                );
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: BOB,
+                        deposit,
+                        profile,
+                        assignment: None,
+                    })
+                );
+            });
+    }
+
+    #[test]
+    fn stop_assignment_works_with_payment() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 2_224);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::SomeKindOfPayment { extra: 42 }
+                ));
+
+                assert_ok!(DataPreservers::stop_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                ));
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: BOB,
+                            profile_id: 0,
+                            deposit,
+                        },
+                        Event::AssignmentStarted {
+                            profile_id: 0,
+                            para_id,
+                        },
+                        Event::AssignmentStopped {
+                            profile_id: 0,
+                            para_id,
+                        }
+                    ]
+                );
+
+                assert_eq!(
+                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
+                    vec![]
+                );
+
+                let payed = (1337 + 42) * 2;
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: BOB,
+                        deposit,
+                        profile,
+                        assignment: None,
+                    })
+                );
+
+                assert_eq!(Balances::free_balance(ALICE), 1_000_000_000_000 - payed);
+                assert_eq!(
+                    Balances::free_balance(BOB),
+                    1_000_000_000_000 - deposit + payed
+                );
+            });
+    }
+
+    #[test]
+    fn unknown_profile_id() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_noop!(
+                    DataPreservers::stop_assignment(RuntimeOrigin::signed(ALICE), 1, para_id,),
+                    Error::<Test>::UnknownProfileId,
+                );
+            });
+    }
+
+    #[test]
+    fn profile_not_assigned() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+
+                assert_noop!(
+                    DataPreservers::stop_assignment(RuntimeOrigin::signed(ALICE), 0, para_id,),
+                    Error::<Test>::ProfileNotAssigned,
+                );
+            });
+    }
+
+    #[test]
+    fn wrong_para_id() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+                let para_id2 = ParaId::from(1003);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                    m.container_chain_managers.insert(para_id2, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_noop!(
+                    DataPreservers::stop_assignment(RuntimeOrigin::signed(ALICE), 0, para_id2,),
+                    Error::<Test>::WrongParaId
+                );
+            });
+    }
+
+    #[test]
+    fn payment_failure() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_500), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 2_224);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::SomeKindOfPayment { extra: 42 }
+                ));
+
+                assert_noop!(
+                    DataPreservers::stop_assignment(RuntimeOrigin::signed(ALICE), 0, para_id,),
+                    TokenError::FundsUnavailable
                 );
             });
     }
