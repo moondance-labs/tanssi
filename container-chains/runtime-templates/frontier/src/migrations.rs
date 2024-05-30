@@ -20,14 +20,69 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess},
+    crate::Precompiles,
+    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess, weights::Weight},
     pallet_migrations::{GetMigrations, Migration},
     runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
         XcmpQueueMigrationV4,
     },
+    sp_core::{Get, H160},
     sp_std::{marker::PhantomData, prelude::*},
 };
+
+pub struct MigratePrecompileXcmDummyCode<T>(pub PhantomData<T>);
+impl<T> Migration for MigratePrecompileXcmDummyCode<T>
+where
+    T: pallet_evm::Config,
+    T: frame_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigratePrecompileXcmCode"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!("Performing migration: TM_MigratePrecompileXcmCode");
+        let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+
+        let db_weights = T::DbWeight::get();
+
+        // Pallet-xcm precompile address
+        let address = H160::from_low_u64_be(2052);
+        pallet_evm::Pallet::<T>::create_account(address.into(), revert_bytecode.clone());
+
+        db_weights.reads_writes(1, 2)
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!("Performing TM_MigratePrecompileXcmCode - pre_upgrade");
+        let address = H160::from_low_u64_be(2052);
+        assert!(pallet_evm::AccountCodes::<T>::get(address).is_empty());
+
+/*         for address in Precompiles::used_addresses() {
+            let account: sp_core::H160 = address.into();
+            assert!(pallet_evm::AccountCodes::<T>::get(account).is_empty());
+        } */
+        Ok(vec![])
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        log::info!("Performing TM_MigratePrecompileXcmCode - post_upgrade");
+        let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+        let address = H160::from_low_u64_be(2052);
+        assert_eq!(pallet_evm::AccountCodes::<T>::get(address), revert_bytecode);
+/*         for address in Precompiles::used_addresses() {
+            let account: sp_core::H160 = address.into();
+            assert_eq!(pallet_evm::AccountCodes::<T>::get(account), revert_bytecode);
+        } */
+
+        Ok(())
+    }
+}
 
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
     PhantomData<(Runtime, XcmpQueue, PolkadotXcm)>,
@@ -50,13 +105,15 @@ where
             XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
         let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        let migrate_precompile_xcm_code = MigratePrecompileXcmDummyCode::<Runtime>(Default::default());
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
-            Box::new(migrate_polkadot_xcm_v1),
+/*             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),
-            Box::new(migrate_xcmp_queue_v4),
+            Box::new(migrate_xcmp_queue_v4), */
+            Box::new(migrate_precompile_xcm_code),
         ]
     }
 }

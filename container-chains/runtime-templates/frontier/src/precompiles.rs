@@ -78,7 +78,7 @@ type EthereumPrecompilesChecks = (AcceptDelegateCall, CallableByContract, Callab
 
 // Pallet-xcm precompile types.
 // The pallet-balances address is identified by ERC20_BALANCES_PRECOMPILE const
-type SingleAddressMatch = SingleAddressMatcher<AccountId, ERC20_BALANCES_PRECOMPILE, Balances>;
+type BalancesPrecompileMatch = SingleAddressMatcher<AccountId, ERC20_BALANCES_PRECOMPILE, Balances>;
 
 // Type that matches an AccountId with a foreign asset address (if any)
 type ForeignAssetMatch = ForeignAssetMatcher<AccountId, AssetId, Runtime, ForeignAssetsCreator>;
@@ -114,7 +114,7 @@ type TemplatePrecompilesAt<R> = (
     >,
     PrecompileAt<
         AddressU64<2052>,
-        PalletXcmPrecompile<R, (SingleAddressMatch, ForeignAssetMatch)>,
+        PalletXcmPrecompile<R, (BalancesPrecompileMatch, ForeignAssetMatch)>,
         (CallableByContract, CallableByPrecompile),
     >,
 );
