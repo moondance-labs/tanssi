@@ -26,7 +26,6 @@ use {
     frame_support::parameter_types,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_consensus_slots::Slot,
     sp_runtime::generic::DigestItem,
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
