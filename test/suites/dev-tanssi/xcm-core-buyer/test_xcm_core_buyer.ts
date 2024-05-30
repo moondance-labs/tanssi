@@ -25,7 +25,7 @@ describeSuite({
             keyring = new Keyring({ type: "sr25519" });
             collatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
             // Collator key of Dave
-            collatorAccountKey = keyring.addFromUri("//" + "Dave", { name: "COLLATOR" + " ACCOUNT" });
+            collatorAccountKey = keyring.addFromUri("//" + "Bob", { name: "COLLATOR" + " ACCOUNT" });
         });
 
         it({
@@ -90,14 +90,23 @@ describeSuite({
                     "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                 ];
 
+                // Let's disable all other parachains and set parathread collator to 4
+                // this will make every collator including the one we are registering being assigned to our parathread
+
                 const tx = polkadotJs.tx.registrar.registerParathread(2002, slotFrequency, containerChainGenesisData);
                 const tx2 = polkadotJs.tx.dataPreservers.setBootNodes(2002, bootNodes);
                 const tx3 = polkadotJs.tx.registrar.markValidForCollating(2002);
+                const tx4 = polkadotJs.tx.configuration.setFullRotationPeriod(0);
+                const tx5 = polkadotJs.tx.registrar.deregister(2000);
+                const tx6 = polkadotJs.tx.registrar.deregister(2001);
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
                     await tx.signAsync(alice, { nonce }),
                     await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
                     await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice, { nonce: nonce.addn(2) }),
+                    await polkadotJs.tx.sudo.sudo(tx4).signAsync(alice, { nonce: nonce.addn(3) }),
+                    await polkadotJs.tx.sudo.sudo(tx5).signAsync(alice, { nonce: nonce.addn(4) }),
+                    await polkadotJs.tx.sudo.sudo(tx6).signAsync(alice, { nonce: nonce.addn(5) }),
                 ]);
 
                 const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
@@ -109,7 +118,7 @@ describeSuite({
 
                 // These will be the paras in session 2
                 // TODO: fix once we have types
-                expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002]);
+                expect(parasScheduled.toJSON()).to.deep.equal([2002]);
 
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
@@ -126,7 +135,7 @@ describeSuite({
                 // Expect now paraIds to be registered
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
-                expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
+                expect(parasRegistered.toJSON()).to.deep.equal([2002]);
 
                 // Check that collators have been assigned
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
@@ -166,18 +175,6 @@ describeSuite({
                 const nimbusPublicKey = collatorNimbusKey.publicKey;
 
                 const collatorAccountId = context.polkadotJs().createType("AccountId", collatorAccountKey.publicKey);
-
-                // Let's disable all other parachains and set parathread collator to 4
-                // this will make every collator including the one we are registering being assigned to our parathread
-                const tx1 = polkadotJs.tx.configuration.setFullRotationPeriod(0);
-                const tx2 = polkadotJs.tx.registrar.deregister(2000);
-                const tx3 = polkadotJs.tx.registrar.deregister(2001);
-                const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
-                await context.createBlock([
-                    await polkadotJs.tx.sudo.sudo(tx1).signAsync(alice, { nonce }),
-                    await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: nonce.addn(1) }),
-                    await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice, { nonce: nonce.addn(2) }),
-                ]);
 
                 await jumpSessions(context, 4);
 
@@ -227,7 +224,7 @@ describeSuite({
         });
 
         it({
-            id: "E04",
+            id: "E05",
             title: "buyCore nonce works properly",
             test: async function () {
                 const paraId = 2002;

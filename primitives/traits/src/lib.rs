@@ -135,7 +135,8 @@ impl SlotFrequency {
         last_block_slot: Slot,
     ) -> bool {
         current_slot
-            >= (last_block_slot + Slot::from(u64::from(self.min)))
+            >= last_block_slot
+                .saturating_add(Slot::from(u64::from(self.min)))
                 .saturating_sub(max_slot_required_to_complete_purchase)
     }
 }
