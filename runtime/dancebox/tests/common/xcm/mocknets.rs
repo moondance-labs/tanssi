@@ -15,18 +15,18 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 pub use sp_core::Get;
 use {
-    crate::Junctions::X1,
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, rococo, simple_template, westend,
     },
+    crate::Junctions::X1,
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
-    sp_consensus_slots::Slot,
     frame_support::parameter_types,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
+    sp_consensus_slots::Slot,
     sp_runtime::generic::DigestItem,
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},

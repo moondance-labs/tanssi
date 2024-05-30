@@ -32,7 +32,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -54,7 +57,8 @@ fn receive_tokens_from_tanssi_to_simple_template() {
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 

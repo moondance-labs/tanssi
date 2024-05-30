@@ -30,7 +30,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -51,7 +54,8 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -148,7 +152,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -220,7 +225,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 

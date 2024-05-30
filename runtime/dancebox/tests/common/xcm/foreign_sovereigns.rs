@@ -32,7 +32,10 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::{*, Junctions::X1}, VersionedLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::X1, *},
+        VersionedLocation, VersionedXcm,
+    },
     staging_xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
     xcm_emulator::Chain,

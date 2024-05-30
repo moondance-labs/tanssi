@@ -30,7 +30,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     parity_scale_codec::Encode,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation, VersionedXcm,
+    },
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,

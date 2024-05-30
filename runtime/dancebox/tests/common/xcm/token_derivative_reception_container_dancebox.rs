@@ -32,7 +32,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -55,7 +58,8 @@ fn receive_tokens_from_the_container_to_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -65,7 +69,11 @@ fn receive_tokens_from_the_container_to_tanssi() {
     let simple_template_pallet_info_junction = PalletInstance(
         <<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let assets: Assets = (X1([simple_template_pallet_info_junction].into()), amount_to_send).into();
+    let assets: Assets = (
+        X1([simple_template_pallet_info_junction].into()),
+        amount_to_send,
+    )
+        .into();
     let fee_asset_item = 0;
     let simple_template_token_asset_id = 1u16;
 

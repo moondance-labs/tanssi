@@ -31,7 +31,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -53,7 +56,8 @@ fn receive_tokens_from_tanssi_to_frontier_template() {
         interior: X1([AccountKey20 {
             network: None,
             key: EthereumReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 

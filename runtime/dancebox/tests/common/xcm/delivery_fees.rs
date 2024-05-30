@@ -29,7 +29,10 @@ use {
     },
     frame_support::{assert_ok, traits::EnsureOrigin},
     paste::paste,
-    staging_xcm::{latest::prelude::{*, Junctions::X1}, VersionedLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::X1, *},
+        VersionedLocation, VersionedXcm,
+    },
     xcm_emulator::Chain,
 };
 

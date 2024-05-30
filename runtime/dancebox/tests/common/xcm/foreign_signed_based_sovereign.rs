@@ -33,7 +33,10 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation, VersionedXcm,
+    },
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,
 };
@@ -57,7 +60,8 @@ fn using_signed_based_sovereign_works_in_tanssi() {
         DescendOrigin(X1([AccountId32 {
             network: None,
             id: WestendSender::get().into(),
-        }].into())),
+        }]
+        .into())),
         WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
@@ -81,7 +85,8 @@ fn using_signed_based_sovereign_works_in_tanssi() {
         interior: X1([AccountId32 {
             network: Some(NetworkId::Westend),
             id: WestendSender::get().into(),
-        }].into()),
+        }]
+        .into()),
     })
     .unwrap();
 
@@ -172,7 +177,8 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
                     network: Some(NetworkId::Westend),
                     id: DanceboxSender::get().into(),
                 },
-            ].into()),
+            ]
+            .into()),
         })
         .unwrap();
 

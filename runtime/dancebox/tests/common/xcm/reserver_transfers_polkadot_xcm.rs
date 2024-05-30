@@ -33,7 +33,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -55,7 +58,8 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -164,7 +168,8 @@ fn transfer_assets_relay_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -179,7 +184,8 @@ fn transfer_assets_relay_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -189,7 +195,10 @@ fn transfer_assets_relay_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1([dancebox_pallet_info_junction].into()), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let relay_amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
     let relay_assets: Assets = (Here, relay_amount_to_send).into();
@@ -364,7 +373,8 @@ fn transfer_assets_container_token_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -379,7 +389,8 @@ fn transfer_assets_container_token_tanssi() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -389,7 +400,10 @@ fn transfer_assets_container_token_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1([dancebox_pallet_info_junction].into()), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let simple_template_amount_to_send: crate::Balance =
         container_chain_template_simple_runtime::ExistentialDeposit::get() * 1000;
 
@@ -608,7 +622,8 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
@@ -623,7 +638,8 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }].into()),
+        }]
+        .into()),
     }
     .into();
 
