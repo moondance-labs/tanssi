@@ -14,7 +14,7 @@ describeSuite({
                     await customDevRpcRequest("tanssi_servicesPaymentBlockCost", []);
                     throw { message: "Should have returned an error" };
                 } catch (e: any) {
-                    expect(e.message.toString()).to.eq("No more params");
+                    expect(e.message.toString()).to.eq("Invalid params");
                 }
 
                 expect(await customDevRpcRequest("tanssi_servicesPaymentBlockCost", [1000])).eq(1000000);
