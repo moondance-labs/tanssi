@@ -32,7 +32,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedLocation},
+    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
     xcm_emulator::Chain,
 };
 
@@ -44,16 +44,16 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
 
     let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2001u32)),
+        interior: X1([Parachain(2001u32)].into()),
     }
     .into();
 
     let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountKey20 {
+        interior: X1([AccountKey20 {
             network: None,
             key: EthereumReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 
@@ -150,16 +150,16 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
 
     let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2001u32)),
+        interior: X1([Parachain(2001u32)].into()),
     }
     .into();
 
     let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountKey20 {
+        interior: X1([AccountKey20 {
             network: None,
             key: EthereumReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 
@@ -233,16 +233,16 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
 
     let frontier_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2001u32)),
+        interior: X1([Parachain(2001u32)].into()),
     }
     .into();
 
     let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountKey20 {
+        interior: X1([AccountKey20 {
             network: None,
             key: EthereumReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 

@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 pub use sp_core::Get;
 use {
+    crate::Junctions::X1,
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, rococo, simple_template, westend,
@@ -83,12 +84,12 @@ decl_test_parachains! {
             // And to sovereigns
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2001u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2002u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
         ])
@@ -168,12 +169,12 @@ decl_test_parachains! {
             // And to sovereigns
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2001u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2002u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
 

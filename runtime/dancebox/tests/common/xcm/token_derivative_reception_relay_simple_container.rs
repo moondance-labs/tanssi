@@ -30,7 +30,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedLocation},
+    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation},
     xcm_emulator::Chain,
 };
 
@@ -42,16 +42,16 @@ fn receive_tokens_from_the_relay_to_simple_template() {
 
     let simple_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 
@@ -142,16 +142,16 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
 
     let simple_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 
@@ -226,16 +226,16 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_templat
 
     let simple_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
-        }),
+        }].into()),
     }
     .into();
 

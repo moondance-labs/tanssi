@@ -187,7 +187,7 @@ pub mod westend {
             },
             babe: westend_runtime::BabeConfig {
                 authorities: Default::default(),
-                epoch_config: Some(westend_runtime::BABE_GENESIS_EPOCH_CONFIG),
+                epoch_config: westend_runtime::BABE_GENESIS_EPOCH_CONFIG,
                 ..Default::default()
             },
             configuration: westend_runtime::ConfigurationConfig {
@@ -272,7 +272,7 @@ pub mod rococo {
             },
             babe: rococo_runtime::BabeConfig {
                 authorities: Default::default(),
-                epoch_config: Some(rococo_runtime::BABE_GENESIS_EPOCH_CONFIG),
+                epoch_config: rococo_runtime::BABE_GENESIS_EPOCH_CONFIG,
                 ..Default::default()
             },
             configuration: rococo_runtime::ConfigurationConfig {

@@ -33,7 +33,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    staging_xcm::{latest::prelude::{*, Junctions::*}, VersionedLocation, VersionedXcm},
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,
 };
@@ -44,20 +44,20 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     let root_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(50 * DANCE),
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        DescendOrigin(X1(AccountId32 {
+        DescendOrigin(X1([AccountId32 {
             network: None,
             id: WestendSender::get().into(),
-        })),
+        }].into())),
         WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
@@ -78,10 +78,10 @@ fn using_signed_based_sovereign_works_in_tanssi() {
         staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
     >::convert_location(&Location {
         parents: 1,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: Some(NetworkId::Westend),
             id: WestendSender::get().into(),
-        }),
+        }].into()),
     })
     .unwrap();
 
@@ -127,7 +127,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
 
     let frontier_destination: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2001)),
+        interior: X1([Parachain(2001)].into()),
     }
     .into();
 
@@ -138,7 +138,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
         ));
 
     let buy_execution_fee = Asset {
-        id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
+        id: container_chain_template_frontier_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -166,13 +166,13 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
             staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
         >::convert_location(&Location {
             parents: 1,
-            interior: X2(
+            interior: X2([
                 Parachain(2000u32),
                 AccountId32 {
                     network: Some(NetworkId::Westend),
                     id: DanceboxSender::get().into(),
                 },
-            ),
+            ].into()),
         })
         .unwrap();
 

@@ -29,7 +29,7 @@ use {
     },
     frame_support::{assert_ok, traits::EnsureOrigin},
     paste::paste,
-    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    staging_xcm::{latest::prelude::{*, Junctions::X1}, VersionedLocation, VersionedXcm},
     xcm_emulator::Chain,
 };
 
@@ -64,7 +64,7 @@ fn ump_delivery_fees_charged_frontier_template() {
 
 #[test]
 fn hrmp_delivery_fees_charged_dancebox() {
-    let dest = Location::new(1, X1(Parachain(2001)));
+    let dest = Location::new(1, X1([Parachain(2001)].into()));
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
         crate::assert_delivery_fees_test!(Dancebox, dest);
@@ -73,7 +73,7 @@ fn hrmp_delivery_fees_charged_dancebox() {
 
 #[test]
 fn hrmp_delivery_fees_charged_simple_template() {
-    let dest = Location::new(1, X1(Parachain(2000)));
+    let dest = Location::new(1, X1([Parachain(2000)].into()));
 
     // Send XCM message from SimpleTemplate
     SimpleTemplate::execute_with(|| {
@@ -83,7 +83,7 @@ fn hrmp_delivery_fees_charged_simple_template() {
 
 #[test]
 fn hrmp_delivery_fees_charged_frontier_template() {
-    let dest = Location::new(1, X1(Parachain(2000)));
+    let dest = Location::new(1, X1([Parachain(2000)].into()));
 
     // Send XCM message from FrontierTemplate
     FrontierTemplate::execute_with(|| {

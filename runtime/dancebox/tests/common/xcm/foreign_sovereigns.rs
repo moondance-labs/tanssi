@@ -32,7 +32,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    staging_xcm::{latest::prelude::{*, Junctions::X1}, VersionedLocation, VersionedXcm},
     staging_xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
     xcm_emulator::Chain,
@@ -49,7 +49,7 @@ fn using_sovereign_works_from_tanssi() {
     );
 
     let buy_execution_fee = Asset {
-        id: Concrete(Location::here()),
+        id: Location::here().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -74,7 +74,7 @@ fn using_sovereign_works_from_tanssi() {
         let sovereign_account =
             westend_runtime::xcm_config::LocationConverter::convert_location(&Location {
                 parents: 0,
-                interior: X1(Parachain(2000u32)),
+                interior: X1([Parachain(2000u32)].into()),
             })
             .unwrap();
 
@@ -144,7 +144,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
     let frontier_destination: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2001)),
+        interior: X1([Parachain(2001)].into()),
     }
     .into();
 
@@ -155,7 +155,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
         ));
 
     let buy_execution_fee = Asset {
-        id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
+        id: container_chain_template_frontier_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -180,7 +180,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
         let sovereign_account =
             container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&Location {
                 parents: 1,
-                interior: X1(Parachain(2000u32)),
+                interior: X1([Parachain(2000u32)].into()),
             })
             .unwrap();
 
