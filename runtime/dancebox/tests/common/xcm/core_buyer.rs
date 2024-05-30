@@ -33,7 +33,7 @@ use {
     dancebox_runtime::{DataPreservers, Registrar, ServicesPayment, XcmCoreBuyer},
     frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
-    polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
+    polkadot_runtime_parachains::{configuration, assigner_on_demand as parachains_assigner_on_demand},
     sp_runtime::AccountId32,
     staging_xcm::{
         latest::{MaybeErrorCode, Response},
@@ -316,16 +316,16 @@ fn get_parathread_tank_relay_address() -> AccountId32 {
 
 fn get_on_demand_base_fee() -> u128 {
     Rococo::execute_with(|| {
-        let config = <Rococo as RococoRelayPallet>::Configuration::config();
+        let config = configuration::ActiveConfig::<<Rococo as Chain>::Runtime>::get();
 
-        config.on_demand_base_fee
+        config.scheduler_params.on_demand_base_fee
     })
 }
 
 fn set_on_demand_base_fee(on_demand_base_fee: u128) {
     Rococo::execute_with(|| {
-        let mut config = <Rococo as RococoRelayPallet>::Configuration::config();
-        config.on_demand_base_fee = on_demand_base_fee;
+        let mut config = configuration::ActiveConfig::<<Rococo as Chain>::Runtime>::get();
+        config.scheduler_params.on_demand_base_fee = on_demand_base_fee;
         <Rococo as RococoRelayPallet>::Configuration::force_set_active_config(config);
     });
 }
