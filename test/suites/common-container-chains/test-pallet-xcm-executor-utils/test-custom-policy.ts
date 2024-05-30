@@ -58,13 +58,8 @@ describeSuite({
                         {
                             allowedAssets: [
                                 {
-                                    concrete: {
-                                        parents: 2,
-                                        interior: { Here: null },
-                                    },
-                                    fun: {
-                                        Fungible: 1_000,
-                                    },
+                                    parents: 2,
+                                    interior: { Here: null },
                                 },
                             ],
                         }

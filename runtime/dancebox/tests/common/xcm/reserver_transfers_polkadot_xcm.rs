@@ -33,7 +33,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -46,16 +49,17 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
     // Parents 1 this time
     let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -64,7 +68,7 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let assets: Assets = (X1(dancebox_pallet_info_junction), amount_to_send).into();
+    let assets: Assets = (X1([dancebox_pallet_info_junction].into()), amount_to_send).into();
     let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
 
@@ -77,7 +81,7 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -155,31 +159,33 @@ fn transfer_assets_relay_tanssi() {
     // Parents 1 this time
     let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -189,7 +195,10 @@ fn transfer_assets_relay_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let relay_amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
     let relay_assets: Assets = (Here, relay_amount_to_send).into();
@@ -207,7 +216,7 @@ fn transfer_assets_relay_tanssi() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -355,31 +364,33 @@ fn transfer_assets_container_token_tanssi() {
     // Parents 1 this time
     let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -389,7 +400,10 @@ fn transfer_assets_container_token_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let simple_template_amount_to_send: crate::Balance =
         container_chain_template_simple_runtime::ExistentialDeposit::get() * 1000;
 
@@ -416,7 +430,7 @@ fn transfer_assets_container_token_tanssi() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -443,7 +457,7 @@ fn transfer_assets_container_token_tanssi() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: X2(Parachain(2002), simple_template_pallet_info_junction)
+                    interior: X2([Parachain(2002), simple_template_pallet_info_junction].into())
                 },
                 simple_template_token_asset_id,
                 DanceboxSender::get(),
@@ -517,7 +531,7 @@ fn transfer_assets_container_token_tanssi() {
         (
             Location {
                 parents: 1,
-                interior: X2(Parachain(2002), simple_template_pallet_info_junction),
+                interior: X2([Parachain(2002), simple_template_pallet_info_junction].into()),
             },
             simple_template_tokens_to_send_simple_template,
         )
@@ -599,31 +613,33 @@ fn transfer_asset_relay_token_across_tanssi_container() {
     // Parents 1 this time
     let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 

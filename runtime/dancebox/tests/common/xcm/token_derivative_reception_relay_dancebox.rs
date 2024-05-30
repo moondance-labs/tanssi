@@ -30,7 +30,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -42,16 +45,17 @@ fn receive_tokens_from_the_relay_to_tanssi() {
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -139,16 +143,17 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -211,16 +216,17 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
     let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 

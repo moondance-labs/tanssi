@@ -50,7 +50,10 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
-            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
+            tokens::{
+                imbalance::ResolveTo, PayFromAccount, Precision, Preservation,
+                UnityAssetBalanceConversion,
+            },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
@@ -453,16 +456,12 @@ where
             let treasury_percentage = 20;
 
             let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
+            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // We need to convert the new Credit type to a negative imbalance
-            let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-            <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
-
             // handle tip if there is one
             if let Some(tip) = fees_then_tips.next() {
                 let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-                <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
+                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             }
         }
     }
@@ -475,8 +474,7 @@ where
         let treasury_percentage = 20;
 
         let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-        <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(imbalance.into());
+        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
     }
 }
 
@@ -1971,7 +1969,7 @@ impl_runtime_apis! {
                     // We only care for native asset until we support others
                     // TODO: refactor this case once other assets are supported
                     vec![Asset{
-                        id: Concrete(Location::here()),
+                        id: AssetId(Location::here()),
                         fun: Fungible(u128::MAX),
                     }].into()
                 }
@@ -2001,9 +1999,16 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
+                fn fee_asset() -> Result<Asset, BenchmarkError> {
+                    Ok(Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(1u128),
+                    })
+                }
+
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
                     let origin = Location::parent();
-                    let assets: Assets = (Concrete(Location::parent()), 1_000u128).into();
+                    let assets: Assets = (Location::parent(), 1_000u128).into();
                     let ticket = Location { parents: 0, interior: Here };
                     Ok((origin, ticket, assets))
                 }
@@ -2024,6 +2029,14 @@ impl_runtime_apis! {
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
+                type DeliveryHelper = ();
+                fn get_asset() -> Asset {
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(ExistentialDeposit::get()),
+                    }
+                }
+
                 fn reachable_dest() -> Option<Location> {
                     Some(Parent.into())
                 }
@@ -2049,7 +2062,7 @@ impl_runtime_apis! {
                     Some((
                         Asset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(SelfReserve::get())
+                            id: AssetId(SelfReserve::get())
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
                     ))

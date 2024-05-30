@@ -41,7 +41,7 @@ mod benchmarks {
         frame_system::pallet_prelude::BlockNumberFor,
         staging_xcm::{
             latest::{MaybeErrorCode, QueryId},
-            v3::{Location, Response},
+            v4::{Location, Response},
         },
     };
 

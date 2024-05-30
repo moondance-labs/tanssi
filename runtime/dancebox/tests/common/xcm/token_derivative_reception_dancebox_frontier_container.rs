@@ -31,7 +31,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -44,16 +47,17 @@ fn receive_tokens_from_tanssi_to_frontier_template() {
     // Parents 1 this time
     let frontier_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2001u32)),
+        interior: X1([Parachain(2001u32)].into()),
     }
     .into();
 
     let frontier_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountKey20 {
+        interior: X1([AccountKey20 {
             network: None,
             key: EthereumReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -62,7 +66,7 @@ fn receive_tokens_from_tanssi_to_frontier_template() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let assets: Assets = (X1(dancebox_pallet_info_junction), amount_to_send).into();
+    let assets: Assets = (X1([dancebox_pallet_info_junction].into()), amount_to_send).into();
     let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
 
@@ -75,7 +79,7 @@ fn receive_tokens_from_tanssi_to_frontier_template() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 EthereumReceiver::get(),
