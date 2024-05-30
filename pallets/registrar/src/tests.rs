@@ -1687,6 +1687,53 @@ mod deregister_with_relay_proof {
     }
 
     #[test]
+    fn can_deregister_pending_para() {
+        // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ));
+            assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            // Do not call mark_valid_for_collating
+
+            let alice_balance_before = System::account(ALICE).data;
+            let bob_balance_before = System::account(BOB).data;
+
+            let (relay_parent_storage_root, proof) =
+                RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+            Mock::mutate(|m| {
+                m.relay_storage_roots.insert(1, relay_parent_storage_root);
+            });
+
+            // Can deregister para because it does not exist in the relay chain
+            assert_ok!(ParaRegistrar::deregister_with_relay_proof(
+                RuntimeOrigin::signed(BOB),
+                42.into(),
+                1,
+                proof,
+            ));
+            System::assert_last_event(Event::ParaIdDeregistered { para_id: 42.into() }.into());
+
+            // Check that Bob is given Alice deposit
+            let alice_balance_after = System::account(ALICE).data;
+            let bob_balance_after = System::account(BOB).data;
+            // Alice free balance has not increased
+            assert_eq!(alice_balance_after.free, alice_balance_before.free);
+            // Bob gained exactly Alice reserve
+            assert_eq!(
+                bob_balance_after.free,
+                bob_balance_before.free + alice_balance_before.reserved
+            );
+            // Alice no longer has any reserved balance
+            assert_eq!(alice_balance_after.reserved, 0);
+        });
+    }
+
+    #[test]
     fn cannot_deregister_para_if_relay_root_not_stored() {
         // Check that storage proof is invalid when the relay storage root provider returns `None`.
         new_test_ext().execute_with(|| {

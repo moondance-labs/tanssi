@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
+import { jumpSessions, fetchStorageProofFromValidationData } from "../../../util/block";
 
 describeSuite({
     id: "CT1102",
@@ -20,12 +20,11 @@ describeSuite({
             // We must generate the same account as in service.rs, using get_ed25519_pairs
             // Instead of having to implement that function in javascript, we can just hardcode the private key here
             // Create a new keyring because we need to use ed25519
+            const relayManagerPrivateKey = "0x3132333435363738393031323334353637383930313233343536373839303132";
             const relayKeyring = new Keyring({
                 type: "ed25519",
             });
-            relayManager = relayKeyring.addFromUri(
-                "0x3132333435363738393031323334353637383930313233343536373839303132"
-            );
+            relayManager = relayKeyring.addFromUri(relayManagerPrivateKey);
         });
 
         it({
@@ -164,32 +163,3 @@ describeSuite({
         });
     },
 });
-
-// Creating a relay storage proof in dev tests is not possible, because there is no relay chain, but we can re-use the
-// proof from setValidationData, which includes the registrar->paras entries because we added them.
-async function fetchStorageProofFromValidationData(polkadotJs) {
-    const block = await polkadotJs.rpc.chain.getBlock();
-
-    // Find parachainSystem.setValidationData extrinsic
-    const ex = block.block.extrinsics.find((ex) => {
-        const {
-            method: { method, section },
-        } = ex;
-        return section == "parachainSystem" && method == "setValidationData";
-    });
-    // Error handling if not found
-    if (!ex) {
-        throw new Error("parachainSystem.setValidationData extrinsic not found");
-    }
-    const {
-        method: { args },
-    } = ex;
-    const arg = args[0].toJSON();
-    const relayProofBlockNumber = arg.validationData.relayParentNumber;
-    const relayStorageProof = arg.relayChainState;
-
-    return {
-        relayProofBlockNumber,
-        relayStorageProof,
-    };
-}
