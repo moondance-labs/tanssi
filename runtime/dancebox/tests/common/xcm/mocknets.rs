@@ -23,6 +23,7 @@ use {
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
+    sp_consensus_slots::Slot,
     frame_support::parameter_types,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -34,7 +35,7 @@ use {
 };
 
 decl_test_relay_chains! {
-    #[api_version(10)]
+    #[api_version(11)]
     pub struct Westend {
         genesis = westend::genesis(),
         on_init = (),
@@ -49,7 +50,7 @@ decl_test_relay_chains! {
             Sudo: westend_runtime::Sudo,
         }
     },
-    #[api_version(10)]
+    #[api_version(11)]
     pub struct Rococo {
         genesis = rococo::genesis(),
         on_init = (),
