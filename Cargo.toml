@@ -65,6 +65,7 @@ pallet-services-payment-runtime-api = { path = "pallets/services-payment/runtime
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/runtime-api", default-features = false }
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
+pallet-xcm-core-buyer-runtime-api = { path = "pallets/xcm-core-buyer/runtime-api", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/runtime-templates/frontier", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/runtime-templates/simple", default-features = false }
@@ -83,6 +84,7 @@ tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-d
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
 
 # Dancekit (wasm)
 ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.6.0", default-features = false }

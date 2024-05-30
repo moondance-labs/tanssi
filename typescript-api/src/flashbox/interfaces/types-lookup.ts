@@ -2721,8 +2721,8 @@ declare module "@polkadot/types/lookup" {
         readonly containerChains: BTreeMap<u32, Vec<AccountId32>>;
     }
 
-    /** @name PalletAuthorNotingContainerChainBlockInfo (321) */
-    interface PalletAuthorNotingContainerChainBlockInfo extends Struct {
+    /** @name TpTraitsContainerChainBlockInfo (321) */
+    interface TpTraitsContainerChainBlockInfo extends Struct {
         readonly blockNumber: u32;
         readonly author: AccountId32;
         readonly latestSlotNumber: u64;

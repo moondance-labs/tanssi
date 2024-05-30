@@ -3066,6 +3066,7 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "pallet-xcm-core-buyer",
+ "pallet-xcm-core-buyer-runtime-api",
  "parachains-common",
  "parity-scale-codec",
  "paste",
@@ -9063,6 +9064,7 @@ dependencies = [
  "scale-info",
  "sp-api",
  "tp-container-chain-genesis-data",
+ "tp-traits",
 ]
 
 [[package]]
@@ -9572,12 +9574,28 @@ dependencies = [
  "scale-info",
  "serde",
  "similar-asserts",
+ "sp-consensus-aura",
  "sp-core",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
  "staging-xcm",
  "tp-traits",
+ "tp-xcm-core-buyer",
+]
+
+[[package]]
+name = "pallet-xcm-core-buyer-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "pallet-xcm-core-buyer",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "thiserror",
 ]
 
 [[package]]
@@ -16061,6 +16079,17 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tp-xcm-core-buyer"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "tp-traits",
 ]
 
 [[package]]
