@@ -15,9 +15,12 @@ dp-core = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, optional = true }
 tp-traits = { workspace = true }
+tp-xcm-core-buyer = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-keystore = { workspace = true }
 staging-xcm = { workspace = true }
 
 # Substrate
@@ -57,13 +60,16 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-io/std",
+	"sp-keystore/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"staging-xcm/std",
 	"staging-xcm/std",
 	"tp-traits/std",
+	"tp-xcm-core-buyer/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
@@ -75,6 +81,7 @@ runtime-benchmarks = [
 	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"tp-xcm-core-buyer/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

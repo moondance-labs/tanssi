@@ -66,7 +66,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn authority_id_mapping)]
-    pub(super) type AuthorityIdMapping<T: Config> = StorageMap<
+    pub type AuthorityIdMapping<T: Config> = StorageMap<
         _,
         Twox64Concat,
         T::SessionIndex,

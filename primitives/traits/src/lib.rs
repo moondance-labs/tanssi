@@ -23,6 +23,8 @@ pub use cumulus_primitives_core::{
     relay_chain::{BlockNumber, Slot},
     ParaId,
 };
+use frame_support::pallet_prelude::MaxEncodedLen;
+use sp_runtime::app_crypto::sp_core;
 use {
     frame_support::{
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
@@ -125,6 +127,20 @@ pub struct SlotFrequency {
     pub max: u32,
 }
 
+impl SlotFrequency {
+    pub fn should_parathread_buy_core(
+        &self,
+        current_slot: Slot,
+        max_slot_required_to_complete_purchase: Slot,
+        last_block_slot: Slot,
+    ) -> bool {
+        current_slot
+            >= last_block_slot
+                .saturating_add(Slot::from(u64::from(self.min)))
+                .saturating_sub(max_slot_required_to_complete_purchase)
+    }
+}
+
 impl Default for SlotFrequency {
     fn default() -> Self {
         Self { min: 1, max: 1 }
@@ -202,4 +218,26 @@ pub trait RemoveParaIdsWithNoCredits {
     /// Make those para ids valid by giving them enough credits, for benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
     fn make_valid_para_ids(para_ids: &[ParaId]);
+}
+
+/// Information extracted from the latest container chain header
+#[derive(
+    Default,
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    MaxEncodedLen,
+)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct ContainerChainBlockInfo<AccountId> {
+    pub block_number: BlockNumber,
+    pub author: AccountId,
+    pub latest_slot_number: Slot,
+}
+
+pub trait LatestAuthorInfoFetcher<AccountId> {
+    fn get_latest_author_info(para_id: ParaId) -> Option<ContainerChainBlockInfo<AccountId>>;
 }

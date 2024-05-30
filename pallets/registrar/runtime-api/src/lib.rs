@@ -19,6 +19,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use tp_container_chain_genesis_data::ContainerChainGenesisData;
+use tp_traits::SlotFrequency;
 use {frame_support::traits::Get, scale_info::prelude::vec::Vec};
 
 sp_api::decl_runtime_apis! {
@@ -42,13 +43,17 @@ sp_api::decl_runtime_apis! {
         ParaId: parity_scale_codec::Codec,
         Slot: parity_scale_codec::Codec,
     {
-        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
-        /// the next block.
+        /// Returns slot frequency for particular para thread. Slot frequency specifies amount of slot
+        /// need to be passed between two parathread blocks. It is expressed as `(min, max)` pair where `min`
+        /// indicates amount of slot must pass before we produce another block and `max` indicates amount of
+        /// blocks before this parathread must produce the block.
+        ///
+        /// Simply put, parathread must produce a block after `min`  but before `(min+max)` slots.
         ///
         /// # Returns
         ///
-        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `Some(slot_frequency)`.
         /// * `None` if the `para_id` is not a parathread.
-        fn min_slot_freq(para_id: ParaId) -> Option<Slot>;
+        fn parathread_slot_frequency(para_id: ParaId) -> Option<SlotFrequency>;
     }
 }
