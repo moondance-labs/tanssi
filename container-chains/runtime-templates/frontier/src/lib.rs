@@ -1180,11 +1180,11 @@ impl_runtime_apis! {
                 }
 
                 fn fee_asset() -> Result<Asset, BenchmarkError> {
-					Ok(Asset {
-						id: AssetId(SelfReserve::get()),
-						fun: Fungible(1u128),
-					})
-				}
+                    Ok(Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(1u128),
+                    })
+                }
 
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
                     let origin = Location::parent();
@@ -1211,12 +1211,12 @@ impl_runtime_apis! {
             impl pallet_xcm::benchmarking::Config for Runtime {
                 type DeliveryHelper = ();
                 fn get_asset() -> Asset {
-					Asset {
-						id: AssetId(SelfReserve::get()),
-						fun: Fungible(ExistentialDeposit::get()),
-					}
-				}
-                
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(ExistentialDeposit::get()),
+                    }
+                }
+
                 fn reachable_dest() -> Option<Location> {
                     Some(Parent.into())
                 }
