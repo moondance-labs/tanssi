@@ -45,7 +45,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
-            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
+            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion, imbalance::ResolveTo},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
