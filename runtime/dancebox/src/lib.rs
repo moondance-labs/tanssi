@@ -1969,7 +1969,7 @@ impl_runtime_apis! {
                     // We only care for native asset until we support others
                     // TODO: refactor this case once other assets are supported
                     vec![Asset{
-                        id: Concrete(Location::here()),
+                        id: AssetId(Location::here()),
                         fun: Fungible(u128::MAX),
                     }].into()
                 }
@@ -1999,9 +1999,16 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
+                fn fee_asset() -> Result<Asset, BenchmarkError> {
+					Ok(Asset {
+						id: AssetId(SelfReserve::get()),
+						fun: Fungible(1u128),
+					})
+				}
+
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
                     let origin = Location::parent();
-                    let assets: Assets = (Concrete(Location::parent()), 1_000u128).into();
+                    let assets: Assets = (Location::parent(), 1_000u128).into();
                     let ticket = Location { parents: 0, interior: Here };
                     Ok((origin, ticket, assets))
                 }
@@ -2022,6 +2029,14 @@ impl_runtime_apis! {
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
+                type DeliveryHelper = ();
+                fn get_asset() -> Asset {
+					Asset {
+						id: AssetId(SelfReserve::get()),
+						fun: Fungible(ExistentialDeposit::get()),
+					}
+				}
+
                 fn reachable_dest() -> Option<Location> {
                     Some(Parent.into())
                 }
@@ -2047,7 +2062,7 @@ impl_runtime_apis! {
                     Some((
                         Asset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(SelfReserve::get())
+                            id: AssetId(SelfReserve::get())
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
                     ))

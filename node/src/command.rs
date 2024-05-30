@@ -22,6 +22,7 @@ use {
     },
     cumulus_client_cli::extract_genesis_wasm,
     cumulus_primitives_core::ParaId,
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
@@ -364,7 +365,7 @@ pub fn run() -> Result<()> {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
                         runner.sync_run(|config| {
-                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(
+                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ReclaimHostFunctions>(Some(
                                 config.chain_spec,
                             ))
                         })

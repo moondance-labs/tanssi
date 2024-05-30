@@ -22,6 +22,7 @@ use {
     },
     container_chain_template_simple_runtime::Block,
     cumulus_primitives_core::ParaId,
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     futures::stream::StreamExt,
@@ -231,7 +232,7 @@ pub fn run() -> Result<()> {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
                         runner.sync_run(|config| {
-                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(
+                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ReclaimHostFunctions>(Some(
                                 config.chain_spec,
                             ))
                         })

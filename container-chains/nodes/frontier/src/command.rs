@@ -21,6 +21,7 @@ use {
         service::{self, frontier_database_dir, NodeConfig},
     },
     container_chain_template_frontier_runtime::Block,
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
@@ -247,7 +248,7 @@ pub fn run() -> Result<()> {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
                         runner.sync_run(|config| {
-                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(
+                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ReclaimHostFunctions>(Some(
                                 config.chain_spec,
                             ))
                         })

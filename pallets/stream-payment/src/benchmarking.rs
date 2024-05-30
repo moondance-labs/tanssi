@@ -19,7 +19,7 @@ use {
         Assets, Call, ChangeKind, Config, DepositChange, Event, Pallet, Party, StreamConfig,
         Streams, TimeProvider,
     },
-    frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
+    frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{assert_ok, dispatch::RawOrigin},
     frame_system::EventRecord,
 };
