@@ -33,7 +33,9 @@ use {
     dancebox_runtime::{DataPreservers, Registrar, ServicesPayment, XcmCoreBuyer},
     frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
-    polkadot_runtime_parachains::{configuration, assigner_on_demand as parachains_assigner_on_demand},
+    polkadot_runtime_parachains::{
+        assigner_on_demand as parachains_assigner_on_demand, configuration,
+    },
     sp_runtime::AccountId32,
     staging_xcm::{
         latest::{MaybeErrorCode, Response},
