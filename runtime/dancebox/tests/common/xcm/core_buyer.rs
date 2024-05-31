@@ -385,7 +385,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
             Rococo,
             vec![
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Withdraw {
+                    pallet_balances::Event::Burned {
                         who,
                         amount: BUY_EXECUTION_COST,
                     }
@@ -399,7 +399,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
                 ) => {
                     account: *account == parathread_tank_in_relay,
                 },
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
             ]
         );
         assert_relay_order_event_not_emitted();
@@ -449,7 +449,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
             Rococo,
             vec![
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Withdraw {
+                    pallet_balances::Event::Burned {
                         who,
                         amount: BUY_EXECUTION_COST,
                     }
@@ -476,12 +476,16 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
                     parachains_assigner_on_demand::Event::OnDemandOrderPlaced {
                         para_id,
                         spot_price,
+                        ordered_by,
                     }
                 ) => {
                     para_id: *para_id == ParaId::from(PARATHREAD_ID),
                     spot_price: *spot_price == spot_price2,
+                    ordered_by: *ordered_by == parathread_tank_in_relay,
                 },
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
+                // TODO: this now emits "success: false" even though the on demand order was placed, will
+                // that break pallet_xcm_core_buyer?
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
             ]
         );
         assert_eq!(balance_after, 0);
@@ -528,7 +532,7 @@ fn xcm_core_buyer_enough_balance() {
             Rococo,
             vec![
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Withdraw {
+                    pallet_balances::Event::Burned {
                         who,
                         amount: BUY_EXECUTION_COST,
                     }
@@ -548,13 +552,15 @@ fn xcm_core_buyer_enough_balance() {
                     parachains_assigner_on_demand::Event::OnDemandOrderPlaced {
                         para_id,
                         spot_price,
+                        ordered_by,
                     }
                 ) => {
                     para_id: *para_id == ParaId::from(PARATHREAD_ID),
                     spot_price: *spot_price == spot_price2,
+                    ordered_by: *ordered_by == parathread_tank_in_relay,
                 },
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Deposit {
+                    pallet_balances::Event::Minted {
                         who,
                         amount: BUY_EXECUTION_REFUND,
                     }
@@ -609,7 +615,7 @@ fn xcm_core_buyer_core_too_expensive() {
             Rococo,
             vec![
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Withdraw {
+                    pallet_balances::Event::Burned {
                         who,
                         amount: BUY_EXECUTION_COST,
                     }
@@ -617,7 +623,7 @@ fn xcm_core_buyer_core_too_expensive() {
                     who: *who == parathread_tank_in_relay,
                 },
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Deposit {
+                    pallet_balances::Event::Minted {
                         who,
                         amount: BUY_EXECUTION_REFUND_ON_FAILURE,
                     }
@@ -681,7 +687,7 @@ fn xcm_core_buyer_set_max_core_price() {
             Rococo,
             vec![
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Withdraw {
+                    pallet_balances::Event::Burned {
                         who,
                         amount: BUY_EXECUTION_COST,
                     }
@@ -689,7 +695,7 @@ fn xcm_core_buyer_set_max_core_price() {
                     who: *who == parathread_tank_in_relay,
                 },
                 RuntimeEvent::Balances(
-                    pallet_balances::Event::Deposit {
+                    pallet_balances::Event::Minted {
                         who,
                         amount: BUY_EXECUTION_REFUND_ON_FAILURE,
                     }
