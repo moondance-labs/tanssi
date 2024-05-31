@@ -22,10 +22,6 @@
 use {
     frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess, weights::Weight},
     pallet_migrations::{GetMigrations, Migration},
-    runtime_common::migrations::{
-        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
-        XcmpQueueMigrationV4,
-    },
     sp_core::{Get, H160},
     sp_std::{marker::PhantomData, prelude::*},
 };
