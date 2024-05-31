@@ -30,9 +30,11 @@ import type {
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
     SpRuntimeMultiSignature,
+    SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
 
@@ -1436,6 +1438,18 @@ declare module "@polkadot/api-base/types/submittable" {
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            /**
+             * Deregister a parachain that no longer exists in the relay chain. The origin of this extrinsic will be rewarded
+             * with the parachain deposit.
+             */
+            deregisterWithRelayProof: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    relayProofBlockNumber: u32 | AnyNumber | Uint8Array,
+                    relayStorageProof: SpTrieStorageProof | { trieNodes?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32, SpTrieStorageProof]
+            >;
             /** Mark container-chain valid for collating */
             markValidForCollating: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -1473,6 +1487,41 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+            >;
+            /** Register parachain or parathread */
+            registerWithRelayProof: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    parathreadParams:
+                        | Option<TpTraitsParathreadParams>
+                        | null
+                        | Uint8Array
+                        | TpTraitsParathreadParams
+                        | { slotFrequency?: any }
+                        | string,
+                    relayProofBlockNumber: u32 | AnyNumber | Uint8Array,
+                    relayStorageProof: SpTrieStorageProof | { trieNodes?: any } | string | Uint8Array,
+                    managerSignature:
+                        | SpRuntimeMultiSignature
+                        | { Ed25519: any }
+                        | { Sr25519: any }
+                        | { Ecdsa: any }
+                        | string
+                        | Uint8Array,
+                    genesisData:
+                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [
+                    u32,
+                    Option<TpTraitsParathreadParams>,
+                    u32,
+                    SpTrieStorageProof,
+                    SpRuntimeMultiSignature,
+                    TpContainerChainGenesisDataContainerChainGenesisData
+                ]
             >;
             setParaManager: AugmentedSubmittable<
                 (
