@@ -60,35 +60,40 @@ describeSuite({
             id: "C03",
             title: "Config registered paras should be filled if more than min collators in orchestrator",
             test: async function () {
-                const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockApi = await api.at("0x3f11946482210b71bf9a2689ffa8704b2d2b030503f22a1d4b3158a899423a53");
+                const currentBlock = (await api.rpc.chain.getBlock("0x3f11946482210b71bf9a2689ffa8704b2d2b030503f22a1d4b3158a899423a53")).block.header.number.toNumber();
 
                 const blockToCheck = Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
-                const config = await api.query.configuration.activeConfig();
+                const config = await blockApi.query.configuration.activeConfig();
                 // get current session
-                const sessionIndex = (await api.query.session.currentIndex()).toNumber();
+                const sessionIndex = (await blockApi.query.session.currentIndex()).toNumber();
                 // get pending authorities
                 // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
                 const authorities = (
-                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
+                    await blockApi.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
                 ).toJSON();
 
-                const currentAuthorities = await api.query.session.validators();
+                const currentAuthorities = await blockApi.query.session.validators();
 
                 const currentCollatorNumber = Math.min(currentAuthorities.length, config.maxCollators);
+
+                console.log(currentCollatorNumber, config.minOrchestratorCollators.toNumber(), config.collatorsPerContainer.toNumber());
 
                 const maxParas = Math.trunc(
                     (currentCollatorNumber - config.minOrchestratorCollators) / config.collatorsPerContainer
                 );
+
+                console.log("Max paras", maxParas);
 
                 // If we have container chain collators, is because the collator number is higher
                 if (maxParas > 0) {
                     let containersToCompareAgainst: Vec<u32>;
                     // If pending para ids for the session are empty we compare with registered para id, otherwise
                     // we compare with pending para ids.
-                    const liveContainers = await api.query.registrar.registeredParaIds();
-                    const pendingContainers = await api.query.registrar.pendingParaIds();
+                    const liveContainers = await blockApi.query.registrar.registeredParaIds();
+                    const pendingContainers = await blockApi.query.registrar.pendingParaIds();
 
                     if (pendingContainers.length == 0) {
                         containersToCompareAgainst = liveContainers;
@@ -100,6 +105,8 @@ describeSuite({
                             containersToCompareAgainst = liveContainers;
                         }
                     }
+
+                    console.log(containersToCompareAgainst.toJSON());
 
                     let numWithNoCredits = 0;
 
@@ -129,6 +136,7 @@ describeSuite({
                                 );
                             }
                         } else {
+                            console.log(container.toString(), " has no credits");
                             numWithNoCredits += 1;
                         }
                     }
@@ -139,6 +147,9 @@ describeSuite({
                         containersToCompareAgainst.length - numWithNoCredits,
                         maxParas
                     );
+
+                    console.log(Object.keys(authorities["containerChains"]));
+
                     expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
                         expectedNumberOfChainsAssigned
                     );
