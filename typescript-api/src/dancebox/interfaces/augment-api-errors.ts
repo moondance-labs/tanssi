@@ -557,13 +557,19 @@ declare module "@polkadot/api-base/types/errors" {
             CollatorNotAssigned: AugmentedError<ApiType>;
             ErrorDeliveringXCM: AugmentedError<ApiType>;
             ErrorValidatingXCM: AugmentedError<ApiType>;
+            /** Collator signature nonce is incorrect */
+            IncorrectCollatorSignatureNonce: AugmentedError<ApiType>;
             /** There are too many in-flight orders, buying cores will not work until some of those orders finish. */
             InFlightLimitReached: AugmentedError<ApiType>;
+            /** Collator signature is invalid */
+            InvalidCollatorSignature: AugmentedError<ApiType>;
             InvalidProof: AugmentedError<ApiType>;
             /** Inverting location from destination point of view failed */
             LocationInversionFailed: AugmentedError<ApiType>;
             /** There are no collators assigned to this parathread, so no point in buying a core */
             NoAssignedCollators: AugmentedError<ApiType>;
+            /** Block production is not allowed for current slot */
+            NotAllowedToProduceBlockRightNow: AugmentedError<ApiType>;
             /** The para id is not a parathread */
             NotAParathread: AugmentedError<ApiType>;
             /** An order for this para id already exists */

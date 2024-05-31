@@ -14,11 +14,401 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use nimbus_primitives::NimbusId;
+use sp_runtime::RuntimeAppPublic;
+use tp_traits::ContainerChainBlockInfo;
 use {
     crate::{mock::*, *},
     frame_support::{assert_noop, assert_ok, assert_storage_noop},
     sp_runtime::traits::BadOrigin,
 };
+
+#[test]
+fn core_buying_nonce_behaviour_is_correct() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+
+            let para_id = 3333.into();
+            let another_para_id = 4444.into();
+
+            {
+                // Add another chain apart from default
+                let mut mocks = MockData::get();
+                let another_chain_nimbus_id = NimbusId::generate_pair(None);
+                mocks.container_chain_collators.insert(
+                    another_para_id,
+                    vec![(AccountId::from(BOB), another_chain_nimbus_id)],
+                );
+                MockData::mutate(|stored_mock_data| {
+                    stored_mock_data.container_chain_collators = mocks.container_chain_collators;
+                    stored_mock_data.parathread_params.insert(
+                        another_para_id,
+                        ParathreadParams {
+                            slot_frequency: Default::default(),
+                        },
+                    );
+                });
+            }
+
+            let mocks = MockData::get();
+            let collator_data = mocks
+                .container_chain_collators
+                .get(&para_id)
+                .expect("Collator data for test paraid must exists");
+            assert!(
+                !collator_data.is_empty(),
+                "collator data must contain at least one element"
+            );
+            let collator = collator_data[0].clone();
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1)
+                .expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            // Initial nonce should be zero
+            assert_eq!(CollatorSignatureNonce::<Test>::get(para_id), 0);
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                TransactionSource::External,
+                &call
+            ));
+            assert_ok!(XcmCoreBuyer::buy_core(
+                RuntimeOrigin::none(),
+                para_id,
+                BOB,
+                proof
+            ));
+
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            // Now, it should be 1
+            assert_eq!(CollatorSignatureNonce::<Test>::get(para_id), 1);
+
+            // We should be able to purchase core for another para id with 0 nonce
+            let collator_data = mocks
+                .container_chain_collators
+                .get(&another_para_id)
+                .expect("Collator data for test paraid must exists");
+            let another_collator = collator_data[0].clone();
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, another_collator.1)
+                .expect("creating collator proof must succeed");
+            let call = Call::buy_core {
+                para_id: another_para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            // Initial nonce should be zero
+            assert_eq!(CollatorSignatureNonce::<Test>::get(another_para_id), 0);
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                TransactionSource::External,
+                &call
+            ));
+            assert_ok!(XcmCoreBuyer::buy_core(
+                RuntimeOrigin::none(),
+                another_para_id,
+                BOB,
+                proof
+            ));
+
+            // Now, it should be 1
+            assert_eq!(CollatorSignatureNonce::<Test>::get(another_para_id), 1);
+        })
+}
+
+#[test]
+fn core_buying_proof_is_validated_correctly() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+
+            let para_id = 3333.into();
+            let another_para_id = 4444.into();
+
+            {
+                // Add another chain apart from default
+                let mut mocks = MockData::get();
+                let another_chain_nimbus_id = NimbusId::generate_pair(None);
+                mocks.container_chain_collators.insert(
+                    another_para_id,
+                    vec![(AccountId::from(BOB), another_chain_nimbus_id)],
+                );
+                MockData::mutate(|stored_mock_data| {
+                    stored_mock_data.container_chain_collators = mocks.container_chain_collators;
+                    stored_mock_data.parathread_params.insert(
+                        another_para_id,
+                        ParathreadParams {
+                            slot_frequency: Default::default(),
+                        },
+                    );
+                });
+            }
+
+            let mocks = MockData::get();
+            let collator_data = mocks
+                .container_chain_collators
+                .get(&para_id)
+                .expect("Collator data for test paraid must exists");
+            assert!(
+                collator_data.len() >= 1,
+                "collator data must contain at least one element"
+            );
+            let collator = collator_data[0].clone();
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                TransactionSource::External,
+                &call
+            ));
+
+            // If we change the public key in the proof, it should not work
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            proof.public_key = NimbusId::generate_pair(None);
+
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            // If we change the signature, it should not work
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            let incorrect_signature = collator
+                .1
+                .sign(&vec![1, 2, 3])
+                .expect("signature creation must succeed.");
+            proof.signature = incorrect_signature;
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            // If we change the nonce, it should not work
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            proof.nonce = 12;
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            // If we change para id, it should not work
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            let call = Call::buy_core {
+                para_id: another_para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            let call = Call::buy_core {
+                para_id: another_para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone())
+                .expect("creating collator proof must succeed");
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+            assert_noop!(
+                <XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(
+                    TransactionSource::External,
+                    &call
+                ),
+                TransactionValidityError::Invalid(InvalidTransaction::Call)
+            );
+        })
+}
+
+#[test]
+fn slot_frequency_is_taken_into_account() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            run_to_block(1);
+
+            let para_id = 3333.into();
+            let another_para_id = 4444.into();
+
+            {
+                // Add another chain apart from default
+                let mut mocks = MockData::get();
+                let another_chain_nimbus_id = NimbusId::generate_pair(None);
+                mocks.container_chain_collators.insert(another_para_id, vec![(AccountId::from(BOB), another_chain_nimbus_id)]);
+                MockData::mutate(|stored_mock_data| {
+                    stored_mock_data.container_chain_collators = mocks.container_chain_collators;
+                    stored_mock_data.parathread_params.insert(another_para_id, ParathreadParams { slot_frequency: SlotFrequency { min: 10, max: 10 } });
+                });
+            }
+
+            // SlotFrequency with min: 1 slot works
+            let mocks = MockData::get();
+            let collator_data = mocks.container_chain_collators.get(&para_id).expect("Collator data for test paraid must exists");
+            assert!(!collator_data.is_empty(), "collator data must contain at least one element");
+            let collator = collator_data[0].clone();
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone()).expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, BOB, proof));
+
+
+            // Clear data to able to attempt to buy core again
+            let system_events = events();
+            assert_eq!(system_events.len(), 1);
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+            let query_id = match system_events[0] {
+                Event::BuyCoreXcmSent { transaction_status_query_id, .. } => transaction_status_query_id,
+                _ => panic!("We checked for the event variant above; qed")
+            };
+            assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Error(BoundedVec::new()))));
+
+            // We should be able to buy slot once again for min: 1 Slot frequency
+            let proof = BuyCoreCollatorProof::new(1, para_id, collator.1.clone()).expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, BOB, proof));
+
+
+            // For a para id with min: 10 slot frequency, only possible to buy after 10 - 2(advance slot allowed to buy)
+
+            let collator_data = mocks.container_chain_collators.get(&another_para_id).expect("Collator data for test paraid must exists");
+            assert!(!collator_data.is_empty(), "collator data must contain at least one element");
+            let collator = collator_data[0].clone();
+
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone()).expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id: another_para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof));
+
+            let mut system_events = events();
+            system_events.reverse(); // Hack to get the newest query id
+            matches!(system_events[0], Event::BuyCoreXcmSent { para_id: event_para_id, .. } if event_para_id == para_id);
+            let query_id = match system_events[0] {
+                Event::BuyCoreXcmSent { transaction_status_query_id, .. } => transaction_status_query_id,
+                _ => panic!("We checked for the event variant above; qed")
+            };
+            assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Success)));
+            Pallet::<Test>::on_container_author_noted(&1u64, 5, another_para_id);
+
+            // Add latest author info entry to indicate block was produced
+            MockData::mutate(|stored_mock_data| {
+                stored_mock_data.latest_author_info.insert(another_para_id, ContainerChainBlockInfo {
+                    block_number: 0,
+                    author: BOB,
+                    latest_slot_number: Default::default(),
+                });
+            });
+
+            let proof = BuyCoreCollatorProof::new(1, another_para_id, collator.1.clone()).expect("creating collator proof must succeed");
+
+            let call = Call::buy_core {
+                para_id: another_para_id,
+                collator_account_id: collator.0,
+                proof: proof.clone(),
+            };
+
+            assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
+            // We are not able to buy due to slot frequency being min: 10-2 = 8
+            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
+
+            // We are still one slot short
+            run_to_block(7);
+            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
+
+            // We should be able to produce block at slot: 8
+            run_to_block(8);
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof));
+        })
+}
 
 #[test]
 fn root_origin_can_force_buy_xcm() {
@@ -439,7 +829,8 @@ fn cannot_force_buy_invalid_para_id() {
 
             MockData::mutate(|m| {
                 // Mock para_id 2000 as a container chain with collators, but not a parathread
-                m.container_chain_collators.insert(2000.into(), vec![ALICE]);
+                m.container_chain_collators
+                    .insert(2000.into(), vec![(ALICE, NimbusId::generate_pair(None))]);
             });
 
             assert_noop!(
@@ -450,7 +841,7 @@ fn cannot_force_buy_invalid_para_id() {
 }
 
 #[test]
-fn cannot_force_buy_para_id_with_no_collators() {
+fn able_to_force_buy_para_id_with_no_collators() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
@@ -461,10 +852,7 @@ fn cannot_force_buy_para_id_with_no_collators() {
                 m.container_chain_collators = Default::default();
             });
 
-            assert_noop!(
-                XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id),
-                Error::<Test>::NoAssignedCollators
-            );
+            assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id));
         });
 }
 

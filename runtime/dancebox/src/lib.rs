@@ -33,6 +33,8 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+use pallet_xcm_core_buyer::BuyingError;
+use tp_traits::SlotFrequency;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -2258,19 +2260,22 @@ impl_runtime_apis! {
     }
 
     impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
-        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
-        /// the next block.
+        /// Returns slot frequency for particular para thread. Slot frequency specifies amount of slot
+        /// need to be passed between two parathread blocks. It is expressed as `(min, max)` pair where `min`
+        /// indicates amount of slot must pass before we produce another block and `max` indicates amount of
+        /// blocks before this parathread must produce the block.
+        ///
+        /// Simply put, parathread must produce a block after `min`  but before `(min+max)` slots.
         ///
         /// # Returns
         ///
-        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `Some(slot_frequency)`.
         /// * `None` if the `para_id` is not a parathread.
-        fn min_slot_freq(para_id: ParaId) -> Option<Slot> {
+        fn parathread_slot_frequency(para_id: ParaId) -> Option<SlotFrequency> {
             Registrar::parathread_params(para_id).map(|params| {
-                Slot::from(u64::from(params.slot_frequency.min))
+                params.slot_frequency
             })
         }
-
     }
 
     impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
@@ -2400,6 +2405,12 @@ impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+    }
+
+    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
+        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id)
         }
     }
 }

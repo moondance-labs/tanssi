@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::{AuthorNoting, AuthorityMapping, Session};
+use nimbus_primitives::NimbusId;
+use pallet_session::ShouldEndSession;
+use pallet_xcm_core_buyer::CheckCollatorValidity;
+#[cfg(feature = "runtime-benchmarks")]
+use sp_std::{collections::btree_map::BTreeMap, vec};
+#[cfg(feature = "runtime-benchmarks")]
+use tp_traits::GetContainerChainAuthor;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -25,7 +33,6 @@ use {
     crate::weights,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
-        pallet_prelude::Get,
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
@@ -33,8 +40,8 @@ use {
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadCollators, GetParathreadMaxCorePrice, GetParathreadParams,
-        GetPurchaseCoreCall, ParaIdIntoAccountTruncating, XCMNotifier,
+        GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
+        ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     parity_scale_codec::{Decode, Encode},
@@ -507,13 +514,12 @@ impl pallet_xcm_core_buyer::Config for Runtime {
 
     type XcmSender = XcmRouter;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
-    type GetBlockNumber = GetBlockNumber;
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type GetParathreadMaxCorePrice = GetMaxCorePriceFromServicesPayment;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChain = RelayChain;
     type GetParathreadParams = GetParathreadParamsImpl;
-    type GetAssignedCollators = GetAssignedCollatorsImpl;
+    type CheckCollatorValidity = CheckCollatorValidityImpl;
     type UnsignedPriority = ParasUnsignedPriority;
     type PendingBlocksTtl = PendingBlockTtl;
     type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
@@ -522,15 +528,11 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
     type XCMNotifier = XCMNotifierImpl;
+    type LatestAuthorInfoFetcher = AuthorNoting;
+    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type CollatorPublicKey = NimbusId;
+
     type WeightInfo = weights::pallet_xcm_core_buyer::SubstrateWeight<Runtime>;
-}
-
-pub struct GetBlockNumber;
-
-impl Get<u32> for GetBlockNumber {
-    fn get() -> u32 {
-        System::block_number()
-    }
 }
 
 pub struct GetParathreadParamsImpl;
@@ -550,23 +552,71 @@ impl GetParathreadParams for GetParathreadParamsImpl {
     }
 }
 
-pub struct GetAssignedCollatorsImpl;
+pub struct CheckCollatorValidityImpl;
 
-impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
-    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId> {
-        // We do not need to check if the para_id is a valid parathread,
-        // because that is already being checked by `GetParathreadParams`.
-        CollatorAssignment::collator_container_chain()
+impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
+    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) -> bool {
+        // Check whether we need to fetch the next authorities or current ones
+        let parent_number = System::block_number();
+        let should_end_session =
+            <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
+                parent_number + 1,
+            );
+
+        let session_index = if should_end_session {
+            Session::current_index() + 1
+        } else {
+            Session::current_index()
+        };
+
+        let possible_autority_id_mapping = AuthorityMapping::authority_id_mapping(session_index);
+        let authority_id_mapping = if let Some(authority_id_mapping) = possible_autority_id_mapping
+        {
+            authority_id_mapping
+        } else {
+            return false;
+        };
+
+        if !authority_id_mapping
+            .get(&public_key)
+            .is_some_and(|corresponding_account_id| *corresponding_account_id == account_id)
+        {
+            return false;
+        }
+
+        let account_ids_for_para_id = CollatorAssignment::collator_container_chain()
             .container_chains
             .get(&para_id)
             .cloned()
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        if !account_ids_for_para_id.contains(&account_id) {
+            return false;
+        }
+
+        true
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
-        use tp_traits::GetContainerChainAuthor;
-        CollatorAssignment::set_authors_for_para_id(para_id, collators);
+    fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) {
+        let parent_number = System::block_number();
+        let should_end_session =
+            <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
+                parent_number + 1,
+            );
+
+        let session_index = if should_end_session {
+            Session::current_index() + 1
+        } else {
+            Session::current_index()
+        };
+
+        pallet_authority_mapping::AuthorityIdMapping::<Runtime>::insert(
+            session_index,
+            BTreeMap::from_iter([(public_key, account_id.clone())]),
+        );
+
+        CollatorAssignment::set_authors_for_para_id(para_id, vec![account_id]);
     }
 }
 

@@ -19,14 +19,13 @@
 //! Benchmarking
 use {
     crate::{
-        Call, Config, GetParathreadCollators, GetParathreadParams, InFlightOrders, Pallet,
-        RelayXcmWeightConfig, RelayXcmWeightConfigInner,
+        Call, Config, GetParathreadParams, InFlightOrders, Pallet, RelayXcmWeightConfig,
+        RelayXcmWeightConfigInner,
     },
     core::marker::PhantomData,
-    frame_benchmarking::{account, v2::*},
+    frame_benchmarking::v2::*,
     frame_support::{assert_ok, pallet_prelude::Weight, BoundedVec},
     frame_system::RawOrigin,
-    sp_std::vec,
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
@@ -35,6 +34,8 @@ pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000,
 
 #[benchmarks(where <T as frame_system::Config>::RuntimeOrigin: From<pallet_xcm::Origin>)]
 mod benchmarks {
+    use crate::{BuyCoreCollatorProof, CheckCollatorValidity};
+    use sp_runtime::RuntimeAppPublic;
     use {
         super::*,
         crate::{InFlightCoreBuyingOrder, PendingBlocks, QueryIdToParaId},
@@ -44,6 +45,62 @@ mod benchmarks {
             v4::{Location, Response},
         },
     };
+
+    #[benchmark]
+    fn buy_core() {
+        let caller: T::AccountId = whitelisted_caller();
+        assert_ok!(Pallet::<T>::set_relay_xcm_weight_config(
+            RawOrigin::Root.into(),
+            Some(RelayXcmWeightConfigInner {
+                buy_execution_cost: BUY_EXECUTION_COST,
+                weight_at_most: PLACE_ORDER_WEIGHT_AT_MOST,
+                _phantom: PhantomData,
+            }),
+        ));
+
+        let x = 1000u32;
+
+        let para_id = ParaId::from(x + 1);
+        for i in 0..=x {
+            InFlightOrders::<T>::set(
+                ParaId::from(i),
+                Some(InFlightCoreBuyingOrder {
+                    para_id: ParaId::from(i),
+                    query_id: QueryId::from(i),
+                    ttl: <frame_system::Pallet<T>>::block_number()
+                        + BlockNumberFor::<T>::from(100u32),
+                }),
+            );
+
+            QueryIdToParaId::<T>::set(QueryId::from(i), Some(ParaId::from(i)));
+        }
+
+        assert!(InFlightOrders::<T>::get(para_id).is_none());
+
+        // For the extrinsic to succeed, we need to ensure that:
+        // * the para_id is a parathread
+        // * it has assigned collators
+        T::GetParathreadParams::set_parathread_params(
+            para_id,
+            Some(ParathreadParams {
+                slot_frequency: SlotFrequency { min: 1, max: 1 },
+            }),
+        );
+
+        let nimbus_key = T::CollatorPublicKey::generate_pair(None);
+        T::CheckCollatorValidity::set_valid_collator(para_id, caller.clone(), nimbus_key.clone());
+
+        #[extrinsic_call]
+        Pallet::<T>::buy_core(
+            RawOrigin::None,
+            para_id,
+            caller,
+            BuyCoreCollatorProof::new(0, para_id, nimbus_key)
+                .expect("Collator proof generation must succeed"),
+        );
+
+        assert!(InFlightOrders::<T>::get(para_id).is_some());
+    }
 
     #[benchmark]
     fn force_buy_core() {
@@ -84,8 +141,6 @@ mod benchmarks {
                 slot_frequency: SlotFrequency { min: 10, max: 10 },
             }),
         );
-        let author: T::AccountId = account("account id", 0u32, 0u32);
-        T::GetAssignedCollators::set_parathread_collators(para_id, vec![author]);
 
         #[extrinsic_call]
         Pallet::<T>::force_buy_core(RawOrigin::Root, para_id);
