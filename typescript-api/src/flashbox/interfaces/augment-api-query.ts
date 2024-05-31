@@ -24,7 +24,6 @@ import type {
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
-    PalletAuthorNotingContainerChainBlockInfo,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesIdAmountRuntimeFreezeReason,
@@ -54,6 +53,7 @@ import type {
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
 } from "@polkadot/types/lookup";
 import type { Observable } from "@polkadot/types/types";
@@ -110,7 +110,7 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, []>;
             latestAuthor: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletAuthorNotingContainerChainBlockInfo>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<TpTraitsContainerChainBlockInfo>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

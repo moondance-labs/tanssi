@@ -5,8 +5,8 @@ members = [
 	"container-chains/runtime-templates/*",
 	"node",
 	"pallets/*",
-	"pallets/collator-assignment/rpc/runtime-api",
-	"pallets/registrar/rpc/runtime-api",
+	"pallets/collator-assignment/runtime-api",
+	"pallets/registrar/runtime-api",
 	"primitives/*",
 	"runtime/dancebox",
 	"runtime/flashbox",
@@ -47,11 +47,11 @@ unsafe-code = { level = "deny", priority = 1 }
 
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
-pallet-author-noting-runtime-api = { path = "pallets/author-noting/rpc/runtime-api", default-features = false }
+pallet-author-noting-runtime-api = { path = "pallets/author-noting/runtime-api", default-features = false }
 pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }
 pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
-pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
+pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-data-preservers = { path = "pallets/data-preservers", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
@@ -59,12 +59,13 @@ pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
-pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
+pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
-pallet-services-payment-runtime-api = { path = "pallets/services-payment/rpc/runtime-api", default-features = false }
+pallet-services-payment-runtime-api = { path = "pallets/services-payment/runtime-api", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
-pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/rpc/runtime-api", default-features = false }
+pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/runtime-api", default-features = false }
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
+pallet-xcm-core-buyer-runtime-api = { path = "pallets/xcm-core-buyer/runtime-api", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/runtime-templates/frontier", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/runtime-templates/simple", default-features = false }
@@ -83,6 +84,7 @@ tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-d
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
 
 # Dancekit (wasm)
 ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }

@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_container_chain_genesis_data::ContainerChainGenesisData;
-
 use {
     crate::{self as pallet_registrar, RegistrarHooks},
     frame_support::{
@@ -23,13 +21,14 @@ use {
         weights::Weight,
     },
     parity_scale_codec::{Decode, Encode},
-    sp_core::{parameter_types, ConstU32, H256},
+    sp_core::{ed25519, parameter_types, ConstU32, Pair, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
     std::collections::BTreeMap,
-    tp_traits::ParaId,
+    tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_traits::{ParaId, RelayStorageRootProvider},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -107,6 +106,29 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     }
 }
 
+pub struct MockRelayStorageRootProvider;
+
+impl RelayStorageRootProvider for MockRelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+        Mock::mock()
+            .relay_storage_roots
+            .get(&relay_block_number)
+            .copied()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
+        Mock::mutate(|m| {
+            if let Some(storage_root) = storage_root {
+                m.relay_storage_roots
+                    .insert(relay_block_number, storage_root);
+            } else {
+                m.relay_storage_roots.remove(&relay_block_number);
+            }
+        })
+    }
+}
+
 parameter_types! {
     pub const DepositAmount: Balance = 100;
     pub const MaxLengthTokenSymbol: u32 = 255;
@@ -114,9 +136,12 @@ parameter_types! {
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
+    type MarkValidForCollatingOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type RegisterWithRelayProofOrigin = frame_system::EnsureSigned<u64>;
+    type RelayStorageRootProvider = MockRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -206,6 +231,7 @@ impl mock_data::Config for Test {}
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub called_hooks: Vec<HookCall>,
+    pub relay_storage_roots: BTreeMap<u32, H256>,
 }
 
 impl Drop for Mocks {
@@ -251,7 +277,8 @@ impl Mocks {
     }
 }
 
-const ALICE: u64 = 1;
+pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -260,7 +287,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(ALICE, 1_000)],
+        balances: vec![(ALICE, 1_000), (BOB, 1_000)],
     }
     .assimilate_storage(&mut t)
     .unwrap();
@@ -312,4 +339,19 @@ pub fn run_to_block(n: u64) {
             ParaRegistrar::initializer_on_new_session(&session_index);
         }
     }
+}
+
+pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {
+    let seed: u128 = 12345678901234567890123456789012;
+    let mut pairs = Vec::new();
+    for i in 0..num {
+        pairs.push(ed25519::Pair::from_seed(
+            (seed + u128::from(i))
+                .to_string()
+                .as_bytes()
+                .try_into()
+                .unwrap(),
+        ))
+    }
+    pairs
 }

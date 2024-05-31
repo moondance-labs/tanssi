@@ -410,6 +410,10 @@ declare module "@polkadot/api-base/types/errors" {
         registrar: {
             /** Attempted to register a ParaId with a genesis data size greater than the limit */
             GenesisDataTooBig: AugmentedError<ApiType>;
+            /** The provided signature from the parachain manager in the relay is not valid */
+            InvalidRelayManagerSignature: AugmentedError<ApiType>;
+            /** The provided relay storage proof is not valid */
+            InvalidRelayStorageProof: AugmentedError<ApiType>;
             /** Tried to change parathread params for a para id that is not a registered parathread */
             NotAParathread: AugmentedError<ApiType>;
             /** Attempted to execute an extrinsic meant only for the para creator */
@@ -430,6 +434,10 @@ declare module "@polkadot/api-base/types/errors" {
             ParaIdNotPaused: AugmentedError<ApiType>;
             /** Attempted to deregister a ParaId that is not registered */
             ParaIdNotRegistered: AugmentedError<ApiType>;
+            /** Tried to deregister a parachain that was not deregistered from the relay chain */
+            ParaStillExistsInRelay: AugmentedError<ApiType>;
+            /** The relay storage root for the corresponding block number could not be retrieved */
+            RelayStorageRootNotFound: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
@@ -557,13 +565,19 @@ declare module "@polkadot/api-base/types/errors" {
             CollatorNotAssigned: AugmentedError<ApiType>;
             ErrorDeliveringXCM: AugmentedError<ApiType>;
             ErrorValidatingXCM: AugmentedError<ApiType>;
+            /** Collator signature nonce is incorrect */
+            IncorrectCollatorSignatureNonce: AugmentedError<ApiType>;
             /** There are too many in-flight orders, buying cores will not work until some of those orders finish. */
             InFlightLimitReached: AugmentedError<ApiType>;
+            /** Collator signature is invalid */
+            InvalidCollatorSignature: AugmentedError<ApiType>;
             InvalidProof: AugmentedError<ApiType>;
             /** Inverting location from destination point of view failed */
             LocationInversionFailed: AugmentedError<ApiType>;
             /** There are no collators assigned to this parathread, so no point in buying a core */
             NoAssignedCollators: AugmentedError<ApiType>;
+            /** Block production is not allowed for current slot */
+            NotAllowedToProduceBlockRightNow: AugmentedError<ApiType>;
             /** The para id is not a parathread */
             NotAParathread: AugmentedError<ApiType>;
             /** An order for this para id already exists */

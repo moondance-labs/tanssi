@@ -1,0 +1,27 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+//! Runtime API for XCM core buyer pallet
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use pallet_xcm_core_buyer::BuyingError;
+
+sp_api::decl_runtime_apis! {
+    pub trait XCMCoreBuyerApi<BlockNumber, ParaId> where ParaId: parity_scale_codec::Codec, BlockNumber: parity_scale_codec::Codec, BuyingError<BlockNumber>: parity_scale_codec::Codec  {
+        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>>;
+    }
+}

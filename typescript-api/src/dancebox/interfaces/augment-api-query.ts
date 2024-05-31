@@ -46,7 +46,6 @@ import type {
     PalletAssetsAssetAccount,
     PalletAssetsAssetDetails,
     PalletAssetsAssetMetadata,
-    PalletAuthorNotingContainerChainBlockInfo,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesIdAmountRuntimeFreezeReason,
@@ -87,6 +86,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Location,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     XcmVersionedAssetId,
     XcmVersionedLocation,
@@ -160,7 +160,7 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, []>;
             latestAuthor: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletAuthorNotingContainerChainBlockInfo>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<TpTraitsContainerChainBlockInfo>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -1297,6 +1297,13 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         xcmCoreBuyer: {
+            /** Collator signature nonce for reply protection */
+            collatorSignatureNonce: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<u64>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Set of parathreads that have already sent an XCM message to buy a core recently. Used to avoid 2 collators
              * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same parathread.

@@ -33,6 +33,8 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+use pallet_xcm_core_buyer::BuyingError;
+use tp_traits::SlotFrequency;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -69,7 +71,7 @@ use {
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
-        EnsureRoot,
+        EnsureRoot, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
@@ -89,7 +91,7 @@ use {
     sp_api::impl_runtime_apis,
     sp_consensus_aura::{Slot, SlotDuration},
     sp_core::{
-        crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug,
+        crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
     },
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -104,7 +106,7 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
     },
 };
 pub use {
@@ -1069,6 +1071,44 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
     }
 }
 
+pub struct PalletRelayStorageRootProvider;
+
+impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(relay_block_number)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
+        pallet_relay_storage_roots::pallet::RelayStorageRootKeys::<Runtime>::mutate(|x| {
+            if storage_root.is_some() {
+                if x.is_full() {
+                    let key = x.remove(0);
+                    pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::remove(key);
+                }
+                let pos = x.iter().position(|x| *x >= relay_block_number);
+                if let Some(pos) = pos {
+                    if x[pos] != relay_block_number {
+                        x.try_insert(pos, relay_block_number).unwrap();
+                    }
+                } else {
+                    // Push at end
+                    x.try_push(relay_block_number).unwrap();
+                }
+            } else {
+                let pos = x.iter().position(|x| *x == relay_block_number);
+                if let Some(pos) = pos {
+                    x.remove(pos);
+                }
+            }
+        });
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::set(
+            relay_block_number,
+            storage_root,
+        );
+    }
+}
+
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
     pub const MaxLengthTokenSymbol: u32 = 255;
@@ -1076,9 +1116,12 @@ parameter_types! {
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type RegisterWithRelayProofOrigin = EnsureSigned<AccountId>;
+    type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -2258,19 +2301,22 @@ impl_runtime_apis! {
     }
 
     impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
-        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
-        /// the next block.
+        /// Returns slot frequency for particular para thread. Slot frequency specifies amount of slot
+        /// need to be passed between two parathread blocks. It is expressed as `(min, max)` pair where `min`
+        /// indicates amount of slot must pass before we produce another block and `max` indicates amount of
+        /// blocks before this parathread must produce the block.
+        ///
+        /// Simply put, parathread must produce a block after `min`  but before `(min+max)` slots.
         ///
         /// # Returns
         ///
-        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `Some(slot_frequency)`.
         /// * `None` if the `para_id` is not a parathread.
-        fn min_slot_freq(para_id: ParaId) -> Option<Slot> {
+        fn parathread_slot_frequency(para_id: ParaId) -> Option<SlotFrequency> {
             Registrar::parathread_params(para_id).map(|params| {
-                Slot::from(u64::from(params.slot_frequency.min))
+                params.slot_frequency
             })
         }
-
     }
 
     impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
@@ -2400,6 +2446,12 @@ impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+    }
+
+    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
+        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id)
         }
     }
 }
