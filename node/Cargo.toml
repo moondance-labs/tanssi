@@ -18,6 +18,7 @@ exit-future = { workspace = true }
 flume = { workspace = true }
 fs2 = { workspace = true }
 futures = { workspace = true }
+hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
@@ -53,6 +54,7 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
+frame-support = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
@@ -125,6 +127,7 @@ runtime-benchmarks = [
 	"flashbox-runtime/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
@@ -134,6 +137,16 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
-try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+try-runtime = [
+	"dancebox-runtime/try-runtime",
+	"flashbox-runtime/try-runtime",
+	"frame-support/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"pallet-configuration/try-runtime",
+	"polkadot-cli/try-runtime",
+	"polkadot-service/try-runtime",
+	"sp-runtime/try-runtime",
+	"try-runtime-cli/try-runtime",
+]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]

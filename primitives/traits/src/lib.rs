@@ -30,6 +30,7 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
         BoundedVec,
     },
+    sp_core::H256,
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
 
@@ -218,6 +219,13 @@ pub trait RemoveParaIdsWithNoCredits {
     /// Make those para ids valid by giving them enough credits, for benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
     fn make_valid_para_ids(para_ids: &[ParaId]);
+}
+
+pub trait RelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>);
 }
 
 /// Information extracted from the latest container chain header
