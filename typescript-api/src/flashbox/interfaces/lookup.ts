@@ -2072,8 +2072,8 @@ export default {
         orchestratorChain: "Vec<AccountId32>",
         containerChains: "BTreeMap<u32, Vec<AccountId32>>",
     },
-    /** Lookup317: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
-    PalletAuthorNotingContainerChainBlockInfo: {
+    /** Lookup317: tp_traits::ContainerChainBlockInfo<sp_core::crypto::AccountId32> */
+    TpTraitsContainerChainBlockInfo: {
         blockNumber: "u32",
         author: "AccountId32",
         latestSlotNumber: "u64",
