@@ -50,10 +50,11 @@ fn create_funded_user<T: Config>(
 #[benchmarks]
 mod benchmarks {
     use super::*;
+    use parity_scale_codec::Encode;
 
-    fn new_genesis_data<T: Get<u32>>(
+    fn new_genesis_data<T: Config>(
         storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> ContainerChainGenesisData<T> {
+    ) -> ContainerChainGenesisData<T::MaxLengthTokenSymbol> {
         ContainerChainGenesisData {
             storage,
             name: Default::default(),
@@ -64,20 +65,60 @@ mod benchmarks {
         }
     }
 
+    /// Creates a `ContainerChainGenesisData` with encoded size very near to `max_encoded_size`, and
+    /// with the provided number of keys.
+    fn max_size_genesis_data<T: Config>(
+        num_keys: u32,
+        max_encoded_size: u32,
+    ) -> ContainerChainGenesisData<T::MaxLengthTokenSymbol> {
+        let mut storage = vec![];
+        // Create one big storage item
+        storage.push((b"code".to_vec(), vec![1; max_encoded_size as usize]).into());
+        // Fill rest of keys with empty values
+        for _i in 1..num_keys {
+            storage.push((b"".to_vec(), b"".to_vec()).into());
+        }
+        // Calculate resulting encoded size
+        let size = new_genesis_data::<T>(storage.clone()).encoded_size();
+        // Should be bigger than max
+        assert!(
+            size >= max_encoded_size as usize,
+            "{:?}",
+            (size, ">=", max_encoded_size)
+        );
+        // Remove size diff from first item in storage vec
+        let size_diff = size - max_encoded_size as usize;
+        let first_value = &mut storage[0].value;
+        assert!(
+            first_value.len() >= size_diff,
+            "{:?}",
+            (first_value.len(), ">=", size_diff)
+        );
+        first_value.truncate(first_value.len() - size_diff);
+
+        let genesis_data = new_genesis_data::<T>(storage);
+
+        // Verify new size matches max exactly
+        let size = genesis_data.encoded_size();
+        // Should be almost exact, but in some cases it is 1 byte smaller because of encoding
+        assert!(
+            size <= max_encoded_size as usize,
+            "{:?}",
+            (size, "<=", max_encoded_size)
+        );
+
+        genesis_data
+    }
+
     // Returns number of para ids in pending verification (registered but not marked as valid)
     fn pending_verification_len<T: Config>() -> usize {
         crate::PendingVerification::<T>::iter_keys().count()
     }
 
     #[benchmark]
-    fn register(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
-        let mut data = vec![];
-        // Number of keys
-        for _i in 1..z {
-            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
-        }
-
-        let storage = new_genesis_data(data);
+    fn register(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(z, x);
 
         for i in 1..y {
             // Twice the deposit just in case
@@ -106,14 +147,9 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn register_with_relay_proof(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
-        let mut data = vec![];
-        // Number of keys
-        for _i in 1..z {
-            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
-        }
-
-        let storage = new_genesis_data(data);
+    fn register_with_relay_proof(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(z, x);
 
         for i in 1..y {
             // Twice the deposit just in case
@@ -167,9 +203,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister_immediate(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
+    fn deregister_immediate() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -197,10 +234,15 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister_scheduled(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
-        let genesis_para_id_len = Pallet::<T>::registered_para_ids().len();
+    fn deregister_scheduled() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
+        let genesis_para_id_len = 0;
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -249,9 +291,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister_with_relay_proof_immediate(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
+    fn deregister_with_relay_proof_immediate() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -292,10 +335,15 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister_with_relay_proof_scheduled(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
-        let genesis_para_id_len = Pallet::<T>::registered_para_ids().len();
+    fn deregister_with_relay_proof_scheduled() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
+        let genesis_para_id_len = 0;
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -356,9 +404,15 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn mark_valid_for_collating(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
-        let storage = new_genesis_data(storage);
+    fn mark_valid_for_collating() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
 
         // Worst case: when RegisteredParaIds and PendingVerification are both full
         // First loop to fill PendingVerification to its maximum
@@ -375,7 +429,7 @@ mod benchmarks {
         }
 
         // Second loop to fill RegisteredParaIds to its maximum
-        for k in 1000..(1000 + y) {
+        for k in 1000..(1000 + y - 1) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
@@ -404,16 +458,31 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn pause_container_chain(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
-        let storage = new_genesis_data(storage);
-
+    fn pause_container_chain() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
         // Worst case: when RegisteredParaIds and Paused are both full
+        // Second loop to fill Paused to its maximum
+        for k in 1000..(1000 + y - 1) {
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                k.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+
         // First loop to fill RegisteredParaIds to its maximum
         for i in 0..y {
             // Twice the deposit just in case
@@ -429,23 +498,8 @@ mod benchmarks {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
-        // Second loop to fill Paused to its maximum
-        for k in 1000..(1000 + y) {
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", k, T::DepositAmount::get());
-            Pallet::<T>::register(
-                RawOrigin::Signed(caller.clone()).into(),
-                k.into(),
-                storage.clone(),
-            )
-            .unwrap();
-            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
-            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
-            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
-        }
-
-        // Check PendingPaused has a length of y
-        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize);
+        // Check PendingPaused has a length of y - 1
+        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize - 1);
         // Check y-1 is not in PendingPaused
         assert!(!Pallet::<T>::pending_paused()[0]
             .1
@@ -468,31 +522,16 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn unpause_container_chain(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
-        let storage = new_genesis_data(storage);
-
+    fn unpause_container_chain() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
         // Worst case: when RegisteredParaIds and Paused are both full
-        // First loop to fill RegisteredParaIds to its maximum
-        for i in 0..y {
-            // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
-            Pallet::<T>::register(
-                RawOrigin::Signed(caller.clone()).into(),
-                i.into(),
-                storage.clone(),
-            )
-            .unwrap();
-            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
-            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
-        }
-
         // Second loop to fill Paused to its maximum
         for k in 1000..(1000 + y) {
             let (caller, _deposit_amount) =
@@ -506,6 +545,21 @@ mod benchmarks {
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+
+        // First loop to fill RegisteredParaIds to its maximum
+        for i in 0..(y - 1) {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
         // Check PendingPaused has a length of y
@@ -532,15 +586,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn register_parathread(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
-        let mut data = vec![];
-        // Number of keys
-        for _i in 1..z {
-            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
-        }
-
+    fn register_parathread(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(z, x);
         let slot_frequency = SlotFrequency::default();
-        let storage = new_genesis_data(data);
 
         for i in 1..y {
             // Twice the deposit just in case
@@ -575,9 +624,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn set_parathread_params(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
-        let storage = new_genesis_data(storage);
+    fn set_parathread_params() {
+        let x = T::MaxGenesisDataSize::get();
+        let y = T::MaxLengthParaIds::get();
+        let storage = max_size_genesis_data::<T>(1, x);
         let slot_frequency = SlotFrequency::default();
 
         // Deregister all the existing chains to avoid conflicts with the new ones
