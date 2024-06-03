@@ -23,7 +23,7 @@ use {
         Pallet, RegistrarHooks,
     },
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::{Currency, EnsureOriginWithArg},
+    frame_support::traits::{Currency, EnsureOrigin, EnsureOriginWithArg},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -147,7 +147,13 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn register_with_relay_proof(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
+    fn register_with_relay_proof(
+        x: Linear<100, 3_000_000>,
+        z: Linear<1, 10>,
+    ) -> Result<(), BenchmarkError> {
+        // This extrinsic is disabled in flashbox runtime, return 0 weight there
+        let _origin = T::RegisterWithRelayProofOrigin::try_successful_origin()
+            .map_err(|_| BenchmarkError::Weightless)?;
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
 
@@ -200,6 +206,8 @@ mod benchmarks {
         // verification code
         assert_eq!(pending_verification_len::<T>(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+
+        Ok(())
     }
 
     #[benchmark]
@@ -291,7 +299,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn deregister_with_relay_proof_immediate() {
+    fn deregister_with_relay_proof_immediate() -> Result<(), BenchmarkError> {
+        // This extrinsic is disabled in flashbox runtime, return 0 weight there
+        let _origin = T::RegisterWithRelayProofOrigin::try_successful_origin()
+            .map_err(|_| BenchmarkError::Weightless)?;
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(1, x);
@@ -332,10 +343,15 @@ mod benchmarks {
         // We should have y-1
         assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+
+        Ok(())
     }
 
     #[benchmark]
-    fn deregister_with_relay_proof_scheduled() {
+    fn deregister_with_relay_proof_scheduled() -> Result<(), BenchmarkError> {
+        // This extrinsic is disabled in flashbox runtime, return 0 weight there
+        let _origin = T::RegisterWithRelayProofOrigin::try_successful_origin()
+            .map_err(|_| BenchmarkError::Weightless)?;
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(1, x);
@@ -401,6 +417,8 @@ mod benchmarks {
             Pallet::<T>::registered_para_ids().len(),
             genesis_para_id_len + (y - 1) as usize
         );
+
+        Ok(())
     }
 
     #[benchmark]

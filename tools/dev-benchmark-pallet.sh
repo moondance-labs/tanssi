@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+# Helper script to run benchmarks locally when adding a new extrinsic to an existing pallet.
+# Runs the benchmark script with `--check` so this is faster than the other benchmarking script,
+# because benchmarks must be run on a specific hardware anyway so we don't benefit from having
+# accurate benchmarks run on an inaccurate machine. And also automatically copies the weights to
+# the expected location.
+#
+# Usage:
+# cargo build --release --features=runtime-benchmarks
+# git commit -am 'before running benchmarks"
+# ./tools/dev-benchmark-pallet.sh "pallet_registrar"
+#
+# It is strongly recommended to create a git commit before running this script, because if the benchmarks fail
+# for the runtime but not for the pallet, it will leave the weights in an inconsistent state and the runtime will
+# not compile, and the easiest way to fix it is to revert the changes.
+
 # Exit on any error
 set -e
 
@@ -64,7 +79,7 @@ TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     tools/benchmarking.sh "$PALLET" "*" --check
 cp -v tmp/flashbox_weights/$PALLET.rs runtime/flashbox/src/weights/$PALLET.rs
 
-# Probably don't need to add weights to templates
+# Probably don't need to add weights to templates, change false to true if the pallet is also included in the templates
 if [[ false ]]; then
 	# Simple template weights
 	BINARY=target/release/container-chain-template-simple-node \
