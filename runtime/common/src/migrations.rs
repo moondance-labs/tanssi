@@ -393,7 +393,9 @@ where
         )
         .unwrap_or_default();
 
-        let total_weight = T::DbWeight::get().reads(1).saturating_add(T::DbWeight::get().writes(1));
+        let total_weight = T::DbWeight::get()
+            .reads(1)
+            .saturating_add(T::DbWeight::get().writes(1));
 
         for para_id in para_ids {
             total_weight.saturating_add(T::DbWeight::get().writes(1));
