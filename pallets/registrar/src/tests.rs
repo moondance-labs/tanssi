@@ -19,7 +19,7 @@ use {
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec, Hashable},
     parity_scale_codec::Encode,
-    sp_core::{Get, Pair},
+    sp_core::Pair,
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, SlotFrequency},
