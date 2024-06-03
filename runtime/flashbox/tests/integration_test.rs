@@ -21,7 +21,7 @@ use {
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    flashbox_runtime::{StreamPaymentAssetId, TimeUnit},
+    flashbox_runtime::{RuntimeOrigin, StreamPaymentAssetId, TimeUnit},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -48,6 +48,44 @@ use {
 mod common;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
+
+fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
+    use {
+        flashbox_runtime::{
+            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest, RuntimeOrigin,
+        },
+        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+    };
+
+    let profile = Profile {
+        url:
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .expect("to fit in BoundedVec"),
+        para_ids: ParaIdsFilter::AnyParaId,
+        mode: ProfileMode::Bootnode,
+        assignment_request: PreserversAssignementPaymentRequest::Free,
+    };
+
+    let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
+    let profile_owner = AccountId::new([1u8; 32]);
+    DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
+        .expect("profile create to succeed");
+
+    DataPreservers::start_assignment(
+        para_manager,
+        profile_id,
+        para_id,
+        PreserversAssignementPaymentExtra::Free,
+    )
+    .expect("assignement to work");
+
+    assert!(
+        pallet_data_preservers::Assignments::<Runtime>::get(&para_id).contains(&profile_id),
+        "profile should be correctly assigned"
+    );
+}
 
 #[test]
 fn genesis_balances() {
@@ -81,8 +119,8 @@ fn genesis_balances() {
 fn genesis_para_registrar() {
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -97,8 +135,8 @@ fn genesis_para_registrar() {
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -136,8 +174,8 @@ fn genesis_para_registrar_deregister() {
 fn genesis_para_registrar_runtime_api() {
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -177,8 +215,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     };
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, genesis_data_1002.clone(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, genesis_data_1001.clone(), u32::MAX, u32::MAX).into(),
+            (1002, genesis_data_1002.clone(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -241,8 +279,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 fn test_author_collation_aura() {
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -271,8 +309,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -347,8 +385,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -484,11 +522,7 @@ fn test_authors_paras_inserted_a_posteriori() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -503,11 +537,7 @@ fn test_authors_paras_inserted_a_posteriori() {
                 1002.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1002.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1002.into()
@@ -577,11 +607,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -645,11 +671,7 @@ fn test_paras_registered_but_zero_credits() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -707,11 +729,7 @@ fn test_paras_registered_but_not_enough_credits() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -790,11 +808,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -887,8 +901,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -949,8 +963,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1015,8 +1029,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1084,8 +1098,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1241,8 +1255,8 @@ fn test_consensus_runtime_api() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1332,8 +1346,8 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1444,8 +1458,8 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1646,8 +1660,8 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1706,8 +1720,8 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1753,8 +1767,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1795,8 +1809,8 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1863,8 +1877,8 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1943,8 +1957,8 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -2261,8 +2275,8 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -2314,8 +2328,8 @@ fn test_reward_to_invulnerable_with_key_change() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -2486,11 +2500,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2530,11 +2540,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 1001.into(),
                 empty_genesis_data()
             ),);
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2563,11 +2569,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 1001.into(),
                 empty_genesis_data()
             ),);
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2607,11 +2609,7 @@ fn test_register_parathread() {
                 SlotFrequency { min: 1, max: 1 },
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                3001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 3001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 3001.into()
@@ -2660,11 +2658,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2761,11 +2755,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2833,11 +2823,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -2945,11 +2931,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3048,11 +3030,7 @@ fn test_credits_with_purchase_can_be_combined() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3190,11 +3168,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3289,11 +3263,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3360,11 +3330,7 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3435,11 +3401,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
                 1001.into(),
                 empty_genesis_data()
             ));
-            assert_ok!(DataPreservers::set_boot_nodes(
-                origin_of(ALICE.into()),
-                1001.into(),
-                dummy_boot_nodes()
-            ));
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -3501,11 +3463,7 @@ fn test_migration_services_collator_assignment_payment() {
             1001.into(),
             empty_genesis_data()
         ));
-        assert_ok!(DataPreservers::set_boot_nodes(
-            origin_of(ALICE.into()),
-            1001.into(),
-            dummy_boot_nodes()
-        ));
+        set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
         assert_ok!(Registrar::mark_valid_for_collating(
             root_origin(),
             1001.into()
@@ -3516,11 +3474,7 @@ fn test_migration_services_collator_assignment_payment() {
             1002.into(),
             empty_genesis_data()
         ));
-        assert_ok!(DataPreservers::set_boot_nodes(
-            origin_of(ALICE.into()),
-            1002.into(),
-            dummy_boot_nodes()
-        ));
+        set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
         assert_ok!(Registrar::mark_valid_for_collating(
             root_origin(),
             1002.into()
@@ -3589,14 +3543,7 @@ fn test_max_collators_uses_pending_value() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![(
-            1001,
-            empty_genesis_data(),
-            vec![],
-            u32::MAX,
-            u32::MAX,
-        )
-            .into()])
+        .with_para_ids(vec![(1001, empty_genesis_data(), u32::MAX, u32::MAX).into()])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 1,
@@ -3698,9 +3645,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -3753,9 +3700,9 @@ fn test_collator_assignment_tip_charged_on_congestion() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -3801,9 +3748,9 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -3854,9 +3801,9 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -3926,9 +3873,9 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {

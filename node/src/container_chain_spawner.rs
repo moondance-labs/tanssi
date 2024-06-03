@@ -903,8 +903,7 @@ fn check_paritydb_lock_held(db_path: &Path) -> Result<bool, std::io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::path::PathBuf;
+    use {super::*, std::path::PathBuf};
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {

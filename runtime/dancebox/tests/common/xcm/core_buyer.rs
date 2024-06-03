@@ -18,7 +18,7 @@ use {
     crate::{
         assert_expected_events,
         common::{
-            dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
+            empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
                 mocknets::{
                     DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
@@ -30,7 +30,7 @@ use {
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{DataPreservers, Registrar, ServicesPayment, XcmCoreBuyer},
+    dancebox_runtime::{Registrar, ServicesPayment, XcmCoreBuyer},
     frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
@@ -80,11 +80,7 @@ fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) -> Quer
             SlotFrequency { min: 1, max: 1 },
             empty_genesis_data()
         ));
-        assert_ok!(DataPreservers::set_boot_nodes(
-            alice_origin,
-            PARATHREAD_ID.into(),
-            dummy_boot_nodes()
-        ));
+        set_dummy_boot_node(alice_origin, PARATHREAD_ID.into());
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
         assert_ok!(Registrar::mark_valid_for_collating(
             root_origin.clone(),

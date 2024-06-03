@@ -19,14 +19,14 @@
 //! Benchmarking
 use {
     crate::{
-        Call, Config, Pallet, ParaIdsFilter, Profile, ProfileDeposit, ProfileMode, Profiles,
-        RegisteredProfile,
+        AssignmentPayment, Call, Config, Pallet, ParaIdsFilter, Profile, ProfileDeposit,
+        ProfileMode, Profiles, RegisteredProfile,
     },
     frame_benchmarking::v2::*,
     frame_support::{
         traits::{
             fungible::{Inspect, Mutate},
-            EnsureOrigin, EnsureOriginWithArg, OriginTrait,
+            EnsureOrigin,
         },
         BoundedVec,
     },
@@ -55,28 +55,6 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-        let para_id = ParaId::from(2);
-        let origin = T::SetBootNodesOrigin::try_successful_origin(&para_id)
-            .expect("failed to create SetBootNodesOrigin");
-        // Worst case is when caller is not root
-        let raw_origin = origin.as_system_ref();
-        assert!(matches!(raw_origin, Some(RawOrigin::Signed(..))));
-
-        #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
-
-        assert_eq!(Pallet::<T>::boot_nodes(para_id), boot_nodes);
-    }
-
-    #[benchmark]
     fn create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
@@ -86,6 +64,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
@@ -100,7 +79,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -115,6 +95,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let owner = create_funded_user::<T>("owner", 1, 1_000_000_000u32);
@@ -133,7 +114,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: owner,
                 deposit: 0u32.into(),
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -147,6 +129,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -162,6 +145,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
@@ -178,7 +162,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -192,6 +177,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -207,6 +193,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
@@ -224,7 +211,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit: 0u32.into(),
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -238,6 +226,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -260,6 +249,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);

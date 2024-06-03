@@ -48,7 +48,6 @@ use {
             tokens::Precision,
             EnsureOriginWithArg,
         },
-        DefaultNoBound,
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::FullCodec,
@@ -56,7 +55,6 @@ use {
         traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
         ArithmeticError,
     },
-    sp_std::vec::Vec,
 };
 
 #[frame_support::pallet]
@@ -96,7 +94,7 @@ pub mod pallet {
     )]
     #[scale_info(skip_type_params(T))]
     pub struct Profile<T: Config> {
-        pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
+        pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
         pub para_ids: ParaIdsFilter<T>,
         pub mode: ProfileMode,
         pub assignment_request: ProviderRequestOf<T>,
@@ -120,6 +118,14 @@ pub mod pallet {
                 Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
             }
         }
+
+        pub fn can_assign(&self, para_id: &ParaId) -> bool {
+            match self {
+                ParaIdsFilter::AnyParaId => true,
+                ParaIdsFilter::Whitelist(list) => list.contains(&para_id),
+                ParaIdsFilter::Blacklist(list) => !list.contains(&para_id),
+            }
+        }
     }
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -141,6 +147,7 @@ pub mod pallet {
         pub account: T::AccountId,
         pub deposit: BalanceOf<T>,
         pub profile: Profile<T>,
+        /// There can be at most 1 assignment per profile.
         pub assignment: Option<(ParaId, AssignmentWitnessOf<T>)>,
     }
 
@@ -199,41 +206,51 @@ pub mod pallet {
             provider: AccountId,
             witness: Self::AssignmentWitness,
         ) -> Result<(), DispatchErrorWithPostInfo>;
+
+        // The values returned by the following functions should match with each other.
+        #[cfg(feature = "runtime-benchmarks")]
+        fn benchmark_provider_request() -> Self::ProviderRequest;
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn benchmark_assigner_parameter() -> Self::AssignerParameter;
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn benchmark_assignment_witness() -> Self::AssignmentWitness;
     }
 
-    #[pallet::genesis_config]
-    #[derive(DefaultNoBound)]
-    pub struct GenesisConfig<T: Config> {
-        /// Para ids
-        pub para_id_boot_nodes: Vec<(ParaId, Vec<Vec<u8>>)>,
-        pub _phantom: PhantomData<T>,
-    }
+    // #[pallet::genesis_config]
+    // #[derive(DefaultNoBound)]
+    // pub struct GenesisConfig<T: Config> {
+    //     /// Para ids
+    //     pub para_id_boot_nodes: Vec<(ParaId, Vec<Vec<u8>>)>,
+    //     pub _phantom: PhantomData<T>,
+    // }
 
-    #[pallet::genesis_build]
-    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-        fn build(&self) {
-            // Sort para ids and detect duplicates, but do it using a vector of
-            // references to avoid cloning the boot nodes.
-            let mut para_ids: Vec<&_> = self.para_id_boot_nodes.iter().collect();
-            para_ids.sort_by(|a, b| a.0.cmp(&b.0));
-            para_ids.dedup_by(|a, b| {
-                if a.0 == b.0 {
-                    panic!("Duplicate para_id: {}", u32::from(a.0));
-                } else {
-                    false
-                }
-            });
+    // #[pallet::genesis_build]
+    // impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+    //     fn build(&self) {
+    //         // Sort para ids and detect duplicates, but do it using a vector of
+    //         // references to avoid cloning the boot nodes.
+    //         let mut para_ids: Vec<&_> = self.para_id_boot_nodes.iter().collect();
+    //         para_ids.sort_by(|a, b| a.0.cmp(&b.0));
+    //         para_ids.dedup_by(|a, b| {
+    //             if a.0 == b.0 {
+    //                 panic!("Duplicate para_id: {}", u32::from(a.0));
+    //             } else {
+    //                 false
+    //             }
+    //         });
 
-            for (para_id, boot_nodes) in para_ids {
-                let boot_nodes: Vec<_> = boot_nodes
-                    .iter()
-                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
-                    .collect();
-                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
-                <BootNodes<T>>::insert(para_id, boot_nodes);
-            }
-        }
-    }
+    //         for (para_id, boot_nodes) in para_ids {
+    //             let boot_nodes: Vec<_> = boot_nodes
+    //                 .iter()
+    //                 .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
+    //                 .collect();
+    //             let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
+    //             <BootNodes<T>>::insert(para_id, boot_nodes);
+    //         }
+    //     }
+    // }
 
     /// Data preservers pallet.
     #[pallet::pallet]
@@ -259,7 +276,8 @@ pub mod pallet {
             + Debug
             + Eq
             + CheckedAdd
-            + One;
+            + One
+            + Ord;
 
         // Who can call set_boot_nodes?
         type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
@@ -275,9 +293,9 @@ pub mod pallet {
         type ForceSetProfileOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         #[pallet::constant]
-        type MaxBootNodes: Get<u32>;
+        type MaxAssignmentsPerParaId: Get<u32>;
         #[pallet::constant]
-        type MaxBootNodeUrlLen: Get<u32>;
+        type MaxNodeUrlLen: Get<u32>;
         #[pallet::constant]
         type MaxParaIdsVecLen: Get<u32>;
 
@@ -334,6 +352,7 @@ pub mod pallet {
         ProfileNotAssigned,
         ProfileIsNotElligibleForParaId,
         WrongParaId,
+        MaxAssignmentsPerParaIdReached,
     }
 
     #[pallet::composite_enum]
@@ -341,17 +360,18 @@ pub mod pallet {
         ProfileDeposit,
     }
 
-    #[pallet::storage]
-    #[pallet::getter(fn boot_nodes)]
-    pub type BootNodes<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ValueQuery,
-    >;
+    // #[pallet::storage]
+    // #[pallet::getter(fn boot_nodes)]
+    // pub type BootNodes<T: Config> = StorageMap<
+    //     _,
+    //     Blake2_128Concat,
+    //     ParaId,
+    //     BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxBootNodes>,
+    //     ValueQuery,
+    // >;
 
     #[pallet::storage]
+    #[pallet::getter(fn profiles)]
     pub type Profiles<T: Config> =
         StorageMap<_, Blake2_128Concat, T::ProfileId, RegisteredProfile<T>, OptionQuery>;
 
@@ -359,38 +379,17 @@ pub mod pallet {
     pub type NextProfileId<T: Config> = StorageValue<_, T::ProfileId, ValueQuery>;
 
     #[pallet::storage]
-    pub type Assignments<T: Config> = StorageDoubleMap<
+    #[pallet::getter(fn assignments)]
+    pub type Assignments<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
         ParaId,
-        Blake2_128Concat,
-        T::ProfileId,
-        (),
-        OptionQuery,
+        BoundedVec<T::ProfileId, T::MaxAssignmentsPerParaId>,
+        ValueQuery,
     >;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Set boot_nodes for this para id
-        #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(
-            T::MaxBootNodeUrlLen::get(),
-            boot_nodes.len() as u32,
-        ))]
-        pub fn set_boot_nodes(
-            origin: OriginFor<T>,
-            para_id: ParaId,
-            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ) -> DispatchResult {
-            T::SetBootNodesOrigin::ensure_origin(origin, &para_id)?;
-
-            BootNodes::<T>::insert(para_id, boot_nodes);
-
-            Self::deposit_event(Event::BootNodesChanged { para_id });
-
-            Ok(())
-        }
-
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::create_profile(
             profile.url.len() as u32,
@@ -656,18 +655,22 @@ pub mod pallet {
                 Err(Error::<T>::ProfileAlreadyAssigned)?
             }
 
-            match &profile.profile.para_ids {
-                ParaIdsFilter::AnyParaId => (),
-                ParaIdsFilter::Whitelist(list) => {
-                    if !list.contains(&para_id) {
-                        Err(Error::<T>::ProfileIsNotElligibleForParaId)?
-                    }
-                }
-                ParaIdsFilter::Blacklist(list) => {
-                    if list.contains(&para_id) {
-                        Err(Error::<T>::ProfileIsNotElligibleForParaId)?
-                    }
-                }
+            if !profile.profile.para_ids.can_assign(&para_id) {
+                Err(Error::<T>::ProfileIsNotElligibleForParaId)?
+            }
+
+            // Add profile id to BoundedVec early in case bound is reached
+            {
+                let mut assignments = Assignments::<T>::get(para_id);
+                let Err(position) = assignments.binary_search(&profile_id) else {
+                    Err(Error::<T>::ProfileAlreadyAssigned)?
+                };
+
+                assignments
+                    .try_insert(position, profile_id)
+                    .map_err(|_| Error::<T>::MaxAssignmentsPerParaIdReached)?;
+
+                Assignments::<T>::insert(para_id, assignments);
             }
 
             // TODO: Check Ethereum RPC?
@@ -681,7 +684,6 @@ pub mod pallet {
 
             profile.assignment = Some((para_id, witness));
             Profiles::<T>::insert(profile_id, profile);
-            Assignments::<T>::insert(para_id, profile_id, ());
 
             Self::deposit_event(Event::AssignmentStarted {
                 profile_id,
@@ -717,7 +719,17 @@ pub mod pallet {
             )?;
 
             Profiles::<T>::insert(profile_id, profile);
-            Assignments::<T>::remove(para_id, profile_id);
+
+            {
+                let mut assignments = Assignments::<T>::get(para_id);
+                let Ok(position) = assignments.binary_search(&profile_id) else {
+                    Err(Error::<T>::ProfileNotAssigned)?
+                };
+
+                assignments.remove(position);
+
+                Assignments::<T>::insert(para_id, assignments);
+            }
 
             Self::deposit_event(Event::AssignmentStopped {
                 profile_id,
@@ -729,19 +741,29 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn assignments_profiles(para_id: ParaId) -> impl Iterator<Item = Profile<T>> {
+            Assignments::<T>::get(para_id)
+                .into_iter()
+                .filter_map(|profile_id| Profiles::<T>::get(profile_id))
+                .map(|profile| profile.profile)
+        }
+
         /// Function that will be called when a container chain is deregistered. Cleans up all the storage related to this para_id.
         /// Cannot fail.
         pub fn para_deregistered(para_id: ParaId) {
-            BootNodes::<T>::remove(para_id);
+            Assignments::<T>::remove(para_id);
         }
 
         pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
-            // To be able to call mark_valid_for_collating, a container chain must have bootnodes
-            if Pallet::<T>::boot_nodes(para_id).len() > 0 {
-                Ok(())
-            } else {
-                Err(Error::<T>::NoBootNodes.into())
+            if Self::assignments_profiles(para_id)
+                .filter(|profile| profile.mode == ProfileMode::Bootnode)
+                .count()
+                == 0
+            {
+                Err(Error::<T>::NoBootNodes)?
             }
+
+            Ok(())
         }
     }
 }

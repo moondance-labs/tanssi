@@ -1159,7 +1159,7 @@ impl<T> EnsureOriginWithArg<T::RuntimeOrigin, ParaId> for EnsureSignedByManager<
 where
     T: Config,
 {
-    type Success = ();
+    type Success = T::AccountId;
 
     fn try_origin(
         o: T::RuntimeOrigin,
@@ -1172,7 +1172,7 @@ where
             return Err(frame_system::RawOrigin::Signed(signed_account).into());
         }
 
-        Ok(())
+        Ok(signed_account)
     }
 
     #[cfg(feature = "runtime-benchmarks")]

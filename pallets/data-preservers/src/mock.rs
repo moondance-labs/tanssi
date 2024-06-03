@@ -368,6 +368,22 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for AssignmentPayment 
 
         Ok(())
     }
+
+    // The values returned by the following functions should match with each other.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_provider_request() -> Self::ProviderRequest {
+        ProviderRequest::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
+        AssignerParameter::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
+        AssignmentWitness::Free
+    }
 }
 
 impl pallet_data_preservers::Config for Test {
@@ -379,8 +395,8 @@ impl pallet_data_preservers::Config for Test {
     type AssignmentOrigin = MockContainerChainManager<Test>;
     type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
-    type MaxBootNodes = ConstU32<10>;
-    type MaxBootNodeUrlLen = ConstU32<200>;
+    type MaxAssignmentsPerParaId = ConstU32<10>;
+    type MaxNodeUrlLen = ConstU32<200>;
     type MaxParaIdsVecLen = ConstU32<20>;
     type ProfileDeposit = crate::BytesProfileDeposit<ConstU128<1000>, ConstU128<51>>;
     type WeightInfo = ();

@@ -20,8 +20,7 @@ use {
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     flashbox_runtime::{
-        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
-        MaxBootNodes, MaxLengthTokenSymbol,
+        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxLengthTokenSymbol,
     },
     frame_support::{
         assert_ok,
@@ -36,7 +35,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
@@ -295,7 +294,6 @@ pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
 pub struct ParaRegistrationParams {
     para_id: u32,
     genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
-    bootnodes: Vec<Vec<u8>>,
     block_production_credits: u32,
     collator_assignment_credits: u32,
 }
@@ -304,7 +302,6 @@ impl
     From<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
         u32,
         u32,
     )> for ParaRegistrationParams
@@ -313,7 +310,6 @@ impl
         value: (
             u32,
             ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
             u32,
             u32,
         ),
@@ -321,9 +317,8 @@ impl
         Self {
             para_id: value.0,
             genesis_data: value.1,
-            bootnodes: value.2,
-            block_production_credits: value.3,
-            collator_assignment_credits: value.4,
+            block_production_credits: value.2,
+            collator_assignment_credits: value.3,
         }
     }
 }
@@ -440,17 +435,6 @@ impl ExtBuilder {
                         .into()
                 })
                 .collect(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_data_preservers::GenesisConfig::<Runtime> {
-            para_id_boot_nodes: self
-                .para_ids
-                .into_iter()
-                .map(|registered_para| (registered_para.para_id.into(), registered_para.bootnodes))
-                .collect(),
-            _phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -591,16 +575,6 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
         extensions: Default::default(),
         properties: Default::default(),
     }
-}
-
-pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
-    vec![BoundedVec::try_from(
-        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-            .to_vec(),
-    )
-    .unwrap()]
-    .try_into()
-    .unwrap()
 }
 
 pub fn current_slot() -> u64 {

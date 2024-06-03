@@ -20,8 +20,8 @@ use {
     },
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        prod_or_fast, AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig,
-        PolkadotXcmConfig, RegistrarConfig, ServicesPaymentConfig, SudoConfig,
+        prod_or_fast, AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
+        RegistrarConfig, ServicesPaymentConfig, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -200,10 +200,6 @@ fn testnet_genesis(
         .iter()
         .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
         .collect();
-    let para_id_boot_nodes: Vec<_> = para_ids
-        .iter()
-        .map(|(para_id, _genesis_data, boot_nodes)| (*para_id, boot_nodes.clone()))
-        .collect();
     let para_ids: Vec<_> = para_ids
         .into_iter()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
@@ -250,10 +246,6 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         configuration,
-        data_preservers: DataPreserversConfig {
-            para_id_boot_nodes,
-            ..Default::default()
-        },
         registrar: RegistrarConfig { para_ids },
         services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {

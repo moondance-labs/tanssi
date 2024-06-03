@@ -28,181 +28,6 @@ fn profile_deposit(profile: &Profile<Test>) -> BalanceOf<Test> {
         .expect("profile_deposit shouldn't fail")
 }
 
-#[test]
-fn set_boot_nodes_bad_origin() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Para 1001 has no manager, Alice cannot set boot nodes
-        assert_noop!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(ALICE),
-            1001.into(),
-            vec![
-                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
-            ].try_into().unwrap()
-        ),
-        DispatchError::BadOrigin
-    );
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_root_no_manager() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Para 1001 has no manager, root can set boot nodes
-        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
-            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        assert_ok!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::root(),
-            1001.into(),
-            boot_nodes.clone(),
-        ));
-        assert_eq!(DataPreservers::boot_nodes(ParaId::from(1001)), boot_nodes);
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_root_with_manager() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Set ALICE as manager of para 1002
-        MockData::mutate(|m| {
-            m.container_chain_managers.insert(1002.into(), Some(ALICE));
-        });
-        // Root can set bootnodes
-        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
-            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        assert_ok!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::root(),
-            1002.into(),
-            boot_nodes.clone()
-        ));
-        assert_eq!(DataPreservers::boot_nodes(ParaId::from(1002)), boot_nodes);
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_para_id_registrar() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Set ALICE as manager of para 1002
-        MockData::mutate(|m| {
-            m.container_chain_managers.insert(1002.into(), Some(ALICE));
-        });
-        // Alice can set bootnodes
-        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
-            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        assert_ok!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(ALICE),
-            1002.into(),
-            boot_nodes.clone(),
-        ));
-        assert_eq!(DataPreservers::boot_nodes(ParaId::from(1002)), boot_nodes);
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_invalid_user_no_manager() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Para 1001 has no manager
-        MockData::mutate(|m| {
-            m.container_chain_managers.insert(1002.into(), Some(ALICE));
-        });
-        // Bob cannot set the bootnodes
-        assert_noop!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(BOB),
-            1001.into(),
-            vec![
-                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
-            ].try_into().unwrap()
-        ),
-        DispatchError::BadOrigin
-        );
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_invalid_user() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Set ALICE as manager of para 1002
-        MockData::mutate(|m| {
-            m.container_chain_managers.insert(1002.into(), Some(ALICE));
-        });
-        // Bob cannot set the bootnodes
-        assert_noop!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(BOB),
-            1002.into(),
-            vec![
-                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
-            ].try_into().unwrap()
-        ),
-        DispatchError::BadOrigin
-        );
-
-        assert_noop!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(BOB),
-            1003.into(),
-            vec![
-                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
-            ].try_into().unwrap()
-        ),
-        DispatchError::BadOrigin
-        );
-    });
-}
-
-#[test]
-fn set_boot_nodes_by_invalid_user_bad_para_id() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Para 1003 does not exist, only root can set bootnodes
-        assert_noop!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::signed(BOB),
-            1003.into(),
-            vec![
-                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
-            ].try_into().unwrap()
-        ),
-        DispatchError::BadOrigin
-        );
-    });
-}
-
-#[test]
-fn set_boot_nodes_bad_para_id() {
-    // Para 1003 does not exist, only root can set bootnodes
-    // This is allowed in case we want to set bootnodes before registering the chain
-    ExtBuilder::default().build().execute_with(|| {
-        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
-            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        assert_ok!(DataPreservers::set_boot_nodes(
-            RuntimeOrigin::root(),
-            1003.into(),
-            boot_nodes.clone(),
-        ));
-        assert_eq!(DataPreservers::boot_nodes(ParaId::from(1003)), boot_nodes);
-    });
-}
-
 mod create_profile {
     use super::*;
 
@@ -886,10 +711,7 @@ mod start_assignment {
                     ]
                 );
 
-                assert_eq!(
-                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
-                    vec![(0, ())]
-                );
+                assert_eq!(Assignments::<Test>::get(para_id).into_inner(), vec![0]);
 
                 assert_eq!(
                     Profiles::<Test>::get(0),
@@ -951,10 +773,7 @@ mod start_assignment {
                     ]
                 );
 
-                assert_eq!(
-                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
-                    vec![(0, ())]
-                );
+                assert_eq!(Assignments::<Test>::get(para_id).into_inner(), vec![0]);
 
                 let payed = 1337 + 42;
 
@@ -1177,10 +996,7 @@ mod stop_assignment {
                     ]
                 );
 
-                assert_eq!(
-                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
-                    vec![]
-                );
+                assert!(Assignments::<Test>::get(para_id).is_empty());
 
                 assert_eq!(
                     Profiles::<Test>::get(0),
@@ -1252,10 +1068,7 @@ mod stop_assignment {
                     ]
                 );
 
-                assert_eq!(
-                    Assignments::<Test>::iter_prefix(para_id).collect::<Vec<_>>(),
-                    vec![]
-                );
+                assert!(Assignments::<Test>::get(para_id).is_empty());
 
                 let payed = (1337 + 42) * 2;
 
