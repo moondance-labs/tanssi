@@ -1866,7 +1866,6 @@ fn weights_assigned_to_extrinsics_are_correct() {
             .weight,
             <() as crate::weights::WeightInfo>::register(
                 empty_genesis_data().encoded_size() as u32,
-                <Test as crate::Config>::MaxLengthParaIds::get(),
                 0
             )
         );
@@ -1875,41 +1874,29 @@ fn weights_assigned_to_extrinsics_are_correct() {
             crate::Call::<Test>::deregister { para_id: 42.into() }
                 .get_dispatch_info()
                 .weight,
-            <() as crate::weights::WeightInfo>::deregister_immediate(
-                <Test as crate::Config>::MaxGenesisDataSize::get(),
-                <Test as crate::Config>::MaxLengthParaIds::get()
-            )
-            .max(<() as crate::weights::WeightInfo>::deregister_scheduled(
-                <Test as crate::Config>::MaxGenesisDataSize::get(),
-                <Test as crate::Config>::MaxLengthParaIds::get()
-            ))
+            <() as crate::weights::WeightInfo>::deregister_immediate()
+                .max(<() as crate::weights::WeightInfo>::deregister_scheduled())
         );
 
         assert_eq!(
             crate::Call::<Test>::mark_valid_for_collating { para_id: 42.into() }
                 .get_dispatch_info()
                 .weight,
-            <() as crate::weights::WeightInfo>::mark_valid_for_collating(
-                <Test as crate::Config>::MaxLengthParaIds::get()
-            )
+            <() as crate::weights::WeightInfo>::mark_valid_for_collating()
         );
 
         assert_eq!(
             crate::Call::<Test>::pause_container_chain { para_id: 42.into() }
                 .get_dispatch_info()
                 .weight,
-            <() as crate::weights::WeightInfo>::pause_container_chain(
-                <Test as crate::Config>::MaxLengthParaIds::get()
-            )
+            <() as crate::weights::WeightInfo>::pause_container_chain()
         );
 
         assert_eq!(
             crate::Call::<Test>::unpause_container_chain { para_id: 42.into() }
                 .get_dispatch_info()
                 .weight,
-            <() as crate::weights::WeightInfo>::unpause_container_chain(
-                <Test as crate::Config>::MaxLengthParaIds::get()
-            )
+            <() as crate::weights::WeightInfo>::unpause_container_chain()
         );
     });
 }
