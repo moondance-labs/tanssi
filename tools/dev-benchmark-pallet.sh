@@ -80,15 +80,15 @@ TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 cp -v tmp/flashbox_weights/$PALLET.rs runtime/flashbox/src/weights/$PALLET.rs
 
 # Probably don't need to add weights to templates, change false to true if the pallet is also included in the templates
-if [[ false ]]; then
+if false; then
 	# Simple template weights
-	BINARY=target/release/container-chain-template-simple-node \
+	BINARY=target/release/container-chain-simple-node \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/simple_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 
 	# Frontier template weights
-	BINARY=target/release/container-chain-template-frontier-node \
+	BINARY=target/release/container-chain-frontier-node \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/frontier_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check

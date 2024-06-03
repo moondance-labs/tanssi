@@ -24,13 +24,13 @@ TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     tools/benchmarking.sh "*" "*"
 
 # Simple template weights
-BINARY=target/release/container-chain-template-simple-node \
+BINARY=target/release/container-chain-simple-node \
     TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     OUTPUT_PATH=tmp/simple_template_weights \
     tools/benchmarking.sh "*" "*"
 
 # Frontier template weights
-BINARY=target/release/container-chain-template-frontier-node \
+BINARY=target/release/container-chain-frontier-node \
     TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     OUTPUT_PATH=tmp/frontier_template_weights \
     tools/benchmarking.sh "*" "*"
