@@ -26,6 +26,10 @@ use {
         weights::Weight,
     },
     pallet_migrations::{GetMigrations, Migration},
+    runtime_common::migrations::{
+        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
+        XcmpQueueMigrationV4,
+    },
     sp_core::{Get, H160},
     sp_std::{marker::PhantomData, prelude::*},
 };
@@ -48,7 +52,7 @@ where
 
         // Pallet-xcm precompile address
         let address = H160::from_low_u64_be(2052);
-        pallet_evm::Pallet::<T>::create_account(address.into(), revert_bytecode.clone());
+        pallet_evm::Pallet::<T>::create_account(address, revert_bytecode.clone());
 
         // reads: <Suicided<T>> and <AccountCodes<T>>
         // writes: <AccountCodesMetadata<T>> and <AccountCodes<T>>
@@ -133,10 +137,10 @@ where
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
-            Box::new(migrate_polkadot_xcm_v1),
+/*             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),
-            Box::new(migrate_xcmp_queue_v4),
+            Box::new(migrate_xcmp_queue_v4), */
             Box::new(migrate_xcm_executor_utils_v4),
             Box::new(migrate_pallet_xcm_v4),
             Box::new(migrate_precompile_xcm_code),
