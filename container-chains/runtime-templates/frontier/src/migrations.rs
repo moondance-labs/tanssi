@@ -137,7 +137,7 @@ where
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
-/*             Box::new(migrate_polkadot_xcm_v1),
+            /*             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),
             Box::new(migrate_xcmp_queue_v4), */
