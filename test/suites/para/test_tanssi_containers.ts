@@ -325,15 +325,19 @@ describeSuite({
                 expect(registered1.toJSON().includes(2002)).to.be.true;
 
                 const tx = paraApi.tx.registrar.deregister(2002);
+                console.log("sending deregister tx");
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                console.log("waiting up to 2 sessions");
                 // Container chain will be deregistered after 2 sessions, but because `signAndSendAndInclude` waits
                 // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
                 // 1 session. So use a callback to wait 1 or 2 sessions.
                 await waitSessions(context, paraApi, 2, async () => {
                     const registered = await paraApi.query.registrar.registeredParaIds();
+                    console.log("waiting for 2002 to deregister... ", registered.toJSON());
                     // Stop waiting if 2002 is no longer registered
                     return !registered.toJSON().includes(2002);
                 });
+                console.log("deregister done");
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 // Round block number to start of session, sometimes the rpc returns the block number of the next block
                 blockNumber2002End = blockNum - (blockNum % sessionPeriod);
