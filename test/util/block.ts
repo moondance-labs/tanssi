@@ -281,6 +281,7 @@ export async function signAndSendAndInclude(
 
     return new Promise((resolve) => {
         const handleSend = ({ status, txHash }) => {
+            console.log("handleSend, status: ", status.toJSON(), ", txHash: ", txHash.toJSON());
             if (status.isFinalized) {
                 isFinalized = true;
                 resolve({
