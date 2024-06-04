@@ -68,9 +68,9 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot, EnsureAllowedCreateAddress,
-        FeeCalculator, GasWeightMapping, IdentityAddressMapping,
-        OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
+        EnsureAllowedCreateAddress, EnsureCreateOrigin, FeeCalculator, GasWeightMapping,
+        IdentityAddressMapping, OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},
@@ -724,11 +724,9 @@ pub mod dynamic_params {
     #[codec(index = 3)]
     pub mod contract_deploy_filter {
         #[codec(index = 0)]
-        pub static AllowedAddressesToCreate: BoundedVec<H160, ConstU32<100>> =
-            BoundedVec::try_from(vec![]).unwrap_or_default();
+        pub static AllowedAddressesToCreate: DeployFilter = DeployFilter::All;
         #[codec(index = 1)]
-        pub static AllowedAddressesToCreateInner: BoundedVec<H160, ConstU32<100>> =
-            BoundedVec::try_from(vec![]).unwrap_or_default();
+        pub static AllowedAddressesToCreateInner: DeployFilter = DeployFilter::All;
     }
 }
 
@@ -748,6 +746,33 @@ impl Default for RuntimeParameters {
                 BoundedVec::try_from(vec![]).unwrap_or_default(),
             ),
         )
+    }
+}
+
+#[derive(Clone, PartialEq, Encode, Decode, TypeInfo, Eq, MaxEncodedLen, Debug)]
+pub enum DeployFilter {
+    All,
+    Whitelisted(BoundedVec<H160, ConstU32<100>>),
+}
+
+pub struct AddressFilter<Runtime, AddressList>(sp_std::marker::PhantomData<(Runtime, AddressList)>);
+impl<Runtime, AddressList> EnsureCreateOrigin<Runtime> for AddressFilter<Runtime, AddressList>
+where
+    Runtime: pallet_evm::Config,
+    AddressList: Get<DeployFilter>,
+{
+    fn check_create_origin(address: &H160) -> Result<(), pallet_evm::Error<Runtime>> {
+        let deploy_filter: DeployFilter = AddressList::get();
+
+        match deploy_filter {
+            DeployFilter::All => return Ok(()),
+            DeployFilter::Whitelisted(addresses_vec) => {
+                if !addresses_vec.contains(address) {
+                    return Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed);
+                }
+                return Ok(());
+            }
+        }
     }
 }
 
@@ -776,24 +801,6 @@ parameter_types! {
     pub SuicideQuickClearLimit: u32 = 0;
 }
 
-pub struct AllowedAddressesToCreateGetter;
-impl Get<Vec<H160>> for AllowedAddressesToCreateGetter {
-    fn get() -> Vec<H160> {
-        dynamic_params::contract_deploy_filter::AllowedAddressesToCreate::get()
-            .try_into()
-            .unwrap_or_default()
-    }
-}
-
-pub struct AllowedAddressesToCreateInnerGetter;
-impl Get<Vec<H160>> for AllowedAddressesToCreateInnerGetter {
-    fn get() -> Vec<H160> {
-        dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner::get()
-            .try_into()
-            .unwrap_or_default()
-    }
-}
-
 impl_on_charge_evm_transaction!();
 impl pallet_evm::Config for Runtime {
     type FeeCalculator = BaseFee;
@@ -803,8 +810,12 @@ impl pallet_evm::Config for Runtime {
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
-    type CreateOrigin = EnsureAllowedCreateAddress<AllowedAddressesToCreateGetter>;
-    type CreateInnerOrigin = EnsureAllowedCreateAddress<AllowedAddressesToCreateInnerGetter>;
+    type CreateOrigin =
+        AddressFilter<Runtime, dynamic_params::contract_deploy_filter::AllowedAddressesToCreate>;
+    type CreateInnerOrigin = AddressFilter<
+        Runtime,
+        dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner,
+    >;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     type PrecompilesType = TemplatePrecompiles<Self>;
