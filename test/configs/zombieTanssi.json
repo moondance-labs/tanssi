@@ -50,7 +50,6 @@
             "collators": [
                 {
                     "name": "Collator1000-01",
-                    "ws_port": "9948",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ltxpool=trace", "--tx-ban-seconds 0"]
                 },
@@ -88,6 +87,13 @@
                     "name": "Collator2002-02",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ltxpool=trace", "--tx-ban-seconds 0"]
+                },
+                {
+                    "name": "FullNode-1000",
+                    "validator": false,
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ltxpool=trace", "--tx-ban-seconds 0"],
+                    "ws_port": "9948"
                 }
             ]
         },
