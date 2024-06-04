@@ -743,7 +743,7 @@ impl Default for RuntimeParameters {
         RuntimeParameters::ContractDeployFilter(
             dynamic_params::contract_deploy_filter::Parameters::AllowedAddressesToCreate(
                 dynamic_params::contract_deploy_filter::AllowedAddressesToCreate,
-                BoundedVec::try_from(vec![]).unwrap_or_default(),
+                DeployFilter::All,
             ),
         )
     }
