@@ -33,6 +33,53 @@ use {
     sp_std::{marker::PhantomData, prelude::*},
 };
 
+pub struct MigratePrecompileProxyDummyCode<T>(pub PhantomData<T>);
+impl<T> Migration for MigratePrecompileProxyDummyCode<T>
+where
+    T: pallet_evm::Config,
+    T: frame_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigratePrecompileProxyCode"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!("Performing migration: TM_MigratePrecompileProxyCode");
+        let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+
+        let db_weights = T::DbWeight::get();
+
+        // Pallet-xcm precompile address
+        let address = H160::from_low_u64_be(2053);
+        pallet_evm::Pallet::<T>::create_account(address, revert_bytecode.clone());
+
+        // reads: <Suicided<T>> and <AccountCodes<T>>
+        // writes: <AccountCodesMetadata<T>> and <AccountCodes<T>>
+        db_weights.reads_writes(2, 2)
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!("Performing TM_MigratePrecompileProxyCode - pre_upgrade");
+
+        let address = H160::from_low_u64_be(2053);
+        assert!(pallet_evm::AccountCodes::<T>::get(address).is_empty());
+        Ok(vec![])
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        log::info!("Performing TM_MigratePrecompileProxyCode - post_upgrade");
+
+        let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+        let address = H160::from_low_u64_be(2053);
+        assert_eq!(pallet_evm::AccountCodes::<T>::get(address), revert_bytecode);
+        Ok(())
+    }
+}
+
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
     PhantomData<(Runtime, XcmpQueue, PolkadotXcm)>,
 );
@@ -84,6 +131,8 @@ where
         let migrate_xcm_executor_utils_v4 =
             pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let migrate_precompile_proxy_code =
+            MigratePrecompileProxyDummyCode::<Runtime>(Default::default());
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
@@ -93,6 +142,7 @@ where
             Box::new(migrate_xcmp_queue_v4),
             Box::new(migrate_xcm_executor_utils_v4),
             Box::new(migrate_pallet_xcm_v4),
+            Box::new(migrate_precompile_proxy_code),
         ]
     }
 }
