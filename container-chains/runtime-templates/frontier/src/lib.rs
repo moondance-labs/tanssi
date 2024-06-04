@@ -44,6 +44,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
+        dynamic_params::{dynamic_pallet_params, dynamic_params},
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -67,7 +68,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot, EnsureAllowedCreateAddress,
         FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
@@ -88,7 +89,7 @@ use {
         transaction_validity::{
             InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
         },
-        ApplyExtrinsicResult,
+        ApplyExtrinsicResult, BoundedVec,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
@@ -715,6 +716,41 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = XcmExecutionManager;
 }
 
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    #[dynamic_pallet_params]
+    #[codec(index = 3)]
+    pub mod contract_deploy_filter {
+        #[codec(index = 0)]
+        pub static AllowedAddressesToCreate: BoundedVec<H160, ConstU32<100>> =
+            BoundedVec::try_from(vec![]).unwrap_or_default();
+        #[codec(index = 1)]
+        pub static AllowedAddressesToCreateInner: BoundedVec<H160, ConstU32<100>> =
+            BoundedVec::try_from(vec![]).unwrap_or_default();
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type AdminOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type WeightInfo = ();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::ContractDeployFilter(
+            dynamic_params::contract_deploy_filter::Parameters::AllowedAddressesToCreate(
+                dynamic_params::contract_deploy_filter::AllowedAddressesToCreate,
+                BoundedVec::try_from(vec![]).unwrap_or_default(),
+            ),
+        )
+    }
+}
+
 // To match ethereum expectations
 const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
@@ -740,6 +776,24 @@ parameter_types! {
     pub SuicideQuickClearLimit: u32 = 0;
 }
 
+pub struct AllowedAddressesToCreateGetter;
+impl Get<Vec<H160>> for AllowedAddressesToCreateGetter {
+    fn get() -> Vec<H160> {
+        dynamic_params::contract_deploy_filter::AllowedAddressesToCreate::get()
+            .try_into()
+            .unwrap_or_default()
+    }
+}
+
+pub struct AllowedAddressesToCreateInnerGetter;
+impl Get<Vec<H160>> for AllowedAddressesToCreateInnerGetter {
+    fn get() -> Vec<H160> {
+        dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner::get()
+            .try_into()
+            .unwrap_or_default()
+    }
+}
+
 impl_on_charge_evm_transaction!();
 impl pallet_evm::Config for Runtime {
     type FeeCalculator = BaseFee;
@@ -749,6 +803,8 @@ impl pallet_evm::Config for Runtime {
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
+    type CreateOrigin = EnsureAllowedCreateAddress<AllowedAddressesToCreateGetter>;
+    type CreateInnerOrigin = EnsureAllowedCreateAddress<AllowedAddressesToCreateInnerGetter>;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     type PrecompilesType = TemplatePrecompiles<Self>;
@@ -868,6 +924,7 @@ construct_runtime!(
 
         // Other utilities
         Multisig: pallet_multisig = 16,
+        Parameters: pallet_parameters = 17,
 
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,

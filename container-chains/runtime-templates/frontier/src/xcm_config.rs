@@ -414,7 +414,11 @@ impl ForeignAssetCreatedHook<Location, AssetIdOf<Runtime>, AssetBalance<Runtime>
         let prefix_slice = [255u8; 18];
         let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
 
-        pallet_evm::Pallet::<Runtime>::create_account(account_id.into(), revert_bytecode.clone(), None);
+        pallet_evm::Pallet::<Runtime>::create_account(
+            account_id.into(),
+            revert_bytecode.clone(),
+            None,
+        );
     }
 }
 
