@@ -440,6 +440,31 @@ where
     }
 }
 
+pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
+impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
+where
+    pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>:
+        frame_support::traits::OnRuntimeUpgrade,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigrateToLatestXcmVersion"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::post_upgrade(state)
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -488,6 +513,7 @@ where
     Runtime: pallet_configuration::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_xcm::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
 {
@@ -513,6 +539,8 @@ where
         let migrate_registrar_manager =
             RegistrarParaManagerMigration::<Runtime>(Default::default());
 
+        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -535,6 +563,7 @@ where
             Box::new(migrate_xcmp_queue_v4),
             Box::new(migrate_registrar_pending_verification),
             Box::new(migrate_registrar_manager),
+            Box::new(migrate_pallet_xcm_v4),
         ]
     }
 }

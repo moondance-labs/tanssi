@@ -20,7 +20,11 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess},
+    frame_support::{
+        pallet_prelude::GetStorageVersion,
+        traits::{OnRuntimeUpgrade, PalletInfoAccess},
+        weights::Weight,
+    },
     pallet_migrations::{GetMigrations, Migration},
     runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
@@ -33,6 +37,31 @@ pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
     PhantomData<(Runtime, XcmpQueue, PolkadotXcm)>,
 );
 
+pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
+impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
+where
+    pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>:
+        frame_support::traits::OnRuntimeUpgrade,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigrateToLatestXcmVersion"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        pallet_xcm::migration::MigrateToLatestXcmVersion::<Runtime>::post_upgrade(state)
+    }
+}
+
 impl<Runtime, XcmpQueue, PolkadotXcm> GetMigrations
     for TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>
 where
@@ -40,6 +69,8 @@ where
     XcmpQueue: GetStorageVersion + PalletInfoAccess + 'static,
     Runtime: frame_system::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_xcm_executor_utils::Config,
+    Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_polkadot_xcm_v1 =
@@ -48,11 +79,16 @@ where
             XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
         let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        let migrate_xcm_executor_utils_v4 =
+            pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
+        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         vec![
             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),
             Box::new(migrate_xcmp_queue_v4),
+            Box::new(migrate_xcm_executor_utils_v4),
+            Box::new(migrate_pallet_xcm_v4),
         ]
     }
 }
