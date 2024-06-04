@@ -270,17 +270,48 @@ export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: 
 /// const { txHash, blockHash } = await signAndSendAndInclude(tx, alice);
 /// // We know the blockHash of the block that includes this transaction
 /// ```
-export function signAndSendAndInclude(tx, account): Promise<{ txHash; blockHash; status }> {
+export async function signAndSendAndInclude(
+    tx,
+    account,
+    waitBlock?: () => Promise<bigint>
+): Promise<{ txHash; blockHash; status }> {
+    const signedTx = await tx.signAsync(account);
+    const pollInterval = 5000;
+    let isFinalized = false;
+
     return new Promise((resolve) => {
-        tx.signAndSend(account, ({ status, txHash }) => {
+        const handleSend = ({ status, txHash }) => {
             if (status.isFinalized) {
+                isFinalized = true;
                 resolve({
                     txHash,
                     blockHash: status.asFinalized,
                     status,
                 });
             }
-        });
+        };
+
+        // Initial send
+        signedTx.send(handleSend);
+
+        // Send tx after every new block, if optional waitBlock param is passed.
+        // This is to mitigate bugs related to tx being lost when forks happen:
+        // * collator 1 includes the tx
+        // * collator 2 builds a different chain that does not include that block
+        // * collator 1 reverts but does not try to include the tx again
+        // https://github.com/paritytech/polkadot-sdk/issues/1202
+        if (waitBlock) {
+            const sendTxAgain = async () => {
+                while (!isFinalized) {
+                    const latestBlockNumber = await waitBlock();
+                    console.log(`signAndSendAndInclude: Latest block number: ${latestBlockNumber}, sending tx again`);
+                    signedTx.send(handleSend);
+                    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+                }
+            };
+
+            sendTxAgain();
+        }
     });
 }
 

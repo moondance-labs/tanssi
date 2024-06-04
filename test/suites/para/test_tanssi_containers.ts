@@ -326,7 +326,13 @@ describeSuite({
 
                 const tx = paraApi.tx.registrar.deregister(2002);
                 console.log("sending deregister tx");
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice, async () => {
+                    await context.waitBlock(1, "Tanssi");
+                    const blockNumber = (
+                        await context.polkadotJs().rpc.chain.getBlock()
+                    ).block.header.number.toBigInt();
+                    return blockNumber;
+                });
                 console.log("waiting up to 2 sessions");
                 // Container chain will be deregistered after 2 sessions, but because `signAndSendAndInclude` waits
                 // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
