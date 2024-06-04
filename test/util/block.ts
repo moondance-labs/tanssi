@@ -279,8 +279,9 @@ export async function signAndSendAndInclude(
     const pollInterval = 5000;
     let isFinalized = false;
 
-    return new Promise((resolve) => {
-        const handleSend = ({ status, txHash }) => {
+    return new Promise((resolve, reject) => {
+        const handleSend = (result) => {
+            const { status, txHash, isError } = result;
             console.log("handleSend, status: ", status.toJSON(), ", txHash: ", txHash.toJSON());
             if (status.isFinalized) {
                 isFinalized = true;
@@ -289,6 +290,21 @@ export async function signAndSendAndInclude(
                     blockHash: status.asFinalized,
                     status,
                 });
+            } else if (isError) {
+                if (result.status.isInvalid) {
+                    // Allow `invalid` tx, since we will validate the hash of the `code` later
+                    // The problem being that there are forks
+                    // Block X is build with the tx included
+                    // X gets retracted by Y that doesn't has the tx included
+                    // And thus the tx lands in the tx pool again
+                    // Then another block on top of x is build that tries to include the tx again and boom
+                    // It reports it as invalid, because it was already included
+                    console.log(`Transaction invalid:`, JSON.stringify(result));
+                    //resolve({txHash, blockHash: null, status});
+                } else {
+                    console.log(`Transaction Error:`, JSON.stringify(result));
+                    reject();
+                }
             }
         };
 
