@@ -26,10 +26,6 @@ use {
         weights::Weight,
     },
     pallet_migrations::{GetMigrations, Migration},
-    /*     runtime_common::migrations::{
-        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
-        XcmpQueueMigrationV4,
-    }, */
     sp_core::{Get, H160},
     sp_std::{marker::PhantomData, prelude::*},
 };
@@ -122,13 +118,6 @@ where
     Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        // let migrate_precompiles = MigratePrecompileDummyCode::<Runtime>(Default::default());
-        /*         let migrate_polkadot_xcm_v1 =
-            PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
-        let migrate_xcmp_queue_v2 =
-            XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
-        let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default()); */
         let migrate_xcm_executor_utils_v4 =
             pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
@@ -137,10 +126,13 @@ where
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
-            /*             Box::new(migrate_polkadot_xcm_v1),
-            Box::new(migrate_xcmp_queue_v2),
-            Box::new(migrate_xcmp_queue_v3),
-            Box::new(migrate_xcmp_queue_v4), */
+            //
+            // Applied in runtime 600
+            // Box::new(migrate_polkadot_xcm_v1),
+            // Box::new(migrate_xcmp_queue_v2),
+            // Box::new(migrate_xcmp_queue_v3),
+            // Box::new(migrate_xcmp_queue_v4),
+            //
             Box::new(migrate_xcm_executor_utils_v4),
             Box::new(migrate_pallet_xcm_v4),
             Box::new(migrate_precompile_xcm_code),
