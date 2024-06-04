@@ -329,7 +329,7 @@ describeSuite({
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice, async () => {
                     await context.waitBlock(1, "Tanssi");
                     const blockNumber = (
-                        await context.polkadotJs().rpc.chain.getBlock()
+                        await paraApi.rpc.chain.getBlock()
                     ).block.header.number.toBigInt();
                     return blockNumber;
                 });
