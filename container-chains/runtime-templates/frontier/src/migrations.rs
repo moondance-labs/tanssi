@@ -123,7 +123,7 @@ where
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         // let migrate_precompiles = MigratePrecompileDummyCode::<Runtime>(Default::default());
-/*         let migrate_polkadot_xcm_v1 =
+        /*         let migrate_polkadot_xcm_v1 =
             PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
         let migrate_xcmp_queue_v2 =
             XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
