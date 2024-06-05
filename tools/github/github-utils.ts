@@ -36,13 +36,17 @@ export async function getCommitAndLabels(
   lookForTanssi=true,
 ): Promise<{ prByLabels: any; commits: any[] }> {
   let commits: Commits = [];
+  let commits_reverted: Commits = [];
+  let commits_reverted_sha = [];
+
   let more = true;
+  let more_reverted = true;
   let page = 0;
   while (more) {
     const compare = await octokit.rest.repos.compareCommitsWithBasehead({
       owner,
       repo,
-      basehead: previousTag + "..." + newTag,
+      basehead: `${previousTag}` + "..." + `${newTag}`,
       per_page: 200,
       page,
     });
@@ -50,6 +54,21 @@ export async function getCommitAndLabels(
     more = compare.data.commits.length == 200;
     page++;
   }
+
+  page = 0;
+  while (more_reverted) {
+    const compare = await octokit.rest.repos.compareCommitsWithBasehead({
+      owner,
+      repo,
+      basehead: "9a3e2c8c5a1" + "..." + "b8956fe1500",
+      per_page: 200,
+      page,
+    });
+    commits_reverted = commits_reverted.concat(compare.data.commits);
+    more_reverted = compare.data.commits.length == 200;
+    page++;
+  }
+  commits_reverted_sha = commits_reverted.map((commit) => commit.sha);
 
   // Determine commits to exclude
   // - commits reverted in the same range
@@ -61,7 +80,12 @@ export async function getCommitAndLabels(
     if (revertedCommits[commitMessageFirstLine] != null) {
       excludedCommits.push(i);
       excludedCommits.push(revertedCommits[commitMessageFirstLine]);
-    } else {
+    } 
+    else if (commits_reverted_sha.includes(commits[i].sha)) {
+      excludedCommits.push(i);
+      excludedCommits.push(revertedCommits[commitMessageFirstLine]);
+    }
+    else {
       const foundRevertedCommitName = commitMessageFirstLine.match(/Revert \"(.*)\"/);
       if (foundRevertedCommitName?.length > 0) {
         revertedCommits[foundRevertedCommitName[1]] = i;

@@ -7,7 +7,7 @@ async function printInfo(octokit: Octokit, previousVersion: string, nextVersion:
     "polkadot-sdk": "paritytech",
   };
   const prefixes = {
-    "polkadot-sdk": "polkadot-",
+    "polkadot-sdk": "release-polkadot-",
   };
   console.log(`# Description\n`);
   console.log(`This ticket is automatically generated using\n`);
