@@ -53,7 +53,8 @@ async function printInfo(octokit: Octokit, previousVersion: string, nextVersion:
         owners[repo],
         repo,
         previousTag,
-        nextTag
+        nextTag,
+        false
       );
       console.log(`https://github.com/${owners[repo]}/${repo}/compare/${previousTag}...${nextTag}`);
       console.log("```");

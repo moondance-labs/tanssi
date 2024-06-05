@@ -32,7 +32,8 @@ export async function getCommitAndLabels(
   owner: string,
   repo: string,
   previousTag: string,
-  newTag: string
+  newTag: string,
+  lookForTanssi=true,
 ): Promise<{ prByLabels: any; commits: any[] }> {
   let commits: Commits = [];
   let more = true;
@@ -98,6 +99,7 @@ export async function getCommitAndLabels(
             }
             break;
           } catch (e) {
+            console.log(e)
             // PR not found... let's try the other repo
           }
         }
