@@ -246,7 +246,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(1, x);
-        let genesis_para_id_len = 0;
+
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -271,10 +271,7 @@ mod benchmarks {
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
         // We should have registered y
-        assert_eq!(
-            Pallet::<T>::registered_para_ids().len(),
-            genesis_para_id_len + y as usize
-        );
+        assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
         #[extrinsic_call]
@@ -283,7 +280,7 @@ mod benchmarks {
         // We now have y - 1 but the deposit has not been removed yet
         assert_eq!(
             Pallet::<T>::pending_registered_para_ids()[0].1.len(),
-            genesis_para_id_len + (y - 1) as usize
+            (y - 1) as usize
         );
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
@@ -291,10 +288,7 @@ mod benchmarks {
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
 
         // Now it has been removed
-        assert_eq!(
-            Pallet::<T>::registered_para_ids().len(),
-            genesis_para_id_len + (y - 1) as usize
-        );
+        assert_eq!(Pallet::<T>::registered_para_ids().len(), (y - 1) as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
     }
 
@@ -355,7 +349,6 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(1, x);
-        let genesis_para_id_len = 0;
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -380,10 +373,7 @@ mod benchmarks {
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
         // We should have registered y
-        assert_eq!(
-            Pallet::<T>::registered_para_ids().len(),
-            genesis_para_id_len + y as usize
-        );
+        assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
         let (caller, _deposit_amount) =
@@ -405,7 +395,7 @@ mod benchmarks {
         // We now have y - 1 and the deposit has been removed
         assert_eq!(
             Pallet::<T>::pending_registered_para_ids()[0].1.len(),
-            genesis_para_id_len + (y - 1) as usize
+            (y - 1) as usize
         );
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
 
@@ -413,10 +403,7 @@ mod benchmarks {
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
 
         // Now it has been removed
-        assert_eq!(
-            Pallet::<T>::registered_para_ids().len(),
-            genesis_para_id_len + (y - 1) as usize
-        );
+        assert_eq!(Pallet::<T>::registered_para_ids().len(), (y - 1) as usize);
 
         Ok(())
     }
@@ -446,7 +433,7 @@ mod benchmarks {
             .unwrap();
         }
 
-        // Second loop to fill RegisteredParaIds to its maximum
+        // Second loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
         for k in 1000..(1000 + y - 1) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
@@ -486,7 +473,7 @@ mod benchmarks {
         }
 
         // Worst case: when RegisteredParaIds and Paused are both full
-        // Second loop to fill Paused to its maximum
+        // Second loop to fill Paused to its maximum, minus 1 space for the benchmark call
         for k in 1000..(1000 + y - 1) {
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
@@ -565,7 +552,7 @@ mod benchmarks {
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
-        // First loop to fill RegisteredParaIds to its maximum
+        // First loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
         for i in 0..(y - 1) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
