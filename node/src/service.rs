@@ -83,6 +83,8 @@ use {
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
+mod mocked_relay_keys;
+
 type FullBackend = TFullBackend<Block>;
 
 /// Native executor type.
@@ -1133,7 +1135,10 @@ pub fn start_dev_node(
                             slots_per_para_block: 1,
                         };
                     let mut additional_keys = mocked_author_noting.get_key_values();
-                    additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
+                    // Mock only chain 2002 in relay.
+                    // This will allow any signed origin to deregister chains 2000 and 2001, and register 2002.
+                    let (registrar_paras_key_2002, para_info_2002) = mocked_relay_keys::get_mocked_registrar_paras(2002.into());
+                    additional_keys.extend([(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode()), (registrar_paras_key_2002, para_info_2002)]);
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {

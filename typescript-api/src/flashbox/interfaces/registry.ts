@@ -56,7 +56,6 @@ import type {
     PalletAuthorInherentCall,
     PalletAuthorInherentError,
     PalletAuthorNotingCall,
-    PalletAuthorNotingContainerChainBlockInfo,
     PalletAuthorNotingError,
     PalletAuthorNotingEvent,
     PalletAuthorityAssignmentCall,
@@ -185,6 +184,7 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
@@ -241,7 +241,6 @@ declare module "@polkadot/types/types/registry" {
         PalletAuthorInherentCall: PalletAuthorInherentCall;
         PalletAuthorInherentError: PalletAuthorInherentError;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
-        PalletAuthorNotingContainerChainBlockInfo: PalletAuthorNotingContainerChainBlockInfo;
         PalletAuthorNotingError: PalletAuthorNotingError;
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
         PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
@@ -370,6 +369,7 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
     } // InterfaceTypes

@@ -18,14 +18,17 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, EnsureSignedByManager, Pallet, RegistrarHooks},
+    crate::{
+        benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
+        Pallet, RegistrarHooks,
+    },
     frame_benchmarking::{account, v2::*},
     frame_support::traits::{Currency, EnsureOriginWithArg},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
     tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
-    tp_traits::{ParaId, SlotFrequency},
+    tp_traits::{ParaId, RelayStorageRootProvider, SlotFrequency},
 };
 
 /// Create a funded user.
@@ -96,6 +99,67 @@ mod benchmarks {
 
         #[extrinsic_call]
         Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage);
+
+        // verification code
+        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+    }
+
+    #[benchmark]
+    fn register_with_relay_proof(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
+        let mut data = vec![];
+        // Number of keys
+        for _i in 1..z {
+            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
+        }
+
+        let storage = new_genesis_data(data);
+
+        for i in 1..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+        }
+
+        // We should have registered y-1
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        // Uncomment to update blob
+        //panic!("caller: {:?}, is_u64? {}", caller.encode(), core::any::TypeId::of::<T::AccountId>() == core::any::TypeId::of::<u64>());
+
+        let blob = benchmark_blob();
+        let (relay_parent_storage_root, proof) = blob.sproof_0;
+
+        T::RelayStorageRootProvider::set_relay_storage_root(1, Some(relay_parent_storage_root));
+
+        // In tests we need a signature for a u64 accountid, in runtime we need a different signature
+        // for a 32 byte account id.
+        let signature = if core::any::TypeId::of::<T::AccountId>() == core::any::TypeId::of::<u64>()
+        {
+            blob.signature_account_u64
+        } else {
+            blob.signature_account_32_bytes
+        };
+
+        #[extrinsic_call]
+        Pallet::<T>::register_with_relay_proof(
+            RawOrigin::Signed(caller),
+            Default::default(),
+            None,
+            1,
+            proof,
+            signature,
+            storage,
+        );
 
         // verification code
         assert_eq!(pending_verification_len::<T>(), y as usize);
@@ -182,6 +246,113 @@ mod benchmarks {
             genesis_para_id_len + (y - 1) as usize
         );
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+    }
+
+    #[benchmark]
+    fn deregister_with_relay_proof_immediate(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
+        }
+
+        // We should have registered y
+        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        let blob = benchmark_blob();
+        let (relay_parent_storage_root, proof) = blob.sproof_empty;
+
+        T::RelayStorageRootProvider::set_relay_storage_root(1, Some(relay_parent_storage_root));
+
+        #[extrinsic_call]
+        Pallet::<T>::deregister_with_relay_proof(
+            RawOrigin::Signed(caller),
+            (y - 1).into(),
+            1,
+            proof,
+        );
+
+        // We should have y-1
+        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+    }
+
+    #[benchmark]
+    fn deregister_with_relay_proof_scheduled(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
+        let genesis_para_id_len = Pallet::<T>::registered_para_ids().len();
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            // Call mark_valid_for_collating to ensure that the deregister call
+            // does not execute the cleanup hooks immediately
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        // We should have registered y
+        assert_eq!(
+            Pallet::<T>::registered_para_ids().len(),
+            genesis_para_id_len + y as usize
+        );
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        let blob = benchmark_blob();
+        let (relay_parent_storage_root, proof) = blob.sproof_empty;
+
+        T::RelayStorageRootProvider::set_relay_storage_root(1, Some(relay_parent_storage_root));
+
+        #[extrinsic_call]
+        Pallet::<T>::deregister_with_relay_proof(
+            RawOrigin::Signed(caller),
+            (y - 1).into(),
+            1,
+            proof,
+        );
+
+        // We now have y - 1 and the deposit has been removed
+        assert_eq!(
+            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
+            genesis_para_id_len + (y - 1) as usize
+        );
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Now it has been removed
+        assert_eq!(
+            Pallet::<T>::registered_para_ids().len(),
+            genesis_para_id_len + (y - 1) as usize
+        );
     }
 
     #[benchmark]

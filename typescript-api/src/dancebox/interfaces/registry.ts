@@ -67,6 +67,7 @@ import type {
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    NimbusPrimitivesNimbusCryptoSignature,
     PalletAssetRateCall,
     PalletAssetRateError,
     PalletAssetRateEvent,
@@ -83,7 +84,6 @@ import type {
     PalletAuthorInherentCall,
     PalletAuthorInherentError,
     PalletAuthorNotingCall,
-    PalletAuthorNotingContainerChainBlockInfo,
     PalletAuthorNotingError,
     PalletAuthorNotingEvent,
     PalletAuthorityAssignmentCall,
@@ -200,7 +200,6 @@ import type {
     PalletUtilityError,
     PalletUtilityEvent,
     PalletXcmCall,
-    PalletXcmCoreBuyerBuyCoreCollatorProof,
     PalletXcmCoreBuyerCall,
     PalletXcmCoreBuyerError,
     PalletXcmCoreBuyerEvent,
@@ -246,8 +245,10 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
+    TpXcmCoreBuyerBuyCoreCollatorProof,
     XcmDoubleEncoded,
     XcmV2BodyId,
     XcmV2BodyPart,
@@ -361,6 +362,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
         NimbusPrimitivesNimbusCryptoPublic: NimbusPrimitivesNimbusCryptoPublic;
+        NimbusPrimitivesNimbusCryptoSignature: NimbusPrimitivesNimbusCryptoSignature;
         PalletAssetRateCall: PalletAssetRateCall;
         PalletAssetRateError: PalletAssetRateError;
         PalletAssetRateEvent: PalletAssetRateEvent;
@@ -377,7 +379,6 @@ declare module "@polkadot/types/types/registry" {
         PalletAuthorInherentCall: PalletAuthorInherentCall;
         PalletAuthorInherentError: PalletAuthorInherentError;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
-        PalletAuthorNotingContainerChainBlockInfo: PalletAuthorNotingContainerChainBlockInfo;
         PalletAuthorNotingError: PalletAuthorNotingError;
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
         PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
@@ -494,7 +495,6 @@ declare module "@polkadot/types/types/registry" {
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;
         PalletXcmCall: PalletXcmCall;
-        PalletXcmCoreBuyerBuyCoreCollatorProof: PalletXcmCoreBuyerBuyCoreCollatorProof;
         PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
         PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
         PalletXcmCoreBuyerEvent: PalletXcmCoreBuyerEvent;
@@ -540,8 +540,10 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
+        TpXcmCoreBuyerBuyCoreCollatorProof: TpXcmCoreBuyerBuyCoreCollatorProof;
         XcmDoubleEncoded: XcmDoubleEncoded;
         XcmV2BodyId: XcmV2BodyId;
         XcmV2BodyPart: XcmV2BodyPart;
