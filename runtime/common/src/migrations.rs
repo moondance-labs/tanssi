@@ -440,6 +440,101 @@ where
     }
 }
 
+pub struct DataPreserversAssignmentsMigration<T>(pub PhantomData<T>);
+impl<T> Migration for DataPreserversAssignmentsMigration<T>
+where
+    T: pallet_data_preservers::Config + pallet_registrar::Config,
+    T::AccountId: From<[u8; 32]>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_DataPreserversAssignmentsMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use {
+            frame_system::RawOrigin,
+            pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
+        };
+
+        let (request, extra, _witness) = T::AssignmentPayment::free_variant_values()
+            .expect("free variant values are necessary to perform migration");
+
+        let dummy_profile_owner = T::AccountId::from([0u8; 32]);
+
+        for (para_id, bootnodes) in pallet_data_preservers::BootNodes::<T>::drain() {
+            let para_manager =
+                pallet_registrar::ParaManager::<T>::get(para_id).expect("para manager exists");
+
+            for bootnode_url in bootnodes {
+                let profile = Profile {
+                    url: bootnode_url,
+                    para_ids: ParaIdsFilter::Whitelist(
+                        vec![para_id].try_into().expect("to be in bound"),
+                    ),
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: request.clone(),
+                };
+
+                let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
+
+                pallet_data_preservers::Pallet::<T>::force_create_profile(
+                    RawOrigin::Root.into(),
+                    profile,
+                    dummy_profile_owner.clone(),
+                )
+                .expect("to create profile");
+
+                pallet_data_preservers::Pallet::<T>::start_assignment(
+                    RawOrigin::Signed(para_manager.clone()).into(),
+                    profile_id,
+                    para_id,
+                    extra.clone(),
+                )
+                .expect("to start assignment");
+            }
+        }
+
+        Weight::default()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use parity_scale_codec::Encode;
+
+        let state: Vec<_> = pallet_data_preservers::BootNodes::<T>::iter().collect();
+        Ok(state.encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+        let pre_state: Vec<(ParaId, Vec<Vec<u8>>)> =
+            Decode::decode(&mut &state[..]).expect("state to be decoded properly");
+
+        for (para_id, bootnodes) in pre_state {
+            let assignments = pallet_data_preservers::Assignments::<T>::get(para_id);
+            assert_eq!(assignments.len(), bootnodes.len());
+
+            let profiles: Vec<_> =
+                pallet_data_preservers::Pallet::<T>::assignments_profiles(para_id).collect();
+
+            for bootnode in bootnodes {
+                assert_eq!(
+                    profiles
+                        .iter()
+                        .filter(|profile| profile.url == bootnode)
+                        .count(),
+                    1
+                );
+            }
+        }
+
+        assert_eq!(pallet_data_preservers::BootNodes::<T>::iter().count(), 0);
+
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -449,6 +544,8 @@ where
     Runtime: pallet_registrar::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_services_payment::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime::AccountId: From<[u8; 32]>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         //let migrate_services_payment =
@@ -463,6 +560,8 @@ where
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
         let migrate_registrar_manager =
             RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -474,6 +573,7 @@ where
             Box::new(migrate_add_collator_assignment_credits),
             Box::new(migrate_registrar_pending_verification),
             Box::new(migrate_registrar_manager),
+            Box::new(migrate_data_preservers_assignments),
         ]
     }
 }
@@ -488,8 +588,10 @@ where
     Runtime: pallet_configuration::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_data_preservers::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
+    Runtime::AccountId: From<[u8; 32]>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
@@ -512,6 +614,8 @@ where
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
         let migrate_registrar_manager =
             RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -535,6 +639,7 @@ where
             Box::new(migrate_xcmp_queue_v4),
             Box::new(migrate_registrar_pending_verification),
             Box::new(migrate_registrar_manager),
+            Box::new(migrate_data_preservers_assignments),
         ]
     }
 }

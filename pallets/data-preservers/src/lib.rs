@@ -112,6 +112,7 @@ pub mod pallet {
     }
 
     impl<T: Config> ParaIdsFilter<T> {
+        #[allow(clippy::len_without_is_empty)]
         pub fn len(&self) -> usize {
             match self {
                 Self::AnyParaId => 0,
@@ -122,8 +123,8 @@ pub mod pallet {
         pub fn can_assign(&self, para_id: &ParaId) -> bool {
             match self {
                 ParaIdsFilter::AnyParaId => true,
-                ParaIdsFilter::Whitelist(list) => list.contains(&para_id),
-                ParaIdsFilter::Blacklist(list) => !list.contains(&para_id),
+                ParaIdsFilter::Whitelist(list) => list.contains(para_id),
+                ParaIdsFilter::Blacklist(list) => !list.contains(para_id),
             }
         }
     }
@@ -207,6 +208,14 @@ pub mod pallet {
             witness: Self::AssignmentWitness,
         ) -> Result<(), DispatchErrorWithPostInfo>;
 
+        /// Return the values for a free assignment if it is supported.
+        /// This is required to perform automatic migration from old Bootnodes storage.
+        fn free_variant_values() -> Option<(
+            Self::ProviderRequest,
+            Self::AssignerParameter,
+            Self::AssignmentWitness,
+        )>;
+
         // The values returned by the following functions should match with each other.
         #[cfg(feature = "runtime-benchmarks")]
         fn benchmark_provider_request() -> Self::ProviderRequest;
@@ -217,40 +226,6 @@ pub mod pallet {
         #[cfg(feature = "runtime-benchmarks")]
         fn benchmark_assignment_witness() -> Self::AssignmentWitness;
     }
-
-    // #[pallet::genesis_config]
-    // #[derive(DefaultNoBound)]
-    // pub struct GenesisConfig<T: Config> {
-    //     /// Para ids
-    //     pub para_id_boot_nodes: Vec<(ParaId, Vec<Vec<u8>>)>,
-    //     pub _phantom: PhantomData<T>,
-    // }
-
-    // #[pallet::genesis_build]
-    // impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-    //     fn build(&self) {
-    //         // Sort para ids and detect duplicates, but do it using a vector of
-    //         // references to avoid cloning the boot nodes.
-    //         let mut para_ids: Vec<&_> = self.para_id_boot_nodes.iter().collect();
-    //         para_ids.sort_by(|a, b| a.0.cmp(&b.0));
-    //         para_ids.dedup_by(|a, b| {
-    //             if a.0 == b.0 {
-    //                 panic!("Duplicate para_id: {}", u32::from(a.0));
-    //             } else {
-    //                 false
-    //             }
-    //         });
-
-    //         for (para_id, boot_nodes) in para_ids {
-    //             let boot_nodes: Vec<_> = boot_nodes
-    //                 .iter()
-    //                 .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
-    //                 .collect();
-    //             let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
-    //             <BootNodes<T>>::insert(para_id, boot_nodes);
-    //         }
-    //     }
-    // }
 
     /// Data preservers pallet.
     #[pallet::pallet]
@@ -360,15 +335,15 @@ pub mod pallet {
         ProfileDeposit,
     }
 
-    // #[pallet::storage]
-    // #[pallet::getter(fn boot_nodes)]
-    // pub type BootNodes<T: Config> = StorageMap<
-    //     _,
-    //     Blake2_128Concat,
-    //     ParaId,
-    //     BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxBootNodes>,
-    //     ValueQuery,
-    // >;
+    #[deprecated]
+    #[pallet::storage]
+    pub type BootNodes<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn profiles)]
@@ -744,7 +719,7 @@ pub mod pallet {
         pub fn assignments_profiles(para_id: ParaId) -> impl Iterator<Item = Profile<T>> {
             Assignments::<T>::get(para_id)
                 .into_iter()
-                .filter_map(|profile_id| Profiles::<T>::get(profile_id))
+                .filter_map(Profiles::<T>::get)
                 .map(|profile| profile.profile)
         }
 

@@ -982,9 +982,27 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     fn try_stop_assignment(
         _assigner: AccountId,
         _provider: AccountId,
-        _witness: Self::AssignmentWitness,
+        witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {
+        match witness {
+            Self::AssignmentWitness::Free => (),
+        }
+
         Ok(())
+    }
+
+    /// Return the values for a free assignment if it is supported.
+    /// This is required to perform automatic migration from old Bootnodes storage.
+    fn free_variant_values() -> Option<(
+        Self::ProviderRequest,
+        Self::AssignerParameter,
+        Self::AssignmentWitness,
+    )> {
+        Some((
+            Self::ProviderRequest::Free,
+            Self::AssignerParameter::Free,
+            Self::AssignmentWitness::Free,
+        ))
     }
 
     // The values returned by the following functions should match with each other.
