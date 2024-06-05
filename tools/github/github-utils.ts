@@ -76,10 +76,12 @@ export async function getCommitAndLabels(
       const foundPrsNumbers = commitMessageFirstLine.match(/\(#([0-9]+)\)$/);
       if (foundPrsNumbers && foundPrsNumbers.length > 1) {
         // This will check current repo and if the PR is not found, will try the official repo
-        const repos = [
-          { owner, repo },
-          { owner: "moondance-labs", repo: "tanssi" },
+        let repos = [
+          { owner, repo }
         ];
+        if (lookForTanssi==true) {
+          repos.push({ owner: "moondance-labs", repo: "tanssi" })
+        }
         for (const { owner, repo } of repos) {
           try {
             const pr = await octokit.rest.pulls.get({
