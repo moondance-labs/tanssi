@@ -619,27 +619,11 @@ where
             .drain()
             .collect();
 
-        let foreign_asset_to_asset_id_count = foreign_asset_to_asset_id_data.len();
-
         let migrated_count = asset_id_to_foreign_asset_data
             .len()
             .saturating_add(foreign_asset_to_asset_id_data.len());
 
         log::info!("Migrating {:?} elements", migrated_count);
-
-        // Removing older entries with old location as key
-        let mut removal_result = storage::unhashed::clear_prefix(
-            &ForeignAssetToAssetId::<Runtime>::final_prefix(),
-            None,
-            None,
-        );
-        while removal_result.maybe_cursor.is_some() {
-            removal_result = storage::unhashed::clear_prefix(
-                &ForeignAssetToAssetId::<Runtime>::final_prefix(),
-                None,
-                removal_result.maybe_cursor.as_deref(),
-            );
-        }
 
         // Write to the new storage with removed and added fields
         for (asset_id, old_location) in asset_id_to_foreign_asset_data {
@@ -662,7 +646,6 @@ where
         Runtime::DbWeight::get()
             .reads(migrated_count as u64)
             .saturating_add(Runtime::DbWeight::get().writes(migrated_count as u64 + 3u64))
-            .saturating_add(Runtime::DbWeight::get().writes(foreign_asset_to_asset_id_count as u64))
     }
 
     #[cfg(feature = "try-runtime")]
