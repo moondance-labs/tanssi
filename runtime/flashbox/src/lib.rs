@@ -64,7 +64,7 @@ use {
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
-        EnsureRoot,
+        EnsureNever, EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
@@ -81,7 +81,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -95,7 +95,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
+        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        ShouldRotateAllCollators,
     },
 };
 pub use {
@@ -444,12 +445,9 @@ where
             ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
             // We need to convert the new Credit type to a negative imbalance
-            //let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
-            //<pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_nonzero_unbalanced(imbalance.into());
             // handle tip if there is one
             if let Some(tip) = fees_then_tips.next() {
                 let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
                 ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
             }
         }
@@ -463,7 +461,6 @@ where
         let treasury_percentage = 20;
 
         let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        let imbalance = NegativeImbalance::<R>::new(to_treasury.peek());
         ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
     }
 }
@@ -926,6 +923,43 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
         pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
+pub struct PalletRelayStorageRootProvider;
+
+impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
+    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::get(relay_block_number)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {
+        pallet_relay_storage_roots::pallet::RelayStorageRootKeys::<Runtime>::mutate(|x| {
+            if storage_root.is_some() {
+                if x.is_full() {
+                    let key = x.remove(0);
+                    pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::remove(key);
+                }
+                let pos = x.iter().position(|x| *x >= relay_block_number);
+                if let Some(pos) = pos {
+                    if x[pos] != relay_block_number {
+                        x.try_insert(pos, relay_block_number).unwrap();
+                    }
+                } else {
+                    // Push at end
+                    x.try_push(relay_block_number).unwrap();
+                }
+            } else {
+                let pos = x.iter().position(|x| *x == relay_block_number);
+                if let Some(pos) = pos {
+                    x.remove(pos);
+                }
+            }
+        });
+        pallet_relay_storage_roots::pallet::RelayStorageRoot::<Runtime>::set(
+            relay_block_number,
+            storage_root,
+        );
+    }
+}
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
@@ -934,9 +968,12 @@ parameter_types! {
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
+    type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;

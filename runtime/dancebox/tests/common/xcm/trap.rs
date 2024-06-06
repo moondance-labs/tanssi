@@ -42,7 +42,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
         dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 

@@ -19,6 +19,7 @@ use {
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, rococo, simple_template, westend,
     },
+    crate::Junctions::X1,
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
@@ -33,7 +34,7 @@ use {
 };
 
 decl_test_relay_chains! {
-    #[api_version(10)]
+    #[api_version(11)]
     pub struct Westend {
         genesis = westend::genesis(),
         on_init = (),
@@ -48,7 +49,7 @@ decl_test_relay_chains! {
             Sudo: westend_runtime::Sudo,
         }
     },
-    #[api_version(10)]
+    #[api_version(11)]
     pub struct Rococo {
         genesis = rococo::genesis(),
         on_init = (),
@@ -83,12 +84,12 @@ decl_test_parachains! {
             // And to sovereigns
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2001u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2002u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
         ])
@@ -168,12 +169,12 @@ decl_test_parachains! {
             // And to sovereigns
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2001u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
             (
                 SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                    &Location{ parents: 1, interior: X1(Parachain(2002u32))}
+                    &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
 

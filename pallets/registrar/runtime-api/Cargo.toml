@@ -1,0 +1,34 @@
+[package]
+name = "pallet-registrar-runtime-api"
+authors = { workspace = true }
+description = "Runtime API definition of pallet-registrar"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+frame-support = { workspace = true }
+pallet-registrar = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+sp-api = { workspace = true }
+tp-container-chain-genesis-data = { workspace = true }
+tp-traits = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-support/std",
+	"pallet-registrar/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-api/std",
+	"tp-container-chain-genesis-data/std",
+	"tp-traits/std",
+]

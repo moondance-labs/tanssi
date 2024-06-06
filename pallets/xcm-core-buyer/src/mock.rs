@@ -14,10 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::CheckCollatorValidity;
+use nimbus_primitives::NimbusId;
+use sp_keystore::testing::MemoryKeystore;
+use sp_keystore::KeystoreExt;
+use sp_runtime::RuntimeAppPublic;
+use tp_traits::{ContainerChainBlockInfo, LatestAuthorInfoFetcher};
+
 use {
     crate::{
-        self as pallet_xcm_core_buyer, GetParathreadCollators, GetPurchaseCoreCall,
-        ParaIdIntoAccountTruncating, RelayXcmWeightConfigInner,
+        self as pallet_xcm_core_buyer, GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
+        RelayXcmWeightConfigInner,
     },
     dp_core::ParaId,
     frame_support::{
@@ -159,18 +166,33 @@ impl mock_data::Config for Test {}
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub container_chain_collators: BTreeMap<ParaId, Vec<AccountId>>,
+    pub latest_author_info: BTreeMap<ParaId, ContainerChainBlockInfo<AccountId>>,
+    pub container_chain_collators: BTreeMap<ParaId, Vec<(AccountId, NimbusId)>>,
     pub parathread_params: BTreeMap<ParaId, ParathreadParams>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
+        let seed = b"//ALICE";
+        let nimbus_id = NimbusId::generate_pair(Some(seed.to_vec()));
+
         Self {
-            container_chain_collators: BTreeMap::from_iter([(ParaId::from(3333), vec![BOB])]),
+            latest_author_info: BTreeMap::from_iter([(
+                ParaId::from(3333),
+                ContainerChainBlockInfo {
+                    block_number: 0,
+                    author: AccountId::from(BOB),
+                    latest_slot_number: Default::default(),
+                },
+            )]),
+            container_chain_collators: BTreeMap::from_iter([(
+                ParaId::from(3333),
+                vec![(AccountId::from(BOB), nimbus_id)],
+            )]),
             parathread_params: BTreeMap::from_iter([(
                 ParaId::from(3333),
                 ParathreadParams {
-                    slot_frequency: SlotFrequency { min: 10, max: 10 },
+                    slot_frequency: SlotFrequency { min: 1, max: 1 },
                 },
             )]),
         }
@@ -193,13 +215,12 @@ impl pallet_xcm_core_buyer::Config for Test {
     type Currency = Balances;
     type XcmSender = DevNull;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;
-    type GetBlockNumber = ();
     type GetParathreadAccountId = ParaIdIntoAccountTruncating;
     type GetParathreadMaxCorePrice = ();
     type SelfParaId = ParachainId;
     type RelayChain = ();
     type GetParathreadParams = GetParathreadParamsImpl;
-    type GetAssignedCollators = GetAssignedCollatorsImpl;
+    type CheckCollatorValidity = CheckCollatorValidityImpl;
     type UnsignedPriority = ();
     type PendingBlocksTtl = PendingBlocksTtl;
     type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
@@ -208,6 +229,9 @@ impl pallet_xcm_core_buyer::Config for Test {
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
     type XCMNotifier = ();
+    type LatestAuthorInfoFetcher = LatestAuthorInfoFetcherImpl;
+    type SlotBeacon = DummyBeacon;
+    type CollatorPublicKey = NimbusId;
 
     type WeightInfo = ();
 }
@@ -242,22 +266,52 @@ impl crate::GetParathreadParams for GetParathreadParamsImpl {
     }
 }
 
-pub struct GetAssignedCollatorsImpl;
+pub struct DummyBeacon {}
+impl nimbus_primitives::SlotBeacon for DummyBeacon {
+    fn slot() -> u32 {
+        let block_number = System::block_number();
 
-impl GetParathreadCollators<AccountId> for GetAssignedCollatorsImpl {
-    fn get_parathread_collators(para_id: ParaId) -> Vec<AccountId> {
+        block_number as u32
+    }
+}
+
+pub struct CheckCollatorValidityImpl;
+
+impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
+    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) -> bool {
         MockData::mock()
             .container_chain_collators
             .get(&para_id)
-            .cloned()
-            .unwrap_or_default()
+            .is_some_and(|collators| collators.contains(&(account_id, public_key)))
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_parathread_collators(para_id: ParaId, collators: Vec<AccountId>) {
-        MockData::mutate(|m| {
-            m.container_chain_collators.insert(para_id, collators);
-        })
+    fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) {
+        let mock_data = MockData::mock();
+        let mut maybe_para_id_collators =
+            mock_data.container_chain_collators.get(&para_id).cloned();
+
+        let new_para_id_collators =
+            if let Some(mut para_id_collators) = maybe_para_id_collators.take() {
+                para_id_collators.push((account_id, public_key));
+                para_id_collators.clone()
+            } else {
+                vec![(account_id, public_key)]
+            };
+
+        MockData::mutate(|mocks| {
+            mocks
+                .container_chain_collators
+                .insert(para_id, new_para_id_collators);
+        });
+    }
+}
+
+pub struct LatestAuthorInfoFetcherImpl;
+
+impl LatestAuthorInfoFetcher<AccountId> for LatestAuthorInfoFetcherImpl {
+    fn get_latest_author_info(para_id: ParaId) -> Option<ContainerChainBlockInfo<AccountId>> {
+        MockData::mock().latest_author_info.get(&para_id).cloned()
     }
 }
 
@@ -306,6 +360,9 @@ impl ExtBuilder {
                 }),
             ));
         });
+
+        let memory_key_store = MemoryKeystore::new();
+        ext.register_extension(KeystoreExt::new(memory_key_store));
 
         ext
     }

@@ -30,7 +30,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     parity_scale_codec::Encode,
-    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation, VersionedXcm,
+    },
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,
@@ -114,7 +117,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
         dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -178,7 +181,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     );
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -245,7 +248,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     let sudo_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(Dancebox::para_id().into())),
+        interior: X1([Parachain(Dancebox::para_id().into())].into()),
     }
     .into();
 
@@ -257,7 +260,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     );
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -306,7 +309,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
                         ..
                     }) => {
                     sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                        &Location{ parents: 1, interior: X1(Parachain(2001u32))}
+                        &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                     ).unwrap(),
                 },
             ]
@@ -328,7 +331,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     let sudo_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(Dancebox::para_id().into())),
+        interior: X1([Parachain(Dancebox::para_id().into())].into()),
     }
     .into();
 
@@ -340,7 +343,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     );
 
     let buy_execution_fee = Asset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -389,7 +392,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
                         ..
                     }) => {
                     sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
-                        &Location{ parents: 1, interior: X1(Parachain(2002u32))}
+                        &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                     ).unwrap(),
                 },
             ]

@@ -48,6 +48,7 @@ describeSuite({
 
                 const wasm = fs.readFileSync((await MoonwallContext.getContext()).rtUpgradePath);
                 const rtHex = `0x${wasm.toString("hex")}`;
+                const rtBefore = paraApi.consts.system.version.specVersion.toNumber();
 
                 if (rtHex === codeString) {
                     log("Runtime already upgraded, skipping test");
@@ -60,6 +61,10 @@ describeSuite({
 
                 await context.upgradeRuntime({ from: alice, logger: log });
                 await context.waitBlock(2);
+                const rtafter = paraApi.consts.system.version.specVersion.toNumber();
+                if (rtBefore === rtafter) {
+                    throw new Error("Runtime upgrade failed");
+                }
                 const blockNumberAfter = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 log(`Before: #${blockNumberBefore}, After: #${blockNumberAfter}`);
                 expect(blockNumberAfter, "Block number did not increase").to.be.greaterThan(blockNumberBefore);
