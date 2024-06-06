@@ -36,7 +36,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
@@ -307,7 +307,6 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 pub struct ParaRegistrationParams {
     para_id: u32,
     genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
-    bootnodes: Vec<Vec<u8>>,
     block_production_credits: u32,
     collator_assignment_credits: u32,
 }
@@ -316,7 +315,6 @@ impl
     From<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
         u32,
         u32,
     )> for ParaRegistrationParams
@@ -325,7 +323,6 @@ impl
         value: (
             u32,
             ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
             u32,
             u32,
         ),
@@ -333,9 +330,8 @@ impl
         Self {
             para_id: value.0,
             genesis_data: value.1,
-            bootnodes: value.2,
-            block_production_credits: value.3,
-            collator_assignment_credits: value.4,
+            block_production_credits: value.2,
+            collator_assignment_credits: value.3,
         }
     }
 }
@@ -676,7 +672,6 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         dancebox_runtime::{
             PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest, RuntimeOrigin,
         },
-        frame_support::traits::EnsureOriginWithArg,
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
     };
 

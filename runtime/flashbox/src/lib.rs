@@ -840,7 +840,6 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     }
 
     fn try_stop_assignment(
-        _assigner: AccountId,
         _provider: AccountId,
         witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {

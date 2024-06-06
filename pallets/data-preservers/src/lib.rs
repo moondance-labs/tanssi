@@ -46,14 +46,14 @@ use {
         traits::{
             fungible::{Balanced, Inspect, MutateHold},
             tokens::Precision,
-            EnsureOriginWithArg,
+            EitherOfDiverse, EnsureOriginWithArg,
         },
     },
-    frame_system::pallet_prelude::*,
+    frame_system::{pallet_prelude::*, EnsureSigned},
     parity_scale_codec::FullCodec,
     sp_runtime::{
         traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
-        ArithmeticError,
+        ArithmeticError, Either,
     },
 };
 
@@ -203,7 +203,6 @@ pub mod pallet {
         ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo>;
 
         fn try_stop_assignment(
-            assigner: AccountId,
             provider: AccountId,
             witness: Self::AssignmentWitness,
         ) -> Result<(), DispatchErrorWithPostInfo>;
@@ -328,6 +327,7 @@ pub mod pallet {
         ProfileIsNotElligibleForParaId,
         WrongParaId,
         MaxAssignmentsPerParaIdReached,
+        CantDeleteAssignedProfile,
     }
 
     #[pallet::composite_enum]
@@ -346,7 +346,6 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn profiles)]
     pub type Profiles<T: Config> =
         StorageMap<_, Blake2_128Concat, T::ProfileId, RegisteredProfile<T>, OptionQuery>;
 
@@ -354,7 +353,6 @@ pub mod pallet {
     pub type NextProfileId<T: Config> = StorageValue<_, T::ProfileId, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn assignments)]
     pub type Assignments<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
@@ -479,6 +477,11 @@ pub mod pallet {
             };
 
             ensure!(
+                profile.assignment.is_none(),
+                Error::<T>::CantDeleteAssignedProfile,
+            );
+
+            ensure!(
                 profile.account == account,
                 sp_runtime::DispatchError::BadOrigin,
             );
@@ -597,6 +600,11 @@ pub mod pallet {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
+            ensure!(
+                profile.assignment.is_none(),
+                Error::<T>::CantDeleteAssignedProfile,
+            );
+
             T::Currency::release(
                 &HoldReason::ProfileDeposit.into(),
                 &profile.account,
@@ -675,9 +683,22 @@ pub mod pallet {
             profile_id: T::ProfileId,
             para_id: ParaId,
         ) -> DispatchResultWithPostInfo {
-            let assigner = T::AssignmentOrigin::ensure_origin(origin, &para_id)?;
+            let caller =
+                EitherOfDiverse::<T::AssignmentOrigin, EnsureSigned<T::AccountId>>::ensure_origin(
+                    origin, &para_id,
+                )?;
 
             let mut profile = Profiles::<T>::get(profile_id).ok_or(Error::<T>::UnknownProfileId)?;
+
+            match caller {
+                // para id manager, is allowed to call
+                Either::Left(_) => (),
+                // signed, must be profile owner
+                Either::Right(account) => ensure!(
+                    profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin
+                ),
+            }
 
             let Some((assignment_para_id, assignment_witness)) = profile.assignment.take() else {
                 Err(Error::<T>::ProfileNotAssigned)?
@@ -687,11 +708,7 @@ pub mod pallet {
                 Err(Error::<T>::WrongParaId)?
             }
 
-            T::AssignmentPayment::try_stop_assignment(
-                assigner,
-                profile.account.clone(),
-                assignment_witness,
-            )?;
+            T::AssignmentPayment::try_stop_assignment(profile.account.clone(), assignment_witness)?;
 
             Profiles::<T>::insert(profile_id, profile);
 

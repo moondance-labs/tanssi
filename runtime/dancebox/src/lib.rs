@@ -33,8 +33,6 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
-use pallet_xcm_core_buyer::BuyingError;
-use tp_traits::SlotFrequency;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
@@ -79,6 +77,7 @@ use {
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::CurrencyAdapter,
+    pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
     smallvec::smallvec,
@@ -100,7 +99,7 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
     },
 };
 pub use {
@@ -982,7 +981,6 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     }
 
     fn try_stop_assignment(
-        _assigner: AccountId,
         _provider: AccountId,
         witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {

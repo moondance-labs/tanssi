@@ -658,6 +658,86 @@ mod delete_profile {
                 );
             });
     }
+
+    #[test]
+    fn cant_delete_assigned_profile() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                let para_id = ParaId::from(1002);
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_noop!(
+                    DataPreservers::delete_profile(RuntimeOrigin::signed(BOB), 0,),
+                    Error::<Test>::CantDeleteAssignedProfile
+                );
+            });
+    }
+
+    #[test]
+    fn cant_force_delete_assigned_profile() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                let para_id = ParaId::from(1002);
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_noop!(
+                    DataPreservers::force_delete_profile(RuntimeOrigin::root(), 0),
+                    Error::<Test>::CantDeleteAssignedProfile
+                );
+            });
+    }
 }
 
 mod start_assignment {
@@ -783,7 +863,13 @@ mod start_assignment {
                         account: BOB,
                         deposit,
                         profile,
-                        assignment: Some((para_id, AssignmentWitness::SomeKindOfPayment { payed })),
+                        assignment: Some((
+                            para_id,
+                            AssignmentWitness::SomeKindOfPayment {
+                                payed,
+                                payer: ALICE
+                            }
+                        )),
                     })
                 );
 
@@ -973,6 +1059,78 @@ mod stop_assignment {
 
                 assert_ok!(DataPreservers::stop_assignment(
                     RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                ));
+
+                assert_eq!(
+                    events(),
+                    vec![
+                        Event::ProfileCreated {
+                            account: BOB,
+                            profile_id: 0,
+                            deposit,
+                        },
+                        Event::AssignmentStarted {
+                            profile_id: 0,
+                            para_id,
+                        },
+                        Event::AssignmentStopped {
+                            profile_id: 0,
+                            para_id,
+                        }
+                    ]
+                );
+
+                assert!(Assignments::<Test>::get(para_id).is_empty());
+
+                assert_eq!(
+                    Profiles::<Test>::get(0),
+                    Some(RegisteredProfile {
+                        account: BOB,
+                        deposit,
+                        profile,
+                        assignment: None,
+                    })
+                );
+            });
+    }
+
+    #[test]
+    fn stop_assignment_can_be_called_by_profile_owner() {
+        ExtBuilder::default()
+            .with_balances(vec![(ALICE, 1_000_000_000_000), (BOB, 1_000_000_000_000)])
+            .build()
+            .execute_with(|| {
+                let profile = Profile {
+                    url: b"test".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: ProviderRequest::Free,
+                };
+                let deposit = profile_deposit(&profile);
+                assert_eq!(deposit, 1_408);
+
+                let para_id = ParaId::from(1002);
+
+                assert_ok!(DataPreservers::create_profile(
+                    RuntimeOrigin::signed(BOB),
+                    profile.clone(),
+                ));
+
+                // Set ALICE as manager of para 1002
+                MockData::mutate(|m| {
+                    m.container_chain_managers.insert(para_id, Some(ALICE));
+                });
+                assert_ok!(DataPreservers::start_assignment(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    para_id,
+                    AssignerParameter::Free
+                ));
+
+                assert_ok!(DataPreservers::stop_assignment(
+                    RuntimeOrigin::signed(BOB),
                     0,
                     para_id,
                 ));

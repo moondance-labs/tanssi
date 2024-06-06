@@ -310,8 +310,10 @@ pub enum AssignmentWitness {
     Free,
     SomeKindOfPayment {
         // in this mock we store requested + extra to ensure `AssignmentPayment` is called
-        // properly.
+        // properly. We also store the payer to perform a second payment while stopping the
+        // assignement.
         payed: Balance,
+        payer: AccountId,
     },
 }
 
@@ -345,6 +347,7 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for AssignmentPayment 
                 )?;
                 AssignmentWitness::SomeKindOfPayment {
                     payed: total_amount,
+                    payer: assigner,
                 }
             }
             _ => Err(crate::Error::<Test>::AssignmentPaymentRequestParameterMismatch)?,
@@ -354,15 +357,14 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for AssignmentPayment 
     }
 
     fn try_stop_assignment(
-        assigner: AccountId,
         provider: AccountId,
         witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {
         // for testing purposes there is also a payment at the end of the assignment
         match witness {
             AssignmentWitness::Free => (),
-            AssignmentWitness::SomeKindOfPayment { payed } => {
-                Balances::transfer_allow_death(RuntimeOrigin::signed(assigner), provider, payed)?;
+            AssignmentWitness::SomeKindOfPayment { payed, payer } => {
+                Balances::transfer_allow_death(RuntimeOrigin::signed(payer), provider, payed)?;
             }
         };
 
