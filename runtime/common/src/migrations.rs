@@ -34,7 +34,6 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-use frame_support::__private::log;
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 use frame_support::migration::storage_key_iter;
