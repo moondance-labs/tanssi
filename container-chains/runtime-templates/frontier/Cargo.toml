@@ -297,6 +297,7 @@ try-runtime = [
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
+	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-sudo/try-runtime",

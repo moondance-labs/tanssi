@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
 import { deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
-import { 
-    ALITH_ADDRESS, 
-    ALITH_PRIVATE_KEY, 
-    BALTATHAR_ADDRESS, 
-    BALTATHAR_PRIVATE_KEY, 
-    alith, 
-    createViemTransaction, 
-    sendRawTransaction 
+import {
+    ALITH_ADDRESS,
+    ALITH_PRIVATE_KEY,
+    BALTATHAR_ADDRESS,
+    BALTATHAR_PRIVATE_KEY,
+    alith,
+    createViemTransaction,
+    sendRawTransaction,
 } from "@moonwall/util";
 import { encodeFunctionData } from "viem";
 import { hexToU8a } from "@polkadot/util";
@@ -21,24 +21,24 @@ describeSuite({
             id: "T01",
             title: "Any account can deploy (CREATE) in default mode",
             test: async function () {
-                const { 
-                    abi: fooAlithAbi, 
-                    contractAddress: contractAddressAlith, 
-                    hash: contractHashAlith, 
-                    status: contractStatusAlith 
-                } = await deployCreateCompiledContract(context, "Foo", {privateKey: ALITH_PRIVATE_KEY});
+                const {
+                    abi: fooAlithAbi,
+                    contractAddress: contractAddressAlith,
+                    hash: contractHashAlith,
+                    status: contractStatusAlith,
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAlithAbi).toBeTruthy();
                 expect(contractAddressAlith).toBeTruthy();
                 expect(contractHashAlith).toBeTruthy();
                 expect(contractStatusAlith).to.eq("success");
 
-                const { 
-                    abi: fooBaltatharAbi, 
-                    contractAddress: contractAddressBaltathar, 
-                    hash: contractHashBaltathar, 
-                    status: contractStatusBaltathar 
-                } = await deployCreateCompiledContract(context, "Foo", {privateKey: BALTATHAR_PRIVATE_KEY});
+                const {
+                    abi: fooBaltatharAbi,
+                    contractAddress: contractAddressBaltathar,
+                    hash: contractHashBaltathar,
+                    status: contractStatusBaltathar,
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: BALTATHAR_PRIVATE_KEY });
 
                 expect(fooBaltatharAbi).toBeTruthy();
                 expect(contractAddressBaltathar).toBeTruthy();
@@ -60,12 +60,12 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 // Alith can deploy "Foo".
-                const { 
-                    abi: fooAlithAbi, 
-                    contractAddress: contractAddressAlith, 
-                    hash: contractHashAlith, 
-                    status: contractStatusAlith 
-                } = await deployCreateCompiledContract(context, "Foo", {privateKey: ALITH_PRIVATE_KEY});
+                const {
+                    abi: fooAlithAbi,
+                    contractAddress: contractAddressAlith,
+                    hash: contractHashAlith,
+                    status: contractStatusAlith,
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAlithAbi).toBeTruthy();
                 expect(contractAddressAlith).toBeTruthy();
@@ -74,12 +74,12 @@ describeSuite({
 
                 // Baltathar is forbidden to deploy after changing the configuration params.
                 try {
-                    await deployCreateCompiledContract(context, "Foo", {privateKey: BALTATHAR_PRIVATE_KEY});
-                }catch(error){
-                     return expect(error.details).to.be.eq(
+                    await deployCreateCompiledContract(context, "Foo", { privateKey: BALTATHAR_PRIVATE_KEY });
+                } catch (error) {
+                    return expect(error.details).to.be.eq(
                         // pallet-evm (index 61): CreateOriginNotAllowed error (index 13)
                         "execution fatal: Module(ModuleError { index: 61, error: [13, 0, 0, 0], message: None })"
-                      );
+                    );
                 }
 
                 expect.fail("Expected the previous contract deployment to fail");
@@ -92,12 +92,12 @@ describeSuite({
             test: async function () {
                 // First Alith deploys "Foo", which then will be used to deploy
                 // the inner contract "Bar".
-                const { 
-                    abi: fooAbi, 
-                    contractAddress: contractFooAddress, 
-                    hash: contractFooHash, 
-                    status: contractFooStatus 
-                } = await deployCreateCompiledContract(context, "Foo", {privateKey: ALITH_PRIVATE_KEY});
+                const {
+                    abi: fooAbi,
+                    contractAddress: contractFooAddress,
+                    hash: contractFooHash,
+                    status: contractFooStatus,
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAbi).toBeTruthy();
                 expect(contractFooAddress).toBeTruthy();
@@ -115,7 +115,7 @@ describeSuite({
                         functionName: "newBar",
                         args: [],
                     }),
-                    privateKey: ALITH_PRIVATE_KEY
+                    privateKey: ALITH_PRIVATE_KEY,
                 });
 
                 const alithTxResult = await sendRawTransaction(context, alithInnerDeployTx);
@@ -127,7 +127,9 @@ describeSuite({
                 expect(alithTxReceipt.status).to.eq("success");
 
                 // Baltathar can also perform inner deployments.
-                let baltatharNonce = (await context.polkadotJs().query.system.account(BALTATHAR_ADDRESS)).nonce.toNumber();
+                let baltatharNonce = (
+                    await context.polkadotJs().query.system.account(BALTATHAR_ADDRESS)
+                ).nonce.toNumber();
                 const baltatharInnerDeployTx = await createViemTransaction(context, {
                     to: contractFooAddress,
                     nonce: baltatharNonce++,
@@ -136,7 +138,7 @@ describeSuite({
                         functionName: "newBar",
                         args: [],
                     }),
-                    privateKey: BALTATHAR_PRIVATE_KEY
+                    privateKey: BALTATHAR_PRIVATE_KEY,
                 });
 
                 const baltatharTxResult = await sendRawTransaction(context, baltatharInnerDeployTx);
@@ -162,12 +164,12 @@ describeSuite({
 
                 // First Alith deploys "Foo", which then will be used to deploy
                 // the inner contract "Bar".
-                const { 
-                    abi: fooAbi, 
-                    contractAddress: contractFooAddress, 
-                    hash: contractFooHash, 
-                    status: contractFooStatus 
-                } = await deployCreateCompiledContract(context, "Foo", {privateKey: ALITH_PRIVATE_KEY});
+                const {
+                    abi: fooAbi,
+                    contractAddress: contractFooAddress,
+                    hash: contractFooHash,
+                    status: contractFooStatus,
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(contractFooStatus).to.eq("success");
 
@@ -182,7 +184,7 @@ describeSuite({
                         functionName: "newBar",
                         args: [],
                     }),
-                    privateKey: ALITH_PRIVATE_KEY
+                    privateKey: ALITH_PRIVATE_KEY,
                 });
 
                 const alithTxResult = await sendRawTransaction(context, alithInnerDeployTx);
@@ -194,7 +196,9 @@ describeSuite({
                 expect(alithTxReceipt.status).to.eq("success");
 
                 // Baltathar can't perform inner deployments anymore.
-                let baltatharNonce = (await context.polkadotJs().query.system.account(BALTATHAR_ADDRESS)).nonce.toNumber();
+                let baltatharNonce = (
+                    await context.polkadotJs().query.system.account(BALTATHAR_ADDRESS)
+                ).nonce.toNumber();
                 try {
                     await createViemTransaction(context, {
                         to: contractFooAddress,
@@ -204,12 +208,10 @@ describeSuite({
                             functionName: "newBar",
                             args: [],
                         }),
-                        privateKey: BALTATHAR_PRIVATE_KEY
+                        privateKey: BALTATHAR_PRIVATE_KEY,
                     });
-                }catch(error){
-                    return expect(error.details).to.be.eq(
-                        "VM Exception while processing transaction: revert"
-                      );
+                } catch (error) {
+                    return expect(error.details).to.be.eq("VM Exception while processing transaction: revert");
                 }
 
                 expect.fail("Expected the previous contract deployment to fail");
