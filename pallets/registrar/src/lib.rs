@@ -416,7 +416,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Register container-chain
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, genesis_data.storage.len() as u32))]
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -435,11 +435,7 @@ pub mod pallet {
         /// from `PendingVerification` as well.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::deregister_immediate(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
         ).max(T::WeightInfo::deregister_scheduled(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
         )))]
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
@@ -451,7 +447,7 @@ pub mod pallet {
 
         /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(T::MaxLengthParaIds::get()))]
+        #[pallet::weight(T::WeightInfo::mark_valid_for_collating())]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::MarkValidForCollatingOrigin::ensure_origin(origin)?;
 
@@ -463,7 +459,7 @@ pub mod pallet {
         /// Pause container-chain from collating. Does not remove its boot nodes nor its genesis config.
         /// Only container-chains that have been marked as valid_for_collating can be paused.
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::pause_container_chain(T::MaxLengthParaIds::get()))]
+        #[pallet::weight(T::WeightInfo::pause_container_chain())]
         pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -495,7 +491,7 @@ pub mod pallet {
         /// Unpause container-chain.
         /// Only container-chains that have been paused can be unpaused.
         #[pallet::call_index(5)]
-        #[pallet::weight(T::WeightInfo::unpause_container_chain(T::MaxLengthParaIds::get()))]
+        #[pallet::weight(T::WeightInfo::unpause_container_chain())]
         pub fn unpause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -525,7 +521,7 @@ pub mod pallet {
 
         /// Register parathread
         #[pallet::call_index(6)]
-        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, genesis_data.storage.len() as u32))]
         pub fn register_parathread(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -544,7 +540,7 @@ pub mod pallet {
 
         /// Change parathread params
         #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::set_parathread_params(T::MaxLengthParaIds::get()))]
+        #[pallet::weight(T::WeightInfo::set_parathread_params())]
         pub fn set_parathread_params(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -589,7 +585,7 @@ pub mod pallet {
 
         /// Register parachain or parathread
         #[pallet::call_index(9)]
-        #[pallet::weight(T::WeightInfo::register_with_relay_proof(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        #[pallet::weight(T::WeightInfo::register_with_relay_proof(genesis_data.encoded_size() as u32, genesis_data.storage.len() as u32))]
         pub fn register_with_relay_proof(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -640,11 +636,7 @@ pub mod pallet {
         /// extrinsic will be rewarded with the parachain deposit.
         #[pallet::call_index(10)]
         #[pallet::weight(T::WeightInfo::deregister_with_relay_proof_immediate(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
         ).max(T::WeightInfo::deregister_with_relay_proof_scheduled(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
         )))]
         pub fn deregister_with_relay_proof(
             origin: OriginFor<T>,
