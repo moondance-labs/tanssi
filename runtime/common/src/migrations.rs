@@ -34,6 +34,7 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
+use frame_support::__private::log;
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 use frame_support::migration::storage_key_iter;
@@ -643,9 +644,7 @@ where
         }
 
         // One db read and one db write per element, plus the on-chain storage
-        Runtime::DbWeight::get()
-            .reads(migrated_count as u64)
-            .saturating_add(Runtime::DbWeight::get().writes(migrated_count as u64 + 3u64))
+        Runtime::DbWeight::get().reads_writes(migrated_count as u64, 2 * migrated_count as u64)
     }
 
     #[cfg(feature = "try-runtime")]
