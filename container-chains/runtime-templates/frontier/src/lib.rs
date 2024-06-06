@@ -69,8 +69,8 @@ use {
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
         Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
-        EnsureAllowedCreateAddress, EnsureCreateOrigin, FeeCalculator, GasWeightMapping,
-        IdentityAddressMapping, OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
+        EnsureCreateOrigin, FeeCalculator, GasWeightMapping, IdentityAddressMapping,
+        OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},
