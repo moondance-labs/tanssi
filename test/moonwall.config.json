@@ -190,10 +190,10 @@
             "name": "zombie_tanssi_keep_db",
             "testFileDir": ["suites/keep-db"],
             "runScripts": [
-                "build-spec-warp-sync.sh",
+                "build-spec-single-container.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -224,10 +224,10 @@
             "name": "zombie_tanssi_metrics",
             "testFileDir": ["suites/metrics"],
             "runScripts": [
-                "build-spec-warp-sync.sh",
+                "build-spec-single-container.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -388,10 +388,10 @@
             "name": "zombie_tanssi_warp_sync",
             "testFileDir": ["suites/warp-sync"],
             "runScripts": [
-                "build-spec-warp-sync.sh",
+                "build-spec-single-container.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/warp-sync-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/warp-sync-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -431,6 +431,82 @@
                     "disableDefaultEthProviders": true
                 }
             }
+        },
+        {
+            "name": "zombie_simple_template_upgrade",
+            "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
+            "runScripts": [
+                "download-latest-rt-binaries.sh",
+                "build-spec-single-container.sh tmp container-chain-simple-node",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+
+            "timeout": 600000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieTemplateUpgradeSimple.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_frontier_template_upgrade",
+            "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
+            "runScripts": [
+                "download-latest-rt-binaries.sh",
+                "build-spec-single-container.sh tmp container-chain-frontier-node",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+
+            "timeout": 600000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieTemplateUpgradeFrontier.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
         },
         {
             "name": "dancebox_smoke",

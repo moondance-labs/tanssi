@@ -397,11 +397,16 @@ where
         )
         .unwrap_or_default();
 
+        let total_weight = T::DbWeight::get()
+            .reads(1)
+            .saturating_add(T::DbWeight::get().writes(1));
+
         for para_id in para_ids {
+            total_weight.saturating_add(T::DbWeight::get().writes(1));
             pallet_registrar::PendingVerification::<T>::insert(para_id, ());
         }
 
-        Weight::default()
+        total_weight
     }
 
     #[cfg(feature = "try-runtime")]
@@ -426,11 +431,17 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
+        let total_weight = Weight::default();
         for (para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
             pallet_registrar::ParaManager::<T>::insert(para_id, deposit.creator);
+            total_weight.saturating_add(
+                T::DbWeight::get()
+                    .reads(1)
+                    .saturating_add(T::DbWeight::get().writes(1)),
+            );
         }
 
-        Weight::default()
+        total_weight
     }
 
     #[cfg(feature = "try-runtime")]
