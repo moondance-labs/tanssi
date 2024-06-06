@@ -12336,9 +12336,11 @@ dependencies = [
  "frame-system",
  "frame-try-runtime",
  "hex-literal 0.3.4",
+ "log",
  "pallet-balances",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-foreign-asset-creator",
  "pallet-invulnerables",
  "pallet-migrations",
  "pallet-pooled-staking",
@@ -12351,6 +12353,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]
