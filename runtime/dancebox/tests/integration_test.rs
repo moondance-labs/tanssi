@@ -5641,18 +5641,18 @@ fn test_migration_foreign_asset_creator() {
             ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
             ForeignAssetToAssetId::<Runtime>::storage_prefix(),
             &location_1.blake2_128_concat(),
-            &asset_id1,
+            asset_id1,
         );
         put_storage_value(
             ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
             ForeignAssetToAssetId::<Runtime>::storage_prefix(),
             &location_2.blake2_128_concat(),
-            &asset_id2,
+            asset_id2,
         );
 
         // Let's run the migration now
         let foreign_asset_creator_migration: ForeignAssetCreatorMigration<Runtime> =
-            ForeignAssetCreatorMigration(PhantomData::default());
+            ForeignAssetCreatorMigration(PhantomData);
         let weight_consumed = foreign_asset_creator_migration.migrate(Default::default());
         assert_eq!(
             weight_consumed,
