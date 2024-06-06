@@ -734,7 +734,7 @@ impl pallet_parameters::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeParameters = RuntimeParameters;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_parameters::SubstrateWeight<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -743,7 +743,7 @@ impl Default for RuntimeParameters {
         RuntimeParameters::ContractDeployFilter(
             dynamic_params::contract_deploy_filter::Parameters::AllowedAddressesToCreate(
                 dynamic_params::contract_deploy_filter::AllowedAddressesToCreate,
-                DeployFilter::All,
+                Some(DeployFilter::All),
             ),
         )
     }
@@ -976,6 +976,7 @@ mod benches {
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_multisig, Multisig]
+        [pallet_parameters, Parameters]
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
