@@ -171,6 +171,7 @@ describeSuite({
                     status: contractFooStatus,
                 } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
+                expect(contractFooHash).toBeTruthy();
                 expect(contractFooStatus).to.eq("success");
 
                 let aliceNonce = (await context.polkadotJs().query.system.account(ALITH_ADDRESS)).nonce.toNumber();
