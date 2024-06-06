@@ -28,7 +28,7 @@ use {
             fungible::{Inspect, Mutate},
             EnsureOrigin,
         },
-        BoundedVec,
+        BoundedBTreeSet, BoundedVec,
     },
     frame_system::RawOrigin,
     sp_runtime::traits::Zero,
@@ -58,7 +58,11 @@ mod benchmarks {
     fn create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -89,7 +93,10 @@ mod benchmarks {
     fn force_create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -123,7 +130,10 @@ mod benchmarks {
     #[benchmark]
     fn update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -139,7 +149,10 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -171,7 +184,10 @@ mod benchmarks {
     #[benchmark]
     fn force_update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -187,7 +203,10 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -220,7 +239,10 @@ mod benchmarks {
     #[benchmark]
     fn delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
@@ -243,7 +265,10 @@ mod benchmarks {
     #[benchmark]
     fn force_delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,

@@ -930,7 +930,9 @@ impl pallet_services_payment::Config for Runtime {
 parameter_types! {
     pub const ProfileDepositBaseFee: Balance = currency::STORAGE_ITEM_FEE;
     pub const ProfileDepositByteFee: Balance = currency::STORAGE_BYTE_FEE;
+    #[derive(Clone)]
     pub const MaxAssignmentsPerParaId: u32 = 10;
+    #[derive(Clone)]
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
@@ -1079,6 +1081,7 @@ impl pallet_invulnerables::Config for Runtime {
 }
 
 parameter_types! {
+    #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }

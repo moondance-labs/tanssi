@@ -18,6 +18,7 @@ use {
     crate::{mock::*, *},
     frame_support::{assert_noop, assert_ok, pallet_prelude::*},
     sp_runtime::TokenError,
+    std::collections::BTreeSet,
 };
 
 const ALICE: u64 = 1;
@@ -26,6 +27,30 @@ const BOB: u64 = 2;
 fn profile_deposit(profile: &Profile<Test>) -> BalanceOf<Test> {
     <Test as Config>::ProfileDeposit::profile_deposit(profile)
         .expect("profile_deposit shouldn't fail")
+}
+
+macro_rules! bset {
+    ( $($value:expr),* $(,)? ) => {
+        {
+            let mut set = BoundedBTreeSet::new();
+            $(
+                set.try_insert($value).expect("max bound reached");
+            )*
+            set
+        }
+    }
+}
+
+macro_rules! set {
+    ( $($value:expr),* $(,)? ) => {
+        {
+            let mut set = BTreeSet::new();
+            $(
+                set.insert($value);
+            )*
+            set
+        }
+    }
 }
 
 mod create_profile {
@@ -224,7 +249,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -288,7 +313,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -326,7 +351,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -364,7 +389,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -405,7 +430,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -466,7 +491,7 @@ mod update_profile {
 
                 let profile2 = Profile {
                     url: b"test2".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![ParaId::from(42)].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: false,
                     },
@@ -791,7 +816,7 @@ mod start_assignment {
                     ]
                 );
 
-                assert_eq!(Assignments::<Test>::get(para_id).into_inner(), vec![0]);
+                assert_eq!(Assignments::<Test>::get(para_id).into_inner(), set![0]);
 
                 assert_eq!(
                     Profiles::<Test>::get(0),
@@ -853,7 +878,7 @@ mod start_assignment {
                     ]
                 );
 
-                assert_eq!(Assignments::<Test>::get(para_id).into_inner(), vec![0]);
+                assert_eq!(Assignments::<Test>::get(para_id), set![0]);
 
                 let payed = 1337 + 42;
 

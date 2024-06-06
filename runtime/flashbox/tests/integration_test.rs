@@ -3940,13 +3940,47 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 fn test_migration_data_preservers_assignments() {
     ExtBuilder::default().build().execute_with(|| {
         use {
+            frame_support::{
+                migration::{have_storage_value, put_storage_value},
+                Blake2_128Concat, StorageHasher,
+            },
             pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode, RegisteredProfile},
             runtime_common::migrations::DataPreserversAssignmentsMigration,
+            sp_runtime::BoundedBTreeSet,
+            sp_std::collections::btree_set::BTreeSet,
+            flashbox_runtime::{MaxNodeUrlLen, MaxAssignmentsPerParaId},
         };
+
+        macro_rules! bset {
+            ( $($value:expr),* $(,)? ) => {
+                {
+                    let mut set = BoundedBTreeSet::new();
+                    $(
+                        set.try_insert($value).expect("max bound reached");
+                    )*
+                    set
+                }
+            }
+        }
+
+        macro_rules! set {
+            ( $($value:expr),* $(,)? ) => {
+                {
+                    let mut set = BTreeSet::new();
+                    $(
+                        set.insert($value);
+                    )*
+                    set
+                }
+            }
+        }
 
         let account = AccountId::from([0u8; 32]);
         let free_request = flashbox_runtime::PreserversAssignementPaymentRequest::Free;
         let free_witness = flashbox_runtime::PreserversAssignementPaymentWitness::Free;
+
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
 
         // Register 2 parachains
         assert_ok!(Registrar::register(
@@ -3961,38 +3995,56 @@ fn test_migration_data_preservers_assignments() {
         ));
 
         // Set bootnodes in old storage
-        let bootnodes: BoundedVec<_, _> = vec![
+        let bootnodes: BoundedVec<BoundedVec<u8, MaxNodeUrlLen>, MaxAssignmentsPerParaId> = vec![
             b"alpha".to_vec().try_into().unwrap(),
             b"beta".to_vec().try_into().unwrap(),
         ]
         .try_into()
         .unwrap();
-        pallet_data_preservers::BootNodes::<Runtime>::insert(ParaId::from(1001), bootnodes);
+        put_storage_value(
+            pallet_prefix,
+            storage_item_prefix,
+            &Blake2_128Concat::hash(&ParaId::from(1001).encode()),
+            bootnodes,
+        );
 
-        let bootnodes: BoundedVec<_, _> = vec![
+        let bootnodes: BoundedVec<BoundedVec<u8, MaxNodeUrlLen>, MaxAssignmentsPerParaId> = vec![
             b"delta".to_vec().try_into().unwrap(),
             b"gamma".to_vec().try_into().unwrap(),
         ]
         .try_into()
         .unwrap();
-        pallet_data_preservers::BootNodes::<Runtime>::insert(ParaId::from(1002), bootnodes);
+        put_storage_value(
+            pallet_prefix,
+            storage_item_prefix,
+            &Blake2_128Concat::hash(&ParaId::from(1002).encode()),
+            bootnodes,
+        );
 
         // Apply migration
         let migration = DataPreserversAssignmentsMigration::<Runtime>(Default::default());
         migration.migrate(Default::default());
 
         // Check old storage is empty
-        assert!(pallet_data_preservers::BootNodes::<Runtime>::get(ParaId::from(1001)).is_empty());
-        assert!(pallet_data_preservers::BootNodes::<Runtime>::get(ParaId::from(1002)).is_empty());
+        assert!(!have_storage_value(
+            pallet_prefix,
+            storage_item_prefix,
+            &Blake2_128Concat::hash(&ParaId::from(1001).encode())
+        ));
+        assert!(!have_storage_value(
+            pallet_prefix,
+            storage_item_prefix,
+            &Blake2_128Concat::hash(&ParaId::from(1002).encode())
+        ));
 
         // Check new storage
         assert_eq!(
-            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1001)).to_vec(),
-            vec![0, 1]
+            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1001)).into_inner(),
+            set![0, 1]
         );
         assert_eq!(
-            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1002)).to_vec(),
-            vec![2, 3]
+            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1002)).into_inner(),
+            set![2, 3]
         );
         assert_eq!(pallet_data_preservers::NextProfileId::<Runtime>::get(), 4);
         assert_eq!(
@@ -4003,7 +4055,7 @@ fn test_migration_data_preservers_assignments() {
                 assignment: Some((1001.into(), free_witness.clone())),
                 profile: Profile {
                     url: b"alpha".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![1001.into()].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
                     mode: ProfileMode::Bootnode,
                     assignment_request: free_request.clone(),
                 }
@@ -4017,7 +4069,7 @@ fn test_migration_data_preservers_assignments() {
                 assignment: Some((1001.into(), free_witness.clone())),
                 profile: Profile {
                     url: b"beta".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![1001.into()].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
                     mode: ProfileMode::Bootnode,
                     assignment_request: free_request.clone(),
                 }
@@ -4031,7 +4083,7 @@ fn test_migration_data_preservers_assignments() {
                 assignment: Some((1002.into(), free_witness.clone())),
                 profile: Profile {
                     url: b"delta".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![1002.into()].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
                     mode: ProfileMode::Bootnode,
                     assignment_request: free_request.clone(),
                 }
@@ -4045,7 +4097,7 @@ fn test_migration_data_preservers_assignments() {
                 assignment: Some((1002.into(), free_witness.clone())),
                 profile: Profile {
                     url: b"gamma".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(vec![1002.into()].try_into().unwrap()),
+                    para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
                     mode: ProfileMode::Bootnode,
                     assignment_request: free_request.clone(),
                 }

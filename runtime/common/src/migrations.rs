@@ -40,9 +40,11 @@ use frame_support::ensure;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
+        migration::{clear_storage_prefix, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         traits::{OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
         weights::Weight,
+        Blake2_128Concat, BoundedVec,
     },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
@@ -463,6 +465,7 @@ where
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
         use {
+            frame_support::BoundedBTreeSet,
             frame_system::RawOrigin,
             pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
         };
@@ -472,16 +475,27 @@ where
 
         let dummy_profile_owner = T::AccountId::from([0u8; 32]);
 
-        for (para_id, bootnodes) in pallet_data_preservers::BootNodes::<T>::drain() {
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+        let bootnodes_storage: Vec<_> = storage_key_iter::<
+            ParaId,
+            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
+        for (para_id, bootnodes) in bootnodes_storage {
             let para_manager =
                 pallet_registrar::ParaManager::<T>::get(para_id).expect("para manager exists");
 
             for bootnode_url in bootnodes {
                 let profile = Profile {
                     url: bootnode_url,
-                    para_ids: ParaIdsFilter::Whitelist(
-                        vec![para_id].try_into().expect("to be in bound"),
-                    ),
+                    para_ids: ParaIdsFilter::Whitelist({
+                        let mut set = BoundedBTreeSet::new();
+                        set.try_insert(para_id).expect("to be in bound");
+                        set
+                    }),
                     mode: ProfileMode::Bootnode,
                     assignment_request: request.clone(),
                 };
@@ -505,6 +519,8 @@ where
             }
         }
 
+        let _ = clear_storage_prefix(pallet_prefix, storage_item_prefix, &[], None, None);
+
         Weight::default()
     }
 
@@ -512,7 +528,15 @@ where
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
         use parity_scale_codec::Encode;
 
-        let state: Vec<_> = pallet_data_preservers::BootNodes::<T>::iter().collect();
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+        let state: Vec<_> = storage_key_iter::<
+            ParaId,
+            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
         Ok(state.encode())
     }
 

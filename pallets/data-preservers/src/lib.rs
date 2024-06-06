@@ -107,8 +107,8 @@ pub mod pallet {
     #[scale_info(skip_type_params(T))]
     pub enum ParaIdsFilter<T: Config> {
         AnyParaId,
-        Whitelist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
-        Blacklist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
+        Whitelist(BoundedBTreeSet<ParaId, T::MaxParaIdsVecLen>),
+        Blacklist(BoundedBTreeSet<ParaId, T::MaxParaIdsVecLen>),
     }
 
     impl<T: Config> ParaIdsFilter<T> {
@@ -267,11 +267,11 @@ pub mod pallet {
         type ForceSetProfileOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         #[pallet::constant]
-        type MaxAssignmentsPerParaId: Get<u32>;
+        type MaxAssignmentsPerParaId: Get<u32> + Clone;
         #[pallet::constant]
-        type MaxNodeUrlLen: Get<u32>;
+        type MaxNodeUrlLen: Get<u32> + Clone;
         #[pallet::constant]
-        type MaxParaIdsVecLen: Get<u32>;
+        type MaxParaIdsVecLen: Get<u32> + Clone;
 
         /// How much must be deposited to register a profile.
         type ProfileDeposit: ProfileDeposit<Profile<Self>, BalanceOf<Self>>;
@@ -335,15 +335,6 @@ pub mod pallet {
         ProfileDeposit,
     }
 
-    #[deprecated]
-    #[pallet::storage]
-    pub type BootNodes<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
-        ValueQuery,
-    >;
 
     #[pallet::storage]
     pub type Profiles<T: Config> =
@@ -357,7 +348,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ParaId,
-        BoundedVec<T::ProfileId, T::MaxAssignmentsPerParaId>,
+        BoundedBTreeSet<T::ProfileId, T::MaxAssignmentsPerParaId>,
         ValueQuery,
     >;
 
@@ -645,12 +636,9 @@ pub mod pallet {
             // Add profile id to BoundedVec early in case bound is reached
             {
                 let mut assignments = Assignments::<T>::get(para_id);
-                let Err(position) = assignments.binary_search(&profile_id) else {
-                    Err(Error::<T>::ProfileAlreadyAssigned)?
-                };
 
                 assignments
-                    .try_insert(position, profile_id)
+                    .try_insert(profile_id)
                     .map_err(|_| Error::<T>::MaxAssignmentsPerParaIdReached)?;
 
                 Assignments::<T>::insert(para_id, assignments);
@@ -714,12 +702,9 @@ pub mod pallet {
 
             {
                 let mut assignments = Assignments::<T>::get(para_id);
-                let Ok(position) = assignments.binary_search(&profile_id) else {
+                if !assignments.remove(&profile_id) {
                     Err(Error::<T>::ProfileNotAssigned)?
-                };
-
-                assignments.remove(position);
-
+                }
                 Assignments::<T>::insert(para_id, assignments);
             }
 
@@ -747,10 +732,8 @@ pub mod pallet {
         }
 
         pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
-            if Self::assignments_profiles(para_id)
-                .filter(|profile| profile.mode == ProfileMode::Bootnode)
-                .count()
-                == 0
+            if !Self::assignments_profiles(para_id)
+                .any(|profile| profile.mode == ProfileMode::Bootnode)
             {
                 Err(Error::<T>::NoBootNodes)?
             }
