@@ -27,8 +27,8 @@ use {
     },
     pallet_migrations::{GetMigrations, Migration},
     runtime_common::migrations::{
-        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
-        XcmpQueueMigrationV4,
+        ForeignAssetCreatorMigration, PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion,
+        XcmpQueueMigrationV3, XcmpQueueMigrationV4,
     },
     sp_std::{marker::PhantomData, prelude::*},
 };
@@ -71,6 +71,9 @@ where
     Runtime: cumulus_pallet_xcmp_queue::Config,
     Runtime: pallet_xcm_executor_utils::Config,
     Runtime: pallet_xcm::Config,
+    Runtime: pallet_foreign_asset_creator::Config,
+    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
+        TryFrom<staging_xcm::v3::MultiLocation>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_polkadot_xcm_v1 =
@@ -82,6 +85,8 @@ where
         let migrate_xcm_executor_utils_v4 =
             pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let foreign_asset_creator_migration =
+            ForeignAssetCreatorMigration::<Runtime>(Default::default());
         vec![
             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
@@ -89,6 +94,7 @@ where
             Box::new(migrate_xcmp_queue_v4),
             Box::new(migrate_xcm_executor_utils_v4),
             Box::new(migrate_pallet_xcm_v4),
+            Box::new(foreign_asset_creator_migration),
         ]
     }
 }
