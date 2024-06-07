@@ -60,6 +60,7 @@ pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-message-queue = { workspace = true }
 pallet-multisig = { workspace = true }
+pallet-parameters = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -183,6 +184,7 @@ std = [
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-multisig/std",
+	"pallet-parameters/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
 	"pallet-sudo/std",
@@ -255,6 +257,7 @@ runtime-benchmarks = [
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
+	"pallet-parameters/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -299,6 +302,7 @@ try-runtime = [
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
+	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-sudo/try-runtime",
