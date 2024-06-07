@@ -5914,6 +5914,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 fn test_migration_data_preservers_assignments() {
     ExtBuilder::default().build().execute_with(|| {
         use {
+            dancebox_runtime::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
             frame_support::{
                 migration::{have_storage_value, put_storage_value},
                 Blake2_128Concat, StorageHasher,
@@ -5922,7 +5923,6 @@ fn test_migration_data_preservers_assignments() {
             runtime_common::migrations::DataPreserversAssignmentsMigration,
             sp_runtime::BoundedBTreeSet,
             sp_std::collections::btree_set::BTreeSet,
-            dancebox_runtime::{MaxNodeUrlLen, MaxAssignmentsPerParaId},
         };
 
         macro_rules! bset {

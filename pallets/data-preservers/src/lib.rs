@@ -335,7 +335,6 @@ pub mod pallet {
         ProfileDeposit,
     }
 
-
     #[pallet::storage]
     pub type Profiles<T: Config> =
         StorageMap<_, Blake2_128Concat, T::ProfileId, RegisteredProfile<T>, OptionQuery>;
@@ -725,10 +724,13 @@ pub mod pallet {
                 .map(|profile| profile.profile)
         }
 
-        /// Function that will be called when a container chain is deregistered. Cleans up all the storage related to this para_id.
+        /// Function that will be called when a container chain is deregistered. Cleans up all the
+        /// storage related to this para_id.
         /// Cannot fail.
-        pub fn para_deregistered(para_id: ParaId) {
-            Assignments::<T>::remove(para_id);
+        pub fn para_deregistered(_para_id: ParaId) {
+            // TODO: Properly deregister the assignments, which requires to iterate over the profiles
+            // to remove the assignments.
+            // Assignments::<T>::remove(para_id);
         }
 
         pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
