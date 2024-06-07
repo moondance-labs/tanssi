@@ -79,6 +79,7 @@ use {
 };
 
 pub use pallet_worker_registration;
+pub use pallet_faucet;
 
 pub mod xcm_config;
 
@@ -220,7 +221,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
-    spec_version: 700,
+    spec_version: 701,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -646,6 +647,24 @@ impl pallet_worker_registration::Config for Runtime {
 	type AuthorityId = pallet_worker_registration::crypto::ClusterStatusAuthId;
 }
 
+parameter_types! {
+    // The amount of token that "drips" from the faucet for every claim.
+	pub const FaucetDripAmount: Balance = 10 * MILLIUNIT;
+    // The minimum period, as a number of blocks, between consecutive claims of a given account.
+	pub const MinBlocksBetweenClaims: BlockNumber = 1 * DAYS;
+    // The maximum number of times an account can claim tokens from the faucet.
+	pub const MaxClaimsPerAccount: u32 = 3;
+}
+
+impl pallet_faucet::Config for Runtime {
+	type Currency = Balances;
+	type DripAmount = FaucetDripAmount;
+	type RuntimeEvent = RuntimeEvent;
+	type MaxClaimsPerAccount = MaxClaimsPerAccount;
+	type MinBlocksBetweenClaims = MinBlocksBetweenClaims;
+	type WeightInfo = pallet_faucet::weights::SubstrateWeight<Runtime>;
+}
+
 // implement `CreateSignedTransaction` to allow `create_transaction` of offchain worker for runtime
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
@@ -747,6 +766,9 @@ construct_runtime!(
         
         // Cyborg Core
         WorkerRegistration: pallet_worker_registration = 120,
+
+        // Testing
+        Faucet: pallet_faucet::{Pallet, Call, Storage, Event<T>} = 200,
     }
 );
 
