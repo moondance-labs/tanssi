@@ -8633,7 +8633,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#0e19d014691c7d36e8acc0f542c58157247ff414"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#0d4850f4d178116b0a77c31663beb8abd720e1da"
 dependencies = [
  "cumulus-primitives-core",
  "evm",
