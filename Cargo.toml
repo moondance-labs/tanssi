@@ -114,6 +114,7 @@ pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-lab
 pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-proxy = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+pallet-evm-precompile-xcm = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompileset-assets-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-foreign-asset-creator = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }

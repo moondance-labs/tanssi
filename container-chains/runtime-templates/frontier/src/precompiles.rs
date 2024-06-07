@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::xcm_config::{ForeignAssetsInstance, XcmConfig},
+    crate::{
+        xcm_config::{AssetId, ForeignAssetsInstance, XcmConfig},
+        AccountId, Balances, ForeignAssetsCreator, Runtime,
+    },
     frame_support::parameter_types,
     pallet_evm_precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata},
     pallet_evm_precompile_batch::BatchPrecompile,
@@ -24,6 +27,7 @@ use {
     pallet_evm_precompile_proxy::{OnlyIsProxyAndProxy, ProxyPrecompile},
     pallet_evm_precompile_sha3fips::Sha3FIPS256,
     pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256},
+    pallet_evm_precompile_xcm::PalletXcmPrecompile,
     pallet_evm_precompile_xcm_utils::{AllExceptXcmExecute, XcmUtilsPrecompile},
     pallet_evm_precompileset_assets_erc20::Erc20AssetsPrecompileSet,
     precompile_utils::precompile_set::{
@@ -31,6 +35,7 @@ use {
         PrecompileAt, PrecompileSetBuilder, PrecompileSetStartingWith, PrecompilesInRangeInclusive,
         SubcallWithMaxNesting,
     },
+    xcm_primitives::location_matcher::{ForeignAssetMatcher, SingleAddressMatcher},
 };
 
 /// ERC20 metadata for the native token.
@@ -63,11 +68,21 @@ impl Erc20Metadata for NativeErc20Metadata {
 /// to Erc20AssetsPrecompileSet being marked as foreign
 pub const FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX: &[u8] = &[255u8; 18];
 
+/// Const to identify ERC20_BALANCES_PRECOMPILE address
+pub const ERC20_BALANCES_PRECOMPILE: u64 = 2048;
+
 parameter_types! {
     pub ForeignAssetPrefix: &'static [u8] = FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX;
 }
 
 type EthereumPrecompilesChecks = (AcceptDelegateCall, CallableByContract, CallableByPrecompile);
+
+// Pallet-xcm precompile types.
+// The pallet-balances address is identified by ERC20_BALANCES_PRECOMPILE const
+type BalancesPrecompileMatch = SingleAddressMatcher<AccountId, ERC20_BALANCES_PRECOMPILE, Balances>;
+
+// Type that matches an AccountId with a foreign asset address (if any)
+type ForeignAssetMatch = ForeignAssetMatcher<AccountId, AssetId, Runtime, ForeignAssetsCreator>;
 
 #[precompile_utils::precompile_name_from_address]
 type TemplatePrecompilesAt<R> = (
@@ -83,7 +98,7 @@ type TemplatePrecompilesAt<R> = (
     PrecompileAt<AddressU64<1025>, ECRecoverPublicKey, (CallableByContract, CallableByPrecompile)>,
     // Template specific precompiles:
     PrecompileAt<
-        AddressU64<2048>,
+        AddressU64<ERC20_BALANCES_PRECOMPILE>,
         Erc20BalancesPrecompile<R, NativeErc20Metadata>,
         (CallableByContract, CallableByPrecompile),
     >,
@@ -97,6 +112,11 @@ type TemplatePrecompilesAt<R> = (
         AddressU64<2051>,
         XcmUtilsPrecompile<R, XcmConfig>,
         CallableByContract<AllExceptXcmExecute<R, XcmConfig>>,
+    >,
+    PrecompileAt<
+        AddressU64<2052>,
+        PalletXcmPrecompile<R, (BalancesPrecompileMatch, ForeignAssetMatch)>,
+        (CallableByContract, CallableByPrecompile),
     >,
     PrecompileAt<
         AddressU64<2053>,

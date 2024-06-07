@@ -1897,6 +1897,7 @@ dependencies = [
  "pallet-evm-precompile-proxy",
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
+ "pallet-evm-precompile-xcm",
  "pallet-evm-precompile-xcm-utils",
  "pallet-evm-precompileset-assets-erc20",
  "pallet-foreign-asset-creator",
@@ -8624,6 +8625,29 @@ dependencies = [
  "fp-evm",
  "ripemd",
  "sp-io",
+]
+
+[[package]]
+name = "pallet-evm-precompile-xcm"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#59f5119fe0e6b7c007f36b77b869a7dda80ca104"
+dependencies = [
+ "cumulus-primitives-core",
+ "evm",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "log",
+ "num_enum",
+ "pallet-evm",
+ "pallet-xcm",
+ "precompile-utils",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "sp-weights",
+ "staging-xcm",
+ "xcm-primitives",
 ]
 
 [[package]]
