@@ -543,6 +543,10 @@ where
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         use parity_scale_codec::Decode;
+
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+
         let pre_state: Vec<(ParaId, Vec<Vec<u8>>)> =
             Decode::decode(&mut &state[..]).expect("state to be decoded properly");
 
@@ -564,7 +568,15 @@ where
             }
         }
 
-        assert_eq!(pallet_data_preservers::BootNodes::<T>::iter().count(), 0);
+        assert_eq!(
+            storage_key_iter::<
+                ParaId,
+                BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+                Blake2_128Concat,
+            >(pallet_prefix, storage_item_prefix)
+            .count(),
+            0
+        );
 
         Ok(())
     }

@@ -382,6 +382,37 @@ mod benchmarks {
         assert_eq!(Assignments::<T>::get(para_id).into_inner(), set![]);
     }
 
+    #[benchmark]
+    fn force_start_assignment() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_id = ParaId::from(42);
+
+        let profile = Profile {
+            url,
+            para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
+            mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        #[extrinsic_call]
+        Pallet::<T>::force_start_assignment(
+            RawOrigin::Root,
+            T::ProfileId::zero(),
+            para_id,
+            T::AssignmentPayment::benchmark_assignment_witness(),
+        );
+
+        assert_eq!(
+            Assignments::<T>::get(para_id).into_inner(),
+            set![T::ProfileId::zero()]
+        );
+    }
+
     impl_benchmark_test_suite!(
         Pallet,
         crate::mock::ExtBuilder::default().build(),
