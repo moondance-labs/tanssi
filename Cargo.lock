@@ -1894,6 +1894,7 @@ dependencies = [
  "pallet-evm-precompile-batch",
  "pallet-evm-precompile-call-permit",
  "pallet-evm-precompile-modexp",
+ "pallet-evm-precompile-proxy",
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
  "pallet-evm-precompile-xcm-utils",
@@ -8586,6 +8587,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-evm-precompile-proxy"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#0d4850f4d178116b0a77c31663beb8abd720e1da"
+dependencies = [
+ "evm",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "log",
+ "num_enum",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-proxy",
+ "parity-scale-codec",
+ "precompile-utils",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-evm-precompile-sha3fips"
 version = "2.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-v1.11.0#5057ec85974671f54d328bc0dbe8c639a44c4b2d"
@@ -12333,9 +12355,11 @@ dependencies = [
  "frame-system",
  "frame-try-runtime",
  "hex-literal 0.3.4",
+ "log",
  "pallet-balances",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-foreign-asset-creator",
  "pallet-invulnerables",
  "pallet-migrations",
  "pallet-pooled-staking",
@@ -12348,6 +12372,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]

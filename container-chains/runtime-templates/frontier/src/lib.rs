@@ -596,6 +596,34 @@ impl Default for ProxyType {
     }
 }
 
+// Be careful: Each time this filter is modified, the substrate filter must also be modified
+// consistently.
+impl pallet_evm_precompile_proxy::EvmProxyCallFilter for ProxyType {
+    fn is_evm_proxy_call_allowed(
+        &self,
+        call: &pallet_evm_precompile_proxy::EvmSubCall,
+        recipient_has_code: bool,
+        gas: u64,
+    ) -> precompile_utils::EvmResult<bool> {
+        Ok(match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => false,
+            ProxyType::Governance => false,
+            // The proxy precompile does not contain method cancel_proxy
+            ProxyType::CancelProxy => false,
+            ProxyType::Balances => {
+                // Allow only "simple" accounts as recipient (no code nor precompile).
+                // Note: Checking the presence of the code is not enough because some precompiles
+                // have no code.
+                !recipient_has_code
+                    && !precompile_utils::precompile_set::is_precompile_or_fail::<Runtime>(
+                        call.to.0, gas,
+                    )?
+            }
+        })
+    }
+}
+
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
         // Since proxy filters are respected in all dispatches of the Utility

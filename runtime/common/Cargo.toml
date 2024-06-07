@@ -14,12 +14,14 @@ workspace = true
 
 [dependencies]
 hex-literal = { workspace = true }
+log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
@@ -41,6 +43,7 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
+staging-xcm = { workspace = true }
 
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
@@ -59,9 +62,11 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"frame-try-runtime?/std",
+	"log/std",
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-invulnerables/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
@@ -74,6 +79,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"staging-xcm/std",
 ]
 
 runtime-benchmarks = [
@@ -84,6 +90,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
@@ -102,6 +109,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",

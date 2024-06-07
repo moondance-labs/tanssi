@@ -21,13 +21,14 @@ use {
     pallet_evm_precompile_batch::BatchPrecompile,
     pallet_evm_precompile_call_permit::CallPermitPrecompile,
     pallet_evm_precompile_modexp::Modexp,
+    pallet_evm_precompile_proxy::{OnlyIsProxyAndProxy, ProxyPrecompile},
     pallet_evm_precompile_sha3fips::Sha3FIPS256,
     pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256},
     pallet_evm_precompile_xcm_utils::{AllExceptXcmExecute, XcmUtilsPrecompile},
     pallet_evm_precompileset_assets_erc20::Erc20AssetsPrecompileSet,
     precompile_utils::precompile_set::{
-        AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, PrecompileAt,
-        PrecompileSetBuilder, PrecompileSetStartingWith, PrecompilesInRangeInclusive,
+        AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, OnlyFrom,
+        PrecompileAt, PrecompileSetBuilder, PrecompileSetStartingWith, PrecompilesInRangeInclusive,
         SubcallWithMaxNesting,
     },
 };
@@ -96,6 +97,16 @@ type TemplatePrecompilesAt<R> = (
         AddressU64<2051>,
         XcmUtilsPrecompile<R, XcmConfig>,
         CallableByContract<AllExceptXcmExecute<R, XcmConfig>>,
+    >,
+    PrecompileAt<
+        AddressU64<2053>,
+        ProxyPrecompile<R>,
+        (
+            CallableByContract<OnlyIsProxyAndProxy<R>>,
+            SubcallWithMaxNesting<0>,
+            // Batch is the only precompile allowed to call Proxy.
+            CallableByPrecompile<OnlyFrom<AddressU64<2049>>>,
+        ),
     >,
 );
 
