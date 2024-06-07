@@ -205,6 +205,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		WorkerRegistered{ creator: T::AccountId },
+		WorkerUnRegistered{ creator: T::AccountId, cluster_id: ClusterId },
 		TaskScheduled {
             worker: T::AccountId,
 			owner: T::AccountId,
@@ -223,7 +224,9 @@ pub mod pallet {
 		WorkerRegisterMissingIp,
 		WorkerRegisterMissingPort,
 		ClusterExists,
+		ClusterDoesNotExists,
 		NoWorkersAvailable,
+		InvalidOwnerOfCluster,
 		WorkerClusterNotRegistered,
 		UnassignedTaskId,
 		InvalidTaskOwner,
@@ -533,6 +536,30 @@ pub mod pallet {
 			Self::deposit_event(Event::VerifiedCompletedTask { task_id });
 			Ok(())
 		} 
+
+		#[pallet::call_index(5)]
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
+		pub fn unregister_worker(
+			origin: OriginFor<T>,
+			cluster_id: ClusterId,
+		) -> DispatchResult {
+			let creator = ensure_signed(origin)?;
+			
+			//check cluster
+			ensure!(WorkerAccounts::<T>::get(creator.clone()) == Some(cluster_id), 
+			Error::<T>::InvalidOwnerOfCluster);
+			ensure!(WorkerClusters::<T>::get(cluster_id) != None, 
+			Error::<T>::ClusterDoesNotExists);
+	
+			// update storage
+			WorkerClusters::<T>::remove(cluster_id);
+			WorkerAccounts::<T>::remove(creator.clone());
+	
+			// Emit an event.
+			Self::deposit_event(Event::WorkerUnRegistered { creator, cluster_id });
+	
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
