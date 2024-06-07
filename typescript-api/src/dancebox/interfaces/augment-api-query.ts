@@ -301,7 +301,11 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         dataPreservers: {
-            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
+            assignments: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<u64>>,
+                [u32]
+            > &
                 QueryableStorageEntry<ApiType, [u32]>;
             nextProfileId: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
             profiles: AugmentedQuery<

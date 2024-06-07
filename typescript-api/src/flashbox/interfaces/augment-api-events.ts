@@ -124,6 +124,8 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         dataPreservers: {
+            AssignmentStarted: AugmentedEvent<ApiType, [profileId: u64, paraId: u32], { profileId: u64; paraId: u32 }>;
+            AssignmentStopped: AugmentedEvent<ApiType, [profileId: u64, paraId: u32], { profileId: u64; paraId: u32 }>;
             /** The list of boot_nodes changed. */
             BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             ProfileCreated: AugmentedEvent<

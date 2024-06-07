@@ -19,6 +19,9 @@ import type {
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FlashboxRuntimeOriginCaller,
+    FlashboxRuntimePreserversAssignementPaymentExtra,
+    FlashboxRuntimePreserversAssignementPaymentRequest,
+    FlashboxRuntimePreserversAssignementPaymentWitness,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeRuntime,
     FlashboxRuntimeRuntimeFreezeReason,
@@ -201,6 +204,9 @@ declare module "@polkadot/types/types/registry" {
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;
+        FlashboxRuntimePreserversAssignementPaymentExtra: FlashboxRuntimePreserversAssignementPaymentExtra;
+        FlashboxRuntimePreserversAssignementPaymentRequest: FlashboxRuntimePreserversAssignementPaymentRequest;
+        FlashboxRuntimePreserversAssignementPaymentWitness: FlashboxRuntimePreserversAssignementPaymentWitness;
         FlashboxRuntimeProxyType: FlashboxRuntimeProxyType;
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
         FlashboxRuntimeRuntimeFreezeReason: FlashboxRuntimeRuntimeFreezeReason;

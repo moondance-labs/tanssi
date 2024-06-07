@@ -68,10 +68,18 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
+            /** Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and `AssignerParameter`. */
+            AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;
+            CantDeleteAssignedProfile: AugmentedError<ApiType>;
+            MaxAssignmentsPerParaIdReached: AugmentedError<ApiType>;
             NextProfileIdShouldBeAvailable: AugmentedError<ApiType>;
             /** This container chain does not have any boot nodes */
             NoBootNodes: AugmentedError<ApiType>;
+            ProfileAlreadyAssigned: AugmentedError<ApiType>;
+            ProfileIsNotElligibleForParaId: AugmentedError<ApiType>;
+            ProfileNotAssigned: AugmentedError<ApiType>;
             UnknownProfileId: AugmentedError<ApiType>;
+            WrongParaId: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

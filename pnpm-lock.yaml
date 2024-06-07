@@ -6,15 +6,6 @@ settings:
 
 importers:
 
-  .:
-    dependencies:
-      api-augment:0.400.0:
-        specifier: link:@tanssi/api-augment:0.400.0
-        version: link:@tanssi/api-augment:0.400.0
-      api-augment:latest:
-        specifier: link:@tanssi/api-augment:latest
-        version: link:@tanssi/api-augment:latest
-
   test:
     dependencies:
       '@zombienet/orchestrator':
@@ -4854,6 +4845,7 @@ packages:
       chalk: 3.0.0
       diff-match-patch: 1.0.5
     dev: true
+    bundledDependencies: []
 
   /jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
