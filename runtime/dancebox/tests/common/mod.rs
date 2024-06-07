@@ -239,9 +239,9 @@ pub fn end_block() {
 
 pub fn run_block() -> RunSummary {
     end_block();
-    let summary = start_block();
+    
 
-    summary
+    start_block()
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
@@ -700,7 +700,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     .expect("assignement to work");
 
     assert!(
-        pallet_data_preservers::Assignments::<Runtime>::get(&para_id).contains(&profile_id),
+        pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
         "profile should be correctly assigned"
     );
 }

@@ -205,11 +205,9 @@ fn testnet_genesis(
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
         .collect();
 
-    let accounts_with_ed = vec![
-        flashbox_runtime::StakingAccount::get(),
+    let accounts_with_ed = [flashbox_runtime::StakingAccount::get(),
         flashbox_runtime::ParachainBondAccount::get(),
-        flashbox_runtime::PendingRewardsAccount::get(),
-    ];
+        flashbox_runtime::PendingRewardsAccount::get()];
     let g = flashbox_runtime::RuntimeGenesisConfig {
         system: Default::default(),
         balances: flashbox_runtime::BalancesConfig {

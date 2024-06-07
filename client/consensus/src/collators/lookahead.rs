@@ -205,8 +205,7 @@ where
                         &mut params.overseer_handle,
                         &mut params.relay_client,
                     )
-                    .await
-                    .get(0)
+                    .await.first()
                     {
                         *core_index
                     } else {

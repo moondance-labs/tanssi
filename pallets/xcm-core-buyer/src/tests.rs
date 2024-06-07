@@ -165,7 +165,7 @@ fn core_buying_proof_is_validated_correctly() {
                 .get(&para_id)
                 .expect("Collator data for test paraid must exists");
             assert!(
-                collator_data.len() >= 1,
+                !collator_data.is_empty(),
                 "collator data must contain at least one element"
             );
             let collator = collator_data[0].clone();

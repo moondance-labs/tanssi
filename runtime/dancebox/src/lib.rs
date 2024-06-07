@@ -1184,7 +1184,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
         .expect("assignement to work");
 
         assert!(
-            pallet_data_preservers::Assignments::<Runtime>::get(&para_id).contains(&profile_id),
+            pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
             "profile should be correctly assigned"
         );
     }

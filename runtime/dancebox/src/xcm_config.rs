@@ -485,7 +485,7 @@ parameter_types! {
     pub const XcmBuyExecutionDotRococo: u128 = XCM_BUY_EXECUTION_COST_ROCOCO;
 }
 
-pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 70_000_000 + 1_266_663_99;
+pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 70_000_000 + 126_666_399;
 
 pub struct XCMNotifierImpl;
 

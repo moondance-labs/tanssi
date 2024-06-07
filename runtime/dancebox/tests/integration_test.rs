@@ -6125,12 +6125,12 @@ fn test_migration_data_preservers_assignments() {
             Some(RegisteredProfile {
                 account: account.clone(),
                 deposit: 0,
-                assignment: Some((1001.into(), free_witness.clone())),
+                assignment: Some((1001.into(), free_witness)),
                 profile: Profile {
                     url: b"alpha".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: free_request.clone(),
+                    assignment_request: free_request,
                 }
             })
         );
@@ -6139,12 +6139,12 @@ fn test_migration_data_preservers_assignments() {
             Some(RegisteredProfile {
                 account: account.clone(),
                 deposit: 0,
-                assignment: Some((1001.into(), free_witness.clone())),
+                assignment: Some((1001.into(), free_witness)),
                 profile: Profile {
                     url: b"beta".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: free_request.clone(),
+                    assignment_request: free_request,
                 }
             })
         );
@@ -6153,12 +6153,12 @@ fn test_migration_data_preservers_assignments() {
             Some(RegisteredProfile {
                 account: account.clone(),
                 deposit: 0,
-                assignment: Some((1002.into(), free_witness.clone())),
+                assignment: Some((1002.into(), free_witness)),
                 profile: Profile {
                     url: b"delta".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: free_request.clone(),
+                    assignment_request: free_request,
                 }
             })
         );
@@ -6167,12 +6167,12 @@ fn test_migration_data_preservers_assignments() {
             Some(RegisteredProfile {
                 account: account.clone(),
                 deposit: 0,
-                assignment: Some((1002.into(), free_witness.clone())),
+                assignment: Some((1002.into(), free_witness)),
                 profile: Profile {
                     url: b"gamma".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: free_request.clone(),
+                    assignment_request: free_request,
                 }
             })
         );

@@ -232,9 +232,9 @@ pub fn end_block() {
 
 pub fn run_block() -> RunSummary {
     end_block();
-    let summary = start_block();
+    
 
-    summary
+    start_block()
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which

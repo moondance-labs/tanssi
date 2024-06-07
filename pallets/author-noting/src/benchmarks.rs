@@ -88,13 +88,13 @@ benchmarks! {
         let para_id = 1000.into();
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
-    }: _(RawOrigin::Root, para_id, block_number, author, (block_number as u64).into())
+    }: _(RawOrigin::Root, para_id, block_number, author, u64::from(block_number).into())
 
     kill_author_data {
         let para_id = 1000.into();
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
-        assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author, (block_number as u64).into()));
+        assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author, u64::from(block_number).into()));
     }: _(RawOrigin::Root, para_id)
 
     impl_benchmark_test_suite!(
