@@ -553,7 +553,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(9)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::force_start_assignment())]
         pub fn force_start_assignment(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
