@@ -205,9 +205,11 @@ fn testnet_genesis(
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
         .collect();
 
-    let accounts_with_ed = [dancebox_runtime::StakingAccount::get(),
+    let accounts_with_ed = [
+        dancebox_runtime::StakingAccount::get(),
         dancebox_runtime::ParachainBondAccount::get(),
-        dancebox_runtime::PendingRewardsAccount::get()];
+        dancebox_runtime::PendingRewardsAccount::get(),
+    ];
     let g = dancebox_runtime::RuntimeGenesisConfig {
         system: Default::default(),
         balances: dancebox_runtime::BalancesConfig {

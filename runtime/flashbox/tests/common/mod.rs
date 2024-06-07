@@ -232,7 +232,6 @@ pub fn end_block() {
 
 pub fn run_block() -> RunSummary {
     end_block();
-    
 
     start_block()
 }

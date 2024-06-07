@@ -29,7 +29,6 @@ mod panics;
 fn create_runner() -> Runner<Cli> {
     // tanssi-node args should go here, `--dev` is probably enough
     let cli = Cli::from_iter(["--dev"]);
-    
 
     cli.create_runner(&cli.run.normalize()).unwrap()
 }

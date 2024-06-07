@@ -24,9 +24,7 @@ where
     T: pallet_treasury::Config,
     T::AccountId: From<[u8; 32]>,
 {
-    fn create_asset_kind(_seed: u32) {
-        
-    }
+    fn create_asset_kind(_seed: u32) {}
 
     fn create_beneficiary(seed: [u8; 32]) -> T::AccountId {
         let account: T::AccountId = seed.into();

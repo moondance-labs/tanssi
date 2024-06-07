@@ -296,17 +296,13 @@ fn assert_query_response(
 /// Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
 /// parathread para id.
 fn get_parathread_tank_relay_address() -> AccountId32 {
-    
     Dancebox::execute_with(|| {
         let parathread_tank_multilocation = XcmCoreBuyer::relay_relative_multilocation(
             XcmCoreBuyer::interior_multilocation(PARATHREAD_ID.into()),
         )
         .expect("reanchor failed");
-        
 
-        <Rococo as RelayChain>::SovereignAccountOf::convert_location(
-                &parathread_tank_multilocation,
-            )
+        <Rococo as RelayChain>::SovereignAccountOf::convert_location(&parathread_tank_multilocation)
             .expect("probably this relay chain does not allow DescendOrigin")
     })
 }
