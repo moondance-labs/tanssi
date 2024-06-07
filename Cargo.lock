@@ -8589,7 +8589,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-proxy"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#0d4850f4d178116b0a77c31663beb8abd720e1da"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.11.0#59f5119fe0e6b7c007f36b77b869a7dda80ca104"
 dependencies = [
  "evm",
  "fp-evm",

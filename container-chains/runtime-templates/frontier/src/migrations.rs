@@ -52,7 +52,7 @@ where
 
         // Pallet-xcm precompile address
         let address = H160::from_low_u64_be(2053);
-        pallet_evm::Pallet::<T>::create_account(address, revert_bytecode.clone());
+        let _ = pallet_evm::Pallet::<T>::create_account(address, revert_bytecode.clone(), None);
 
         // reads: <Suicided<T>> and <AccountCodes<T>>
         // writes: <AccountCodesMetadata<T>> and <AccountCodes<T>>
