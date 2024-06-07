@@ -566,7 +566,7 @@ where
                         set
                     }),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: request.clone(),
+                    assignment_request: request,
                 };
 
                 let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
@@ -582,7 +582,7 @@ where
                     RawOrigin::Signed(para_manager.clone()).into(),
                     profile_id,
                     para_id,
-                    extra.clone(),
+                    extra,
                 )
                 .expect("to start assignment");
             }
