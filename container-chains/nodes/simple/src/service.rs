@@ -22,7 +22,7 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
-    cumulus_client_service::prepare_node_config,
+    cumulus_client_service::{prepare_node_config, ParachainHostFunctions},
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
     nimbus_primitives::NimbusId,
     node_common::service::ManualSealConfiguration,
@@ -40,7 +40,7 @@ use {
     std::{sync::Arc, time::Duration},
 };
 
-type ParachainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
@@ -131,7 +131,7 @@ pub async fn start_parachain_node(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -197,7 +197,11 @@ pub async fn start_dev_node(
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
-    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
+    let mut node_builder = node_builder
+        .build_substrate_network::<sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            import_queue,
+        )?;
 
     let mut command_sink = None;
     let mut xcm_senders = None;

@@ -33,7 +33,10 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation, VersionedXcm,
+    },
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,
 };
@@ -42,22 +45,23 @@ use {
 fn using_signed_based_sovereign_works_in_tanssi() {
     // XcmPallet send arguments
     let root_origin = <Westend as Chain>::RuntimeOrigin::root();
-    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let buy_execution_fee = MultiAsset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+    let buy_execution_fee = Asset {
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(50 * DANCE),
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
-        DescendOrigin(X1(AccountId32 {
+        DescendOrigin(X1([AccountId32 {
             network: None,
             id: WestendSender::get().into(),
-        })),
+        }]
+        .into())),
         WithdrawAsset(vec![buy_execution_fee.clone()].into()),
         BuyExecution {
             fees: buy_execution_fee.clone(),
@@ -76,12 +80,13 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     let alice_westend_account_dancebox = staging_xcm_builder::HashedDescription::<
         crate::AccountId,
         staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
-    >::convert_location(&MultiLocation {
+    >::convert_location(&Location {
         parents: 1,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: Some(NetworkId::Westend),
             id: WestendSender::get().into(),
-        }),
+        }]
+        .into()),
     })
     .unwrap();
 
@@ -125,9 +130,9 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
     // XcmPallet send arguments
     let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
-    let frontier_destination: VersionedMultiLocation = MultiLocation {
+    let frontier_destination: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2001)),
+        interior: X1([Parachain(2001)].into()),
     }
     .into();
 
@@ -137,8 +142,8 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
             300_000,
         ));
 
-    let buy_execution_fee = MultiAsset {
-        id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
+    let buy_execution_fee = Asset {
+        id: container_chain_template_frontier_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -164,15 +169,16 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
         let alice_dancebox_account_frontier = staging_xcm_builder::HashedDescription::<
             container_chain_template_frontier_runtime::AccountId,
             staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
-        >::convert_location(&MultiLocation {
+        >::convert_location(&Location {
             parents: 1,
-            interior: X2(
+            interior: X2([
                 Parachain(2000u32),
                 AccountId32 {
                     network: Some(NetworkId::Westend),
                     id: DanceboxSender::get().into(),
                 },
-            ),
+            ]
+            .into()),
         })
         .unwrap();
 

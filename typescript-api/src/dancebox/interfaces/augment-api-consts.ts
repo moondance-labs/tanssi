@@ -16,7 +16,7 @@ import type {
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
-    XcmV3Junctions,
+    StagingXcmV4Junctions,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -47,11 +47,17 @@ declare module "@polkadot/api-base/types/consts" {
             existentialDeposit: u128 & AugmentedConst<ApiType>;
             /** The maximum number of individual freeze locks that can exist on an account at any time. */
             maxFreezes: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of holds that can exist on an account at any time. */
-            maxHolds: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation. */
+            /**
+             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation.
+             *
+             * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             maxLocks: u32 & AugmentedConst<ApiType>;
-            /** The maximum number of named reserves that can exist on an account. */
+            /**
+             * The maximum number of named reserves that can exist on an account.
+             *
+             * Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             maxReserves: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
@@ -95,7 +101,7 @@ declare module "@polkadot/api-base/types/consts" {
             basicDeposit: u128 & AugmentedConst<ApiType>;
             /** The amount held on deposit per encoded byte for a registered identity. */
             byteDeposit: u128 & AugmentedConst<ApiType>;
-            /** Maxmimum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
+            /** Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
             maxRegistrars: u32 & AugmentedConst<ApiType>;
             /** The maximum number of sub-accounts allowed per identified account. */
             maxSubAccounts: u32 & AugmentedConst<ApiType>;
@@ -140,15 +146,24 @@ declare module "@polkadot/api-base/types/consts" {
              */
             heapSize: u32 & AugmentedConst<ApiType>;
             /**
+             * The maximum amount of weight (if any) to be used from remaining weight `on_idle` which should be provided to
+             * the message queue for servicing enqueued items `on_idle`. Useful for parachains to process messages at the same
+             * block they are received.
+             *
+             * If `None`, it will not call `ServiceQueues::service_queues` in `on_idle`.
+             */
+            idleMaxServiceWeight: Option<SpWeightsWeightV2Weight> & AugmentedConst<ApiType>;
+            /**
              * The maximum number of stale pages (i.e. of overweight messages) allowed before culling can happen. Once there
              * are more stale pages than this, then historical pages may be dropped, even if they contain unprocessed
              * overweight messages.
              */
             maxStale: u32 & AugmentedConst<ApiType>;
             /**
-             * The amount of weight (if any) which should be provided to the message queue for servicing enqueued items.
+             * The amount of weight (if any) which should be provided to the message queue for servicing enqueued items `on_initialize`.
              *
-             * This may be legitimately `None` in the case that you will call `ServiceQueues::service_queues` manually.
+             * This may be legitimately `None` in the case that you will call `ServiceQueues::service_queues` manually or set
+             * [`Self::IdleMaxServiceWeight`] to have it run in `on_idle`.
              */
             serviceWeight: Option<SpWeightsWeightV2Weight> & AugmentedConst<ApiType>;
             /** Generic const */
@@ -170,6 +185,12 @@ declare module "@polkadot/api-base/types/consts" {
             depositFactor: u128 & AugmentedConst<ApiType>;
             /** The maximum amount of signatories allowed in the multisig. */
             maxSignatories: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        parachainSystem: {
+            /** Returns the parachain ID we are running with. */
+            selfParaId: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
@@ -288,7 +309,7 @@ declare module "@polkadot/api-base/types/consts" {
              * about the prefix in order to make use of it as an identifier of the chain.
              */
             ss58Prefix: u16 & AugmentedConst<ApiType>;
-            /** Get the chain's current version. */
+            /** Get the chain's in-code version. */
             version: SpVersionRuntimeVersion & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
@@ -383,7 +404,7 @@ declare module "@polkadot/api-base/types/consts" {
             coreBuyingXCMQueryTtl: u32 & AugmentedConst<ApiType>;
             /** TTL for pending blocks entry, which prevents anyone to submit another core buying xcm. */
             pendingBlocksTtl: u32 & AugmentedConst<ApiType>;
-            universalLocation: XcmV3Junctions & AugmentedConst<ApiType>;
+            universalLocation: StagingXcmV4Junctions & AugmentedConst<ApiType>;
             /**
              * A configuration for base priority of unsigned transactions.
              *

@@ -95,6 +95,8 @@ declare module "@polkadot/api-base/types/events" {
             Suspended: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /** Some balance was thawed. */
             Thawed: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
+            /** The `TotalIssuance` was forcefully changed. */
+            TotalIssuanceForced: AugmentedEvent<ApiType, [old: u128, new_: u128], { old: u128; new_: u128 }>;
             /** Transfer succeeded. */
             Transfer: AugmentedEvent<
                 ApiType,

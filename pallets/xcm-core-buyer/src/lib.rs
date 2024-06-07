@@ -49,8 +49,8 @@ use {
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
     staging_xcm::{
+        latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
-        v3::{InteriorMultiLocation, MultiAsset, MultiAssets, Response, Xcm},
     },
     tp_traits::LatestAuthorInfoFetcher,
     tp_traits::ParathreadParams,
@@ -59,20 +59,20 @@ use {
 
 pub trait XCMNotifier<T: Config> {
     fn new_notify_query(
-        responder: impl Into<MultiLocation>,
+        responder: impl Into<Location>,
         notify: impl Into<<T as Config>::RuntimeCall>,
         timeout: BlockNumberFor<T>,
-        match_querier: impl Into<MultiLocation>,
+        match_querier: impl Into<Location>,
     ) -> u64;
 }
 
 /// Dummy implementation. Should only be used for testing.
 impl<T: Config> XCMNotifier<T> for () {
     fn new_notify_query(
-        _responder: impl Into<MultiLocation>,
+        _responder: impl Into<Location>,
         _notify: impl Into<<T as Config>::RuntimeCall>,
         _timeout: BlockNumberFor<T>,
-        _match_querier: impl Into<MultiLocation>,
+        _match_querier: impl Into<Location>,
     ) -> u64 {
         0
     }
@@ -184,7 +184,7 @@ pub mod pallet {
         type AdditionalTtlForInflightOrders: Get<BlockNumberFor<Self>>;
 
         #[pallet::constant]
-        type UniversalLocation: Get<InteriorMultiLocation>;
+        type UniversalLocation: Get<InteriorLocation>;
 
         type RuntimeOrigin: Into<Result<pallet_xcm::Origin, <Self as Config>::RuntimeOrigin>>
             + From<<Self as frame_system::Config>::RuntimeOrigin>;
@@ -493,26 +493,26 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Returns the interior multilocation for this container chain para id. This is a relative
         /// multilocation that can be used in the `descend_origin` XCM opcode.
-        pub fn interior_multilocation(para_id: ParaId) -> InteriorMultiLocation {
+        pub fn interior_multilocation(para_id: ParaId) -> InteriorLocation {
             let container_chain_account = T::GetParathreadAccountId::convert(para_id);
             let account_junction = Junction::AccountId32 {
                 id: container_chain_account,
                 network: None,
             };
 
-            InteriorMultiLocation::X1(account_junction)
+            [account_junction].into()
         }
 
         /// Returns a multilocation that can be used in the `deposit_asset` XCM opcode.
         /// The `interior_multilocation` can be obtained using `Self::interior_multilocation`.
         pub fn relay_relative_multilocation(
-            interior_multilocation: InteriorMultiLocation,
-        ) -> Result<MultiLocation, Error<T>> {
-            let relay_chain = MultiLocation::parent();
-            let context = Parachain(T::SelfParaId::get().into()).into();
-            let mut reanchored: MultiLocation = interior_multilocation.into();
+            interior_multilocation: InteriorLocation,
+        ) -> Result<Location, Error<T>> {
+            let relay_chain = Location::parent();
+            let context: InteriorLocation = [Parachain(T::SelfParaId::get().into())].into();
+            let mut reanchored: Location = interior_multilocation.into();
             reanchored
-                .reanchor(&relay_chain, context)
+                .reanchor(&relay_chain, &context)
                 .map_err(|_| Error::<T>::ReanchorFailed)?;
 
             Ok(reanchored)
@@ -605,14 +605,14 @@ pub mod pallet {
             // Assumption: derived account already has DOT
             // The balance should be enough to cover the `Withdraw` needed to `BuyExecution`, plus
             // the price of the core, which can change based on demand.
-            let relay_asset_total: MultiAsset = (Here, withdraw_amount).into();
-            let refund_asset_filter: MultiAssetFilter =
-                MultiAssetFilter::Wild(WildMultiAsset::AllCounted(1));
+            let relay_asset_total: Asset = (Here, withdraw_amount).into();
+            let refund_asset_filter: AssetFilter = AssetFilter::Wild(WildAsset::AllCounted(1));
 
             let interior_multilocation = Self::interior_multilocation(para_id);
             // The parathread tank account is derived from the tanssi sovereign account and the
             // parathread para id.
-            let derived_account = Self::relay_relative_multilocation(interior_multilocation)?;
+            let derived_account =
+                Self::relay_relative_multilocation(interior_multilocation.clone())?;
 
             // Need to use `builder_unsafe` because safe `builder` does not allow `descend_origin` as first instruction.
             // We use `descend_origin` instead of wrapping the transact call in `utility.as_derivative`
@@ -629,17 +629,17 @@ pub mod pallet {
                 <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();
 
             // Send XCM to relay chain
-            let relay_chain = MultiLocation::parent();
+            let relay_chain = Location::parent();
             let query_id = T::XCMNotifier::new_notify_query(
-                relay_chain,
+                relay_chain.clone(),
                 notify_call,
                 notify_query_ttl,
-                interior_multilocation,
+                interior_multilocation.clone(),
             );
 
             let message: Xcm<()> = Xcm::builder_unsafe()
-                .descend_origin(interior_multilocation)
-                .withdraw_asset(MultiAssets::from(vec![relay_asset_total.clone()]))
+                .descend_origin(interior_multilocation.clone())
+                .withdraw_asset(Assets::from(vec![relay_asset_total.clone()]))
                 .buy_execution(relay_asset_total, Unlimited)
                 // Both in case of error and in case of success, we want to refund the unused weight
                 .set_appendix(
@@ -655,7 +655,7 @@ pub mod pallet {
                         .deposit_asset(refund_asset_filter, derived_account)
                         .build(),
                 )
-                .transact(origin, weight_at_most, call.into())
+                .transact(origin, weight_at_most, call)
                 .build();
 
             // We intentionally do not charge any fees

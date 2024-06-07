@@ -39,7 +39,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
-        genesis_builder_helper::{build_config, create_default_config},
+        genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
@@ -59,7 +59,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_transaction_payment::CurrencyAdapter,
+    pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
@@ -356,6 +356,11 @@ impl frame_system::Config for Runtime {
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type RuntimeTask = RuntimeTask;
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
@@ -377,7 +382,6 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<0>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<0>;
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -388,7 +392,7 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // This will burn the fees
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -716,7 +720,7 @@ impl_runtime_apis! {
             Executive::execute_block(block)
         }
 
-        fn initialize_block(header: &<Block as BlockT>::Header) {
+        fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
         }
     }
@@ -806,12 +810,15 @@ impl_runtime_apis! {
     }
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
-        fn create_default_config() -> Vec<u8> {
-            create_default_config::<RuntimeGenesisConfig>()
+        fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
-            build_config::<RuntimeGenesisConfig>(config)
+        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+        }
+        fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
+            vec![]
         }
     }
 
@@ -852,7 +859,7 @@ impl_runtime_apis! {
             }
             use crate::xcm_config::SelfReserve;
             parameter_types! {
-                pub ExistentialDepositAsset: Option<MultiAsset> = Some((
+                pub ExistentialDepositAsset: Option<Asset> = Some((
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
@@ -866,14 +873,14 @@ impl_runtime_apis! {
                 ExistentialDepositAsset,
                 xcm_config::PriceForParentDelivery,
                 >;
-                fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
-                    Ok(MultiLocation::parent())
+                fn valid_destination() -> Result<Location, BenchmarkError> {
+                    Ok(Location::parent())
                 }
-                fn worst_case_holding(_depositable_count: u32) -> MultiAssets {
+                fn worst_case_holding(_depositable_count: u32) -> Assets {
                     // We only care for native asset until we support others
                     // TODO: refactor this case once other assets are supported
-                    vec![MultiAsset{
-                        id: Concrete(MultiLocation::here()),
+                    vec![Asset{
+                        id: AssetId(Location::here()),
                         fun: Fungible(u128::MAX),
                     }].into()
                 }
@@ -887,61 +894,76 @@ impl_runtime_apis! {
                     (0u64, Response::Version(Default::default()))
                 }
 
-                fn worst_case_asset_exchange() -> Result<(MultiAssets, MultiAssets), BenchmarkError> {
+                fn worst_case_asset_exchange() -> Result<(Assets, Assets), BenchmarkError> {
                     Err(BenchmarkError::Skip)
                 }
 
-                fn universal_alias() -> Result<(MultiLocation, Junction), BenchmarkError> {
+                fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
                     Err(BenchmarkError::Skip)
                 }
 
-                fn transact_origin_and_runtime_call() -> Result<(MultiLocation, RuntimeCall), BenchmarkError> {
-                    Ok((MultiLocation::parent(), frame_system::Call::remark_with_event { remark: vec![] }.into()))
+                fn transact_origin_and_runtime_call() -> Result<(Location, RuntimeCall), BenchmarkError> {
+                    Ok((Location::parent(), frame_system::Call::remark_with_event { remark: vec![] }.into()))
                 }
 
-                fn subscribe_origin() -> Result<MultiLocation, BenchmarkError> {
-                    Ok(MultiLocation::parent())
+                fn subscribe_origin() -> Result<Location, BenchmarkError> {
+                    Ok(Location::parent())
                 }
 
-                fn claimable_asset() -> Result<(MultiLocation, MultiLocation, MultiAssets), BenchmarkError> {
-                    let origin = MultiLocation::parent();
-                    let assets: MultiAssets = (Concrete(MultiLocation::parent()), 1_000u128).into();
-                    let ticket = MultiLocation { parents: 0, interior: Here };
+                fn fee_asset() -> Result<Asset, BenchmarkError> {
+                    Ok(Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(1u128),
+                    })
+                }
+
+                fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
+                    let origin = Location::parent();
+                    let assets: Assets = (Location::parent(), 1_000u128).into();
+                    let ticket = Location { parents: 0, interior: Here };
                     Ok((origin, ticket, assets))
                 }
 
-                fn unlockable_asset() -> Result<(MultiLocation, MultiLocation, MultiAsset), BenchmarkError> {
+                fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
                     Err(BenchmarkError::Skip)
                 }
 
                 fn export_message_origin_and_destination(
-                ) -> Result<(MultiLocation, NetworkId, InteriorMultiLocation), BenchmarkError> {
+                ) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
                     Err(BenchmarkError::Skip)
                 }
 
-                fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
+                fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
                     Err(BenchmarkError::Skip)
                 }
             }
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
-                fn reachable_dest() -> Option<MultiLocation> {
+                type DeliveryHelper = ();
+                fn get_asset() -> Asset {
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(ExistentialDeposit::get()),
+                    }
+                }
+
+                fn reachable_dest() -> Option<Location> {
                     Some(Parent.into())
                 }
 
-                fn teleportable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
                     // Relay/native token can be teleported between AH and Relay.
                     Some((
-                        MultiAsset {
+                        Asset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(Parent.into())
+                            id: Parent.into()
                         },
                         Parent.into(),
                     ))
                 }
 
-                fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
                     use xcm_config::SelfReserve;
                     // AH can reserve transfer native token to some random parachain.
                     let random_para_id = 43211234;
@@ -949,16 +971,16 @@ impl_runtime_apis! {
                         random_para_id.into()
                     );
                     Some((
-                        MultiAsset {
+                        Asset {
                             fun: Fungible(EXISTENTIAL_DEPOSIT),
-                            id: Concrete(SelfReserve::get())
+                            id: SelfReserve::get().into()
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
                     ))
                 }
 
                 fn set_up_complex_asset_transfer(
-                ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                ) -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
                     use xcm_config::SelfReserve;
                     // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
                     // fees using teleported native token.
@@ -966,7 +988,7 @@ impl_runtime_apis! {
                     let dest = Parent.into();
 
                     let fee_amount = EXISTENTIAL_DEPOSIT;
-                    let fee_asset: MultiAsset = (SelfReserve::get(), fee_amount).into();
+                    let fee_asset: Asset = (SelfReserve::get(), fee_amount).into();
 
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
@@ -987,9 +1009,9 @@ impl_runtime_apis! {
                         who.clone()
                     );
 
-                    let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
+                    let transfer_asset: Asset = (asset_location, asset_amount).into();
 
-                    let assets: MultiAssets = vec![fee_asset.clone(), transfer_asset].into();
+                    let assets: Assets = vec![fee_asset.clone(), transfer_asset].into();
                     let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
 
                     // verify transferred successfully

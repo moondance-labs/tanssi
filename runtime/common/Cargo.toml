@@ -14,12 +14,14 @@ workspace = true
 
 [dependencies]
 hex-literal = { workspace = true }
+log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
@@ -39,6 +41,10 @@ pallet-balances = { workspace = true }
 # Cumulus
 cumulus-pallet-xcmp-queue = { workspace = true }
 
+# Polkadot
+pallet-xcm = { workspace = true }
+staging-xcm = { workspace = true }
+
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
@@ -56,20 +62,24 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"frame-try-runtime?/std",
+	"log/std",
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-invulnerables/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
 	"pallet-registrar/std",
 	"pallet-services-payment/std",
 	"pallet-treasury/std",
+	"pallet-xcm/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"staging-xcm/std",
 ]
 
 runtime-benchmarks = [
@@ -80,12 +90,14 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 
@@ -97,12 +109,14 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-treasury/try-runtime",
+	"pallet-xcm/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 

@@ -32,7 +32,6 @@ use {
         weights::Weight,
     },
     frame_system::EnsureRoot,
-    pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
     pallet_foreign_asset_creator::{
         AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
     },
@@ -58,17 +57,18 @@ use {
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
+    xcm_primitives::AccountIdAssetIdConversion,
 };
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
-    // a MultiLocation: (Self Balances pallet index)
+    // a Location: (Self Balances pallet index)
     // We use the RELATIVE multilocation
-    pub SelfReserve: MultiLocation = MultiLocation {
+    pub SelfReserve: Location = Location {
         parents:0,
-        interior: Junctions::X1(
+        interior: [
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
-        )
+        ].into()
     };
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
@@ -87,15 +87,15 @@ parameter_types! {
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorMultiLocation =
-    X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+    pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
+
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-    pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+    pub ReachableDest: Option<Location> = Some(Parent.into());
 }
 
 pub type XcmBarrier = (
@@ -122,7 +122,7 @@ type Descriptor = staging_xcm_builder::DescribeFamily<staging_xcm_builder::Descr
 #[cfg(feature = "runtime-benchmarks")]
 type Descriptor = staging_xcm_builder::DescribeAllTerminal;
 
-/// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
+/// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
 /// `Transact` in order to determine the dispatch Origin.
 pub type LocationToAccountId = (
@@ -130,7 +130,7 @@ pub type LocationToAccountId = (
     ParentIsPreset<AccountId>,
     // Sibling parachain origins convert to AccountId via the `ParaId::into`.
     SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
-    // If we receive a MultiLocation of type AccountKey20, just generate a native account
+    // If we receive a Location of type AccountKey20, just generate a native account
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     staging_xcm_builder::HashedDescription<AccountId, Descriptor>,
@@ -145,7 +145,7 @@ pub type CurrencyTransactor = FungibleAdapter<
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
     IsConcrete<SelfReserve>,
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,
@@ -224,6 +224,10 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
+    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type HrmpNewChannelOpenRequestHandler = ();
+    type HrmpChannelAcceptedHandler = ();
+    type HrmpChannelClosingHandler = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -312,6 +316,7 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+    type IdleMaxServiceWeight = MessageQueueServiceWeight;
 }
 
 parameter_types! {
@@ -397,11 +402,11 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 
 pub struct RevertCodePrecompileHook;
 
-impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Runtime>>
+impl ForeignAssetCreatedHook<Location, AssetIdOf<Runtime>, AssetBalance<Runtime>>
     for RevertCodePrecompileHook
 {
     fn on_asset_created(
-        _foreign_asset: &MultiLocation,
+        _foreign_asset: &Location,
         asset_id: &AssetIdOf<Runtime>,
         _min_balance: &AssetBalance<Runtime>,
     ) {
@@ -413,8 +418,8 @@ impl ForeignAssetCreatedHook<MultiLocation, AssetIdOf<Runtime>, AssetBalance<Run
     }
 }
 
-impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for RevertCodePrecompileHook {
-    fn on_asset_destroyed(_foreign_asset: &MultiLocation, asset_id: &AssetIdOf<Runtime>) {
+impl ForeignAssetDestroyedHook<Location, AssetIdOf<Runtime>> for RevertCodePrecompileHook {
+    fn on_asset_destroyed(_foreign_asset: &Location, asset_id: &AssetIdOf<Runtime>) {
         let prefix_slice = [255u8; 18];
         let account_id = Runtime::asset_id_to_account(prefix_slice.as_slice(), *asset_id);
 
@@ -424,7 +429,7 @@ impl ForeignAssetDestroyedHook<MultiLocation, AssetIdOf<Runtime>> for RevertCode
 
 impl pallet_foreign_asset_creator::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ForeignAsset = MultiLocation;
+    type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
@@ -473,7 +478,7 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
     ForeignAssets,
     // Use this currency when it is a fungible asset matching the given location or name:
     (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,

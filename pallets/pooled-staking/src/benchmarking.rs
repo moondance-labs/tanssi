@@ -25,7 +25,7 @@ use {
         HoldReason,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
-    frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
+    frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
         traits::{

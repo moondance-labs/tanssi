@@ -23,6 +23,7 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
+use fc_storage::StorageOverride;
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
     cumulus_client_parachain_inherent::ParachainInherentData,
@@ -40,7 +41,6 @@ use {
         AuxStore, BlockOf, StorageProvider,
     },
     sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
-    sc_network::NetworkService,
     sc_network_sync::SyncingService,
     sc_service::TaskManager,
     sc_transaction_pool::{ChainApi, Pool},
@@ -55,6 +55,7 @@ use {
     sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT},
     std::{sync::Arc, time::Duration},
 };
+
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
@@ -82,7 +83,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
     /// Network service
-    pub network: Arc<NetworkService<Block, Hash>>,
+    pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// Chain syncing service
     pub sync: Arc<SyncingService<Block>>,
     /// EthFilterApi pool.
@@ -99,7 +100,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Fee history cache.
     pub fee_history_cache: FeeHistoryCache,
     /// Ethereum data access overrides.
-    pub overrides: Arc<OverrideHandle<Block>>,
+    pub overrides: Arc<dyn StorageOverride<Block>>,
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
     /// The Node authority flag
@@ -323,9 +324,9 @@ pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
     pub task_manager: &'a TaskManager,
     pub client: Arc<C>,
     pub substrate_backend: Arc<BE>,
-    pub frontier_backend: fc_db::Backend<B>,
+    pub frontier_backend: Arc<fc_db::Backend<B, C>>,
     pub filter_pool: Option<FilterPool>,
-    pub overrides: Arc<OverrideHandle<B>>,
+    pub overrides: Arc<dyn StorageOverride<B>>,
     pub fee_history_limit: u64,
     pub fee_history_cache: FeeHistoryCache,
     /// Chain syncing service
@@ -355,7 +356,7 @@ where
 {
     // Frontier offchain DB task. Essential.
     // Maps emulated ethereum data to substrate native data.
-    match params.frontier_backend {
+    match &*params.frontier_backend {
         fc_db::Backend::KeyValue(b) => {
             params.task_manager.spawn_essential_handle().spawn(
                 "frontier-mapping-sync-worker",
@@ -366,7 +367,7 @@ where
                     params.client.clone(),
                     params.substrate_backend.clone(),
                     params.overrides.clone(),
-                    Arc::new(b),
+                    b.clone(),
                     3,
                     0,
                     SyncStrategy::Parachain,
@@ -383,7 +384,7 @@ where
                 fc_mapping_sync::sql::SyncWorker::run(
                     params.client.clone(),
                     params.substrate_backend.clone(),
-                    Arc::new(b),
+                    b.clone(),
                     params.client.import_notification_stream(),
                     fc_mapping_sync::sql::SyncWorkerConfig {
                         read_notification_timeout: Duration::from_secs(10),

@@ -60,6 +60,7 @@ import type {
     PalletAuthorNotingEvent,
     PalletAuthorityAssignmentCall,
     PalletBalancesAccountData,
+    PalletBalancesAdjustmentDirection,
     PalletBalancesBalanceLock,
     PalletBalancesCall,
     PalletBalancesError,
@@ -154,18 +155,14 @@ import type {
     PolkadotCorePrimitivesInboundDownwardMessage,
     PolkadotCorePrimitivesInboundHrmpMessage,
     PolkadotCorePrimitivesOutboundHrmpMessage,
-    PolkadotPrimitivesV6AbridgedHostConfiguration,
-    PolkadotPrimitivesV6AbridgedHrmpChannel,
-    PolkadotPrimitivesV6AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV6PersistedValidationData,
-    PolkadotPrimitivesV6UpgradeGoAhead,
-    PolkadotPrimitivesV6UpgradeRestriction,
+    PolkadotPrimitivesV7AbridgedHostConfiguration,
+    PolkadotPrimitivesV7AbridgedHrmpChannel,
+    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams,
+    PolkadotPrimitivesV7PersistedValidationData,
+    PolkadotPrimitivesV7UpgradeGoAhead,
+    PolkadotPrimitivesV7UpgradeRestriction,
     SpArithmeticArithmeticError,
     SpCoreCryptoKeyTypeId,
-    SpCoreEcdsaSignature,
-    SpCoreEd25519Signature,
-    SpCoreSr25519Public,
-    SpCoreSr25519Signature,
     SpCoreVoid,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
@@ -245,6 +242,7 @@ declare module "@polkadot/types/types/registry" {
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
         PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
         PalletBalancesAccountData: PalletBalancesAccountData;
+        PalletBalancesAdjustmentDirection: PalletBalancesAdjustmentDirection;
         PalletBalancesBalanceLock: PalletBalancesBalanceLock;
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
@@ -339,18 +337,14 @@ declare module "@polkadot/types/types/registry" {
         PolkadotCorePrimitivesInboundDownwardMessage: PolkadotCorePrimitivesInboundDownwardMessage;
         PolkadotCorePrimitivesInboundHrmpMessage: PolkadotCorePrimitivesInboundHrmpMessage;
         PolkadotCorePrimitivesOutboundHrmpMessage: PolkadotCorePrimitivesOutboundHrmpMessage;
-        PolkadotPrimitivesV6AbridgedHostConfiguration: PolkadotPrimitivesV6AbridgedHostConfiguration;
-        PolkadotPrimitivesV6AbridgedHrmpChannel: PolkadotPrimitivesV6AbridgedHrmpChannel;
-        PolkadotPrimitivesV6AsyncBackingAsyncBackingParams: PolkadotPrimitivesV6AsyncBackingAsyncBackingParams;
-        PolkadotPrimitivesV6PersistedValidationData: PolkadotPrimitivesV6PersistedValidationData;
-        PolkadotPrimitivesV6UpgradeGoAhead: PolkadotPrimitivesV6UpgradeGoAhead;
-        PolkadotPrimitivesV6UpgradeRestriction: PolkadotPrimitivesV6UpgradeRestriction;
+        PolkadotPrimitivesV7AbridgedHostConfiguration: PolkadotPrimitivesV7AbridgedHostConfiguration;
+        PolkadotPrimitivesV7AbridgedHrmpChannel: PolkadotPrimitivesV7AbridgedHrmpChannel;
+        PolkadotPrimitivesV7AsyncBackingAsyncBackingParams: PolkadotPrimitivesV7AsyncBackingAsyncBackingParams;
+        PolkadotPrimitivesV7PersistedValidationData: PolkadotPrimitivesV7PersistedValidationData;
+        PolkadotPrimitivesV7UpgradeGoAhead: PolkadotPrimitivesV7UpgradeGoAhead;
+        PolkadotPrimitivesV7UpgradeRestriction: PolkadotPrimitivesV7UpgradeRestriction;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
-        SpCoreEcdsaSignature: SpCoreEcdsaSignature;
-        SpCoreEd25519Signature: SpCoreEd25519Signature;
-        SpCoreSr25519Public: SpCoreSr25519Public;
-        SpCoreSr25519Signature: SpCoreSr25519Signature;
         SpCoreVoid: SpCoreVoid;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;

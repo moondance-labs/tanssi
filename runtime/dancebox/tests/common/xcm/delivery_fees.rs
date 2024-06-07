@@ -29,13 +29,16 @@ use {
     },
     frame_support::{assert_ok, traits::EnsureOrigin},
     paste::paste,
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
+    staging_xcm::{
+        latest::prelude::{Junctions::X1, *},
+        VersionedLocation, VersionedXcm,
+    },
     xcm_emulator::Chain,
 };
 
 #[test]
 fn ump_delivery_fees_charged_dancebox() {
-    let dest = MultiLocation::parent();
+    let dest = Location::parent();
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
         crate::assert_delivery_fees_test!(Dancebox, dest);
@@ -44,7 +47,7 @@ fn ump_delivery_fees_charged_dancebox() {
 
 #[test]
 fn ump_delivery_fees_charged_simple_template() {
-    let dest = MultiLocation::parent();
+    let dest = Location::parent();
 
     // Send XCM message from SimpleTemplate
     SimpleTemplate::execute_with(|| {
@@ -54,7 +57,7 @@ fn ump_delivery_fees_charged_simple_template() {
 
 #[test]
 fn ump_delivery_fees_charged_frontier_template() {
-    let dest = MultiLocation::parent();
+    let dest = Location::parent();
 
     // Send XCM message from FrontierTemplate
     FrontierTemplate::execute_with(|| {
@@ -64,7 +67,7 @@ fn ump_delivery_fees_charged_frontier_template() {
 
 #[test]
 fn hrmp_delivery_fees_charged_dancebox() {
-    let dest = MultiLocation::new(1, X1(Parachain(2001)));
+    let dest = Location::new(1, X1([Parachain(2001)].into()));
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
         crate::assert_delivery_fees_test!(Dancebox, dest);
@@ -73,7 +76,7 @@ fn hrmp_delivery_fees_charged_dancebox() {
 
 #[test]
 fn hrmp_delivery_fees_charged_simple_template() {
-    let dest = MultiLocation::new(1, X1(Parachain(2000)));
+    let dest = Location::new(1, X1([Parachain(2000)].into()));
 
     // Send XCM message from SimpleTemplate
     SimpleTemplate::execute_with(|| {
@@ -83,7 +86,7 @@ fn hrmp_delivery_fees_charged_simple_template() {
 
 #[test]
 fn hrmp_delivery_fees_charged_frontier_template() {
-    let dest = MultiLocation::new(1, X1(Parachain(2000)));
+    let dest = Location::new(1, X1([Parachain(2000)].into()));
 
     // Send XCM message from FrontierTemplate
     FrontierTemplate::execute_with(|| {
@@ -100,7 +103,7 @@ macro_rules! assert_delivery_fees_test {
                 RefundSurplus,
             ]);
 
-            let versioned_xcm: VersionedXcm<()> = VersionedXcm::V3(xcm.clone());
+            let versioned_xcm: VersionedXcm<()> = VersionedXcm::V4(xcm.clone());
             let sender_account =  [<$chain Sender>]::get();
 
             let balance_sender_before = <$chain as [<$chain ParaPallet>]>::Balances::free_balance(sender_account.clone());
@@ -114,14 +117,14 @@ macro_rules! assert_delivery_fees_test {
                 DescendOrigin(interior),
                 RefundSurplus,
             ]);
-            let dest: VersionedMultiLocation = $dest.into();
+            let dest: VersionedLocation = $dest.into();
 
             assert_ok!(<$chain as [<$chain ParaPallet>]>::PolkadotXcm::send(
                 origin,
                 bx!(dest),
                 bx!(versioned_xcm)
             ));
-            let (_, price) = validate_send::<<<$chain as Chain>::Runtime as pallet_xcm::Config>::XcmRouter>(MultiLocation::parent(), final_xcm.clone()).unwrap();
+            let (_, price) = validate_send::<<<$chain as Chain>::Runtime as pallet_xcm::Config>::XcmRouter>(Location::parent(), final_xcm.clone()).unwrap();
             let balance_sender_after = <$chain as [<$chain ParaPallet>]>::Balances::free_balance(&sender_account);
             assert!(balance_sender_after < balance_sender_before);
             // assert there is at least an asset

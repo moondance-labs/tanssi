@@ -31,7 +31,8 @@ use {
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{
-        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
+        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, ParachainHostFunctions,
+        StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
@@ -91,7 +92,7 @@ type FullBackend = TFullBackend<Block>;
 pub struct ParachainNativeExecutor;
 
 impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+    type ExtendHostFunctions = ParachainHostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         dancebox_runtime::api::dispatch(method, data)
@@ -128,7 +129,7 @@ type ParachainProposerFactory =
     ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
 
 // Container chains types
-type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
 pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =
@@ -340,7 +341,7 @@ async fn start_node_impl(
     let force_authoring = parachain_config.force_authoring;
 
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -565,7 +566,7 @@ pub async fn start_node_impl_container(
 
     log::info!("are we collators? {:?}", collator);
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
@@ -1053,7 +1054,11 @@ pub fn start_dev_node(
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
-    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
+    let mut node_builder = node_builder
+        .build_substrate_network::<sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            import_queue,
+        )?;
 
     // If we're running a collator dev node we must install manual seal block
     // production.

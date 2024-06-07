@@ -22,11 +22,12 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
-    cumulus_client_service::prepare_node_config,
+    cumulus_client_service::{prepare_node_config, ParachainHostFunctions},
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
     fc_consensus::FrontierBlockImport,
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
+    fc_storage::StorageOverrideHandler,
     nimbus_primitives::NimbusId,
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     parity_scale_codec::Encode,
@@ -44,7 +45,7 @@ use {
     },
 };
 
-type ParachainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<
@@ -75,11 +76,11 @@ pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::P
 pub fn open_frontier_backend<C>(
     client: Arc<C>,
     config: &Configuration,
-) -> Result<fc_db::kv::Backend<Block>, String>
+) -> Result<fc_db::kv::Backend<Block, C>, String>
 where
     C: sp_blockchain::HeaderBackend<Block>,
 {
-    fc_db::kv::Backend::<Block>::new(
+    fc_db::kv::Backend::<Block, _>::new(
         client,
         &fc_db::kv::DatabaseSettings {
             source: match config.database {
@@ -179,11 +180,10 @@ async fn start_node_impl(
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
     let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
-    let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(
-        node_builder.client.clone(),
-        &parachain_config,
-    )?);
-    let overrides = crate::rpc::overrides_handle(node_builder.client.clone());
+    let frontier_backend = fc_db::Backend::KeyValue(
+        open_frontier_backend(node_builder.client.clone(), &parachain_config)?.into(),
+    );
+    let overrides = Arc::new(StorageOverrideHandler::new(node_builder.client.clone()));
     let fee_history_limit = rpc_config.fee_history_limit;
 
     let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
@@ -200,13 +200,15 @@ async fn start_node_impl(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network(
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
             para_id,
             import_queue,
             relay_chain_interface.clone(),
         )
         .await?;
+
+    let frontier_backend = Arc::new(frontier_backend);
 
     crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
         task_manager: &node_builder.task_manager,
@@ -236,12 +238,12 @@ async fn start_node_impl(
         let network = node_builder.network.network.clone();
         let sync = node_builder.network.sync_service.clone();
         let filter_pool = filter_pool.clone();
-        let frontier_backend = frontier_backend.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
         let overrides = overrides;
         let fee_history_cache = fee_history_cache.clone();
         let block_data_cache = block_data_cache;
+        let frontier_backend = frontier_backend.clone();
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -249,16 +251,16 @@ async fn start_node_impl(
                 client: client.clone(),
                 deny_unsafe,
                 filter_pool: filter_pool.clone(),
-                frontier_backend: match frontier_backend.clone() {
-                    fc_db::Backend::KeyValue(b) => Arc::new(b),
-                    fc_db::Backend::Sql(b) => Arc::new(b),
+                frontier_backend: match &*frontier_backend {
+                    fc_db::Backend::KeyValue(b) => b.clone(),
+                    fc_db::Backend::Sql(b) => b.clone(),
                 },
                 graph: pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
-                network: network.clone(),
+                network: Arc::new(network.clone()),
                 sync: sync.clone(),
                 block_data_cache: block_data_cache.clone(),
                 overrides: overrides.clone(),
@@ -335,11 +337,10 @@ pub async fn start_dev_node(
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
     let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
-    let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(
-        node_builder.client.clone(),
-        &parachain_config,
-    )?);
-    let overrides = crate::rpc::overrides_handle(node_builder.client.clone());
+    let frontier_backend = fc_db::Backend::KeyValue(
+        open_frontier_backend(node_builder.client.clone(), &parachain_config)?.into(),
+    );
+    let overrides = Arc::new(StorageOverrideHandler::new(node_builder.client.clone()));
     let fee_history_limit = rpc_config.fee_history_limit;
 
     let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
@@ -351,7 +352,11 @@ pub async fn start_dev_node(
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
-    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
+    let mut node_builder = node_builder
+        .build_substrate_network::<sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            import_queue,
+        )?;
 
     let mut command_sink = None;
     let mut xcm_senders = None;
@@ -455,6 +460,8 @@ pub async fn start_dev_node(
         })?;
     }
 
+    let frontier_backend = Arc::new(frontier_backend);
+
     crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
         task_manager: &node_builder.task_manager,
         client: node_builder.client.clone(),
@@ -483,7 +490,7 @@ pub async fn start_dev_node(
         let network = node_builder.network.network.clone();
         let sync = node_builder.network.sync_service.clone();
         let filter_pool = filter_pool;
-        let frontier_backend = frontier_backend;
+        let frontier_backend = frontier_backend.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
         let overrides = overrides;
@@ -495,9 +502,9 @@ pub async fn start_dev_node(
                 client: client.clone(),
                 deny_unsafe,
                 filter_pool: filter_pool.clone(),
-                frontier_backend: match frontier_backend.clone() {
-                    fc_db::Backend::KeyValue(b) => Arc::new(b),
-                    fc_db::Backend::Sql(b) => Arc::new(b),
+                frontier_backend: match &*frontier_backend {
+                    fc_db::Backend::KeyValue(b) => b.clone(),
+                    fc_db::Backend::Sql(b) => b.clone(),
                 },
                 graph: pool.pool().clone(),
                 pool: pool.clone(),

@@ -76,6 +76,11 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
     type RuntimeTask = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
@@ -180,6 +185,10 @@ impl RelaychainStateProvider for MockRelayStateProvider {
             state_root: root,
             number: 0, // block number is not relevant here
         }
+    }
+
+    fn current_relay_state_proof() -> Option<sp_trie::StorageProof> {
+        None
     }
 
     #[cfg(feature = "runtime-benchmarks")]

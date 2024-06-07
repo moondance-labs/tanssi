@@ -33,7 +33,10 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation},
+    staging_xcm::{
+        latest::prelude::{Junctions::*, *},
+        VersionedLocation,
+    },
     xcm_emulator::Chain,
 };
 
@@ -44,18 +47,19 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
     let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
     // Parents 1 this time
-    let simple_template_dest: VersionedMultiLocation = MultiLocation {
+    let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
-    let simple_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -64,7 +68,7 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let assets: MultiAssets = (X1(dancebox_pallet_info_junction), amount_to_send).into();
+    let assets: Assets = (X1([dancebox_pallet_info_junction].into()), amount_to_send).into();
     let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
 
@@ -75,9 +79,9 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation {
+                Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -153,33 +157,35 @@ fn transfer_assets_relay_tanssi() {
     let alice_relay_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
     // Parents 1 this time
-    let simple_template_dest: VersionedMultiLocation = MultiLocation {
+    let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
-    let simple_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
-    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -189,10 +195,13 @@ fn transfer_assets_relay_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let relay_amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
-    let relay_assets: MultiAssets = (Here, relay_amount_to_send).into();
+    let relay_assets: Assets = (Here, relay_amount_to_send).into();
 
     let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
@@ -205,9 +214,9 @@ fn transfer_assets_relay_tanssi() {
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation {
+                Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -227,7 +236,7 @@ fn transfer_assets_relay_tanssi() {
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
                 true,
@@ -251,7 +260,7 @@ fn transfer_assets_relay_tanssi() {
         assert_ok!(
             <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 DanceboxSender::get(),
                 true,
@@ -318,13 +327,9 @@ fn transfer_assets_relay_tanssi() {
 
     let relay_tokens_to_send_simple_template = (relay_amount_to_send - native_balance) / 2;
     // We just send half of the DOT received
-    let combined_assets: MultiAssets = vec![
+    let combined_assets: Assets = vec![
         dancebox_assets.into(),
-        (
-            MultiLocation::parent(),
-            relay_tokens_to_send_simple_template,
-        )
-            .into(),
+        (Location::parent(), relay_tokens_to_send_simple_template).into(),
     ]
     .into();
 
@@ -357,33 +362,35 @@ fn transfer_assets_container_token_tanssi() {
         <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
 
     // Parents 1 this time
-    let simple_template_dest: VersionedMultiLocation = MultiLocation {
+    let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
-    let simple_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
-    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
@@ -393,7 +400,10 @@ fn transfer_assets_container_token_tanssi() {
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
-    let dancebox_assets = (X1(dancebox_pallet_info_junction), dancebox_amount_to_send);
+    let dancebox_assets = (
+        X1([dancebox_pallet_info_junction].into()),
+        dancebox_amount_to_send,
+    );
     let simple_template_amount_to_send: crate::Balance =
         container_chain_template_simple_runtime::ExistentialDeposit::get() * 1000;
 
@@ -401,7 +411,7 @@ fn transfer_assets_container_token_tanssi() {
         <<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
 
-    let simple_template_assets: MultiAssets = (
+    let simple_template_assets: Assets = (
         simple_template_pallet_info_junction,
         simple_template_amount_to_send,
     )
@@ -418,9 +428,9 @@ fn transfer_assets_container_token_tanssi() {
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation {
+                Location {
                     parents: 1,
-                    interior: X2(Parachain(2000), dancebox_pallet_info_junction)
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
                 dancebox_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
@@ -445,9 +455,9 @@ fn transfer_assets_container_token_tanssi() {
         assert_ok!(
             <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation {
+                Location {
                     parents: 1,
-                    interior: X2(Parachain(2002), simple_template_pallet_info_junction)
+                    interior: X2([Parachain(2002), simple_template_pallet_info_junction].into())
                 },
                 simple_template_token_asset_id,
                 DanceboxSender::get(),
@@ -516,12 +526,12 @@ fn transfer_assets_container_token_tanssi() {
     let simple_template_tokens_to_send_simple_template =
         (simple_template_amount_to_send - native_balance) / 2;
     // We just send half of the DOT received
-    let combined_assets: MultiAssets = vec![
+    let combined_assets: Assets = vec![
         dancebox_assets.into(),
         (
-            MultiLocation {
+            Location {
                 parents: 1,
-                interior: X2(Parachain(2002), simple_template_pallet_info_junction),
+                interior: X2([Parachain(2002), simple_template_pallet_info_junction].into()),
             },
             simple_template_tokens_to_send_simple_template,
         )
@@ -601,39 +611,41 @@ fn transfer_asset_relay_token_across_tanssi_container() {
     let alice_relay_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
     // Parents 1 this time
-    let simple_template_dest: VersionedMultiLocation = MultiLocation {
+    let simple_template_dest: VersionedLocation = Location {
         parents: 1,
-        interior: X1(Parachain(2002u32)),
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
-    let simple_template_beneficiary: VersionedMultiLocation = MultiLocation {
+    let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
-    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1(Parachain(2000u32)),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1(AccountId32 {
+        interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
-        }),
+        }]
+        .into()),
     }
     .into();
 
     let relay_amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
 
-    let relay_assets: MultiAssets = (Here, relay_amount_to_send).into();
+    let relay_assets: Assets = (Here, relay_amount_to_send).into();
 
     let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
@@ -645,7 +657,7 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
                 true,
@@ -669,7 +681,7 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         assert_ok!(
             <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                MultiLocation::parent(),
+                Location::parent(),
                 westend_token_asset_id,
                 DanceboxSender::get(),
                 true,
@@ -736,12 +748,8 @@ fn transfer_asset_relay_token_across_tanssi_container() {
 
     let relay_tokens_to_send_simple_template = (relay_amount_to_send - native_balance) / 2;
     // We just send half of the DOT received
-    let relay_assets_to_send: MultiAssets = vec![(
-        MultiLocation::parent(),
-        relay_tokens_to_send_simple_template,
-    )
-        .into()]
-    .into();
+    let relay_assets_to_send: Assets =
+        vec![(Location::parent(), relay_tokens_to_send_simple_template).into()].into();
 
     // Now we need to send the relay asset to simple template
     // Send XCM message from Dancebox

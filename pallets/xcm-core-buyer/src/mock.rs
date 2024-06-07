@@ -42,8 +42,8 @@ use {
     },
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::{
-        latest::{MultiAssets, MultiLocation, SendError, SendResult, SendXcm, Xcm, XcmHash},
-        prelude::{GlobalConsensus, InteriorMultiLocation, NetworkId, Parachain, X2},
+        latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
+        prelude::{GlobalConsensus, InteriorLocation, Junctions::X2, NetworkId, Parachain},
     },
     tp_traits::{ParathreadParams, SlotFrequency},
 };
@@ -73,7 +73,7 @@ impl From<pallet_xcm::Origin> for RuntimeOrigin {
 /// Only needed for benchmark test suite
 impl From<RuntimeOrigin> for Result<pallet_xcm::Origin, RuntimeOrigin> {
     fn from(_value: RuntimeOrigin) -> Self {
-        Ok(Origin::Response(MultiLocation::parent()))
+        Ok(Origin::Response(Location::parent()))
     }
 }
 
@@ -102,6 +102,11 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
     type RuntimeTask = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
@@ -121,7 +126,6 @@ impl pallet_balances::Config for Test {
     type MaxFreezes = ();
     type RuntimeHoldReason = ();
     type RuntimeFreezeReason = ();
-    type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }
 
@@ -203,7 +207,7 @@ parameter_types! {
     pub const PendingBlocksTtl: u32 = 5;
     pub const CoreBuyingXCMQueryTtl: u32 = 100;
     pub const AdditionalTtlForInflightOrders: u32 = 5;
-    pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(NetworkId::Westend), Parachain(1000));
+    pub UniversalLocation: InteriorLocation = X2([GlobalConsensus(NetworkId::Westend), Parachain(1000)].into());
 }
 
 impl pallet_xcm_core_buyer::Config for Test {
@@ -235,8 +239,8 @@ impl pallet_xcm_core_buyer::Config for Test {
 pub struct DevNull;
 impl SendXcm for DevNull {
     type Ticket = ();
-    fn validate(_: &mut Option<MultiLocation>, _: &mut Option<Xcm<()>>) -> SendResult<()> {
-        Ok(((), MultiAssets::new()))
+    fn validate(_: &mut Option<Location>, _: &mut Option<Xcm<()>>) -> SendResult<()> {
+        Ok(((), Assets::new()))
     }
     fn deliver(_: ()) -> Result<XcmHash, SendError> {
         Ok([0; 32])

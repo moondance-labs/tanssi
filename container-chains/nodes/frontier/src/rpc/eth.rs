@@ -25,9 +25,9 @@ use {
 // Frontier
 use fc_db::Backend as FrontierBackend;
 pub use {
-    fc_rpc::{EthBlockDataCacheTask, OverrideHandle},
+    fc_rpc::EthBlockDataCacheTask,
     fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool},
-    fc_storage::overrides_handle,
+    fc_storage::StorageOverride,
 };
 
 /// Extra dependencies for Ethereum compatibility.
@@ -49,9 +49,9 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
     /// Chain syncing service
     pub sync: Arc<SyncingService<B>>,
     /// Frontier Backend.
-    pub frontier_backend: Arc<FrontierBackend<B>>,
+    pub frontier_backend: Arc<FrontierBackend<B, C>>,
     /// Ethereum data access overrides.
-    pub overrides: Arc<OverrideHandle<B>>,
+    pub overrides: Arc<dyn StorageOverride<B>>,
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<B>>,
     /// EthFilterApi pool.

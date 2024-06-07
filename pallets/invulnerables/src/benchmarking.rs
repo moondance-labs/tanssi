@@ -23,7 +23,7 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as InvulnerablesPallet;
 use {
-    frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
+    frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
         pallet_prelude::*,
         traits::{tokens::fungible::Balanced, Currency, EnsureOrigin, Get},
