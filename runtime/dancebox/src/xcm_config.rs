@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{AuthorNoting, AuthorityMapping, Session};
-use nimbus_primitives::NimbusId;
-use pallet_session::ShouldEndSession;
-use pallet_xcm_core_buyer::CheckCollatorValidity;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
@@ -30,7 +26,7 @@ use {
         ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
         RuntimeEvent, RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
-    crate::weights,
+    crate::{weights, AuthorNoting, AuthorityMapping, Session},
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
@@ -38,9 +34,11 @@ use {
         weights::Weight,
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
+    nimbus_primitives::NimbusId,
+    pallet_session::ShouldEndSession,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
+        CheckCollatorValidity, GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
         ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
@@ -66,13 +64,13 @@ use {
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
-    // a MultiLocation: (Self Balances pallet index)
+    // a Location: (Self Balances pallet index)
     // We use the RELATIVE multilocation
-    pub SelfReserve: MultiLocation = MultiLocation {
+    pub SelfReserve: Location = Location {
         parents: 0,
-        interior: Junctions::X1(
+        interior: [
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
-        )
+        ].into()
     };
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
@@ -91,15 +89,15 @@ parameter_types! {
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorMultiLocation =
-    X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
+    pub UniversalLocation: InteriorLocation =
+    [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-    pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+    pub ReachableDest: Option<Location> = Some(Parent.into());
 }
 
 pub type XcmBarrier = (
@@ -119,7 +117,7 @@ pub type XcmBarrier = (
     >,
 );
 
-/// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
+/// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
 /// `Transact` in order to determine the dispatch Origin.
 pub type LocationToAccountId = (
@@ -127,7 +125,7 @@ pub type LocationToAccountId = (
     ParentIsPreset<AccountId>,
     // Sibling parachain origins convert to AccountId via the `ParaId::into`.
     SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
-    // If we receive a MultiLocation of type AccountKey20, just generate a native account
+    // If we receive a Location of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     staging_xcm_builder::HashedDescription<
@@ -145,7 +143,7 @@ pub type CurrencyTransactor = FungibleAdapter<
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
     IsConcrete<SelfReserve>,
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,
@@ -226,6 +224,10 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
+    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type HrmpNewChannelOpenRequestHandler = ();
+    type HrmpChannelAcceptedHandler = ();
+    type HrmpChannelClosingHandler = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -345,7 +347,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 
 impl pallet_foreign_asset_creator::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ForeignAsset = MultiLocation;
+    type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
     type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
@@ -373,7 +375,7 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
     ForeignAssets,
     // Use this currency when it is a fungible asset matching the given location or name:
     (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
-    // Convert an XCM MultiLocation into a local account id:
+    // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
     AccountId,
@@ -394,17 +396,15 @@ pub type AssetRateAsMultiplier =
 
 // TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
-    fn contains(asset: &MultiAsset, origin: &MultiLocation) -> bool {
+impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
+    fn contains(asset: &Asset, origin: &Location) -> bool {
         log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if let Concrete(location) = &asset.id {
-            if location.parents == 0 && !matches!(location.first_interior(), Some(Parachain(_))) {
-                Some(MultiLocation::here())
-            } else {
-                location.chain_part()
-            }
+        let reserve = if asset.id.0.parents == 0
+            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
+        {
+            Some(Location::here())
         } else {
-            None
+            asset.id.0.chain_part()
         };
 
         if let Some(ref reserve) = reserve {
@@ -419,32 +419,32 @@ impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAs
 pub trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
     /// parachain, or child parachain.
-    fn chain_part(&self) -> Option<MultiLocation>;
+    fn chain_part(&self) -> Option<Location>;
     /// Returns "non-chain" location part.
-    fn non_chain_part(&self) -> Option<MultiLocation>;
+    fn non_chain_part(&self) -> Option<Location>;
 }
 
-impl Parse for MultiLocation {
-    fn chain_part(&self) -> Option<MultiLocation> {
+impl Parse for Location {
+    fn chain_part(&self) -> Option<Location> {
         match (self.parents, self.first_interior()) {
             // sibling parachain
-            (1, Some(Parachain(id))) => Some(MultiLocation::new(1, X1(Parachain(*id)))),
+            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
             // parent
-            (1, _) => Some(MultiLocation::parent()),
+            (1, _) => Some(Location::parent()),
             // children parachain
-            (0, Some(Parachain(id))) => Some(MultiLocation::new(0, X1(Parachain(*id)))),
+            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
             _ => None,
         }
     }
 
-    fn non_chain_part(&self) -> Option<MultiLocation> {
-        let mut junctions = *self.interior();
+    fn non_chain_part(&self) -> Option<Location> {
+        let mut junctions = self.interior().clone();
         while matches!(junctions.first(), Some(Parachain(_))) {
             let _ = junctions.take_first();
         }
 
         if junctions != Here {
-            Some(MultiLocation::new(0, junctions))
+            Some(Location::new(0, junctions))
         } else {
             None
         }
@@ -477,6 +477,7 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+    type IdleMaxServiceWeight = MessageQueueServiceWeight;
 }
 
 parameter_types! {
@@ -490,10 +491,10 @@ pub struct XCMNotifierImpl;
 
 impl XCMNotifier<Runtime> for XCMNotifierImpl {
     fn new_notify_query(
-        responder: impl Into<MultiLocation>,
+        responder: impl Into<Location>,
         notify: impl Into<RuntimeCall>,
         timeout: BlockNumberFor<Runtime>,
-        match_querier: impl Into<MultiLocation>,
+        match_querier: impl Into<Location>,
     ) -> u64 {
         pallet_xcm::Pallet::<Runtime>::new_notify_query(responder, notify, timeout, match_querier)
     }

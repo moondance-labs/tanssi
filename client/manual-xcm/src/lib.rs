@@ -60,7 +60,7 @@ impl ManualXcmApiServer for ManualXcm {
         let downward_message_channel = self.downward_message_channel.clone();
         // If no message is supplied, inject a default one.
         let msg = if msg.is_empty() {
-            staging_xcm::VersionedXcm::<()>::V3(Xcm(vec![
+            staging_xcm::VersionedXcm::<()>::V4(Xcm(vec![
                 ReserveAssetDeposited((Parent, 10000000000000u128).into()),
                 ClearOrigin,
                 BuyExecution {
@@ -72,12 +72,12 @@ impl ManualXcmApiServer for ManualXcm {
                 },
                 DepositAsset {
                     assets: AllCounted(1).into(),
-                    beneficiary: MultiLocation::new(
+                    beneficiary: Location::new(
                         0,
-                        X1(AccountKey20 {
+                        [AccountKey20 {
                             network: None,
                             key: hex_literal::hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac"),
-                        }),
+                        }],
                     ),
                 },
             ]))
@@ -103,7 +103,7 @@ impl ManualXcmApiServer for ManualXcm {
         let msg = if msg.is_empty() {
             let mut mes = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
             mes.append(
-                &mut (staging_xcm::VersionedXcm::<()>::V3(Xcm(vec![
+                &mut (staging_xcm::VersionedXcm::<()>::V4(Xcm(vec![
                     ReserveAssetDeposited(
                         ((Parent, Parachain(sender.into())), 10000000000000u128).into(),
                     ),
@@ -117,12 +117,12 @@ impl ManualXcmApiServer for ManualXcm {
                     },
                     DepositAsset {
                         assets: AllCounted(1).into(),
-                        beneficiary: MultiLocation::new(
+                        beneficiary: Location::new(
                             0,
-                            X1(AccountKey20 {
+                            [AccountKey20 {
                                 network: None,
                                 key: hex_literal::hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac"),
-                            }),
+                            }],
                         ),
                     },
                 ]))
@@ -145,13 +145,11 @@ impl ManualXcmApiServer for ManualXcm {
 }
 
 // This bit cribbed from frontier.
-pub fn internal_err<T: AsRef<str>>(message: T) -> jsonrpsee::core::Error {
-    jsonrpsee::core::Error::Call(jsonrpsee::types::error::CallError::Custom(
-        jsonrpsee::types::error::ErrorObject::borrowed(
-            jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-            &message,
-            None,
-        )
-        .into_owned(),
-    ))
+pub fn internal_err<T: AsRef<str>>(message: T) -> jsonrpsee::types::ErrorObjectOwned {
+    jsonrpsee::types::error::ErrorObject::borrowed(
+        jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+        message.as_ref(),
+        None,
+    )
+    .into_owned()
 }

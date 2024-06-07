@@ -27,7 +27,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
+    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
     xcm_emulator::Chain,
 };
 
@@ -35,14 +35,14 @@ use {
 fn trapping_asserts_works_with_polkadot_xcm() {
     // XcmPallet send arguments
     let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
-    let dancebox_para_destination: VersionedMultiLocation =
+    let dancebox_para_destination: VersionedLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
     let buy_execution_fee_amount =
         dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
-    let buy_execution_fee = MultiAsset {
-        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+    let buy_execution_fee = Asset {
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -82,7 +82,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
             vec![
                 RuntimeEvent::PolkadotXcm(
                     pallet_xcm::Event::AssetsTrapped{origin, ..}) => {
-                        origin: *origin == MultiLocation::parent(),
+                        origin: *origin == Location::parent(),
                 },
             ]
         );

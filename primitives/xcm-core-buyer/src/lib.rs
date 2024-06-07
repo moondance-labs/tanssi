@@ -19,10 +19,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
-use frame_support::{CloneNoBound, DebugNoBound};
-use sp_runtime::RuntimeAppPublic;
-use tp_traits::ParaId;
+use {
+    frame_support::{
+        pallet_prelude::{Decode, Encode, TypeInfo},
+        CloneNoBound, DebugNoBound,
+    },
+    sp_runtime::RuntimeAppPublic,
+    tp_traits::ParaId,
+};
 
 /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
 #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]

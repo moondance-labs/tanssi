@@ -21,6 +21,7 @@ use {
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     cumulus_primitives_core::ParaId,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
@@ -225,14 +226,19 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+
             // Switch on the concrete benchmark sub-command-
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ()>(config))
+                        runner.sync_run(|config| {
+                            cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ReclaimHostFunctions>(Some(
+                                config.chain_spec,
+                            ))
+                        })
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
-                    You can enable it with `--features runtime-benchmarks`."
+			  You can enable it with `--features runtime-benchmarks`."
                             .into())
                     }
                 }
@@ -261,18 +267,6 @@ pub fn run() -> Result<()> {
                 #[allow(unreachable_patterns)]
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
-        }
-        #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(_)) => {
-            Err("Substrate's `try-runtime` subcommand has been migrated \
-            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
-                .into())
-        }
-        #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => {
-            Err("Substrate's `try-runtime` subcommand has been migrated \
-            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
-                .into())
         }
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;

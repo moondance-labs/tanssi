@@ -82,13 +82,11 @@ where
     }
 }
 
-pub fn internal_err<T: ToString>(error: T) -> jsonrpsee::core::Error {
-    jsonrpsee::core::Error::Call(jsonrpsee::types::error::CallError::Custom(
-        jsonrpsee::types::error::ErrorObject::borrowed(
-            jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-            &error.to_string(),
-            None,
-        )
-        .into_owned(),
-    ))
+pub fn internal_err<T: ToString>(message: T) -> jsonrpsee::types::ErrorObjectOwned {
+    jsonrpsee::types::error::ErrorObject::borrowed(
+        jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+        &message.to_string(),
+        None,
+    )
+    .into_owned()
 }

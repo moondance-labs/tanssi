@@ -44,10 +44,10 @@ import type {
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
     PolkadotCorePrimitivesOutboundHrmpMessage,
-    PolkadotPrimitivesV6AbridgedHostConfiguration,
-    PolkadotPrimitivesV6PersistedValidationData,
-    PolkadotPrimitivesV6UpgradeGoAhead,
-    PolkadotPrimitivesV6UpgradeRestriction,
+    PolkadotPrimitivesV7AbridgedHostConfiguration,
+    PolkadotPrimitivesV7PersistedValidationData,
+    PolkadotPrimitivesV7UpgradeGoAhead,
+    PolkadotPrimitivesV7UpgradeRestriction,
     SpCoreCryptoKeyTypeId,
     SpRuntimeDigest,
     SpTrieStorageProof,
@@ -166,14 +166,22 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** The total units of outstanding deactivated balance in the system. */
             inactiveIssuance: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
-            /** Any liquidity locks on some account balances. NOTE: Should only be accessed when setting, changing and freeing a lock. */
+            /**
+             * Any liquidity locks on some account balances. NOTE: Should only be accessed when setting, changing and freeing a lock.
+             *
+             * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             locks: AugmentedQuery<
                 ApiType,
                 (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesBalanceLock>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
-            /** Named reserves on some account balances. */
+            /**
+             * Named reserves on some account balances.
+             *
+             * Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
+             */
             reserves: AugmentedQuery<
                 ApiType,
                 (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesReserveData>>,
@@ -433,7 +441,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             hostConfiguration: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV6AbridgedHostConfiguration>>,
+                () => Observable<Option<PolkadotPrimitivesV7AbridgedHostConfiguration>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -554,7 +562,7 @@ declare module "@polkadot/api-base/types/storage" {
              * This storage item is a mirror of the corresponding value for the current parachain from the relay-chain. This
              * value is ephemeral which means it doesn't hit the storage. This value is set after the inherent.
              */
-            upgradeGoAhead: AugmentedQuery<ApiType, () => Observable<Option<PolkadotPrimitivesV6UpgradeGoAhead>>, []> &
+            upgradeGoAhead: AugmentedQuery<ApiType, () => Observable<Option<PolkadotPrimitivesV7UpgradeGoAhead>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * An option which indicates if the relay-chain restricts signalling a validation code upgrade. In other words, if
@@ -565,7 +573,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             upgradeRestrictionSignal: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV6UpgradeRestriction>>,
+                () => Observable<Option<PolkadotPrimitivesV7UpgradeRestriction>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -585,7 +593,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             validationData: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV6PersistedValidationData>>,
+                () => Observable<Option<PolkadotPrimitivesV7PersistedValidationData>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -881,6 +889,8 @@ declare module "@polkadot/api-base/types/storage" {
             /** Extrinsics data for the current block (maps an extrinsic's index to its data). */
             extrinsicData: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>, [u32]> &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Whether all inherents have been applied. */
+            inherentsApplied: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /** Stores the `spec_version` and `spec_name` of when the last runtime upgrade happened. */
             lastRuntimeUpgrade: AugmentedQuery<
                 ApiType,

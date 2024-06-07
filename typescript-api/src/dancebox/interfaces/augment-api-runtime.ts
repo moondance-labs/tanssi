@@ -6,19 +6,21 @@
 import "@polkadot/api-base/types/calls";
 
 import type { ApiTypes, AugmentedCall, DecoratedCallBase } from "@polkadot/api-base/types";
-import type { Bytes, Null, Option, Vec, u32 } from "@polkadot/types-codec";
+import type { Bytes, Null, Option, Result, Vec, u32 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { CheckInherentsResult, InherentData } from "@polkadot/types/interfaces/blockbuilder";
 import type { BlockHash } from "@polkadot/types/interfaces/chain";
 import type { AuthorityId } from "@polkadot/types/interfaces/consensus";
 import type { CollationInfo } from "@polkadot/types/interfaces/cumulus";
 import type { Extrinsic } from "@polkadot/types/interfaces/extrinsics";
+import type { GenesisBuildErr } from "@polkadot/types/interfaces/genesisBuilder";
 import type { OpaqueMetadata } from "@polkadot/types/interfaces/metadata";
 import type { FeeDetails, RuntimeDispatchInfo } from "@polkadot/types/interfaces/payment";
 import type {
     AccountId,
     Balance,
     Block,
+    ExtrinsicInclusionMode,
     Header,
     Index,
     KeyTypeId,
@@ -92,7 +94,7 @@ declare module "@polkadot/api-base/types/calls" {
             /** Generic call */
             [key: string]: DecoratedCallBase<ApiType>;
         };
-        /** 0xdf6acb689907609b/4 */
+        /** 0xdf6acb689907609b/5 */
         core: {
             /** Execute the given block. */
             executeBlock: AugmentedCall<
@@ -108,10 +110,22 @@ declare module "@polkadot/api-base/types/calls" {
                         | { parentHash?: any; number?: any; stateRoot?: any; extrinsicsRoot?: any; digest?: any }
                         | string
                         | Uint8Array
-                ) => Observable<Null>
+                ) => Observable<ExtrinsicInclusionMode>
             >;
             /** Returns the version of the runtime. */
             version: AugmentedCall<ApiType, () => Observable<RuntimeVersion>>;
+            /** Generic call */
+            [key: string]: DecoratedCallBase<ApiType>;
+        };
+        /** 0xfbc577b9d747efd6/1 */
+        genesisBuilder: {
+            /** Build `RuntimeGenesisConfig` from a JSON blob not using any defaults and store it in the storage. */
+            buildConfig: AugmentedCall<
+                ApiType,
+                (json: Bytes | string | Uint8Array) => Observable<Result<ITuple<[]>, GenesisBuildErr>>
+            >;
+            /** Creates the default `RuntimeGenesisConfig` and returns it as a JSON blob. */
+            createDefaultConfig: AugmentedCall<ApiType, () => Observable<Bytes>>;
             /** Generic call */
             [key: string]: DecoratedCallBase<ApiType>;
         };

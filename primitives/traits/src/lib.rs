@@ -23,14 +23,13 @@ pub use cumulus_primitives_core::{
     relay_chain::{BlockNumber, Slot},
     ParaId,
 };
-use frame_support::pallet_prelude::MaxEncodedLen;
-use sp_runtime::app_crypto::sp_core;
 use {
     frame_support::{
-        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
+        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
     sp_core::H256,
+    sp_runtime::app_crypto::sp_core,
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
 

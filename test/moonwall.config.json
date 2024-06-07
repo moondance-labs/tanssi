@@ -31,7 +31,8 @@
                             "--chain=tmp/dancebox_dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
-                            "--wasmtime-precompiled=wasm"
+                            "--wasmtime-precompiled=wasm",
+                            "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
@@ -49,7 +50,7 @@
                     {
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
-                        "options": ["--chain=dancebox", "--sealing=manual", "--collator", "--dev-service", "--tmp"],
+                        "options": ["--chain=dancebox", "--sealing=manual", "--collator", "--dev-service", "--tmp", "--unsafe-force-node-key-generation"],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
                     }
@@ -88,7 +89,8 @@
                             "--chain=tmp/dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
-                            "--wasmtime-precompiled=wasm"
+                            "--wasmtime-precompiled=wasm",
+                            "--unsafe-force-node-key-generation"
                         ],
                         "newRpcBehaviour": true
                     }
@@ -119,7 +121,8 @@
                             "--chain=tmp/dev-raw.json",
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
-                            "--wasmtime-precompiled=wasm"
+                            "--wasmtime-precompiled=wasm",
+                            "--unsafe-force-node-key-generation"
                         ],
                         "newRpcBehaviour": true,
                         "disableDefaultEthProviders": true
@@ -642,7 +645,8 @@
                             "--no-prometheus",
                             "--no-telemetry",
                             "--reserved-only",
-                            "--wasmtime-precompiled=wasm"
+                            "--wasmtime-precompiled=wasm",
+                            "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true

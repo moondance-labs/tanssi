@@ -249,6 +249,15 @@ impl RelayChainInterface for RelayChain {
     async fn header(&self, _block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
         unimplemented!("Not needed for test")
     }
+
+    async fn validation_code_hash(
+        &self,
+        _relay_parent: PHash,
+        _para_id: ParaId,
+        _occupied_core_assumption: OccupiedCoreAssumption,
+    ) -> RelayChainResult<Option<polkadot_primitives::ValidationCodeHash>> {
+        unimplemented!("Not needed for test")
+    }
 }
 
 #[derive(Clone)]

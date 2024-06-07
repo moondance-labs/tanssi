@@ -49,8 +49,7 @@ fn create_funded_user<T: Config>(
 
 #[benchmarks]
 mod benchmarks {
-    use super::*;
-    use parity_scale_codec::Encode;
+    use {super::*, parity_scale_codec::Encode};
 
     fn new_genesis_data<T: Config>(
         storage: Vec<ContainerChainGenesisDataItem>,

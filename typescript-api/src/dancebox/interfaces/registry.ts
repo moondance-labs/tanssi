@@ -88,6 +88,7 @@ import type {
     PalletAuthorNotingEvent,
     PalletAuthorityAssignmentCall,
     PalletBalancesAccountData,
+    PalletBalancesAdjustmentDirection,
     PalletBalancesBalanceLock,
     PalletBalancesCall,
     PalletBalancesError,
@@ -214,18 +215,14 @@ import type {
     PolkadotCorePrimitivesInboundDownwardMessage,
     PolkadotCorePrimitivesInboundHrmpMessage,
     PolkadotCorePrimitivesOutboundHrmpMessage,
-    PolkadotPrimitivesV6AbridgedHostConfiguration,
-    PolkadotPrimitivesV6AbridgedHrmpChannel,
-    PolkadotPrimitivesV6AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV6PersistedValidationData,
-    PolkadotPrimitivesV6UpgradeGoAhead,
-    PolkadotPrimitivesV6UpgradeRestriction,
+    PolkadotPrimitivesV7AbridgedHostConfiguration,
+    PolkadotPrimitivesV7AbridgedHrmpChannel,
+    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams,
+    PolkadotPrimitivesV7PersistedValidationData,
+    PolkadotPrimitivesV7UpgradeGoAhead,
+    PolkadotPrimitivesV7UpgradeRestriction,
     SpArithmeticArithmeticError,
     SpCoreCryptoKeyTypeId,
-    SpCoreEcdsaSignature,
-    SpCoreEd25519Signature,
-    SpCoreSr25519Public,
-    SpCoreSr25519Signature,
     SpCoreVoid,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
@@ -239,7 +236,26 @@ import type {
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
     StagingParachainInfoCall,
+    StagingXcmExecutorAssetTransferTransferType,
     StagingXcmV3MultiLocation,
+    StagingXcmV4Asset,
+    StagingXcmV4AssetAssetFilter,
+    StagingXcmV4AssetAssetId,
+    StagingXcmV4AssetAssetInstance,
+    StagingXcmV4AssetAssets,
+    StagingXcmV4AssetFungibility,
+    StagingXcmV4AssetWildAsset,
+    StagingXcmV4AssetWildFungibility,
+    StagingXcmV4Instruction,
+    StagingXcmV4Junction,
+    StagingXcmV4JunctionNetworkId,
+    StagingXcmV4Junctions,
+    StagingXcmV4Location,
+    StagingXcmV4PalletInfo,
+    StagingXcmV4QueryResponseInfo,
+    StagingXcmV4Response,
+    StagingXcmV4TraitsOutcome,
+    StagingXcmV4Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
@@ -289,12 +305,11 @@ import type {
     XcmV3QueryResponseInfo,
     XcmV3Response,
     XcmV3TraitsError,
-    XcmV3TraitsOutcome,
     XcmV3WeightLimit,
     XcmV3Xcm,
     XcmVersionedAssetId,
-    XcmVersionedMultiAssets,
-    XcmVersionedMultiLocation,
+    XcmVersionedAssets,
+    XcmVersionedLocation,
     XcmVersionedResponse,
     XcmVersionedXcm,
 } from "@polkadot/types/lookup";
@@ -383,6 +398,7 @@ declare module "@polkadot/types/types/registry" {
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
         PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
         PalletBalancesAccountData: PalletBalancesAccountData;
+        PalletBalancesAdjustmentDirection: PalletBalancesAdjustmentDirection;
         PalletBalancesBalanceLock: PalletBalancesBalanceLock;
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
@@ -509,18 +525,14 @@ declare module "@polkadot/types/types/registry" {
         PolkadotCorePrimitivesInboundDownwardMessage: PolkadotCorePrimitivesInboundDownwardMessage;
         PolkadotCorePrimitivesInboundHrmpMessage: PolkadotCorePrimitivesInboundHrmpMessage;
         PolkadotCorePrimitivesOutboundHrmpMessage: PolkadotCorePrimitivesOutboundHrmpMessage;
-        PolkadotPrimitivesV6AbridgedHostConfiguration: PolkadotPrimitivesV6AbridgedHostConfiguration;
-        PolkadotPrimitivesV6AbridgedHrmpChannel: PolkadotPrimitivesV6AbridgedHrmpChannel;
-        PolkadotPrimitivesV6AsyncBackingAsyncBackingParams: PolkadotPrimitivesV6AsyncBackingAsyncBackingParams;
-        PolkadotPrimitivesV6PersistedValidationData: PolkadotPrimitivesV6PersistedValidationData;
-        PolkadotPrimitivesV6UpgradeGoAhead: PolkadotPrimitivesV6UpgradeGoAhead;
-        PolkadotPrimitivesV6UpgradeRestriction: PolkadotPrimitivesV6UpgradeRestriction;
+        PolkadotPrimitivesV7AbridgedHostConfiguration: PolkadotPrimitivesV7AbridgedHostConfiguration;
+        PolkadotPrimitivesV7AbridgedHrmpChannel: PolkadotPrimitivesV7AbridgedHrmpChannel;
+        PolkadotPrimitivesV7AsyncBackingAsyncBackingParams: PolkadotPrimitivesV7AsyncBackingAsyncBackingParams;
+        PolkadotPrimitivesV7PersistedValidationData: PolkadotPrimitivesV7PersistedValidationData;
+        PolkadotPrimitivesV7UpgradeGoAhead: PolkadotPrimitivesV7UpgradeGoAhead;
+        PolkadotPrimitivesV7UpgradeRestriction: PolkadotPrimitivesV7UpgradeRestriction;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
-        SpCoreEcdsaSignature: SpCoreEcdsaSignature;
-        SpCoreEd25519Signature: SpCoreEd25519Signature;
-        SpCoreSr25519Public: SpCoreSr25519Public;
-        SpCoreSr25519Signature: SpCoreSr25519Signature;
         SpCoreVoid: SpCoreVoid;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
@@ -534,7 +546,26 @@ declare module "@polkadot/types/types/registry" {
         SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
         StagingParachainInfoCall: StagingParachainInfoCall;
+        StagingXcmExecutorAssetTransferTransferType: StagingXcmExecutorAssetTransferTransferType;
         StagingXcmV3MultiLocation: StagingXcmV3MultiLocation;
+        StagingXcmV4Asset: StagingXcmV4Asset;
+        StagingXcmV4AssetAssetFilter: StagingXcmV4AssetAssetFilter;
+        StagingXcmV4AssetAssetId: StagingXcmV4AssetAssetId;
+        StagingXcmV4AssetAssetInstance: StagingXcmV4AssetAssetInstance;
+        StagingXcmV4AssetAssets: StagingXcmV4AssetAssets;
+        StagingXcmV4AssetFungibility: StagingXcmV4AssetFungibility;
+        StagingXcmV4AssetWildAsset: StagingXcmV4AssetWildAsset;
+        StagingXcmV4AssetWildFungibility: StagingXcmV4AssetWildFungibility;
+        StagingXcmV4Instruction: StagingXcmV4Instruction;
+        StagingXcmV4Junction: StagingXcmV4Junction;
+        StagingXcmV4JunctionNetworkId: StagingXcmV4JunctionNetworkId;
+        StagingXcmV4Junctions: StagingXcmV4Junctions;
+        StagingXcmV4Location: StagingXcmV4Location;
+        StagingXcmV4PalletInfo: StagingXcmV4PalletInfo;
+        StagingXcmV4QueryResponseInfo: StagingXcmV4QueryResponseInfo;
+        StagingXcmV4Response: StagingXcmV4Response;
+        StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
+        StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
         TpContainerChainGenesisDataContainerChainGenesisData: TpContainerChainGenesisDataContainerChainGenesisData;
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
@@ -584,12 +615,11 @@ declare module "@polkadot/types/types/registry" {
         XcmV3QueryResponseInfo: XcmV3QueryResponseInfo;
         XcmV3Response: XcmV3Response;
         XcmV3TraitsError: XcmV3TraitsError;
-        XcmV3TraitsOutcome: XcmV3TraitsOutcome;
         XcmV3WeightLimit: XcmV3WeightLimit;
         XcmV3Xcm: XcmV3Xcm;
         XcmVersionedAssetId: XcmVersionedAssetId;
-        XcmVersionedMultiAssets: XcmVersionedMultiAssets;
-        XcmVersionedMultiLocation: XcmVersionedMultiLocation;
+        XcmVersionedAssets: XcmVersionedAssets;
+        XcmVersionedLocation: XcmVersionedLocation;
         XcmVersionedResponse: XcmVersionedResponse;
         XcmVersionedXcm: XcmVersionedXcm;
     } // InterfaceTypes
