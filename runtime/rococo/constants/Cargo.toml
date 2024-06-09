@@ -1,26 +1,26 @@
 [package]
 name = "rococo-runtime-constants"
-version = "7.0.0"
 description = "Constants used throughout the Rococo network."
-authors.workspace = true
-edition.workspace = true
-license.workspace = true
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
 
 [lints]
 workspace = true
 
+# FIXME: lock versions for all non-branched crates
 [dependencies]
 smallvec = "1.8.0"
 
-frame-support = { path = "../../../../substrate/frame/support", default-features = false }
-primitives = { package = "polkadot-primitives", path = "../../../primitives", default-features = false }
-runtime-common = { package = "polkadot-runtime-common", path = "../../common", default-features = false }
-sp-runtime = { path = "../../../../substrate/primitives/runtime", default-features = false }
-sp-weights = { path = "../../../../substrate/primitives/weights", default-features = false }
-sp-core = { path = "../../../../substrate/primitives/core", default-features = false }
+frame-support = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+primitives = { package = "polkadot-primitives", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+runtime-common = { package = "polkadot-runtime-common", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+sp-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+sp-weights = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+sp-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
-xcm = { package = "staging-xcm", path = "../../../xcm", default-features = false }
-xcm-builder = { package = "staging-xcm-builder", path = "../../../xcm/xcm-builder", default-features = false }
+xcm = { package = "staging-xcm", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 [features]
 default = ["std"]
