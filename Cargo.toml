@@ -11,6 +11,7 @@ members = [
 	"runtime/dancebox",
 	"runtime/flashbox",
 	"runtime/relay-encoder",
+	"runtime/rococo",
 ]
 resolver = "2"
 
@@ -72,6 +73,7 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
+flashbox-rococo = { path = "runtime/rococo", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
