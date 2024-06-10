@@ -371,6 +371,13 @@ tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.18" }
 url = "2.2.2"
 
+# Re-aliased for Mozart runtime compatibility
+primitives = { package = "polkadot-primitives", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+runtime-common = { package = "polkadot-runtime-common", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+
+xcm = { package = "staging-xcm", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+
 [profile.production]
 codegen-units = 1
 inherits = "release"

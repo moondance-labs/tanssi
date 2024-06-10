@@ -7148,7 +7148,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
- "polkadot-runtime-common",
+ "runtime-common",
  "smallvec",
  "sp-core",
  "sp-runtime",
