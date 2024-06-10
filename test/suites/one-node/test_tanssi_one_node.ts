@@ -199,7 +199,7 @@ async function registerEmptyParathread(api, manager, paraId) {
         mode: "Bootnode",
         assignmentRequest: "Free",
     }));
-    txs.push(api.tx.dataPreservers.startAssignment(profileId, paraId, "Free"));
+    txs.push(api.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free"));
     txs.push(api.tx.registrar.markValidForCollating(paraId));
 
     return txs;

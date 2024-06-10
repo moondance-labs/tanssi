@@ -371,7 +371,7 @@ async function registerParathread(api, manager, paraId) {
             });
             txs.push(profileTx);
 
-            const tx2 = api.tx.dataPreservers.startAssignment(profileId++, rawSpec.para_id, "Free");
+            const tx2 = api.tx.dataPreservers.forceStartAssignment(profileId++, rawSpec.para_id, "Free");
             const tx2s = api.tx.sudo.sudo(tx2);
             txs.push(tx2s);
         }
