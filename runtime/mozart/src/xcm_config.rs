@@ -51,7 +51,7 @@ use xcm_executor::XcmExecutor;
 parameter_types! {
 	pub TokenLocation: Location = Here.into_location();
 	pub RootLocation: Location = Location::here();
-	pub const ThisNetwork: NetworkId = NetworkId::Rococo;
+	pub const ThisNetwork: NetworkId = NetworkId::Rococo; // TODO(akram): Change to Mozart
 	pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
 	pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
