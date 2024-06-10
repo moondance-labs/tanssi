@@ -104,7 +104,7 @@ describeSuite({
                 await context.createBlock([await profileTx.signAsync(alice), await tx3.signAsync(charlie)]);
 
                 const assignments = await polkadotJs.query.dataPreservers.assignments(2002);
-                expect(assignments.toJSON()).to.deep.equal([profileId]);
+                expect(assignments.toJSON()).to.deep.equal([profileId.toJSON()]);
             },
         });
 
