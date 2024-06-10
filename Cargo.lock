@@ -1460,7 +1460,7 @@ dependencies = [
  "multibase",
  "multihash 0.17.0",
  "serde",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -1473,7 +1473,7 @@ dependencies = [
  "multibase",
  "multihash 0.18.1",
  "serde",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -6148,7 +6148,7 @@ dependencies = [
  "rw-stream-sink",
  "smallvec",
  "thiserror",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
  "void",
 ]
 
@@ -6230,7 +6230,7 @@ dependencies = [
  "smallvec",
  "thiserror",
  "uint",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
  "void",
 ]
 
@@ -6621,8 +6621,8 @@ dependencies = [
 
 [[package]]
 name = "litep2p"
-version = "0.5.0"
-source = "git+https://github.com/paritytech/litep2p?branch=master#d905ec1f634968fe3bf7182feee8aa1b73e8db6a"
+version = "0.3.0"
+source = "git+https://github.com/paritytech/litep2p?branch=master#b142c9eb611fb2fe78d2830266a3675b37299ceb"
 dependencies = [
  "async-trait",
  "bs58 0.4.0",
@@ -6634,7 +6634,7 @@ dependencies = [
  "hex-literal 0.4.1",
  "indexmap 2.2.3",
  "libc",
- "mockall 0.12.1",
+ "mockall",
  "multiaddr",
  "multihash 0.17.0",
  "network-interface",
@@ -6664,7 +6664,7 @@ dependencies = [
  "tracing",
  "trust-dns-resolver 0.23.2",
  "uint",
- "unsigned-varint 0.8.0",
+ "unsigned-varint",
  "url",
  "webpki",
  "x25519-dalek 2.0.1",
@@ -7019,23 +7019,8 @@ dependencies = [
  "downcast",
  "fragile",
  "lazy_static",
- "mockall_derive 0.11.4",
- "predicates 2.1.5",
- "predicates-tree",
-]
-
-[[package]]
-name = "mockall"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43766c2b5203b10de348ffe19f7e54564b64f3d6018ff7648d1e2d6d3a0f0a48"
-dependencies = [
- "cfg-if",
- "downcast",
- "fragile",
- "lazy_static",
- "mockall_derive 0.12.1",
- "predicates 3.1.0",
+ "mockall_derive",
+ "predicates",
  "predicates-tree",
 ]
 
@@ -7049,18 +7034,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "mockall_derive"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af7cbce79ec385a1d4f54baa90a76401eb15d9cab93685f62e7e9f942aa00ae2"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "syn 2.0.66",
 ]
 
 [[package]]
@@ -7199,7 +7172,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "static_assertions",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
  "url",
 ]
 
@@ -7228,7 +7201,7 @@ dependencies = [
  "multihash-derive 0.8.0",
  "sha2 0.10.8",
  "sha3",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -7245,7 +7218,7 @@ dependencies = [
  "multihash-derive 0.8.0",
  "sha2 0.10.8",
  "sha3",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -7255,7 +7228,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "076d548d76a0e2a0d4ab471d0b1c36c577786dfc4471242035d97a12a735c492"
 dependencies = [
  "core2",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -7334,7 +7307,7 @@ dependencies = [
  "log",
  "pin-project",
  "smallvec",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -11694,16 +11667,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "predicates"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68b87bfd4605926cdfefc1c3b5f8fe560e3feca9d5552cf68c466d3d8236c7e8"
-dependencies = [
- "anstyle",
- "predicates-core",
-]
-
-[[package]]
 name = "predicates-core"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12004,7 +11967,7 @@ dependencies = [
  "bytes",
  "quick-protobuf",
  "thiserror",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -13058,7 +13021,7 @@ dependencies = [
  "futures 0.3.30",
  "futures-timer",
  "log",
- "mockall 0.11.4",
+ "mockall",
  "parking_lot 0.12.3",
  "sc-client-api",
  "sc-network-types",
@@ -13501,7 +13464,7 @@ dependencies = [
  "linked_hash_set",
  "litep2p",
  "log",
- "mockall 0.11.4",
+ "mockall",
  "once_cell",
  "parity-scale-codec",
  "parking_lot 0.12.3",
@@ -13526,7 +13489,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "unsigned-varint 0.7.2",
+ "unsigned-varint",
  "void",
  "wasm-timer",
  "zeroize",
@@ -13604,7 +13567,7 @@ dependencies = [
  "futures-timer",
  "libp2p",
  "log",
- "mockall 0.11.4",
+ "mockall",
  "parity-scale-codec",
  "prost 0.12.6",
  "prost-build",
@@ -14192,9 +14155,9 @@ dependencies = [
 
 [[package]]
 name = "sctp-proto"
-version = "0.2.2"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6220f78bb44c15f326b0596113305f6101097a18755d53727a575c97e09fb24"
+checksum = "8f64cef148d3295c730c3cb340b0b252a4d570b1c7d4bf0808f88540b0a888bc"
 dependencies = [
  "bytes",
  "crc",
@@ -15801,17 +15764,17 @@ dependencies = [
 
 [[package]]
 name = "str0m"
-version = "0.5.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6706347e49b13373f7ddfafad47df7583ed52083d6fc8a594eb2c80497ef959d"
+checksum = "ee48572247f422dcbe68630c973f8296fbd5157119cd36a3223e48bf83d47727"
 dependencies = [
  "combine",
  "crc",
- "fastrand 2.0.1",
  "hmac 0.12.1",
  "once_cell",
  "openssl",
  "openssl-sys",
+ "rand 0.8.5",
  "sctp-proto",
  "serde",
  "sha-1 0.10.1",
@@ -17264,15 +17227,6 @@ dependencies = [
  "bytes",
  "futures-io",
  "futures-util",
-]
-
-[[package]]
-name = "unsigned-varint"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb066959b24b5196ae73cb057f45598450d2c5f71460e98c49b738086eff9c06"
-dependencies = [
- "bytes",
  "tokio-util",
 ]
 
