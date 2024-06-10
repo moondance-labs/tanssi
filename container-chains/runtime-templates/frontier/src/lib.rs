@@ -793,12 +793,13 @@ where
         let deploy_filter: DeployFilter = AddressList::get();
 
         match deploy_filter {
-            DeployFilter::All => return Ok(()),
+            DeployFilter::All => Ok(()),
             DeployFilter::Whitelisted(addresses_vec) => {
                 if !addresses_vec.contains(address) {
-                    return Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed);
+                    Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed)
+                } else {
+                    Ok(())
                 }
-                return Ok(());
             }
         }
     }

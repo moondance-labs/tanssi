@@ -202,7 +202,7 @@ fn testnet_genesis(
         .collect();
     let data_preservers_bootnodes: Vec<_> = para_ids
         .iter()
-        .map(|(para_id, _genesis_data, bootnodes)| {
+        .flat_map(|(para_id, _genesis_data, bootnodes)| {
             bootnodes.clone().into_iter().map(|bootnode| {
                 (
                     *para_id,
@@ -213,7 +213,6 @@ fn testnet_genesis(
                 )
             })
         })
-        .flatten()
         .collect();
 
     let para_ids: Vec<_> = para_ids
