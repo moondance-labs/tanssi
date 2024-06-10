@@ -115,10 +115,12 @@ describeSuite({
                         // if currently assigned, then 2
                         let sessionRequirements: bigint;
 
-                        if(currentAuthorityAssignment["containerChains"][container.toString()].length == 0) {
+                        if (
+                            currentAuthorityAssignment["containerChains"][container.toString()] == null ||
+                            currentAuthorityAssignment["containerChains"][container.toString()].length == 0
+                        ) {
                             sessionRequirements = 1n;
-                        }
-                        else {
+                        } else {
                             sessionRequirements = 2n;
                         }
                         if (
@@ -137,9 +139,9 @@ describeSuite({
                             // Here we only check that  that we have collators
                             // If we are able to cover all paras, then all of them should have collators if credits
                             if (maxParas >= containersToCompareAgainst.length) {
-                                expect(pendingAuthorityAssignment["containerChains"][container.toString()].length).to.be.greaterThan(
-                                    0
-                                );
+                                expect(
+                                    pendingAuthorityAssignment["containerChains"][container.toString()].length
+                                ).to.be.greaterThan(0);
                             }
                         } else {
                             numWithNoCredits += 1;
