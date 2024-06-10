@@ -804,22 +804,52 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
 }
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
     // TODO: Add Stream Payment (with deposit)
 }
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)

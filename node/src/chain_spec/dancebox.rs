@@ -20,8 +20,8 @@ use {
     },
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        prod_or_fast, AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
-        RegistrarConfig, ServicesPaymentConfig, SudoConfig,
+        prod_or_fast, AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig,
+        PolkadotXcmConfig, RegistrarConfig, ServicesPaymentConfig, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -200,6 +200,21 @@ fn testnet_genesis(
         .iter()
         .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
         .collect();
+    let data_preservers_bootnodes: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, bootnodes)| {
+            bootnodes.clone().into_iter().map(|bootnode| {
+                (
+                    *para_id,
+                    AccountId::from([0u8; 32]),
+                    bootnode,
+                    dancebox_runtime::PreserversAssignementPaymentRequest::Free,
+                    dancebox_runtime::PreserversAssignementPaymentWitness::Free,
+                )
+            })
+        })
+        .flatten()
+        .collect();
     let para_ids: Vec<_> = para_ids
         .into_iter()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
@@ -263,6 +278,10 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
         treasury: Default::default(),
+        data_preservers: DataPreserversConfig {
+            bootnodes: data_preservers_bootnodes,
+            ..Default::default()
+        },
     };
 
     serde_json::to_value(g).unwrap()

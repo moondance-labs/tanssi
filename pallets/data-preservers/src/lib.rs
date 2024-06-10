@@ -34,9 +34,6 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use {
     core::fmt::Debug,
     dp_core::ParaId,
@@ -48,28 +45,21 @@ use {
             tokens::Precision,
             EitherOfDiverse, EnsureOriginWithArg,
         },
+        DefaultNoBound,
     },
     frame_system::{pallet_prelude::*, EnsureRoot, EnsureSigned},
     parity_scale_codec::FullCodec,
+    serde::{de::DeserializeOwned, Deserialize, Serialize},
     sp_runtime::{
         traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
         ArithmeticError, Either,
     },
+    sp_std::vec::Vec,
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-
-    #[cfg(feature = "std")]
-    pub trait SerdeIfStd: serde::Serialize + serde::de::DeserializeOwned {}
-    #[cfg(feature = "std")]
-    impl<T: serde::Serialize + serde::de::DeserializeOwned> SerdeIfStd for T {}
-
-    #[cfg(not(feature = "std"))]
-    pub trait SerdeIfStd {}
-    #[cfg(not(feature = "std"))]
-    impl<T> SerdeIfStd for T {}
 
     /// Balance used by this pallet
     pub type BalanceOf<T> =
@@ -88,9 +78,16 @@ pub mod pallet {
     >>::AssignmentWitness;
 
     /// Data preserver profile.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+        RuntimeDebugNoBound,
+        PartialEqNoBound,
+        EqNoBound,
+        Encode,
+        Decode,
+        CloneNoBound,
+        TypeInfo,
+        Serialize,
+        Deserialize,
     )]
     #[scale_info(skip_type_params(T))]
     pub struct Profile<T: Config> {
@@ -100,9 +97,16 @@ pub mod pallet {
         pub assignment_request: ProviderRequestOf<T>,
     }
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+        RuntimeDebugNoBound,
+        PartialEqNoBound,
+        EqNoBound,
+        Encode,
+        Decode,
+        CloneNoBound,
+        TypeInfo,
+        Serialize,
+        Deserialize,
     )]
     #[scale_info(skip_type_params(T))]
     pub enum ParaIdsFilter<T: Config> {
@@ -129,8 +133,9 @@ pub mod pallet {
         }
     }
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum ProfileMode {
         Bootnode,
         Rpc { supports_ethereum_rpcs: bool },
@@ -139,9 +144,16 @@ pub mod pallet {
     /// Profile with additional data:
     /// - the account id which created (and manage) the profile
     /// - the amount deposited to register the profile
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
+        RuntimeDebugNoBound,
+        PartialEqNoBound,
+        EqNoBound,
+        Encode,
+        Decode,
+        CloneNoBound,
+        TypeInfo,
+        Serialize,
+        Deserialize,
     )]
     #[scale_info(skip_type_params(T))]
     pub struct RegisteredProfile<T: Config> {
@@ -189,11 +201,32 @@ pub mod pallet {
     /// Allows to process various kinds of payment options for assignments.
     pub trait AssignmentPayment<AccountId> {
         /// Providers requests which kind of payment it accepts.
-        type ProviderRequest: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+        type ProviderRequest: FullCodec
+            + TypeInfo
+            + Copy
+            + Clone
+            + Debug
+            + Eq
+            + Serialize
+            + DeserializeOwned;
         /// Extra parameter the assigner provides.
-        type AssignerParameter: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+        type AssignerParameter: FullCodec
+            + TypeInfo
+            + Copy
+            + Clone
+            + Debug
+            + Eq
+            + Serialize
+            + DeserializeOwned;
         /// Represents the succesful outcome of the assignment.
-        type AssignmentWitness: FullCodec + TypeInfo + Copy + Clone + Debug + Eq + SerdeIfStd;
+        type AssignmentWitness: FullCodec
+            + TypeInfo
+            + Copy
+            + Clone
+            + Debug
+            + Eq
+            + Serialize
+            + DeserializeOwned;
 
         fn try_start_assignment(
             assigner: AccountId,
@@ -224,6 +257,49 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         fn benchmark_assignment_witness() -> Self::AssignmentWitness;
+    }
+
+    #[pallet::genesis_config]
+    #[derive(DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
+        pub bootnodes: Vec<(
+            // ParaId the profile will be assigned to
+            ParaId,
+            // Owner of the profile
+            T::AccountId,
+            // URL of the bootnode
+            Vec<u8>,
+            // Assignment request
+            ProviderRequestOf<T>,
+            // Assignment witness (try_start_assignment is skipped)
+            AssignmentWitnessOf<T>,
+        )>,
+        #[serde(skip)]
+        pub _phantom: PhantomData<T>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            for (para_id, profile_owner, url, request, witness) in self.bootnodes.clone() {
+                let profile = Profile {
+                    url: url.try_into().expect("should fit in BoundedVec"),
+                    para_ids: ParaIdsFilter::Whitelist({
+                        let mut set = BoundedBTreeSet::new();
+                        set.try_insert(para_id).expect("to fit in BoundedBTreeSet");
+                        set
+                    }),
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: request,
+                };
+
+                let profile_id = NextProfileId::<T>::get();
+                Pallet::<T>::do_create_profile(profile, profile_owner, Zero::zero())
+                    .expect("to create profile");
+                Pallet::<T>::do_start_assignment(profile_id, para_id, |_| Ok(witness))
+                    .expect("to start assignment");
+            }
+        }
     }
 
     /// Data preservers pallet.
