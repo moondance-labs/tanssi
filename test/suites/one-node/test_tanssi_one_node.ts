@@ -191,10 +191,16 @@ async function registerEmptyParathread(api, manager, paraId) {
         )
     );
     const bootNodes = ["/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw"];
-    const tx2 = api.tx.dataPreservers.setBootNodes(paraId, bootNodes);
-    txs.push(tx2);
-    const tx3 = api.tx.registrar.markValidForCollating(paraId);
-    txs.push(tx3);
+
+    const profileId = await api.query.dataPreservers.nextProfileId();
+    txs.push(api.tx.dataPreservers.createProfile({
+        url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+        paraIds: "AnyParaId",
+        mode: "Bootnode",
+        assignmentRequest: "Free",
+    }));
+    txs.push(api.tx.dataPreservers.startAssignment(profileId, paraId, "Free"));
+    txs.push(api.tx.registrar.markValidForCollating(paraId));
 
     return txs;
 }

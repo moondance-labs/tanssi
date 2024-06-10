@@ -361,8 +361,20 @@ async function registerParathread(api, manager, paraId) {
         )
     );
     if (rawSpec.bootNodes?.length) {
-        const tx2 = api.tx.dataPreservers.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);
-        txs.push(tx2);
+        let profileId = await api.query.dataPreservers.nextProfileId();   
+        for (const bootnode of rawSpec.bootNodes) {            
+            const profileTx = api.tx.dataPreservers.createProfile({
+                url: bootnode,
+                paraIds: "AnyParaId",
+                mode: "Bootnode",
+                assignmentRequest: "Free",
+            });
+            txs.push(profileTx);
+
+            const tx2 = api.tx.dataPreservers.startAssignment(profileId++, rawSpec.para_id, "Free");
+            const tx2s = api.tx.sudo.sudo(tx2);
+            txs.push(tx2s);
+        }
     }
     const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
     txs.push(tx3);

@@ -28,6 +28,7 @@ describeSuite({
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
+                    assignmentRequest: "Free",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -37,12 +38,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -64,12 +67,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const profile2 = {
@@ -90,7 +95,9 @@ describeSuite({
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -112,12 +119,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.deleteProfile(profileId);
@@ -151,7 +160,9 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -173,12 +184,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const profile2 = {
@@ -199,7 +212,9 @@ describeSuite({
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -221,12 +236,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceDeleteProfile(profileId);

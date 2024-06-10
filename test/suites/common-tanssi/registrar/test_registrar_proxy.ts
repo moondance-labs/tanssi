@@ -87,18 +87,24 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
+                const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile({
+                    url: "dummy",
+                    paraIds: "AnyParaId",
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                });
+
                 // assert we can inject bootnodes with proxy
                 const tx3 = polkadotJs.tx.proxy.proxy(
                     bob.address,
                     null,
-                    polkadotJs.tx.dataPreservers.setBootNodes(2002, ["dummy"])
+                    polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free")
                 );
-                await context.createBlock([await tx3.signAsync(charlie)]);
+                await context.createBlock([await profileTx.signAsync(alice), await tx3.signAsync(charlie)]);
 
-                // Check that the on chain genesis data is set correctly
-                const onChainBootnodes = await polkadotJs.query.dataPreservers.bootNodes(2002);
-                // TODO: fix once we have types
-                expect(onChainBootnodes.toHuman()).to.deep.equal(["dummy"]);
+                const assignments = await polkadotJs.query.dataPreservers.assignments(2002);
+                expect(assignments.toJSON()).to.deep.equal([profileId]);
             },
         });
 
