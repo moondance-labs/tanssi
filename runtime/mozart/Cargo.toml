@@ -115,12 +115,12 @@ xcm-fee-payment-runtime-api = { workspace = true }
 [dev-dependencies]
 keyring = { workspace = true }
 remote-externalities = { workspace = true }
-separator = "0.4.1"
+separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }
 sp-trie = { workspace = true }
 tiny-keccak = { workspace = true }
-tokio = { version = "1.24.2", features = [ "macros" ] }
+tokio = { workspace = true, features = [ "macros" ] }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
