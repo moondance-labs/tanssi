@@ -21,12 +21,12 @@ use frame_support::migration::put_storage_value;
 use frame_support::storage::generator::StorageMap;
 use frame_support::Hashable;
 use pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId};
-use runtime_common::migrations::ForeignAssetCreatorMigration;
 use staging_xcm::v3::{
     Junction as V3Junction, Junctions as V3Junctions, MultiLocation as V3MultiLocation,
     NetworkId as V3NetworkId,
 };
 use std::marker::PhantomData;
+use tanssi_runtime_common::migrations::ForeignAssetCreatorMigration;
 use {
     common::*,
     cumulus_primitives_core::ParaId,
@@ -51,10 +51,6 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
-    runtime_common::migrations::{
-        MigrateConfigurationParathreads, MigrateServicesPaymentAddCollatorAssignmentCredits,
-        RegistrarPendingVerificationValueToMap,
-    },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -63,6 +59,10 @@ use {
     },
     sp_std::vec,
     staging_xcm::latest::prelude::*,
+    tanssi_runtime_common::migrations::{
+        MigrateConfigurationParathreads, MigrateServicesPaymentAddCollatorAssignmentCredits,
+        RegistrarPendingVerificationValueToMap,
+    },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
 };

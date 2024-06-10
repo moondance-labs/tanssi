@@ -1922,7 +1922,6 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "precompile-utils",
- "runtime-common",
  "scale-info",
  "serde",
  "smallvec",
@@ -1946,6 +1945,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "xcm-primitives",
 ]
 
@@ -2002,7 +2002,6 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
- "runtime-common",
  "scale-info",
  "serde",
  "smallvec",
@@ -2026,6 +2025,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "xcm-primitives",
 ]
 
@@ -3073,7 +3073,6 @@ dependencies = [
  "polkadot-service",
  "rococo-runtime",
  "rococo-runtime-constants",
- "runtime-common",
  "sc-consensus-grandpa",
  "sc-service",
  "scale-info",
@@ -3105,6 +3104,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-relay-encoder",
+ "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
@@ -4378,7 +4378,6 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
- "runtime-common",
  "sc-consensus-grandpa",
  "scale-info",
  "serde",
@@ -4404,6 +4403,7 @@ dependencies = [
  "sp-version",
  "staging-parachain-info",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
@@ -12370,36 +12370,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "runtime-common"
-version = "0.1.0"
-dependencies = [
- "cumulus-pallet-xcmp-queue",
- "cumulus-primitives-core",
- "frame-support",
- "frame-system",
- "frame-try-runtime",
- "hex-literal 0.3.4",
- "log",
- "pallet-balances",
- "pallet-configuration",
- "pallet-data-preservers",
- "pallet-foreign-asset-creator",
- "pallet-invulnerables",
- "pallet-migrations",
- "pallet-pooled-staking",
- "pallet-registrar",
- "pallet-services-payment",
- "pallet-treasury",
- "pallet-xcm",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
- "staging-xcm",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16056,6 +16026,36 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tanssi-runtime-common"
+version = "0.1.0"
+dependencies = [
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "log",
+ "pallet-balances",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-foreign-asset-creator",
+ "pallet-invulnerables",
+ "pallet-migrations",
+ "pallet-pooled-staking",
+ "pallet-registrar",
+ "pallet-services-payment",
+ "pallet-treasury",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]

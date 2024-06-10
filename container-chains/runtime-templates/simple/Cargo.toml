@@ -25,7 +25,7 @@ dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
-runtime-common = { workspace = true }
+tanssi-runtime-common = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -156,7 +156,6 @@ std = [
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
-	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -178,6 +177,7 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
+	"tanssi-runtime-common/std",
 	"xcm-primitives/std",
 ]
 
@@ -218,10 +218,10 @@ runtime-benchmarks = [
 	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
-	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
+	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 ]
 
@@ -259,6 +259,6 @@ try-runtime = [
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
-	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
+	"tanssi-runtime-common/try-runtime",
 ]
