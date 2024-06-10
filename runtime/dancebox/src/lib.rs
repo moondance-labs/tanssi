@@ -789,19 +789,14 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(
         para_ids: &mut Vec<ParaId>,
-        currently_assigned: &BTreeSet<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
     ) {
         let blocks_per_session = Period::get();
 
         para_ids.retain(|para_id| {
             // If the para has been assigned collators for this session it must have enough block credits
             // for the current and the next session.
-            let block_credits_needed = if currently_assigned.contains(para_id) {
-                blocks_per_session * 2
-            } else {
-                blocks_per_session
-            };
-
+            let block_credits_needed = blocks_per_session * 2;
             // Check if the container chain has enough credits for producing blocks
             let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
