@@ -361,8 +361,8 @@ async function registerParathread(api, manager, paraId) {
         )
     );
     if (rawSpec.bootNodes?.length) {
-        let profileId = await api.query.dataPreservers.nextProfileId();   
-        for (const bootnode of rawSpec.bootNodes) {            
+        let profileId = await api.query.dataPreservers.nextProfileId();
+        for (const bootnode of rawSpec.bootNodes) {
             const profileTx = api.tx.dataPreservers.createProfile({
                 url: bootnode,
                 paraIds: "AnyParaId",

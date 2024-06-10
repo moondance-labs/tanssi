@@ -88,15 +88,11 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const bootNodes = [
-                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-                ];
 
                 // Let's disable all other parachains and set parathread collator to 4
                 // this will make every collator including the one we are registering being assigned to our parathread
-
                 const tx = polkadotJs.tx.registrar.registerParathread(2002, slotFrequency, containerChainGenesisData);
-                
+
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({
                     url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",

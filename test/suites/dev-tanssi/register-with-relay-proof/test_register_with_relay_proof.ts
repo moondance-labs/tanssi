@@ -76,10 +76,6 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const bootNodes = [
-                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-                ];
-
                 const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
                     polkadotJs
                 );

@@ -59,9 +59,8 @@ yargs(hideBin(process.argv))
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
-                    let profileId = await api.query.dataPreservers.nextProfileId();   
+                    let profileId = await api.query.dataPreservers.nextProfileId();
                     for (const bootnode of rawSpec.bootNodes) {
-                        
                         const profileTx = api.tx.dataPreservers.createProfile({
                             url: bootnode,
                             paraIds: "AnyParaId",
@@ -187,7 +186,7 @@ yargs(hideBin(process.argv))
 
                 const txs = [];
 
-                let profileId = await api.query.dataPreservers.nextProfileId();  
+                let profileId = await api.query.dataPreservers.nextProfileId();
                 for (const bootnode of bootnodes) {
                     const profileTx = api.tx.dataPreservers.createProfile({
                         url: bootnode,
@@ -215,7 +214,7 @@ yargs(hideBin(process.argv))
                         process.stdout.write(`Not setting container chain valid for collating\n`);
                     }
                 }
-                let batchTx = api.tx.utility.batchAll(txs);
+                const batchTx = api.tx.utility.batchAll(txs);
                 process.stdout.write(`Sending transaction... `);
                 const txHash = await batchTx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);

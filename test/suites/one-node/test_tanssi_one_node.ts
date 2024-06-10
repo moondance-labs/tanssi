@@ -190,15 +190,16 @@ async function registerEmptyParathread(api, manager, paraId) {
             tx1
         )
     );
-    const bootNodes = ["/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw"];
 
     const profileId = await api.query.dataPreservers.nextProfileId();
-    txs.push(api.tx.dataPreservers.createProfile({
-        url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-        paraIds: "AnyParaId",
-        mode: "Bootnode",
-        assignmentRequest: "Free",
-    }));
+    txs.push(
+        api.tx.dataPreservers.createProfile({
+            url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+            paraIds: "AnyParaId",
+            mode: "Bootnode",
+            assignmentRequest: "Free",
+        })
+    );
     txs.push(api.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free"));
     txs.push(api.tx.registrar.markValidForCollating(paraId));
 

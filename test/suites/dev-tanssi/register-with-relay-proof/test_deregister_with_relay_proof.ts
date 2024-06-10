@@ -66,7 +66,7 @@ describeSuite({
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2003, "Free");
-                
+
                 const tx3 = polkadotJs.tx.registrar.markValidForCollating(2003);
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
