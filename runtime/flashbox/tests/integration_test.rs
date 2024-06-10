@@ -32,7 +32,6 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
-    tanssi_runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -40,6 +39,7 @@ use {
         DigestItem,
     },
     sp_std::vec,
+    tanssi_runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
 };

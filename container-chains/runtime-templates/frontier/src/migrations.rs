@@ -26,12 +26,12 @@ use {
         weights::Weight,
     },
     pallet_migrations::{GetMigrations, Migration},
+    sp_core::{Get, H160},
+    sp_std::{marker::PhantomData, prelude::*},
     tanssi_runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
         XcmpQueueMigrationV4,
     },
-    sp_core::{Get, H160},
-    sp_std::{marker::PhantomData, prelude::*},
 };
 
 pub struct MigratePrecompileXcmDummyCode<T>(pub PhantomData<T>);
