@@ -539,7 +539,7 @@ where
             pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
         };
 
-        let (request, extra, _witness) = T::AssignmentPayment::free_variant_values()
+        let (request, _extra, witness) = T::AssignmentPayment::free_variant_values()
             .expect("free variant values are necessary to perform migration");
 
         let dummy_profile_owner = T::AccountId::from([0u8; 32]);
@@ -554,9 +554,6 @@ where
         .collect();
 
         for (para_id, bootnodes) in bootnodes_storage {
-            let para_manager =
-                pallet_registrar::ParaManager::<T>::get(para_id).expect("para manager exists");
-
             for bootnode_url in bootnodes {
                 let profile = Profile {
                     url: bootnode_url,
@@ -578,11 +575,11 @@ where
                 )
                 .expect("to create profile");
 
-                pallet_data_preservers::Pallet::<T>::start_assignment(
-                    RawOrigin::Signed(para_manager.clone()).into(),
+                pallet_data_preservers::Pallet::<T>::force_start_assignment(
+                    RawOrigin::Root.into(),
                     profile_id,
                     para_id,
-                    extra,
+                    witness,
                 )
                 .expect("to start assignment");
             }
