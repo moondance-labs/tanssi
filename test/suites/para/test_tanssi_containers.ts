@@ -252,7 +252,7 @@ describeSuite({
                     assignmentRequest: "Free",
                 });
 
-                const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");
+                const tx3 = paraApi.tx.dataPreservers.startAssignment(profileId, 2002, "Free");
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 // Send the batch transaction: [register, purchaseCredits, sudo(setBootNodes), sudo(markValidForCollating)]
                 const txBatch = paraApi.tx.utility.batchAll([

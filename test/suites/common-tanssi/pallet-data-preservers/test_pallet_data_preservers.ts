@@ -90,7 +90,7 @@ describeSuite({
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile2.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_210_000_000_000,
+                    deposit: 10_220_000_000_000,
                     profile: {
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
