@@ -44,6 +44,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
+        dynamic_params::{dynamic_pallet_params, dynamic_params},
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -68,7 +69,7 @@ use {
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
         Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
-        FeeCalculator, GasWeightMapping, IdentityAddressMapping,
+        EnsureCreateOrigin, FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
@@ -88,7 +89,7 @@ use {
         transaction_validity::{
             InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
         },
-        ApplyExtrinsicResult,
+        ApplyExtrinsicResult, BoundedVec,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
@@ -595,6 +596,34 @@ impl Default for ProxyType {
     }
 }
 
+// Be careful: Each time this filter is modified, the substrate filter must also be modified
+// consistently.
+impl pallet_evm_precompile_proxy::EvmProxyCallFilter for ProxyType {
+    fn is_evm_proxy_call_allowed(
+        &self,
+        call: &pallet_evm_precompile_proxy::EvmSubCall,
+        recipient_has_code: bool,
+        gas: u64,
+    ) -> precompile_utils::EvmResult<bool> {
+        Ok(match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => false,
+            ProxyType::Governance => false,
+            // The proxy precompile does not contain method cancel_proxy
+            ProxyType::CancelProxy => false,
+            ProxyType::Balances => {
+                // Allow only "simple" accounts as recipient (no code nor precompile).
+                // Note: Checking the presence of the code is not enough because some precompiles
+                // have no code.
+                !recipient_has_code
+                    && !precompile_utils::precompile_set::is_precompile_or_fail::<Runtime>(
+                        call.to.0, gas,
+                    )?
+            }
+        })
+    }
+}
+
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
         // Since proxy filters are respected in all dispatches of the Utility
@@ -715,6 +744,66 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = XcmExecutionManager;
 }
 
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    #[dynamic_pallet_params]
+    #[codec(index = 3)]
+    pub mod contract_deploy_filter {
+        #[codec(index = 0)]
+        pub static AllowedAddressesToCreate: DeployFilter = DeployFilter::All;
+        #[codec(index = 1)]
+        pub static AllowedAddressesToCreateInner: DeployFilter = DeployFilter::All;
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type AdminOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type WeightInfo = weights::pallet_parameters::SubstrateWeight<Runtime>;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::ContractDeployFilter(
+            dynamic_params::contract_deploy_filter::Parameters::AllowedAddressesToCreate(
+                dynamic_params::contract_deploy_filter::AllowedAddressesToCreate,
+                Some(DeployFilter::All),
+            ),
+        )
+    }
+}
+
+#[derive(Clone, PartialEq, Encode, Decode, TypeInfo, Eq, MaxEncodedLen, Debug)]
+pub enum DeployFilter {
+    All,
+    Whitelisted(BoundedVec<H160, ConstU32<100>>),
+}
+
+pub struct AddressFilter<Runtime, AddressList>(sp_std::marker::PhantomData<(Runtime, AddressList)>);
+impl<Runtime, AddressList> EnsureCreateOrigin<Runtime> for AddressFilter<Runtime, AddressList>
+where
+    Runtime: pallet_evm::Config,
+    AddressList: Get<DeployFilter>,
+{
+    fn check_create_origin(address: &H160) -> Result<(), pallet_evm::Error<Runtime>> {
+        let deploy_filter: DeployFilter = AddressList::get();
+
+        match deploy_filter {
+            DeployFilter::All => return Ok(()),
+            DeployFilter::Whitelisted(addresses_vec) => {
+                if !addresses_vec.contains(address) {
+                    return Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed);
+                }
+                return Ok(());
+            }
+        }
+    }
+}
+
 // To match ethereum expectations
 const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
@@ -749,6 +838,12 @@ impl pallet_evm::Config for Runtime {
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
+    type CreateOrigin =
+        AddressFilter<Runtime, dynamic_params::contract_deploy_filter::AllowedAddressesToCreate>;
+    type CreateInnerOrigin = AddressFilter<
+        Runtime,
+        dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner,
+    >;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     type PrecompilesType = TemplatePrecompiles<Self>;
@@ -868,6 +963,7 @@ construct_runtime!(
 
         // Other utilities
         Multisig: pallet_multisig = 16,
+        Parameters: pallet_parameters = 17,
 
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
@@ -908,6 +1004,7 @@ mod benches {
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_multisig, Multisig]
+        [pallet_parameters, Parameters]
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]

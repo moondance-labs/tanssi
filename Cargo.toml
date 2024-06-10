@@ -113,6 +113,8 @@ pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", br
 pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+pallet-evm-precompile-proxy = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+pallet-evm-precompile-xcm = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-evm-precompileset-assets-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-foreign-asset-creator = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
@@ -135,6 +137,7 @@ pallet-balances = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 pallet-identity = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-message-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-multisig = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+pallet-parameters = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-proxy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-root-testing = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 pallet-session = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }

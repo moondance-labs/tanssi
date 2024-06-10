@@ -37,6 +37,8 @@ pallet-author-inherent = { workspace = true }
 pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
+pallet-evm-precompile-proxy = { workspace = true }
+pallet-evm-precompile-xcm = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
 pallet-evm-precompileset-assets-erc20 = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
@@ -58,6 +60,7 @@ pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-message-queue = { workspace = true }
 pallet-multisig = { workspace = true }
+pallet-parameters = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -169,9 +172,11 @@ std = [
 	"pallet-evm-precompile-batch/std",
 	"pallet-evm-precompile-call-permit/std",
 	"pallet-evm-precompile-modexp/std",
+	"pallet-evm-precompile-proxy/std",
 	"pallet-evm-precompile-sha3fips/std",
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm-precompile-xcm-utils/std",
+	"pallet-evm-precompile-xcm/std",
 	"pallet-evm-precompileset-assets-erc20/std",
 	"pallet-evm/std",
 	"pallet-foreign-asset-creator/std",
@@ -179,6 +184,7 @@ std = [
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-multisig/std",
+	"pallet-parameters/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
 	"pallet-sudo/std",
@@ -245,11 +251,13 @@ runtime-benchmarks = [
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
+	"pallet-evm-precompile-xcm/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
+	"pallet-parameters/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -294,6 +302,7 @@ try-runtime = [
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
+	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-sudo/try-runtime",
