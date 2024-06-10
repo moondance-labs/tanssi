@@ -3073,7 +3073,6 @@ dependencies = [
  "polkadot-service",
  "rococo-runtime",
  "rococo-runtime-constants",
- "runtime-common",
  "sc-consensus-grandpa",
  "sc-service",
  "scale-info",
@@ -7148,7 +7147,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
- "runtime-common",
+ "polkadot-runtime-common",
  "smallvec",
  "sp-core",
  "sp-runtime",
