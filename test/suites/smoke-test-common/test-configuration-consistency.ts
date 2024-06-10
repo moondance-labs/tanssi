@@ -70,8 +70,14 @@ describeSuite({
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
                 // get pending authorities
                 // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
-                const authorities = (
+                const pendingAuthorityAssignment = (
                     await api.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
+                ).toJSON();
+
+                // get current authorities
+                // we need to know whether a chain is assigned currently
+                const currentAuthorityAssignment = (
+                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex)
                 ).toJSON();
 
                 const currentAuthorities = await api.query.session.validators();
@@ -105,16 +111,23 @@ describeSuite({
 
                     // This should be true as long as they have enough credits for getting collators
                     for (const container of containersToCompareAgainst) {
-                        // we should only check those who have enough credits
-                        // we compare against the credits they had just before new session obviously
-                        // that is when they were charged for tokens
+                        // if not currently assigned, then one session
+                        // if currently assigned, then 2
+                        let sessionRequirements: bigint;
+
+                        if(currentAuthorityAssignment["containerChains"][container.toString()].length == 0) {
+                            sessionRequirements = 1n;
+                        }
+                        else {
+                            sessionRequirements = 2n;
+                        }
                         if (
                             await hasEnoughCredits(
                                 apiBeforeLatestNewSession,
                                 container,
                                 blocksPerSession,
                                 1n,
-                                2n,
+                                sessionRequirements,
                                 costPerSession,
                                 costPerBlock
                             )
@@ -124,7 +137,7 @@ describeSuite({
                             // Here we only check that  that we have collators
                             // If we are able to cover all paras, then all of them should have collators if credits
                             if (maxParas >= containersToCompareAgainst.length) {
-                                expect(authorities["containerChains"][container.toString()].length).to.be.greaterThan(
+                                expect(pendingAuthorityAssignment["containerChains"][container.toString()].length).to.be.greaterThan(
                                     0
                                 );
                             }
@@ -139,7 +152,7 @@ describeSuite({
                         containersToCompareAgainst.length - numWithNoCredits,
                         maxParas
                     );
-                    expect(Object.keys(authorities["containerChains"]).length).to.be.equal(
+                    expect(Object.keys(pendingAuthorityAssignment["containerChains"]).length).to.be.equal(
                         expectedNumberOfChainsAssigned
                     );
                 }
