@@ -32,7 +32,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
-    runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
+    tanssi_runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{

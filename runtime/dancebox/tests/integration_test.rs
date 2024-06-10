@@ -21,7 +21,7 @@ use frame_support::migration::put_storage_value;
 use frame_support::storage::generator::StorageMap;
 use frame_support::Hashable;
 use pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId};
-use runtime_common::migrations::ForeignAssetCreatorMigration;
+use tanssi_runtime_common::migrations::ForeignAssetCreatorMigration;
 use staging_xcm::v3::{
     Junction as V3Junction, Junctions as V3Junctions, MultiLocation as V3MultiLocation,
     NetworkId as V3NetworkId,
@@ -51,7 +51,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
-    runtime_common::migrations::{
+    tanssi_runtime_common::migrations::{
         MigrateConfigurationParathreads, MigrateServicesPaymentAddCollatorAssignmentCredits,
         RegistrarPendingVerificationValueToMap,
     },

@@ -45,7 +45,7 @@ pallet-stream-payment = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true }
 pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
-runtime-common = { workspace = true }
+tanssi-runtime-common = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 
 # Moonkit
@@ -236,7 +236,7 @@ std = [
 	"polkadot-runtime-parachains/std",
 	"rococo-runtime-constants/std",
 	"rococo-runtime/std",
-	"runtime-common/std",
+	"tanssi-runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -329,7 +329,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
 	"rococo-runtime/runtime-benchmarks",
-	"runtime-common/runtime-benchmarks",
+	"tanssi-runtime-common/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
@@ -393,7 +393,7 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"polkadot-service/try-runtime",
 	"rococo-runtime/try-runtime",
-	"runtime-common/try-runtime",
+	"tanssi-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
 ]

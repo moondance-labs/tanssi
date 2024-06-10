@@ -26,7 +26,7 @@ use {
         weights::Weight,
     },
     pallet_migrations::{GetMigrations, Migration},
-    runtime_common::migrations::{
+    tanssi_runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
         XcmpQueueMigrationV4,
     },

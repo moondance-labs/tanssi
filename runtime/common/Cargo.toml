@@ -1,5 +1,5 @@
 [package]
-name = "runtime-common"
+name = "tanssi-runtime-common"
 authors = { workspace = true }
 description = "Common implementations for all tanssi runtimes"
 edition = "2021"
