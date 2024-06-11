@@ -1428,7 +1428,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (runtime_common::migrations::DanceboxMigrations<Runtime>,);
+    type MigrationsList = (tanssi_runtime_common::migrations::DanceboxMigrations<Runtime>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 
@@ -1836,7 +1836,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
+    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {

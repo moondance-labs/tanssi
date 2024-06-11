@@ -63,6 +63,10 @@ use {
         },
     },
     std::marker::PhantomData,
+    tanssi_runtime_common::migrations::{
+        ForeignAssetCreatorMigration, MigrateConfigurationParathreads,
+        MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
+    },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
 };
