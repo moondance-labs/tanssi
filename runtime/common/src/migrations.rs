@@ -430,10 +430,10 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        let total_weight = Weight::default();
+        let mut total_weight = Weight::default();
         for (para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
             pallet_registrar::ParaManager::<T>::insert(para_id, deposit.creator);
-            total_weight.saturating_add(
+            total_weight = total_weight.saturating_add(
                 T::DbWeight::get()
                     .reads(1)
                     .saturating_add(T::DbWeight::get().writes(1)),
@@ -539,6 +539,8 @@ where
             pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
         };
 
+        let mut total_weight = Weight::default();
+
         let (request, _extra, witness) = T::AssignmentPayment::free_variant_values()
             .expect("free variant values are necessary to perform migration");
 
@@ -552,6 +554,12 @@ where
             Blake2_128Concat,
         >(pallet_prefix, storage_item_prefix)
         .collect();
+
+        total_weight = total_weight.saturating_add(
+            T::DbWeight::get()
+                .reads(bootnodes_storage.len() as u64)
+                .saturating_add(T::DbWeight::get().writes(bootnodes_storage.len() as u64)),
+        );
 
         for (para_id, bootnodes) in bootnodes_storage {
             for bootnode_url in bootnodes {
@@ -568,26 +576,34 @@ where
 
                 let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
 
-                pallet_data_preservers::Pallet::<T>::force_create_profile(
+                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_create_profile(
                     RawOrigin::Root.into(),
                     profile,
                     dummy_profile_owner.clone(),
                 )
-                .expect("to create profile");
+                .expect("to create profile")
+                .actual_weight
+                {
+                    total_weight = total_weight.saturating_add(weight);
+                }
 
-                pallet_data_preservers::Pallet::<T>::force_start_assignment(
+                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_start_assignment(
                     RawOrigin::Root.into(),
                     profile_id,
                     para_id,
                     witness,
                 )
-                .expect("to start assignment");
+                .expect("to start assignment")
+                .actual_weight
+                {
+                    total_weight = total_weight.saturating_add(weight);
+                }
             }
         }
 
         let _ = clear_storage_prefix(pallet_prefix, storage_item_prefix, &[], None, None);
 
-        Weight::default()
+        total_weight
     }
 
     #[cfg(feature = "try-runtime")]
