@@ -7049,7 +7049,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
- "hex-literal 0.4.1",
+ "hex-literal 0.3.4",
  "log",
  "mozart-runtime-constants",
  "pallet-asset-rate",
