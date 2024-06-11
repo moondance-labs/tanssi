@@ -3946,9 +3946,9 @@ fn test_migration_data_preservers_assignments() {
                 Blake2_128Concat, StorageHasher,
             },
             pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode, RegisteredProfile},
-            runtime_common::migrations::DataPreserversAssignmentsMigration,
             sp_runtime::BoundedBTreeSet,
             sp_std::collections::btree_set::BTreeSet,
+            tanssi_runtime_common::migrations::DataPreserversAssignmentsMigration,
         };
 
         macro_rules! bset {
