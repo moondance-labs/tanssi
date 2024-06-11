@@ -20,7 +20,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
+mod types;
+
+pub use {pallet::*, types::*};
 
 #[cfg(test)]
 mod mock;
@@ -49,9 +51,8 @@ use {
     },
     frame_system::{pallet_prelude::*, EnsureRoot, EnsureSigned},
     parity_scale_codec::FullCodec,
-    serde::{de::DeserializeOwned, Deserialize, Serialize},
     sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
+        traits::{CheckedAdd, CheckedSub, Get, One, Zero},
         ArithmeticError, Either,
     },
     sp_std::vec::Vec,
@@ -76,188 +77,6 @@ pub mod pallet {
     pub type AssignmentWitnessOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
         <T as frame_system::Config>::AccountId,
     >>::AssignmentWitness;
-
-    /// Data preserver profile.
-    #[derive(
-        RuntimeDebugNoBound,
-        PartialEqNoBound,
-        EqNoBound,
-        Encode,
-        Decode,
-        CloneNoBound,
-        TypeInfo,
-        Serialize,
-        Deserialize,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct Profile<T: Config> {
-        pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
-        pub para_ids: ParaIdsFilter<T>,
-        pub mode: ProfileMode,
-        pub assignment_request: ProviderRequestOf<T>,
-    }
-
-    #[derive(
-        RuntimeDebugNoBound,
-        PartialEqNoBound,
-        EqNoBound,
-        Encode,
-        Decode,
-        CloneNoBound,
-        TypeInfo,
-        Serialize,
-        Deserialize,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub enum ParaIdsFilter<T: Config> {
-        AnyParaId,
-        Whitelist(BoundedBTreeSet<ParaId, T::MaxParaIdsVecLen>),
-        Blacklist(BoundedBTreeSet<ParaId, T::MaxParaIdsVecLen>),
-    }
-
-    impl<T: Config> ParaIdsFilter<T> {
-        #[allow(clippy::len_without_is_empty)]
-        pub fn len(&self) -> usize {
-            match self {
-                Self::AnyParaId => 0,
-                Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
-            }
-        }
-
-        pub fn can_assign(&self, para_id: &ParaId) -> bool {
-            match self {
-                ParaIdsFilter::AnyParaId => true,
-                ParaIdsFilter::Whitelist(list) => list.contains(para_id),
-                ParaIdsFilter::Blacklist(list) => !list.contains(para_id),
-            }
-        }
-    }
-
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
-    )]
-    pub enum ProfileMode {
-        Bootnode,
-        Rpc { supports_ethereum_rpcs: bool },
-    }
-
-    /// Profile with additional data:
-    /// - the account id which created (and manage) the profile
-    /// - the amount deposited to register the profile
-    #[derive(
-        RuntimeDebugNoBound,
-        PartialEqNoBound,
-        EqNoBound,
-        Encode,
-        Decode,
-        CloneNoBound,
-        TypeInfo,
-        Serialize,
-        Deserialize,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct RegisteredProfile<T: Config> {
-        pub account: T::AccountId,
-        pub deposit: BalanceOf<T>,
-        pub profile: Profile<T>,
-        /// There can be at most 1 assignment per profile.
-        pub assignment: Option<(ParaId, AssignmentWitnessOf<T>)>,
-    }
-
-    /// Computes the deposit cost of a profile.
-    pub trait ProfileDeposit<Profile, Balance> {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
-    }
-
-    /// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
-    pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
-
-    impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
-        for BytesProfileDeposit<BaseCost, ByteCost>
-    where
-        BaseCost: Get<Balance>,
-        ByteCost: Get<Balance>,
-        Profile: Encode,
-        Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
-    {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
-            let base = BaseCost::get();
-            let byte = ByteCost::get();
-            let size: Balance = profile
-                .encoded_size()
-                .try_into()
-                .map_err(|_| ArithmeticError::Overflow)?;
-
-            let deposit = byte
-                .checked_mul(&size)
-                .ok_or(ArithmeticError::Overflow)?
-                .checked_add(&base)
-                .ok_or(ArithmeticError::Overflow)?;
-
-            Ok(deposit)
-        }
-    }
-
-    /// Allows to process various kinds of payment options for assignments.
-    pub trait AssignmentPayment<AccountId> {
-        /// Providers requests which kind of payment it accepts.
-        type ProviderRequest: FullCodec
-            + TypeInfo
-            + Copy
-            + Clone
-            + Debug
-            + Eq
-            + Serialize
-            + DeserializeOwned;
-        /// Extra parameter the assigner provides.
-        type AssignerParameter: FullCodec
-            + TypeInfo
-            + Copy
-            + Clone
-            + Debug
-            + Eq
-            + Serialize
-            + DeserializeOwned;
-        /// Represents the succesful outcome of the assignment.
-        type AssignmentWitness: FullCodec
-            + TypeInfo
-            + Copy
-            + Clone
-            + Debug
-            + Eq
-            + Serialize
-            + DeserializeOwned;
-
-        fn try_start_assignment(
-            assigner: AccountId,
-            provider: AccountId,
-            request: &Self::ProviderRequest,
-            extra: Self::AssignerParameter,
-        ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo>;
-
-        fn try_stop_assignment(
-            provider: AccountId,
-            witness: Self::AssignmentWitness,
-        ) -> Result<(), DispatchErrorWithPostInfo>;
-
-        /// Return the values for a free assignment if it is supported.
-        /// This is required to perform automatic migration from old Bootnodes storage.
-        fn free_variant_values() -> Option<(
-            Self::ProviderRequest,
-            Self::AssignerParameter,
-            Self::AssignmentWitness,
-        )>;
-
-        // The values returned by the following functions should match with each other.
-        #[cfg(feature = "runtime-benchmarks")]
-        fn benchmark_provider_request() -> Self::ProviderRequest;
-
-        #[cfg(feature = "runtime-benchmarks")]
-        fn benchmark_assigner_parameter() -> Self::AssignerParameter;
-
-        #[cfg(feature = "runtime-benchmarks")]
-        fn benchmark_assignment_witness() -> Self::AssignmentWitness;
-    }
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
