@@ -38,15 +38,29 @@ describeSuite({
                 if (pending.isNone) {
                     pending = await api.query.collatorAssignment.collatorContainerChain();
                 }
+                const current = await api.query.collatorAssignment.collatorContainerChain();
+
                 if (pending["containerChains"] != undefined) {
                     for (const container of Object.keys(pending.toJSON()["containerChains"])) {
+                        // if not currently assigned, then one session
+                        // if currently assigned, then 2
+                        let sessionRequirements: bigint;
+
+                        if (
+                            current.toJSON()["containerChains"][container.toString()] == null ||
+                            current.toJSON()["containerChains"][container.toString()].length == 0
+                        ) {
+                            sessionRequirements = 1n;
+                        } else {
+                            sessionRequirements = 2n;
+                        }
                         expect(
                             await hasEnoughCredits(
                                 apiBeforeLatestNewSession,
                                 container,
                                 blocksPerSession,
                                 1n,
-                                2n,
+                                sessionRequirements,
                                 costPerSession,
                                 costPerBlock
                             ),
