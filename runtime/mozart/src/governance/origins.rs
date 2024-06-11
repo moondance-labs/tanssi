@@ -20,75 +20,75 @@ pub use pallet_custom_origins::*;
 
 #[frame_support::pallet]
 pub mod pallet_custom_origins {
-	use crate::{Balance, CENTS, GRAND};
-	use frame_support::pallet_prelude::*;
+    use crate::{Balance, CENTS, GRAND};
+    use frame_support::pallet_prelude::*;
 
-	#[pallet::config]
-	pub trait Config: frame_system::Config {}
+    #[pallet::config]
+    pub trait Config: frame_system::Config {}
 
-	#[pallet::pallet]
-	pub struct Pallet<T>(_);
+    #[pallet::pallet]
+    pub struct Pallet<T>(_);
 
-	#[derive(PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, TypeInfo, RuntimeDebug)]
-	#[pallet::origin]
-	pub enum Origin {
-		/// Origin for cancelling slashes.
-		StakingAdmin,
-		/// Origin for spending (any amount of) funds.
-		Treasurer,
-		/// Origin for managing the composition of the fellowship.
-		FellowshipAdmin,
-		/// Origin for managing the registrar.
-		GeneralAdmin,
-		/// Origin for starting auctions.
-		AuctionAdmin,
-		/// Origin able to force slot leases.
-		LeaseAdmin,
-		/// Origin able to cancel referenda.
-		ReferendumCanceller,
-		/// Origin able to kill referenda.
-		ReferendumKiller,
-		/// Origin able to spend up to 1 KSM from the treasury at once.
-		SmallTipper,
-		/// Origin able to spend up to 5 KSM from the treasury at once.
-		BigTipper,
-		/// Origin able to spend up to 50 KSM from the treasury at once.
-		SmallSpender,
-		/// Origin able to spend up to 500 KSM from the treasury at once.
-		MediumSpender,
-		/// Origin able to spend up to 5,000 KSM from the treasury at once.
-		BigSpender,
-		/// Origin able to dispatch a whitelisted call.
-		WhitelistedCaller,
-		/// Origin commanded by any members of the Polkadot Fellowship (no Dan grade needed).
-		FellowshipInitiates,
-		/// Origin commanded by Polkadot Fellows (3rd Dan fellows or greater).
-		Fellows,
-		/// Origin commanded by Polkadot Experts (5th Dan fellows or greater).
-		FellowshipExperts,
-		/// Origin commanded by Polkadot Masters (7th Dan fellows of greater).
-		FellowshipMasters,
-		/// Origin commanded by rank 1 of the Polkadot Fellowship and with a success of 1.
-		Fellowship1Dan,
-		/// Origin commanded by rank 2 of the Polkadot Fellowship and with a success of 2.
-		Fellowship2Dan,
-		/// Origin commanded by rank 3 of the Polkadot Fellowship and with a success of 3.
-		Fellowship3Dan,
-		/// Origin commanded by rank 4 of the Polkadot Fellowship and with a success of 4.
-		Fellowship4Dan,
-		/// Origin commanded by rank 5 of the Polkadot Fellowship and with a success of 5.
-		Fellowship5Dan,
-		/// Origin commanded by rank 6 of the Polkadot Fellowship and with a success of 6.
-		Fellowship6Dan,
-		/// Origin commanded by rank 7 of the Polkadot Fellowship and with a success of 7.
-		Fellowship7Dan,
-		/// Origin commanded by rank 8 of the Polkadot Fellowship and with a success of 8.
-		Fellowship8Dan,
-		/// Origin commanded by rank 9 of the Polkadot Fellowship and with a success of 9.
-		Fellowship9Dan,
-	}
+    #[derive(PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, TypeInfo, RuntimeDebug)]
+    #[pallet::origin]
+    pub enum Origin {
+        /// Origin for cancelling slashes.
+        StakingAdmin,
+        /// Origin for spending (any amount of) funds.
+        Treasurer,
+        /// Origin for managing the composition of the fellowship.
+        FellowshipAdmin,
+        /// Origin for managing the registrar.
+        GeneralAdmin,
+        /// Origin for starting auctions.
+        AuctionAdmin,
+        /// Origin able to force slot leases.
+        LeaseAdmin,
+        /// Origin able to cancel referenda.
+        ReferendumCanceller,
+        /// Origin able to kill referenda.
+        ReferendumKiller,
+        /// Origin able to spend up to 1 KSM from the treasury at once.
+        SmallTipper,
+        /// Origin able to spend up to 5 KSM from the treasury at once.
+        BigTipper,
+        /// Origin able to spend up to 50 KSM from the treasury at once.
+        SmallSpender,
+        /// Origin able to spend up to 500 KSM from the treasury at once.
+        MediumSpender,
+        /// Origin able to spend up to 5,000 KSM from the treasury at once.
+        BigSpender,
+        /// Origin able to dispatch a whitelisted call.
+        WhitelistedCaller,
+        /// Origin commanded by any members of the Polkadot Fellowship (no Dan grade needed).
+        FellowshipInitiates,
+        /// Origin commanded by Polkadot Fellows (3rd Dan fellows or greater).
+        Fellows,
+        /// Origin commanded by Polkadot Experts (5th Dan fellows or greater).
+        FellowshipExperts,
+        /// Origin commanded by Polkadot Masters (7th Dan fellows of greater).
+        FellowshipMasters,
+        /// Origin commanded by rank 1 of the Polkadot Fellowship and with a success of 1.
+        Fellowship1Dan,
+        /// Origin commanded by rank 2 of the Polkadot Fellowship and with a success of 2.
+        Fellowship2Dan,
+        /// Origin commanded by rank 3 of the Polkadot Fellowship and with a success of 3.
+        Fellowship3Dan,
+        /// Origin commanded by rank 4 of the Polkadot Fellowship and with a success of 4.
+        Fellowship4Dan,
+        /// Origin commanded by rank 5 of the Polkadot Fellowship and with a success of 5.
+        Fellowship5Dan,
+        /// Origin commanded by rank 6 of the Polkadot Fellowship and with a success of 6.
+        Fellowship6Dan,
+        /// Origin commanded by rank 7 of the Polkadot Fellowship and with a success of 7.
+        Fellowship7Dan,
+        /// Origin commanded by rank 8 of the Polkadot Fellowship and with a success of 8.
+        Fellowship8Dan,
+        /// Origin commanded by rank 9 of the Polkadot Fellowship and with a success of 9.
+        Fellowship9Dan,
+    }
 
-	macro_rules! decl_unit_ensures {
+    macro_rules! decl_unit_ensures {
 		( $name:ident: $success_type:ty = $success:expr ) => {
 			pub struct $name;
 			impl<O: Into<Result<Origin, O>> + From<Origin>>
@@ -118,23 +118,23 @@ pub mod pallet_custom_origins {
 		};
 		() => {}
 	}
-	decl_unit_ensures!(
-		StakingAdmin,
-		Treasurer,
-		FellowshipAdmin,
-		GeneralAdmin,
-		AuctionAdmin,
-		LeaseAdmin,
-		ReferendumCanceller,
-		ReferendumKiller,
-		WhitelistedCaller,
-		FellowshipInitiates: u16 = 0,
-		Fellows: u16 = 3,
-		FellowshipExperts: u16 = 5,
-		FellowshipMasters: u16 = 7,
-	);
+    decl_unit_ensures!(
+        StakingAdmin,
+        Treasurer,
+        FellowshipAdmin,
+        GeneralAdmin,
+        AuctionAdmin,
+        LeaseAdmin,
+        ReferendumCanceller,
+        ReferendumKiller,
+        WhitelistedCaller,
+        FellowshipInitiates: u16 = 0,
+        Fellows: u16 = 3,
+        FellowshipExperts: u16 = 5,
+        FellowshipMasters: u16 = 7,
+    );
 
-	macro_rules! decl_ensure {
+    macro_rules! decl_ensure {
 		(
 			$vis:vis type $name:ident: EnsureOrigin<Success = $success_type:ty> {
 				$( $item:ident = $success:expr, )*
@@ -167,28 +167,28 @@ pub mod pallet_custom_origins {
 		}
 	}
 
-	decl_ensure! {
-		pub type Spender: EnsureOrigin<Success = Balance> {
-			SmallTipper = 250 * 3 * CENTS,
-			BigTipper = 1 * GRAND,
-			SmallSpender = 10 * GRAND,
-			MediumSpender = 100 * GRAND,
-			BigSpender = 1_000 * GRAND,
-			Treasurer = 10_000 * GRAND,
-		}
-	}
+    decl_ensure! {
+        pub type Spender: EnsureOrigin<Success = Balance> {
+            SmallTipper = 250 * 3 * CENTS,
+            BigTipper = 1 * GRAND,
+            SmallSpender = 10 * GRAND,
+            MediumSpender = 100 * GRAND,
+            BigSpender = 1_000 * GRAND,
+            Treasurer = 10_000 * GRAND,
+        }
+    }
 
-	decl_ensure! {
-		pub type EnsureFellowship: EnsureOrigin<Success = u16> {
-			Fellowship1Dan = 1,
-			Fellowship2Dan = 2,
-			Fellowship3Dan = 3,
-			Fellowship4Dan = 4,
-			Fellowship5Dan = 5,
-			Fellowship6Dan = 6,
-			Fellowship7Dan = 7,
-			Fellowship8Dan = 8,
-			Fellowship9Dan = 9,
-		}
-	}
+    decl_ensure! {
+        pub type EnsureFellowship: EnsureOrigin<Success = u16> {
+            Fellowship1Dan = 1,
+            Fellowship2Dan = 2,
+            Fellowship3Dan = 3,
+            Fellowship4Dan = 4,
+            Fellowship5Dan = 5,
+            Fellowship6Dan = 6,
+            Fellowship7Dan = 7,
+            Fellowship8Dan = 8,
+            Fellowship9Dan = 9,
+        }
+    }
 }

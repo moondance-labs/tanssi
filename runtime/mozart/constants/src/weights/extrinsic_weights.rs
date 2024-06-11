@@ -39,43 +39,43 @@ use sp_core::parameter_types;
 use sp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
 
 parameter_types! {
-	/// Time to execute a NO-OP extrinsic, for example `System::remark`.
-	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
-	///
-	/// Stats nanoseconds:
-	///   Min, Max: 97_574, 100_119
-	///   Average:  98_236
-	///   Median:   98_179
-	///   Std-Dev:  394.9
-	///
-	/// Percentiles nanoseconds:
-	///   99th: 99_893
-	///   95th: 98_850
-	///   75th: 98_318
-	pub const ExtrinsicBaseWeight: Weight =
-		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(98_236), 0);
+    /// Time to execute a NO-OP extrinsic, for example `System::remark`.
+    /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
+    ///
+    /// Stats nanoseconds:
+    ///   Min, Max: 97_574, 100_119
+    ///   Average:  98_236
+    ///   Median:   98_179
+    ///   Std-Dev:  394.9
+    ///
+    /// Percentiles nanoseconds:
+    ///   99th: 99_893
+    ///   95th: 98_850
+    ///   75th: 98_318
+    pub const ExtrinsicBaseWeight: Weight =
+        Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(98_236), 0);
 }
 
 #[cfg(test)]
 mod test_weights {
-	use sp_weights::constants;
+    use sp_weights::constants;
 
-	/// Checks that the weight exists and is sane.
-	// NOTE: If this test fails but you are sure that the generated values are fine,
-	// you can delete it.
-	#[test]
-	fn sane() {
-		let w = super::ExtrinsicBaseWeight::get();
+    /// Checks that the weight exists and is sane.
+    // NOTE: If this test fails but you are sure that the generated values are fine,
+    // you can delete it.
+    #[test]
+    fn sane() {
+        let w = super::ExtrinsicBaseWeight::get();
 
-		// At least 10 µs.
-		assert!(
-			w.ref_time() >= 10u64 * constants::WEIGHT_REF_TIME_PER_MICROS,
-			"Weight should be at least 10 µs."
-		);
-		// At most 1 ms.
-		assert!(
-			w.ref_time() <= constants::WEIGHT_REF_TIME_PER_MILLIS,
-			"Weight should be at most 1 ms."
-		);
-	}
+        // At least 10 µs.
+        assert!(
+            w.ref_time() >= 10u64 * constants::WEIGHT_REF_TIME_PER_MICROS,
+            "Weight should be at least 10 µs."
+        );
+        // At most 1 ms.
+        assert!(
+            w.ref_time() <= constants::WEIGHT_REF_TIME_PER_MILLIS,
+            "Weight should be at most 1 ms."
+        );
+    }
 }
