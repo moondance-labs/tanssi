@@ -1687,14 +1687,14 @@ export default {
             },
         },
     },
-    /** Lookup226: pallet_data_preservers::pallet::Profile<T> */
+    /** Lookup226: pallet_data_preservers::types::Profile<T> */
     PalletDataPreserversProfile: {
         url: "Bytes",
         paraIds: "PalletDataPreserversParaIdsFilter",
         mode: "PalletDataPreserversProfileMode",
         assignmentRequest: "FlashboxRuntimePreserversAssignementPaymentRequest",
     },
-    /** Lookup228: pallet_data_preservers::pallet::ParaIdsFilter<T> */
+    /** Lookup228: pallet_data_preservers::types::ParaIdsFilter<T> */
     PalletDataPreserversParaIdsFilter: {
         _enum: {
             AnyParaId: "Null",
@@ -1702,7 +1702,7 @@ export default {
             Blacklist: "BTreeSet<u32>",
         },
     },
-    /** Lookup232: pallet_data_preservers::pallet::ProfileMode */
+    /** Lookup232: pallet_data_preservers::types::ProfileMode */
     PalletDataPreserversProfileMode: {
         _enum: {
             Bootnode: "Null",
@@ -2148,7 +2148,7 @@ export default {
     PalletServicesPaymentError: {
         _enum: ["InsufficientFundsToPurchaseCredits", "InsufficientCredits", "CreditPriceTooExpensive"],
     },
-    /** Lookup329: pallet_data_preservers::pallet::RegisteredProfile<T> */
+    /** Lookup329: pallet_data_preservers::types::RegisteredProfile<T> */
     PalletDataPreserversRegisteredProfile: {
         account: "AccountId32",
         deposit: "u128",

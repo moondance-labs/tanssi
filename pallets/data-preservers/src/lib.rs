@@ -149,9 +149,6 @@ pub mod pallet {
             + One
             + Ord;
 
-        // Who can call set_boot_nodes?
-        type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
-
         // Who can call start_assignment/stop_assignment?
         type AssignmentOrigin: EnsureOriginWithArg<
             Self::RuntimeOrigin,

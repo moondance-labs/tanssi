@@ -1076,8 +1076,6 @@ impl pallet_data_preservers::Config for Runtime {
     type AssignmentPayment = PreserversAssignementPayment;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
-    type SetBootNodesOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
