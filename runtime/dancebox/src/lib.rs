@@ -74,7 +74,6 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
-    pallet_data_preservers::BytesProfileDeposit,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
@@ -1073,7 +1072,7 @@ impl pallet_data_preservers::Config for Runtime {
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = u64;
-    type ProfileDeposit = BytesProfileDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+    type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentPayment = PreserversAssignementPayment;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;

@@ -21,10 +21,6 @@ use {
     frame_support::{dispatch::DispatchErrorWithPostInfo, pallet_prelude::*},
     parity_scale_codec::FullCodec,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, Get},
-        ArithmeticError,
-    },
 };
 
 /// Data preserver profile.
@@ -110,40 +106,6 @@ pub struct RegisteredProfile<T: Config> {
     pub profile: Profile<T>,
     /// There can be at most 1 assignment per profile.
     pub assignment: Option<(ParaId, AssignmentWitnessOf<T>)>,
-}
-
-/// Computes the deposit cost of a profile.
-pub trait ProfileDeposit<Profile, Balance> {
-    fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
-}
-
-/// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
-pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
-
-impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
-    for BytesProfileDeposit<BaseCost, ByteCost>
-where
-    BaseCost: Get<Balance>,
-    ByteCost: Get<Balance>,
-    Profile: Encode,
-    Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
-{
-    fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
-        let base = BaseCost::get();
-        let byte = ByteCost::get();
-        let size: Balance = profile
-            .encoded_size()
-            .try_into()
-            .map_err(|_| ArithmeticError::Overflow)?;
-
-        let deposit = byte
-            .checked_mul(&size)
-            .ok_or(ArithmeticError::Overflow)?
-            .checked_add(&base)
-            .ok_or(ArithmeticError::Overflow)?;
-
-        Ok(deposit)
-    }
 }
 
 /// Allows to process various kinds of payment options for assignments.

@@ -24,12 +24,18 @@ pub use cumulus_primitives_core::{
     ParaId,
 };
 use {
+    core::marker::PhantomData,
     frame_support::{
+        dispatch::DispatchErrorWithPostInfo,
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
     sp_core::H256,
-    sp_runtime::app_crypto::sp_core,
+    sp_runtime::{
+        app_crypto::sp_core,
+        traits::{CheckedAdd, CheckedMul},
+        ArithmeticError,
+    },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
 
@@ -247,4 +253,35 @@ pub struct ContainerChainBlockInfo<AccountId> {
 
 pub trait LatestAuthorInfoFetcher<AccountId> {
     fn get_latest_author_info(para_id: ParaId) -> Option<ContainerChainBlockInfo<AccountId>>;
+}
+
+pub trait StorageDeposit<Data, Balance> {
+    fn compute_deposit(data: &Data) -> Result<Balance, DispatchErrorWithPostInfo>;
+}
+
+pub struct BytesDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
+impl<Data, Balance, BaseCost, ByteCost> StorageDeposit<Data, Balance>
+    for BytesDeposit<BaseCost, ByteCost>
+where
+    Data: Encode,
+    Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
+    BaseCost: Get<Balance>,
+    ByteCost: Get<Balance>,
+{
+    fn compute_deposit(data: &Data) -> Result<Balance, DispatchErrorWithPostInfo> {
+        let base = BaseCost::get();
+        let byte = ByteCost::get();
+        let size: Balance = data
+            .encoded_size()
+            .try_into()
+            .map_err(|_| ArithmeticError::Overflow)?;
+
+        let deposit = byte
+            .checked_mul(&size)
+            .ok_or(ArithmeticError::Overflow)?
+            .checked_add(&base)
+            .ok_or(ArithmeticError::Overflow)?;
+
+        Ok(deposit)
+    }
 }

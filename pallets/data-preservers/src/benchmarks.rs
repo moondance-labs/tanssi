@@ -19,8 +19,8 @@
 //! Benchmarking
 use {
     crate::{
-        AssignmentPayment, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile,
-        ProfileDeposit, ProfileMode, Profiles, RegisteredProfile,
+        AssignmentPayment, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile, ProfileMode,
+        Profiles, RegisteredProfile,
     },
     frame_benchmarking::v2::*,
     frame_support::{
@@ -33,7 +33,7 @@ use {
     frame_system::RawOrigin,
     sp_runtime::traits::Zero,
     sp_std::{collections::btree_set::BTreeSet, vec},
-    tp_traits::ParaId,
+    tp_traits::{ParaId, StorageDeposit},
 };
 
 macro_rules! bset {
@@ -96,7 +96,7 @@ mod benchmarks {
             assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
-        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+        let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
@@ -186,7 +186,7 @@ mod benchmarks {
             assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
-        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+        let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
 
         #[extrinsic_call]
         Pallet::<T>::update_profile(

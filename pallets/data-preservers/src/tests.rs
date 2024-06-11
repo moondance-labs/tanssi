@@ -25,8 +25,8 @@ const ALICE: u64 = 1;
 const BOB: u64 = 2;
 
 fn profile_deposit(profile: &Profile<Test>) -> BalanceOf<Test> {
-    <Test as Config>::ProfileDeposit::profile_deposit(profile)
-        .expect("profile_deposit shouldn't fail")
+    <Test as Config>::ProfileDeposit::compute_deposit(profile)
+        .expect("compute_deposit shouldn't fail")
 }
 
 macro_rules! bset {

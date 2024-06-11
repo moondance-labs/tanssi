@@ -56,6 +56,7 @@ use {
         ArithmeticError, Either,
     },
     sp_std::vec::Vec,
+    tp_traits::StorageDeposit,
 };
 
 #[frame_support::pallet]
@@ -169,7 +170,7 @@ pub mod pallet {
         type MaxParaIdsVecLen: Get<u32> + Clone;
 
         /// How much must be deposited to register a profile.
-        type ProfileDeposit: ProfileDeposit<Profile<Self>, BalanceOf<Self>>;
+        type ProfileDeposit: StorageDeposit<Profile<Self>, BalanceOf<Self>>;
 
         type AssignmentPayment: AssignmentPayment<Self::AccountId>;
 
@@ -259,7 +260,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+            let deposit = T::ProfileDeposit::compute_deposit(&profile)?;
             T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
 
             Self::do_create_profile(profile, account, deposit)
@@ -277,7 +278,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let new_deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+            let new_deposit = T::ProfileDeposit::compute_deposit(&profile)?;
 
             Self::do_update_profile(profile_id, profile, |existing_profile| {
                 ensure!(

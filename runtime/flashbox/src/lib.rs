@@ -68,7 +68,6 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
-    pallet_data_preservers::BytesProfileDeposit,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -929,7 +928,7 @@ impl pallet_data_preservers::Config for Runtime {
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = u64;
-    type ProfileDeposit = BytesProfileDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+    type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentPayment = PreserversAssignementPayment;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
