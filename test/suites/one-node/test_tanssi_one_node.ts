@@ -81,9 +81,18 @@ describeSuite({
                     const containerChainCollators = (
                         await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                     ).toJSON().containerChains;
-                    // Stop waiting when parathreads have been assigned collators
-                    return containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined;
+                    // Stop waiting when parathread has been assigned collators
+                    return containerChainCollators[2000] != undefined;
                 });
+
+                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+                const containerChainCollators = (
+                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+                ).toJSON().containerChains;
+                expect(
+                    containerChainCollators[2000] != undefined,
+                    "Failed to register parathread: no collators assigned"
+                ).to.be.true;
             },
         });
 
@@ -193,12 +202,15 @@ async function registerEmptyParathread(api, manager, paraId) {
 
     const profileId = await api.query.dataPreservers.nextProfileId();
     txs.push(
-        api.tx.dataPreservers.createProfile({
-            url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-            paraIds: "AnyParaId",
-            mode: "Bootnode",
-            assignmentRequest: "Free",
-        })
+        api.tx.dataPreservers.forceCreateProfile(
+            {
+                url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                paraIds: "AnyParaId",
+                mode: "Bootnode",
+                assignmentRequest: "Free",
+            },
+            manager
+        )
     );
     txs.push(api.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free"));
     txs.push(api.tx.registrar.markValidForCollating(paraId));

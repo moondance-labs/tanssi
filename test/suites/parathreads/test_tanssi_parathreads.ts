@@ -131,7 +131,6 @@ describeSuite({
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON().containerChains;
-                // Stop waiting when parathreads have been assigned collators
                 expect(
                     containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined,
                     "Failed to register parathreads: no collators assigned"
