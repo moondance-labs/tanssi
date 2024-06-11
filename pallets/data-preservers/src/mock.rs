@@ -413,7 +413,6 @@ impl pallet_data_preservers::Config for Test {
     type ProfileId = u64;
     type AssignmentPayment = AssignmentPayment;
     type AssignmentOrigin = MockContainerChainManager<Test>;
-    type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxAssignmentsPerParaId = ConstU32<10>;
     type MaxNodeUrlLen = ConstU32<200>;
