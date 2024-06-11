@@ -142,6 +142,7 @@ std = [
 	"frame-try-runtime/std",
 	"grandpa_primitives/std",
 	"inherents/std",
+	"keyring/std",
 	"log/std",
 	"mozart-runtime-constants/std",
 	"offchain-primitives/std",
@@ -211,6 +212,7 @@ std = [
 	"sp-std/std",
 	"sp-storage/std",
 	"sp-tracing/std",
+	"sp-trie/std",
 	"sp-version/std",
 	"substrate-wasm-builder",
 	"tx-pool-api/std",
@@ -218,8 +220,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-fee-payment-runtime-api/std",
 	"xcm/std",
-	"keyring/std",
-	"sp-trie/std"
 ]
 no_std = []
 runtime-benchmarks = [
