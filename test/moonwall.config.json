@@ -50,7 +50,14 @@
                     {
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
-                        "options": ["--chain=dancebox", "--sealing=manual", "--collator", "--dev-service", "--tmp", "--unsafe-force-node-key-generation"],
+                        "options": [
+                            "--chain=dancebox",
+                            "--sealing=manual",
+                            "--collator",
+                            "--dev-service",
+                            "--tmp",
+                            "--unsafe-force-node-key-generation"
+                        ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
                     }

@@ -18,7 +18,7 @@ use {
     crate::{
         assert_expected_events,
         common::{
-            dummy_boot_nodes, empty_genesis_data, run_to_session, start_block,
+            empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
                 mocknets::{
                     DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
@@ -30,7 +30,7 @@ use {
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{DataPreservers, Registrar, ServicesPayment, XcmCoreBuyer},
+    dancebox_runtime::{Registrar, ServicesPayment, XcmCoreBuyer},
     frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     polkadot_runtime_parachains::{
@@ -62,7 +62,7 @@ const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100
 fn constants() {
     // If these constants change, some tests may break
     assert_eq!(ROCOCO_ED, 100_000_000 / 3);
-    assert_eq!(BUY_EXECUTION_COST, 70_000_000 + 1_266_663_99);
+    assert_eq!(BUY_EXECUTION_COST, 70_000_000 + 126_666_399);
 }
 
 /// The tests in this module all use this function to trigger an XCM message to buy a core.
@@ -82,11 +82,7 @@ fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) -> Quer
             SlotFrequency { min: 1, max: 1 },
             empty_genesis_data()
         ));
-        assert_ok!(DataPreservers::set_boot_nodes(
-            alice_origin,
-            PARATHREAD_ID.into(),
-            dummy_boot_nodes()
-        ));
+        set_dummy_boot_node(alice_origin, PARATHREAD_ID.into());
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
         assert_ok!(Registrar::mark_valid_for_collating(
             root_origin.clone(),
@@ -300,20 +296,15 @@ fn assert_query_response(
 /// Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
 /// parathread para id.
 fn get_parathread_tank_relay_address() -> AccountId32 {
-    let parathread_tank_in_relay = Dancebox::execute_with(|| {
+    Dancebox::execute_with(|| {
         let parathread_tank_multilocation = XcmCoreBuyer::relay_relative_multilocation(
             XcmCoreBuyer::interior_multilocation(PARATHREAD_ID.into()),
         )
         .expect("reanchor failed");
-        let parathread_tank_in_relay =
-            <Rococo as RelayChain>::SovereignAccountOf::convert_location(
-                &parathread_tank_multilocation,
-            )
-            .expect("probably this relay chain does not allow DescendOrigin");
 
-        parathread_tank_in_relay
-    });
-    parathread_tank_in_relay
+        <Rococo as RelayChain>::SovereignAccountOf::convert_location(&parathread_tank_multilocation)
+            .expect("probably this relay chain does not allow DescendOrigin")
+    })
 }
 
 fn get_on_demand_base_fee() -> u128 {

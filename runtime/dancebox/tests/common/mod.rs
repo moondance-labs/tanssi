@@ -19,8 +19,8 @@ use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dancebox_runtime::{
-        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
-        MaxBootNodes, MaxLengthTokenSymbol,
+        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxLengthTokenSymbol,
+        RuntimeOrigin,
     },
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
@@ -36,7 +36,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
@@ -239,9 +239,8 @@ pub fn end_block() {
 
 pub fn run_block() -> RunSummary {
     end_block();
-    let summary = start_block();
 
-    summary
+    start_block()
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
@@ -307,7 +306,6 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 pub struct ParaRegistrationParams {
     para_id: u32,
     genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
-    bootnodes: Vec<Vec<u8>>,
     block_production_credits: u32,
     collator_assignment_credits: u32,
 }
@@ -316,7 +314,6 @@ impl
     From<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
         u32,
         u32,
     )> for ParaRegistrationParams
@@ -325,7 +322,6 @@ impl
         value: (
             u32,
             ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
             u32,
             u32,
         ),
@@ -333,9 +329,8 @@ impl
         Self {
             para_id: value.0,
             genesis_data: value.1,
-            bootnodes: value.2,
-            block_production_credits: value.3,
-            collator_assignment_credits: value.4,
+            block_production_credits: value.2,
+            collator_assignment_credits: value.3,
         }
     }
 }
@@ -464,17 +459,6 @@ impl ExtBuilder {
                         .into()
                 })
                 .collect(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_data_preservers::GenesisConfig::<Runtime> {
-            para_id_boot_nodes: self
-                .para_ids
-                .into_iter()
-                .map(|registered_para| (registered_para.para_id.into(), registered_para.bootnodes))
-                .collect(),
-            _phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -631,16 +615,6 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     }
 }
 
-pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
-    vec![BoundedVec::try_from(
-        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-            .to_vec(),
-    )
-    .unwrap()]
-    .try_into()
-    .unwrap()
-}
-
 pub fn current_slot() -> u64 {
     u64::from(
         pallet_async_backing::SlotInfo::<Runtime>::get()
@@ -691,3 +665,41 @@ pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
+
+pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
+    use {
+        dancebox_runtime::{
+            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest, RuntimeOrigin,
+        },
+        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+    };
+
+    let profile = Profile {
+        url:
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .expect("to fit in BoundedVec"),
+        para_ids: ParaIdsFilter::AnyParaId,
+        mode: ProfileMode::Bootnode,
+        assignment_request: PreserversAssignementPaymentRequest::Free,
+    };
+
+    let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
+    let profile_owner = AccountId::new([1u8; 32]);
+    DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
+        .expect("profile create to succeed");
+
+    DataPreservers::start_assignment(
+        para_manager,
+        profile_id,
+        para_id,
+        PreserversAssignementPaymentExtra::Free,
+    )
+    .expect("assignement to work");
+
+    assert!(
+        pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
+        "profile should be correctly assigned"
+    );
+}

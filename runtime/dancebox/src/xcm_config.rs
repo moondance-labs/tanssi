@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{AuthorNoting, AuthorityMapping, Session};
-use nimbus_primitives::NimbusId;
-use pallet_session::ShouldEndSession;
-use pallet_xcm_core_buyer::CheckCollatorValidity;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
@@ -30,7 +26,7 @@ use {
         ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
         RuntimeEvent, RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
     },
-    crate::weights,
+    crate::{weights, AuthorNoting, AuthorityMapping, Session},
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
@@ -38,9 +34,11 @@ use {
         weights::Weight,
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
+    nimbus_primitives::NimbusId,
+    pallet_session::ShouldEndSession,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
-        GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
+        CheckCollatorValidity, GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
         ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
@@ -487,7 +485,7 @@ parameter_types! {
     pub const XcmBuyExecutionDotRococo: u128 = XCM_BUY_EXECUTION_COST_ROCOCO;
 }
 
-pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 70_000_000 + 1_266_663_99;
+pub const XCM_BUY_EXECUTION_COST_ROCOCO: u128 = 70_000_000 + 126_666_399;
 
 pub struct XCMNotifierImpl;
 

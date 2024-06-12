@@ -316,7 +316,8 @@ async fn start_node_impl(
                 .base
                 .base
                 .import_params
-                .wasmtime_precompiled = parachain_config.wasmtime_precompiled.clone();
+                .wasmtime_precompiled
+                .clone_from(&parachain_config.wasmtime_precompiled);
         }
     }
 

@@ -65,7 +65,7 @@ fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
         let mut keys = [0u8; 128];
 
         if c > 0 {
-            let mut rng = rand::rngs::StdRng::seed_from_u64(c as u64);
+            let mut rng = rand::rngs::StdRng::seed_from_u64(u64::from(c));
             rng.fill_bytes(&mut keys);
         }
 

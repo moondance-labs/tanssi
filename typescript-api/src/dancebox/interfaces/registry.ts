@@ -29,6 +29,9 @@ import type {
     CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
     DanceboxRuntimeOriginCaller,
+    DanceboxRuntimePreserversAssignementPaymentExtra,
+    DanceboxRuntimePreserversAssignementPaymentRequest,
+    DanceboxRuntimePreserversAssignementPaymentWitness,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
     DanceboxRuntimeRuntimeFreezeReason,
@@ -339,6 +342,9 @@ declare module "@polkadot/types/types/registry" {
         CumulusPrimitivesCoreAggregateMessageOrigin: CumulusPrimitivesCoreAggregateMessageOrigin;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
+        DanceboxRuntimePreserversAssignementPaymentExtra: DanceboxRuntimePreserversAssignementPaymentExtra;
+        DanceboxRuntimePreserversAssignementPaymentRequest: DanceboxRuntimePreserversAssignementPaymentRequest;
+        DanceboxRuntimePreserversAssignementPaymentWitness: DanceboxRuntimePreserversAssignementPaymentWitness;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
         DanceboxRuntimeRuntimeFreezeReason: DanceboxRuntimeRuntimeFreezeReason;

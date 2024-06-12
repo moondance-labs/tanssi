@@ -59,9 +59,20 @@ yargs(hideBin(process.argv))
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
-                    const tx2 = api.tx.dataPreservers.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);
-                    const tx2s = api.tx.sudo.sudo(tx2);
-                    txs.push(tx2s);
+                    let profileId = await api.query.dataPreservers.nextProfileId();
+                    for (const bootnode of rawSpec.bootNodes) {
+                        const profileTx = api.tx.dataPreservers.createProfile({
+                            url: bootnode,
+                            paraIds: "AnyParaId",
+                            mode: "Bootnode",
+                            assignmentRequest: "Free",
+                        });
+                        txs.push(profileTx);
+
+                        const tx2 = api.tx.dataPreservers.startAssignment(profileId++, rawSpec.para_id, "Free");
+                        const tx2s = api.tx.sudo.sudo(tx2);
+                        txs.push(tx2s);
+                    }
                 }
                 const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
                 const tx3s = api.tx.sudo.sudo(tx3);
@@ -71,7 +82,7 @@ yargs(hideBin(process.argv))
                     process.stdout.write(`Sending register transaction (register + markValidForCollating)... `);
                 } else {
                     process.stdout.write(
-                        `Sending register transaction (register + setBootNodes + markValidForCollating)... `
+                        `Sending register transaction (register + createProfile + startAssignment + markValidForCollating)... `
                     );
                 }
                 const txBatch = api.tx.utility.batchAll(txs);
@@ -173,9 +184,23 @@ yargs(hideBin(process.argv))
                 }
                 bootnodes = [...bootnodes, ...argv.bootnode];
 
-                const tx1 = api.tx.dataPreservers.setBootNodes(argv.paraId, bootnodes);
-                const tx1s = api.tx.sudo.sudo(tx1);
-                let tx2s = null;
+                const txs = [];
+
+                let profileId = await api.query.dataPreservers.nextProfileId();
+                for (const bootnode of bootnodes) {
+                    const profileTx = api.tx.dataPreservers.createProfile({
+                        url: bootnode,
+                        paraIds: "AnyParaId",
+                        mode: "Bootnode",
+                        assignmentRequest: "Free",
+                    });
+                    txs.push(profileTx);
+
+                    const tx2 = api.tx.dataPreservers.startAssignment(profileId++, argv.paraId, "Free");
+                    const tx2s = api.tx.sudo.sudo(tx2);
+                    txs.push(tx2s);
+                }
+
                 if (argv.markValidForCollating) {
                     // Check if not already valid, and only in that case call markValidForCollating
                     const notValidParas = (await api.query.registrar.pendingVerification()) as any;
@@ -183,19 +208,15 @@ yargs(hideBin(process.argv))
                         process.stdout.write(`Will set container chain valid for collating\n`);
                         const tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
                         tx2s = api.tx.sudo.sudo(tx2);
+                        txs.push(tx2s);
                     } else {
                         // ParaId already valid, or not registered at all
                         process.stdout.write(`Not setting container chain valid for collating\n`);
                     }
                 }
-                let tx;
-                if (tx2s != null) {
-                    tx = api.tx.utility.batchAll([tx1s, tx2s]);
-                } else {
-                    tx = tx1s;
-                }
+                const batchTx = api.tx.utility.batchAll(txs);
                 process.stdout.write(`Sending transaction... `);
-                const txHash = await tx.signAndSend(account);
+                const txHash = await batchTx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
                 process.stdout.write(`Done ✅\n`);

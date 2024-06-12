@@ -28,6 +28,7 @@ describeSuite({
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     mode: "Bootnode",
+                    assignmentRequest: "Free",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -37,12 +38,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -64,12 +67,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const profile2 = {
@@ -85,12 +90,14 @@ describeSuite({
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile2.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_210_000_000_000,
+                    deposit: 10_220_000_000_000,
                     profile: {
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -112,12 +119,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.deleteProfile(profileId);
@@ -151,7 +160,9 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -173,12 +184,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const profile2 = {
@@ -199,7 +212,9 @@ describeSuite({
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
             },
         });
@@ -221,12 +236,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_190_000_000_000,
+                    deposit: 10_200_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
+                        assignmentRequest: "Free",
                     },
+                    assignment: null,
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceDeleteProfile(profileId);
@@ -236,6 +253,299 @@ describeSuite({
 
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile2.toJSON()).to.be.equal(null);
+            },
+        });
+
+        it({
+            id: "E07",
+            title: "Profile can be assigned",
+            test: async function () {
+                const paraId = 2002;
+                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                    min: 1,
+                    max: 1,
+                });
+                const emptyGenesisData = () => {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
+                const containerChainGenesisData = emptyGenesisData();
+
+                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                    paraId,
+                    slotFrequency,
+                    containerChainGenesisData
+                );
+                await context.createBlock([await registerTx.signAsync(sudo_alice)]);
+
+                const profile = {
+                    url: "exemple",
+                    paraIds: { whitelist: [paraId] },
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                };
+
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
+                await context.createBlock([await profileTx.signAsync(general_user_bob)]);
+                profileId++;
+
+                const assignTx = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");
+                await context.createBlock([await assignTx.signAsync(sudo_alice)]);
+
+                expect((await polkadotJs.query.dataPreservers.assignments(paraId)).toJSON()).to.deep.equal([profileId]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.toJSON()).to.be.deep.equal({
+                    account: general_user_bob.address,
+                    deposit: 10_160_000_000_000,
+                    profile: {
+                        url: "0x6578656d706c65",
+                        paraIds: { whitelist: [paraId] },
+                        mode: { bootnode: null },
+                        assignmentRequest: "Free",
+                    },
+                    assignment: [paraId, "Free"],
+                });
+            },
+        });
+
+        it({
+            id: "E08",
+            title: "Profile can be force assigned",
+            test: async function () {
+                const paraId = 2003;
+                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                    min: 1,
+                    max: 1,
+                });
+                const emptyGenesisData = () => {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
+                const containerChainGenesisData = emptyGenesisData();
+
+                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                    paraId,
+                    slotFrequency,
+                    containerChainGenesisData
+                );
+                await context.createBlock([await registerTx.signAsync(sudo_alice)]);
+
+                const profile = {
+                    url: "exemple",
+                    paraIds: { whitelist: [paraId] },
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                };
+
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
+                await context.createBlock([await profileTx.signAsync(general_user_bob)]);
+                ++profileId;
+
+                const assignTx = polkadotJs.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free");
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(assignTx).signAsync(sudo_alice)]);
+
+                expect((await polkadotJs.query.dataPreservers.assignments(paraId)).toJSON()).to.deep.equal([profileId]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.toJSON()).to.be.deep.equal({
+                    account: general_user_bob.address,
+                    deposit: 10_160_000_000_000,
+                    profile: {
+                        url: "0x6578656d706c65",
+                        paraIds: { whitelist: [paraId] },
+                        mode: { bootnode: null },
+                        assignmentRequest: "Free",
+                    },
+                    assignment: [paraId, "Free"],
+                });
+            },
+        });
+
+        it({
+            id: "E09",
+            title: "Profile can be unassigned",
+            test: async function () {
+                const paraId = 2004;
+                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                    min: 1,
+                    max: 1,
+                });
+                const emptyGenesisData = () => {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
+                const containerChainGenesisData = emptyGenesisData();
+
+                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                    paraId,
+                    slotFrequency,
+                    containerChainGenesisData
+                );
+                await context.createBlock([await registerTx.signAsync(sudo_alice)]);
+
+                const profile = {
+                    url: "exemple",
+                    paraIds: { whitelist: [paraId] },
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                };
+
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
+                await context.createBlock([await profileTx.signAsync(general_user_bob)]);
+                profileId++;
+
+                const assignTx = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");
+                const unassignTx = polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId);
+                await context.createBlock();
+                await context.createBlock([await assignTx.signAsync(sudo_alice)]);
+                await context.createBlock([await unassignTx.signAsync(sudo_alice)]);
+
+                expect((await polkadotJs.query.dataPreservers.assignments(paraId)).toJSON()).to.deep.equal([]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.toJSON()).to.be.deep.equal({
+                    account: general_user_bob.address,
+                    deposit: 10_160_000_000_000,
+                    profile: {
+                        url: "0x6578656d706c65",
+                        paraIds: { whitelist: [paraId] },
+                        mode: { bootnode: null },
+                        assignmentRequest: "Free",
+                    },
+                    assignment: null,
+                });
+            },
+        });
+
+        it({
+            id: "E09",
+            title: "Profile can be force unassigned",
+            test: async function () {
+                const paraId = 2005;
+                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                    min: 1,
+                    max: 1,
+                });
+                const emptyGenesisData = () => {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                        storage: [
+                            {
+                                key: "0x636f6465",
+                                value: "0x010203040506",
+                            },
+                        ],
+                        name: "0x436f6e7461696e657220436861696e2032303030",
+                        id: "0x636f6e7461696e65722d636861696e2d32303030",
+                        forkId: null,
+                        extensions: "0x",
+                        properties: {
+                            tokenMetadata: {
+                                tokenSymbol: "0x61626364",
+                                ss58Format: 42,
+                                tokenDecimals: 12,
+                            },
+                            isEthereum: false,
+                        },
+                    });
+                    return g;
+                };
+                const containerChainGenesisData = emptyGenesisData();
+
+                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                    paraId,
+                    slotFrequency,
+                    containerChainGenesisData
+                );
+                await context.createBlock([await registerTx.signAsync(sudo_alice)]);
+
+                const profile = {
+                    url: "exemple",
+                    paraIds: { whitelist: [paraId] },
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                };
+
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
+                await context.createBlock([await profileTx.signAsync(general_user_bob)]);
+                profileId++;
+
+                const assignTx = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");
+                const unassignTx = polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId);
+                await context.createBlock([await assignTx.signAsync(sudo_alice)]);
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(unassignTx).signAsync(sudo_alice)]);
+
+                expect((await polkadotJs.query.dataPreservers.assignments(paraId)).toJSON()).to.deep.equal([]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.toJSON()).to.be.deep.equal({
+                    account: general_user_bob.address,
+                    deposit: 10_160_000_000_000,
+                    profile: {
+                        url: "0x6578656d706c65",
+                        paraIds: { whitelist: [paraId] },
+                        mode: { bootnode: null },
+                        assignmentRequest: "Free",
+                    },
+                    assignment: null,
+                });
             },
         });
     },

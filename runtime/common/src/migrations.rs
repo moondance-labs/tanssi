@@ -36,19 +36,18 @@
 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
-use frame_support::migration::storage_key_iter;
 
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
+        migration::{clear_storage_prefix, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         traits::{OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
         weights::Weight,
-        StoragePrefixedMap,
+        Blake2_128Concat, BoundedVec, StoragePrefixedMap,
     },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
-    pallet_foreign_asset_creator::AssetId,
-    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
+    pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
@@ -431,10 +430,10 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        let total_weight = Weight::default();
+        let mut total_weight = Weight::default();
         for (para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
             pallet_registrar::ParaManager::<T>::insert(para_id, deposit.creator);
-            total_weight.saturating_add(
+            total_weight = total_weight.saturating_add(
                 T::DbWeight::get()
                     .reads(1)
                     .saturating_add(T::DbWeight::get().writes(1)),
@@ -489,6 +488,8 @@ where
     Runtime: pallet_registrar::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_services_payment::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime::AccountId: From<[u8; 32]>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         //let migrate_services_payment =
@@ -503,6 +504,8 @@ where
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
         let migrate_registrar_manager =
             RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -514,7 +517,150 @@ where
             Box::new(migrate_add_collator_assignment_credits),
             Box::new(migrate_registrar_pending_verification),
             Box::new(migrate_registrar_manager),
+            Box::new(migrate_data_preservers_assignments),
         ]
+    }
+}
+
+pub struct DataPreserversAssignmentsMigration<T>(pub PhantomData<T>);
+impl<T> Migration for DataPreserversAssignmentsMigration<T>
+where
+    T: pallet_data_preservers::Config + pallet_registrar::Config,
+    T::AccountId: From<[u8; 32]>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_DataPreserversAssignmentsMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use {
+            frame_support::BoundedBTreeSet,
+            frame_system::RawOrigin,
+            pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
+        };
+
+        let mut total_weight = Weight::default();
+
+        let (request, _extra, witness) = T::AssignmentPayment::free_variant_values()
+            .expect("free variant values are necessary to perform migration");
+
+        let dummy_profile_owner = T::AccountId::from([0u8; 32]);
+
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+        let bootnodes_storage: Vec<_> = storage_key_iter::<
+            ParaId,
+            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
+        total_weight = total_weight.saturating_add(
+            T::DbWeight::get()
+                .reads(bootnodes_storage.len() as u64)
+                .saturating_add(T::DbWeight::get().writes(bootnodes_storage.len() as u64)),
+        );
+
+        for (para_id, bootnodes) in bootnodes_storage {
+            for bootnode_url in bootnodes {
+                let profile = Profile {
+                    url: bootnode_url,
+                    para_ids: ParaIdsFilter::Whitelist({
+                        let mut set = BoundedBTreeSet::new();
+                        set.try_insert(para_id).expect("to be in bound");
+                        set
+                    }),
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: request,
+                };
+
+                let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
+
+                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_create_profile(
+                    RawOrigin::Root.into(),
+                    profile,
+                    dummy_profile_owner.clone(),
+                )
+                .expect("to create profile")
+                .actual_weight
+                {
+                    total_weight = total_weight.saturating_add(weight);
+                }
+
+                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_start_assignment(
+                    RawOrigin::Root.into(),
+                    profile_id,
+                    para_id,
+                    witness,
+                )
+                .expect("to start assignment")
+                .actual_weight
+                {
+                    total_weight = total_weight.saturating_add(weight);
+                }
+            }
+        }
+
+        let _ = clear_storage_prefix(pallet_prefix, storage_item_prefix, &[], None, None);
+
+        total_weight
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use parity_scale_codec::Encode;
+
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+        let state: Vec<_> = storage_key_iter::<
+            ParaId,
+            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
+        Ok(state.encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+
+        let pallet_prefix: &[u8] = b"DataPreservers";
+        let storage_item_prefix: &[u8] = b"BootNodes";
+
+        let pre_state: Vec<(ParaId, Vec<Vec<u8>>)> =
+            Decode::decode(&mut &state[..]).expect("state to be decoded properly");
+
+        for (para_id, bootnodes) in pre_state {
+            let assignments = pallet_data_preservers::Assignments::<T>::get(para_id);
+            assert_eq!(assignments.len(), bootnodes.len());
+
+            let profiles: Vec<_> =
+                pallet_data_preservers::Pallet::<T>::assignments_profiles(para_id).collect();
+
+            for bootnode in bootnodes {
+                assert_eq!(
+                    profiles
+                        .iter()
+                        .filter(|profile| profile.url == bootnode)
+                        .count(),
+                    1
+                );
+            }
+        }
+
+        assert_eq!(
+            storage_key_iter::<
+                ParaId,
+                BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
+                Blake2_128Concat,
+            >(pallet_prefix, storage_item_prefix)
+            .count(),
+            0
+        );
+
+        Ok(())
     }
 }
 
@@ -528,12 +674,16 @@ where
     Runtime: pallet_configuration::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
     <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
         TryFrom<staging_xcm::v3::MultiLocation>,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
+        From<pallet_pooled_staking::HoldReason>,
+    Runtime::AccountId: From<[u8; 32]>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
@@ -556,6 +706,8 @@ where
             RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
         let migrate_registrar_manager =
             RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
 
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let foreign_asset_creator_migration =
@@ -585,6 +737,7 @@ where
             Box::new(migrate_registrar_manager),
             Box::new(migrate_pallet_xcm_v4),
             Box::new(foreign_asset_creator_migration),
+            Box::new(migrate_data_preservers_assignments),
         ]
     }
 }

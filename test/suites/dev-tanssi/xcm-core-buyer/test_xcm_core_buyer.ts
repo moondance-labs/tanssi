@@ -15,12 +15,14 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let charlie: KeyringPair;
         let keyring: Keyring;
         let collatorNimbusKey: KeyringPair;
         let collatorAccountKey: KeyringPair;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
+            charlie = context.keyring.charlie;
             polkadotJs = context.polkadotJs();
             keyring = new Keyring({ type: "sr25519" });
             collatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
@@ -86,15 +88,20 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const bootNodes = [
-                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-                ];
 
                 // Let's disable all other parachains and set parathread collator to 4
                 // this will make every collator including the one we are registering being assigned to our parathread
-
                 const tx = polkadotJs.tx.registrar.registerParathread(2002, slotFrequency, containerChainGenesisData);
-                const tx2 = polkadotJs.tx.dataPreservers.setBootNodes(2002, bootNodes);
+
+                const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+                const profileTx = polkadotJs.tx.dataPreservers.createProfile({
+                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    paraIds: "AnyParaId",
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                });
+
+                const tx2 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");
                 const tx3 = polkadotJs.tx.registrar.markValidForCollating(2002);
                 const tx4 = polkadotJs.tx.configuration.setFullRotationPeriod(0);
                 const tx5 = polkadotJs.tx.registrar.deregister(2000);
@@ -102,6 +109,7 @@ describeSuite({
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
                     await tx.signAsync(alice, { nonce }),
+                    await profileTx.signAsync(charlie),
                     await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
                     await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice, { nonce: nonce.addn(2) }),
                     await polkadotJs.tx.sudo.sudo(tx4).signAsync(alice, { nonce: nonce.addn(3) }),

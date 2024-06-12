@@ -7,7 +7,19 @@ import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, bool, u128, u32, u64 } from "@polkadot/types-codec";
+import type {
+    BTreeMap,
+    BTreeSet,
+    Bytes,
+    Null,
+    Option,
+    U8aFixed,
+    Vec,
+    bool,
+    u128,
+    u32,
+    u64,
+} from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -251,7 +263,11 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         dataPreservers: {
-            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
+            assignments: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<u64>>,
+                [u32]
+            > &
                 QueryableStorageEntry<ApiType, [u32]>;
             nextProfileId: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
             profiles: AugmentedQuery<

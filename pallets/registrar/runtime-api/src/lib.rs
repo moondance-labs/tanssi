@@ -19,8 +19,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use tp_container_chain_genesis_data::ContainerChainGenesisData;
-use tp_traits::SlotFrequency;
-use {frame_support::traits::Get, scale_info::prelude::vec::Vec};
+use {frame_support::traits::Get, scale_info::prelude::vec::Vec, tp_traits::SlotFrequency};
 
 sp_api::decl_runtime_apis! {
     pub trait RegistrarApi<ParaId, MaxLengthTokenSymbol> where

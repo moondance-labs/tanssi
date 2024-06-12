@@ -68,7 +68,7 @@ where
             .client
             .runtime_api()
             .block_cost(self.client.usage_info().chain.best_hash, para_id)
-            .map_err(|e| internal_err(e))?;
+            .map_err(internal_err)?;
         Ok(cost)
     }
 
@@ -77,7 +77,7 @@ where
             .client
             .runtime_api()
             .collator_assignment_cost(self.client.usage_info().chain.best_hash, para_id)
-            .map_err(|e| internal_err(e))?;
+            .map_err(internal_err)?;
         Ok(cost)
     }
 }

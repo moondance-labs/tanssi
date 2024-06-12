@@ -34,12 +34,14 @@ pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000,
 
 #[benchmarks(where <T as frame_system::Config>::RuntimeOrigin: From<pallet_xcm::Origin>)]
 mod benchmarks {
-    use crate::{BuyCoreCollatorProof, CheckCollatorValidity};
-    use sp_runtime::RuntimeAppPublic;
     use {
         super::*,
-        crate::{InFlightCoreBuyingOrder, PendingBlocks, QueryIdToParaId},
+        crate::{
+            BuyCoreCollatorProof, CheckCollatorValidity, InFlightCoreBuyingOrder, PendingBlocks,
+            QueryIdToParaId,
+        },
         frame_system::pallet_prelude::BlockNumberFor,
+        sp_runtime::RuntimeAppPublic,
         staging_xcm::{
             latest::{MaybeErrorCode, QueryId},
             v4::{Location, Response},

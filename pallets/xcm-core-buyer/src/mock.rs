@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::CheckCollatorValidity;
-use nimbus_primitives::NimbusId;
-use sp_keystore::testing::MemoryKeystore;
-use sp_keystore::KeystoreExt;
-use sp_runtime::RuntimeAppPublic;
-use tp_traits::{ContainerChainBlockInfo, LatestAuthorInfoFetcher};
+use {
+    crate::CheckCollatorValidity,
+    nimbus_primitives::NimbusId,
+    sp_keystore::{testing::MemoryKeystore, KeystoreExt},
+    sp_runtime::RuntimeAppPublic,
+    tp_traits::{ContainerChainBlockInfo, LatestAuthorInfoFetcher},
+};
 
 use {
     crate::{

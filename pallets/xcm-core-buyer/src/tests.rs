@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use nimbus_primitives::NimbusId;
-use sp_runtime::RuntimeAppPublic;
-use tp_traits::ContainerChainBlockInfo;
 use {
     crate::{mock::*, *},
     frame_support::{assert_noop, assert_ok, assert_storage_noop},
-    sp_runtime::traits::BadOrigin,
+    nimbus_primitives::NimbusId,
+    sp_runtime::{traits::BadOrigin, RuntimeAppPublic},
+    tp_traits::ContainerChainBlockInfo,
 };
 
 #[test]
@@ -166,7 +165,7 @@ fn core_buying_proof_is_validated_correctly() {
                 .get(&para_id)
                 .expect("Collator data for test paraid must exists");
             assert!(
-                collator_data.len() >= 1,
+                !collator_data.is_empty(),
                 "collator data must contain at least one element"
             );
             let collator = collator_data[0].clone();

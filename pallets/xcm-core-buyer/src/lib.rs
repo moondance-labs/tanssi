@@ -52,8 +52,7 @@ use {
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },
-    tp_traits::LatestAuthorInfoFetcher,
-    tp_traits::ParathreadParams,
+    tp_traits::{LatestAuthorInfoFetcher, ParathreadParams},
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
@@ -119,10 +118,10 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use nimbus_primitives::SlotBeacon;
-    use pallet_xcm::ensure_response;
-    use sp_runtime::RuntimeAppPublic;
+    use {
+        super::*, nimbus_primitives::SlotBeacon, pallet_xcm::ensure_response,
+        sp_runtime::RuntimeAppPublic,
+    };
 
     #[pallet::pallet]
     #[pallet::without_storage_info]

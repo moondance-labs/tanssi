@@ -94,8 +94,9 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-                const txs2000 = await registerParathread(paraApi, alice.address, 2000);
-                const txs2001 = await registerParathread(paraApi, alice.address, 2001);
+                const profileIdPtr = [await paraApi.query.dataPreservers.nextProfileId()];
+                const txs2000 = await registerParathread(paraApi, alice.address, 2000, profileIdPtr);
+                const txs2001 = await registerParathread(paraApi, alice.address, 2001, profileIdPtr);
 
                 const slotFrequency2000 = paraApi.createType("TpTraitsSlotFrequency", {
                     min: 5,
@@ -125,6 +126,15 @@ describeSuite({
                     // Stop waiting when parathreads have been assigned collators
                     return containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined;
                 });
+
+                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+                const containerChainCollators = (
+                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+                ).toJSON().containerChains;
+                expect(
+                    containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined,
+                    "Failed to register parathreads: no collators assigned"
+                ).to.be.true;
             },
         });
 
@@ -328,7 +338,7 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function registerParathread(api, manager, paraId) {
+async function registerParathread(api, manager, paraId, lastProfileIdPtr) {
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",
@@ -361,8 +371,24 @@ async function registerParathread(api, manager, paraId) {
         )
     );
     if (rawSpec.bootNodes?.length) {
-        const tx2 = api.tx.dataPreservers.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);
-        txs.push(tx2);
+        let profileId = lastProfileIdPtr[0];
+        for (const bootnode of rawSpec.bootNodes) {
+            const profileTx = api.tx.dataPreservers.forceCreateProfile(
+                {
+                    url: bootnode,
+                    paraIds: "AnyParaId",
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                },
+                manager
+            );
+            txs.push(profileTx);
+
+            const tx2 = api.tx.dataPreservers.forceStartAssignment(profileId++, rawSpec.para_id, "Free");
+            const tx2s = api.tx.sudo.sudo(tx2);
+            txs.push(tx2s);
+        }
+        lastProfileIdPtr[0] = profileId;
     }
     const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
     txs.push(tx3);

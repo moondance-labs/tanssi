@@ -793,12 +793,13 @@ where
         let deploy_filter: DeployFilter = AddressList::get();
 
         match deploy_filter {
-            DeployFilter::All => return Ok(()),
+            DeployFilter::All => Ok(()),
             DeployFilter::Whitelisted(addresses_vec) => {
                 if !addresses_vec.contains(address) {
-                    return Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed);
+                    Err(pallet_evm::Error::<Runtime>::CreateOriginNotAllowed)
+                } else {
+                    Ok(())
                 }
-                return Ok(());
             }
         }
     }
@@ -1366,7 +1367,7 @@ impl_runtime_apis! {
                     );
 
                     // verify initial balance
-                    assert_eq!(Balances::free_balance(&who), balance);
+                    assert_eq!(Balances::free_balance(who), balance);
 
                     // set up local asset
                     let asset_amount = 10u128;
@@ -1386,10 +1387,10 @@ impl_runtime_apis! {
                     let verify = Box::new(move || {
                         // verify native balance after transfer, decreased by transferred fee amount
                         // (plus transport fees)
-                        assert!(Balances::free_balance(&who) <= balance - fee_amount);
+                        assert!(Balances::free_balance(who) <= balance - fee_amount);
                         // verify asset balance decreased by exactly transferred amount
                         assert_eq!(
-                            ForeignAssets::balance(asset_id, &who),
+                            ForeignAssets::balance(asset_id, who),
                             initial_asset_amount - asset_amount,
                         );
                     });

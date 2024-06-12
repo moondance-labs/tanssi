@@ -19,6 +19,8 @@ import type {
     CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
     DanceboxRuntimeOriginCaller,
+    DanceboxRuntimePreserversAssignementPaymentExtra,
+    DanceboxRuntimePreserversAssignementPaymentWitness,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
@@ -362,7 +364,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -376,7 +378,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
                         | string
                         | Uint8Array,
                     forAccount: AccountId32 | string | Uint8Array
@@ -387,31 +389,46 @@ declare module "@polkadot/api-base/types/submittable" {
                 (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
             >;
+            forceStartAssignment: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    assignmentWitness: DanceboxRuntimePreserversAssignementPaymentWitness | "Free" | number | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, u32, DanceboxRuntimePreserversAssignementPaymentWitness]
+            >;
             forceUpdateProfile: AugmentedSubmittable<
                 (
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, PalletDataPreserversProfile]
             >;
-            /** Set boot_nodes for this para id */
-            setBootNodes: AugmentedSubmittable<
+            startAssignment: AugmentedSubmittable<
                 (
+                    profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
-                    bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
+                    assignerParam: DanceboxRuntimePreserversAssignementPaymentExtra | "Free" | number | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, Vec<Bytes>]
+                [u64, u32, DanceboxRuntimePreserversAssignementPaymentExtra]
+            >;
+            stopAssignment: AugmentedSubmittable<
+                (
+                    profileId: u64 | AnyNumber | Uint8Array,
+                    paraId: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, u32]
             >;
             updateProfile: AugmentedSubmittable<
                 (
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any }
+                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,

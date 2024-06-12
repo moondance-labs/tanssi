@@ -17,7 +17,7 @@ hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
@@ -186,8 +186,7 @@ std = [
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",

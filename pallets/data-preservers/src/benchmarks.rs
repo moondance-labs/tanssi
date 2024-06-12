@@ -19,22 +19,47 @@
 //! Benchmarking
 use {
     crate::{
-        Call, Config, Pallet, ParaIdsFilter, Profile, ProfileDeposit, ProfileMode, Profiles,
-        RegisteredProfile,
+        AssignmentPayment, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile, ProfileMode,
+        Profiles, RegisteredProfile,
     },
     frame_benchmarking::v2::*,
     frame_support::{
         traits::{
             fungible::{Inspect, Mutate},
-            EnsureOrigin, EnsureOriginWithArg, OriginTrait,
+            EnsureOrigin, EnsureOriginWithArg,
         },
-        BoundedVec,
+        BoundedBTreeSet, BoundedVec,
     },
     frame_system::RawOrigin,
     sp_runtime::traits::Zero,
-    sp_std::vec,
-    tp_traits::ParaId,
+    sp_std::{collections::btree_set::BTreeSet, vec},
+    tp_traits::{ParaId, StorageDeposit},
 };
+
+macro_rules! bset {
+    ( $($value:expr),* $(,)? ) => {
+        {
+            let mut set = BoundedBTreeSet::new();
+            $(
+                set.try_insert($value).expect("max bound reached");
+            )*
+            set
+        }
+    }
+}
+
+macro_rules! set {
+    () => { BTreeSet::new() };
+    ( $($value:expr),* $(,)? ) => {
+        {
+            let mut set = BTreeSet::new();
+            $(
+                set.insert($value);
+            )*
+            set
+        }
+    }
+}
 
 const SEED: u32 = 0;
 
@@ -55,40 +80,23 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-        let para_id = ParaId::from(2);
-        let origin = T::SetBootNodesOrigin::try_successful_origin(&para_id)
-            .expect("failed to create SetBootNodesOrigin");
-        // Worst case is when caller is not root
-        let raw_origin = origin.as_system_ref();
-        assert!(matches!(raw_origin, Some(RawOrigin::Signed(..))));
-
-        #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(origin as T::RuntimeOrigin, para_id, boot_nodes.clone());
-
-        assert_eq!(Pallet::<T>::boot_nodes(para_id), boot_nodes);
-    }
-
-    #[benchmark]
     fn create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
-        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+        let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
@@ -100,7 +108,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -109,12 +118,16 @@ mod benchmarks {
     fn force_create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let owner = create_funded_user::<T>("owner", 1, 1_000_000_000u32);
@@ -133,7 +146,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: owner,
                 deposit: 0u32.into(),
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -141,12 +155,16 @@ mod benchmarks {
     #[benchmark]
     fn update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -156,15 +174,19 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
-        let deposit = T::ProfileDeposit::profile_deposit(&profile).expect("deposit to be computed");
+        let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
 
         #[extrinsic_call]
         Pallet::<T>::update_profile(
@@ -178,7 +200,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit,
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -186,12 +209,16 @@ mod benchmarks {
     #[benchmark]
     fn force_update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -201,12 +228,16 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(43); y as usize]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..y {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
@@ -224,7 +255,8 @@ mod benchmarks {
             Some(RegisteredProfile {
                 account: caller,
                 deposit: 0u32.into(),
-                profile
+                profile,
+                assignment: None,
             })
         );
     }
@@ -232,12 +264,16 @@ mod benchmarks {
     #[benchmark]
     fn delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -254,12 +290,16 @@ mod benchmarks {
     #[benchmark]
     fn force_delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_ids = BoundedVec::try_from(vec![ParaId::from(42); 2]).unwrap();
+        let mut para_ids = BoundedBTreeSet::new();
+        for i in 0..2 {
+            para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
 
         let profile = Profile {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -274,6 +314,103 @@ mod benchmarks {
         Pallet::<T>::force_delete_profile(origin_force as T::RuntimeOrigin, T::ProfileId::zero());
 
         assert_eq!(Profiles::<T>::get(T::ProfileId::zero()), None);
+    }
+
+    #[benchmark]
+    fn start_assignment() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_id = ParaId::from(42);
+
+        let profile = Profile {
+            url,
+            para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
+            mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
+
+        #[extrinsic_call]
+        Pallet::<T>::start_assignment(
+            origin as T::RuntimeOrigin,
+            T::ProfileId::zero(),
+            para_id,
+            T::AssignmentPayment::benchmark_assigner_parameter(),
+        );
+
+        assert_eq!(
+            Assignments::<T>::get(para_id).into_inner(),
+            set![T::ProfileId::zero()]
+        );
+    }
+
+    #[benchmark]
+    fn stop_assignment() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_id = ParaId::from(42);
+
+        let profile = Profile {
+            url,
+            para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
+            mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
+
+        Pallet::<T>::start_assignment(
+            origin.clone() as T::RuntimeOrigin,
+            T::ProfileId::zero(),
+            para_id,
+            T::AssignmentPayment::benchmark_assigner_parameter(),
+        )
+        .expect("to assign");
+
+        #[extrinsic_call]
+        Pallet::<T>::stop_assignment(origin as T::RuntimeOrigin, T::ProfileId::zero(), para_id);
+
+        assert_eq!(Assignments::<T>::get(para_id).into_inner(), set![]);
+    }
+
+    #[benchmark]
+    fn force_start_assignment() {
+        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let para_id = ParaId::from(42);
+
+        let profile = Profile {
+            url,
+            para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
+            mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        #[extrinsic_call]
+        Pallet::<T>::force_start_assignment(
+            RawOrigin::Root,
+            T::ProfileId::zero(),
+            para_id,
+            T::AssignmentPayment::benchmark_assignment_witness(),
+        );
+
+        assert_eq!(
+            Assignments::<T>::get(para_id).into_inner(),
+            set![T::ProfileId::zero()]
+        );
     }
 
     impl_benchmark_test_suite!(

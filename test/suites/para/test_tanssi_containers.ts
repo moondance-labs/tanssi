@@ -243,15 +243,22 @@ describeSuite({
                 const purchasedCredits = 100000n;
                 const requiredBalance = purchasedCredits * 1_000_000n;
                 const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, requiredBalance);
-                const bootNodes = [
-                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-                ];
-                const tx3 = paraApi.tx.dataPreservers.setBootNodes(2002, bootNodes);
+
+                const profileId = await paraApi.query.dataPreservers.nextProfileId();
+                const profileTx = paraApi.tx.dataPreservers.createProfile({
+                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    paraIds: "AnyParaId",
+                    mode: "Bootnode",
+                    assignmentRequest: "Free",
+                });
+
+                const tx3 = paraApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 // Send the batch transaction: [register, purchaseCredits, sudo(setBootNodes), sudo(markValidForCollating)]
                 const txBatch = paraApi.tx.utility.batchAll([
                     tx1,
                     tx2,
+                    profileTx,
                     paraApi.tx.sudo.sudo(tx3),
                     paraApi.tx.sudo.sudo(tx4),
                 ]);

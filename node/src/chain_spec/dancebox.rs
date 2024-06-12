@@ -200,16 +200,26 @@ fn testnet_genesis(
         .iter()
         .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
         .collect();
-    let para_id_boot_nodes: Vec<_> = para_ids
+    let data_preservers_bootnodes: Vec<_> = para_ids
         .iter()
-        .map(|(para_id, _genesis_data, boot_nodes)| (*para_id, boot_nodes.clone()))
+        .flat_map(|(para_id, _genesis_data, bootnodes)| {
+            bootnodes.clone().into_iter().map(|bootnode| {
+                (
+                    *para_id,
+                    AccountId::from([0u8; 32]),
+                    bootnode,
+                    dancebox_runtime::PreserversAssignementPaymentRequest::Free,
+                    dancebox_runtime::PreserversAssignementPaymentWitness::Free,
+                )
+            })
+        })
         .collect();
     let para_ids: Vec<_> = para_ids
         .into_iter()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
         .collect();
 
-    let accounts_with_ed = vec![
+    let accounts_with_ed = [
         dancebox_runtime::StakingAccount::get(),
         dancebox_runtime::ParachainBondAccount::get(),
         dancebox_runtime::PendingRewardsAccount::get(),
@@ -250,10 +260,6 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         configuration,
-        data_preservers: DataPreserversConfig {
-            para_id_boot_nodes,
-            ..Default::default()
-        },
         registrar: RegistrarConfig { para_ids },
         services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {
@@ -271,6 +277,10 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
         treasury: Default::default(),
+        data_preservers: DataPreserversConfig {
+            bootnodes: data_preservers_bootnodes,
+            ..Default::default()
+        },
     };
 
     serde_json::to_value(g).unwrap()

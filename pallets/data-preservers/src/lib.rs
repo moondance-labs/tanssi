@@ -20,7 +20,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
+mod types;
+
+pub use {pallet::*, types::*};
 
 #[cfg(test)]
 mod mock;
@@ -30,11 +32,9 @@ mod tests;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
+
 pub mod weights;
 pub use weights::WeightInfo;
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 
 use {
     core::fmt::Debug,
@@ -45,53 +45,79 @@ use {
         traits::{
             fungible::{Balanced, Inspect, MutateHold},
             tokens::Precision,
-            EnsureOriginWithArg,
+            EitherOfDiverse, EnsureOriginWithArg,
         },
         DefaultNoBound,
     },
-    frame_system::pallet_prelude::*,
+    frame_system::{pallet_prelude::*, EnsureRoot, EnsureSigned},
     parity_scale_codec::FullCodec,
     sp_runtime::{
-        traits::{CheckedAdd, CheckedMul, CheckedSub, Get, One, Zero},
-        ArithmeticError,
+        traits::{CheckedAdd, CheckedSub, Get, One, Zero},
+        ArithmeticError, Either,
     },
     sp_std::vec::Vec,
+    tp_traits::StorageDeposit,
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
 
+    /// Balance used by this pallet
+    pub type BalanceOf<T> =
+        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+
+    pub type ProviderRequestOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::ProviderRequest;
+
+    pub type AssignerParameterOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::AssignerParameter;
+
+    pub type AssignmentWitnessOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+        <T as frame_system::Config>::AccountId,
+    >>::AssignmentWitness;
+
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        /// Para ids
-        pub para_id_boot_nodes: Vec<(ParaId, Vec<Vec<u8>>)>,
+        pub bootnodes: Vec<(
+            // ParaId the profile will be assigned to
+            ParaId,
+            // Owner of the profile
+            T::AccountId,
+            // URL of the bootnode
+            Vec<u8>,
+            // Assignment request
+            ProviderRequestOf<T>,
+            // Assignment witness (try_start_assignment is skipped)
+            AssignmentWitnessOf<T>,
+        )>,
+        #[serde(skip)]
         pub _phantom: PhantomData<T>,
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            // Sort para ids and detect duplicates, but do it using a vector of
-            // references to avoid cloning the boot nodes.
-            let mut para_ids: Vec<&_> = self.para_id_boot_nodes.iter().collect();
-            para_ids.sort_by(|a, b| a.0.cmp(&b.0));
-            para_ids.dedup_by(|a, b| {
-                if a.0 == b.0 {
-                    panic!("Duplicate para_id: {}", u32::from(a.0));
-                } else {
-                    false
-                }
-            });
+            for (para_id, profile_owner, url, request, witness) in self.bootnodes.clone() {
+                let profile = Profile {
+                    url: url.try_into().expect("should fit in BoundedVec"),
+                    para_ids: ParaIdsFilter::Whitelist({
+                        let mut set = BoundedBTreeSet::new();
+                        set.try_insert(para_id).expect("to fit in BoundedBTreeSet");
+                        set
+                    }),
+                    mode: ProfileMode::Bootnode,
+                    assignment_request: request,
+                };
 
-            for (para_id, boot_nodes) in para_ids {
-                let boot_nodes: Vec<_> = boot_nodes
-                    .iter()
-                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
-                    .collect();
-                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
-                <BootNodes<T>>::insert(para_id, boot_nodes);
+                let profile_id = NextProfileId::<T>::get();
+                Pallet::<T>::do_create_profile(profile, profile_owner, Zero::zero())
+                    .expect("to create profile");
+                Pallet::<T>::do_start_assignment(profile_id, para_id, |_| Ok(witness))
+                    .expect("to start assignment");
             }
         }
     }
@@ -120,22 +146,30 @@ pub mod pallet {
             + Debug
             + Eq
             + CheckedAdd
-            + One;
+            + One
+            + Ord;
 
-        // Who can call set_boot_nodes?
-        type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        // Who can call start_assignment/stop_assignment?
+        type AssignmentOrigin: EnsureOriginWithArg<
+            Self::RuntimeOrigin,
+            ParaId,
+            Success = Self::AccountId,
+        >;
 
+        // Who can call force_X?
         type ForceSetProfileOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         #[pallet::constant]
-        type MaxBootNodes: Get<u32>;
+        type MaxAssignmentsPerParaId: Get<u32> + Clone;
         #[pallet::constant]
-        type MaxBootNodeUrlLen: Get<u32>;
+        type MaxNodeUrlLen: Get<u32> + Clone;
         #[pallet::constant]
-        type MaxParaIdsVecLen: Get<u32>;
+        type MaxParaIdsVecLen: Get<u32> + Clone;
 
         /// How much must be deposited to register a profile.
-        type ProfileDeposit: ProfileDeposit<Profile<Self>, BalanceOf<Self>>;
+        type ProfileDeposit: StorageDeposit<Profile<Self>, BalanceOf<Self>>;
+
+        type AssignmentPayment: AssignmentPayment<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -159,6 +193,14 @@ pub mod pallet {
             profile_id: T::ProfileId,
             released_deposit: BalanceOf<T>,
         },
+        AssignmentStarted {
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        },
+        AssignmentStopped {
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        },
     }
 
     #[pallet::error]
@@ -168,6 +210,17 @@ pub mod pallet {
 
         UnknownProfileId,
         NextProfileIdShouldBeAvailable,
+
+        /// Made for `AssignmentPayment` implementors to report a mismatch between
+        /// `ProviderRequest` and `AssignerParameter`.
+        AssignmentPaymentRequestParameterMismatch,
+
+        ProfileAlreadyAssigned,
+        ProfileNotAssigned,
+        ProfileIsNotElligibleForParaId,
+        WrongParaId,
+        MaxAssignmentsPerParaIdReached,
+        CantDeleteAssignedProfile,
     }
 
     #[pallet::composite_enum]
@@ -176,135 +229,23 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn boot_nodes)]
-    pub type BootNodes<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ValueQuery,
-    >;
-
-    #[pallet::storage]
     pub type Profiles<T: Config> =
         StorageMap<_, Blake2_128Concat, T::ProfileId, RegisteredProfile<T>, OptionQuery>;
 
     #[pallet::storage]
     pub type NextProfileId<T: Config> = StorageValue<_, T::ProfileId, ValueQuery>;
 
-    /// Balance used by this pallet
-    pub type BalanceOf<T> =
-        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-
-    /// Data preserver profile.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct Profile<T: Config> {
-        pub url: BoundedVec<u8, T::MaxBootNodeUrlLen>,
-        pub para_ids: ParaIdsFilter<T>,
-        pub mode: ProfileMode,
-    }
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub enum ParaIdsFilter<T: Config> {
-        AnyParaId,
-        Whitelist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
-        Blacklist(BoundedVec<ParaId, T::MaxParaIdsVecLen>),
-    }
-
-    impl<T: Config> ParaIdsFilter<T> {
-        pub fn len(&self) -> usize {
-            match self {
-                Self::AnyParaId => 0,
-                Self::Whitelist(list) | Self::Blacklist(list) => list.len(),
-            }
-        }
-    }
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub enum ProfileMode {
-        Bootnode,
-        Rpc { supports_ethereum_rpcs: bool },
-    }
-
-    /// Profile with additional data:
-    /// - the account id which created (and manage) the profile
-    /// - the amount deposited to register the profile
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(
-        RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, Encode, Decode, CloneNoBound, TypeInfo,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct RegisteredProfile<T: Config> {
-        pub account: T::AccountId,
-        pub deposit: BalanceOf<T>,
-        pub profile: Profile<T>,
-    }
-
-    /// Computes the deposit cost of a profile.
-    pub trait ProfileDeposit<Profile, Balance> {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo>;
-    }
-
-    /// Implementation of `ProfileDeposit` based on the size of the SCALE-encoding.
-    pub struct BytesProfileDeposit<BaseCost, ByteCost>(PhantomData<(BaseCost, ByteCost)>);
-
-    impl<Profile, Balance, BaseCost, ByteCost> ProfileDeposit<Profile, Balance>
-        for BytesProfileDeposit<BaseCost, ByteCost>
-    where
-        BaseCost: Get<Balance>,
-        ByteCost: Get<Balance>,
-        Profile: Encode,
-        Balance: TryFrom<usize> + CheckedAdd + CheckedMul,
-    {
-        fn profile_deposit(profile: &Profile) -> Result<Balance, DispatchErrorWithPostInfo> {
-            let base = BaseCost::get();
-            let byte = ByteCost::get();
-            let size: Balance = profile
-                .encoded_size()
-                .try_into()
-                .map_err(|_| ArithmeticError::Overflow)?;
-
-            let deposit = byte
-                .checked_mul(&size)
-                .ok_or(ArithmeticError::Overflow)?
-                .checked_add(&base)
-                .ok_or(ArithmeticError::Overflow)?;
-
-            Ok(deposit)
-        }
-    }
+    #[pallet::storage]
+    pub type Assignments<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        BoundedBTreeSet<T::ProfileId, T::MaxAssignmentsPerParaId>,
+        ValueQuery,
+    >;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Set boot_nodes for this para id
-        #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(
-            T::MaxBootNodeUrlLen::get(),
-            boot_nodes.len() as u32,
-        ))]
-        pub fn set_boot_nodes(
-            origin: OriginFor<T>,
-            para_id: ParaId,
-            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ) -> DispatchResult {
-            T::SetBootNodesOrigin::ensure_origin(origin, &para_id)?;
-
-            BootNodes::<T>::insert(para_id, boot_nodes);
-
-            Self::deposit_event(Event::BootNodesChanged { para_id });
-
-            Ok(())
-        }
-
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::create_profile(
             profile.url.len() as u32,
@@ -316,10 +257,216 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let deposit = T::ProfileDeposit::profile_deposit(&profile)?;
+            let deposit = T::ProfileDeposit::compute_deposit(&profile)?;
             T::Currency::hold(&HoldReason::ProfileDeposit.into(), &account, deposit)?;
 
+            Self::do_create_profile(profile, account, deposit)
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::update_profile(
+            profile.url.len() as u32,
+            profile.para_ids.len() as u32,
+        ))]
+        pub fn update_profile(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            profile: Profile<T>,
+        ) -> DispatchResultWithPostInfo {
+            let account = ensure_signed(origin)?;
+
+            let new_deposit = T::ProfileDeposit::compute_deposit(&profile)?;
+
+            Self::do_update_profile(profile_id, profile, |existing_profile| {
+                ensure!(
+                    existing_profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+
+                if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
+                    T::Currency::hold(
+                        &HoldReason::ProfileDeposit.into(),
+                        &existing_profile.account,
+                        diff,
+                    )?;
+                } else if let Some(diff) = existing_profile.deposit.checked_sub(&new_deposit) {
+                    T::Currency::release(
+                        &HoldReason::ProfileDeposit.into(),
+                        &existing_profile.account,
+                        diff,
+                        Precision::Exact,
+                    )?;
+                }
+
+                Ok(new_deposit)
+            })
+        }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::delete_profile())]
+        pub fn delete_profile(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+        ) -> DispatchResultWithPostInfo {
+            let account = ensure_signed(origin)?;
+
+            Self::do_delete_profile(profile_id, |profile| {
+                ensure!(
+                    profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin,
+                );
+
+                Ok(().into())
+            })
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::force_create_profile(
+            profile.url.len() as u32,
+            profile.para_ids.len() as u32,
+        ))]
+        pub fn force_create_profile(
+            origin: OriginFor<T>,
+            profile: Profile<T>,
+            for_account: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            Self::do_create_profile(profile, for_account, Zero::zero())
+        }
+
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::force_update_profile(
+            profile.url.len() as u32,
+            profile.para_ids.len() as u32,
+        ))]
+        pub fn force_update_profile(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            profile: Profile<T>,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            Self::do_update_profile(profile_id, profile, |existing_profile| {
+                // We release the previous deposit
+                T::Currency::release(
+                    &HoldReason::ProfileDeposit.into(),
+                    &existing_profile.account,
+                    existing_profile.deposit,
+                    Precision::Exact,
+                )?;
+
+                // New deposit is zero since its forced
+                Ok(Zero::zero())
+            })
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::force_delete_profile())]
+        pub fn force_delete_profile(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+        ) -> DispatchResultWithPostInfo {
+            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+
+            Self::do_delete_profile(profile_id, |_| Ok(().into()))
+        }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::start_assignment())]
+        pub fn start_assignment(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+            assigner_param: AssignerParameterOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let assigner = T::AssignmentOrigin::ensure_origin(origin, &para_id)?;
+
+            Self::do_start_assignment(profile_id, para_id, |profile| {
+                T::AssignmentPayment::try_start_assignment(
+                    assigner,
+                    profile.account.clone(),
+                    &profile.profile.assignment_request,
+                    assigner_param,
+                )
+            })
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::stop_assignment())]
+        pub fn stop_assignment(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+        ) -> DispatchResultWithPostInfo {
+            let caller = EitherOfDiverse::<
+                // root or para manager can call without being the owner
+                EitherOfDiverse<T::AssignmentOrigin, EnsureRoot<T::AccountId>>,
+                // otherwise it can be a simple signed account but it will require
+                // cheking if it is the owner of the profile
+                EnsureSigned<T::AccountId>,
+            >::ensure_origin(origin, &para_id)?;
+
+            let mut profile = Profiles::<T>::get(profile_id).ok_or(Error::<T>::UnknownProfileId)?;
+
+            match caller {
+                // root or para id manager is allowed to call
+                Either::Left(_) => (),
+                // signed, must be profile owner
+                Either::Right(account) => ensure!(
+                    profile.account == account,
+                    sp_runtime::DispatchError::BadOrigin
+                ),
+            }
+
+            let Some((assignment_para_id, assignment_witness)) = profile.assignment.take() else {
+                Err(Error::<T>::ProfileNotAssigned)?
+            };
+
+            if assignment_para_id != para_id {
+                Err(Error::<T>::WrongParaId)?
+            }
+
+            T::AssignmentPayment::try_stop_assignment(profile.account.clone(), assignment_witness)?;
+
+            Profiles::<T>::insert(profile_id, profile);
+
+            {
+                let mut assignments = Assignments::<T>::get(para_id);
+                assignments.remove(&profile_id);
+                Assignments::<T>::insert(para_id, assignments);
+            }
+
+            Self::deposit_event(Event::AssignmentStopped {
+                profile_id,
+                para_id,
+            });
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::force_start_assignment())]
+        pub fn force_start_assignment(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+            para_id: ParaId,
+            assignment_witness: AssignmentWitnessOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            Self::do_start_assignment(profile_id, para_id, |_profile| Ok(assignment_witness))
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        fn do_create_profile(
+            profile: Profile<T>,
+            account: T::AccountId,
+            deposit: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
             let id = NextProfileId::<T>::get();
+
             NextProfileId::<T>::set(
                 id.checked_add(&One::one())
                     .ok_or(ArithmeticError::Overflow)?,
@@ -336,6 +483,7 @@ pub mod pallet {
                     account: account.clone(),
                     deposit,
                     profile,
+                    assignment: None,
                 },
             );
 
@@ -348,51 +496,25 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::update_profile(
-            profile.url.len() as u32,
-            profile.para_ids.len() as u32,
-        ))]
-        pub fn update_profile(
-            origin: OriginFor<T>,
+        fn do_update_profile(
             profile_id: T::ProfileId,
-            profile: Profile<T>,
+            new_profile: Profile<T>,
+            update_deposit: impl FnOnce(
+                &RegisteredProfile<T>,
+            ) -> Result<BalanceOf<T>, DispatchErrorWithPostInfo>,
         ) -> DispatchResultWithPostInfo {
-            let account = ensure_signed(origin)?;
-
             let Some(existing_profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
-            ensure!(
-                existing_profile.account == account,
-                sp_runtime::DispatchError::BadOrigin,
-            );
-
-            // Update deposit
-            let new_deposit = T::ProfileDeposit::profile_deposit(&profile)?;
-
-            if let Some(diff) = new_deposit.checked_sub(&existing_profile.deposit) {
-                T::Currency::hold(
-                    &HoldReason::ProfileDeposit.into(),
-                    &existing_profile.account,
-                    diff,
-                )?;
-            } else if let Some(diff) = existing_profile.deposit.checked_sub(&new_deposit) {
-                T::Currency::release(
-                    &HoldReason::ProfileDeposit.into(),
-                    &existing_profile.account,
-                    diff,
-                    Precision::Exact,
-                )?;
-            }
+            let new_deposit = update_deposit(&existing_profile)?;
 
             Profiles::<T>::insert(
                 profile_id,
                 RegisteredProfile {
-                    account: existing_profile.account,
                     deposit: new_deposit,
-                    profile,
+                    profile: new_profile,
+                    ..existing_profile
                 },
             );
 
@@ -405,22 +527,20 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::delete_profile())]
-        pub fn delete_profile(
-            origin: OriginFor<T>,
+        fn do_delete_profile(
             profile_id: T::ProfileId,
+            profile_owner_check: impl FnOnce(&RegisteredProfile<T>) -> DispatchResultWithPostInfo,
         ) -> DispatchResultWithPostInfo {
-            let account = ensure_signed(origin)?;
-
             let Some(profile) = Profiles::<T>::get(profile_id) else {
                 Err(Error::<T>::UnknownProfileId)?
             };
 
             ensure!(
-                profile.account == account,
-                sp_runtime::DispatchError::BadOrigin,
+                profile.assignment.is_none(),
+                Error::<T>::CantDeleteAssignedProfile,
             );
+
+            profile_owner_check(&profile)?;
 
             T::Currency::release(
                 &HoldReason::ProfileDeposit.into(),
@@ -439,133 +559,70 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::force_create_profile(
-            profile.url.len() as u32,
-            profile.para_ids.len() as u32,
-        ))]
-        pub fn force_create_profile(
-            origin: OriginFor<T>,
-            profile: Profile<T>,
-            for_account: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
-            T::ForceSetProfileOrigin::ensure_origin(origin)?;
-
-            let id = NextProfileId::<T>::get();
-            NextProfileId::<T>::set(
-                id.checked_add(&One::one())
-                    .ok_or(ArithmeticError::Overflow)?,
-            );
-
-            ensure!(
-                !Profiles::<T>::contains_key(id),
-                Error::<T>::NextProfileIdShouldBeAvailable
-            );
-
-            Profiles::<T>::insert(
-                id,
-                RegisteredProfile {
-                    account: for_account.clone(),
-                    deposit: Zero::zero(),
-                    profile,
-                },
-            );
-
-            Self::deposit_event(Event::ProfileCreated {
-                account: for_account,
-                profile_id: id,
-                deposit: Zero::zero(),
-            });
-
-            Ok(().into())
-        }
-
-        #[pallet::call_index(5)]
-        #[pallet::weight(T::WeightInfo::force_update_profile(
-            profile.url.len() as u32,
-            profile.para_ids.len() as u32,
-        ))]
-        pub fn force_update_profile(
-            origin: OriginFor<T>,
+        fn do_start_assignment(
             profile_id: T::ProfileId,
-            profile: Profile<T>,
+            para_id: ParaId,
+            witness_producer: impl FnOnce(
+                &RegisteredProfile<T>,
+            )
+                -> Result<AssignmentWitnessOf<T>, DispatchErrorWithPostInfo>,
         ) -> DispatchResultWithPostInfo {
-            T::ForceSetProfileOrigin::ensure_origin(origin)?;
+            let mut profile = Profiles::<T>::get(profile_id).ok_or(Error::<T>::UnknownProfileId)?;
 
-            let Some(existing_profile) = Profiles::<T>::get(profile_id) else {
-                Err(Error::<T>::UnknownProfileId)?
-            };
+            if profile.assignment.is_some() {
+                Err(Error::<T>::ProfileAlreadyAssigned)?
+            }
 
-            // We release the previous deposit
-            T::Currency::release(
-                &HoldReason::ProfileDeposit.into(),
-                &existing_profile.account,
-                existing_profile.deposit,
-                Precision::Exact,
-            )?;
+            if !profile.profile.para_ids.can_assign(&para_id) {
+                Err(Error::<T>::ProfileIsNotElligibleForParaId)?
+            }
 
-            Profiles::<T>::insert(
+            // Add profile id to BoundedVec early in case bound is reached
+            {
+                let mut assignments = Assignments::<T>::get(para_id);
+
+                assignments
+                    .try_insert(profile_id)
+                    .map_err(|_| Error::<T>::MaxAssignmentsPerParaIdReached)?;
+
+                Assignments::<T>::insert(para_id, assignments);
+            }
+
+            let witness = witness_producer(&profile)?;
+
+            profile.assignment = Some((para_id, witness));
+            Profiles::<T>::insert(profile_id, profile);
+
+            Self::deposit_event(Event::AssignmentStarted {
                 profile_id,
-                RegisteredProfile {
-                    account: existing_profile.account,
-                    deposit: Zero::zero(),
-                    profile,
-                },
-            );
-
-            Self::deposit_event(Event::ProfileUpdated {
-                profile_id,
-                old_deposit: existing_profile.deposit,
-                new_deposit: Zero::zero(),
+                para_id,
             });
 
             Ok(().into())
         }
 
-        #[pallet::call_index(6)]
-        #[pallet::weight(T::WeightInfo::force_delete_profile())]
-        pub fn force_delete_profile(
-            origin: OriginFor<T>,
-            profile_id: T::ProfileId,
-        ) -> DispatchResultWithPostInfo {
-            T::ForceSetProfileOrigin::ensure_origin(origin)?;
-
-            let Some(profile) = Profiles::<T>::get(profile_id) else {
-                Err(Error::<T>::UnknownProfileId)?
-            };
-
-            T::Currency::release(
-                &HoldReason::ProfileDeposit.into(),
-                &profile.account,
-                profile.deposit,
-                Precision::Exact,
-            )?;
-
-            Profiles::<T>::remove(profile_id);
-
-            Self::deposit_event(Event::ProfileDeleted {
-                profile_id,
-                released_deposit: profile.deposit,
-            });
-
-            Ok(().into())
+        pub fn assignments_profiles(para_id: ParaId) -> impl Iterator<Item = Profile<T>> {
+            Assignments::<T>::get(para_id)
+                .into_iter()
+                .filter_map(Profiles::<T>::get)
+                .map(|profile| profile.profile)
         }
-    }
 
-    impl<T: Config> Pallet<T> {
-        /// Function that will be called when a container chain is deregistered. Cleans up all the storage related to this para_id.
+        /// Function that will be called when a container chain is deregistered. Cleans up all the
+        /// storage related to this para_id.
         /// Cannot fail.
         pub fn para_deregistered(para_id: ParaId) {
-            BootNodes::<T>::remove(para_id);
+            Assignments::<T>::remove(para_id);
         }
 
         pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
-            // To be able to call mark_valid_for_collating, a container chain must have bootnodes
-            if Pallet::<T>::boot_nodes(para_id).len() > 0 {
-                Ok(())
-            } else {
-                Err(Error::<T>::NoBootNodes.into())
+            if !Self::assignments_profiles(para_id)
+                .any(|profile| profile.mode == ProfileMode::Bootnode)
+            {
+                Err(Error::<T>::NoBootNodes)?
             }
+
+            Ok(())
         }
     }
 }

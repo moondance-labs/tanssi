@@ -33,8 +33,6 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
-use pallet_xcm_core_buyer::BuyingError;
-use tp_traits::SlotFrequency;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -46,7 +44,7 @@ use {
     },
     frame_support::{
         construct_runtime,
-        dispatch::DispatchClass,
+        dispatch::{DispatchClass, DispatchErrorWithPostInfo},
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -76,7 +74,6 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
-    pallet_data_preservers::BytesProfileDeposit,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
@@ -85,6 +82,7 @@ use {
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
+    pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
     smallvec::smallvec,
@@ -106,7 +104,7 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
     },
 };
 pub use {
@@ -943,6 +941,128 @@ impl pallet_services_payment::Config for Runtime {
 parameter_types! {
     pub const ProfileDepositBaseFee: Balance = currency::STORAGE_ITEM_FEE;
     pub const ProfileDepositByteFee: Balance = currency::STORAGE_BYTE_FEE;
+    #[derive(Clone)]
+    pub const MaxAssignmentsPerParaId: u32 = 10;
+    #[derive(Clone)]
+    pub const MaxNodeUrlLen: u32 = 200;
+}
+
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub enum PreserversAssignementPaymentRequest {
+    Free,
+    // TODO: Add Stream Payment (with config)
+}
+
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub enum PreserversAssignementPaymentExtra {
+    Free,
+    // TODO: Add Stream Payment (with deposit)
+}
+
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub enum PreserversAssignementPaymentWitness {
+    Free,
+    // TODO: Add Stream Payment (with stream id)
+}
+
+pub struct PreserversAssignementPayment;
+
+impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignementPayment {
+    /// Providers requests which kind of payment it accepts.
+    type ProviderRequest = PreserversAssignementPaymentRequest;
+    /// Extra parameter the assigner provides.
+    type AssignerParameter = PreserversAssignementPaymentExtra;
+    /// Represents the succesful outcome of the assignment.
+    type AssignmentWitness = PreserversAssignementPaymentWitness;
+
+    fn try_start_assignment(
+        _assigner: AccountId,
+        _provider: AccountId,
+        request: &Self::ProviderRequest,
+        extra: Self::AssignerParameter,
+    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
+        let witness = match (request, extra) {
+            (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
+                Self::AssignmentWitness::Free
+            }
+        };
+
+        Ok(witness)
+    }
+
+    fn try_stop_assignment(
+        _provider: AccountId,
+        witness: Self::AssignmentWitness,
+    ) -> Result<(), DispatchErrorWithPostInfo> {
+        match witness {
+            Self::AssignmentWitness::Free => (),
+        }
+
+        Ok(())
+    }
+
+    /// Return the values for a free assignment if it is supported.
+    /// This is required to perform automatic migration from old Bootnodes storage.
+    fn free_variant_values() -> Option<(
+        Self::ProviderRequest,
+        Self::AssignerParameter,
+        Self::AssignmentWitness,
+    )> {
+        Some((
+            Self::ProviderRequest::Free,
+            Self::AssignerParameter::Free,
+            Self::AssignmentWitness::Free,
+        ))
+    }
+
+    // The values returned by the following functions should match with each other.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_provider_request() -> Self::ProviderRequest {
+        PreserversAssignementPaymentRequest::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
+        PreserversAssignementPaymentExtra::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
+        PreserversAssignementPaymentWitness::Free
+    }
 }
 
 impl pallet_data_preservers::Config for Runtime {
@@ -952,14 +1072,14 @@ impl pallet_data_preservers::Config for Runtime {
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = u64;
-    type ProfileDeposit = BytesProfileDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+    type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+    type AssignmentPayment = PreserversAssignementPayment;
 
-    type SetBootNodesOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
-    type MaxBootNodes = MaxBootNodes;
-    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
+    type MaxNodeUrlLen = MaxNodeUrlLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
@@ -1000,10 +1120,9 @@ impl pallet_invulnerables::Config for Runtime {
 }
 
 parameter_types! {
+    #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
-    pub const MaxBootNodes: u32 = 10;
-    pub const MaxBootNodeUrlLen: u32 = 200;
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -1057,17 +1176,44 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
-        use sp_runtime::BoundedVec;
-        let boot_nodes: BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> = vec![
-            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        ]
-        .try_into()
-        .unwrap();
+        use {
+            frame_support::traits::EnsureOriginWithArg,
+            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        };
 
-        pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
+        let profile = Profile {
+            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                    .to_vec()
+                    .try_into()
+                    .expect("to fit in BoundedVec"),
+            para_ids: ParaIdsFilter::AnyParaId,
+            mode: ProfileMode::Bootnode,
+            assignment_request: PreserversAssignementPaymentRequest::Free,
+        };
+
+        let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
+        let profile_owner = AccountId::new([1u8; 32]);
+        DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
+            .expect("profile create to succeed");
+
+        let para_manager =
+            <Runtime as pallet_data_preservers::Config>::AssignmentOrigin::try_successful_origin(
+                &para_id,
+            )
+            .expect("should be able to get para manager");
+
+        DataPreservers::start_assignment(
+            para_manager,
+            profile_id,
+            para_id,
+            PreserversAssignementPaymentExtra::Free,
+        )
+        .expect("assignement to work");
+
+        assert!(
+            pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
+            "profile should be correctly assigned"
+        );
     }
 }
 
@@ -2293,10 +2439,10 @@ impl_runtime_apis! {
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
-            // TODO: remember to write migration to move boot nodes from pallet_registrar to pallet_data_preservers
-            let bounded_vec = DataPreservers::boot_nodes(para_id);
-
-            bounded_vec.into_iter().map(|x| x.into()).collect()
+            DataPreservers::assignments_profiles(para_id)
+                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
+                .map(|profile| profile.url.into())
+                .collect()
         }
     }
 

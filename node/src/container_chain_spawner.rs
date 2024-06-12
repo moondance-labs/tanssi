@@ -800,7 +800,7 @@ fn delete_container_chain_db(db_path: &Path) {
     let _ = std::fs::remove_dir_all(db_path);
     // Remove all the empty folders inside `simple_container_2002`, including self
     if let Some(parent) = db_path.ancestors().nth(2) {
-        let _ = delete_empty_folders_recursive(parent);
+        delete_empty_folders_recursive(parent);
     }
 }
 
@@ -821,7 +821,7 @@ fn delete_empty_folders_recursive(path: &Path) {
 
         let path = entry.path();
         if path.is_dir() {
-            let _ = delete_empty_folders_recursive(&path);
+            delete_empty_folders_recursive(&path);
         }
     }
 
@@ -903,8 +903,7 @@ fn check_paritydb_lock_held(db_path: &Path) -> Result<bool, std::io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::path::PathBuf;
+    use {super::*, std::path::PathBuf};
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
