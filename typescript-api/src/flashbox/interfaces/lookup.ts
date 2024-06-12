@@ -2254,6 +2254,8 @@ export default {
     FrameSystemExtensionsCheckWeight: "Null",
     /** Lookup368: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup369: flashbox_runtime::Runtime */
+    /** Lookup369: cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<T> */
+    CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: "Null",
+    /** Lookup370: flashbox_runtime::Runtime */
     FlashboxRuntimeRuntime: "Null",
 };
