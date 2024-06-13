@@ -12,6 +12,7 @@ members = [
 	"runtime/flashbox",
 	"runtime/mozart",
 	"runtime/mozart/constants",
+	"runtime/mozart/node",
 	"runtime/relay-encoder",
 ]
 resolver = "2"
