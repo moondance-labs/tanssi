@@ -199,11 +199,11 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
 	"polkadot-test-client/runtime-benchmarks",
 	"sc-client-db/runtime-benchmarks",
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-support/try-runtime",
@@ -213,8 +213,8 @@ try-runtime = [
 	"pallet-staking/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"polkadot-runtime-parachains/try-runtime",
+	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
-	"polkadot-service/try-runtime"
 ]
 
 malus = [ "full-node" ]

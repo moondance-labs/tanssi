@@ -10,11 +10,11 @@ members = [
 	"primitives/*",
 	"runtime/dancebox",
 	"runtime/flashbox",
-	"runtime/mozart/runtime",
+	"runtime/mozart",
+	"runtime/mozart/cli",
 	"runtime/mozart/constants",
 	"runtime/mozart/node",
-	"runtime/mozart/cli",
-	"runtime/mozart",
+	"runtime/mozart/runtime",
 	"runtime/relay-encoder",
 ]
 resolver = "2"
@@ -83,9 +83,9 @@ mozart-runtime-constants = { path = "runtime/mozart/constants", default-features
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
+tanssi-relay-cli = { path = "runtime/mozart/cli", default-features = false }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
 tanssi-relay-service = { path = "runtime/mozart/node", default-features = false }
-tanssi-relay-cli = { path = "runtime/mozart/cli", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
@@ -463,19 +463,24 @@ telemetry = { package = "sc-telemetry", git = "https://github.com/moondance-labs
 
 # Tanssi Relay Chain CLI
 cfg-if = "1.0"
-pyro = { package = "pyroscope", version = "0.5.3"}
+pyro = { package = "pyroscope", version = "0.5.3" }
 pyroscope_pprofrs = { version = "0.2" }
 
-sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 polkadot-node-metrics = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 sc-storage-monitor = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # Tanssi Relay Chain
-polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
-polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
-polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+assert_cmd = "2.0.4"
+color-eyre = { version = "0.6.1", default-features = false }
+nix = { version = "0.26.1", features = [ "signal" ] }
+tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
-substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+
+substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 [profile.production]
 codegen-units = 1
