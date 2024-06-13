@@ -116,7 +116,6 @@ mod benchmarks {
 
     #[benchmark]
     fn register(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
-        let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
 
         let (caller, _deposit_amount) =
@@ -138,7 +137,6 @@ mod benchmarks {
         // This extrinsic is disabled in flashbox runtime, return 0 weight there
         let _origin = T::RegisterWithRelayProofOrigin::try_successful_origin()
             .map_err(|_| BenchmarkError::Weightless)?;
-        let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
 
         let (caller, _deposit_amount) =
@@ -561,7 +559,6 @@ mod benchmarks {
 
     #[benchmark]
     fn register_parathread(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
-        let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
         let slot_frequency = SlotFrequency::default();
 
