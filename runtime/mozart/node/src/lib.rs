@@ -998,6 +998,8 @@ pub fn new_full<
         })?;
 
     if config.offchain_worker.enabled {
+		use futures::FutureExt;
+
         task_manager.spawn_handle().spawn(
             "offchain-workers-runner",
             "offchain-work",
