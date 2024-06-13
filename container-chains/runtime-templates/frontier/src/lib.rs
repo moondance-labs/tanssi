@@ -1247,7 +1247,7 @@ impl_runtime_apis! {
                     // We only care for native asset until we support others
                     // TODO: refactor this case once other assets are supported
                     vec![Asset{
-                        id: Location::here().into(),
+                        id: AssetId(SelfReserve::get()),
                         fun: Fungible(u128::MAX),
                     }].into()
                 }
