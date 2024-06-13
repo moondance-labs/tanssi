@@ -14,7 +14,7 @@ workspace = true
 babe = { workspace = true }
 beefy = { workspace = true }
 grandpa = { workspace = true }
-mmr-gadget = { workspace = true }
+mmr-gadget = { workspace = true, features = [ "std" ] }
 sc-authority-discovery = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-block-builder = { workspace = true }
@@ -23,6 +23,7 @@ sc-client-api = { workspace = true }
 sc-client-db = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-slots = { workspace = true }
+sc-executor = { workspace = true }
 sc-keystore = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
@@ -46,13 +47,13 @@ sp-authority-discovery = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus-babe = { workspace = true }
-sp-core = { workspace = true }
-sp-inherents = { workspace = true }
-sp-io = { workspace = true }
+sp-core = { workspace = true, features = [ "std" ] }
+sp-inherents = { workspace = true, features = [ "std" ] }
+sp-io = { workspace = true, features = [ "std" ] }
 sp-keyring = { workspace = true }
-sp-keystore = { workspace = true }
-sp-offchain = { workspace = true }
-sp-runtime = { workspace = true }
+sp-keystore = { workspace = true, features = [ "std" ] }
+sp-offchain = { workspace = true, features = [ "std" ] }
+sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true }
 sp-state-machine = { workspace = true }
 sp-storage = { workspace = true }

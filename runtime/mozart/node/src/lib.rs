@@ -18,26 +18,25 @@
 
 #![deny(unused_results)]
 
-pub mod benchmarking;
 pub mod chain_spec;
 mod fake_runtime_api;
 mod grandpa_support;
 mod parachains_db;
 mod relay_chain_selection;
 
-#[cfg(feature = "full-node")]
-pub mod overseer;
-#[cfg(feature = "full-node")]
-pub mod workers;
+pub use polkadot_service::{benchmarking};
 
 #[cfg(feature = "full-node")]
-pub use polkadot_service::overseer::{
+pub use polkadot_service::{overseer, workers};
+
+#[cfg(feature = "full-node")]
+use polkadot_service::overseer::{
 	CollatorOverseerGen, ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs,
 	ValidatorOverseerGen,
 };
 
 #[cfg(test)]
-mod tests;
+pub use polkadot_service::tests;
 
 #[cfg(feature = "full-node")]
 use {
@@ -80,7 +79,6 @@ use polkadot_node_subsystem::jaeger;
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
-use prometheus_endpoint::Registry;
 #[cfg(feature = "full-node")]
 use service::KeystoreContainer;
 use service::RpcHandlers;
@@ -466,11 +464,7 @@ where
 		client.clone(),
 	);
 
-	let grandpa_hard_forks = if config.chain_spec.is_kusama() {
-		grandpa_support::kusama_hard_forks()
-	} else {
-		Vec::new()
-	};
+	let grandpa_hard_forks = Vec::new();
 
 	let (grandpa_block_import, grandpa_link) = grandpa::block_import_with_authority_set_hard_forks(
 		client.clone(),
@@ -712,8 +706,8 @@ pub fn new_full<
 	let is_offchain_indexing_enabled = config.offchain_worker.indexing_enabled;
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
-	let backoff_authoring_blocks = if !force_authoring_backoff &&
-		(config.chain_spec.is_polkadot() || config.chain_spec.is_kusama())
+	let backoff_authoring_blocks = if !force_authoring_backoff
+		// && (config.chain_spec.is_polkadot() || config.chain_spec.is_kusama())
 	{
 		// the block authoring backoff is disabled by default on production networks
 		None
@@ -721,8 +715,6 @@ pub fn new_full<
 		let mut backoff = sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default();
 
 		if config.chain_spec.is_mozart() ||
-			config.chain_spec.is_wococo() ||
-			config.chain_spec.is_versi() ||
 			config.chain_spec.is_dev()
 		{
 			// on testnets that are in flux (like mozart or versi), finality has stalled
@@ -874,11 +866,7 @@ pub fn new_full<
 		IncomingRequest::get_config_receiver::<_, Network>(&req_protocol_names);
 	net_config.add_request_response_protocol(cfg);
 
-	let grandpa_hard_forks = if config.chain_spec.is_kusama() {
-		grandpa_support::kusama_hard_forks()
-	} else {
-		Vec::new()
-	};
+	let grandpa_hard_forks = Vec::new();
 
 	let warp_sync = Arc::new(grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
@@ -974,8 +962,6 @@ pub fn new_full<
 		})?;
 
 	if config.offchain_worker.enabled {
-		use futures::FutureExt;
-
 		task_manager.spawn_handle().spawn(
 			"offchain-workers-runner",
 			"offchain-work",
@@ -1230,7 +1216,7 @@ pub fn new_full<
 			runtime: client.clone(),
 			key_store: keystore_opt.clone(),
 			network_params,
-			min_block_delta: if chain_spec.is_wococo() { 4 } else { 8 },
+			min_block_delta: 8,
 			prometheus_registry: prometheus_registry.clone(),
 			links: beefy_links,
 			on_demand_justifications_handler: beefy_on_demand_justifications_handler,
@@ -1351,9 +1337,7 @@ pub fn new_chain_ops(
 {
 	config.keystore = service::config::KeystoreConfig::InMemory;
 
-	if config.chain_spec.is_mozart() ||
-		config.chain_spec.is_wococo() ||
-		config.chain_spec.is_versi()
+	if config.chain_spec.is_mozart()
 	{
 		chain_ops!(config, jaeger_agent, None)
 	} else {
@@ -1370,13 +1354,8 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
 	config: Configuration,
 	mut params: NewFullParams<OverseerGenerator>,
 ) -> Result<NewFull, Error> {
-	let is_polkadot = config.chain_spec.is_polkadot();
-
 	params.overseer_message_channel_capacity_override =
 		params.overseer_message_channel_capacity_override.map(move |capacity| {
-			if is_polkadot {
-				gum::warn!("Channel capacity should _never_ be tampered with on polkadot!");
-			}
 			capacity
 		});
 

@@ -16550,6 +16550,7 @@ dependencies = [
  "sc-consensus-beefy",
  "sc-consensus-grandpa",
  "sc-consensus-slots",
+ "sc-executor",
  "sc-keystore",
  "sc-network",
  "sc-network-common",
