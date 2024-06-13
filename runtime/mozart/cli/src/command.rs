@@ -45,7 +45,7 @@ fn get_exec_name() -> Option<String> {
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Parity Polkadot".into()
+		"Tanssi".into()
 	}
 
 	fn impl_version() -> String {
@@ -62,7 +62,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/paritytech/polkadot-sdk/issues/new".into()
+		"https://github.com/moondance-labs/tanssi/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -70,87 +70,29 @@ impl SubstrateCli for Cli {
 	}
 
 	fn executable_name() -> String {
-		"polkadot".into()
+		"tanssi".into()
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 		let id = if id == "" {
 			let n = get_exec_name().unwrap_or_default();
-			["polkadot", "kusama", "westend", "rococo", "versi"]
+			["mozart"]
 				.iter()
 				.cloned()
 				.find(|&chain| n.starts_with(chain))
-				.unwrap_or("polkadot")
+				.unwrap_or("mozart")
 		} else {
 			id
 		};
 		Ok(match id {
-			"kusama" => Box::new(service::chain_spec::kusama_config()?),
-			name if name.starts_with("kusama-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the kusama native runtime no longer part of the node."))?,
-			"polkadot" => Box::new(service::chain_spec::polkadot_config()?),
-			name if name.starts_with("polkadot-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the polkadot native runtime no longer part of the node."))?,
-			"paseo" => Box::new(service::chain_spec::paseo_config()?),
-			"rococo" => Box::new(service::chain_spec::rococo_config()?),
 			"mozart" => Box::new(tanssi_relay_service::chain_spec::mozart_config()?),
-			#[cfg(feature = "rococo-native")]
-			"dev" | "rococo-dev" => Box::new(service::chain_spec::rococo_development_config()?),
-			#[cfg(feature = "rococo-native")]
-			"rococo-local" => Box::new(service::chain_spec::rococo_local_testnet_config()?),
-			#[cfg(feature = "rococo-native")]
-			"rococo-staging" => Box::new(service::chain_spec::rococo_staging_testnet_config()?),
-			#[cfg(not(feature = "rococo-native"))]
-			name if name.starts_with("rococo-") && !name.ends_with(".json") || name == "dev" =>
-				Err(format!("`{}` only supported with `rococo-native` feature enabled.", name))?,
-			"westend" => Box::new(service::chain_spec::westend_config()?),
-			#[cfg(feature = "westend-native")]
-			"westend-dev" => Box::new(service::chain_spec::westend_development_config()?),
-			#[cfg(feature = "westend-native")]
-			"westend-local" => Box::new(service::chain_spec::westend_local_testnet_config()?),
-			#[cfg(feature = "westend-native")]
-			"westend-staging" => Box::new(service::chain_spec::westend_staging_testnet_config()?),
-			#[cfg(not(feature = "westend-native"))]
-			name if name.starts_with("westend-") && !name.ends_with(".json") =>
-				Err(format!("`{}` only supported with `westend-native` feature enabled.", name))?,
-			"wococo" => Box::new(service::chain_spec::wococo_config()?),
-			#[cfg(feature = "rococo-native")]
-			"wococo-dev" => Box::new(service::chain_spec::wococo_development_config()?),
-			#[cfg(feature = "rococo-native")]
-			"wococo-local" => Box::new(service::chain_spec::wococo_local_testnet_config()?),
-			#[cfg(not(feature = "rococo-native"))]
-			name if name.starts_with("wococo-") =>
-				Err(format!("`{}` only supported with `rococo-native` feature enabled.", name))?,
-			#[cfg(feature = "rococo-native")]
-			"versi-dev" => Box::new(service::chain_spec::versi_development_config()?),
-			#[cfg(feature = "rococo-native")]
-			"versi-local" => Box::new(service::chain_spec::versi_local_testnet_config()?),
-			#[cfg(feature = "rococo-native")]
-			"versi-staging" => Box::new(service::chain_spec::versi_staging_testnet_config()?),
-			#[cfg(not(feature = "rococo-native"))]
-			name if name.starts_with("versi-") =>
-				Err(format!("`{}` only supported with `rococo-native` feature enabled.", name))?,
 			path => {
 				let path = std::path::PathBuf::from(path);
 
 				let chain_spec = Box::new(service::GenericChainSpec::from_json_file(path.clone())?)
 					as Box<dyn service::ChainSpec>;
 
-				// When `force_*` is given or the file name starts with the name of one of the known
-				// chains, we use the chain spec for the specific chain.
-				if self.run.force_rococo ||
-					chain_spec.is_rococo() ||
-					chain_spec.is_wococo() ||
-					chain_spec.is_versi()
-				{
-					Box::new(service::RococoChainSpec::from_json_file(path)?)
-				} else if self.run.force_kusama || chain_spec.is_kusama() {
-					Box::new(service::GenericChainSpec::from_json_file(path)?)
-				} else if self.run.force_westend || chain_spec.is_westend() {
-					Box::new(service::WestendChainSpec::from_json_file(path)?)
-				} else {
-					chain_spec
-				}
+				chain_spec
 			},
 		})
 	}
