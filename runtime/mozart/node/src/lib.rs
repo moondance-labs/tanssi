@@ -24,7 +24,7 @@ mod grandpa_support;
 mod parachains_db;
 mod relay_chain_selection;
 
-pub use polkadot_service::benchmarking;
+pub use polkadot_service::{benchmarking, Error};
 
 #[cfg(feature = "full-node")]
 pub use polkadot_service::{overseer, workers};
@@ -58,7 +58,6 @@ use {
 };
 
 use polkadot_node_subsystem_util::database::Database;
-use polkadot_service::Error;
 
 #[cfg(feature = "full-node")]
 pub use {
