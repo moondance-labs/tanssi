@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Polkadot.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{relay_chain_selection::*, *};
+use super::*;
 
 use futures::channel::oneshot::Receiver;
 use polkadot_node_primitives::approval::v2::VrfSignature;

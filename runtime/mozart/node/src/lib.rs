@@ -22,7 +22,6 @@ pub mod chain_spec;
 mod fake_runtime_api;
 mod grandpa_support;
 mod parachains_db;
-mod relay_chain_selection;
 
 pub use polkadot_service::{benchmarking, Error};
 
@@ -63,7 +62,7 @@ use polkadot_node_subsystem_util::database::Database;
 pub use {
     polkadot_overseer::{Handle, Overseer, OverseerConnector, OverseerHandle},
     polkadot_primitives::runtime_api::ParachainHost,
-    relay_chain_selection::SelectRelayChain,
+    polkadot_service::SelectRelayChain,
     sc_client_api::AuxStore,
     sp_authority_discovery::AuthorityDiscoveryApi,
     sp_blockchain::{HeaderBackend, HeaderMetadata},
@@ -220,7 +219,7 @@ fn jaeger_launch_collector_with_agent(
 }
 
 #[cfg(feature = "full-node")]
-type FullSelectChain = relay_chain_selection::SelectRelayChain<FullBackend>;
+type FullSelectChain = SelectRelayChain<FullBackend>;
 #[cfg(feature = "full-node")]
 type FullGrandpaBlockImport<ChainSelection = FullSelectChain> =
     grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, ChainSelection>;
