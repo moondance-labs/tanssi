@@ -13,8 +13,9 @@ workspace = true
 # https://github.com/rustwasm/wasm-pack/issues/781 etc.
 wasm-opt = false
 
-[lib]
-crate-type = ["cdylib", "rlib"]
+[[bin]]
+name = "polkadot-parachain"
+path = "src/main.rs"
 
 [dependencies]
 cfg-if = { workspace = true }

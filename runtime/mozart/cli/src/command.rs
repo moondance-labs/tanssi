@@ -93,6 +93,7 @@ impl SubstrateCli for Cli {
 					as Box<dyn service::ChainSpec>;
 
 				chain_spec
+				}
 			},
 		})
 	}
