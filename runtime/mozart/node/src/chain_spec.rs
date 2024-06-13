@@ -45,14 +45,14 @@ const DEFAULT_PROTOCOL_ID: &str = "moz";
 #[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
 #[serde(rename_all = "camelCase")]
 pub struct Extensions {
-	/// Block numbers with known hashes.
-	pub fork_blocks: sc_client_api::ForkBlocks<polkadot_primitives::Block>,
-	/// Known bad block hashes.
-	pub bad_blocks: sc_client_api::BadBlocks<polkadot_primitives::Block>,
-	/// The light sync state.
-	///
-	/// This value will be set by the `sync-state rpc` implementation.
-	pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
+    /// Block numbers with known hashes.
+    pub fork_blocks: sc_client_api::ForkBlocks<polkadot_primitives::Block>,
+    /// Known bad block hashes.
+    pub bad_blocks: sc_client_api::BadBlocks<polkadot_primitives::Block>,
+    /// The light sync state.
+    ///
+    /// This value will be set by the `sync-state rpc` implementation.
+    pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
 }
 
 // Generic chain spec, in case when we don't have the native runtime.
@@ -68,104 +68,119 @@ pub type MozartChainSpec = service::GenericChainSpec<(), Extensions>;
 pub type MozartChainSpec = GenericChainSpec;
 
 pub fn mozart_config() -> Result<MozartChainSpec, String> {
-	MozartChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..]) // FIXME: Update this to Mozart.json once it is available
+    MozartChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..])
+    // FIXME: Update this to Mozart.json once it is available
 }
 
 /// Mozart staging testnet config.
 #[cfg(feature = "mozart-native")]
 pub fn mozart_staging_testnet_config() -> Result<MozartChainSpec, String> {
-	Ok(MozartChainSpec::builder(
-		mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
-		Default::default(),
-	)
-	.with_name("Mozart Staging Testnet")
-	.with_id("mozart_staging_testnet")
-	.with_chain_type(ChainType::Live)
-	.with_genesis_config_preset_name("staging_testnet")
-	.with_telemetry_endpoints(
-		TelemetryEndpoints::new(vec![(MOZART_STAGING_TELEMETRY_URL.to_string(), 0)])
-			.expect("Mozart Staging telemetry url is valid; qed"),
-	)
-	.with_protocol_id(DEFAULT_PROTOCOL_ID)
-	.build())
+    Ok(MozartChainSpec::builder(
+        mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+        Default::default(),
+    )
+    .with_name("Mozart Staging Testnet")
+    .with_id("mozart_staging_testnet")
+    .with_chain_type(ChainType::Live)
+    .with_genesis_config_preset_name("staging_testnet")
+    .with_telemetry_endpoints(
+        TelemetryEndpoints::new(vec![(MOZART_STAGING_TELEMETRY_URL.to_string(), 0)])
+            .expect("Mozart Staging telemetry url is valid; qed"),
+    )
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .build())
 }
-
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-	TPublic::Pair::from_string(&format!("//{}", seed), None)
-		.expect("static values are valid; qed")
-		.public()
+    TPublic::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
 }
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
-	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
-	seed: &str,
+    seed: &str,
 ) -> (
-	AccountId,
-	AccountId,
-	BabeId,
-	GrandpaId,
-	ValidatorId,
-	AssignmentId,
-	AuthorityDiscoveryId,
-	BeefyId,
+    AccountId,
+    AccountId,
+    BabeId,
+    GrandpaId,
+    ValidatorId,
+    AssignmentId,
+    AuthorityDiscoveryId,
+    BeefyId,
 ) {
-	let keys = get_authority_keys_from_seed_no_beefy(seed);
-	(keys.0, keys.1, keys.2, keys.3, keys.4, keys.5, keys.6, get_from_seed::<BeefyId>(seed))
+    let keys = get_authority_keys_from_seed_no_beefy(seed);
+    (
+        keys.0,
+        keys.1,
+        keys.2,
+        keys.3,
+        keys.4,
+        keys.5,
+        keys.6,
+        get_from_seed::<BeefyId>(seed),
+    )
 }
 
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed_no_beefy(
-	seed: &str,
-) -> (AccountId, AccountId, BabeId, GrandpaId, ValidatorId, AssignmentId, AuthorityDiscoveryId) {
-	(
-		get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-		get_account_id_from_seed::<sr25519::Public>(seed),
-		get_from_seed::<BabeId>(seed),
-		get_from_seed::<GrandpaId>(seed),
-		get_from_seed::<ValidatorId>(seed),
-		get_from_seed::<AssignmentId>(seed),
-		get_from_seed::<AuthorityDiscoveryId>(seed),
-	)
+    seed: &str,
+) -> (
+    AccountId,
+    AccountId,
+    BabeId,
+    GrandpaId,
+    ValidatorId,
+    AssignmentId,
+    AuthorityDiscoveryId,
+) {
+    (
+        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
+        get_account_id_from_seed::<sr25519::Public>(seed),
+        get_from_seed::<BabeId>(seed),
+        get_from_seed::<GrandpaId>(seed),
+        get_from_seed::<ValidatorId>(seed),
+        get_from_seed::<AssignmentId>(seed),
+        get_from_seed::<AuthorityDiscoveryId>(seed),
+    )
 }
-
 
 /// Mozart development config (single validator Alice)
 #[cfg(feature = "mozart-native")]
 pub fn mozart_development_config() -> Result<MozartChainSpec, String> {
-	Ok(MozartChainSpec::builder(
-		mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
-		Default::default(),
-	)
-	.with_name("Development")
-	.with_id("mozart_dev")
-	.with_chain_type(ChainType::Development)
-	.with_genesis_config_preset_name("development")
-	.with_protocol_id(DEFAULT_PROTOCOL_ID)
-	.build())
+    Ok(MozartChainSpec::builder(
+        mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+        Default::default(),
+    )
+    .with_name("Development")
+    .with_id("mozart_dev")
+    .with_chain_type(ChainType::Development)
+    .with_genesis_config_preset_name("development")
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .build())
 }
-
 
 /// Mozart local testnet config (multivalidator Alice + Bob)
 #[cfg(feature = "mozart-native")]
 pub fn mozart_local_testnet_config() -> Result<MozartChainSpec, String> {
-	Ok(MozartChainSpec::builder(
-		mozart::fast_runtime_binary::WASM_BINARY.ok_or("Mozart development wasm not available")?,
-		Default::default(),
-	)
-	.with_name("Mozart Local Testnet")
-	.with_id("mozart_local_testnet")
-	.with_chain_type(ChainType::Local)
-	.with_genesis_config_preset_name("local_testnet")
-	.with_protocol_id(DEFAULT_PROTOCOL_ID)
-	.build())
+    Ok(MozartChainSpec::builder(
+        mozart::fast_runtime_binary::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+        Default::default(),
+    )
+    .with_name("Mozart Local Testnet")
+    .with_id("mozart_local_testnet")
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config_preset_name("local_testnet")
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .build())
 }
