@@ -31,7 +31,7 @@ pub mod overseer;
 pub mod workers;
 
 #[cfg(feature = "full-node")]
-pub use self::overseer::{
+pub use polkadot_service::overseer::{
 	CollatorOverseerGen, ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs,
 	ValidatorOverseerGen,
 };

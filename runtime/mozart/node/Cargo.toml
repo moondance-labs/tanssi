@@ -136,6 +136,7 @@ polkadot-node-core-pvf = { workspace = true, optional = true }
 polkadot-node-core-pvf-checker = { workspace = true, optional = true }
 polkadot-node-core-runtime-api = { workspace = true, optional = true }
 polkadot-statement-distribution = { workspace = true, optional = true }
+polkadot-service = { workspace = true }
 
 xcm = { workspace = true }
 xcm-fee-payment-runtime-api = { workspace = true }
