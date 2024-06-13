@@ -16490,6 +16490,8 @@ dependencies = [
  "kvdb",
  "kvdb-rocksdb",
  "log",
+ "mozart-runtime",
+ "mozart-runtime-constants",
  "pallet-babe",
  "pallet-mmr",
  "pallet-staking",
@@ -16536,8 +16538,6 @@ dependencies = [
  "polkadot-runtime-parachains",
  "polkadot-statement-distribution",
  "polkadot-test-client",
- "rococo-runtime",
- "rococo-runtime-constants",
  "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-block-builder",
@@ -16592,8 +16592,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing-gum",
- "westend-runtime",
- "westend-runtime-constants",
  "xcm-fee-payment-runtime-api",
 ]
 
