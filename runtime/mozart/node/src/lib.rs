@@ -31,8 +31,7 @@ pub use polkadot_service::{overseer, workers};
 
 #[cfg(feature = "full-node")]
 use polkadot_service::overseer::{
-	CollatorOverseerGen, ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs,
-	ValidatorOverseerGen,
+	ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs
 };
 
 #[cfg(test)]
