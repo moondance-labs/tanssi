@@ -108,11 +108,9 @@ polkadot-runtime-parachains = { workspace = true }
 
 # Polkadot Runtime Constants
 rococo-runtime-constants = { workspace = true, optional = true }
-westend-runtime-constants = { workspace = true, optional = true }
 
 # Polkadot Runtimes
 rococo-runtime = { workspace = true, optional = true }
-westend-runtime = { workspace = true, optional = true }
 
 # Polkadot Subsystems
 polkadot-approval-distribution = { workspace = true, optional = true }
@@ -186,9 +184,8 @@ full-node = [
 
 # Configure the native runtimes to use.
 rococo-native = [ "bitvec", "rococo-runtime", "rococo-runtime-constants" ]
-westend-native = [ "bitvec", "westend-runtime", "westend-runtime-constants" ]
 
-fast-runtime = [ "rococo-runtime?/fast-runtime", "westend-runtime?/fast-runtime" ]
+fast-runtime = [ "rococo-runtime?/fast-runtime" ]
 runtime-benchmarks = [
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
@@ -204,7 +201,6 @@ runtime-benchmarks = [
 	"sc-client-db/runtime-benchmarks",
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"westend-runtime?/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
@@ -215,14 +211,12 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"rococo-runtime?/try-runtime",
 	"sp-runtime/try-runtime",
-	"westend-runtime?/try-runtime",
 ]
 
 malus = [ "full-node" ]
 runtime-metrics = [
 	"polkadot-runtime-parachains/runtime-metrics",
 	"rococo-runtime?/runtime-metrics",
-	"westend-runtime?/runtime-metrics",
 ]
 
 elastic-scaling-experimental = [
