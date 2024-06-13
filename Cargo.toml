@@ -82,7 +82,7 @@ node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
-tanssi-relay-node = { path = "runtime/mozart/node", default-features = false }
+tanssi-relay-service = { path = "runtime/mozart/node", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }

@@ -16472,7 +16472,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tanssi-relay-node"
+name = "tanssi-relay-service"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
