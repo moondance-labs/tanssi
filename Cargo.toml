@@ -10,10 +10,11 @@ members = [
 	"primitives/*",
 	"runtime/dancebox",
 	"runtime/flashbox",
-	"runtime/mozart",
+	"runtime/mozart/runtime",
 	"runtime/mozart/constants",
 	"runtime/mozart/node",
 	"runtime/mozart/cli",
+	"runtime/mozart",
 	"runtime/relay-encoder",
 ]
 resolver = "2"
@@ -77,7 +78,7 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
-mozart-runtime = { path = "runtime/mozart", default-features = false }
+mozart-runtime = { path = "runtime/mozart/runtime", default-features = false }
 mozart-runtime-constants = { path = "runtime/mozart/constants", default-features = false }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
@@ -468,6 +469,13 @@ pyroscope_pprofrs = { version = "0.2" }
 sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 polkadot-node-metrics = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 sc-storage-monitor = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+
+# Tanssi Relay Chain
+polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+
+substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
 
 [profile.production]
 codegen-units = 1

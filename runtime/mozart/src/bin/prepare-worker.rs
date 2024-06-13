@@ -14,29 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Polkadot.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Polkadot CLI library.
+//! Prepare worker.
 
-#![warn(missing_docs)]
-
-#[cfg(feature = "cli")]
-mod cli;
-#[cfg(feature = "cli")]
-mod command;
-#[cfg(feature = "cli")]
-mod error;
-
-#[cfg(feature = "service")]
-pub use service::{self, Block, CoreApi, IdentifyVariant, ProvideRuntimeApi, TFullClient};
-
-#[cfg(feature = "malus")]
-pub use service::overseer::validator_overseer_builder;
-
-#[cfg(feature = "cli")]
-pub use cli::*;
-
-#[cfg(feature = "cli")]
-pub use command::*;
-
-#[cfg(feature = "cli")]
-pub use sc_cli::{Error, Result};
-
+polkadot_node_core_pvf_common::decl_worker_main!(
+	"prepare-worker",
+	polkadot_node_core_pvf_prepare_worker::worker_entrypoint,
+	polkadot_cli::NODE_VERSION,
+	env!("SUBSTRATE_CLI_COMMIT_HASH"),
+);
