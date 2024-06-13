@@ -27,6 +27,7 @@ pyroscope_pprofrs = { workspace = true, optional = true }
 
 # polkadot-service = { workspace = true, optional = true }
 service = { package = "polkadot-service", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", optional = true }
+tanssi-relay-service = { workspace = true, optional = true }
 
 sp-core = { workspace = true }
 sp-io = { workspace = true }
@@ -56,28 +57,33 @@ cli = [
 	"sc-service",
 	"sc-tracing",
 	"service",
+	"tanssi-relay-service",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking-cli?/runtime-benchmarks",
 	"polkadot-node-metrics/runtime-benchmarks",
 	"sc-service?/runtime-benchmarks",
 	"service/runtime-benchmarks",
+	"tanssi-relay-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 full-node = ["service/full-node"]
 try-runtime = [
 	"service/try-runtime",
+	"tanssi-relay-service/try-runtime",
 	"sp-runtime/try-runtime",
 ]
-fast-runtime = ["service/fast-runtime"]
+fast-runtime = ["service/fast-runtime", "tanssi-relay-service"]
 pyroscope = ["pyro", "pyroscope_pprofrs"]
 
 # Configure the native runtimes to use.
 westend-native = ["service/westend-native"]
 rococo-native = ["service/rococo-native"]
+mozart-native = ["tanssi-relay-service/mozart-native"]
 
 malus = ["full-node", "service/malus"]
 runtime-metrics = [
 	"polkadot-node-metrics/runtime-metrics",
 	"service/runtime-metrics",
+	"tanssi-relay-service/runtime-metrics",
 ]
