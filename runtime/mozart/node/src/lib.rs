@@ -20,7 +20,6 @@
 
 pub mod chain_spec;
 mod fake_runtime_api;
-mod grandpa_support;
 mod parachains_db;
 
 pub use polkadot_service::{benchmarking, Error};
