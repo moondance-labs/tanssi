@@ -43,7 +43,6 @@ use {
         self as approval_voting_subsystem, Config as ApprovalVotingConfig,
     },
     polkadot_node_core_av_store::Config as AvailabilityConfig,
-    polkadot_node_core_av_store::Error as AvailabilityError,
     polkadot_node_core_candidate_validation::Config as CandidateValidationConfig,
     polkadot_node_core_chain_selection::{
         self as chain_selection_subsystem, Config as ChainSelectionConfig,
@@ -59,6 +58,7 @@ use {
 };
 
 use polkadot_node_subsystem_util::database::Database;
+use polkadot_service::Error;
 
 #[cfg(feature = "full-node")]
 pub use {
@@ -74,7 +74,7 @@ pub use {
 #[cfg(feature = "full-node")]
 use polkadot_node_subsystem::jaeger;
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 #[cfg(feature = "full-node")]
 use service::KeystoreContainer;
@@ -188,74 +188,6 @@ where
     fn header_provider(&self) -> &Self::Provider {
         self.blockchain()
     }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-
-    #[error(transparent)]
-    AddrFormatInvalid(#[from] std::net::AddrParseError),
-
-    #[error(transparent)]
-    Sub(#[from] SubstrateServiceError),
-
-    #[error(transparent)]
-    Blockchain(#[from] sp_blockchain::Error),
-
-    #[error(transparent)]
-    Consensus(#[from] consensus_common::Error),
-
-    #[error("Failed to create an overseer")]
-    Overseer(#[from] polkadot_overseer::SubsystemError),
-
-    #[error(transparent)]
-    Prometheus(#[from] prometheus_endpoint::PrometheusError),
-
-    #[error(transparent)]
-    Telemetry(#[from] telemetry::Error),
-
-    #[error(transparent)]
-    Jaeger(#[from] polkadot_node_subsystem::jaeger::JaegerError),
-
-    #[cfg(feature = "full-node")]
-    #[error(transparent)]
-    Availability(#[from] AvailabilityError),
-
-    #[error("Authorities require the real overseer implementation")]
-    AuthoritiesRequireRealOverseer,
-
-    #[cfg(feature = "full-node")]
-    #[error("Creating a custom database is required for validators")]
-    DatabasePathRequired,
-
-    #[cfg(feature = "full-node")]
-    #[error("Expected at least one of mozart runtime feature")]
-    NoRuntime,
-
-    #[cfg(feature = "full-node")]
-    #[error("Worker binaries not executable, prepare binary: {prep_worker_path:?}, execute binary: {exec_worker_path:?}")]
-    InvalidWorkerBinaries {
-        prep_worker_path: PathBuf,
-        exec_worker_path: PathBuf,
-    },
-
-    #[cfg(feature = "full-node")]
-    #[error("Worker binaries could not be found, make sure polkadot was built and installed correctly. Please see the readme for the latest instructions (https://github.com/paritytech/polkadot-sdk/tree/master/polkadot). If you ran with `cargo run`, please run `cargo build` first. Searched given workers path ({given_workers_path:?}), polkadot binary path ({current_exe_path:?}), and lib path (/usr/lib/polkadot), workers names: {workers_names:?}")]
-    MissingWorkerBinaries {
-        given_workers_path: Option<PathBuf>,
-        current_exe_path: PathBuf,
-        workers_names: Option<(String, String)>,
-    },
-
-    #[cfg(feature = "full-node")]
-    #[error("Version of worker binary ({worker_version}) is different from node version ({node_version}), worker_path: {worker_path}. If you ran with `cargo run`, please run `cargo build` first, otherwise try to `cargo clean`. TESTING ONLY: this check can be disabled with --disable-worker-version-check")]
-    WorkerBinaryVersionMismatch {
-        worker_version: String,
-        node_version: String,
-        worker_path: PathBuf,
-    },
 }
 
 /// Identifies the variant of the chain.
