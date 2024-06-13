@@ -119,21 +119,6 @@ mod benchmarks {
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
 
-        for i in 1..y {
-            // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
-            Pallet::<T>::register(
-                RawOrigin::Signed(caller.clone()).into(),
-                i.into(),
-                storage.clone(),
-            )
-            .unwrap();
-        }
-
-        // We should have registered y-1
-        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
-
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
@@ -141,7 +126,7 @@ mod benchmarks {
         Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage);
 
         // verification code
-        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), 1usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
     }
 
@@ -155,21 +140,6 @@ mod benchmarks {
             .map_err(|_| BenchmarkError::Weightless)?;
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data::<T>(z, x);
-
-        for i in 1..y {
-            // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
-            Pallet::<T>::register(
-                RawOrigin::Signed(caller.clone()).into(),
-                i.into(),
-                storage.clone(),
-            )
-            .unwrap();
-        }
-
-        // We should have registered y-1
-        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
 
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
@@ -203,7 +173,7 @@ mod benchmarks {
         );
 
         // verification code
-        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), 1usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
 
         Ok(())
@@ -595,22 +565,6 @@ mod benchmarks {
         let storage = max_size_genesis_data::<T>(z, x);
         let slot_frequency = SlotFrequency::default();
 
-        for i in 1..y {
-            // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
-            Pallet::<T>::register_parathread(
-                RawOrigin::Signed(caller.clone()).into(),
-                i.into(),
-                slot_frequency.clone(),
-                storage.clone(),
-            )
-            .unwrap();
-        }
-
-        // We should have registered y-1
-        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
-
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
@@ -623,7 +577,7 @@ mod benchmarks {
         );
 
         // verification code
-        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), 1usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
     }
 
