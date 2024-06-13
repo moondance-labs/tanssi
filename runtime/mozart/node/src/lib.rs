@@ -104,7 +104,7 @@ pub use sp_runtime::{
 #[cfg(feature = "mozart-native")]
 pub use {mozart_runtime, mozart_runtime_constants};
 
-pub use fake_runtime_api::{GetLastTimestamp, RuntimeApi};
+pub use fake_runtime_api::RuntimeApi;
 
 #[cfg(feature = "full-node")]
 pub type FullBackend = service::TFullBackend<Block>;
