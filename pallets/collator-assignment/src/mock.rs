@@ -116,9 +116,16 @@ pub mod mock_data {
 }
 
 #[derive(
-    Default, Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo,
+    Default,
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub min_orchestrator_chain_collators: u32,
     pub max_orchestrator_chain_collators: u32,

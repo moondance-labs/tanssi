@@ -85,6 +85,7 @@ use {
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
+    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_aura::{Slot, SlotDuration},
@@ -1297,9 +1298,20 @@ impl pallet_utility::Config for Runtime {
 }
 
 /// The type used to represent the kinds of proxying allowed.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
+    Debug,
+    MaxEncodedLen,
+    TypeInfo,
+    Serialize,
+    Deserialize,
 )]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {

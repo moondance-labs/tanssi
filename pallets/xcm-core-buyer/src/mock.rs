@@ -15,17 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::CheckCollatorValidity,
-    nimbus_primitives::NimbusId,
-    sp_keystore::{testing::MemoryKeystore, KeystoreExt},
-    sp_runtime::RuntimeAppPublic,
-    tp_traits::{ContainerChainBlockInfo, LatestAuthorInfoFetcher},
-};
-
-use {
     crate::{
-        self as pallet_xcm_core_buyer, GetPurchaseCoreCall, ParaIdIntoAccountTruncating,
-        RelayXcmWeightConfigInner,
+        self as pallet_xcm_core_buyer, CheckCollatorValidity, GetPurchaseCoreCall,
+        ParaIdIntoAccountTruncating, RelayXcmWeightConfigInner,
     },
     dp_core::ParaId,
     frame_support::{
@@ -34,19 +26,24 @@ use {
         parameter_types,
         traits::{ConstU64, Everything},
     },
+    nimbus_primitives::NimbusId,
     pallet_xcm::Origin,
+    serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_io::TestExternalities,
+    sp_keystore::{testing::MemoryKeystore, KeystoreExt},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage,
+        BuildStorage, RuntimeAppPublic,
     },
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::{
         latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
         prelude::{GlobalConsensus, InteriorLocation, Junctions::X2, NetworkId, Parachain},
     },
-    tp_traits::{ParathreadParams, SlotFrequency},
+    tp_traits::{
+        ContainerChainBlockInfo, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
+    },
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -164,8 +161,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    Serialize,
+    Deserialize,
+)]
 pub struct Mocks {
     pub latest_author_info: BTreeMap<ParaId, ContainerChainBlockInfo<AccountId>>,
     pub container_chain_collators: BTreeMap<ParaId, Vec<(AccountId, NimbusId)>>,

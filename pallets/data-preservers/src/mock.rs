@@ -134,8 +134,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct Mocks {
     /// List of container chains, with the corresponding "manager" account.
     /// In dancebox, the manager is the one who put the deposit in pallet_registrar.

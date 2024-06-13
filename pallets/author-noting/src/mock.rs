@@ -121,8 +121,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct Mocks {
     pub container_chains: BoundedVec<ParaId, ConstU32<100>>,
 }
