@@ -14,7 +14,7 @@ workspace = true
 babe = { workspace = true }
 beefy = { workspace = true }
 grandpa = { workspace = true }
-mmr-gadget = { workspace = true, features = [ "std" ] }
+mmr-gadget = { workspace = true }
 sc-authority-discovery = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-block-builder = { workspace = true }
