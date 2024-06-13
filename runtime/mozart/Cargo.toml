@@ -60,8 +60,8 @@ color-eyre = { workspace = true, default-features = false }
 tikv-jemallocator = { workspace = true, optional = true, features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
 # Crates in our workspace, defined as dependencies so we can pass them feature flags.
-polkadot-node-core-pvf = { workpace = true }
-polkadot-node-core-pvf-prepare-worker = { workpace = true }
+polkadot-node-core-pvf = { workspace = true }
+polkadot-node-core-pvf-prepare-worker = { workspace = true }
 polkadot-overseer = { workspace = true }
 tanssi-relay-cli = { workspace = true, features = [ "mozart-native" ] }
 
