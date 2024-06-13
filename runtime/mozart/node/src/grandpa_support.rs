@@ -18,7 +18,7 @@
 
 use sp_runtime::traits::{Block as BlockT, Header as _, NumberFor};
 
-use crate::HeaderProvider;
+use polkadot_service::HeaderProvider;
 
 #[cfg(feature = "full-node")]
 use polkadot_primitives::{Block, Hash};

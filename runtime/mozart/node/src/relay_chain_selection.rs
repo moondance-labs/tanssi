@@ -35,7 +35,7 @@
 
 #![cfg(feature = "full-node")]
 
-use super::{HeaderProvider, HeaderProviderProvider};
+use polkadot_service::{HeaderProvider, HeaderProviderProvider};
 use consensus_common::{Error as ConsensusError, SelectChain};
 use futures::channel::oneshot;
 use polkadot_node_primitives::MAX_FINALITY_LAG as PRIMITIVES_MAX_FINALITY_LAG;
