@@ -85,7 +85,10 @@ impl SubstrateCli for Cli {
             id
         };
         Ok(match id {
-            "mozart" => Box::new(tanssi_relay_service::chain_spec::mozart_config()?),
+            "mozart" => {
+                info!("Using Mozart chain spec");
+                Box::new(tanssi_relay_service::chain_spec::mozart_config()?)
+            },
             path => {
                 let path = std::path::PathBuf::from(path);
 
@@ -98,15 +101,8 @@ impl SubstrateCli for Cli {
     }
 }
 
-fn set_default_ss58_version(spec: &Box<dyn service::ChainSpec>) {
-    let ss58_version = if spec.is_kusama() {
-        Ss58AddressFormatRegistry::KusamaAccount
-    } else if spec.is_westend() {
-        Ss58AddressFormatRegistry::SubstrateAccount
-    } else {
-        Ss58AddressFormatRegistry::PolkadotAccount
-    }
-    .into();
+fn set_default_ss58_version(_spec: &Box<dyn service::ChainSpec>) {
+    let ss58_version = Ss58AddressFormatRegistry::PolkadotAccount.into();
 
     sp_core::crypto::set_default_ss58_version(ss58_version);
 }
@@ -148,14 +144,6 @@ where
     let enable_beefy = !cli.run.no_beefy;
 
     set_default_ss58_version(chain_spec);
-
-    if chain_spec.is_kusama() {
-        info!("----------------------------");
-        info!("This chain is not in any way");
-        info!("      endorsed by the       ");
-        info!("     KUSAMA FOUNDATION      ");
-        info!("----------------------------");
-    }
 
     let jaeger_agent = if let Some(ref jaeger_agent) = cli.run.jaeger_agent {
         Some(
