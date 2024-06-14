@@ -73,7 +73,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        let id = if id == "" {
+        let id = if id.is_empty() {
             let n = get_exec_name().unwrap_or_default();
             ["mozart"]
                 .iter()
@@ -193,7 +193,7 @@ where
     runner.run_node_until_exit(move |config| async move {
         let hwbench = (!cli.run.no_hardware_benchmarks)
             .then_some(config.database.path().map(|database_path| {
-                let _ = std::fs::create_dir_all(&database_path);
+                let _ = std::fs::create_dir_all(database_path);
                 sc_sysinfo::gather_hwbench(Some(database_path))
             }))
             .flatten();
@@ -445,7 +445,7 @@ pub fn run() -> Result<()> {
                             cmd.run_with_spec::<sp_runtime::traits::HashingFor<polkadot_service::Block>, ()>(
                                 Some(config.chain_spec),
                             )
-                            .map_err(|e| Error::SubstrateCli(e))
+                            .map_err(Error::SubstrateCli)
                         })
                     } else {
                         Err(sc_cli::Error::Input(
