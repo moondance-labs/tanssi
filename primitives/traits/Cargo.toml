@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 frame-support = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
+macro_rules_attribute = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true }

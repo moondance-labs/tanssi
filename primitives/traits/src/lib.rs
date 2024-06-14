@@ -19,9 +19,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::{
-    relay_chain::{BlockNumber, Slot},
-    ParaId,
+pub mod alias;
+
+pub use {
+    alias::*,
+    cumulus_primitives_core::{
+        relay_chain::{BlockNumber, Slot},
+        ParaId,
+    },
 };
 use {
     core::marker::PhantomData,

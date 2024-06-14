@@ -571,7 +571,7 @@ where
                         set
                     }),
                     mode: ProfileMode::Bootnode,
-                    assignment_request: request,
+                    assignment_request: request.clone(),
                 };
 
                 let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
@@ -591,7 +591,7 @@ where
                     RawOrigin::Root.into(),
                     profile_id,
                     para_id,
-                    witness,
+                    witness.clone(),
                 )
                 .expect("to start assignment")
                 .actual_weight
