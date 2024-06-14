@@ -87,7 +87,6 @@ impl SubstrateCli for Cli {
         };
         Ok(match id {
             "mozart" => {
-                info!("Using Mozart chain spec");
                 Box::new(tanssi_relay_service::chain_spec::mozart_config()?)
             },
             path => {
