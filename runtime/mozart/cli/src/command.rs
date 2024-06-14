@@ -84,9 +84,7 @@ impl SubstrateCli for Cli {
             id
         };
         Ok(match id {
-            "mozart" => {
-                Box::new(tanssi_relay_service::chain_spec::mozart_config()?)
-            },
+            "mozart" => Box::new(tanssi_relay_service::chain_spec::mozart_config()?),
             path => {
                 let path = std::path::PathBuf::from(path);
 
@@ -94,9 +92,11 @@ impl SubstrateCli for Cli {
                     as Box<dyn service::ChainSpec>;
 
                 // When `force_*` is given or the file name starts with the name of one of the known
-				// chains, we use the chain spec for the specific chain.
-				if self.run.force_mozart {
-                    Box::new(tanssi_relay_service::chain_spec::MozartChainSpec::from_json_file(path)?)
+                // chains, we use the chain spec for the specific chain.
+                if self.run.force_mozart {
+                    Box::new(
+                        tanssi_relay_service::chain_spec::MozartChainSpec::from_json_file(path)?,
+                    )
                 } else {
                     chain_spec
                 }
