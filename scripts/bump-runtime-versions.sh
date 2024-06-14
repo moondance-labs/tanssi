@@ -47,7 +47,7 @@ fi
 update_cargo_toml() {
     local file=$1
     local new_version=$2
-    sed -i.bak "s/^version = \".*\"$/version = \"$new_version\"/" "$file"
+    sed -i "s/^version = \".*\"$/version = \"$new_version\"/" "$file"
     echo "Updated $file to version $new_version"
 }
 
@@ -55,7 +55,7 @@ update_cargo_toml() {
 update_lib_rs() {
     local file=$1
     local new_version=$2
-    sed -i.bak "s/.*spec_version: .*,/    spec_version: $new_version,/" "$file"
+    sed -i "s/.*spec_version: .*,/    spec_version: $new_version,/" "$file"
     echo "Updated $file to spec_version $new_version"
 }
 
