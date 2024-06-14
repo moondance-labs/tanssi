@@ -27,7 +27,7 @@ use color_eyre::eyre;
 static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 fn main() -> eyre::Result<()> {
-	color_eyre::install()?;
-	tanssi_relay_cli::run()?;
-	Ok(())
+    color_eyre::install()?;
+    tanssi_relay_cli::run()?;
+    Ok(())
 }

@@ -65,7 +65,7 @@ pub struct RunCmd {
     #[clap(flatten)]
     pub base: sc_cli::RunCmd,
 
-    /// Force using Rococo native runtime.
+    /// Force using Mozart native runtime.
     #[arg(long = "force-mozart")]
     pub force_mozart: bool,
 
