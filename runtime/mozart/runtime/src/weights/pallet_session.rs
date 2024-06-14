@@ -47,16 +47,16 @@ impl<T: frame_system::Config> pallet_session::WeightInfo for WeightInfo<T> {
 	// Storage: Session NextKeys (r:1 w:1)
 	// Storage: Session KeyOwner (r:6 w:6)
 	fn set_keys() -> Weight {
-		Weight::from_parts(36_115_000 as u64, 0)
-			.saturating_add(T::DbWeight::get().reads(8 as u64))
-			.saturating_add(T::DbWeight::get().writes(7 as u64))
+		Weight::from_parts(36_115_000_u64, 0)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	// Storage: Staking Ledger (r:1 w:0)
 	// Storage: Session NextKeys (r:1 w:1)
 	// Storage: Session KeyOwner (r:0 w:6)
 	fn purge_keys() -> Weight {
-		Weight::from_parts(21_459_000 as u64, 0)
-			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(7 as u64))
+		Weight::from_parts(21_459_000_u64, 0)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 }

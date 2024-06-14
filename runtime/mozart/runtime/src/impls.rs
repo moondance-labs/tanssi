@@ -180,8 +180,7 @@ where
                     network: None,
                     id: who.clone().into(),
                 }
-                .into_location()
-                .into(),
+                .into_location(),
             },
             // Poke the deposit to reserve the appropriate amount on the parachain.
             Transact {

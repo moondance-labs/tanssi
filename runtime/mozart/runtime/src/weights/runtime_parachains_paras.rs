@@ -90,7 +90,7 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for WeightIn
 	fn force_set_most_recent_context() -> Weight {
 		Weight::from_parts(10_155_000, 0)
 			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().writes(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: Configuration ActiveConfig (r:1 w:0)
 	/// Proof Skipped: Configuration ActiveConfig (max_values: Some(1), max_size: None, mode: Measured)

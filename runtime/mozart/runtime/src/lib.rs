@@ -353,7 +353,7 @@ impl pallet_preimage::Config for Runtime {
 
 parameter_types! {
     pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
-    pub ReportLongevity: u64 = EpochDurationInBlocks::get() as u64 * 10;
+    pub ReportLongevity: u64 = u64::from(EpochDurationInBlocks::get()) * 10;
 }
 
 impl pallet_babe::Config for Runtime {
@@ -469,7 +469,7 @@ impl pallet_session::Config for Runtime {
 pub struct FullIdentificationOf;
 impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
     fn convert(_: AccountId) -> Option<()> {
-        Some(Default::default())
+        Some(())
     }
 }
 
@@ -1321,7 +1321,6 @@ impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
         binary_merkle_tree::merkle_root::<mmr::Hashing, _>(
             para_heads.into_iter().map(|pair| pair.encode()),
         )
-        .into()
     }
 }
 
@@ -2287,7 +2286,7 @@ sp_api::impl_runtime_apis! {
             list_benchmarks!(list, extra);
 
             let storage_info = AllPalletsWithSystem::storage_info();
-            return (list, storage_info)
+            (list, storage_info)
         }
 
         fn dispatch_benchmark(
