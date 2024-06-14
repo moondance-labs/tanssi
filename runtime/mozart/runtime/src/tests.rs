@@ -16,11 +16,9 @@
 
 //! Tests for the Mozart Runtime Configuration
 
-use crate::*;
-use std::collections::HashSet;
+use {crate::*, std::collections::HashSet};
 
-use frame_support::traits::WhitelistedStorageKeys;
-use sp_core::hexdisplay::HexDisplay;
+use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay};
 
 #[test]
 fn check_whitelist() {

@@ -14,16 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Polkadot.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::xcm_config;
-use frame_support::pallet_prelude::DispatchResult;
-use frame_system::RawOrigin;
-use mozart_runtime_constants::currency::*;
-use parity_scale_codec::{Decode, Encode};
-use primitives::Balance;
-use runtime_common::identity_migrator::{OnReapIdentity, WeightInfo};
-use sp_std::{marker::PhantomData, prelude::*};
-use xcm::{latest::prelude::*, VersionedLocation, VersionedXcm};
-use xcm_executor::traits::TransactAsset;
+use {
+    crate::xcm_config,
+    frame_support::pallet_prelude::DispatchResult,
+    frame_system::RawOrigin,
+    mozart_runtime_constants::currency::*,
+    parity_scale_codec::{Decode, Encode},
+    primitives::Balance,
+    runtime_common::identity_migrator::{OnReapIdentity, WeightInfo},
+    sp_std::{marker::PhantomData, prelude::*},
+    xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    xcm_executor::traits::TransactAsset,
+};
 
 /// A type containing the encoding of the People Chain pallets in its runtime. Used to construct any
 /// remote calls. The codec index must correspond to the index of `IdentityMigrator` in the

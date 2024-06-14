@@ -16,22 +16,26 @@
 
 //! Polkadot chain configurations.
 
-use beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId;
-use grandpa::AuthorityId as GrandpaId;
-use polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId};
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_babe::AuthorityId as BabeId;
+use {
+    beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    grandpa::AuthorityId as GrandpaId,
+    polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
+    sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
+    sp_consensus_babe::AuthorityId as BabeId,
+};
 
 #[cfg(feature = "mozart-native")]
 use mozart_runtime as mozart;
-use sc_chain_spec::ChainSpecExtension;
 #[cfg(any(feature = "mozart-native"))]
 use sc_chain_spec::ChainType;
-use serde::{Deserialize, Serialize};
-use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::IdentifyAccount;
 #[cfg(any(feature = "mozart-native"))]
 use telemetry::TelemetryEndpoints;
+use {
+    sc_chain_spec::ChainSpecExtension,
+    serde::{Deserialize, Serialize},
+    sp_core::{sr25519, Pair, Public},
+    sp_runtime::traits::IdentifyAccount,
+};
 
 #[cfg(feature = "mozart-native")]
 const MOZART_STAGING_TELEMETRY_URL: &str = "wss://telemetry.tanssi.network/submit/";

@@ -16,8 +16,7 @@
 
 //! A pallet for managing validators on Mozart.
 
-use sp_staking::SessionIndex;
-use sp_std::vec::Vec;
+use {sp_staking::SessionIndex, sp_std::vec::Vec};
 
 pub use pallet::*;
 
@@ -25,9 +24,11 @@ type Session<T> = pallet_session::Pallet<T>;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::EnsureOrigin};
-    use frame_system::pallet_prelude::*;
+    use {
+        super::*,
+        frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::EnsureOrigin},
+        frame_system::pallet_prelude::*,
+    };
 
     #[pallet::pallet]
     #[pallet::without_storage_info]

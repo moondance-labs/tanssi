@@ -14,18 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Polkadot.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cli::{Cli, Subcommand, NODE_VERSION};
-use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
-use futures::future::TryFutureExt;
-use polkadot_service::{
-    self,
-    benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
-    HeaderBackend, IdentifyVariant,
+use {
+    crate::cli::{Cli, Subcommand, NODE_VERSION},
+    frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE},
+    futures::future::TryFutureExt,
+    polkadot_service::{
+        self,
+        benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
+        HeaderBackend, IdentifyVariant,
+    },
+    sc_cli::SubstrateCli,
+    sp_core::crypto::Ss58AddressFormatRegistry,
+    sp_keyring::Sr25519Keyring,
+    std::net::ToSocketAddrs,
 };
-use sc_cli::SubstrateCli;
-use sp_core::crypto::Ss58AddressFormatRegistry;
-use sp_keyring::Sr25519Keyring;
-use std::net::ToSocketAddrs;
 
 pub use crate::error::Error;
 #[cfg(feature = "hostperfcheck")]

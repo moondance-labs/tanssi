@@ -16,12 +16,14 @@
 
 //! New governance configurations for the Mozart runtime.
 
-use super::*;
-use frame_support::{
-    parameter_types,
-    traits::{ConstU16, EitherOf},
+use {
+    super::*,
+    frame_support::{
+        parameter_types,
+        traits::{ConstU16, EitherOf},
+    },
+    frame_system::EnsureRootWithSuccess,
 };
-use frame_system::EnsureRootWithSuccess;
 
 mod origins;
 pub use origins::{

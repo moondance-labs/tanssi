@@ -16,11 +16,15 @@
 
 //! Elements of governance concerning the Mozart Fellowship.
 
-use frame_support::traits::{MapSuccess, TryMapSuccess};
-use sp_runtime::traits::{CheckedReduceBy, ConstU16, Replace, ReplaceWithDefault};
+use {
+    frame_support::traits::{MapSuccess, TryMapSuccess},
+    sp_runtime::traits::{CheckedReduceBy, ConstU16, Replace, ReplaceWithDefault},
+};
 
-use super::*;
-use crate::{CENTS, DAYS};
+use {
+    super::*,
+    crate::{CENTS, DAYS},
+};
 
 parameter_types! {
     pub const AlarmInterval: BlockNumber = 1;

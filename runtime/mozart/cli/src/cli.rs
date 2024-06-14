@@ -18,8 +18,7 @@
 
 pub use polkadot_node_primitives::NODE_VERSION;
 
-use clap::Parser;
-use std::path::PathBuf;
+use {clap::Parser, std::path::PathBuf};
 
 #[allow(missing_docs)]
 #[derive(Debug, Parser)]

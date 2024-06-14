@@ -22,7 +22,7 @@ pub mod extrinsic_weights;
 pub mod paritydb_weights;
 pub mod rocksdb_weights;
 
-pub use block_weights::BlockExecutionWeight;
-pub use extrinsic_weights::ExtrinsicBaseWeight;
-pub use paritydb_weights::constants::ParityDbWeight;
-pub use rocksdb_weights::constants::RocksDbWeight;
+pub use {
+    block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
+    paritydb_weights::constants::ParityDbWeight, rocksdb_weights::constants::RocksDbWeight,
+};

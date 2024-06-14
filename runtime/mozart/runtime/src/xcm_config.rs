@@ -23,30 +23,32 @@ use super::{
 
 use crate::governance::StakingAdmin;
 
-use frame_support::{
-    parameter_types,
-    traits::{Contains, Equals, Everything, Nothing},
-    weights::Weight,
+use {
+    frame_support::{
+        parameter_types,
+        traits::{Contains, Equals, Everything, Nothing},
+        weights::Weight,
+    },
+    frame_system::EnsureRoot,
+    mozart_runtime_constants::{currency::CENTS, system_parachain::*},
+    runtime_common::{
+        xcm_sender::{ChildParachainRouter, ExponentialPrice},
+        ToAuthor,
+    },
+    sp_core::ConstU32,
+    xcm::latest::prelude::*,
+    xcm_builder::{
+        AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
+        AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
+        ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
+        FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
+        IsConcrete, MintLocation, OriginToPluralityVoice, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents, XcmFeeToAccount,
+    },
+    xcm_executor::XcmExecutor,
 };
-use frame_system::EnsureRoot;
-use mozart_runtime_constants::{currency::CENTS, system_parachain::*};
-use runtime_common::{
-    xcm_sender::{ChildParachainRouter, ExponentialPrice},
-    ToAuthor,
-};
-use sp_core::ConstU32;
-use xcm::latest::prelude::*;
-use xcm_builder::{
-    AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
-    AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-    ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
-    FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-    IsConcrete, MintLocation, OriginToPluralityVoice, SignedAccountId32AsNative,
-    SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-    UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-    XcmFeeManagerFromComponents, XcmFeeToAccount,
-};
-use xcm_executor::XcmExecutor;
 
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();

@@ -63,13 +63,15 @@ pub mod time {
 
 /// Fee-related.
 pub mod fee {
-    use crate::weights::ExtrinsicBaseWeight;
-    use frame_support::weights::{
-        WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
-    };
-    use primitives::Balance;
-    use smallvec::smallvec;
     pub use sp_runtime::Perbill;
+    use {
+        crate::weights::ExtrinsicBaseWeight,
+        frame_support::weights::{
+            WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+        },
+        primitives::Balance,
+        smallvec::smallvec,
+    };
 
     /// The block saturation level. Fees will be updates based on this value.
     pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
@@ -103,8 +105,7 @@ pub mod fee {
 
 /// System Parachains.
 pub mod system_parachain {
-    use primitives::Id;
-    use xcm_builder::IsChildSystemParachain;
+    use {primitives::Id, xcm_builder::IsChildSystemParachain};
 
     /// Network's Asset Hub parachain ID.
     pub const ASSET_HUB_ID: u32 = 1000;
@@ -128,13 +129,15 @@ pub const TREASURY_PALLET_ID: u8 = 18;
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        currency::{CENTS, MILLICENTS},
-        fee::WeightToFee,
+    use {
+        super::{
+            currency::{CENTS, MILLICENTS},
+            fee::WeightToFee,
+        },
+        crate::weights::ExtrinsicBaseWeight,
+        frame_support::weights::WeightToFee as WeightToFeeT,
+        runtime_common::MAXIMUM_BLOCK_WEIGHT,
     };
-    use crate::weights::ExtrinsicBaseWeight;
-    use frame_support::weights::WeightToFee as WeightToFeeT;
-    use runtime_common::MAXIMUM_BLOCK_WEIGHT;
 
     #[test]
     // Test that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight has sane bounds.

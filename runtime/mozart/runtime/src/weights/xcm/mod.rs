@@ -17,13 +17,17 @@
 mod pallet_xcm_benchmarks_fungible;
 mod pallet_xcm_benchmarks_generic;
 
-use crate::Runtime;
-use frame_support::weights::Weight;
-use sp_std::prelude::*;
-use xcm::{latest::prelude::*, DoubleEncoded};
+use {
+    crate::Runtime,
+    frame_support::weights::Weight,
+    sp_std::prelude::*,
+    xcm::{latest::prelude::*, DoubleEncoded},
+};
 
-use pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight;
-use pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric;
+use {
+    pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
+    pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
+};
 
 /// Types of asset supported by the Mozart runtime.
 pub enum AssetTypes {

@@ -16,18 +16,20 @@
 
 //! Genesis configs presets for the Mozart runtime
 
-use crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG};
-use authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId;
-use babe_primitives::AuthorityId as BabeId;
-use beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId;
-use grandpa_primitives::AuthorityId as GrandpaId;
-use mozart_runtime_constants::currency::UNITS as MOZ;
-use primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId};
-use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::IdentifyAccount;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
-use sp_std::vec::Vec;
+use {
+    crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG},
+    authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
+    babe_primitives::AuthorityId as BabeId,
+    beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    grandpa_primitives::AuthorityId as GrandpaId,
+    mozart_runtime_constants::currency::UNITS as MOZ,
+    primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
+    sp_core::{sr25519, Pair, Public},
+    sp_runtime::traits::IdentifyAccount,
+    sp_std::vec::Vec,
+};
 
 /// Helper function to generate a crypto pair from seed
 fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -245,8 +247,7 @@ fn mozart_testnet_genesis(
 
 // staging_testnet
 fn mozart_staging_testnet_config_genesis() -> serde_json::Value {
-    use hex_literal::hex;
-    use sp_core::crypto::UncheckedInto;
+    use {hex_literal::hex, sp_core::crypto::UncheckedInto};
 
     // subkey inspect "$SECRET"
     let endowed_accounts = Vec::from([
