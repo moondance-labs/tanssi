@@ -17,7 +17,6 @@
 use crate::cli::{Cli, Subcommand, NODE_VERSION};
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use futures::future::TryFutureExt;
-use log::info;
 use sc_cli::SubstrateCli;
 use service::{
     self,
@@ -74,7 +73,6 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        info!("Loading chain spec");
         let id = if id == "" {
             let n = get_exec_name().unwrap_or_default();
             ["mozart"]
