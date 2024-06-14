@@ -1946,6 +1946,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
+ "xcm-fee-payment-runtime-api",
  "xcm-primitives",
 ]
 
@@ -2026,6 +2027,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
+ "xcm-fee-payment-runtime-api",
  "xcm-primitives",
 ]
 
@@ -3111,6 +3113,7 @@ dependencies = [
  "westend-runtime",
  "westend-runtime-constants",
  "xcm-emulator",
+ "xcm-fee-payment-runtime-api",
  "xcm-primitives",
 ]
 

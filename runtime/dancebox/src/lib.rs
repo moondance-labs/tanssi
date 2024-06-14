@@ -62,8 +62,8 @@ use {
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
-            WeightToFeePolynomial,
+            ConstantMultiplier, Weight, WeightToFee as _, WeightToFeeCoefficient,
+            WeightToFeeCoefficients, WeightToFeePolynomial,
         },
         PalletId,
     },
@@ -102,10 +102,14 @@ use {
     },
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
+    staging_xcm::{
+        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
+    },
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
         RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
     },
+    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -2604,6 +2608,37 @@ impl_runtime_apis! {
     impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
         fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
             XcmCoreBuyer::is_core_buying_allowed(para_id)
+        }
+    }
+
+    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+            if !matches!(xcm_version, 3 | 4) {
+                return Err(XcmPaymentApiError::UnhandledXcmVersion);
+            }
+            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+                .into_iter()
+                .filter_map(|asset| asset.into_version(xcm_version).ok())
+                .collect())
+        }
+
+        fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
+            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let asset = asset
+                .into_version(4)
+                .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+
+            if asset != local_asset { return Err(XcmPaymentApiError::AssetNotFound); }
+
+            Ok(WeightToFee::weight_to_fee(&weight))
+        }
+
+        fn query_xcm_weight(message: VersionedXcm<()>) -> Result<Weight, XcmPaymentApiError> {
+            PolkadotXcm::query_xcm_weight(message)
+        }
+
+        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
+            PolkadotXcm::query_delivery_fees(destination, message)
         }
     }
 }
