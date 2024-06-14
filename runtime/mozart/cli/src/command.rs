@@ -75,7 +75,7 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         let id = if id == "" {
             let n = get_exec_name().unwrap_or_default();
-            ["mozart"]
+            ["mozart", "mozart-dev"]
                 .iter()
                 .cloned()
                 .find(|&chain| n.starts_with(chain))
@@ -85,6 +85,7 @@ impl SubstrateCli for Cli {
         };
         Ok(match id {
             "mozart" => Box::new(tanssi_relay_service::chain_spec::mozart_config()?),
+            "mozart-dev" => Box::new(tanssi_relay_service::chain_spec::mozart_development_config()?),
             path => {
                 let path = std::path::PathBuf::from(path);
 
