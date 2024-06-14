@@ -188,6 +188,9 @@ mod benchmarks {
     // worst case for new session.
     #[benchmark]
     fn new_session(r: Linear<1, { T::MaxInvulnerables::get() }>) -> Result<(), BenchmarkError> {
+        // start fresh
+        Invulnerables::<T>::kill();
+
         let origin =
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 

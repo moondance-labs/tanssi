@@ -85,6 +85,7 @@ mod benchmarks {
 
     #[benchmark]
     fn close_stream() -> Result<(), BenchmarkError> {
+        use frame_support::traits::Get;
         // Worst case is closing a stream with a pending payment.
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
         let asset_id = T::Assets::bench_worst_case_asset_id();
@@ -117,7 +118,7 @@ mod benchmarks {
         assert_last_event::<T>(
             Event::StreamClosed {
                 stream_id: 0u32.into(),
-                refunded: initial_deposit - (rate * delta),
+                refunded: initial_deposit - (rate * delta) + T::OpenStreamHoldAmount::get(),
             }
             .into(),
         );
