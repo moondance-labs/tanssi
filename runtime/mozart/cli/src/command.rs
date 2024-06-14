@@ -74,6 +74,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        info!("Loading chain spec");
         let id = if id == "" {
             let n = get_exec_name().unwrap_or_default();
             ["mozart"]
@@ -95,7 +96,13 @@ impl SubstrateCli for Cli {
                 let chain_spec = Box::new(service::GenericChainSpec::from_json_file(path.clone())?)
                     as Box<dyn service::ChainSpec>;
 
-                chain_spec
+                // When `force_*` is given or the file name starts with the name of one of the known
+				// chains, we use the chain spec for the specific chain.
+				if self.run.force_mozart {
+                    Box::new(tanssi_relay_service::chain_spec::MozartChainSpec::from_json_file(path)?)
+                } else {
+                    chain_spec
+                }
             }
         })
     }
