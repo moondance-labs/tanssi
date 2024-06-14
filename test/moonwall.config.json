@@ -41,6 +41,27 @@
             }
         },
         {
+            "name": "dev_tanssi_relay",
+            "envVars": ["DEBUG_COLORS=1"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
+            "multiThreads": true,
+            "reporters": ["basic"],
+            "foundation": {
+                "type": "dev",
+                "launchSpec": [
+                    {
+                        "name": "tanssi",
+                        "binPath": "../target/release/tanssi-relay",
+                        "options": [
+                            "--chain=mozart-dev"
+                        ],
+                        "disableDefaultEthProviders": true,
+                        "newRpcBehaviour": true
+                    }
+                ]
+            }
+        },
+        {
             "name": "dev_dancebox_specs",
             "testFileDir": ["suites/dancebox-specs"],
             "multiThreads": true,
@@ -682,28 +703,6 @@
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
-        },
-        {
-            "name": "dev_tanssi_relay",
-            "timeout": 120000,
-            "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
-            "multiThreads": true,
-            "reporters": ["basic"],
-            "foundation": {
-                "type": "dev",
-                "launchSpec": [
-                    {
-                        "name": "tanssi",
-                        "binPath": "../target/release/tanssi-relay",
-                        "options": [
-                            "--chain=mozart-dev"
-                        ],
-                        "disableDefaultEthProviders": true,
-                        "newRpcBehaviour": true
-                    }
-                ]
-            }
         }
     ]
 }
