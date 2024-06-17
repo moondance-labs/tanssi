@@ -43,7 +43,7 @@
         {
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
+            "testFileDir": ["suites/dev-tanssi-relay"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
