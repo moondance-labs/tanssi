@@ -67,6 +67,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let baseDelivery: bigint;
         let chain;
 
         beforeAll(async function () {
