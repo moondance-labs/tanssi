@@ -1,13 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
-import {
-    MultiLocation,
-    extractPaidDeliveryFees,
-    getLastSentHrmpMessageFee,
-    XcmFragment,
-    mockHrmpChannelExistanceTx,
-} from "../../../util/xcm";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
 const runtimeApi = {
     runtime: {
@@ -73,10 +67,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let baseDelivery: bigint;
         let chain;
-        const destinationPara = 3000;
-        const txByteFee = 1n;
 
         beforeAll(async function () {
             // Not using context.polkadotJs() because we need to add the runtime api
@@ -93,23 +84,47 @@ describeSuite({
                           name: "Alice default",
                       });
             baseDelivery = chain == "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
+
+            // We register the token
+            const txSigned = polkadotJs.tx.sudo.sudo(
+                polkadotJs.tx.utility.batch([
+                    polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                        STATEMINT_LOCATION_EXAMPLE,
+                        1,
+                        alice.address,
+                        true,
+                        1
+                    ),
+                    polkadotJs.tx.assetRate.create(
+                        1,
+                        // this defines how much the asset costs with respect to the
+                        // new asset
+                        // in this case, asset*2=native
+                        // that means that we will charge 0.5 of the native balance
+                        2000000000000000000n
+                    ),
+                ])
+            );
+
+            await context.createBlock(await txSigned.signAsync(alice), {
+                allowFailures: false,
+            });
         });
 
         it({
             id: "T01",
             title: "Should succeed calling runtime api",
             test: async function () {
-                const api = polkadotJs;
-                const chainInfo = api.registry.getChainProperties();
-                const metadata = await api.rpc.state.getMetadata();
+                const chainInfo = polkadotJs.registry.getChainProperties();
+                const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
 
                 console.log(chainInfo.toHuman());
 
-                const assets = await api.call.xcmPaymentApi.queryAcceptablePaymentAssets(3);
-                const weightToNativeAssets = await api.call.xcmPaymentApi.queryWeightToAssetFee(
+                const assets = await polkadotJs.call.xcmPaymentApi.queryAcceptablePaymentAssets(3);
+                const weightToNativeAssets = await polkadotJs.call.xcmPaymentApi.queryWeightToAssetFee(
                     {
                         refTime: 10_000_000_000n,
                         profSize: 0n,
@@ -126,21 +141,14 @@ describeSuite({
                     }
                 );
 
-                const weightToForeingAssets = await api.call.xcmPaymentApi.queryWeightToAssetFee(
+                const weightToForeingAssets = await polkadotJs.call.xcmPaymentApi.queryWeightToAssetFee(
                     {
                         refTime: 10_000_000_000n,
                         profSize: 0n,
                     },
                     {
                         V3: {
-                            Concrete: {
-                                parents: 1,
-                                interior: {
-                                    x1: {
-                                        parachain: 2040,
-                                    },
-                                },
-                            },
+                            Concrete: STATEMINT_LOCATION_EXAMPLE,
                         },
                     }
                 );
@@ -149,7 +157,7 @@ describeSuite({
                     refTime: 200000000n,
                     proofSize: 3000n,
                 };
-                const xcmToWeight = await api.call.xcmPaymentApi.queryXcmWeight({
+                const xcmToWeight = await polkadotJs.call.xcmPaymentApi.queryXcmWeight({
                     V3: [
                         {
                             Transact: {
@@ -163,9 +171,11 @@ describeSuite({
                         },
                     ],
                 });
+                // Uncomment to debug if test fails
+                /*
                 console.log(
                     "assets:",
-                    assets.toJSON(),
+                    JSON.stringify(assets.toJSON()),
                     "\nweightToNativeAsset: ",
                     weightToNativeAssets.toHuman(),
                     "\nweightToForeingAsset: ",
@@ -173,22 +183,20 @@ describeSuite({
                     "\nxcmToWeight: ",
                     xcmToWeight.toHuman()
                 );
+                */
 
                 expect(assets.isOk).to.be.true;
-                expect(assets.asOk.toJSON().length).to.be.equal(1);
+                // Includes the native asset and the asset registered in foreignAssetsCreator
+                expect(assets.asOk.toJSON().length).to.be.equal(2);
                 expect(xcmToWeight.isOk).to.be.true;
                 // Weight estimated by queryXcmWeight will always be greater than the weight passed to the transact call as requireWeightAtMost
                 expect(xcmToWeight.asOk.refTime.toBigInt() > transactWeightAtMost.refTime).to.be.true;
                 expect(xcmToWeight.asOk.proofSize.toBigInt() > transactWeightAtMost.proofSize).to.be.true;
 
-                // Output of console.log:
-                // TODO: add expects?
-                /*
-                assets: { ok: [ { v3: [Object] } ] } 
-                weightToNativeAsset:  { Ok: '93,393,354,128,920' } 
-                weightToForeingAsset:  { Err: 'AssetNotFound' } 
-                xcmToWeight:  { Ok: { refTime: '265,490,000', proofSize: '6,997' } }
-                */
+                // foreign*2=native
+                const diff = weightToNativeAssets.asOk.toBigInt() - 2n * weightToForeingAssets.asOk.toBigInt();
+                // Allow rounding error of +/- 1
+                expect(diff >= -1n && diff <= 1n).to.be.true;
             },
         });
     },
