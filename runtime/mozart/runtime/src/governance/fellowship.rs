@@ -294,7 +294,7 @@ pallet_referenda::impl_tracksinfo_get!(TracksInfo, Balance, BlockNumber);
 pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
 
 impl pallet_referenda::Config<FellowshipReferendaInstance> for Runtime {
-    type WeightInfo = weights::pallet_referenda_fellowship_referenda::WeightInfo<Self>;
+    type WeightInfo = ();
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
     type Scheduler = Scheduler;
@@ -317,7 +317,7 @@ impl pallet_referenda::Config<FellowshipReferendaInstance> for Runtime {
 pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;
 
 impl pallet_ranked_collective::Config<FellowshipCollectiveInstance> for Runtime {
-    type WeightInfo = weights::pallet_ranked_collective::WeightInfo<Self>;
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     // Adding is by any of:
     // - Root.

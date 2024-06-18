@@ -21,7 +21,7 @@ use {
     mozart_runtime_constants::currency::*,
     parity_scale_codec::{Decode, Encode},
     primitives::Balance,
-    runtime_common::identity_migrator::{OnReapIdentity, WeightInfo},
+    runtime_common::identity_migrator::OnReapIdentity,
     sp_std::{marker::PhantomData, prelude::*},
     xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
     xcm_executor::traits::TransactAsset,
@@ -89,10 +89,7 @@ where
     AccountId: Into<[u8; 32]> + Clone + Encode,
 {
     fn on_reap_identity(who: &AccountId, fields: u32, subs: u32) -> DispatchResult {
-        use crate::{
-            impls::IdentityMigratorCalls::PokeDeposit,
-            weights::runtime_common_identity_migrator::WeightInfo as MigratorWeights,
-        };
+        use crate::impls::IdentityMigratorCalls::PokeDeposit;
 
         let total_to_send = Self::calculate_remote_deposit(fields, subs);
 
@@ -161,7 +158,7 @@ where
         .into();
 
         let poke = PeopleRuntimePallets::<AccountId>::IdentityMigrator(PokeDeposit(who.clone()));
-        let remote_weight_limit = MigratorWeights::<Runtime>::poke_deposit().saturating_mul(2);
+        let remote_weight_limit = Weight::zero().saturating_mul(2);
 
         // Actual program to execute on People Chain.
         let program: Xcm<()> = Xcm(vec![
