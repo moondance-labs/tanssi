@@ -2980,6 +2980,9 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletTransactionPaymentChargeTransactionPayment (368) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name FlashboxRuntimeRuntime (369) */
+    /** @name CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim (369) */
+    type CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim = Null;
+
+    /** @name FlashboxRuntimeRuntime (370) */
     type FlashboxRuntimeRuntime = Null;
 } // declare module
