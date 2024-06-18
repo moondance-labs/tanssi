@@ -352,6 +352,7 @@ pub mod pallet {
         ChangingAssetRequiresAbsoluteDepositChange,
         TargetCantChangeDeposit,
         ImmediateDepositChangeRequiresSameAssetId,
+        DeadlineCantBeInPast,
     }
 
     #[pallet::event]
@@ -524,6 +525,13 @@ pub mod pallet {
 
             if stream.config == new_config && deposit_change.is_none() {
                 return Ok(().into());
+            }
+
+            if let ChangeKind::Mandatory { deadline } = kind {
+                let now = T::TimeProvider::now(&stream.config.time_unit)
+                    .ok_or(Error::<T>::CantFetchCurrentTime)?;
+
+                ensure!(deadline >= now, Error::<T>::DeadlineCantBeInPast);
             }
 
             // If asset id and time unit are the same, we allow to make the change
