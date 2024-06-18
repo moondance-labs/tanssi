@@ -103,7 +103,6 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
@@ -169,7 +168,7 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     type MaxContainerChains = ConstU32<100>;
 
     fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
-        MockData::mock().container_chains
+        mock_data::Mock::<Test>::get().container_chains
     }
 
     #[cfg(feature = "runtime-benchmarks")]

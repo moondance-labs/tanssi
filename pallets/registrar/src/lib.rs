@@ -166,12 +166,10 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn registered_para_ids)]
     pub type RegisteredParaIds<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn pending_registered_para_ids)]
     pub type PendingParaIds<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -179,7 +177,6 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn para_genesis_data)]
     pub type ParaGenesisData<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
@@ -189,17 +186,14 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn pending_verification)]
     pub type PendingVerification<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn paused)]
     pub type Paused<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn pending_paused)]
     pub type PendingPaused<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -207,7 +201,6 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn pending_to_remove)]
     pub type PendingToRemove<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -215,12 +208,10 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn parathread_params)]
     pub type ParathreadParams<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn pending_parathread_params)]
     pub type PendingParathreadParams<T: Config> = StorageValue<
         _,
         Vec<(
@@ -244,7 +235,6 @@ pub mod pallet {
     /// holding the creator (from which the deposit was reserved) and
     /// the deposit amount
     #[pallet::storage]
-    #[pallet::getter(fn registrar_deposit)]
     pub type RegistrarDeposit<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, DepositInfo<T>>;
 
     #[pallet::storage]
@@ -1228,6 +1218,53 @@ pub mod pallet {
             <PendingToRemove<T>>::put(pending_paras);
 
             Ok(())
+        }
+
+        pub fn registered_para_ids() -> BoundedVec<ParaId, T::MaxLengthParaIds> {
+            RegisteredParaIds::<T>::get()
+        }
+
+        pub fn pending_registered_para_ids(
+        ) -> Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)> {
+            PendingParaIds::<T>::get()
+        }
+
+        pub fn para_genesis_data(
+            para_id: ParaId,
+        ) -> Option<ContainerChainGenesisData<T::MaxLengthTokenSymbol>> {
+            ParaGenesisData::<T>::get(para_id)
+        }
+
+        pub fn pending_verification(para_id: ParaId) -> Option<()> {
+            PendingVerification::<T>::get(para_id)
+        }
+
+        pub fn paused() -> BoundedVec<ParaId, T::MaxLengthParaIds> {
+            Paused::<T>::get()
+        }
+
+        pub fn pending_paused() -> Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)> {
+            PendingPaused::<T>::get()
+        }
+
+        pub fn pending_to_remove() -> Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>
+        {
+            PendingToRemove::<T>::get()
+        }
+
+        pub fn parathread_params(para_id: ParaId) -> Option<ParathreadParamsTy> {
+            ParathreadParams::<T>::get(para_id)
+        }
+
+        pub fn pending_parathread_params() -> Vec<(
+            T::SessionIndex,
+            BoundedVec<(ParaId, ParathreadParamsTy), T::MaxLengthParaIds>,
+        )> {
+            PendingParathreadParams::<T>::get()
+        }
+
+        pub fn registrar_deposit(para_id: ParaId) -> Option<DepositInfo<T>> {
+            RegistrarDeposit::<T>::get(para_id)
         }
     }
 

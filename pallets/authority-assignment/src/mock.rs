@@ -89,8 +89,7 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
-    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
+    pub type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
         pub fn get() -> Mocks {
@@ -154,8 +153,9 @@ pub fn run_to_block(n: u64) {
 
         if x % SESSION_LEN == 1 {
             let session_index = (x / SESSION_LEN) as u32;
-            let nimbus_map = &MockData::mock().nimbus_map;
-            let next_collator_assignment = &MockData::mock().next_collator_assignment;
+            let mock_data = mock_data::Mock::<Test>::get();
+            let nimbus_map = &mock_data.nimbus_map;
+            let next_collator_assignment = &mock_data.next_collator_assignment;
             AuthorityAssignment::initializer_on_new_session(
                 &session_index,
                 nimbus_map,

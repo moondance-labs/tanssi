@@ -112,7 +112,6 @@ pub mod pallet {
 
     /// The invulnerable, permissioned collators. This list must be sorted.
     #[pallet::storage]
-    #[pallet::getter(fn invulnerables)]
     pub type Invulnerables<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxInvulnerables>, ValueQuery>;
 
@@ -235,6 +234,12 @@ pub mod pallet {
 
             Self::deposit_event(Event::InvulnerableRemoved { account_id: who });
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn invulnerables() -> BoundedVec<T::CollatorId, T::MaxInvulnerables> {
+            Invulnerables::<T>::get()
         }
     }
 

@@ -93,10 +93,9 @@ use {
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
     tp_traits::{
-        apply, derive_storage_traits,
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
-        ShouldRotateAllCollators,
+        apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
     },
 };
 pub use {
