@@ -1227,7 +1227,6 @@ import type {
     XcmVersion,
     XcmpMessageFormat,
 } from "@polkadot/types/interfaces/xcm";
-import type { XcmPaymentApiError } from "@tanssi/api-augment/dancebox/interfaces/tanssi";
 
 declare module "@polkadot/types/types/registry" {
     interface InterfaceTypes {
@@ -2401,7 +2400,6 @@ declare module "@polkadot/types/types/registry" {
         XcmOrderV2: XcmOrderV2;
         XcmOrigin: XcmOrigin;
         XcmOriginKind: XcmOriginKind;
-        XcmPaymentApiError: XcmPaymentApiError;
         XcmpMessageFormat: XcmpMessageFormat;
         XcmV0: XcmV0;
         XcmV1: XcmV1;

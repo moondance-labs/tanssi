@@ -9,6 +9,63 @@ import {
 } from "../../../util/xcm";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 
+const runtimeApi = {
+    runtime: {
+        XcmPaymentApi: [
+            {
+                methods: {
+                    query_acceptable_payment_assets: {
+                        description: "The API to query acceptable payment assets",
+                        params: [
+                            {
+                                name: "version",
+                                type: "u32",
+                            },
+                        ],
+                        type: "Result<Vec<XcmVersionedAssetId>, XcmPaymentApiError>",
+                    },
+                    query_weight_to_asset_fee: {
+                        description: "",
+                        params: [
+                            {
+                                name: "weight",
+                                type: "WeightV2",
+                            },
+                            {
+                                name: "asset",
+                                type: "XcmVersionedAssetId",
+                            },
+                        ],
+                        type: "Result<u128, XcmPaymentApiError>",
+                    },
+                    query_xcm_weight: {
+                        description: "",
+                        params: [
+                            {
+                                name: "message",
+                                type: "XcmVersionedXcm",
+                            },
+                        ],
+                        type: "Result<WeightV2, XcmPaymentApiError>",
+                    },
+                },
+                version: 1,
+            },
+        ],
+    },
+    types: {
+        XcmPaymentApiError: {
+            _enum: {
+                Unimplemented: "Null",
+                VersionedConversionFailed: "Null",
+                WeightNotComputable: "Null",
+                UnhandledXcmVersion: "Null",
+                AssetNotFound: "Null",
+            },
+        },
+    },
+};
+
 describeSuite({
     id: "CX0207",
     title: "XCM - XcmPaymentApi",
@@ -22,7 +79,65 @@ describeSuite({
         const txByteFee = 1n;
 
         beforeAll(async function () {
-            polkadotJs = context.polkadotJs();
+            // Not using context.polkadotJs() because we need to add the runtime api
+            polkadotJs = await ApiPromise.create({
+                provider: new WsProvider(`ws://localhost:${process.env.MOONWALL_RPC_PORT}/`),
+                runtime: {
+                    XcmPaymentApi: [
+                        {
+                            methods: {
+                                query_acceptable_payment_assets: {
+                                    description: "The API to query acceptable payment assets",
+                                    params: [
+                                        {
+                                            name: "version",
+                                            type: "u32",
+                                        },
+                                    ],
+                                    type: "Result<Vec<XcmVersionedAssetId>, XcmPaymentApiError>",
+                                },
+                                query_weight_to_asset_fee: {
+                                    description: "",
+                                    params: [
+                                        {
+                                            name: "weight",
+                                            type: "WeightV2",
+                                        },
+                                        {
+                                            name: "asset",
+                                            type: "XcmVersionedAssetId",
+                                        },
+                                    ],
+                                    type: "Result<u128, XcmPaymentApiError>",
+                                },
+                                query_xcm_weight: {
+                                    description: "",
+                                    params: [
+                                        {
+                                            name: "message",
+                                            type: "XcmVersionedXcm",
+                                        },
+                                    ],
+                                    type: "Result<WeightV2, XcmPaymentApiError>",
+                                },
+                            },
+                            version: 1,
+                        },
+                    ],
+                },
+                types: {
+                    XcmPaymentApiError: {
+                        _enum: {
+                            Unimplemented: "Null",
+                            VersionedConversionFailed: "Null",
+                            WeightNotComputable: "Null",
+                            UnhandledXcmVersion: "Null",
+                            AssetNotFound: "Null",
+                        },
+                    },
+                },
+            });
+            //
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
                 chain == "frontier-template"
@@ -45,7 +160,6 @@ describeSuite({
                     .index.toNumber();
 
                 console.log(chainInfo.toHuman());
-                console.log(api.call.xcmPaymentApi);
 
                 const assets = await api.call.xcmPaymentApi.queryAcceptablePaymentAssets(3);
                 const weightToNativeAssets = await api.call.xcmPaymentApi.queryWeightToAssetFee(
