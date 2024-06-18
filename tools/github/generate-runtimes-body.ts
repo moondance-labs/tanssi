@@ -18,7 +18,7 @@ function capitalize(s) {
 function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
   if (runtimeName.includes("-template")) {
     const specVersion = execSync(
-      `cat ../container-chains/templates/${runtimeName.split("-template")[0]}/runtime/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+      `cat ../container-chains/runtime-templates/${runtimeName.split("-template")[0]}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
     ).toString();
     return {
       name: runtimeName,

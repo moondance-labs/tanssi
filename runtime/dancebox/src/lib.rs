@@ -132,6 +132,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -234,7 +235,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 700,
+    spec_version: 800,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
