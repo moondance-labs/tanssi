@@ -121,9 +121,6 @@ pub use {frame_system::Call as SystemCall, pallet_balances::Call as BalancesCall
 /// Constant values used within the runtime.
 use mozart_runtime_constants::{currency::*, fee::*, time::*};
 
-// Weights used in the runtime.
-mod weights;
-
 // XCM configurations.
 pub mod xcm_config;
 

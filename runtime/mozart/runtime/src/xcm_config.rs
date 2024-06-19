@@ -44,8 +44,8 @@ use {
         FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
         IsConcrete, MintLocation, OriginToPluralityVoice, SignedAccountId32AsNative,
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents, XcmFeeToAccount,
+        UsingComponents, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        XcmFeeToAccount,
     },
     xcm_executor::XcmExecutor,
 };
@@ -187,6 +187,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = (SystemParachains, Equals<RootLocation>, LocalPlurality);
+pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
@@ -198,11 +199,7 @@ impl xcm_executor::Config for XcmConfig {
     type IsTeleporter = TrustedTeleporters;
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
-    type Weigher = WeightInfoBounds<
-        crate::weights::xcm::MozartXcmWeight<RuntimeCall>,
-        RuntimeCall,
-        MaxInstructions,
-    >;
+    type Weigher = XcmWeigher;
     type Trader =
         UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
     type ResponseHandler = XcmPallet;
