@@ -43,7 +43,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
+            tokens::ConversionToAssetBalance, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
+            Contains, InsideBoth, InstanceFilter,
         },
         weights::{
             constants::{
@@ -1136,9 +1137,22 @@ impl_runtime_apis! {
             if !matches!(xcm_version, 3 | 4) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
+
             Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
                 .into_iter()
-                .filter_map(|asset| asset.into_version(xcm_version).ok())
+                .chain(
+                    pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
+                        pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
+                            VersionedAssetId::V4(location.into())
+                        }).or_else(|| {
+                            log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
+                            None
+                        })
+                    })
+                )
+                .filter_map(|asset| asset.into_version(xcm_version).map_err(|e| {
+                    log::warn!("Failed to convert asset to version {}: {:?}", xcm_version, e);
+                }).ok())
                 .collect())
         }
 
@@ -1148,9 +1162,21 @@ impl_runtime_apis! {
                 .into_version(4)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
 
-            if asset != local_asset { return Err(XcmPaymentApiError::AssetNotFound); }
-
-            Ok(WeightToFee::weight_to_fee(&weight))
+            if asset == local_asset {
+                Ok(WeightToFee::weight_to_fee(&weight))
+            } else {
+                let native_fee = WeightToFee::weight_to_fee(&weight);
+                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
+                let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
+                match asset_rate {
+                    Ok(x) => Ok(x),
+                    Err(pallet_asset_rate::Error::UnknownAssetKind) => Err(XcmPaymentApiError::AssetNotFound),
+                    // Error when converting native balance to asset balance, probably overflow
+                    Err(_e) => Err(XcmPaymentApiError::WeightNotComputable),
+                }
+            }
         }
 
         fn query_xcm_weight(message: VersionedXcm<()>) -> Result<Weight, XcmPaymentApiError> {
