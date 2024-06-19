@@ -39,7 +39,7 @@ use {
         assigner_on_demand as parachains_assigner_on_demand, configuration,
     },
     sp_core::Pair,
-    sp_runtime::{traits::ValidateUnsigned, AccountId32, RuntimeAppPublic},
+    sp_runtime::{traits::ValidateUnsigned, AccountId32},
     staging_xcm::{
         latest::{MaybeErrorCode, Response},
         v3::QueryId,
