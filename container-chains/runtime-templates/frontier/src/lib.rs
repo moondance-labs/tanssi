@@ -574,19 +574,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
-    Copy,
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Encode,
-    Decode,
-    Debug,
-    MaxEncodedLen,
-    TypeInfo,
-    Serialize,
-    Deserialize,
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
 )]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {

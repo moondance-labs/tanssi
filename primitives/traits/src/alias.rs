@@ -19,7 +19,6 @@ pub mod __reexports {
     pub use {
         frame_support::{CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound},
         scale_info::TypeInfo,
-        serde::{de::DeserializeOwned, Deserialize, Serialize},
         sp_core::{Decode, Encode, RuntimeDebug},
     };
 }
@@ -37,48 +36,39 @@ macro_rules! derive_storage_traits {
             $crate::alias::__reexports::Encode,
             $crate::alias::__reexports::Decode,
             $crate::alias::__reexports::TypeInfo,
-            $crate::alias::__reexports::Serialize,
-            $crate::alias::__reexports::Deserialize,
         )]
         $($tt)*
     }
 }
 
+#[macro_export]
+macro_rules! derive_storage_traits_no_bounds {
+    ( $( $tt:tt )* ) => (
+        #[derive(
+            $crate::alias::__reexports::RuntimeDebugNoBound,
+            $crate::alias::__reexports::PartialEqNoBound,
+            $crate::alias::__reexports::EqNoBound,
+            $crate::alias::__reexports::CloneNoBound,
+            $crate::alias::__reexports::Encode,
+            $crate::alias::__reexports::Decode,
+            $crate::alias::__reexports::TypeInfo,
+        )]
+        $($tt)*
+    );
+}
+
 /// Derives traits related to SCALE encoding and serde.
 #[macro_export]
-macro_rules! derive_scale_and_serde {
+macro_rules! derive_scale_codec {
     ( $( $tt:tt )* ) => {
         #[derive(
             $crate::alias::__reexports::Encode,
             $crate::alias::__reexports::Decode,
             $crate::alias::__reexports::TypeInfo,
-            $crate::alias::__reexports::Serialize,
-            $crate::alias::__reexports::Deserialize,
         )]
         $($tt)*
     }
 }
-
-// This currently doesn't work due to a quirk in RuntimeDebugNoBound, PartialEqNoBound
-// and CloneNoBound, as there seem to be something breaking macro hygiene. This is not an
-// issue when using the derive directly, but doesn't compile when adding it through our macro.
-// #[macro_export]
-// macro_rules! derive_storage_traits_no_bounds {
-//     ( $( $tt:tt )* ) => (
-//         #[derive(
-//             $crate::alias::__reexports::RuntimeDebugNoBound,
-//             $crate::alias::__reexports::PartialEqNoBound,
-//             $crate::alias::__reexports::EqNoBound,
-//             $crate::alias::__reexports::CloneNoBound,
-//             $crate::alias::__reexports::Encode,
-//             $crate::alias::__reexports::Decode,
-//             $crate::alias::__reexports::TypeInfo,
-//             $crate::alias::__reexports::Serialize,
-//             $crate::alias::__reexports::Deserialize,
-//         )]
-//         $($tt)*
-//     );
-// }
 
 macro_rules! trait_alias {
     ($vis:vis $alias:ident : $bound0:path $(, $boundN:path)* $(,)?) => {
@@ -87,12 +77,7 @@ macro_rules! trait_alias {
     }
 }
 
-trait_alias!(pub Serde:
-    __reexports::Serialize,
-    __reexports::DeserializeOwned,
-);
-
-trait_alias!(pub Scale:
+trait_alias!(pub ScaleCodec:
     __reexports::Encode,
     __reexports::Decode,
     __reexports::TypeInfo,
@@ -103,6 +88,5 @@ trait_alias!(pub StorageTraits:
     ::core::clone::Clone,
     ::core::cmp::Eq,
     ::core::cmp::PartialEq,
-    Scale,
-    Serde,
+    ScaleCodec,
 );

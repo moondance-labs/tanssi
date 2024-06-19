@@ -18,12 +18,14 @@ use {
     super::*,
     dp_core::ParaId,
     frame_support::{dispatch::DispatchErrorWithPostInfo, pallet_prelude::*},
-    tp_traits::{apply, derive_scale_and_serde, derive_storage_traits},
+    serde::{de::DeserializeOwned, Serialize},
+    tp_traits::{
+        apply, derive_scale_codec, derive_storage_traits, derive_storage_traits_no_bounds,
+    },
 };
 
 // Data preserver profile.
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
-#[apply(derive_scale_and_serde)]
+#[apply(derive_storage_traits_no_bounds)]
 #[scale_info(skip_type_params(T))]
 pub struct Profile<T: Config> {
     pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
@@ -32,8 +34,7 @@ pub struct Profile<T: Config> {
     pub assignment_request: ProviderRequestOf<T>,
 }
 
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
-#[apply(derive_scale_and_serde)]
+#[apply(derive_storage_traits_no_bounds)]
 #[scale_info(skip_type_params(T))]
 pub enum ParaIdsFilter<T: Config> {
     AnyParaId,
@@ -68,8 +69,7 @@ pub enum ProfileMode {
 /// Profile with additional data:
 /// - the account id which created (and manage) the profile
 /// - the amount deposited to register the profile
-#[apply(derive_scale_and_serde)]
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
+#[apply(derive_storage_traits_no_bounds)]
 #[scale_info(skip_type_params(T))]
 pub struct RegisteredProfile<T: Config> {
     pub account: T::AccountId,
@@ -82,11 +82,11 @@ pub struct RegisteredProfile<T: Config> {
 /// Allows to process various kinds of payment options for assignments.
 pub trait AssignmentPayment<AccountId> {
     /// Providers requests which kind of payment it accepts.
-    type ProviderRequest: tp_traits::StorageTraits;
+    type ProviderRequest: tp_traits::StorageTraits + Serialize + DeserializeOwned;
     /// Extra parameter the assigner provides.
-    type AssignerParameter: tp_traits::StorageTraits;
+    type AssignerParameter: tp_traits::StorageTraits + Serialize + DeserializeOwned;
     /// Represents the succesful outcome of the assignment.
-    type AssignmentWitness: tp_traits::StorageTraits;
+    type AssignmentWitness: tp_traits::StorageTraits + Serialize + DeserializeOwned;
 
     fn try_start_assignment(
         assigner: AccountId,
