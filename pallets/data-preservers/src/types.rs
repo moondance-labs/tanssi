@@ -20,12 +20,13 @@ use {
     frame_support::{dispatch::DispatchErrorWithPostInfo, pallet_prelude::*},
     serde::{de::DeserializeOwned, Serialize},
     tp_traits::{
-        apply, derive_scale_codec, derive_storage_traits, derive_storage_traits_no_bounds,
+        apply, derive_scale_codec, derive_storage_traits,
     },
 };
 
 // Data preserver profile.
-#[apply(derive_storage_traits_no_bounds)]
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub struct Profile<T: Config> {
     pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
@@ -34,7 +35,8 @@ pub struct Profile<T: Config> {
     pub assignment_request: ProviderRequestOf<T>,
 }
 
-#[apply(derive_storage_traits_no_bounds)]
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub enum ParaIdsFilter<T: Config> {
     AnyParaId,
@@ -69,7 +71,8 @@ pub enum ProfileMode {
 /// Profile with additional data:
 /// - the account id which created (and manage) the profile
 /// - the amount deposited to register the profile
-#[apply(derive_storage_traits_no_bounds)]
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub struct RegisteredProfile<T: Config> {
     pub account: T::AccountId,

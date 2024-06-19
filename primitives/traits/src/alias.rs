@@ -41,21 +41,24 @@ macro_rules! derive_storage_traits {
     }
 }
 
-#[macro_export]
-macro_rules! derive_storage_traits_no_bounds {
-    ( $( $tt:tt )* ) => (
-        #[derive(
-            $crate::alias::__reexports::RuntimeDebugNoBound,
-            $crate::alias::__reexports::PartialEqNoBound,
-            $crate::alias::__reexports::EqNoBound,
-            $crate::alias::__reexports::CloneNoBound,
-            $crate::alias::__reexports::Encode,
-            $crate::alias::__reexports::Decode,
-            $crate::alias::__reexports::TypeInfo,
-        )]
-        $($tt)*
-    );
-}
+// This currently doesn't work due to a quirk in RuntimeDebugNoBound, PartialEqNoBound
+// and CloneNoBound, as there seem to be something breaking macro hygiene. This is not an
+// issue when using the derive directly, but doesn't compile when adding it through our macro.
+// #[macro_export]
+// macro_rules! derive_storage_traits_no_bounds {
+//     ( $( $tt:tt )* ) => (
+//         #[derive(
+//             $crate::alias::__reexports::RuntimeDebugNoBound,
+//             $crate::alias::__reexports::PartialEqNoBound,
+//             $crate::alias::__reexports::EqNoBound,
+//             $crate::alias::__reexports::CloneNoBound,
+//             $crate::alias::__reexports::Encode,
+//             $crate::alias::__reexports::Decode,
+//             $crate::alias::__reexports::TypeInfo,
+//         )]
+//         $($tt)*
+//     );
+// }
 
 /// Derives traits related to SCALE encoding and serde.
 #[macro_export]
