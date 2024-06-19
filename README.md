@@ -49,7 +49,7 @@ sudo npm i -g pnpm
 pnpm i
 
 # Create typescript-api local interfaces
-cd typescript-api && pnpm create-local-interfaces && ..
+cd typescript-api && pnpm create-local-interfaces && cd ..
 
 # Change directory to test
 cd test
