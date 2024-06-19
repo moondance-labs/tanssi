@@ -67,7 +67,6 @@ describeSuite({
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let baseDelivery: bigint;
         let chain;
 
         beforeAll(async function () {
@@ -84,7 +83,6 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-            baseDelivery = chain == "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
 
             // We register the token
             const txSigned = polkadotJs.tx.sudo.sudo(
