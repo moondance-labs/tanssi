@@ -21,8 +21,8 @@ use {
             empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
                 mocknets::{
-                    DanceboxParaPallet, DanceboxRococoPara as Dancebox, DanceboxSender,
-                    RococoRelay as Rococo, RococoRelayPallet, RococoSender,
+                    DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+                    RococoRelayPallet, RococoSender,
                 },
                 *,
             },
@@ -30,10 +30,8 @@ use {
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{
-        Registrar, RuntimeCall, RuntimeOrigin, ServicesPayment, SessionKeys, XcmCoreBuyer,
-    },
-    frame_support::{assert_ok, dispatch},
+    dancebox_runtime::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
+    frame_support::assert_ok,
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     parity_scale_codec::Encode,
@@ -334,9 +332,8 @@ fn core_buyer_sign_collator_nonce(
     id: nimbus_primitives::NimbusPair,
     account: crate::AccountId,
 ) {
-    let nonce = pallet_xcm_core_buyer::CollatorSignatureNonce::<dancebox_runtime::Runtime>::get(
-        para_id.clone(),
-    );
+    let nonce =
+        pallet_xcm_core_buyer::CollatorSignatureNonce::<dancebox_runtime::Runtime>::get(para_id);
 
     let payload = (nonce, para_id).encode();
     let signature = id.sign(&payload);
@@ -348,7 +345,7 @@ fn core_buyer_sign_collator_nonce(
         signature,
     };
     XcmCoreBuyer::pre_dispatch(&pallet_xcm_core_buyer::Call::buy_core {
-        para_id: para_id.clone(),
+        para_id: para_id,
         collator_account_id: account.clone(),
         proof: proof.clone(),
     })
