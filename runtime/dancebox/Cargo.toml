@@ -269,10 +269,10 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
+	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
-	"tp-xcm-core-buyer/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -337,9 +337,9 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"tp-xcm-core-buyer/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
-	"tp-xcm-core-buyer/runtime-benchmarks"
 ]
 
 try-runtime = [
