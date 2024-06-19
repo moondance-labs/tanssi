@@ -103,6 +103,11 @@ pub struct ContainerChainState {
     stop_handle: StopContainerChain,
     /// Database path
     db_path: PathBuf,
+    // Restart collator
+    collate_on:
+        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
+    collation_cancellation_constructs:
+        Option<(CancellationToken, futures::channel::oneshot::Receiver<()>)>,
 }
 
 /// Stops a container chain when signal is sent. The bool means `keep_db`, whether to keep the
@@ -325,19 +330,28 @@ impl ContainerChainSpawner {
             container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
-            let (mut container_chain_task_manager, container_chain_client, container_chain_db) =
-                start_node_impl_container(
-                    container_chain_cli_config,
-                    orchestrator_client.clone(),
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    collator_key.clone(),
-                    sync_keystore.clone(),
-                    container_chain_para_id,
-                    orchestrator_para_id,
-                    validator && start_collation,
-                )
-                .await?;
+            let (
+                mut container_chain_task_manager,
+                container_chain_client,
+                container_chain_db,
+                collate_on,
+            ) = start_node_impl_container(
+                container_chain_cli_config,
+                orchestrator_client.clone(),
+                relay_chain_interface.clone(),
+                orchestrator_chain_interface.clone(),
+                collator_key.clone(),
+                sync_keystore.clone(),
+                container_chain_para_id,
+                orchestrator_para_id,
+                validator && start_collation,
+            )
+            .await?;
+
+            let mut collation_cancellation_constructs = None;
+            if validator && start_collation {
+                collation_cancellation_constructs = Some(collate_on());
+            }
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = oneshot::channel::<bool>();
@@ -365,6 +379,8 @@ impl ContainerChainSpawner {
                             id: monitor_id,
                         },
                         db_path: db_path.clone(),
+                        collate_on,
+                        collation_cancellation_constructs,
                     },
                 );
             }
@@ -470,6 +486,67 @@ impl ContainerChainSpawner {
         }
     }
 
+    fn start_collator(&mut self, para_id: ParaId) {
+        if para_id == self.orchestrator_para_id {
+            self.collation_cancellation_constructs = Some((self.collate_on_tanssi)());
+            return;
+        }
+
+        let mut state = self.state.lock().unwrap();
+        let container_state = state
+            .spawned_container_chains
+            .get_mut(&para_id)
+            .unwrap_or_else(|| {
+                panic!(
+                    "tried to start_collator for para id that is not running: {}",
+                    para_id
+                )
+            });
+        assert!(container_state.collation_cancellation_constructs.is_none());
+        container_state.collation_cancellation_constructs = Some((container_state.collate_on)());
+    }
+
+    async fn stop_collator(&mut self) {
+        // If not assigned to orchestrator chain anymore, we need to stop the collator process
+        let maybe_exit_notification_receiver = self.collation_cancellation_constructs.take().map(
+            |(cancellation_token, exit_notification_receiver)| {
+                cancellation_token.cancel();
+                exit_notification_receiver
+            },
+        );
+
+        if let Some(exit_notification_receiver) = maybe_exit_notification_receiver {
+            let _ = exit_notification_receiver.await;
+        }
+
+        // Stop container collator
+        let mut exit_notifications = vec![];
+        // Separate block because we need to drop `state` before the await to avoid a compile error
+        // related to future not being Send
+        {
+            let mut state = self.state.lock().unwrap();
+            for (_para_id, container_state) in state.spawned_container_chains.iter_mut() {
+                let maybe_exit_notification_receiver = container_state
+                    .collation_cancellation_constructs
+                    .take()
+                    .map(|(cancellation_token, exit_notification_receiver)| {
+                        cancellation_token.cancel();
+                        exit_notification_receiver
+                    });
+
+                if let Some(exit_notification_receiver) = maybe_exit_notification_receiver {
+                    exit_notifications.push(exit_notification_receiver);
+                }
+            }
+        }
+
+        // This causes a deadlock in some cases apparently, I believe when orchestrator is at block
+        // 3 and containers are at block 0, they never stop the collator...
+        for exit_notification_receiver in exit_notifications {
+            let _ = exit_notification_receiver.await;
+        }
+    }
+
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
         // The node always starts as an orchestrator chain collator.
@@ -480,12 +557,39 @@ impl ContainerChainSpawner {
         if validator {
             self.handle_update_assignment(Some(self.orchestrator_para_id), None)
                 .await;
+            // Always be assigned to 2000 and 2001 by setting both start_collation=true
+            // Doesn't work, will end up assigned to last chain
+            self.spawn(2000.into(), true).await;
+            self.spawn(2001.into(), true).await;
+        }
+
+        let parathreads = [0u32, 2000, 2001];
+        // Random number without rand crate certified by chatgpt
+        //let random_number = (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 3) as u8;
+        //let mut assigned_index = random_number as usize;
+        let mut assigned_index = 0;
+        let parathread_restart_collator_duration = Duration::from_secs(60);
+
+        loop {
+            tokio::time::sleep(parathread_restart_collator_duration).await;
+
+            assigned_index = (assigned_index + 1) % parathreads.len();
+            let assigned_for_collation = parathreads[assigned_index];
+            log::info!("PARATHREAD HACK: assigned to {}", assigned_for_collation);
+
+            self.stop_collator().await;
+            if assigned_for_collation == 0 {
+                self.start_collator(self.orchestrator_para_id);
+            } else {
+                self.start_collator(assigned_for_collation.into());
+            }
         }
 
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next).await;
+                    // Disable automatic assignment detection for testing
+                    //self.handle_update_assignment(current, next).await;
                 }
             }
         }

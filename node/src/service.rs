@@ -555,6 +555,7 @@ pub async fn start_node_impl_container(
     TaskManager,
     Arc<ContainerChainClient>,
     Arc<ParachainBackend>,
+    Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
 
@@ -626,36 +627,56 @@ pub async fn start_node_impl_container(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
+    let mut collate_on: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    > = Arc::new(move || {
+        if collator {
+            panic!("Called uninitialized collate_on for container {}", para_id);
+        } else {
+            panic!(
+                "Called collate_on for container {} when node is not running as a validator",
+                para_id
+            );
+        }
+    });
+
     if collator {
-        let collator_key = collator_key
-            .clone()
-            .expect("Command line arguments do not allow this. qed");
+        let start_collation = {
+            let collator_key = collator_key
+                .clone()
+                .expect("Command line arguments do not allow this. qed");
 
-        let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
-        let node_client = node_builder.client.clone();
-        let node_backend = node_builder.backend.clone();
+            let node_client = node_builder.client.clone();
+            let node_backend = node_builder.backend.clone();
+            let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
 
-        start_consensus_container(
-            node_client.clone(),
-            node_backend.clone(),
-            orchestrator_client.clone(),
-            block_import.clone(),
-            prometheus_registry.clone(),
-            node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
-            node_spawn_handle.clone(),
-            relay_chain_interface.clone(),
-            orchestrator_chain_interface.clone(),
-            node_builder.transaction_pool.clone(),
-            node_builder.network.sync_service.clone(),
-            keystore.clone(),
-            force_authoring,
-            relay_chain_slot_duration,
-            para_id,
-            orchestrator_para_id,
-            collator_key.clone(),
-            overseer_handle.clone(),
-            announce_block.clone(),
-        );
+            move || {
+                start_consensus_container(
+                    node_client.clone(),
+                    node_backend.clone(),
+                    orchestrator_client.clone(),
+                    block_import.clone(),
+                    prometheus_registry.clone(),
+                    node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
+                    node_spawn_handle.clone(),
+                    relay_chain_interface.clone(),
+                    orchestrator_chain_interface.clone(),
+                    node_builder.transaction_pool.clone(),
+                    node_builder.network.sync_service.clone(),
+                    keystore.clone(),
+                    force_authoring,
+                    relay_chain_slot_duration,
+                    para_id,
+                    orchestrator_para_id,
+                    collator_key.clone(),
+                    overseer_handle.clone(),
+                    announce_block.clone(),
+                )
+            }
+        };
+
+        // Save callback for later, used when collator rotates from container chain back to orchestrator chain
+        collate_on = Arc::new(start_collation);
     }
 
     node_builder.network.start_network.start_network();
@@ -664,6 +685,7 @@ pub async fn start_node_impl_container(
         node_builder.task_manager,
         node_builder.client,
         node_builder.backend,
+        collate_on,
     ))
 }
 
@@ -703,7 +725,7 @@ fn start_consensus_container(
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
-) {
+) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
         .expect("start_consensus_container: slot duration should exist");
 
@@ -737,6 +759,8 @@ fn start_consensus_container(
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
     };
+
+    let cancellation_token = CancellationToken::new();
 
     let params = LookaheadTanssiAuraParams {
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
@@ -849,13 +873,14 @@ fn start_consensus_container(
         authoring_duration: Duration::from_millis(500),
         para_backend: backend,
         code_hash_provider,
-        // This cancellation token is no-op as it is not shared outside.
-        cancellation_token: CancellationToken::new(),
+        cancellation_token: cancellation_token.clone(),
     };
 
-    let (fut, _exit_notification_receiver) =
+    let (fut, exit_notification_receiver) =
         lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
     spawner.spawn("tanssi-aura-container", None, fut);
+
+    (cancellation_token, exit_notification_receiver)
 }
 
 /// Start collator task for orchestrator chain.
