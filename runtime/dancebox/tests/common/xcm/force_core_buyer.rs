@@ -21,8 +21,8 @@ use {
             empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
                 mocknets::{
-                    DanceboxParaPallet, DanceboxRococoPara as Dancebox, DanceboxSender,
-                    RococoRelay as Rococo, RococoRelayPallet, RococoSender,
+                    DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+                    RococoRelayPallet, RococoSender,
                 },
                 *,
             },
@@ -30,18 +30,13 @@ use {
     },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{
-        Registrar, RuntimeCall, RuntimeOrigin, ServicesPayment, SessionKeys, XcmCoreBuyer,
-    },
-    frame_support::{assert_ok, dispatch},
-    nimbus_primitives::NimbusId,
+    dancebox_runtime::{Registrar, ServicesPayment, XcmCoreBuyer},
+    frame_support::assert_ok,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
-    parity_scale_codec::Encode,
     polkadot_runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand, configuration,
     },
-    sp_core::Pair,
-    sp_runtime::{traits::ValidateUnsigned, AccountId32, RuntimeAppPublic},
+    sp_runtime::AccountId32,
     staging_xcm::{
         latest::{MaybeErrorCode, Response},
         v3::QueryId,
@@ -159,11 +154,10 @@ fn do_test(tank_account_balance: u128, set_max_core_price: Option<u128>) -> Quer
             root_origin.clone(),
             Some(dancebox_runtime::xcm_config::RelayChain::Rococo),
         ));
-        core_buyer_sign_collator_nonce(
-            PARATHREAD_ID.into(),
-            get_aura_pair_from_seed(&crate::AccountId::from(crate::BOB).to_string()),
-            crate::AccountId::from(crate::BOB),
-        );
+        assert_ok!(XcmCoreBuyer::force_buy_core(
+            root_origin,
+            PARATHREAD_ID.into()
+        ));
 
         type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
@@ -327,44 +321,6 @@ fn set_on_demand_base_fee(on_demand_base_fee: u128) {
         config.scheduler_params.on_demand_base_fee = on_demand_base_fee;
         <Rococo as RococoRelayPallet>::Configuration::force_set_active_config(config);
     });
-}
-
-fn core_buyer_sign_collator_nonce(
-    para_id: ParaId,
-    id: nimbus_primitives::NimbusPair,
-    account: crate::AccountId,
-) {
-    let nonce = pallet_xcm_core_buyer::CollatorSignatureNonce::<dancebox_runtime::Runtime>::get(
-        para_id.clone(),
-    );
-
-    let payload = (nonce, para_id).encode();
-    let signature = id.sign(&payload);
-    let public_key = id.public();
-
-    let proof = tp_xcm_core_buyer::BuyCoreCollatorProof::<NimbusId> {
-        nonce,
-        public_key: public_key.clone().into_inner().into(),
-        signature,
-    };
-    XcmCoreBuyer::pre_dispatch(&pallet_xcm_core_buyer::Call::buy_core {
-        para_id: para_id.clone(),
-        collator_account_id: account.clone(),
-        proof: proof.clone(),
-    })
-    .expect("collator signature predispatch should go through");
-    assert_ok!(XcmCoreBuyer::buy_core(
-        RuntimeOrigin::none(),
-        para_id,
-        account,
-        proof
-    ));
-}
-
-pub fn get_aura_pair_from_seed(seed: &str) -> nimbus_primitives::NimbusPair {
-    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .into()
 }
 
 #[test]
