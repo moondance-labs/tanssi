@@ -53,7 +53,16 @@
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-relay",
                         "options": [
-                            "--chain=mozart-dev"
+                            "--force-authoring",
+                            "--rpc-cors=all",
+                            "--no-prometheus",
+                            "--no-telemetry",
+                            "--reserved-only",
+                            "--alice",
+                            "--tmp",
+                            "--chain=mozart-dev",
+                            "--no-hardware-benchmarks",
+                            "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
