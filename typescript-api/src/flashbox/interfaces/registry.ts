@@ -16,6 +16,7 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth,
     CumulusPrimitivesParachainInherentParachainInherentData,
+    CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FlashboxRuntimeOriginCaller,
@@ -201,6 +202,7 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletParachainSystemUnincludedSegmentSegmentTracker: CumulusPalletParachainSystemUnincludedSegmentSegmentTracker;
         CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth: CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
+        CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;

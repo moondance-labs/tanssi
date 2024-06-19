@@ -28,6 +28,7 @@ import type {
     CumulusPalletXcmpQueueQueueConfigData,
     CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
+    CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimePreserversAssignementPaymentExtra,
     DanceboxRuntimePreserversAssignementPaymentRequest,
@@ -341,6 +342,7 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletXcmpQueueQueueConfigData: CumulusPalletXcmpQueueQueueConfigData;
         CumulusPrimitivesCoreAggregateMessageOrigin: CumulusPrimitivesCoreAggregateMessageOrigin;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
+        CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
         DanceboxRuntimePreserversAssignementPaymentExtra: DanceboxRuntimePreserversAssignementPaymentExtra;
         DanceboxRuntimePreserversAssignementPaymentRequest: DanceboxRuntimePreserversAssignementPaymentRequest;

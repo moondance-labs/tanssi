@@ -241,10 +241,11 @@ where
         let executor = ExecutorOf::<T>::new_with_wasm_executor(wasm_builder.build());
 
         let (client, backend, keystore_container, task_manager) =
-            sc_service::new_full_parts::<BlockOf<T>, RuntimeApiOf<T>, _>(
+            sc_service::new_full_parts_record_import::<BlockOf<T>, RuntimeApiOf<T>, _>(
                 parachain_config,
                 telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
                 executor,
+                true,
             )?;
         let client = Arc::new(client);
 
