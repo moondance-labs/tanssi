@@ -141,7 +141,12 @@ pub struct NodeBuilder<
     pub backend: Arc<BackendOf<T>>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<sc_transaction_pool::FullPool<BlockOf<T>, ClientOf<T>>>,
+    pub transaction_pool: Arc<
+        sc_transaction_pool::BasicPool<
+            sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
+            BlockOf<T>,
+        >,
+    >,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
@@ -259,7 +264,7 @@ where
         });
 
         let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-            parachain_config.transaction_pool.clone(),
+            Default::default(),
             parachain_config.role.is_authority().into(),
             parachain_config.prometheus_registry(),
             task_manager.spawn_essential_handle(),
@@ -339,6 +344,7 @@ where
         SImportQueueService: TypeIdentity<Type = ()>,
         RCInterface: RelayChainInterface + Clone + 'static,
         Net: sc_network::service::traits::NetworkBackend<BlockOf<T>, BlockHashOf<T>>,
+        BlockHashOf<T>: Unpin,
     {
         let Self {
             client,

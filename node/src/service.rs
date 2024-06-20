@@ -66,7 +66,6 @@ use {
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::TelemetryHandle,
-    sc_transaction_pool::FullPool,
     sp_api::StorageProof,
     sp_consensus::{EnableProofRecording, SyncOracle},
     sp_consensus_slots::{Slot, SlotDuration},
@@ -125,9 +124,14 @@ pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
-type ParachainProposerFactory =
-    ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
-
+type ParachainProposerFactory = ProposerFactory<
+    sc_transaction_pool::BasicPool<
+        sc_transaction_pool::FullChainApi<ParachainClient, Block>,
+        Block,
+    >,
+    ParachainClient,
+    EnableProofRecording,
+>;
 // Container chains types
 type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
@@ -693,7 +697,12 @@ fn start_consensus_container(
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
+    transaction_pool: Arc<
+        sc_transaction_pool::BasicPool<
+            sc_transaction_pool::FullChainApi<ContainerChainClient, Block>,
+            Block,
+        >,
+    >,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,

@@ -43,7 +43,7 @@ use {
 pub type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies
-pub struct FullDeps<C, P> {
+pub struct FullDeps<C, P: ?Sized> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -70,7 +70,7 @@ where
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
-    P: TransactionPool + Sync + Send + 'static,
+    P: TransactionPool<Block = Block> + Sync + Send + 'static + ?Sized,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
 
