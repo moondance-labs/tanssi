@@ -16,12 +16,10 @@ describeSuite({
             id: "E01",
             title: "Checking spec name and version",
             test: async function () {
-                const relayNetwork = polkadotJs.consts.system;
-
-                const specName = relayNetwork.version.specName.toString();
+                const specName = polkadotJs.consts.system.version.specName.toString();
                 expect(specName, "Relay API incorrect").to.contain("mozart");
 
-                const specVersion = relayNetwork.version.specVersion.toString();
+                const specVersion = polkadotJs.consts.system.version.specVersion.toString();
                 expect(specVersion, "Relay API incorrect").to.contain("1011000");
             },
         });
