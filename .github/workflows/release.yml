@@ -386,10 +386,17 @@ jobs:
               with:
                   node-version: 20.x
                   cache: "pnpm"
-            - name: "Run Dev tests"
+            # - name: "Generate typescript api"
+            #   run: |
+            #       chmod uog+x target/release/tanssi-node
+            #       cd typescript-api
+            #       pnpm install
+            #       pnpm create-local-interfaces
+            - name: "Run Dev Relay tests"
               run: |
                   chmod uog+x target/release/tanssi-relay
                   cd test
+                  pnpm install
                   pnpm moonwall test dev_tanssi_relay
 
     typescript-tests-flashbox:
