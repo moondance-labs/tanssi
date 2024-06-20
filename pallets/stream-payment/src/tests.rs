@@ -1099,6 +1099,7 @@ mod request_change {
             ));
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
+                stalled: true,
                 ..default()
             });
 
@@ -1543,6 +1544,7 @@ mod accept_requested_change {
             ));
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
+                stalled: true,
                 ..default()
             });
 

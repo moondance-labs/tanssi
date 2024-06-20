@@ -2582,6 +2582,7 @@ declare module "@polkadot/types/lookup" {
         readonly isChangingAssetRequiresAbsoluteDepositChange: boolean;
         readonly isTargetCantChangeDeposit: boolean;
         readonly isImmediateDepositChangeRequiresSameAssetId: boolean;
+        readonly isDeadlineCantBeInPast: boolean;
         readonly type:
             | "UnknownStreamId"
             | "StreamIdOverflow"
@@ -2597,7 +2598,8 @@ declare module "@polkadot/types/lookup" {
             | "WrongRequestNonce"
             | "ChangingAssetRequiresAbsoluteDepositChange"
             | "TargetCantChangeDeposit"
-            | "ImmediateDepositChangeRequiresSameAssetId";
+            | "ImmediateDepositChangeRequiresSameAssetId"
+            | "DeadlineCantBeInPast";
     }
 
     /** @name PalletIdentityRegistration (283) */

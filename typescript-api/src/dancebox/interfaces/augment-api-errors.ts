@@ -477,6 +477,7 @@ declare module "@polkadot/api-base/types/errors" {
             CantFetchCurrentTime: AugmentedError<ApiType>;
             CantOverrideMandatoryChange: AugmentedError<ApiType>;
             ChangingAssetRequiresAbsoluteDepositChange: AugmentedError<ApiType>;
+            DeadlineCantBeInPast: AugmentedError<ApiType>;
             ImmediateDepositChangeRequiresSameAssetId: AugmentedError<ApiType>;
             NoPendingRequest: AugmentedError<ApiType>;
             SourceCantDecreaseRate: AugmentedError<ApiType>;
