@@ -19,9 +19,7 @@ use {
     dp_core::ParaId,
     frame_support::{dispatch::DispatchErrorWithPostInfo, pallet_prelude::*},
     serde::{de::DeserializeOwned, Serialize},
-    tp_traits::{
-        apply, derive_scale_codec, derive_storage_traits,
-    },
+    tp_traits::{apply, derive_scale_codec, derive_storage_traits},
 };
 
 // Data preserver profile.

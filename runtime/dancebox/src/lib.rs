@@ -85,6 +85,7 @@ use {
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
+    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_aura::{Slot, SlotDuration},
@@ -949,21 +950,21 @@ parameter_types! {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
     // TODO: Add Stream Payment (with deposit)
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)
