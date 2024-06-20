@@ -9,7 +9,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
 
         beforeAll(() => {
-            polkadotJs = context.polkadotJs("Relay");
+            polkadotJs = context.polkadotJs();
         });
 
         it({
@@ -22,7 +22,7 @@ describeSuite({
                 expect(specName, "Relay API incorrect").to.contain("mozart");
 
                 const specVersion = relayNetwork.version.specVersion.toString();
-                expect(specVersion, "Relay API incorrect").to.contain("0.1.0");
+                expect(specVersion, "Relay API incorrect").to.contain("1011000");
             },
         });
     },
