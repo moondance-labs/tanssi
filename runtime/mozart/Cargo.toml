@@ -12,11 +12,11 @@ name = "tanssi-relay"
 path = "src/main.rs"
 
 [[bin]]
-name = "tanssi-relay-execute-worker"
+name = "polkadot-execute-worker"
 path = "src/bin/execute-worker.rs"
 
 [[bin]]
-name = "tanssi-relay-prepare-worker"
+name = "polkadot-prepare-worker"
 path = "src/bin/prepare-worker.rs"
 
 [lints]
