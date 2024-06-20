@@ -44,6 +44,7 @@
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay"],
+            "runScripts": ["download-polkadot.sh"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
