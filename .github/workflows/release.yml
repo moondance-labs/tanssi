@@ -386,12 +386,6 @@ jobs:
               with:
                   node-version: 20.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
             - name: "Run Dev tests"
               run: |
                   chmod uog+x target/release/tanssi-relay
