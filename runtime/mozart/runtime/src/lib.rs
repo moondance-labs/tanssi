@@ -162,7 +162,7 @@ pub mod fast_runtime_binary {
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("mozart"),
-    impl_name: create_runtime_str!("parity-mozart-v2.0"),
+    impl_name: create_runtime_str!("tanssi-mozart-v2.0"),
     authoring_version: 0,
     spec_version: 1_011_000,
     impl_version: 0,

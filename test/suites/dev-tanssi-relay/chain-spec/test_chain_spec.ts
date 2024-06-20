@@ -15,14 +15,35 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Checking spec details",
+            title: "Checking runtime version",
             test: async function () {
                 const specName = polkadotJs.consts.system.version.specName.toString();
-                expect(specName, "Relay API incorrect").to.contain("mozart");
+                expect(specName, "Relay API incorrect").to.toBe("mozart");
 
-                const specVersion = polkadotJs.consts.system.version.specVersion.toString();
-                expect(specVersion, "Relay API incorrect").toBe("1011000");
+                const specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+                expect(specVersion, "Relay API incorrect").toBe(1_011_000);
 
+                const authoringVersion = polkadotJs.consts.system.version.authoringVersion.toNumber();
+                expect(authoringVersion, "Relay API incorrect").to.toBe(0);
+
+                const implName = polkadotJs.consts.system.version.implName.toString();
+                expect(implName, "Relay API incorrect").to.toBe("tanssi-mozart-v2.0");
+
+                const implVersion = polkadotJs.consts.system.version.implVersion.toNumber();
+                expect(implVersion, "Relay API incorrect").to.toBe(0);
+
+                const transactionVersion = polkadotJs.consts.system.version.transactionVersion.toNumber();
+                expect(transactionVersion, "Relay API incorrect").to.toBe(25);
+
+                const stateVersion = polkadotJs.consts.system.version.stateVersion.toNumber();
+                expect(stateVersion, "Relay API incorrect").to.toBe(1);
+            },
+        });
+
+        it({
+            id: "E02",
+            title: "Checking ss58 Prefix",
+            test: async function () {
                 const ss58Prefix = polkadotJs.consts.system.ss58Prefix.toString();
                 expect(ss58Prefix, "Relay API incorrect").toBe("42");
             },
