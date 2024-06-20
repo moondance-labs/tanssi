@@ -135,6 +135,12 @@ pub type ContainerChainBackend = ParachainBackend;
 type ContainerChainBlockImport =
     TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
+type ContainerProposerFactory = ProposerFactory<
+    FullPool<Block, ContainerChainClient>,
+    ContainerChainClient,
+    EnableProofRecording,
+>;
+
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
 
 /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
@@ -649,6 +655,14 @@ pub async fn start_node_impl_container(
             let node_client = node_builder.client.clone();
             let node_backend = node_builder.backend.clone();
             let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
+            let node_telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
+            let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
+                node_spawn_handle.clone(),
+                node_client.clone(),
+                node_builder.transaction_pool.clone(),
+                node_builder.prometheus_registry.as_ref(),
+                node_telemetry_handle,
+            );
 
             move || {
                 start_consensus_container(
@@ -671,6 +685,7 @@ pub async fn start_node_impl_container(
                     collator_key.clone(),
                     overseer_handle.clone(),
                     announce_block.clone(),
+                    proposer_factory.clone(),
                 )
             }
         };
@@ -725,17 +740,10 @@ fn start_consensus_container(
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
+    proposer_factory: ContainerProposerFactory,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
         .expect("start_consensus_container: slot duration should exist");
-
-    let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
-        spawner.clone(),
-        client.clone(),
-        transaction_pool,
-        prometheus_registry.as_ref(),
-        telemetry.clone(),
-    );
 
     let proposer = Proposer::new(proposer_factory);
 
