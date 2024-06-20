@@ -11,14 +11,6 @@ version = "0.1.0"
 name = "tanssi-relay"
 path = "src/main.rs"
 
-[[bin]]
-name = "polkadot-execute-worker"
-path = "src/bin/execute-worker.rs"
-
-[[bin]]
-name = "polkadot-prepare-worker"
-path = "src/bin/prepare-worker.rs"
-
 [lints]
 workspace = true
 
