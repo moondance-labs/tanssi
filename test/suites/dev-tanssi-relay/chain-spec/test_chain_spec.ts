@@ -44,7 +44,7 @@ describeSuite({
             title: "Checking ss58 Prefix",
             test: async function () {
                 const ss58Prefix = polkadotJs.consts.system.ss58Prefix.toNumber();
-                expect(ss58Prefix, "Relay API incorrect").toBe("42");
+                expect(ss58Prefix, "Relay API incorrect").toBe(42);
             },
         });
     },
