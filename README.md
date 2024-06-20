@@ -43,10 +43,16 @@ Typescript tests are run with [Moonwall](https://github.com/Moonsong-Labs/moonwa
 
 ```bash
 # Install moonwall
-sudo npm i -g pnpm  
+sudo npm i -g pnpm
 
 # Install dependencies
 pnpm i
+
+# Create typescript-api local interfaces
+cd typescript-api && pnpm create-local-interfaces && cd ..
+
+# Change directory to test
+cd test
 
 # Run manual seal orchestrator tests
 pnpm moonwall test dev_tanssi
