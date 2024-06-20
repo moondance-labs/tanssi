@@ -1,6 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { hexToString } from "@polkadot/util";
 
 describeSuite({
     id: "DTR0101",
