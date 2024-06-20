@@ -25,5 +25,5 @@ describeSuite({
                 expect(specVersion, "Relay API incorrect").to.contain("0.1.0");
             },
         });
-    }
+    },
 });
