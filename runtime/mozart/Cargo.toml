@@ -7,38 +7,6 @@ license = "GPL-3.0-only"
 readme = "README.md"
 version = "0.1.0"
 
-# Configuration for building a .deb package - for use with `cargo-deb`
-[package.metadata.deb]
-name = "tanssi-relay"
-assets = [
-	[
-	"/usr/bin/",
-	"755",
-	"target/release/tanssi-relay",
-],
-	[
-	"/usr/lib/tanssi-relay/",
-	"755",
-	"target/release/tanssi-relay-prepare-worker",
-],
-	[
-	"/usr/lib/tanssi-relay/",
-	"755",
-	"target/release/tanssi-relay-execute-worker",
-],
-	[
-	"/lib/systemd/system/",
-	"644",
-	"scripts/packaging/tanssi-relay.service",
-],
-]
-conf-files = [ "/etc/default/tanssi-relay" ]
-extended-description = "Implementation of a https://tanssi.network node in Rust based on the Substrate framework."
-license-file = [ "0", "LICENSE" ]
-maintainer = "security@tanssi.network"
-# https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
-maintainer-scripts = "scripts/packaging/deb-maintainer-scripts"
-section = "misc"
 [[bin]]
 name = "tanssi-relay"
 path = "src/main.rs"
