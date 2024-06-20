@@ -5,7 +5,6 @@ description = "Implementation of a `https://tanssi.network` node in Rust based o
 edition = "2021"
 license = "GPL-3.0-only"
 readme = "README.md"
-rust-version = "1.64.0"
 version = "0.1.0"
 
 # Configuration for building a .deb package - for use with `cargo-deb`
