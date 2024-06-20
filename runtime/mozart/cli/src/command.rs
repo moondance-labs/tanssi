@@ -128,6 +128,7 @@ impl SubstrateCli for Cli {
     }
 }
 
+#[allow(clippy::borrowed_box)]
 fn set_default_ss58_version(_spec: &Box<dyn polkadot_service::ChainSpec>) {
     let ss58_version = Ss58AddressFormatRegistry::PolkadotAccount.into();
 
