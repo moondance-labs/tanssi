@@ -1,5 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
+import { hexToString } from "@polkadot/util";
 
 describeSuite({
     id: "DTR0101",
@@ -14,13 +15,16 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Checking spec name and version",
+            title: "Checking spec details",
             test: async function () {
                 const specName = polkadotJs.consts.system.version.specName.toString();
                 expect(specName, "Relay API incorrect").to.contain("mozart");
 
                 const specVersion = polkadotJs.consts.system.version.specVersion.toString();
-                expect(specVersion, "Relay API incorrect").to.contain("1011000");
+                expect(specVersion, "Relay API incorrect").toBe("1011000");
+
+                const ss58Prefix = polkadotJs.consts.system.ss58Prefix.toString();
+                expect(ss58Prefix, "Relay API incorrect").toBe("42");
             },
         });
     },
