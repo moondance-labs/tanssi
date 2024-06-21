@@ -125,10 +125,7 @@ pub type ParachainBackend = TFullBackend<Block>;
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 type ParachainProposerFactory = ProposerFactory<
-    sc_transaction_pool::BasicPool<
-        sc_transaction_pool::FullChainApi<ParachainClient, Block>,
-        Block,
-    >,
+    sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>,
     ParachainClient,
     EnableProofRecording,
 >;
@@ -713,10 +710,7 @@ fn start_consensus_container(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<
-        sc_transaction_pool::BasicPool<
-            sc_transaction_pool::FullChainApi<ContainerChainClient, Block>,
-            Block,
-        >,
+        sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient>,
     >,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,

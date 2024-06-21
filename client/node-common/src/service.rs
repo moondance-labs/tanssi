@@ -84,6 +84,7 @@ pub trait NodeBuilderConfig {
             ConstructRuntimeApi<BlockOf<Self>, ClientOf<Self>> + Sync + Send + 'static,
         ConstructedRuntimeApiOf<Self>:
             TaggedTransactionQueue<BlockOf<Self>> + BlockBuilder<BlockOf<Self>>,
+        BlockHashOf<Self>: Unpin,
     {
         NodeBuilder::<Self>::new(parachain_config, hwbench)
     }
@@ -141,12 +142,7 @@ pub struct NodeBuilder<
     pub backend: Arc<BackendOf<T>>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<
-        sc_transaction_pool::BasicPool<
-            sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
-            BlockOf<T>,
-        >,
-    >,
+    pub transaction_pool: Arc<sc_transaction_pool::TransactionPoolImpl<BlockOf<T>, ClientOf<T>>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
@@ -200,6 +196,7 @@ where
         Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
     RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
     ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
+    BlockHashOf<T>: Unpin,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it only starts telemetry, and doesn't provide any
@@ -208,7 +205,7 @@ where
     fn new(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
-    ) -> Result<Self, sc_service::Error> {
+    ) -> Result<Self, sc_service::Error>  {
         // Refactor: old new_partial
 
         let telemetry = parachain_config
@@ -263,12 +260,13 @@ where
             telemetry
         });
 
-        let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-            Default::default(),
-            parachain_config.role.is_authority().into(),
-            parachain_config.prometheus_registry(),
-            task_manager.spawn_essential_handle(),
-            client.clone(),
+        let transaction_pool = sc_transaction_pool::Builder::new()
+            .with_options(parachain_config.transaction_pool.clone())
+            .build(
+                parachain_config.role.is_authority().into(),
+                parachain_config.prometheus_registry(),
+                task_manager.spawn_essential_handle(),
+                client.clone(),
         );
 
         Ok(Self {
@@ -644,7 +642,8 @@ where
             dyn Stream<Item = EngineCommand<BlockHashOf<T>>> + Send + Sync + Unpin,
         > = match sealing {
             Sealing::Instant => {
-                Box::new(
+                todo!();
+                /*Box::new(
                     // This bit cribbed from the implementation of instant seal.
                     self.transaction_pool
                         .pool()
@@ -656,7 +655,7 @@ where
                             parent_hash: None,
                             sender: None,
                         }),
-                )
+                )*/
             }
             Sealing::Manual => {
                 let (sink, stream) = futures::channel::mpsc::channel(1000);
