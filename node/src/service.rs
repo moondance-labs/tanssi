@@ -354,14 +354,7 @@ async fn start_node_impl(
     let rpc_builder = {
         let client = node_builder.client.clone();
 
-        let transaction_pool = sc_transaction_pool::Builder::new()
-            .with_options(parachain_config.transaction_pool.clone())
-            .build(
-                parachain_config.role.is_authority().into(),
-                parachain_config.prometheus_registry(),
-                node_builder.task_manager.spawn_essential_handle(),
-                client.clone(),
-            );
+        let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -589,14 +582,7 @@ pub async fn start_node_impl_container(
 
     let rpc_builder = {
         let client = node_builder.client.clone();
-        let transaction_pool = sc_transaction_pool::Builder::new()
-            .with_options(parachain_config.transaction_pool.clone())
-            .build(
-                parachain_config.role.is_authority().into(),
-                parachain_config.prometheus_registry(),
-                node_builder.task_manager.spawn_essential_handle(),
-                client.clone(),
-            );
+        let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
