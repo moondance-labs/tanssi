@@ -127,6 +127,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -215,7 +216,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
-    spec_version: 700,
+    spec_version: 800,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -892,7 +893,7 @@ impl_runtime_apis! {
                     // We only care for native asset until we support others
                     // TODO: refactor this case once other assets are supported
                     vec![Asset{
-                        id: AssetId(Location::here()),
+                        id: AssetId(SelfReserve::get()),
                         fun: Fungible(u128::MAX),
                     }].into()
                 }
@@ -925,7 +926,7 @@ impl_runtime_apis! {
                 fn fee_asset() -> Result<Asset, BenchmarkError> {
                     Ok(Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(1u128),
+                        fun: Fungible(ExistentialDeposit::get()*100),
                     })
                 }
 
@@ -982,9 +983,15 @@ impl_runtime_apis! {
                     ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
                         random_para_id.into()
                     );
+                    let who = frame_benchmarking::whitelisted_caller();
+                    // Give some multiple of the existential deposit
+                    let balance = EXISTENTIAL_DEPOSIT * 1000;
+                    let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+                        &who, balance,
+                    );
                     Some((
                         Asset {
-                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            fun: Fungible(EXISTENTIAL_DEPOSIT*10),
                             id: SelfReserve::get().into()
                         },
                         ParentThen(Parachain(random_para_id).into()).into(),
