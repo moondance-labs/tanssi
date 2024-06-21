@@ -76,7 +76,6 @@ use {
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
-    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
