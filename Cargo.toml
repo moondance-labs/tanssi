@@ -10,12 +10,11 @@ members = [
 	"primitives/*",
 	"runtime/dancebox",
 	"runtime/flashbox",
-	"runtime/mozart",
-	"runtime/mozart/cli",
-	"runtime/mozart/constants",
-	"runtime/mozart/node",
-	"runtime/mozart/runtime",
 	"runtime/relay-encoder",
+	"solo-chains/client/*",
+	"solo-chains/node/*",
+	"solo-chains/runtime/mozart",
+	"solo-chains/runtime/mozart/constants",
 ]
 resolver = "2"
 
@@ -78,14 +77,14 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
-mozart-runtime = { path = "runtime/mozart/runtime", default-features = false }
-mozart-runtime-constants = { path = "runtime/mozart/constants", default-features = false }
+mozart-runtime = { path = "solo-chains/runtime/mozart", default-features = false }
+mozart-runtime-constants = { path = "solo-chains/runtime/mozart/constants", default-features = false }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
-tanssi-relay-cli = { path = "runtime/mozart/cli", default-features = false }
+tanssi-relay-cli = { path = "solo-chains/client/cli", default-features = false }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
-tanssi-relay-service = { path = "runtime/mozart/node", default-features = false }
+tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
