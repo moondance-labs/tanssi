@@ -11645,7 +11645,6 @@ version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
 dependencies = [
  "async-trait",
- "bitvec",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-support",
@@ -11701,7 +11700,6 @@ dependencies = [
  "polkadot-runtime-parachains",
  "polkadot-statement-distribution",
  "rococo-runtime",
- "rococo-runtime-constants",
  "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-block-builder",
@@ -11756,7 +11754,6 @@ dependencies = [
  "thiserror",
  "tracing-gum",
  "westend-runtime",
- "westend-runtime-constants",
  "xcm-fee-payment-runtime-api",
 ]
 

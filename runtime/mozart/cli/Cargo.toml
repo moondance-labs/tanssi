@@ -77,8 +77,6 @@ try-runtime = [
 
 # Configure the native runtimes to use.
 mozart-native = [ "tanssi-relay-service/mozart-native" ]
-rococo-native = [ "polkadot-service/rococo-native" ]
-westend-native = [ "polkadot-service/westend-native" ]
 
 malus = [ "full-node", "polkadot-service/malus" ]
 runtime-metrics = [
