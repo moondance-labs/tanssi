@@ -2001,6 +2001,7 @@ export default {
             "TargetCantChangeDeposit",
             "ImmediateDepositChangeRequiresSameAssetId",
             "DeadlineCantBeInPast",
+            "CantFetchStatusBeforeLastTimeUpdated",
         ],
     },
     /** Lookup283: pallet_identity::types::Registration<Balance, MaxJudgements, pallet_identity::legacy::IdentityInfo<FieldLimit>> */
