@@ -1,5 +1,4 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import { describeSuite, expect } from "@moonwall/cli";
 
 describeSuite({
     id: "ZR-01",
@@ -17,6 +16,6 @@ describeSuite({
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
-        });     
+        });
     },
 });
