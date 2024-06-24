@@ -1,2 +1,5 @@
 # Mark typescript-api folder as auto generated
 typescript-api/** linguist-generated=true
+typescript-api/package.json linguist-generated=false
+typescript-api/scripts/** linguist-generated=false
+typescript-api/src/*/interfaces/tanssi/definitions.ts linguist-generated=false

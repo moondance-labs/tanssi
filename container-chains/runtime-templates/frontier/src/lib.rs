@@ -49,16 +49,17 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT,
-            FindAuthor, Imbalance, InsideBoth, InstanceFilter, OnFinalize, OnUnbalanced,
+            tokens::ConversionToAssetBalance, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
+            Contains, Currency as CurrencyT, FindAuthor, Imbalance, InsideBoth, InstanceFilter,
+            OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
-            WeightToFeePolynomial,
+            ConstantMultiplier, Weight, WeightToFee as _, WeightToFeeCoefficient,
+            WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
     frame_system::{
@@ -93,6 +94,10 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    staging_xcm::{
+        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
+    },
+    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -1646,6 +1651,62 @@ impl_runtime_apis! {
     impl dp_slot_duration_runtime_api::TanssiSlotDurationApi<Block> for Runtime {
         fn slot_duration() -> u64 {
             SLOT_DURATION
+        }
+    }
+
+    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+            if !matches!(xcm_version, 3 | 4) {
+                return Err(XcmPaymentApiError::UnhandledXcmVersion);
+            }
+
+            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+                .into_iter()
+                .chain(
+                    pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
+                        pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
+                            VersionedAssetId::V4(location.into())
+                        }).or_else(|| {
+                            log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
+                            None
+                        })
+                    })
+                )
+                .filter_map(|asset| asset.into_version(xcm_version).map_err(|e| {
+                    log::warn!("Failed to convert asset to version {}: {:?}", xcm_version, e);
+                }).ok())
+                .collect())
+        }
+
+        fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
+            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let asset = asset
+                .into_version(4)
+                .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+
+            if asset == local_asset {
+                Ok(WeightToFee::weight_to_fee(&weight))
+            } else {
+                let native_fee = WeightToFee::weight_to_fee(&weight);
+                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
+                let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
+                match asset_rate {
+                    Ok(x) => Ok(x),
+                    Err(pallet_asset_rate::Error::UnknownAssetKind) => Err(XcmPaymentApiError::AssetNotFound),
+                    // Error when converting native balance to asset balance, probably overflow
+                    Err(_e) => Err(XcmPaymentApiError::WeightNotComputable),
+                }
+            }
+        }
+
+        fn query_xcm_weight(message: VersionedXcm<()>) -> Result<Weight, XcmPaymentApiError> {
+            PolkadotXcm::query_xcm_weight(message)
+        }
+
+        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
+            PolkadotXcm::query_delivery_fees(destination, message)
         }
     }
 }
