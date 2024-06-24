@@ -46,7 +46,7 @@
             "testFileDir": ["suites/dev-tanssi-relay"],
             "runScripts": ["download-polkadot.sh"],
             "multiThreads": true,
-            "reporters": ["verbose"],
+            "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
