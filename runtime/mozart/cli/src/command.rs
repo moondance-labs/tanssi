@@ -213,7 +213,10 @@ where
                 node_version,
                 secure_validator_mode,
                 workers_path: cli.run.workers_path,
-                workers_names: None,
+                workers_names: Some((
+                   (&"tanssi-relay-execute-worker").to_string(),
+                   (&"tanssi-relay-prepare-worker").to_string()
+                )),
                 overseer_gen,
                 overseer_message_channel_capacity_override: cli
                     .run

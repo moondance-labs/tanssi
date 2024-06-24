@@ -547,6 +547,34 @@
             ]
         },
         {
+            "name": "zombie_tanssi_relay",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie-tanssi-relay"],
+            "runScripts": [
+                "build-spec-single-container.sh tmp container-chain-simple-node",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "skipBlockCheck": ["Container2000"],
+                    "configPath": "./configs/zombieMozart.json"
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
             "name": "dancebox_smoke",
             "testFileDir": ["suites/smoke-test-dancebox", "suites/smoke-test-common"],
             "foundation": {
