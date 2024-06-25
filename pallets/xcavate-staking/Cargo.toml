@@ -1,0 +1,62 @@
+[package]
+name = "pallet-xcavate-staking"
+version = "4.0.0-dev"
+description = "The Xcavate pallet xcavate-staking"
+authors = ["Xcavate Network"]
+homepage = "https://xcavate.io"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/XcavateBlockchain/MarketplaceMVP_Substrate/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+	"derive",
+] }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.197", features = ["derive"], optional = true }
+
+frame-benchmarking = {  default-features = false, optional = true, git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.6.0" }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+pallet-balances = { workspace = true }
+sp-std = { workspace = true }
+pallet-timestamp = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-insecure-randomness-collective-flip = { workspace = true }
+pallet-nfts = { workspace = true }
+
+
+# Local dependencies
+pallet-community-loan-pool = { path = "../community-loan-pool", default-features = false }
+pallet-xcavate-whitelist = { path = "../xcavate-whitelist", default-features = false }
+
+[dev-dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"pallet-balances/std",
+	"sp-std/std",
+	"serde",
+	"pallet-community-loan-pool/std",
+	"pallet-xcavate-whitelist/std",
+	"pallet-timestamp/std",
+	"pallet-transaction-payment/std",
+	"pallet-insecure-randomness-collective-flip/std",
+	"pallet-nfts/std",
+]
+runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]

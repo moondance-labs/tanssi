@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [lints]
 workspace = true
@@ -15,9 +15,9 @@ workspace = true
 [dependencies]
 hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive" ] }
-scale-info = { workspace = true, features = [ "derive" ] }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+serde = { workspace = true, optional = true, features = ["derive"] }
 smallvec = { workspace = true }
 
 # Local
@@ -27,13 +27,22 @@ dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
+# Custom pallets
+pallet-community-loan-pool = { workspace = true }
+pallet-xcavate-staking = { workspace = true }
+pallet-nft-marketplace = { workspace = true }
+pallet-community-projects = { workspace = true }
+pallet-xcavate-whitelist = { workspace = true }
+pallet-property-management = { workspace = true }
+pallet-property-governance = { workspace = true }
+
 # Moonkit
 async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
-pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
+pallet-maintenance-mode = { workspace = true, features = ["xcm-support"] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
@@ -51,6 +60,11 @@ pallet-balances = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-proxy = { workspace = true }
+pallet-bounties = { workspace = true }
+pallet-child-bounties = { workspace = true }
+pallet-nfts = { workspace = true }
+pallet-uniques = { workspace = true }
+pallet-nft-fractionalization = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -59,6 +73,8 @@ pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-tx-pause = { workspace = true }
 pallet-utility = { workspace = true }
+pallet-treasury = { workspace = true }
+pallet-collective = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
@@ -106,9 +122,12 @@ frame-try-runtime = { workspace = true, optional = true }
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
+node-primitives = { workspace = true }
+
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
+	"node-primitives/std",
 	"async-backing-primitives/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
@@ -143,6 +162,11 @@ std = [
 	"pallet-migrations/std",
 	"pallet-multisig/std",
 	"pallet-proxy/std",
+	"pallet-bounties/std",
+	"pallet-child-bounties/std",
+	"pallet-nfts/std",
+	"pallet-uniques/std",
+	"pallet-nft-fractionalization/std",
 	"pallet-root-testing/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
@@ -151,6 +175,8 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-tx-pause/std",
 	"pallet-utility/std",
+	"pallet-treasury/std",
+	"pallet-collective/std",
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm-executor-utils/std",
 	"pallet-xcm/std",
@@ -183,10 +209,18 @@ std = [
 	"tanssi-runtime-common/std",
 	"xcm-fee-payment-runtime-api/std",
 	"xcm-primitives/std",
+
+	"pallet-community-loan-pool/std",
+	"pallet-xcavate-staking/std",
+	"pallet-nft-marketplace/std",
+	"pallet-community-projects/std",
+	"pallet-xcavate-whitelist/std",
+	"pallet-property-management/std",
+	"pallet-property-governance/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
-force-debug = [ "sp-debug-derive/force-debug" ]
+force-debug = ["sp-debug-derive/force-debug"]
 
 runtime-benchmarks = [
 	"cumulus-pallet-dmp-queue/runtime-benchmarks",
@@ -211,11 +245,18 @@ runtime-benchmarks = [
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
+	"pallet-nfts/runtime-benchmarks",
+	"pallet-uniques/runtime-benchmarks",
+	"pallet-nft-fractionalization/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
+	"pallet-bounties/runtime-benchmarks",
+	"pallet-child-bounties/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
+	"pallet-treasury/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"pallet-xcm-executor-utils/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
@@ -227,6 +268,14 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+
+	"pallet-community-loan-pool/runtime-benchmarks",
+	"pallet-xcavate-staking/runtime-benchmarks",
+	"pallet-nft-marketplace/runtime-benchmarks",
+	"pallet-community-projects/runtime-benchmarks",
+	"pallet-xcavate-whitelist/runtime-benchmarks",
+	"pallet-property-management/runtime-benchmarks",
+	"pallet-property-governance/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -251,7 +300,12 @@ try-runtime = [
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
+	"pallet-nfts/try-runtime",
+	"pallet-uniques/try-runtime",
+	"pallet-nft-fractionalization/try-runtime",
 	"pallet-proxy/try-runtime",
+	"pallet-bounties/try-runtime",
+	"pallet-child-bounties/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-sudo/try-runtime",
@@ -259,10 +313,20 @@ try-runtime = [
 	"pallet-transaction-payment/try-runtime",
 	"pallet-tx-pause/try-runtime",
 	"pallet-utility/try-runtime",
+	"pallet-treasury/try-runtime",
+	"pallet-collective/try-runtime",
 	"pallet-xcm-executor-utils/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+
+	"pallet-community-loan-pool/try-runtime",
+	"pallet-xcavate-staking/try-runtime",
+	"pallet-nft-marketplace/try-runtime",
+	"pallet-community-projects/try-runtime",
+	"pallet-xcavate-whitelist/try-runtime",
+	"pallet-property-management/try-runtime",
+	"pallet-property-governance/try-runtime",
 ]

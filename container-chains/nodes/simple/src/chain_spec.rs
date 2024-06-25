@@ -187,6 +187,8 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
         system: Default::default(),
+
+        community_loan_pool: Default::default(),
     };
 
     serde_json::to_value(g).unwrap()

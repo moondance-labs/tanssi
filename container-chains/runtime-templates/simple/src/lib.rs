@@ -26,25 +26,32 @@ use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
+pub mod constants;
+use constants::currency::*;
+
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
 pub mod migrations;
 pub mod weights;
 
+use pallet_nfts::PalletFeatures;
+
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
+        PalletId, BoundedVec,
         construct_runtime,
         dispatch::DispatchClass,
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
+        ord_parameter_types,
         traits::{
             tokens::ConversionToAssetBalance, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
-            Contains, InsideBoth, InstanceFilter,
+            Contains, InsideBoth, InstanceFilter, EitherOfDiverse, AsEnsureOriginWithArg, tokens::{PayFromAccount, UnityAssetBalanceConversion},
         },
         weights::{
             constants::{
@@ -57,7 +64,7 @@ use {
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
-        EnsureRoot,
+        EnsureRoot, EnsureSignedBy, EnsureWithSuccess, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_transaction_payment::FungibleAdapter,
@@ -70,7 +77,7 @@ use {
     sp_core::{MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify, IdentityLookup, AccountIdConversion},
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
     },
@@ -644,6 +651,449 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	pub const CommunityLoanPalletId: PalletId = PalletId(*b"py/loana");
+	pub const MaxLoans: u32 = 1000;
+	pub const VotingTime: BlockNumber = 10;
+	pub const MaximumCommitteeMembers: u32 = 10;
+	pub const MaxMilestones: u32 = 10;
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+    pub const ProposalBondMinimum: Balance = 100 * DANCE;
+}
+
+/// Configure the pallet-community-loan-pool in pallets/community-loan-pool.
+impl pallet_community_loan_pool::Config for Runtime {
+	type PalletId = CommunityLoanPalletId;
+	type Currency = Balances;
+	type CommitteeOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+	type RuntimeEvent = RuntimeEvent;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type ProposalBondMaximum = ();
+	type OnSlash = ();
+	type MaxOngoingLoans = MaxLoans;
+	type TimeProvider = Timestamp;
+	type WeightInfo = pallet_community_loan_pool::weights::SubstrateWeight<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_community_loan_pool::NftHelper;
+	type VotingTime = VotingTime;
+	type MaxCommitteeMembers = MaximumCommitteeMembers;
+	type MaxMilestonesPerProject = MaxMilestones;
+	type CollectionId = u32;
+	type ItemId = u32;
+}
+
+parameter_types! {
+	pub const MinimumRemainingAmount: Balance = DOLLARS;
+	pub const MaxStaker: u32 = 5000;
+	pub const RewardsDistributing: BlockNumber = 1;
+}
+
+/// Configure the pallet-xcavate-staking in pallets/xcavate-staking.
+impl pallet_xcavate_staking::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_xcavate_staking::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type MinimumRemainingAmount = MinimumRemainingAmount;
+	type MaxStakers = MaxStaker;
+	type TimeProvider = Timestamp;
+	type RewardsDistributingTime = RewardsDistributing;
+}
+
+parameter_types! {
+	pub const NftMarketplacePalletId: PalletId = PalletId(*b"py/nftxc");
+	pub const MaxNftTokens: u32 = 250;
+	pub const Postcode: u32 = 10;
+}
+
+/// Configure the pallet-nft-marketplace in pallets/nft-marketplace.
+impl pallet_nft_marketplace::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_nft_marketplace::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type PalletId = NftMarketplacePalletId;
+	type MaxNftToken = MaxNftTokens;
+	type LocationOrigin = EnsureRoot<Self::AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_nft_marketplace::NftHelper;
+	type CollectionId = u32;
+	type ItemId = u32;
+	type TreasuryId = TreasuryPalletId;
+	type CommunityProjectsId = CommunityProjectPalletId;
+ 	type FractionalizeCollectionId = <Self as pallet_nfts::Config>::CollectionId;
+	type FractionalizeItemId = <Self as pallet_nfts::Config>::ItemId;
+	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
+	type AssetId2 = u32; 
+	type PostcodeLimit = Postcode;
+}
+
+parameter_types! {
+	pub const CommunityProjectPalletId: PalletId = PalletId(*b"py/cmprj");
+	pub const MaxNftType: u32 = 4;
+	pub const MaxNftsInCollectionProject: u32 = 100;
+	pub const MaxOngoingProject: u32 = 250;
+}
+
+/// Configure the pallet-community-projects in pallets/community-projects.
+impl pallet_community_projects::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_community_projects::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type PalletId = CommunityProjectPalletId;
+	type MaxNftTypes = MaxNftType;
+	type MaxNftInCollection = MaxNftsInCollectionProject;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_community_projects::NftHelper;
+	type TimeProvider = Timestamp;
+	type MaxOngoingProjects = MaxOngoingProject;
+	type AssetId = u32;
+	type CollectionId = u32;
+	type ItemId = u32;
+	type MinimumRemainingAmount = MinimumRemainingAmount;
+}
+
+parameter_types! {
+	pub const MaxWhitelistUsers: u32 = 1000;
+}
+
+/// Configure the pallet-xcavate-whitelist in pallets/xcavate-whitelist.
+impl pallet_xcavate_whitelist::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_xcavate_whitelist::weights::SubstrateWeight<Runtime>;
+	type WhitelistOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+	type MaxUsersInWhitelist = MaxWhitelistUsers;
+}
+
+parameter_types! {
+	pub const MinimumStakingAmount: Balance = 100 * DOLLARS;
+	pub const PropertyManagementPalletId: PalletId = PalletId(*b"py/ppmmt");
+	pub const MaxProperty: u32 = 1000;
+	pub const MaxLettingAgent: u32 = 100;
+	pub const MaxLocation: u32 = 100;
+}
+
+/// Configure the pallet-property-management in pallets/property-management.
+impl pallet_property_management::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_property_management::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type PalletId = PropertyManagementPalletId;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_property_management::AssetHelper;
+	type AgentOrigin = EnsureRoot<Self::AccountId>;
+	type MinStakingAmount = MinimumStakingAmount;
+	type MaxProperties = MaxProperty;
+	type MaxLettingAgents = MaxLettingAgent;
+	type MaxLocations = MaxLocation;
+}
+
+parameter_types! {
+	pub const PropertyVotingTime: BlockNumber = 30;
+	pub const MaxVoteForBlock: u32 = 100;
+	pub const MinimumSlashingAmount: Balance = 10 * DOLLARS;
+	pub const MaximumVoter: u32 = 100;
+	pub const VotingThreshold: u8 = 67;
+}
+
+/// Configure the pallet-property-governance in pallets/property-governance.
+impl pallet_property_governance::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_property_governance::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type VotingTime = PropertyVotingTime;
+	type MaxVotesForBlock =  MaxVoteForBlock;
+	type Slash = ();
+	type MinSlashingAmount = MinimumSlashingAmount;
+	type MaxVoter = MaximumVoter;
+	type Threshold = VotingThreshold;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_property_governance::AssetHelper;
+}
+
+parameter_types! {
+    pub Features: PalletFeatures = PalletFeatures::all_enabled();
+    pub const MaxAttributesPerCall: u32 = 10;
+}
+
+ord_parameter_types! {
+	pub const CollectionCreationOrigin: AccountId = AccountIdConversion::<AccountId>::into_account_truncating(&CommunityLoanPalletId::get());
+}
+
+impl pallet_nfts::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollectionId = u32;
+    type ItemId = u32;
+    type Currency = Balances;
+    type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+    type CollectionDeposit = CollectionDeposit;
+    type ItemDeposit = ItemDeposit;
+    type MetadataDepositBase = MetadataDepositBase;
+    type AttributeDepositBase = MetadataDepositBase;
+    type DepositPerByte = MetadataDepositPerByte;
+    type StringLimit = ConstU32<5000>;
+    type KeyLimit = ConstU32<64>;
+    type ValueLimit = ConstU32<256>;
+    type ApprovalsLimit = ApprovalsLimit;
+    type ItemAttributesApprovalsLimit = ItemAttributesApprovalsLimit;
+    type MaxTips = MaxTips;
+    type MaxDeadlineDuration = MaxDeadlineDuration;
+    type MaxAttributesPerCall = MaxAttributesPerCall;
+    type Features = Features;
+    type OffchainSignature = Signature;
+    type OffchainPublic = <Signature as Verify>::Signer;
+    type WeightInfo = pallet_nfts::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = ();
+    type CreateOrigin = AsEnsureOriginWithArg<EnsureSignedBy<CollectionCreationOrigin, AccountId>>;
+    type Locker = ();
+}
+
+parameter_types! {
+    pub const CollectionDeposit: Balance = CENTS;
+    pub const ItemDeposit: Balance = CENTS;
+    pub const ApprovalsLimit: u32 = 20;
+    pub const ItemAttributesApprovalsLimit: u32 = 20;
+    pub const MaxTips: u32 = 10;
+    pub const MaxDeadlineDuration: BlockNumber = 12 * 30 * DAYS;
+}
+
+impl pallet_uniques::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollectionId = u32;
+    type ItemId = u32;
+    type Currency = Balances;
+    type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+    type CollectionDeposit = CollectionDeposit;
+    type ItemDeposit = ItemDeposit;
+    type MetadataDepositBase = MetadataDepositBase;
+    type AttributeDepositBase = MetadataDepositBase;
+    type DepositPerByte = MetadataDepositPerByte;
+    type StringLimit = ConstU32<128>;
+    type KeyLimit = ConstU32<32>;
+    type ValueLimit = ConstU32<64>;
+    type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = ();
+    type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+    type Locker = ();
+}
+
+parameter_types! {
+	pub const NftFractionalizationPalletId: PalletId = PalletId(*b"fraction");
+	pub NewAssetSymbol: BoundedVec<u8, StringLimit> = (*b"BRIX").to_vec().try_into().unwrap();
+	pub NewAssetName: BoundedVec<u8, StringLimit> = (*b"Brix").to_vec().try_into().unwrap();
+	pub const Deposit: Balance = DOLLARS;
+}
+
+impl pallet_nft_fractionalization::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Deposit = Deposit;
+	type Currency = Balances;
+	type NewAssetSymbol = NewAssetSymbol;
+	type NewAssetName = NewAssetName;
+	type NftCollectionId = <Self as pallet_nfts::Config>::CollectionId;
+	type NftId = <Self as pallet_nfts::Config>::ItemId;
+	type AssetBalance = <Self as pallet_balances::Config>::Balance;
+	type AssetId = <Self as pallet_assets::Config>::AssetId;
+	type Assets = Assets;
+	type Nfts = Nfts;
+	type PalletId = NftFractionalizationPalletId;
+	type WeightInfo = ();
+	type StringLimit = StringLimit;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
+}
+
+
+parameter_types! {
+    pub const CouncilMotionDuration: BlockNumber = 5 * DAYS;
+    pub const CouncilMaxProposals: u32 = 100;
+    pub const CouncilMaxMembers: u32 = 100;
+    pub MaxCollectivesProposalWeight: Weight = Perbill::from_percent(50) * RuntimeBlockWeights::get().max_block;
+}
+
+type CouncilCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = CouncilMotionDuration;
+    type MaxProposals = CouncilMaxProposals;
+    type MaxMembers = CouncilMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+    type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+    type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+parameter_types! {
+    pub const TechnicalMotionDuration: BlockNumber = 5 * DAYS;
+    pub const TechnicalMaxProposals: u32 = 100;
+    pub const TechnicalMaxMembers: u32 = 100;
+}
+
+type TechnicalCollective = pallet_collective::Instance2;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = TechnicalMotionDuration;
+    type MaxProposals = TechnicalMaxProposals;
+    type MaxMembers = TechnicalMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+    type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+    type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+const ALLIANCE_MOTION_DURATION_IN_BLOCKS: BlockNumber = 5 * DAYS;
+
+parameter_types! {
+    pub const AllianceMotionDuration: BlockNumber = ALLIANCE_MOTION_DURATION_IN_BLOCKS;
+    pub const AllianceMaxProposals: u32 = 100;
+    pub const AllianceMaxMembers: u32 = 100;
+}
+
+type AllianceCollective = pallet_collective::Instance3;
+impl pallet_collective::Config<AllianceCollective> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = AllianceMotionDuration;
+    type MaxProposals = AllianceMaxProposals;
+    type MaxMembers = AllianceMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+    type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+    type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+
+parameter_types! {
+    pub const AssetDeposit: Balance = 10 * UNIT;
+    pub const AssetAccountDeposit: Balance = deposit(1, 16);
+    pub const ApprovalDeposit: Balance = EXISTENTIAL_DEPOSIT;
+    pub const StringLimit: u32 = 50;
+    pub const MetadataDepositBase: Balance = deposit(1, 68);
+    pub const MetadataDepositPerByte: Balance = deposit(0, 1);
+}
+
+impl pallet_assets::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = Balance;
+    type AssetId = u32;
+    type AssetIdParameter = parity_scale_codec::Compact<u32>;
+    type Currency = Balances;
+    type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+    type CallbackHandle = ();
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AssetDeposit = AssetDeposit;
+    type AssetAccountDeposit = AssetAccountDeposit;
+    type MetadataDepositBase = MetadataDepositBase;
+    type MetadataDepositPerByte = MetadataDepositPerByte;
+    type ApprovalDeposit = ApprovalDeposit;
+    type StringLimit = StringLimit;
+    type Freezer = ();
+    type Extra = ();
+    type RemoveItemsLimit = ConstU32<1000>;
+    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
+}
+
+parameter_types! {
+    pub const TProposalBondMinimum: Balance = 1 * DOLLARS;
+    pub const SpendPeriod: BlockNumber = 1 * DAYS;
+    pub const Burn: Permill = Permill::from_percent(50);
+    pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+    pub const MaxApprovals: u32 = 100;
+    pub const MaxBalance: Balance = Balance::max_value();
+    pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
+}
+
+impl pallet_treasury::Config for Runtime {
+	type PalletId = TreasuryPalletId;
+	type Currency = Balances;
+
+	type ApproveOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>,
+	>;
+	type RejectOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+
+	// type ApproveOrigin = EnsureSigned<AccountId>;
+	// type RejectOrigin = EnsureSigned<AccountId>;
+
+	type RuntimeEvent = RuntimeEvent;
+	type OnSlash = ();
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type ProposalBondMaximum = ();
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type SpendFunds = Bounties;
+	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+	type MaxApprovals = MaxApprovals;
+	type SpendOrigin = EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
+	type AssetKind = ();
+	type Beneficiary = Self::AccountId;
+	type BeneficiaryLookup = IdentityLookup<Self::AccountId>;
+	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+	type BalanceConverter = UnityAssetBalanceConversion;
+	type PayoutPeriod = PayoutSpendPeriod;
+}
+
+parameter_types! {
+    pub const BountyValueMinimum: Balance = 5 * DOLLARS;
+    pub const BountyDepositBase: Balance = 1 * DOLLARS;
+    pub const CuratorDepositMultiplier: Permill = Permill::from_percent(50);
+    pub const CuratorDepositMin: Balance = 1 * DOLLARS;
+    pub const CuratorDepositMax: Balance = 100 * DOLLARS;
+    pub const BountyDepositPayoutDelay: BlockNumber = 1 * DAYS;
+    pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
+    pub const MaximumReasonLength: u32 = 300;
+    pub const DataDepositPerByte: Balance = 1 * CENTS;
+}
+
+impl pallet_bounties::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type BountyDepositBase = BountyDepositBase;
+    type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
+    type BountyUpdatePeriod = BountyUpdatePeriod;
+    type CuratorDepositMultiplier = CuratorDepositMultiplier;
+    type CuratorDepositMin = CuratorDepositMin;
+    type CuratorDepositMax = CuratorDepositMax;
+    type BountyValueMinimum = BountyValueMinimum;
+    type DataDepositPerByte = DataDepositPerByte;
+    type MaximumReasonLength = MaximumReasonLength;
+    type WeightInfo = pallet_bounties::weights::SubstrateWeight<Runtime>;
+    type ChildBountyManager = ChildBounties;
+}
+
+parameter_types! {
+    pub const ChildBountyValueMinimum: Balance = 1 * DOLLARS;
+}
+
+impl pallet_child_bounties::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxActiveChildBountyCount = ConstU32<5>;
+    type ChildBountyValueMinimum = ChildBountyValueMinimum;
+    type WeightInfo = pallet_child_bounties::weights::SubstrateWeight<Runtime>;
+}
+
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -687,6 +1137,25 @@ construct_runtime!(
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
+        
+        CommunityLoanPool: pallet_community_loan_pool = 112,
+		XcavateStaking: pallet_xcavate_staking = 113,
+		NftMarketplace: pallet_nft_marketplace = 114,
+		CommunityProject: pallet_community_projects = 115,
+		XcavateWhitelist: pallet_xcavate_whitelist = 116,
+		PropertyManagement: pallet_property_management = 117,
+		PropertyGovernance: pallet_property_governance = 118,
+        
+        Nfts: pallet_nfts = 119,
+
+        Council: pallet_collective::<Instance1> = 120,
+        TechnicalCommittee: pallet_collective::<Instance2> = 121,
+        AllianceMotion: pallet_collective::<Instance3> = 122,
+        Assets: pallet_assets = 123,
+        Uniques: pallet_uniques  = 124,
+        Treasury: pallet_treasury = 125,
+        Bounties: pallet_bounties = 126,
+        ChildBounties: pallet_child_bounties = 127,
     }
 );
 
@@ -713,6 +1182,14 @@ mod benches {
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
         [pallet_xcm_executor_utils, XcmExecutorUtils]
+
+        [pallet_community_loan_pool, CommunityLoanPool]
+		[pallet_xcavate_staking, XcavateStaking]
+		[pallet_nft_marketplace, NftMarketplace]
+		[pallet_community_projects, CommunityProject]
+		[pallet_xcavate_whitelist, XcavateWhitelist]
+		[pallet_property_management, PropertyManagement]
+		[pallet_property_governance, PropertyGovernance]
     );
 }
 
