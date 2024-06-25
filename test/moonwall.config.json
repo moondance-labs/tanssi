@@ -551,7 +551,6 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "download-polkadot.sh",
                 "build-spec-single-container.sh ../target/release container-chain-simple-node",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
             ],
