@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! The Mozart runtime for v1 parachains.
+//! The Starlight runtime for v1 parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
@@ -30,7 +30,7 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
-    mozart_runtime_constants::system_parachain::BROKER_ID,
+    starlight_runtime_constants::system_parachain::BROKER_ID,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -119,7 +119,7 @@ use {
 pub use {frame_system::Call as SystemCall, pallet_balances::Call as BalancesCall};
 
 /// Constant values used within the runtime.
-use mozart_runtime_constants::{currency::*, fee::*, time::*};
+use starlight_runtime_constants::{currency::*, fee::*, time::*};
 
 // XCM configurations.
 pub mod xcm_config;
@@ -144,7 +144,7 @@ mod tests;
 mod genesis_config_presets;
 mod validator_manager;
 
-impl_runtime_weights!(mozart_runtime_constants);
+impl_runtime_weights!(starlight_runtime_constants);
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -158,11 +158,11 @@ pub mod fast_runtime_binary {
     include!(concat!(env!("OUT_DIR"), "/fast_runtime_binary.rs"));
 }
 
-/// Runtime version (Mozart).
+/// Runtime version (Starlight).
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("mozart"),
-    impl_name: create_runtime_str!("tanssi-mozart-v2.0"),
+    spec_name: create_runtime_str!("starlight"),
+    impl_name: create_runtime_str!("tanssi-starlight-v2.0"),
     authoring_version: 0,
     spec_version: 1_011_000,
     impl_version: 0,
@@ -677,7 +677,7 @@ where
 }
 
 parameter_types! {
-    pub Prefix: &'static [u8] = b"Pay ROCs to the Mozart account:";
+    pub Prefix: &'static [u8] = b"Pay ROCs to the Starlight account:";
 }
 
 impl claims::Config for Runtime {
@@ -689,7 +689,7 @@ impl claims::Config for Runtime {
 }
 
 parameter_types! {
-    // Minimum 100 bytes/MOZ deposited (1 CENT/byte)
+    // Minimum 100 bytes/STAR deposited (1 CENT/byte)
     pub const BasicDeposit: Balance = 1000 * CENTS;       // 258 bytes on-chain
     pub const ByteDeposit: Balance = deposit(0, 1);
     pub const SubAccountDeposit: Balance = 200 * CENTS;   // 53 bytes on-chain
@@ -2248,7 +2248,7 @@ sp_api::impl_runtime_apis! {
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
         fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
-            log::info!("try-runtime::on_runtime_upgrade mozart.");
+            log::info!("try-runtime::on_runtime_upgrade starlight.");
             let weight = Executive::try_runtime_upgrade(checks).unwrap();
             (weight, BlockWeights::get().max_block)
         }
@@ -2308,7 +2308,7 @@ sp_api::impl_runtime_apis! {
                     TokenLocation::get(),
                     ExistentialDeposit::get()
                 ).into());
-                pub AssetHubParaId: ParaId = mozart_runtime_constants::system_parachain::ASSET_HUB_ID.into();
+                pub AssetHubParaId: ParaId = starlight_runtime_constants::system_parachain::ASSET_HUB_ID.into();
                 pub const RandomParaId: ParaId = ParaId::new(43211234);
             }
 
@@ -2393,7 +2393,7 @@ sp_api::impl_runtime_apis! {
                     Ok(AssetHub::get())
                 }
                 fn worst_case_holding(_depositable_count: u32) -> Assets {
-                    // Mozart only knows about MOZ
+                    // Starlight only knows about STAR
                     vec![Asset{
                         id: AssetId(TokenLocation::get()),
                         fun: Fungible(1_000_000 * UNITS),
@@ -2433,12 +2433,12 @@ sp_api::impl_runtime_apis! {
                 }
 
                 fn worst_case_asset_exchange() -> Result<(Assets, Assets), BenchmarkError> {
-                    // Mozart doesn't support asset exchanges
+                    // Starlight doesn't support asset exchanges
                     Err(BenchmarkError::Skip)
                 }
 
                 fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-                    // The XCM executor of Mozart doesn't have a configured `UniversalAliases`
+                    // The XCM executor of Starlight doesn't have a configured `UniversalAliases`
                     Err(BenchmarkError::Skip)
                 }
 
@@ -2465,18 +2465,18 @@ sp_api::impl_runtime_apis! {
                 }
 
                 fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
-                    // Mozart doesn't support asset locking
+                    // Starlight doesn't support asset locking
                     Err(BenchmarkError::Skip)
                 }
 
                 fn export_message_origin_and_destination(
                 ) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
-                    // Mozart doesn't support exporting messages
+                    // Starlight doesn't support exporting messages
                     Err(BenchmarkError::Skip)
                 }
 
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
-                    // The XCM executor of Mozart doesn't have a configured `Aliasers`
+                    // The XCM executor of Starlight doesn't have a configured `Aliasers`
                     Err(BenchmarkError::Skip)
                 }
             }
@@ -2534,7 +2534,7 @@ mod remote_tests {
 
         sp_tracing::try_init_simple();
         let transport: Transport = var("WS")
-            .unwrap_or("wss://mozart-rpc.polkadot.io:443".to_string())
+            .unwrap_or("wss://starlight-rpc.polkadot.io:443".to_string())
             .into();
         let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
         let mut ext = Builder::<Block>::default()

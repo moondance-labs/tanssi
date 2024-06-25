@@ -18,7 +18,7 @@ use {
     crate::xcm_config,
     frame_support::pallet_prelude::DispatchResult,
     frame_system::RawOrigin,
-    mozart_runtime_constants::currency::*,
+    starlight_runtime_constants::currency::*,
     parity_scale_codec::{Decode, Encode},
     primitives::Balance,
     runtime_common::identity_migrator::OnReapIdentity,
@@ -57,7 +57,7 @@ impl<Runtime, AccountId> ToParachainIdentityReaper<Runtime, AccountId> {
     fn calculate_remote_deposit(bytes: u32, subs: u32) -> Balance {
         // Remote deposit constants. Parachain uses `deposit / 100`
         // Source:
-        // https://github.com/paritytech/polkadot-sdk/blob/a146918/cumulus/parachains/common/src/mozart.rs#L29
+        // https://github.com/paritytech/polkadot-sdk/blob/a146918/cumulus/parachains/common/src/starlight.rs#L29
         //
         // Parachain Deposit Configuration:
         //
@@ -94,7 +94,7 @@ where
         let total_to_send = Self::calculate_remote_deposit(fields, subs);
 
         // define asset / destination from relay perspective
-        let moz = Asset {
+        let star = Asset {
             id: AssetId(Here.into_location()),
             fun: Fungible(total_to_send),
         };
@@ -110,12 +110,12 @@ where
             id: who.clone().into(),
         }
         .into_location();
-        let _withdrawn = xcm_config::LocalAssetTransactor::withdraw_asset(&moz, &who_origin, None)
+        let _withdrawn = xcm_config::LocalAssetTransactor::withdraw_asset(&star, &who_origin, None)
             .map_err(|err| {
                 log::error!(
                     target: "runtime::on_reap_identity",
                     "withdraw_asset(what: {:?}, who_origin: {:?}) error: {:?}",
-                    moz, who_origin, err
+                    star, who_origin, err
                 );
                 pallet_xcm::Error::<Runtime>::LowBalance
             })?;
@@ -123,7 +123,7 @@ where
         // check out
         xcm_config::LocalAssetTransactor::can_check_out(
             &destination,
-            &moz,
+            &star,
             // not used in AssetTransactor
             &XcmContext {
                 origin: None,
@@ -135,13 +135,13 @@ where
             log::error!(
                 target: "runtime::on_reap_identity",
                 "can_check_out(destination: {:?}, asset: {:?}, _) error: {:?}",
-                destination, moz, err
+                destination, star, err
             );
             pallet_xcm::Error::<Runtime>::CannotCheckOutTeleport
         })?;
         xcm_config::LocalAssetTransactor::check_out(
             &destination,
-            &moz,
+            &star,
             // not used in AssetTransactor
             &XcmContext {
                 origin: None,
@@ -151,7 +151,7 @@ where
         );
 
         // reanchor
-        let moz_reanchored: Assets = vec![Asset {
+        let star_reanchored: Assets = vec![Asset {
             id: AssetId(Location::new(1, Here)),
             fun: Fungible(total_to_send),
         }]
@@ -169,7 +169,7 @@ where
                 check_origin: None,
             },
             // Receive the asset into holding.
-            ReceiveTeleportedAsset(moz_reanchored),
+            ReceiveTeleportedAsset(star_reanchored),
             // Deposit into the user's account.
             DepositAsset {
                 assets: Wild(AllCounted(1)),

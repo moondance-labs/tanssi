@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Genesis configs presets for the Mozart runtime
+//! Genesis configs presets for the Starlight runtime
 
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
@@ -24,7 +24,7 @@ use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     grandpa_primitives::AuthorityId as GrandpaId,
-    mozart_runtime_constants::currency::UNITS as MOZ,
+    starlight_runtime_constants::currency::UNITS as STAR,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::IdentifyAccount,
@@ -112,7 +112,7 @@ fn testnet_accounts() -> Vec<AccountId> {
     ])
 }
 
-fn mozart_session_keys(
+fn starlight_session_keys(
     babe: BabeId,
     grandpa: GrandpaId,
     para_validator: ValidatorId,
@@ -185,7 +185,7 @@ fn default_parachains_host_configuration_is_consistent() {
     default_parachains_host_configuration().panic_if_not_consistent();
 }
 
-fn mozart_testnet_genesis(
+fn starlight_testnet_genesis(
     initial_authorities: Vec<(
         AccountId,
         AccountId,
@@ -201,7 +201,7 @@ fn mozart_testnet_genesis(
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
 
-    const ENDOWMENT: u128 = 1_000_000 * MOZ;
+    const ENDOWMENT: u128 = 1_000_000 * STAR;
 
     serde_json::json!({
         "balances": {
@@ -214,7 +214,7 @@ fn mozart_testnet_genesis(
                     (
                         x.0.clone(),
                         x.0.clone(),
-                        mozart_session_keys(
+                        starlight_session_keys(
                             x.2.clone(),
                             x.3.clone(),
                             x.4.clone(),
@@ -246,7 +246,7 @@ fn mozart_testnet_genesis(
 }
 
 // staging_testnet
-fn mozart_staging_testnet_config_genesis() -> serde_json::Value {
+fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
     use {hex_literal::hex, sp_core::crypto::UncheckedInto};
 
     // subkey inspect "$SECRET"
@@ -460,8 +460,8 @@ fn mozart_staging_testnet_config_genesis() -> serde_json::Value {
         ),
     ]);
 
-    const ENDOWMENT: u128 = 1_000_000 * MOZ;
-    const STASH: u128 = 100 * MOZ;
+    const ENDOWMENT: u128 = 1_000_000 * STAR;
+    const STASH: u128 = 100 * STAR;
 
     serde_json::json!({
         "balances": {
@@ -478,7 +478,7 @@ fn mozart_staging_testnet_config_genesis() -> serde_json::Value {
                     (
                         x.0.clone(),
                         x.0,
-                        mozart_session_keys(
+                        starlight_session_keys(
                             x.2,
                             x.3,
                             x.4,
@@ -504,8 +504,8 @@ fn mozart_staging_testnet_config_genesis() -> serde_json::Value {
 }
 
 //development
-fn mozart_development_config_genesis() -> serde_json::Value {
-    mozart_testnet_genesis(
+fn starlight_development_config_genesis() -> serde_json::Value {
+    starlight_testnet_genesis(
         Vec::from([get_authority_keys_from_seed("Alice")]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
@@ -513,8 +513,8 @@ fn mozart_development_config_genesis() -> serde_json::Value {
 }
 
 //local_testnet
-fn mozart_local_testnet_genesis() -> serde_json::Value {
-    mozart_testnet_genesis(
+fn starlight_local_testnet_genesis() -> serde_json::Value {
+    starlight_testnet_genesis(
         Vec::from([
             get_authority_keys_from_seed("Alice"),
             get_authority_keys_from_seed("Bob"),
@@ -524,10 +524,10 @@ fn mozart_local_testnet_genesis() -> serde_json::Value {
     )
 }
 
-/// `Versi` is a temporary testnet that uses the same runtime as mozart.
+/// `Versi` is a temporary testnet that uses the same runtime as starlight.
 // versi_local_testnet
 fn versi_local_testnet_genesis() -> serde_json::Value {
-    mozart_testnet_genesis(
+    starlight_testnet_genesis(
         Vec::from([
             get_authority_keys_from_seed("Alice"),
             get_authority_keys_from_seed("Bob"),
@@ -539,10 +539,10 @@ fn versi_local_testnet_genesis() -> serde_json::Value {
     )
 }
 
-/// Wococo is a temporary testnet that uses almost the same runtime as mozart.
+/// Wococo is a temporary testnet that uses almost the same runtime as starlight.
 //wococo_local_testnet
 fn wococo_local_testnet_genesis() -> serde_json::Value {
-    mozart_testnet_genesis(
+    starlight_testnet_genesis(
         Vec::from([
             get_authority_keys_from_seed("Alice"),
             get_authority_keys_from_seed("Bob"),
@@ -557,9 +557,9 @@ fn wococo_local_testnet_genesis() -> serde_json::Value {
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
     let patch = match id.try_into() {
-        Ok("local_testnet") => mozart_local_testnet_genesis(),
-        Ok("development") => mozart_development_config_genesis(),
-        Ok("staging_testnet") => mozart_staging_testnet_config_genesis(),
+        Ok("local_testnet") => starlight_local_testnet_genesis(),
+        Ok("development") => starlight_development_config_genesis(),
+        Ok("staging_testnet") => starlight_staging_testnet_config_genesis(),
         Ok("wococo_local_testnet") => wococo_local_testnet_genesis(),
         Ok("versi_local_testnet") => versi_local_testnet_genesis(),
         _ => return None,

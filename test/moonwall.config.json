@@ -61,7 +61,7 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=mozart-dev",
+                            "--chain=starlight-dev",
                             "--no-hardware-benchmarks",
                             "--unsafe-force-node-key-generation"
                         ],
@@ -558,7 +558,7 @@
                 "type": "zombie",
                 "zombieSpec": {
                     "skipBlockCheck": ["Container2000"],
-                    "configPath": "./configs/zombieMozart.json"
+                    "configPath": "./configs/zombieStarlight.json"
                 }
             },
             "connections": [

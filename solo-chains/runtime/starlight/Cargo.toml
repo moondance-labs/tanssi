@@ -1,7 +1,7 @@
 [package]
-name = "mozart-runtime"
+name = "starlight-runtime"
 authors = { workspace = true }
-description = "Mozart runtime"
+description = "Starlight runtime"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -30,7 +30,7 @@ binary-merkle-tree = { workspace = true }
 block-builder-api = { workspace = true }
 grandpa_primitives = { workspace = true }
 inherents = { workspace = true }
-mozart-runtime-constants = { workspace = true }
+starlight-runtime-constants = { workspace = true }
 offchain-primitives = { workspace = true }
 sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
@@ -144,7 +144,7 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
-	"mozart-runtime-constants/std",
+	"starlight-runtime-constants/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
 	"pallet-authority-discovery/std",
@@ -328,7 +328,7 @@ try-runtime = [
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
-fast-runtime = [ "mozart-runtime-constants/fast-runtime" ]
+fast-runtime = [ "starlight-runtime-constants/fast-runtime" ]
 
 runtime-metrics = [ "runtime-parachains/runtime-metrics", "sp-io/with-tracing" ]
 

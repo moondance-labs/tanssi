@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! XCM configuration for Mozart.
+//! XCM configuration for Starlight.
 
 use super::{
     parachains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
@@ -30,7 +30,7 @@ use {
         weights::Weight,
     },
     frame_system::EnsureRoot,
-    mozart_runtime_constants::{currency::CENTS, system_parachain::*},
+    starlight_runtime_constants::{currency::CENTS, system_parachain::*},
     runtime_common::{
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
@@ -53,7 +53,7 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Mozart
+    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Starlight
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
@@ -72,7 +72,7 @@ pub type LocationConverter = (
 /// Our asset transactor. This is what allows us to interest with the runtime facilities from the
 /// point of view of XCM-only concepts like `Location` and `Asset`.
 ///
-/// Ours is only aware of the Balances pallet, which is mapped to `MozLocation`.
+/// Ours is only aware of the Balances pallet, which is mapped to `StarLocation`.
 pub type LocalAssetTransactor = FungibleAdapter<
     // Use this currency:
     Balances,
@@ -116,7 +116,7 @@ pub type XcmRouter = WithUniqueTopic<
 >;
 
 parameter_types! {
-    pub Moz: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
+    pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
     pub Contracts: Location = Parachain(CONTRACTS_ID).into_location();
     pub Encointer: Location = Parachain(ENCOINTER_ID).into_location();
@@ -126,28 +126,28 @@ parameter_types! {
     pub Tick: Location = Parachain(100).into_location();
     pub Trick: Location = Parachain(110).into_location();
     pub Track: Location = Parachain(120).into_location();
-    pub MozForTick: (AssetFilter, Location) = (Moz::get(), Tick::get());
-    pub MozForTrick: (AssetFilter, Location) = (Moz::get(), Trick::get());
-    pub MozForTrack: (AssetFilter, Location) = (Moz::get(), Track::get());
-    pub MozForAssetHub: (AssetFilter, Location) = (Moz::get(), AssetHub::get());
-    pub MozForContracts: (AssetFilter, Location) = (Moz::get(), Contracts::get());
-    pub MozForEncointer: (AssetFilter, Location) = (Moz::get(), Encointer::get());
-    pub MozForBridgeHub: (AssetFilter, Location) = (Moz::get(), BridgeHub::get());
-    pub MozForPeople: (AssetFilter, Location) = (Moz::get(), People::get());
-    pub MozForBroker: (AssetFilter, Location) = (Moz::get(), Broker::get());
+    pub StarForTick: (AssetFilter, Location) = (Star::get(), Tick::get());
+    pub StarForTrick: (AssetFilter, Location) = (Star::get(), Trick::get());
+    pub StarForTrack: (AssetFilter, Location) = (Star::get(), Track::get());
+    pub StarForAssetHub: (AssetFilter, Location) = (Star::get(), AssetHub::get());
+    pub StarForContracts: (AssetFilter, Location) = (Star::get(), Contracts::get());
+    pub StarForEncointer: (AssetFilter, Location) = (Star::get(), Encointer::get());
+    pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
+    pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
+    pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }
 pub type TrustedTeleporters = (
-    xcm_builder::Case<MozForTick>,
-    xcm_builder::Case<MozForTrick>,
-    xcm_builder::Case<MozForTrack>,
-    xcm_builder::Case<MozForAssetHub>,
-    xcm_builder::Case<MozForContracts>,
-    xcm_builder::Case<MozForEncointer>,
-    xcm_builder::Case<MozForBridgeHub>,
-    xcm_builder::Case<MozForPeople>,
-    xcm_builder::Case<MozForBroker>,
+    xcm_builder::Case<StarForTick>,
+    xcm_builder::Case<StarForTrick>,
+    xcm_builder::Case<StarForTrack>,
+    xcm_builder::Case<StarForAssetHub>,
+    xcm_builder::Case<StarForContracts>,
+    xcm_builder::Case<StarForEncointer>,
+    xcm_builder::Case<StarForBridgeHub>,
+    xcm_builder::Case<StarForPeople>,
+    xcm_builder::Case<StarForBroker>,
 );
 
 pub struct OnlyParachains;

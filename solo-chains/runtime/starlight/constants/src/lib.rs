@@ -45,7 +45,7 @@ pub mod time {
 
     frame_support::parameter_types! {
         pub EpochDurationInBlocks: BlockNumber =
-            prod_or_fast!(1 * HOURS, 1 * MINUTES, "MOZART_EPOCH_DURATION");
+            prod_or_fast!(1 * HOURS, 1 * MINUTES, "STARLIGHT_EPOCH_DURATION");
     }
 
     // These time units are defined in number of blocks.
@@ -90,7 +90,7 @@ pub mod fee {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            // in Mozart, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+            // in Starlight, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
             let p = super::currency::CENTS;
             let q = 10 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
             smallvec![WeightToFeeCoefficient {
@@ -120,11 +120,11 @@ pub mod system_parachain {
     /// Brokerage parachain ID.
     pub const BROKER_ID: u32 = 1005;
 
-    /// All system parachains of Mozart.
+    /// All system parachains of Starlight.
     pub type SystemParachains = IsChildSystemParachain<Id>;
 }
 
-/// Mozart Treasury pallet instance.
+/// Starlight Treasury pallet instance.
 pub const TREASURY_PALLET_ID: u8 = 18;
 
 #[cfg(test)]

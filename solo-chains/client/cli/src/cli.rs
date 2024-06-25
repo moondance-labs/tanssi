@@ -64,13 +64,13 @@ pub struct RunCmd {
     #[clap(flatten)]
     pub base: sc_cli::RunCmd,
 
-    /// Force using Mozart native runtime.
-    #[arg(long = "force-mozart")]
-    pub force_mozart: bool,
+    /// Force using Starlight native runtime.
+    #[arg(long = "force-starlight")]
+    pub force_starlight: bool,
 
     /// Disable the BEEFY gadget.
     ///
-    /// Currently enabled by default on 'Mozart'.
+    /// Currently enabled by default on 'Starlight'.
     #[arg(long)]
     pub no_beefy: bool,
 

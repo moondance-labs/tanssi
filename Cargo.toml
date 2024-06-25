@@ -13,8 +13,8 @@ members = [
 	"runtime/relay-encoder",
 	"solo-chains/client/*",
 	"solo-chains/node/*",
-	"solo-chains/runtime/mozart",
-	"solo-chains/runtime/mozart/constants",
+	"solo-chains/runtime/starlight",
+	"solo-chains/runtime/starlight/constants",
 ]
 resolver = "2"
 
@@ -77,8 +77,8 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
-mozart-runtime = { path = "solo-chains/runtime/mozart", default-features = false }
-mozart-runtime-constants = { path = "solo-chains/runtime/mozart/constants", default-features = false }
+starlight-runtime = { path = "solo-chains/runtime/starlight", default-features = false }
+starlight-runtime-constants = { path = "solo-chains/runtime/starlight/constants", default-features = false }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
@@ -344,7 +344,7 @@ tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.18" }
 url = "2.2.2"
 
-# Mozart runtime
+# Starlight runtime
 bitvec = { version = "1.0.1", default-features = false, features = [ "alloc" ] }
 separator = "0.4.1"
 serde_derive = { version = "1.0.117" }

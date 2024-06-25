@@ -77,33 +77,33 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         let id = if id.is_empty() {
             let n = get_exec_name().unwrap_or_default();
-            ["mozart"]
+            ["starlight"]
                 .iter()
                 .cloned()
                 .find(|&chain| n.starts_with(chain))
-                .unwrap_or("mozart")
+                .unwrap_or("starlight")
         } else {
             id
         };
         Ok(match id {
-            #[cfg(feature = "mozart-native")]
-            "mozart" => Box::new(tanssi_relay_service::chain_spec::mozart_config()?),
-            #[cfg(feature = "mozart-native")]
-            "dev" | "mozart-dev" => {
-                Box::new(tanssi_relay_service::chain_spec::mozart_development_config()?)
+            #[cfg(feature = "starlight-native")]
+            "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
+            #[cfg(feature = "starlight-native")]
+            "dev" | "starlight-dev" => {
+                Box::new(tanssi_relay_service::chain_spec::starlight_development_config()?)
             }
-            #[cfg(feature = "mozart-native")]
-            "mozart-local" => {
-                Box::new(tanssi_relay_service::chain_spec::mozart_local_testnet_config()?)
+            #[cfg(feature = "starlight-native")]
+            "starlight-local" => {
+                Box::new(tanssi_relay_service::chain_spec::starlight_local_testnet_config()?)
             }
-            #[cfg(feature = "mozart-native")]
-            "mozart-staging" => {
-                Box::new(tanssi_relay_service::chain_spec::mozart_staging_testnet_config()?)
+            #[cfg(feature = "starlight-native")]
+            "starlight-staging" => {
+                Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
             }
-            #[cfg(not(feature = "mozart-native"))]
-            name if name.starts_with("mozart-") && !name.ends_with(".json") || name == "dev" => {
+            #[cfg(not(feature = "starlight-native"))]
+            name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
                 Err(format!(
-                    "`{}` only supported with `mozart-native` feature enabled.",
+                    "`{}` only supported with `starlight-native` feature enabled.",
                     name
                 ))?
             }
@@ -116,9 +116,9 @@ impl SubstrateCli for Cli {
 
                 // When `force_*` is given or the file name starts with the name of one of the known
                 // chains, we use the chain spec for the specific chain.
-                if self.run.force_mozart {
+                if self.run.force_starlight {
                     Box::new(
-                        tanssi_relay_service::chain_spec::MozartChainSpec::from_json_file(path)?,
+                        tanssi_relay_service::chain_spec::StarlightChainSpec::from_json_file(path)?,
                     )
                 } else {
                     chain_spec

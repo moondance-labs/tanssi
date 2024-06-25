@@ -22,7 +22,7 @@ tikv-jemallocator = { workspace = true, optional = true, features = [ "unprefixe
 polkadot-node-core-pvf = { workspace = true }
 polkadot-node-core-pvf-prepare-worker = { workspace = true }
 polkadot-overseer = { workspace = true }
-tanssi-relay-cli = { workspace = true, features = [ "mozart-native" ] }
+tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
