@@ -24,10 +24,10 @@ use {
     sp_consensus_babe::AuthorityId as BabeId,
 };
 
-#[cfg(feature = "starlight-native")]
-use starlight_runtime as starlight;
 #[cfg(any(feature = "starlight-native"))]
 use sc_chain_spec::ChainType;
+#[cfg(feature = "starlight-native")]
+use starlight_runtime as starlight;
 #[cfg(any(feature = "starlight-native"))]
 use telemetry::TelemetryEndpoints;
 use {
@@ -178,7 +178,8 @@ pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
 #[cfg(feature = "starlight-native")]
 pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
     Ok(StarlightChainSpec::builder(
-        starlight::fast_runtime_binary::WASM_BINARY.ok_or("Starlight development wasm not available")?,
+        starlight::fast_runtime_binary::WASM_BINARY
+            .ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
     .with_name("Starlight Local Testnet")

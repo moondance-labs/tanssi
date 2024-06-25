@@ -30,7 +30,6 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
-    starlight_runtime_constants::system_parachain::BROKER_ID,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -74,6 +73,7 @@ use {
         collections::{btree_map::BTreeMap, vec_deque::VecDeque},
         prelude::*,
     },
+    starlight_runtime_constants::system_parachain::BROKER_ID,
 };
 
 #[cfg(any(feature = "std", test))]

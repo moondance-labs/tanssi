@@ -24,11 +24,11 @@ use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     grandpa_primitives::AuthorityId as GrandpaId,
-    starlight_runtime_constants::currency::UNITS as STAR,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::IdentifyAccount,
     sp_std::vec::Vec,
+    starlight_runtime_constants::currency::UNITS as STAR,
 };
 
 /// Helper function to generate a crypto pair from seed
