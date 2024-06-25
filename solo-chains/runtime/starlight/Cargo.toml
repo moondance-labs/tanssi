@@ -30,7 +30,6 @@ binary-merkle-tree = { workspace = true }
 block-builder-api = { workspace = true }
 grandpa_primitives = { workspace = true }
 inherents = { workspace = true }
-starlight-runtime-constants = { workspace = true }
 offchain-primitives = { workspace = true }
 sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
@@ -44,6 +43,7 @@ sp-staking = { workspace = true }
 sp-std = { workspace = true }
 sp-storage = { workspace = true }
 sp-version = { workspace = true }
+starlight-runtime-constants = { workspace = true }
 tx-pool-api = { workspace = true }
 
 frame-executive = { workspace = true }
@@ -144,7 +144,6 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
-	"starlight-runtime-constants/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
 	"pallet-authority-discovery/std",
@@ -214,6 +213,7 @@ std = [
 	"sp-tracing/std",
 	"sp-trie/std",
 	"sp-version/std",
+	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tx-pool-api/std",
 	"xcm-builder/std",
