@@ -45,6 +45,7 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
 	"serde",
+	"sp-io/std",
 	"pallet-nfts/std",
 	"pallet-xcavate-whitelist/std",
 	"pallet-balances/std",
