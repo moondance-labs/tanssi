@@ -1,9 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { filterAndApply, KeyringPair } from "@moonwall/util";
+import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
-import { EventRecord } from "@polkadot/types/interfaces";
 
 describeSuite({
     id: "CT1101",
@@ -160,7 +159,6 @@ describeSuite({
                 expect(balanceBeforeAlice.reserved.toBigInt()).to.be.eq(expectedDepositValue);
                 expect(balanceAfterAlice.reserved.toBigInt()).to.be.eq(0n);
 
-                // Find tx fee paid
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFeeAuthor(events, bob.address).amount.toBigInt();
                 expect(balanceAfterBob.free.toBigInt()).toEqual(
