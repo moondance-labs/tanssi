@@ -939,7 +939,7 @@ jobs:
             if: failure()
             uses: actions/upload-artifact@v4
             with:
-                name: logs
+                name: logs-tanssi-relay
                 path: logs
 
     docker-tanssi:
