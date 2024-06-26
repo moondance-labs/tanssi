@@ -6,7 +6,7 @@
     "relaychain": {
         "chain": "starlight-local",
         "default_command": "../target/release/tanssi-relay",
-        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy", "--disable-worker-version-check"],
         "genesis": {
             "runtimeGenesis": {
                 "patch": {
