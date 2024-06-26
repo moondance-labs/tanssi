@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { filterAndApply, KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { jumpSessions, fetchStorageProofFromValidationData } from "../../../util/block";
+import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
 import { EventRecord } from "@polkadot/types/interfaces";
 
 describeSuite({
@@ -162,17 +162,10 @@ describeSuite({
 
                 // Find tx fee paid
                 const events = await polkadotJs.query.system.events();
-                const filtered = filterAndApply(events, "balances", ["Withdraw"], ({ event }: EventRecord) =>
-                    (event.data as unknown as { amount: u128 }).toJSON()
+                const fee = extractFeeAuthor(events, bob.address).amount.toBigInt();
+                expect(balanceAfterBob.free.toBigInt()).toEqual(
+                    balanceBeforeBob.free.toBigInt() + expectedDepositValue - fee
                 );
-                const bobDepositEvent = filtered.find(
-                    (event) => event[0] === bob.address
-                );
-                if (!bobDepositEvent) {
-                    console.log("withdraw events: ", filtered);
-                }
-                expect(bobDepositEvent).to.not.be.undefined;
-                expect(balanceAfterBob.free.toBigInt()).toEqual(balanceBeforeBob.free.toBigInt() + expectedDepositValue - BigInt(bobDepositEvent[1]));
 
                 // Checking that in session 2 paras are registered
                 await jumpSessions(context, 2);
