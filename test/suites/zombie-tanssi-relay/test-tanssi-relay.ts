@@ -12,7 +12,7 @@ describeSuite({
                 console.log("executing");
                 const relayApi = context.polkadotJs("Tanssi-relay");
                 const relayNetwork = relayApi.consts.system.version.specName.toString();
-                expect(relayNetwork, "Relay API incorrect").to.contain("mozart");
+                expect(relayNetwork, "Relay API incorrect").to.contain("starlight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },

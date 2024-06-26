@@ -61,7 +61,7 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=mozart-dev",
+                            "--chain=starlight-dev",
                             "--no-hardware-benchmarks",
                             "--unsafe-force-node-key-generation"
                         ],
@@ -551,14 +551,14 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "build-spec-single-container.sh ../target/release container-chain-simple-node",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
+                "build-spec-single-container.sh tmp container-chain-simple-node",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
             ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
                     "skipBlockCheck": ["Container2000"],
-                    "configPath": "./configs/zombieMozart.json"
+                    "configPath": "./configs/zombieStarlight.json"
                 }
             },
             "connections": [

@@ -1099,6 +1099,7 @@ mod request_change {
             ));
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
+                stalled: true,
                 ..default()
             });
 
@@ -1130,60 +1131,26 @@ mod request_change {
     }
 
     #[test]
-    fn deadline_in_past_is_fine() {
+    fn cant_set_past_deadline() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            // Target requets a change.
+            roll_to(12);
+
             let change1 = StreamConfig {
                 rate: 101,
                 ..open_stream.config
             };
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(BOB),
-                0,
-                ChangeKind::Mandatory { deadline: 10 },
-                change1,
-                None,
-            ));
-
-            // Roll to block after deadline, payment should stop at deadline.
-            let delta = u128::from(roll_to(11));
-            let payment = (delta - 1) * open_stream.config.rate;
-
-            assert_ok!(StreamPayment::perform_payment(
-                RuntimeOrigin::signed(CHARLIE),
-                0
-            ));
-            assert_event_emitted!(PaymentEvent {
-                amount: payment,
-                ..default()
-            });
-
-            // Target requets a new change that moves the deadline in the future.
-            let change1 = StreamConfig {
-                rate: 102,
-                ..open_stream.config
-            };
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(BOB),
-                0,
-                ChangeKind::Mandatory { deadline: 5 },
-                change1,
-                None,
-            ));
-
-            let deposit_before = Streams::<Runtime>::get(0).unwrap().deposit;
-            assert_ok!(StreamPayment::perform_payment(
-                RuntimeOrigin::signed(CHARLIE),
-                0
-            ));
-            let deposit_after = Streams::<Runtime>::get(0).unwrap().deposit;
-
-            assert_eq!(
-                deposit_before, deposit_after,
-                "no payment should be performed"
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(BOB),
+                    0,
+                    ChangeKind::Mandatory { deadline: 10 },
+                    change1,
+                    None,
+                ),
+                Error::DeadlineCantBeInPast
             );
         })
     }
@@ -1577,6 +1544,7 @@ mod accept_requested_change {
             ));
             assert_event_emitted!(PaymentEvent {
                 amount: payment,
+                stalled: true,
                 ..default()
             });
 

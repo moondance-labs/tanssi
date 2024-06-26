@@ -24,11 +24,11 @@ use {
     sp_consensus_babe::AuthorityId as BabeId,
 };
 
-#[cfg(feature = "mozart-native")]
-use mozart_runtime as mozart;
-#[cfg(any(feature = "mozart-native"))]
+#[cfg(any(feature = "starlight-native"))]
 use sc_chain_spec::ChainType;
-#[cfg(any(feature = "mozart-native"))]
+#[cfg(feature = "starlight-native")]
+use starlight_runtime as starlight;
+#[cfg(any(feature = "starlight-native"))]
 use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
@@ -37,10 +37,10 @@ use {
     sp_runtime::traits::IdentifyAccount,
 };
 
-#[cfg(feature = "mozart-native")]
-const MOZART_STAGING_TELEMETRY_URL: &str = "wss://telemetry.tanssi.network/submit/";
-#[cfg(any(feature = "mozart-native"))]
-const DEFAULT_PROTOCOL_ID: &str = "moz";
+#[cfg(feature = "starlight-native")]
+const STARLIGHT_STAGING_TELEMETRY_URL: &str = "wss://telemetry.tanssi.network/submit/";
+#[cfg(any(feature = "starlight-native"))]
+const DEFAULT_PROTOCOL_ID: &str = "star";
 
 /// Node `ChainSpec` extensions.
 ///
@@ -62,34 +62,34 @@ pub struct Extensions {
 // Generic chain spec, in case when we don't have the native runtime.
 pub type GenericChainSpec = service::GenericChainSpec<(), Extensions>;
 
-/// The `ChainSpec` parameterized for the mozart runtime.
-#[cfg(feature = "mozart-native")]
-pub type MozartChainSpec = service::GenericChainSpec<(), Extensions>;
+/// The `ChainSpec` parameterized for the starlight runtime.
+#[cfg(feature = "starlight-native")]
+pub type StarlightChainSpec = service::GenericChainSpec<(), Extensions>;
 
-/// The `ChainSpec` parameterized for the mozart runtime.
+/// The `ChainSpec` parameterized for the starlight runtime.
 // Dummy chain spec, but that is fine when we don't have the native runtime.
-#[cfg(not(feature = "mozart-native"))]
-pub type MozartChainSpec = GenericChainSpec;
+#[cfg(not(feature = "starlight-native"))]
+pub type StarlightChainSpec = GenericChainSpec;
 
-pub fn mozart_config() -> Result<MozartChainSpec, String> {
-    MozartChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..])
-    // FIXME: Update this to Mozart.json once it is available
+pub fn starlight_config() -> Result<StarlightChainSpec, String> {
+    StarlightChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..])
+    // FIXME: Update this to Starlight.json once it is available
 }
 
-/// Mozart staging testnet config.
-#[cfg(feature = "mozart-native")]
-pub fn mozart_staging_testnet_config() -> Result<MozartChainSpec, String> {
-    Ok(MozartChainSpec::builder(
-        mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+/// Starlight staging testnet config.
+#[cfg(feature = "starlight-native")]
+pub fn starlight_staging_testnet_config() -> Result<StarlightChainSpec, String> {
+    Ok(StarlightChainSpec::builder(
+        starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
-    .with_name("Mozart Staging Testnet")
-    .with_id("mozart_staging_testnet")
+    .with_name("Starlight Staging Testnet")
+    .with_id("starlight_staging_testnet")
     .with_chain_type(ChainType::Live)
     .with_genesis_config_preset_name("staging_testnet")
     .with_telemetry_endpoints(
-        TelemetryEndpoints::new(vec![(MOZART_STAGING_TELEMETRY_URL.to_string(), 0)])
-            .expect("Mozart Staging telemetry url is valid; qed"),
+        TelemetryEndpoints::new(vec![(STARLIGHT_STAGING_TELEMETRY_URL.to_string(), 0)])
+            .expect("Starlight Staging telemetry url is valid; qed"),
     )
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
@@ -159,30 +159,31 @@ pub fn get_authority_keys_from_seed_no_beefy(
     )
 }
 
-/// Mozart development config (single validator Alice)
-#[cfg(feature = "mozart-native")]
-pub fn mozart_development_config() -> Result<MozartChainSpec, String> {
-    Ok(MozartChainSpec::builder(
-        mozart::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+/// Starlight development config (single validator Alice)
+#[cfg(feature = "starlight-native")]
+pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
+    Ok(StarlightChainSpec::builder(
+        starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
     .with_name("Development")
-    .with_id("mozart_dev")
+    .with_id("starlight_dev")
     .with_chain_type(ChainType::Development)
     .with_genesis_config_preset_name("development")
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
 }
 
-/// Mozart local testnet config (multivalidator Alice + Bob)
-#[cfg(feature = "mozart-native")]
-pub fn mozart_local_testnet_config() -> Result<MozartChainSpec, String> {
-    Ok(MozartChainSpec::builder(
-        mozart::fast_runtime_binary::WASM_BINARY.ok_or("Mozart development wasm not available")?,
+/// Starlight local testnet config (multivalidator Alice + Bob)
+#[cfg(feature = "starlight-native")]
+pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
+    Ok(StarlightChainSpec::builder(
+        starlight::fast_runtime_binary::WASM_BINARY
+            .ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
-    .with_name("Mozart Local Testnet")
-    .with_id("mozart_local_testnet")
+    .with_name("Starlight Local Testnet")
+    .with_id("starlight_local_testnet")
     .with_chain_type(ChainType::Local)
     .with_genesis_config_preset_name("local_testnet")
     .with_protocol_id(DEFAULT_PROTOCOL_ID)

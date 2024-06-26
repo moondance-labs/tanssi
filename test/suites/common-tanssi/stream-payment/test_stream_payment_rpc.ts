@@ -81,12 +81,13 @@ describeSuite({
                     .performPayment(0)
                     .signAsync(alice, { nonce: aliceNonce++ });
 
+                const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
                 const txRequestChange = await polkadotJs.tx.streamPayment
                     .requestChange(
                         0,
                         {
                             Mandatory: {
-                                deadline: 2, // deadline in the past, which should make the stream stalled
+                                deadline: blockNumber + 3,
                             },
                         },
                         {
@@ -102,6 +103,12 @@ describeSuite({
 
                 newBlock = await context.createBlock([txPerformPayment, txRequestChange]);
 
+                expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
+                    deposit_left: 9_800_000,
+                    stalled: false,
+                    payment: 0,
+                });
+
                 const performPaymentEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamPayment";
                 });
@@ -112,23 +119,27 @@ describeSuite({
                 });
                 expect(requestChangeEvents.length).to.be.equal(1);
 
+                newBlock = await context.createBlock();
+
+                // stream have made progress and not yet stalled
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_800_000,
-                    stalled: true,
-                    payment: 0,
+                    deposit_left: 9_700_000,
+                    stalled: false,
+                    payment: 100_000,
                 });
 
                 // 4th block: create an empty block to check status
-                newBlock = await context.createBlock();
-
-                expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_800_000,
-                    stalled: true,
-                    payment: 0,
-                });
 
                 // produce empty block on session change, which cannot contain extrinsics
                 await context.createBlock();
+
+                // produce a new block to reach deadline, stream should be stalled
+                newBlock = await context.createBlock();
+                expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
+                    deposit_left: 9_600_000,
+                    stalled: true,
+                    payment: 200_000,
+                });
 
                 // 6th block: accept change, resuming stream
                 const txAcceptChange = await polkadotJs.tx.streamPayment
@@ -142,7 +153,7 @@ describeSuite({
                 expect(acceptChangeEvents.length).to.be.equal(1);
 
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_805_000, // old deposit + increase
+                    deposit_left: 9_605_000, // old deposit + increase
                     stalled: false,
                     payment: 0,
                 });
@@ -151,7 +162,7 @@ describeSuite({
                 newBlock = await context.createBlock();
 
                 expect(await rpcStreamPaymentStatus(context, newBlock.block.hash, 0, null)).to.deep.equal({
-                    deposit_left: 9_755_000,
+                    deposit_left: 9_555_000,
                     stalled: false,
                     payment: 50_000,
                 });
