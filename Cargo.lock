@@ -11077,6 +11077,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "polkadot-node-core-pvf-execute-worker"
+version = "7.0.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
+dependencies = [
+ "cfg-if",
+ "cpu-time",
+ "libc",
+ "nix 0.27.1",
+ "parity-scale-codec",
+ "polkadot-node-core-pvf-common",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "tracing-gum",
+]
+
+[[package]]
 name = "polkadot-node-core-pvf-prepare-worker"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
@@ -16897,6 +16913,8 @@ dependencies = [
  "nix 0.26.4",
  "polkadot-core-primitives",
  "polkadot-node-core-pvf",
+ "polkadot-node-core-pvf-common",
+ "polkadot-node-core-pvf-execute-worker",
  "polkadot-node-core-pvf-prepare-worker",
  "polkadot-overseer",
  "substrate-build-script-utils",
