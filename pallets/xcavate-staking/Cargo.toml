@@ -52,6 +52,8 @@ std = [
 	"sp-std/std",
 	"serde",
 	"sp-io/std",
+	"sp-core/std",
+	"sp-runtime/std",
 	"pallet-community-loan-pool/std",
 	"pallet-xcavate-whitelist/std",
 	"pallet-timestamp/std",

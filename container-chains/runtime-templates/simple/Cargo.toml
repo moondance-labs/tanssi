@@ -127,7 +127,6 @@ node-primitives = { workspace = true }
 [features]
 default = ["std"]
 std = [
-	"node-primitives/std",
 	"async-backing-primitives/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
