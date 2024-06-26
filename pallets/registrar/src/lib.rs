@@ -47,7 +47,7 @@ use {
     frame_support::{
         pallet_prelude::*,
         traits::{
-            fungible::{Inspect, InspectHold, MutateHold},
+            fungible::{Inspect, InspectHold, Mutate, MutateHold},
             tokens::{Fortitude, Precision, Restriction},
             EnsureOriginWithArg,
         },
@@ -159,8 +159,7 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        type Currency: Inspect<Self::AccountId>
-            + InspectHold<Self::AccountId, Reason = Self::RuntimeHoldReason>
+        type Currency: Mutate<Self::AccountId>
             + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 
         type RuntimeHoldReason: From<HoldReason>;
@@ -730,7 +729,7 @@ pub mod pallet {
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> T::AccountId {
             use {
                 frame_benchmarking::account,
-                frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
+                frame_support::{assert_ok, dispatch::RawOrigin},
             };
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
@@ -745,8 +744,7 @@ pub mod pallet {
                 ) -> (T::AccountId, DepositBalanceOf<T>) {
                     const SEED: u32 = 0;
                     let user = account(string, n, SEED);
-                    T::Currency::make_free_balance_be(&user, total);
-                    let _ = T::Currency::issue(total);
+                    assert_ok!(T::Currency::mint_into(&user, total));
                     (user, total)
                 }
                 let new_balance =
@@ -761,8 +759,7 @@ pub mod pallet {
             // Fund deposit creator, just in case it is not a new account
             let new_balance =
                 (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
-            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
-            let _ = T::Currency::issue(new_balance);
+            assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
 
             deposit_info.creator
         }

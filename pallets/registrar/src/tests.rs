@@ -1686,7 +1686,7 @@ mod deregister_with_relay_proof {
             // Deposit is no longer on hold
             assert_eq!(
                 Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
-                0u128.into()
+                0u128
             );
             // Bob gained exactly Alice reserve
             assert_eq!(
@@ -1742,7 +1742,7 @@ mod deregister_with_relay_proof {
             // Deposit is no longer on hold
             assert_eq!(
                 Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
-                0u128.into()
+                0u128
             );
             // Bob gained exactly Alice reserve
             assert_eq!(

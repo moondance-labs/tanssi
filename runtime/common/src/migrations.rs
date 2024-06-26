@@ -43,8 +43,8 @@ use {
         migration::{clear_storage_prefix, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         traits::{
-            fungible::{InspectHold, MutateHold},
-            OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency, StorageVersion,
+            fungible::MutateHold, OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency,
+            StorageVersion,
         },
         weights::Weight,
         Blake2_128Concat, BoundedVec, StoragePrefixedMap,
