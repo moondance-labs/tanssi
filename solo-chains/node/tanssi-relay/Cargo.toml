@@ -28,9 +28,9 @@ tikv-jemallocator = { workspace = true, optional = true, features = [ "unprefixe
 
 # Crates in our workspace, defined as dependencies so we can pass them feature flags.
 polkadot-node-core-pvf = { workspace = true }
+polkadot-node-core-pvf-common = { workspace = true }
 polkadot-node-core-pvf-execute-worker = { workspace = true }
 polkadot-node-core-pvf-prepare-worker = { workspace = true }
-polkadot-node-core-pvf-common = { workspace = true }
 
 polkadot-overseer = { workspace = true }
 tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
