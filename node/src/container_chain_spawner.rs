@@ -25,22 +25,23 @@ use {
     crate::{
         cli::ContainerChainCli,
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, NodeConfig, ParachainClient},
+        service::{start_node_impl_container, ContainerChainClient, ParachainClient},
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{AccountId, Block, BlockNumber},
+    dancebox_runtime::Block,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     fs2::FileExt,
     futures::FutureExt,
-    node_common::{command::generate_genesis_block, service::NodeBuilderConfig},
+    node_common::command::generate_genesis_block,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
-    sp_api::{ApiExt, ProvideRuntimeApi},
+    sp_api::ProvideRuntimeApi,
+    sp_core::H256,
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
@@ -249,7 +250,55 @@ impl ContainerChainSpawner {
                 .database_params
                 .database = Some(Database::ParityDb);
 
-            let create_container_chain_cli_config = || {
+            container_chain_cli.base.base.network_params.sync =
+                select_sync_mode(&orchestrator_client, container_chain_para_id)?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+
+            // Start container chain node
+            // This should be a separate function but it has so many arguments that I prefer to have it inline for now
+            let mut delete_db_next_iteration = false;
+            let mut loop_counter = 0;
+            let mut db_path_opt: Option<PathBuf> = None;
+            let mut db_removal_reason_opt = None;
+            let (
+                mut container_chain_task_manager,
+                container_chain_client,
+                container_chain_db,
+                db_path,
+            ) = loop {
+                loop_counter += 1;
+                if loop_counter > 2 {
+                    panic!("This loop should only run 2 times in the worst case when removing the db, and 1 time in most cases");
+                }
+                #[allow(unused_assignments)]
+                if delete_db_next_iteration {
+                    delete_db_next_iteration = false;
+                    let db_path = db_path_opt.take().unwrap();
+                    // Wait here to for the database created in the previous loop iteration to close.
+                    // Dropping is not enough because there is some background process that keeps the database open,
+                    // so we check the paritydb lock file directly.
+                    log::info!(
+                        "Restarting container chain {} after db deletion. Reason: {:?}",
+                        container_chain_para_id,
+                        db_removal_reason_opt.take().unwrap(),
+                    );
+                    let max_restart_timeout = Duration::from_secs(60);
+                    wait_for_paritydb_lock(&db_path, max_restart_timeout)
+                        .await
+                        .map_err(|e| {
+                            log::warn!(
+                                "Error waiting for chain {} to release db lock: {:?}",
+                                container_chain_para_id,
+                                e
+                            );
+
+                            e
+                        })?;
+                    delete_container_chain_db(&db_path);
+                }
                 let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                     &container_chain_cli,
                     &container_chain_cli,
@@ -266,78 +315,50 @@ impl ContainerChainSpawner {
                     .to_owned();
                 db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
                 container_chain_cli_config.database.set_path(&db_path);
+                let db_existed_before = db_path.exists();
 
-                sc_service::error::Result::Ok((container_chain_cli_config, db_path))
+                let (container_chain_task_manager, container_chain_client, container_chain_db) =
+                    start_node_impl_container(
+                        container_chain_cli_config,
+                        orchestrator_client.clone(),
+                        relay_chain_interface.clone(),
+                        orchestrator_chain_interface.clone(),
+                        collator_key.clone(),
+                        sync_keystore.clone(),
+                        container_chain_para_id,
+                        orchestrator_para_id,
+                        validator && start_collation,
+                    )
+                    .await?;
+
+                if db_existed_before {
+                    // If the database already existed before, check if it can be used or it needs to be removed.
+                    // To remove the database, we restart the node, wait for the db to close to avoid a
+                    // "shutdown error" log, and then remove it.
+                    if let Some(db_removal_reason) = db_needs_removal(
+                        &container_chain_client,
+                        &orchestrator_client,
+                        container_chain_para_id,
+                        &container_chain_cli,
+                        container_chain_cli.base.keep_db,
+                    )? {
+                        // We cannot remove the database here because it is still open, we could
+                        // manually drop all the variables that keep it open, or we can just jump to
+                        // before they were created to have them automatically dropped.
+                        delete_db_next_iteration = true;
+                        db_path_opt = Some(db_path);
+                        db_removal_reason_opt = Some(db_removal_reason);
+                        continue;
+                    }
+                }
+
+                break (
+                    container_chain_task_manager,
+                    container_chain_client,
+                    container_chain_db,
+                    db_path,
+                );
             };
-
-            let (_container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
-            let db_exists = db_path.exists();
-            let db_exists_but_may_need_removal = db_exists && validator;
-            if db_exists_but_may_need_removal {
-                // If the database exists it may be invalid (genesis hash mismatch), so check if it is valid
-                // and if not, delete it.
-                // Create a new cli config because otherwise the tasks spawned in `open_and_maybe_delete_db` don't stop
-                let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
-                open_and_maybe_delete_db(
-                    container_chain_cli_config,
-                    &db_path,
-                    &orchestrator_client,
-                    container_chain_para_id,
-                    &container_chain_cli,
-                    container_chain_cli.base.keep_db,
-                )?;
-                // Wait here to for the partial components created in`open_and_maybe_delete_db` to close.
-                // Dropping is not enough because there is some background process that keeps the database open,
-                // so we check the paritydb lock file directly.
-                log::info!("Restarting container chain {}", container_chain_para_id);
-                let max_restart_timeout = Duration::from_secs(60);
-                wait_for_paritydb_lock(&db_path, max_restart_timeout)
-                    .await
-                    .map_err(|e| {
-                        log::warn!(
-                            "Error waiting for chain {} to release db lock: {:?}",
-                            container_chain_para_id,
-                            e
-                        );
-
-                        e
-                    })?;
-            }
-
-            // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
-            // or the block number is 0 (because of a warp sync bug in that case).
-            let db_still_exists = db_path.exists();
-            container_chain_cli.base.base.network_params.sync = select_sync_mode(
-                db_still_exists,
-                &orchestrator_client,
-                container_chain_para_id,
-            )?;
-            log::info!(
-                "Container chain sync mode: {:?}",
-                container_chain_cli.base.base.network_params.sync
-            );
-            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
-                &container_chain_cli,
-                &container_chain_cli,
-                tokio_handle.clone(),
-            )
-            .map_err(|err| format!("Container chain argument error: {}", err))?;
-            container_chain_cli_config.database.set_path(&db_path);
-
-            // Start container chain node
-            let (mut container_chain_task_manager, container_chain_client, container_chain_db) =
-                start_node_impl_container(
-                    container_chain_cli_config,
-                    orchestrator_client.clone(),
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    collator_key.clone(),
-                    sync_keystore.clone(),
-                    container_chain_para_id,
-                    orchestrator_para_id,
-                    validator && start_collation,
-                )
-                .await?;
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = oneshot::channel::<bool>();
@@ -568,6 +589,10 @@ impl ContainerChainSpawner {
         for para_id in chains_to_start {
             // Edge case: when starting the node it may be assigned to a container chain, so we need to
             // start a container chain already collating.
+            // TODO: another edge case: if current == None, and running_chains == 0,
+            // and chains_to_start == 1, we can start this chain as collating, and we won't need
+            // to restart it on the next session. We need to add some extra state somewhere to
+            // implement this properly.
             let start_collation = Some(para_id) == current;
             self.spawn(para_id, start_collation).await;
         }
@@ -675,41 +700,27 @@ fn handle_update_assignment_state_change(
 }
 
 /// Select `SyncMode` to use for a container chain.
-/// We want to use warp sync unless the db still exists, or the block number is 0 (because of a warp sync bug in that case).
-/// The reason is that warp sync doesn't work if a database already exists, it falls back to full sync instead.
+/// We want to use warp sync unless the container chain is still at genesis block (because of a warp sync bug in that case).
+/// Remember that warp sync doesn't work if a partially synced database already exists, it falls
+/// back to full sync instead. The only exception is if the previous instance of the database was
+/// interrupted before it finished downloading the state, in that case the node will use warp sync.
+/// If it was interrupted during the block history download, the node will use full sync but also
+/// finish the block history download in the background, even if warp sync is not specified.
 fn select_sync_mode(
-    db_exists: bool,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
 ) -> sc_service::error::Result<SyncMode> {
-    if db_exists {
-        // If the user wants to use warp sync, they should have already removed the database
-        return Ok(SyncMode::Full);
-    }
-
     // The following check is only needed because of this bug:
     // https://github.com/paritytech/polkadot-sdk/issues/1930
 
     let orchestrator_runtime_api = orchestrator_client.runtime_api();
     let orchestrator_chain_info = orchestrator_client.chain_info();
 
-    // Force container chains to use warp sync, unless full sync is needed for some reason
-    let full_sync_needed = if !orchestrator_runtime_api
-        .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
-            orchestrator_chain_info.best_hash,
-        )
-        .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
-    {
-        // Before runtime API was implemented we don't know if the container chain has any blocks,
-        // so use full sync because that always works
-        true
-    } else {
-        // If the container chain is still at genesis block, use full sync because warp sync is broken
-        orchestrator_runtime_api
-            .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
-            .map_err(|e| format!("Failed to read latest author: {}", e))?
-            .is_none()
-    };
+    // If the container chain is still at genesis block, use full sync because warp sync is broken
+    let full_sync_needed = orchestrator_runtime_api
+        .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
+        .map_err(|e| format!("Failed to read latest author: {}", e))?
+        .is_none();
 
     if full_sync_needed {
         Ok(SyncMode::Full)
@@ -718,42 +729,62 @@ fn select_sync_mode(
     }
 }
 
+#[derive(Debug)]
+#[allow(dead_code)]
+enum DbRemovalReason {
+    HighBlockDiff {
+        best_block_number_db: u32,
+        best_block_number_onchain: u32,
+    },
+    GenesisHashMismatch {
+        container_client_genesis_hash: H256,
+        chain_spec_genesis_hash_v0: H256,
+        chain_spec_genesis_hash_v1: H256,
+    },
+}
+
 /// Start a container chain using `new_partial` and check if the database is valid. If not, delete the db.
 /// The caller may need to wait a few seconds before trying to start the same container chain again, to
 /// give the database enough time to close.
-// TODO: instead of waiting, we could also return Weak references to the components `temp_cli.backend`
-// and `temp_cli.client`, and then the caller would only need to check if the reference counts are 0.
-fn open_and_maybe_delete_db(
-    container_chain_cli_config: sc_service::Configuration,
-    db_path: &Path,
+fn db_needs_removal(
+    container_chain_client: &Arc<ContainerChainClient>,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
-) -> sc_service::error::Result<()> {
-    let temp_cli = NodeConfig::new_builder(&container_chain_cli_config, None)?;
-
+) -> sc_service::error::Result<Option<DbRemovalReason>> {
     // Check block diff, only needed if keep-db is false
     if !keep_db {
         // Get latest block number from the container chain client
-        let last_container_block_temp = temp_cli.client.chain_info().best_number;
+        let last_container_block_temp = container_chain_client.chain_info().best_number;
+        if last_container_block_temp == 0 {
+            // Don't remove an empty database, as it may be in the process of a warp sync
+        } else {
+            let orchestrator_runtime_api = orchestrator_client.runtime_api();
+            let orchestrator_chain_info = orchestrator_client.chain_info();
+            // Get the container chain's latest block from orchestrator chain and compare with client's one
+            let last_container_block_from_orchestrator = orchestrator_runtime_api
+                .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+                .unwrap_or_default();
 
-        let orchestrator_runtime_api = orchestrator_client.runtime_api();
-        let orchestrator_chain_info = orchestrator_client.chain_info();
-        // Get the container chain's latest block from orchestrator chain and compare with client's one
-        let last_container_block_from_orchestrator = orchestrator_runtime_api
-            .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
-            .unwrap_or_default();
-
-        let max_block_diff_allowed = 100u32;
-        if last_container_block_from_orchestrator
-            .unwrap_or(0u32)
-            .abs_diff(last_container_block_temp)
-            > max_block_diff_allowed
-        {
-            // if the diff is big, delete db and restart using warp sync
-            delete_container_chain_db(db_path);
-            return Ok(());
+            // Block diff threshold above which we decide it will be faster to delete the database and
+            // use warp sync, rather than using full sync to download a large number of blocks.
+            // This is only needed because warp sync does not support syncing from a state that is not
+            // genesis, it falls back to full sync in that case.
+            // 30_000 blocks = 50 hours at 6s/block.
+            // Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
+            let max_block_diff_allowed = 30_000;
+            if last_container_block_from_orchestrator
+                .unwrap_or(0)
+                .abs_diff(last_container_block_temp)
+                > max_block_diff_allowed
+            {
+                // if the diff is big, delete db and restart using warp sync
+                return Ok(Some(DbRemovalReason::HighBlockDiff {
+                    best_block_number_db: last_container_block_temp,
+                    best_block_number_onchain: last_container_block_temp,
+                }));
+            }
         }
     }
 
@@ -771,7 +802,7 @@ fn open_and_maybe_delete_db(
             .map_err(|e| format!("{:?}", e))?;
     let chain_spec_genesis_hash_v1 = block_v1.header().hash();
 
-    let container_client_genesis_hash = temp_cli.client.chain_info().genesis_hash;
+    let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
 
     if container_client_genesis_hash != chain_spec_genesis_hash_v0
         && container_client_genesis_hash != chain_spec_genesis_hash_v1
@@ -782,11 +813,14 @@ fn open_and_maybe_delete_db(
             "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
             container_client_genesis_hash
         );
-        delete_container_chain_db(db_path);
-        return Ok(());
+        return Ok(Some(DbRemovalReason::GenesisHashMismatch {
+            container_client_genesis_hash,
+            chain_spec_genesis_hash_v0,
+            chain_spec_genesis_hash_v1,
+        }));
     }
 
-    Ok(())
+    Ok(None)
 }
 
 /// Remove the container chain database folder. This is called with db_path:

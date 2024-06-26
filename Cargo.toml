@@ -400,7 +400,6 @@ tx-pool-api = { package = "sp-transaction-pool", git = "https://github.com/moond
 xcm = { package = "staging-xcm", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 xcm-executor = { package = "staging-xcm-executor", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
-xcm-fee-payment-runtime-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # Tanssi Relay Node
 assert_matches = "1.5.0"
