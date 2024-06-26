@@ -187,6 +187,12 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
         system: Default::default(),
+        alliance_motion: Default::default(),
+        council: container_chain_template_simple_runtime::CouncilConfig { members: vec![], phantom: Default::default() },
+        technical_committee: container_chain_template_simple_runtime::TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
     };
 
     serde_json::to_value(g).unwrap()

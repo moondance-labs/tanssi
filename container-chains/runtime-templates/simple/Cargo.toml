@@ -27,6 +27,9 @@ dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
+pallet-xcavate-whitelist = { workspace = true }
+pallet-nft-marketplace = { workspace = true}
+
 # Moonkit
 async-backing-primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
@@ -41,6 +44,8 @@ xcm-primitives = { workspace = true }
 pallet-xcm-executor-utils = { workspace = true }
 
 # Substrate
+node-primitives = { workspace = true }
+pallet-collective = { workspace = true }
 frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -48,9 +53,14 @@ frame-system-rpc-runtime-api = { workspace = true }
 pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
+pallet-nft-fractionalization = { workspace = true }
+pallet-nfts = { workspace = true }
+pallet-bounties = {workspace = true}
+pallet-child-bounties = {workspace = true}
 pallet-message-queue = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-proxy = { workspace = true }
+pallet-treasury ={ workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -183,6 +193,16 @@ std = [
 	"tanssi-runtime-common/std",
 	"xcm-fee-payment-runtime-api/std",
 	"xcm-primitives/std",
+	"pallet-collective/std",
+	"pallet-nft-fractionalization/std",
+	"pallet-nfts/std",
+	"node-primitives/std",
+	"pallet-treasury/std",
+	"pallet-bounties/std",
+	"pallet-child-bounties/std",
+
+	"pallet-xcavate-whitelist/std",
+	"pallet-nft-marketplace/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -227,6 +247,15 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
+	"pallet-nft-fractionalization/runtime-benchmarks",
+	"pallet-nfts/runtime-benchmarks",
+	"pallet-treasury/runtime-benchmarks",
+	"pallet-bounties/runtime-benchmarks",
+	"pallet-child-bounties/runtime-benchmarks",
+
+	"pallet-xcavate-whitelist/runtime-benchmarks",
+	"pallet-nft-marketplace/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -265,4 +294,13 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-collective/try-runtime",
+	"pallet-nft-fractionalization/try-runtime",
+	"pallet-nfts/try-runtime",
+	"pallet-treasury/try-runtime",
+	"pallet-bounties/try-runtime",
+	"pallet-child-bounties/try-runtime",
+
+	"pallet-xcavate-whitelist/try-runtime",
+	"pallet-nft-marketplace/try-runtime",
 ]

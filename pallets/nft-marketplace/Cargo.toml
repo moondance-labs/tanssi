@@ -1,0 +1,57 @@
+[package]
+name = "pallet-nft-marketplace"
+version = "4.0.0-dev"
+description = "The Xcavate pallet nft-marketplace"
+authors = ["Xcavate Network"]
+homepage = "https://xcavate.io"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/XcavateBlockchain/MarketplaceMVP_Substrate/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+	"derive",
+] }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
+
+serde = { version = "1.0.197", features = ["derive"], optional = true }
+frame-benchmarking = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-std = { default-features = false,  git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.6.0" }
+
+pallet-nfts = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-assets = { workspace = true }
+pallet-nft-fractionalization = { workspace = true }
+enumflags2 = { version = "0.7.7" }
+
+# Local dependencies
+pallet-xcavate-whitelist = { path = "../xcavate-whitelist", default-features = false }
+
+[dev-dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"serde",
+	"pallet-nfts/std",
+	"pallet-balances/std",
+	# "pallet-xcavate-whitelist/std",
+	"pallet-assets/std",
+	"pallet-nft-fractionalization/std",
+]
+runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]
