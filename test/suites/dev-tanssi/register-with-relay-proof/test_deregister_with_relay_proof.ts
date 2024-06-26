@@ -160,19 +160,19 @@ describeSuite({
                 expect(balanceBeforeAlice.reserved.toBigInt()).to.be.eq(expectedDepositValue);
                 expect(balanceAfterAlice.reserved.toBigInt()).to.be.eq(0n);
 
-                // Find a Deposit(100000000000000) event for bob address
+                // Find tx fee paid
                 const events = await polkadotJs.query.system.events();
-                const filtered = filterAndApply(events, "balances", ["Deposit"], ({ event }: EventRecord) =>
+                const filtered = filterAndApply(events, "balances", ["Withdraw"], ({ event }: EventRecord) =>
                     (event.data as unknown as { amount: u128 }).toJSON()
                 );
                 const bobDepositEvent = filtered.find(
-                    (event) => event[0] === bob.address && BigInt(event[1]) === expectedDepositValue
+                    (event) => event[0] === bob.address
                 );
                 if (!bobDepositEvent) {
-                    console.log("deposit events: ", filtered);
+                    console.log("withdraw events: ", filtered);
                 }
                 expect(bobDepositEvent).to.not.be.undefined;
-                expect(balanceAfterBob.free.toBigInt()).toBeGreaterThan(balanceBeforeBob.free.toBigInt());
+                expect(balanceAfterBob.free.toBigInt()).toEqual(balanceBeforeBob.free.toBigInt() + expectedDepositValue - BigInt(bobDepositEvent[1]));
 
                 // Checking that in session 2 paras are registered
                 await jumpSessions(context, 2);
