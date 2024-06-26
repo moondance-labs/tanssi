@@ -258,8 +258,8 @@ jobs:
                   mkdir -p binaries
                   cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
                   cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
-                  cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay-execute-worker;
-                  cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay-prepare-worker;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
                   cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
                   cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
             - name: Upload binary

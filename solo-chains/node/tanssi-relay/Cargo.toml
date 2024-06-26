@@ -11,6 +11,14 @@ version = "0.1.0"
 name = "tanssi-relay"
 path = "src/main.rs"
 
+[[bin]]
+name = "tanssi-relay-execute-worker"
+path = "src/bin/execute-worker.rs"
+
+[[bin]]
+name = "tanssi-relay-prepare-worker"
+path = "src/bin/prepare-worker.rs"
+
 [lints]
 workspace = true
 
@@ -20,7 +28,10 @@ tikv-jemallocator = { workspace = true, optional = true, features = [ "unprefixe
 
 # Crates in our workspace, defined as dependencies so we can pass them feature flags.
 polkadot-node-core-pvf = { workspace = true }
+polkadot-node-core-pvf-execute-worker = { workspace = true }
 polkadot-node-core-pvf-prepare-worker = { workspace = true }
+polkadot-node-core-pvf-common = { workspace = true }
+
 polkadot-overseer = { workspace = true }
 tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
 
