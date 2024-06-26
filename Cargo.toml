@@ -77,8 +77,6 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
-mozart-runtime = { path = "solo-chains/runtime/mozart", default-features = false }
-mozart-runtime-constants = { path = "solo-chains/runtime/mozart/constants", default-features = false }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 starlight-runtime = { path = "solo-chains/runtime/starlight", default-features = false }
