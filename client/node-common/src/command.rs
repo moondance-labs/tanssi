@@ -16,8 +16,7 @@
 
 use {
     parity_scale_codec::Encode,
-    sc_chain_spec::construct_genesis_block,
-    sc_chain_spec::ChainSpec,
+    sc_chain_spec::{construct_genesis_block, ChainSpec},
     sp_runtime::{
         traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
         StateVersion,

@@ -16,13 +16,11 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use crate::container_chain_spawner::TrySpawnParams;
-use tokio_util::sync::CancellationToken;
 #[allow(deprecated)]
 use {
     crate::{
         cli::ContainerChainCli,
-        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
+        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawnParams, ContainerChainSpawner},
     },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -83,6 +81,7 @@ use {
         OrchestratorAuraWorkerAuxData,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
+    tokio_util::sync::CancellationToken,
 };
 
 mod mocked_relay_keys;
@@ -497,7 +496,7 @@ async fn start_node_impl(
         let orchestrator_client = node_builder.client.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
-            params: TrySpawnParams {
+            params: ContainerChainSpawnParams {
                 orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
                 orchestrator_client,
                 container_chain_cli,

@@ -61,7 +61,7 @@ use {
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
 pub struct ContainerChainSpawner {
     /// Start container chain params
-    pub params: TrySpawnParams,
+    pub params: ContainerChainSpawnParams,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -80,7 +80,7 @@ pub struct ContainerChainSpawner {
 /// These params must be the same for all container chains, params that change such as the
 /// `container_chain_para_id` should be passed as separate arguments to the [try_spawn] function.
 #[derive(Clone)]
-pub struct TrySpawnParams {
+pub struct ContainerChainSpawnParams {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub container_chain_cli: ContainerChainCli,
@@ -136,12 +136,12 @@ pub enum CcSpawnMsg {
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
 async fn try_spawn(
-    try_spawn_params: TrySpawnParams,
+    try_spawn_params: ContainerChainSpawnParams,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
 ) -> sc_service::error::Result<()> {
-    let TrySpawnParams {
+    let ContainerChainSpawnParams {
         orchestrator_chain_interface,
         orchestrator_client,
         mut container_chain_cli,
