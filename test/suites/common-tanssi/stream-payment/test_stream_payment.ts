@@ -53,12 +53,13 @@ describeSuite({
                     .performPayment(0)
                     .signAsync(alice, { nonce: aliceNonce++ });
 
+                const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
                 const txRequestChange = await polkadotJs.tx.streamPayment
                     .requestChange(
                         0,
                         {
                             Mandatory: {
-                                deadline: 0,
+                                deadline: blockNumber + 5,
                             },
                         },
                         {
