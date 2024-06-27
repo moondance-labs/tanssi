@@ -57,6 +57,10 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
+/// Timeout to wait for the database to close before starting it again, used in `wait_for_paritydb_lock`.
+/// This is the max timeout, if the db is closed in 1 second then that function will only wait 1 second.
+const MAX_DB_RESTART_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
 pub struct ContainerChainSpawner {
@@ -317,8 +321,7 @@ async fn try_spawn(
                         container_chain_para_id,
                         db_removal_reason,
                     );
-                    let max_restart_timeout = Duration::from_secs(60);
-                    wait_for_paritydb_lock(&db_path, max_restart_timeout)
+                    wait_for_paritydb_lock(&db_path, MAX_DB_RESTART_TIMEOUT)
                         .await
                         .map_err(|e| {
                             log::warn!(
@@ -365,6 +368,12 @@ async fn try_spawn(
             client: Arc::downgrade(&container_chain_client),
         });
 
+        if state
+            .spawned_container_chains
+            .contains_key(&container_chain_para_id)
+        {
+            return Err(format!("Tried to spawn a container chain when another container chain with the same para id was already running: {:?}", container_chain_para_id).into());
+        }
         state.spawned_container_chains.insert(
             container_chain_para_id,
             ContainerChainState {
@@ -407,7 +416,23 @@ async fn try_spawn(
                 // which means that the node is stopping.
                 // Delete existing database if running as collator
                 if validator && stop_unassigned == Ok(false) && !container_chain_cli.base.keep_db {
-                    delete_container_chain_db(&db_path);
+                    // If this breaks after a code change, make sure that all the variables that
+                    // may keep the chain alive are dropped before the call to `wait_for_paritydb_lock`.
+                    drop(container_chain_task_manager_future);
+                    drop(container_chain_task_manager);
+                    let db_closed = wait_for_paritydb_lock(&db_path, MAX_DB_RESTART_TIMEOUT)
+                        .await
+                        .map_err(|e| {
+                            log::warn!(
+                                "Error waiting for chain {} to release db lock: {:?}",
+                                container_chain_para_id,
+                                e
+                            );
+                        }).is_ok();
+                    // If db has not closed in 60 seconds we do not delete it.
+                    if db_closed {
+                        delete_container_chain_db(&db_path);
+                    }
                 }
             }
         }
@@ -424,6 +449,11 @@ async fn try_spawn(
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of an error, this does not stop the node, and
     /// the container chain will be attempted to spawn again when the collator is reassigned to it.
+    ///
+    /// It is possible that we try to spawn-stop-spawn the same chain, and the second spawn fails
+    /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
+    /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
+    /// `handle_update_assignment`.
     async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
         let try_spawn_params = self.params.clone();
         let state = self.state.clone();
@@ -567,11 +597,10 @@ impl ContainerChainSpawner {
             // Ensure the chains we stopped actually stopped by checking if their database is unlocked.
             // Using `join_all` because in one edge case we may be restarting 2 chains,
             // but almost always this will be only one future.
-            let max_restart_timeout = Duration::from_secs(60);
             let futs = db_paths_restart
                 .into_iter()
                 .map(|(para_id, db_path)| async move {
-                    wait_for_paritydb_lock(&db_path, max_restart_timeout)
+                    wait_for_paritydb_lock(&db_path, MAX_DB_RESTART_TIMEOUT)
                         .await
                         .map_err(|e| {
                             log::warn!(
