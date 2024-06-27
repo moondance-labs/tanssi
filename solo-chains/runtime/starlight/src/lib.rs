@@ -30,6 +30,8 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
+    nimbus_primitives::NimbusId,
+    pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -1510,6 +1512,9 @@ construct_runtime! {
 
         // Sudo.
         Sudo: pallet_sudo = 255,
+
+        // FIXME: correct ordering
+        TanssiInitializer: tanssi_initializer = 100,
     }
 }
 
@@ -2513,6 +2518,27 @@ sp_api::impl_runtime_apis! {
             ]
         }
     }
+}
+
+pub struct OwnApplySession;
+impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
+    fn apply_new_session(
+        _changed: bool,
+        _session_index: u32,
+        _all_validators: Vec<(AccountId, NimbusId)>,
+        _queued: Vec<(AccountId, NimbusId)>,
+    ) {
+        // TODO: To be implemented
+    }
+}
+
+impl tanssi_initializer::Config for Runtime {
+    type SessionIndex = u32;
+
+    /// The identifier type for an authority.
+    type AuthorityId = NimbusId;
+
+    type SessionHandler = OwnApplySession;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]
