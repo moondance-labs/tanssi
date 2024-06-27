@@ -669,7 +669,7 @@ pub const FERDIE: [u8; 32] = [9u8; 32];
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
         dancebox_runtime::{
-            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest, RuntimeOrigin,
+            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest,
         },
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
     };

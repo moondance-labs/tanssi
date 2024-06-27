@@ -51,7 +51,7 @@ const UNIT: Balance = 1_000_000_000_000_000_000;
 fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
         flashbox_runtime::{
-            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest, RuntimeOrigin,
+            PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest,
         },
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
     };
