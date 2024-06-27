@@ -46,9 +46,7 @@ use {
     sp_runtime::traits::Block as BlockT,
     std::{
         collections::{HashMap, HashSet},
-        future::Future,
         path::{Path, PathBuf},
-        pin::Pin,
         sync::{Arc, Mutex},
         time::Instant,
     },
@@ -59,11 +57,30 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
+/// Task that handles spawning a stopping container chains based on assignment.
+/// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
+pub struct ContainerChainSpawner {
+    /// Start container chain params
+    pub params: TrySpawnParams,
+
+    /// State
+    pub state: Arc<Mutex<ContainerChainSpawnerState>>,
+
+    /// Async callback that enables collation on the orchestrator chain
+    pub collate_on_tanssi:
+        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
+    /// Stores the cancellation token used to stop the orchestrator chain collator process.
+    /// When this is None, the orchestrator collator is not running.
+    pub collation_cancellation_constructs:
+        Option<(CancellationToken, futures::channel::oneshot::Receiver<()>)>,
+}
+
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
-
-pub struct ContainerChainSpawner {
-    // Start container chain params
+/// These params must be the same for all container chains, params that change such as the
+/// `container_chain_para_id` should be passed as separate arguments to the [try_spawn] function.
+#[derive(Clone)]
+pub struct TrySpawnParams {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub container_chain_cli: ContainerChainCli,
@@ -76,19 +93,9 @@ pub struct ContainerChainSpawner {
     pub orchestrator_para_id: ParaId,
     pub validator: bool,
     pub spawn_handle: SpawnTaskHandle,
-
-    // State
-    pub state: Arc<Mutex<ContainerChainSpawnerState>>,
-
-    // Async callback that enables collation on the orchestrator chain
-    pub collate_on_tanssi:
-        Arc<dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync>,
-    // Stores the cancellation token used to stop the orchestrator chain collator process.
-    // When this is None, the orchestrator collator is not running.
-    pub collation_cancellation_constructs:
-        Option<(CancellationToken, futures::channel::oneshot::Receiver<()>)>,
 }
 
+/// Mutable state for container chain spawner. Keeps track of running chains.
 #[derive(Default)]
 pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
@@ -125,165 +132,190 @@ pub enum CcSpawnMsg {
     },
 }
 
-impl ContainerChainSpawner {
-    /// Try to start a new container chain. In case of an error, this does not stop the node, and
-    /// the container chain will be attempted to spawn again when the collator is reassigned to it.
-    #[must_use]
-    fn spawn(
-        &self,
-        container_chain_para_id: ParaId,
-        start_collation: bool,
-    ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
-        let (
-            orchestrator_chain_interface,
-            orchestrator_client,
-            mut container_chain_cli,
-            tokio_handle,
-            chain_type,
-            relay_chain,
-            relay_chain_interface,
-            collator_key,
-            sync_keystore,
-            orchestrator_para_id,
-            validator,
-            spawn_handle,
-            state,
-        ) = (
-            self.orchestrator_chain_interface.clone(),
-            self.orchestrator_client.clone(),
-            self.container_chain_cli.clone(),
-            self.tokio_handle.clone(),
-            self.chain_type.clone(),
-            self.relay_chain.clone(),
-            self.relay_chain_interface.clone(),
-            self.collator_key.clone(),
-            self.sync_keystore.clone(),
-            self.orchestrator_para_id,
-            self.validator,
-            self.spawn_handle.clone(),
-            self.state.clone(),
+// Separate function to allow using `?` to return a result, and also to avoid using `self` in an
+// async function. Mutable state should be written by locking `state`.
+// TODO: `state` should be an async mutex
+async fn try_spawn(
+    try_spawn_params: TrySpawnParams,
+    state: Arc<Mutex<ContainerChainSpawnerState>>,
+    container_chain_para_id: ParaId,
+    start_collation: bool,
+) -> sc_service::error::Result<()> {
+    let TrySpawnParams {
+        orchestrator_chain_interface,
+        orchestrator_client,
+        mut container_chain_cli,
+        tokio_handle,
+        chain_type,
+        relay_chain,
+        relay_chain_interface,
+        collator_key,
+        sync_keystore,
+        orchestrator_para_id,
+        validator,
+        spawn_handle,
+    } = try_spawn_params;
+    // Preload genesis data from orchestrator chain storage.
+
+    // TODO: the orchestrator chain node may not be fully synced yet,
+    // in that case we will be reading an old state.
+    let orchestrator_chain_info = orchestrator_client.chain_info();
+    log::info!(
+        "Reading container chain genesis data from orchestrator chain at block #{} {}",
+        orchestrator_chain_info.best_number,
+        orchestrator_chain_info.best_hash,
+    );
+    let orchestrator_runtime_api = orchestrator_client.runtime_api();
+
+    log::info!(
+        "Detected assignment for container chain {}",
+        container_chain_para_id
+    );
+
+    let genesis_data = orchestrator_runtime_api
+        .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
+        .map_err(|e| format!("Failed to call genesis_data runtime api: {}", e))?
+        .ok_or_else(|| {
+            format!(
+                "No genesis data registered for container chain id {}",
+                container_chain_para_id
+            )
+        })?;
+
+    let boot_nodes_raw = orchestrator_runtime_api
+        .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
+        .map_err(|e| format!("Failed to call boot_nodes runtime api: {}", e))?;
+    if boot_nodes_raw.is_empty() {
+        log::warn!(
+            "No boot nodes registered on-chain for container chain {}",
+            container_chain_para_id
         );
-        let state2 = state.clone();
-        // This closure is used to emulate a try block, it enables using the `?` operator inside
-        let try_closure = move || async move {
-            // Preload genesis data from orchestrator chain storage.
-            // The preload must finish before calling create_configuration, so any async operations
-            // need to be awaited.
+    }
+    let boot_nodes = parse_boot_nodes_ignore_invalid(boot_nodes_raw, container_chain_para_id);
+    if boot_nodes.is_empty() {
+        log::warn!(
+            "No valid boot nodes for container chain {}",
+            container_chain_para_id
+        );
+    }
 
-            // TODO: the orchestrator chain node may not be fully synced yet,
-            // in that case we will be reading an old state.
-            let orchestrator_chain_info = orchestrator_client.chain_info();
-            log::info!(
-                "Reading container chain genesis data from orchestrator chain at block #{} {}",
-                orchestrator_chain_info.best_number,
-                orchestrator_chain_info.best_hash,
-            );
-            let orchestrator_runtime_api = orchestrator_client.runtime_api();
+    container_chain_cli
+        .preload_chain_spec_from_genesis_data(
+            container_chain_para_id.into(),
+            genesis_data,
+            chain_type.clone(),
+            relay_chain.clone(),
+            boot_nodes,
+        )
+        .map_err(|e| {
+            format!(
+                "failed to create container chain chain spec from on chain genesis data: {}",
+                e
+            )
+        })?;
 
-            log::info!(
-                "Detected assignment for container chain {}",
-                container_chain_para_id
-            );
+    log::info!(
+        "Loaded chain spec for container chain {}",
+        container_chain_para_id
+    );
 
-            let genesis_data = orchestrator_runtime_api
-                .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .map_err(|e| format!("Failed to call genesis_data runtime api: {}", e))?
-                .ok_or_else(|| {
-                    format!(
-                        "No genesis data registered for container chain id {}",
-                        container_chain_para_id
-                    )
-                })?;
+    if !start_collation {
+        log::info!("This is a syncing container chain, using random ports");
+        // Use random ports to avoid conflicts with the other running container chain
+        let random_ports = [23456, 23457, 23458];
+        container_chain_cli
+            .base
+            .base
+            .prometheus_params
+            .prometheus_port = Some(random_ports[0]);
+        container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
+        container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
+    }
 
-            let boot_nodes_raw = orchestrator_runtime_api
-                .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .map_err(|e| format!("Failed to call boot_nodes runtime api: {}", e))?;
-            if boot_nodes_raw.is_empty() {
-                log::warn!(
-                    "No boot nodes registered on-chain for container chain {}",
-                    container_chain_para_id
-                );
-            }
-            let boot_nodes =
-                parse_boot_nodes_ignore_invalid(boot_nodes_raw, container_chain_para_id);
-            if boot_nodes.is_empty() {
-                log::warn!(
-                    "No valid boot nodes for container chain {}",
-                    container_chain_para_id
-                );
-            }
+    // Update CLI params
+    container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+    container_chain_cli
+        .base
+        .base
+        .import_params
+        .database_params
+        .database = Some(Database::ParityDb);
 
-            container_chain_cli
-                .preload_chain_spec_from_genesis_data(
-                    container_chain_para_id.into(),
-                    genesis_data,
-                    chain_type.clone(),
-                    relay_chain.clone(),
-                    boot_nodes,
+    container_chain_cli.base.base.network_params.sync =
+        select_sync_mode(&orchestrator_client, container_chain_para_id)?;
+    log::info!(
+        "Container chain sync mode: {:?}",
+        container_chain_cli.base.base.network_params.sync
+    );
+
+    // Start container chain node. After starting, check if the database is good or needs to
+    // be removed. If the db needs to be removed, this function will handle the node restart, and
+    // return the components of a running container chain node.
+    // This should be a separate function, but it has so many arguments that I prefer to have it as a closure for now
+    let start_node_impl_container_with_restart = || async {
+        // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
+        for _ in 0..2 {
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+            // Change database path to make it depend on container chain para id
+            // So instead of the usual "db/full" we have "db/full-container-2000"
+            let mut db_path = container_chain_cli_config
+                .database
+                .path()
+                .ok_or_else(|| "Failed to get database path".to_string())?
+                .to_owned();
+            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
+            container_chain_cli_config.database.set_path(&db_path);
+            let db_existed_before = db_path.exists();
+
+            let (container_chain_task_manager, container_chain_client, container_chain_db) =
+                start_node_impl_container(
+                    container_chain_cli_config,
+                    orchestrator_client.clone(),
+                    relay_chain_interface.clone(),
+                    orchestrator_chain_interface.clone(),
+                    collator_key.clone(),
+                    sync_keystore.clone(),
+                    container_chain_para_id,
+                    orchestrator_para_id,
+                    validator && start_collation,
                 )
-                .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
+                .await?;
 
-            log::info!(
-                "Loaded chain spec for container chain {}",
-                container_chain_para_id
-            );
-
-            if !start_collation {
-                log::info!("This is a syncing container chain, using random ports");
-                // Use random ports to avoid conflicts with the other running container chain
-                let random_ports = [23456, 23457, 23458];
-                container_chain_cli
-                    .base
-                    .base
-                    .prometheus_params
-                    .prometheus_port = Some(random_ports[0]);
-                container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
-                container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
-            }
-
-            // Update CLI params
-            container_chain_cli.base.para_id = Some(container_chain_para_id.into());
-            container_chain_cli
-                .base
-                .base
-                .import_params
-                .database_params
-                .database = Some(Database::ParityDb);
-
-            container_chain_cli.base.base.network_params.sync =
-                select_sync_mode(&orchestrator_client, container_chain_para_id)?;
-            log::info!(
-                "Container chain sync mode: {:?}",
-                container_chain_cli.base.base.network_params.sync
-            );
-
-            // Start container chain node
-            // This should be a separate function but it has so many arguments that I prefer to have it inline for now
-            let mut delete_db_next_iteration = false;
-            let mut loop_counter = 0;
-            let mut db_path_opt: Option<PathBuf> = None;
-            let mut db_removal_reason_opt = None;
-            let (
-                mut container_chain_task_manager,
+            // Keep all node parts in one variable to make them easier to drop
+            let node_parts = (
+                container_chain_task_manager,
                 container_chain_client,
                 container_chain_db,
                 db_path,
-            ) = loop {
-                loop_counter += 1;
-                if loop_counter > 2 {
-                    panic!("This loop should only run 2 times in the worst case when removing the db, and 1 time in most cases");
-                }
-                #[allow(unused_assignments)]
-                if delete_db_next_iteration {
-                    delete_db_next_iteration = false;
-                    let db_path = db_path_opt.take().unwrap();
+            );
+
+            if db_existed_before {
+                // If the database already existed before, check if it can be used or it needs to be removed.
+                // To remove the database, we restart the node, wait for the db to close to avoid a
+                // "shutdown error" log, and then remove it.
+                if let Some(db_removal_reason) = db_needs_removal(
+                    &node_parts.1,
+                    &orchestrator_client,
+                    container_chain_para_id,
+                    &container_chain_cli,
+                    container_chain_cli.base.keep_db,
+                )? {
+                    let db_path = node_parts.3.clone();
+                    // Important, drop `node_parts` before trying to `wait_for_paritydb_lock`
+                    drop(node_parts);
                     // Wait here to for the database created in the previous loop iteration to close.
                     // Dropping is not enough because there is some background process that keeps the database open,
                     // so we check the paritydb lock file directly.
                     log::info!(
                         "Restarting container chain {} after db deletion. Reason: {:?}",
                         container_chain_para_id,
-                        db_removal_reason_opt.take().unwrap(),
+                        db_removal_reason,
                     );
                     let max_restart_timeout = Duration::from_secs(60);
                     wait_for_paritydb_lock(&db_path, max_restart_timeout)
@@ -298,158 +330,125 @@ impl ContainerChainSpawner {
                             e
                         })?;
                     delete_container_chain_db(&db_path);
+
+                    // Recursion, will only happen once because `db_existed_before` will be false after
+                    // removing the db. Apparently closures cannot be recursive so fake recursion by
+                    // using a loop + continue
+                    continue;
                 }
-                let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
-                    &container_chain_cli,
-                    &container_chain_cli,
-                    tokio_handle.clone(),
-                )
-                .map_err(|err| format!("Container chain argument error: {}", err))?;
-
-                // Change database path to make it depend on container chain para id
-                // So instead of the usual "db/full" we have "db/full-container-2000"
-                let mut db_path = container_chain_cli_config
-                    .database
-                    .path()
-                    .ok_or_else(|| "Failed to get database path".to_string())?
-                    .to_owned();
-                db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
-                container_chain_cli_config.database.set_path(&db_path);
-                let db_existed_before = db_path.exists();
-
-                let (container_chain_task_manager, container_chain_client, container_chain_db) =
-                    start_node_impl_container(
-                        container_chain_cli_config,
-                        orchestrator_client.clone(),
-                        relay_chain_interface.clone(),
-                        orchestrator_chain_interface.clone(),
-                        collator_key.clone(),
-                        sync_keystore.clone(),
-                        container_chain_para_id,
-                        orchestrator_para_id,
-                        validator && start_collation,
-                    )
-                    .await?;
-
-                if db_existed_before {
-                    // If the database already existed before, check if it can be used or it needs to be removed.
-                    // To remove the database, we restart the node, wait for the db to close to avoid a
-                    // "shutdown error" log, and then remove it.
-                    if let Some(db_removal_reason) = db_needs_removal(
-                        &container_chain_client,
-                        &orchestrator_client,
-                        container_chain_para_id,
-                        &container_chain_cli,
-                        container_chain_cli.base.keep_db,
-                    )? {
-                        // We cannot remove the database here because it is still open, we could
-                        // manually drop all the variables that keep it open, or we can just jump to
-                        // before they were created to have them automatically dropped.
-                        delete_db_next_iteration = true;
-                        db_path_opt = Some(db_path);
-                        db_removal_reason_opt = Some(db_removal_reason);
-                        continue;
-                    }
-                }
-
-                break (
-                    container_chain_task_manager,
-                    container_chain_client,
-                    container_chain_db,
-                    db_path,
-                );
-            };
-
-            // Signal that allows to gracefully stop a container chain
-            let (signal, on_exit) = oneshot::channel::<bool>();
-
-            let monitor_id;
-            {
-                let mut state = state.lock().expect("poison error");
-
-                monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
-                    id: 0,
-                    para_id: container_chain_para_id,
-                    start_time: Instant::now(),
-                    stop_signal_time: None,
-                    stop_task_manager_time: None,
-                    stop_refcount_time: Default::default(),
-                    backend: Arc::downgrade(&container_chain_db),
-                    client: Arc::downgrade(&container_chain_client),
-                });
-
-                state.spawned_container_chains.insert(
-                    container_chain_para_id,
-                    ContainerChainState {
-                        stop_handle: StopContainerChain {
-                            signal,
-                            id: monitor_id,
-                        },
-                        db_path: db_path.clone(),
-                    },
-                );
             }
 
-            // Add the container chain task manager as a child task to the parent task manager.
-            // We want to stop the node if this task manager stops, but we also want to allow a
-            // graceful shutdown using the `on_exit` future.
-            let name = "container-chain-task-manager";
-            spawn_handle.spawn(name, None, async move {
-                let mut container_chain_task_manager_future =
-                    container_chain_task_manager.future().fuse();
-                let mut on_exit_future = on_exit.fuse();
+            return sc_service::error::Result::Ok(node_parts);
+        }
 
-                futures::select! {
-                    res1 = container_chain_task_manager_future => {
-                        // An essential task failed or the task manager was stopped unexpectedly
-                        // using `.terminate()`. This should stop the container chain but not the node.
-                        if res1.is_err() {
-                            log::error!("Essential task failed in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
-                        } else {
-                            log::error!("Unexpected shutdown in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
-                        }
-                        // Mark this container chain as "failed to stop" to avoid warning in `self.stop()`
-                        let mut state = state.lock().expect("poison error");
-                        state.failed_para_ids.insert(container_chain_para_id);
-                        // Never delete db in this case because it is not a graceful shutdown
-                    }
-                    stop_unassigned = on_exit_future => {
-                        // Graceful shutdown.
-                        // `stop_unassigned` will be `Ok(keep_db)` if `.stop()` has been called, which means that the
-                        // container chain has been unassigned, and will be `Err` if the handle has been dropped,
-                        // which means that the node is stopping.
-                        // Delete existing database if running as collator
-                        if validator && stop_unassigned == Ok(false) && !container_chain_cli.base.keep_db {
-                            delete_container_chain_db(&db_path);
-                        }
-                    }
+        unreachable!("Above loop can run at most 2 times, and in the second iteration it is guaranteed to return")
+    };
+
+    let (mut container_chain_task_manager, container_chain_client, container_chain_db, db_path) =
+        start_node_impl_container_with_restart().await?;
+
+    // Signal that allows to gracefully stop a container chain
+    let (signal, on_exit) = oneshot::channel::<bool>();
+
+    let monitor_id;
+    {
+        let mut state = state.lock().expect("poison error");
+
+        monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
+            id: 0,
+            para_id: container_chain_para_id,
+            start_time: Instant::now(),
+            stop_signal_time: None,
+            stop_task_manager_time: None,
+            stop_refcount_time: Default::default(),
+            backend: Arc::downgrade(&container_chain_db),
+            client: Arc::downgrade(&container_chain_client),
+        });
+
+        state.spawned_container_chains.insert(
+            container_chain_para_id,
+            ContainerChainState {
+                stop_handle: StopContainerChain {
+                    signal,
+                    id: monitor_id,
+                },
+                db_path: db_path.clone(),
+            },
+        );
+    }
+
+    // Add the container chain task manager as a child task to the parent task manager.
+    // We want to stop the node if this task manager stops, but we also want to allow a
+    // graceful shutdown using the `on_exit` future.
+    let name = "container-chain-task-manager";
+    spawn_handle.spawn(name, None, async move {
+        let mut container_chain_task_manager_future =
+            container_chain_task_manager.future().fuse();
+        let mut on_exit_future = on_exit.fuse();
+
+        futures::select! {
+            res1 = container_chain_task_manager_future => {
+                // An essential task failed or the task manager was stopped unexpectedly
+                // using `.terminate()`. This should stop the container chain but not the node.
+                if res1.is_err() {
+                    log::error!("Essential task failed in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
+                } else {
+                    log::error!("Unexpected shutdown in container chain {} task manager. Shutting down container chain service", container_chain_para_id);
                 }
-
+                // Mark this container chain as "failed to stop" to avoid warning in `self.stop()`
                 let mut state = state.lock().expect("poison error");
-                state
-                    .spawned_containers_monitor
-                    .set_stop_task_manager_time(monitor_id, Instant::now());
-            });
-
-            sc_service::error::Result::Ok(())
-        };
-
-        async move {
-            match try_closure().await {
-                Ok(()) => {}
-                Err(e) => {
-                    log::error!(
-                        "Failed to start container chain {}: {}",
-                        container_chain_para_id,
-                        e
-                    );
-                    // Mark this container chain as "failed to start"
-                    let mut state = state2.lock().expect("poison error");
-                    state.failed_para_ids.insert(container_chain_para_id);
+                state.failed_para_ids.insert(container_chain_para_id);
+                // Never delete db in this case because it is not a graceful shutdown
+            }
+            stop_unassigned = on_exit_future => {
+                // Graceful shutdown.
+                // `stop_unassigned` will be `Ok(keep_db)` if `.stop()` has been called, which means that the
+                // container chain has been unassigned, and will be `Err` if the handle has been dropped,
+                // which means that the node is stopping.
+                // Delete existing database if running as collator
+                if validator && stop_unassigned == Ok(false) && !container_chain_cli.base.keep_db {
+                    delete_container_chain_db(&db_path);
                 }
             }
         }
-        .boxed()
+
+        let mut state = state.lock().expect("poison error");
+        state
+            .spawned_containers_monitor
+            .set_stop_task_manager_time(monitor_id, Instant::now());
+    });
+
+    Ok(())
+}
+
+impl ContainerChainSpawner {
+    /// Try to start a new container chain. In case of an error, this does not stop the node, and
+    /// the container chain will be attempted to spawn again when the collator is reassigned to it.
+    async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
+        let try_spawn_params = self.params.clone();
+        let state = self.state.clone();
+        let state2 = state.clone();
+
+        match try_spawn(
+            try_spawn_params,
+            state,
+            container_chain_para_id,
+            start_collation,
+        )
+        .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                log::error!(
+                    "Failed to start container chain {}: {}",
+                    container_chain_para_id,
+                    e
+                );
+                // Mark this container chain as "failed to start"
+                let mut state = state2.lock().expect("poison error");
+                state.failed_para_ids.insert(container_chain_para_id);
+            }
+        }
     }
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
@@ -499,7 +498,7 @@ impl ContainerChainSpawner {
         // So all nodes start as orchestrator chain collators, until the first block is imported,
         // then the real assignment is used.
         if validator {
-            self.handle_update_assignment(Some(self.orchestrator_para_id), None)
+            self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
                 .await;
         }
 
@@ -527,12 +526,12 @@ impl ContainerChainSpawner {
             need_to_restart: _,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
-            self.orchestrator_para_id,
+            self.params.orchestrator_para_id,
             current,
             next,
         );
 
-        if current != Some(self.orchestrator_para_id) {
+        if current != Some(self.params.orchestrator_para_id) {
             // If not assigned to orchestrator chain anymore, we need to stop the collator process
             let maybe_exit_notification_receiver = self
                 .collation_cancellation_constructs
@@ -699,13 +698,14 @@ fn handle_update_assignment_state_change(
     }
 }
 
-/// Select `SyncMode` to use for a container chain.
+/// Select [SyncMode] to use for a container chain.
 /// We want to use warp sync unless the container chain is still at genesis block (because of a warp sync bug in that case).
+///
 /// Remember that warp sync doesn't work if a partially synced database already exists, it falls
 /// back to full sync instead. The only exception is if the previous instance of the database was
 /// interrupted before it finished downloading the state, in that case the node will use warp sync.
 /// If it was interrupted during the block history download, the node will use full sync but also
-/// finish the block history download in the background, even if warp sync is not specified.
+/// finish the block history download in the background, even if sync mode is set to full sync.
 fn select_sync_mode(
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
@@ -743,9 +743,8 @@ enum DbRemovalReason {
     },
 }
 
-/// Start a container chain using `new_partial` and check if the database is valid. If not, delete the db.
-/// The caller may need to wait a few seconds before trying to start the same container chain again, to
-/// give the database enough time to close.
+/// Given a container chain client, check if the database is valid. If not, returns `Some` with the
+/// reason for db removal.
 fn db_needs_removal(
     container_chain_client: &Arc<ContainerChainClient>,
     orchestrator_client: &Arc<ParachainClient>,
@@ -791,12 +790,7 @@ fn db_needs_removal(
     // Generate genesis hash to compare against container client's genesis hash
     let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.as_ref().unwrap();
 
-    // Check with both state versions
-    let block_v0: Block =
-        generate_genesis_block(&**container_preloaded_genesis, sp_runtime::StateVersion::V0)
-            .map_err(|e| format!("{:?}", e))?;
-    let chain_spec_genesis_hash_v0 = block_v0.header().hash();
-
+    // Check with both state versions, but first v1 which is the latest
     let block_v1: Block =
         generate_genesis_block(&**container_preloaded_genesis, sp_runtime::StateVersion::V1)
             .map_err(|e| format!("{:?}", e))?;
@@ -804,20 +798,25 @@ fn db_needs_removal(
 
     let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
 
-    if container_client_genesis_hash != chain_spec_genesis_hash_v0
-        && container_client_genesis_hash != chain_spec_genesis_hash_v1
-    {
-        log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
-        log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
-        log::info!(
-            "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
-            container_client_genesis_hash
-        );
-        return Ok(Some(DbRemovalReason::GenesisHashMismatch {
-            container_client_genesis_hash,
-            chain_spec_genesis_hash_v0,
-            chain_spec_genesis_hash_v1,
-        }));
+    if container_client_genesis_hash != chain_spec_genesis_hash_v1 {
+        let block_v0: Block =
+            generate_genesis_block(&**container_preloaded_genesis, sp_runtime::StateVersion::V0)
+                .map_err(|e| format!("{:?}", e))?;
+        let chain_spec_genesis_hash_v0 = block_v0.header().hash();
+
+        if container_client_genesis_hash != chain_spec_genesis_hash_v0 {
+            log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
+            log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
+            log::info!(
+                "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
+                container_client_genesis_hash
+            );
+            return Ok(Some(DbRemovalReason::GenesisHashMismatch {
+                container_client_genesis_hash,
+                chain_spec_genesis_hash_v0,
+                chain_spec_genesis_hash_v1,
+            }));
+        }
     }
 
     Ok(None)
