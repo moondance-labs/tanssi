@@ -112,9 +112,6 @@ xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 xcm-fee-payment-runtime-api = { workspace = true }
 
-# Moonkit
-nimbus-primitives = { workspace = true }
-
 [dev-dependencies]
 keyring = { workspace = true }
 remote-externalities = { workspace = true }
@@ -148,7 +145,6 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
-	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
 	"pallet-authority-discovery/std",
@@ -285,7 +281,6 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime",
 	"frame-try-runtime/try-runtime",
-	"nimbus-primitives/try-runtime",
 	"pallet-asset-rate/try-runtime",
 	"pallet-authority-discovery/try-runtime",
 	"pallet-authorship/try-runtime",

@@ -30,7 +30,6 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
-    nimbus_primitives::NimbusId,
     pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -2525,8 +2524,8 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         _changed: bool,
         _session_index: u32,
-        _all_validators: Vec<(AccountId, NimbusId)>,
-        _queued: Vec<(AccountId, NimbusId)>,
+        _all_validators: Vec<(AccountId, ValidatorId)>,
+        _queued: Vec<(AccountId, ValidatorId)>,
     ) {
         // TODO: To be implemented
     }
@@ -2536,7 +2535,7 @@ impl tanssi_initializer::Config for Runtime {
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
-    type AuthorityId = NimbusId;
+    type AuthorityId = ValidatorId;
 
     type SessionHandler = OwnApplySession;
 }
