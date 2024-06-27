@@ -61,6 +61,14 @@ use {
 /// This is the max timeout, if the db is closed in 1 second then that function will only wait 1 second.
 const MAX_DB_RESTART_TIMEOUT: Duration = Duration::from_secs(60);
 
+/// Block diff threshold above which we decide it will be faster to delete the database and
+/// use warp sync, rather than using full sync to download a large number of blocks.
+/// This is only needed because warp sync does not support syncing from a state that is not
+/// genesis, it falls back to full sync in that case.
+/// 30_000 blocks = 50 hours at 6s/block.
+/// Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
+const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
+
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
 pub struct ContainerChainSpawner {
@@ -774,6 +782,9 @@ enum DbRemovalReason {
 
 /// Given a container chain client, check if the database is valid. If not, returns `Some` with the
 /// reason for db removal.
+/// Reasons may be:
+/// * High block diff: when the local db is outdated and it would take a long time to sync using full sync, we remove it to be able to use warp sync.
+/// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
 fn db_needs_removal(
     container_chain_client: &Arc<ContainerChainClient>,
     orchestrator_client: &Arc<ParachainClient>,
@@ -795,17 +806,10 @@ fn db_needs_removal(
                 .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .unwrap_or_default();
 
-            // Block diff threshold above which we decide it will be faster to delete the database and
-            // use warp sync, rather than using full sync to download a large number of blocks.
-            // This is only needed because warp sync does not support syncing from a state that is not
-            // genesis, it falls back to full sync in that case.
-            // 30_000 blocks = 50 hours at 6s/block.
-            // Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
-            let max_block_diff_allowed = 30_000;
             if last_container_block_from_orchestrator
                 .unwrap_or(0)
                 .abs_diff(last_container_block_temp)
-                > max_block_diff_allowed
+                > MAX_BLOCK_DIFF_FOR_FULL_SYNC
             {
                 // if the diff is big, delete db and restart using warp sync
                 return Ok(Some(DbRemovalReason::HighBlockDiff {
