@@ -2527,7 +2527,25 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         _all_validators: Vec<(AccountId, ValidatorId)>,
         _queued: Vec<(AccountId, ValidatorId)>,
     ) {
-        // TODO: To be implemented
+        // // We first initialize Configuration
+        // Configuration::initializer_on_new_session(&session_index);
+        // // Next: Registrar
+        // Registrar::initializer_on_new_session(&session_index);
+        // // Next: AuthorityMapping
+        // AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
+
+        // let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
+
+        // // Next: CollatorAssignment
+        // let assignments =
+        //     CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+
+        // let queued_id_to_validator_map = queued.iter().cloned().collect();
+        // AuthorityAssignment::initializer_on_new_session(
+        //     &session_index,
+        //     &queued_id_to_validator_map,
+        //     &assignments.next_assignment,
+        // );
     }
 }
 
