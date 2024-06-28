@@ -30,6 +30,7 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
+    pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -436,7 +437,7 @@ impl_opaque_keys! {
     pub struct SessionKeys {
         pub grandpa: Grandpa,
         pub babe: Babe,
-        pub para_validator: Initializer,
+        pub para_validator: TanssiInitializer,
         pub para_assignment: ParaSessionInfo,
         pub authority_discovery: AuthorityDiscovery,
         pub beefy: Beefy,
@@ -1510,6 +1511,9 @@ construct_runtime! {
 
         // Sudo.
         Sudo: pallet_sudo = 255,
+
+        // FIXME: correct ordering
+        TanssiInitializer: tanssi_initializer = 100,
     }
 }
 
@@ -2513,6 +2517,60 @@ sp_api::impl_runtime_apis! {
             ]
         }
     }
+}
+
+pub struct OwnApplySession;
+impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
+    fn apply_new_session(
+        changed: bool,
+        _session_index: u32,
+        all_validators: Vec<(AccountId, ValidatorId)>,
+        queued: Vec<(AccountId, ValidatorId)>,
+    ) {
+        use frame_support::traits::OneSessionHandler;
+        let all_validators_initializer: Vec<(&AccountId, ValidatorId)> = all_validators
+            .iter()
+            .map(|(validator, key)| (validator, key.clone()))
+            .collect();
+        let queued_initializer: Vec<(&AccountId, ValidatorId)> = queued
+            .iter()
+            .map(|(validator, key)| (validator, key.clone()))
+            .collect();
+
+        Initializer::on_new_session(
+            changed,
+            all_validators_initializer.into_iter(),
+            queued_initializer.into_iter(),
+        );
+        // // We first initialize Configuration
+        // Configuration::initializer_on_new_session(&session_index);
+        // // Next: Registrar
+        // Registrar::initializer_on_new_session(&session_index);
+        // // Next: AuthorityMapping
+        // AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
+
+        // let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
+
+        // // Next: CollatorAssignment
+        // let assignments =
+        //     CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+
+        // let queued_id_to_validator_map = queued.iter().cloned().collect();
+        // AuthorityAssignment::initializer_on_new_session(
+        //     &session_index,
+        //     &queued_id_to_validator_map,
+        //     &assignments.next_assignment,
+        // );
+    }
+}
+
+impl tanssi_initializer::Config for Runtime {
+    type SessionIndex = u32;
+
+    /// The identifier type for an authority.
+    type AuthorityId = ValidatorId;
+
+    type SessionHandler = OwnApplySession;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

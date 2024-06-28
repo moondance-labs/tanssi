@@ -16292,6 +16292,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-identity",
  "pallet-indices",
+ "pallet-initializer",
  "pallet-membership",
  "pallet-message-queue",
  "pallet-mmr",

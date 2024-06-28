@@ -66,6 +66,7 @@ pallet-elections-phragmen = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-indices = { workspace = true }
+pallet-initializer = { workspace = true }
 pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
@@ -161,6 +162,7 @@ std = [
 	"pallet-grandpa/std",
 	"pallet-identity/std",
 	"pallet-indices/std",
+	"pallet-initializer/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-mmr/std",
@@ -295,6 +297,7 @@ try-runtime = [
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-indices/try-runtime",
+	"pallet-initializer/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-mmr/try-runtime",
