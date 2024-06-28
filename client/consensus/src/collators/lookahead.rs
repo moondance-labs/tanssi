@@ -197,13 +197,13 @@ where
                     let relay_parent = relay_parent_header.hash();
 
                     // TODO: Currently we use just the first core here, but for elastic scaling
-            // we iterate and build on all of the cores returned.
-            // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
+                    // we iterate and build on all of the cores returned.
+                    // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
                     let core_index = if let Some(core_index) = cores_scheduled_for_para(
                         relay_parent,
                         params.para_id,
                         &mut params.overseer_handle,
-                        &mut params.relay_client,
+                        &params.relay_client,
                     )
                     .await.first()
                     {

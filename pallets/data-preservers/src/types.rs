@@ -16,25 +16,15 @@
 
 use {
     super::*,
-    core::fmt::Debug,
     dp_core::ParaId,
     frame_support::{dispatch::DispatchErrorWithPostInfo, pallet_prelude::*},
-    parity_scale_codec::FullCodec,
-    serde::{de::DeserializeOwned, Deserialize, Serialize},
+    serde::{de::DeserializeOwned, Serialize},
+    tp_traits::{apply, derive_scale_codec, derive_storage_traits},
 };
 
-/// Data preserver profile.
-#[derive(
-    RuntimeDebugNoBound,
-    PartialEqNoBound,
-    EqNoBound,
-    Encode,
-    Decode,
-    CloneNoBound,
-    TypeInfo,
-    Serialize,
-    Deserialize,
-)]
+// Data preserver profile.
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub struct Profile<T: Config> {
     pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
@@ -43,17 +33,8 @@ pub struct Profile<T: Config> {
     pub assignment_request: ProviderRequestOf<T>,
 }
 
-#[derive(
-    RuntimeDebugNoBound,
-    PartialEqNoBound,
-    EqNoBound,
-    Encode,
-    Decode,
-    CloneNoBound,
-    TypeInfo,
-    Serialize,
-    Deserialize,
-)]
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub enum ParaIdsFilter<T: Config> {
     AnyParaId,
@@ -79,7 +60,7 @@ impl<T: Config> ParaIdsFilter<T> {
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
+#[apply(derive_storage_traits)]
 pub enum ProfileMode {
     Bootnode,
     Rpc { supports_ethereum_rpcs: bool },
@@ -88,17 +69,8 @@ pub enum ProfileMode {
 /// Profile with additional data:
 /// - the account id which created (and manage) the profile
 /// - the amount deposited to register the profile
-#[derive(
-    RuntimeDebugNoBound,
-    PartialEqNoBound,
-    EqNoBound,
-    Encode,
-    Decode,
-    CloneNoBound,
-    TypeInfo,
-    Serialize,
-    Deserialize,
-)]
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
 #[scale_info(skip_type_params(T))]
 pub struct RegisteredProfile<T: Config> {
     pub account: T::AccountId,
@@ -111,32 +83,11 @@ pub struct RegisteredProfile<T: Config> {
 /// Allows to process various kinds of payment options for assignments.
 pub trait AssignmentPayment<AccountId> {
     /// Providers requests which kind of payment it accepts.
-    type ProviderRequest: FullCodec
-        + TypeInfo
-        + Copy
-        + Clone
-        + Debug
-        + Eq
-        + Serialize
-        + DeserializeOwned;
+    type ProviderRequest: tp_traits::StorageTraits + Serialize + DeserializeOwned;
     /// Extra parameter the assigner provides.
-    type AssignerParameter: FullCodec
-        + TypeInfo
-        + Copy
-        + Clone
-        + Debug
-        + Eq
-        + Serialize
-        + DeserializeOwned;
+    type AssignerParameter: tp_traits::StorageTraits + Serialize + DeserializeOwned;
     /// Represents the succesful outcome of the assignment.
-    type AssignmentWitness: FullCodec
-        + TypeInfo
-        + Copy
-        + Clone
-        + Debug
-        + Eq
-        + Serialize
-        + DeserializeOwned;
+    type AssignmentWitness: tp_traits::StorageTraits + Serialize + DeserializeOwned;
 
     fn try_start_assignment(
         assigner: AccountId,

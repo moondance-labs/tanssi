@@ -19,9 +19,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::{
-    relay_chain::{BlockNumber, Slot},
-    ParaId,
+pub mod alias;
+
+pub use {
+    alias::*,
+    cumulus_primitives_core::{
+        relay_chain::{BlockNumber, Slot},
+        ParaId,
+    },
 };
 use {
     core::marker::PhantomData,
@@ -30,6 +35,7 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
+    serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_runtime::{
         app_crypto::sp_core,
@@ -120,8 +126,9 @@ pub trait GetCurrentContainerChains {
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
 /// tanssi slot time, 12 seconds by default.
 // TODO: this is currently ignored
-#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
     /// every `x >= 10` slots, but they are not enforced to. If collators produce a block after less than 10
@@ -153,8 +160,9 @@ impl Default for SlotFrequency {
     }
 }
 
-#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct ParathreadParams {
     pub slot_frequency: SlotFrequency,
 }
@@ -243,8 +251,9 @@ pub trait RelayStorageRootProvider {
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
     MaxEncodedLen,
+    Serialize,
+    Deserialize,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContainerChainBlockInfo<AccountId> {
     pub block_number: BlockNumber,
     pub author: AccountId,

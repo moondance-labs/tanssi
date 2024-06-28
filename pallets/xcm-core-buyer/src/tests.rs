@@ -35,7 +35,7 @@ fn core_buying_nonce_behaviour_is_correct() {
 
             {
                 // Add another chain apart from default
-                let mut mocks = MockData::get();
+                let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
                 mocks.container_chain_collators.insert(
                     another_para_id,
@@ -52,7 +52,7 @@ fn core_buying_nonce_behaviour_is_correct() {
                 });
             }
 
-            let mocks = MockData::get();
+            let mocks = MockData::mock();
             let collator_data = mocks
                 .container_chain_collators
                 .get(&para_id)
@@ -142,7 +142,7 @@ fn core_buying_proof_is_validated_correctly() {
 
             {
                 // Add another chain apart from default
-                let mut mocks = MockData::get();
+                let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
                 mocks.container_chain_collators.insert(
                     another_para_id,
@@ -159,7 +159,7 @@ fn core_buying_proof_is_validated_correctly() {
                 });
             }
 
-            let mocks = MockData::get();
+            let mocks = MockData::mock();
             let collator_data = mocks
                 .container_chain_collators
                 .get(&para_id)
@@ -302,7 +302,7 @@ fn slot_frequency_is_taken_into_account() {
 
             {
                 // Add another chain apart from default
-                let mut mocks = MockData::get();
+                let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
                 mocks.container_chain_collators.insert(another_para_id, vec![(AccountId::from(BOB), another_chain_nimbus_id)]);
                 MockData::mutate(|stored_mock_data| {
@@ -312,7 +312,7 @@ fn slot_frequency_is_taken_into_account() {
             }
 
             // SlotFrequency with min: 1 slot works
-            let mocks = MockData::get();
+            let mocks = MockData::mock();
             let collator_data = mocks.container_chain_collators.get(&para_id).expect("Collator data for test paraid must exists");
             assert!(!collator_data.is_empty(), "collator data must contain at least one element");
             let collator = collator_data[0].clone();

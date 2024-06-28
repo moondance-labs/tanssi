@@ -194,7 +194,6 @@ pub mod pallet {
 
     /// The active configuration for the current session.
     #[pallet::storage]
-    #[pallet::getter(fn config)]
     pub(crate) type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
 
     /// Pending configuration changes.
@@ -205,7 +204,6 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
-    #[pallet::getter(fn pending_configs)]
     pub(crate) type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
@@ -525,6 +523,14 @@ pub mod pallet {
             <PendingConfigs<T>>::put(pending_configs);
 
             Ok(())
+        }
+
+        pub fn config() -> HostConfiguration {
+            ActiveConfig::<T>::get()
+        }
+
+        pub fn pending_configs() -> Vec<(T::SessionIndex, HostConfiguration)> {
+            PendingConfigs::<T>::get()
         }
     }
 

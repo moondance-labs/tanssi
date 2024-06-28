@@ -13,7 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 
 dp-core = { workspace = true }
 log = { workspace = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
@@ -58,8 +58,7 @@ std = [
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-io/std",

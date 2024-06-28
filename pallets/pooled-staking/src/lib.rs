@@ -72,6 +72,7 @@ pub mod pallet {
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
         scale_info::TypeInfo,
+        serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
@@ -84,9 +85,6 @@ pub mod pallet {
         PooledStake,
     }
 
-    #[cfg(feature = "std")]
-    use serde::{Deserialize, Serialize};
-
     // Type aliases for better readability.
     pub type Candidate<T> = <T as frame_system::Config>::AccountId;
     pub type CreditOf<T> =
@@ -95,8 +93,9 @@ pub mod pallet {
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum PoolsKey<A: FullCodec> {
         /// Total amount of currency backing this candidate across all pools.
         CandidateTotalStake,
@@ -151,8 +150,10 @@ pub mod pallet {
     /// Key used by the "PendingOperations" StorageDoubleMap.
     /// StorageDoubleMap first key is the account id of the delegator who made the request.
     /// Value is the amount of shares in the joining/leaving pool.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
         JoiningAutoCompounding { candidate: A, at: J },
@@ -168,8 +169,9 @@ pub mod pallet {
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
         pub operation: PendingOperationKey<A, J, L>,
@@ -181,15 +183,17 @@ pub mod pallet {
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum TargetPool {
         AutoCompounding,
         ManualRewards,
     }
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum AllTargetPool {
         Joining,
         AutoCompounding,
@@ -210,21 +214,44 @@ pub mod pallet {
     /// When providing stake, calls will convert them into share amounts that are
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
     /// amount.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum SharesOrStake<T> {
         Shares(T),
         Stake(T),
     }
 
     /// Wrapper type for an amount of shares.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, Default, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug,
+        Default,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+    )]
     pub struct Shares<T>(pub T);
 
     /// Wrapper type for an amount of staked currency.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, Default, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug,
+        Default,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+    )]
     pub struct Stake<T>(pub T);
 
     /// Pooled Staking pallet.

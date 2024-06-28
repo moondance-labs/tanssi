@@ -85,6 +85,7 @@ use {
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
+    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_aura::{Slot, SlotDuration},
@@ -106,8 +107,9 @@ use {
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
+        apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, SlotFrequency,
     },
     xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
@@ -952,52 +954,22 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
     // TODO: Add Stream Payment (with deposit)
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)
@@ -1302,10 +1274,8 @@ impl pallet_utility::Config for Runtime {
 }
 
 /// The type used to represent the kinds of proxying allowed.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
