@@ -23,7 +23,10 @@ use {
         Pallet, RegistrarHooks,
     },
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::{Currency, EnsureOrigin, EnsureOriginWithArg},
+    frame_support::{
+        assert_ok,
+        traits::{fungible::Mutate, EnsureOrigin, EnsureOriginWithArg},
+    },
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -42,8 +45,7 @@ fn create_funded_user<T: Config>(
     let user = account(string, n, SEED);
     let min_reserve_amount = T::DepositAmount::get();
     let total = min_reserve_amount + extra;
-    T::Currency::make_free_balance_be(&user, total);
-    let _ = T::Currency::issue(total);
+    assert_ok!(T::Currency::mint_into(&user, total));
     (user, total)
 }
 

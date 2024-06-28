@@ -46,7 +46,11 @@ use {
     dp_chain_state_snapshot::GenericStateProof,
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, EnsureOriginWithArg, ReservableCurrency},
+        traits::{
+            fungible::{Inspect, InspectHold, Mutate, MutateHold},
+            tokens::{Fortitude, Precision, Restriction},
+            EnsureOriginWithArg,
+        },
         DefaultNoBound, Hashable, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
@@ -155,10 +159,13 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        type Currency: ReservableCurrency<Self::AccountId>;
+        type Currency: Mutate<Self::AccountId>
+            + MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+
+        type RuntimeHoldReason: From<HoldReason>;
 
         #[pallet::constant]
-        type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
+        type DepositAmount: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
 
         type RegistrarHooks: RegistrarHooks;
 
@@ -222,7 +229,7 @@ pub mod pallet {
     >;
 
     pub type DepositBalanceOf<T> =
-        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
     #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, scale_info::TypeInfo)]
     #[scale_info(skip_type_params(T))]
@@ -295,6 +302,11 @@ pub mod pallet {
         InvalidRelayManagerSignature,
         /// Tried to deregister a parachain that was not deregistered from the relay chain
         ParaStillExistsInRelay,
+    }
+
+    #[pallet::composite_enum]
+    pub enum HoldReason {
+        RegistrarDeposit,
     }
 
     #[pallet::hooks]
@@ -663,15 +675,16 @@ pub mod pallet {
             // Take the deposit immediately and give it to origin account
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
                 // Slash deposit from parachain creator
-                let (slashed_deposit, _not_slashed_deposit) =
-                    T::Currency::slash_reserved(&asset_info.creator, asset_info.deposit);
-                // _not_slashed_deposit can be greater than 0 if the account does not have enough reserved balance
-                // Should never happen but if it does, we just drop it
-                // TODO: is that the same as burning? Or as doing nothing? Either seems fine.
-
-                // Give deposit to origin account
                 // TODO: error handling
-                let _ = T::Currency::resolve_into_existing(&account, slashed_deposit);
+                let _ = T::Currency::transfer_on_hold(
+                    &HoldReason::RegistrarDeposit.into(),
+                    &asset_info.creator,
+                    &account,
+                    asset_info.deposit,
+                    Precision::Exact,
+                    Restriction::Free,
+                    Fortitude::Force,
+                );
             }
 
             Self::do_deregister(para_id)?;
@@ -706,7 +719,7 @@ pub mod pallet {
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> T::AccountId {
             use {
                 frame_benchmarking::account,
-                frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
+                frame_support::{assert_ok, dispatch::RawOrigin},
             };
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
@@ -721,8 +734,7 @@ pub mod pallet {
                 ) -> (T::AccountId, DepositBalanceOf<T>) {
                     const SEED: u32 = 0;
                     let user = account(string, n, SEED);
-                    T::Currency::make_free_balance_be(&user, total);
-                    let _ = T::Currency::issue(total);
+                    assert_ok!(T::Currency::mint_into(&user, total));
                     (user, total)
                 }
                 let new_balance =
@@ -737,8 +749,7 @@ pub mod pallet {
             // Fund deposit creator, just in case it is not a new account
             let new_balance =
                 (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
-            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
-            let _ = T::Currency::issue(new_balance);
+            assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
 
             deposit_info.creator
         }
@@ -749,11 +760,10 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             let deposit = T::DepositAmount::get();
-
-            // Verify we can reserve
-            T::Currency::can_reserve(&account, deposit)
-                .then_some(true)
-                .ok_or(Error::<T>::NotSufficientDeposit)?;
+            // Verify we can hold
+            if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
+                return Err(Error::<T>::NotSufficientDeposit.into());
+            }
 
             // Check if the para id is already registered by looking at the genesis data
             if ParaGenesisData::<T>::contains_key(para_id) {
@@ -783,8 +793,8 @@ pub mod pallet {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
 
-            // Reserve the deposit, we verified we can do this
-            T::Currency::reserve(&account, deposit)?;
+            // Hold the deposit, we verified we can do this
+            T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
@@ -1179,8 +1189,13 @@ pub mod pallet {
             // Get asset creator and deposit amount
             // Deposit may not exist, for example if the para id was registered on genesis
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
-                // Unreserve deposit
-                T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
+                // Release hold
+                let _ = T::Currency::release(
+                    &HoldReason::RegistrarDeposit.into(),
+                    &asset_info.creator,
+                    asset_info.deposit,
+                    Precision::Exact,
+                );
             }
 
             ParaManager::<T>::remove(para_id);
