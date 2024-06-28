@@ -2522,11 +2522,26 @@ sp_api::impl_runtime_apis! {
 pub struct OwnApplySession;
 impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
-        _changed: bool,
+        changed: bool,
         _session_index: u32,
-        _all_validators: Vec<(AccountId, ValidatorId)>,
-        _queued: Vec<(AccountId, ValidatorId)>,
+        all_validators: Vec<(AccountId, ValidatorId)>,
+        queued: Vec<(AccountId, ValidatorId)>,
     ) {
+        use frame_support::traits::OneSessionHandler;
+        let all_validators_initializer: Vec<(&AccountId, ValidatorId)> = all_validators
+            .iter()
+            .map(|(validator, key)| (validator, key.clone()))
+            .collect();
+        let queued_initializer: Vec<(&AccountId, ValidatorId)> = queued
+            .iter()
+            .map(|(validator, key)| (validator, key.clone()))
+            .collect();
+
+        Initializer::on_new_session(
+            changed,
+            all_validators_initializer.into_iter(),
+            queued_initializer.into_iter(),
+        );
         // // We first initialize Configuration
         // Configuration::initializer_on_new_session(&session_index);
         // // Next: Registrar
