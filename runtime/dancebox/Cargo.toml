@@ -147,6 +147,7 @@ sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
+tp-xcm-core-buyer = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
@@ -269,6 +270,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
+	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-fee-payment-runtime-api/std",
@@ -337,6 +339,7 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"tp-xcm-core-buyer/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 ]

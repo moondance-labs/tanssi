@@ -3234,6 +3234,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
+ "tp-xcm-core-buyer",
  "westend-runtime",
  "westend-runtime-constants",
  "xcm-emulator",
