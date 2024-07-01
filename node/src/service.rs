@@ -434,6 +434,7 @@ async fn start_node_impl(
             let node_backend = node_builder.backend.clone();
             let relay_interface = relay_chain_interface.clone();
             let node_sync_service = node_builder.network.sync_service.clone();
+            let orchestrator_tx_pool = node_builder.transaction_pool.clone();
             let overseer = overseer_handle.clone();
             let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
                 node_spawn_handle.clone(),
@@ -459,6 +460,7 @@ async fn start_node_impl(
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),
+                    orchestrator_tx_pool.clone(),
                 )
             }
         };
@@ -498,6 +500,7 @@ async fn start_node_impl(
         let container_chain_spawner = ContainerChainSpawner {
             orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
             orchestrator_client,
+            orchestrator_tx_pool: node_builder.transaction_pool.clone(),
             container_chain_cli,
             tokio_handle,
             chain_type,
@@ -544,6 +547,7 @@ fn container_log_str(para_id: ParaId) -> String {
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
     orchestrator_client: Arc<ParachainClient>,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
@@ -639,6 +643,7 @@ pub async fn start_node_impl_container(
             node_client.clone(),
             node_backend.clone(),
             orchestrator_client.clone(),
+            orchestrator_tx_pool.clone(),
             block_import.clone(),
             prometheus_registry.clone(),
             node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
@@ -687,6 +692,7 @@ fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -726,7 +732,7 @@ fn start_consensus_container(
 
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client;
+    let orchestrator_client_for_cidp = orchestrator_client.clone();
     let client_for_cidp = client.clone();
     let client_for_hash_provider = client.clone();
 
@@ -854,7 +860,11 @@ fn start_consensus_container(
     };
 
     let (fut, _exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+            params,
+            orchestrator_tx_pool,
+            orchestrator_client,
+        );
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
@@ -876,6 +886,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
@@ -977,7 +988,7 @@ fn start_consensus_orchestrator(
             }
         },
         block_import,
-        para_client: client,
+        para_client: client.clone(),
         relay_client: relay_chain_interface,
         sync_oracle,
         keystore,
@@ -997,7 +1008,11 @@ fn start_consensus_orchestrator(
     };
 
     let (fut, exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+            params,
+            orchestrator_tx_pool,
+            client,
+        );
     spawner.spawn("tanssi-aura", None, fut);
 
     (cancellation_token, exit_notification_receiver)

@@ -21,6 +21,7 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
+use sc_transaction_pool::FullPool;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -29,7 +30,7 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{AccountId, Block, BlockNumber},
+    dancebox_runtime::{opaque::Block as OpaqueBlock, AccountId, Block, BlockNumber},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     fs2::FileExt,
     futures::FutureExt,
@@ -65,6 +66,7 @@ pub struct ContainerChainSpawner {
     // Start container chain params
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,
@@ -136,6 +138,7 @@ impl ContainerChainSpawner {
         let (
             orchestrator_chain_interface,
             orchestrator_client,
+            orchestrator_tx_pool,
             mut container_chain_cli,
             tokio_handle,
             chain_type,
@@ -150,6 +153,7 @@ impl ContainerChainSpawner {
         ) = (
             self.orchestrator_chain_interface.clone(),
             self.orchestrator_client.clone(),
+            self.orchestrator_tx_pool.clone(),
             self.container_chain_cli.clone(),
             self.tokio_handle.clone(),
             self.chain_type.clone(),
@@ -329,6 +333,7 @@ impl ContainerChainSpawner {
                 start_node_impl_container(
                     container_chain_cli_config,
                     orchestrator_client.clone(),
+                    orchestrator_tx_pool.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface.clone(),
                     collator_key.clone(),
