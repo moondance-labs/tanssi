@@ -34,12 +34,11 @@ use {
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance, BlockNumber,
-        CandidateEvent, CandidateHash, CommittedCandidateReceipt, CoreIndex, CoreState,
-        DisputeState, ExecutorParams, GroupRotationInfo, Hash, Id as ParaId,
-        InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
-        OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes, SessionInfo,
-        Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
+        slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
+        CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
+        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
+        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
+        SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
@@ -117,7 +116,11 @@ use {
     xcm_builder::PayOverXcm,
 };
 
-pub use {frame_system::Call as SystemCall, pallet_balances::Call as BalancesCall};
+pub use {
+    frame_system::Call as SystemCall,
+    pallet_balances::Call as BalancesCall,
+    primitives::{AccountId, Balance},
+};
 
 /// Constant values used within the runtime.
 use starlight_runtime_constants::{currency::*, fee::*, time::*};
@@ -1382,6 +1385,45 @@ impl OnSwap for SwapLeases {
     }
 }
 
+pub struct CurrentSessionIndexGetter;
+
+impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        Session::current_index()
+    }
+}
+
+impl pallet_configuration::Config for Runtime {
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type AuthorityId = BeefyId;
+    type WeightInfo = ();
+}
+
+parameter_types! {
+    // pub const DepositAmount: Balance = 100 * UNIT;
+    pub const MaxLengthTokenSymbol: u32 = 255;
+}
+// impl pallet_registrar::Config for Runtime {
+//     type RuntimeEvent = RuntimeEvent;
+//     type RegistrarOrigin = EnsureRoot<AccountId>;
+//     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
+//     type MaxLengthParaIds = MaxLengthParaIds;
+//     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
+//     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+//     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
+//     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
+//     type SessionDelay = ConstU32<2>;
+//     type SessionIndex = u32;
+//     type CurrentSessionIndex = CurrentSessionIndexGetter;
+//     type Currency = Balances;
+//     type DepositAmount = DepositAmount;
+//     type RegistrarHooks = FlashboxRegistrarHooks;
+//     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+// }
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1514,6 +1556,7 @@ construct_runtime! {
 
         // FIXME: correct ordering
         TanssiInitializer: tanssi_initializer = 100,
+        CollatorConfiguration: pallet_configuration = 101,
     }
 }
 
@@ -2523,7 +2566,7 @@ pub struct OwnApplySession;
 impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         changed: bool,
-        _session_index: u32,
+        session_index: u32,
         all_validators: Vec<(AccountId, ValidatorId)>,
         queued: Vec<(AccountId, ValidatorId)>,
     ) {
@@ -2542,8 +2585,8 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             all_validators_initializer.into_iter(),
             queued_initializer.into_iter(),
         );
-        // // We first initialize Configuration
-        // Configuration::initializer_on_new_session(&session_index);
+        // We first initialize Configuration
+        CollatorConfiguration::initializer_on_new_session(&session_index);
         // // Next: Registrar
         // Registrar::initializer_on_new_session(&session_index);
         // // Next: AuthorityMapping
