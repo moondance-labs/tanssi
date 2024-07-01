@@ -58,6 +58,7 @@ fn get_authority_keys_from_seed(
     AssignmentId,
     AuthorityDiscoveryId,
     BeefyId,
+    nimbus_primitives::NimbusId,
 ) {
     let keys = get_authority_keys_from_seed_no_beefy(seed);
     (
@@ -69,7 +70,17 @@ fn get_authority_keys_from_seed(
         keys.5,
         keys.6,
         get_from_seed::<BeefyId>(seed),
+        get_aura_id_from_seed(seed)
+
     )
+}
+
+/// Helper function to generate a crypto pair from seed
+pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
 }
 
 /// Helper function to generate stash, controller and session key from seed
@@ -119,6 +130,7 @@ fn starlight_session_keys(
     para_assignment: AssignmentId,
     authority_discovery: AuthorityDiscoveryId,
     beefy: BeefyId,
+    nimbus: nimbus_primitives::NimbusId,
 ) -> SessionKeys {
     SessionKeys {
         babe,
@@ -127,6 +139,7 @@ fn starlight_session_keys(
         para_assignment,
         authority_discovery,
         beefy,
+        nimbus
     }
 }
 
@@ -195,6 +208,7 @@ fn starlight_testnet_genesis(
         AssignmentId,
         AuthorityDiscoveryId,
         BeefyId,
+        nimbus_primitives::NimbusId
     )>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
@@ -221,6 +235,7 @@ fn starlight_testnet_genesis(
                             x.5.clone(),
                             x.6.clone(),
                             x.7.clone(),
+                            x.8.clone(),
                         ),
                     )
                 })
@@ -265,6 +280,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
         AssignmentId,
         AuthorityDiscoveryId,
         BeefyId,
+        nimbus_primitives::NimbusId
     )> = Vec::from([
         (
             //5EHZkbp22djdbuMFH9qt1DVzSCvqi3zWpj6DAYfANa828oei
@@ -288,6 +304,9 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             //5DPSWdgw38Spu315r6LSvYCggeeieBAJtP5A1qzuzKhqmjVu
             hex!["034f68c5661a41930c82f26a662276bf89f33467e1c850f2fb8ef687fe43d62276"]
+                .unchecked_into(),
+            //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
+            hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"]
                 .unchecked_into(),
         ),
         (
@@ -313,6 +332,9 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
             //5F7nTtN8MyJV4UsXpjg7tHSnfANXZ5KRPJmkASc1ZSH2Xoa5
             hex!["03a90c2bb6d3b7000020f6152fe2e5002fa970fd1f42aafb6c8edda8dacc2ea77e"]
                 .unchecked_into(),
+            //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
+            hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"]
+            .unchecked_into(),
         ),
         (
             //5FPMzsezo1PRxYbVpJMWK7HNbR2kUxidsAAxH4BosHa4wd6S
@@ -337,6 +359,8 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
             //5EPoHj8uV4fFKQHYThc6Z9fDkU7B6ih2ncVzQuDdNFb8UyhF
             hex!["039d065fe4f9234f0a4f13cc3ae585f2691e9c25afa469618abb6645111f607a53"]
                 .unchecked_into(),
+            hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"]
+                .unchecked_into(), 
         ),
         (
             //5DMNx7RoX6d7JQ38NEM7DWRcW2THu92LBYZEWvBRhJeqcWgR
@@ -360,6 +384,8 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             //5CPx6dsr11SCJHKFkcAQ9jpparS7FwXQBrrMznRo4Hqv1PXz
             hex!["0307d29bbf6a5c4061c2157b44fda33b7bb4ec52a5a0305668c74688cedf288d58"]
+                .unchecked_into(),
+            hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
                 .unchecked_into(),
         ),
         (
@@ -385,6 +411,8 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
             //5H91T5mHhoCw9JJG4NjghDdQyhC6L7XcSuBWKD3q3TAhEVvQ
             hex!["02fb0330356e63a35dd930bc74525edf28b3bf5eb44aab9e9e4962c8309aaba6a6"]
                 .unchecked_into(),
+            hex!["7c94715e5dd8ab54221b1b6b2bfa5666f593f28a92a18e28052531de1bd80813"]
+                .unchecked_into(),
         ),
         (
             //5C8XbDXdMNKJrZSrQURwVCxdNdk8AzG6xgLggbzuA399bBBF
@@ -408,6 +436,9 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             //5HgoR9JJkdBusxKrrs3zgd3ToppgNoGj1rDyAJp4e7eZiYyT
             hex!["020019a8bb188f8145d02fa855e9c36e9914457d37c500e03634b5223aa5702474"]
+                .unchecked_into(),
+            //5GHWB8ZDzegLcMW7Gdd1BS6WHVwDdStfkkE4G7KjPjZNJBtD
+            hex!["bab3cccdcc34401e9b3971b96a662686cf755aa869a5c4b762199ce531b12c5b"]
                 .unchecked_into(),
         ),
         (
@@ -433,6 +464,8 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
             //5FaUcPt4fPz93vBhcrCJqmDkjYZ7jCbzAF56QJoCmvPaKrmx
             hex!["033f1a6d47fe86f88934e4b83b9fae903b92b5dcf4fec97d5e3e8bf4f39df03685"]
                 .unchecked_into(),
+            hex!["720537e2c1c554654d73b3889c3ef4c3c2f95a65dd3f7c185ebe4afebed78372"]
+                .unchecked_into(),
         ),
         (
             //5Ey3NQ3dfabaDc16NUv7wRLsFCMDFJSqZFzKVycAsWuUC6Di
@@ -456,6 +489,8 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             //5E41Znrr2YtZu8bZp3nvRuLVHg3jFksfQ3tXuviLku4wsao7
             hex!["025e84e95ed043e387ddb8668176b42f8e2773ddd84f7f58a6d9bf436a4b527986"]
+                .unchecked_into(),
+            hex!["da6b2df18f0f9001a6dcf1d301b92534fe9b1f3ccfa10c49449fee93adaa8349"]
                 .unchecked_into(),
         ),
     ]);
@@ -485,6 +520,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                             x.5,
                             x.6,
                             x.7,
+                            x.8,
                         ),
                     )
                 })

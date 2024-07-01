@@ -437,10 +437,11 @@ impl_opaque_keys! {
     pub struct SessionKeys {
         pub grandpa: Grandpa,
         pub babe: Babe,
-        pub para_validator: TanssiInitializer,
+        pub para_validator: Initializer,
         pub para_assignment: ParaSessionInfo,
         pub authority_discovery: AuthorityDiscovery,
         pub beefy: Beefy,
+        pub nimbus: TanssiInitializer,
     }
 }
 
@@ -1382,6 +1383,23 @@ impl OnSwap for SwapLeases {
     }
 }
 
+parameter_types! {
+    pub const MaxInvulnerables: u32 = 100;
+}
+
+impl pallet_invulnerables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type MaxInvulnerables = MaxInvulnerables;
+    type CollatorId = <Self as frame_system::Config>::AccountId;
+    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorRegistration = Session;
+    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
+}
+
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1514,6 +1532,7 @@ construct_runtime! {
 
         // FIXME: correct ordering
         TanssiInitializer: tanssi_initializer = 100,
+        TanssiInvulnerables: pallet_invulnerables = 101,
     }
 }
 
@@ -2523,25 +2542,58 @@ pub struct OwnApplySession;
 impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         changed: bool,
-        _session_index: u32,
-        all_validators: Vec<(AccountId, ValidatorId)>,
-        queued: Vec<(AccountId, ValidatorId)>,
+        session_index: u32,
+        _all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
+        _queued: Vec<(AccountId, nimbus_primitives::NimbusId)>,
     ) {
         use frame_support::traits::OneSessionHandler;
-        let all_validators_initializer: Vec<(&AccountId, ValidatorId)> = all_validators
-            .iter()
-            .map(|(validator, key)| (validator, key.clone()))
-            .collect();
-        let queued_initializer: Vec<(&AccountId, ValidatorId)> = queued
-            .iter()
-            .map(|(validator, key)| (validator, key.clone()))
-            .collect();
+        let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
-        Initializer::on_new_session(
-            changed,
-            all_validators_initializer.into_iter(),
-            queued_initializer.into_iter(),
+        let (next_collators, next_identities_changed) = (invulnerables, true);
+
+		// Queue next session keys.
+		let (queued_amalgamated, next_changed) = {
+			// until we are certain there has been a change, iterate the prior
+			// validators along with the current and check for changes
+			let mut changed = next_identities_changed;
+
+			let queued_amalgamated = next_collators
+				.into_iter()
+				.filter_map(|a| {
+					let k = pallet_session::NextKeys::<Runtime>::get(&a)?;
+
+					Some((a, k.nimbus))
+				})
+				.collect::<Vec<_>>();
+
+			(queued_amalgamated, changed)
+		};
+
+        //let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
+
+        // Next: CollatorAssignment
+/*
+        // Ask CollatorManager who are the next collators
+        let next_collators = CollatorManager::collators();
+
+        // Ask pallet-session for the keys of each of these collators
+        for collator in next_collators {
+            let collators_keys = 
+        }
+        //
+        let collator_and_keys = Vec(collator, keys);
+
+        // Next: CollatorAssignment
+        let assignments =
+            CollatorAssignment::initializer_on_new_session(&session_index, collator_and_keys);
+
+        let queued_id_to_nimbus_map = collator_and_keys.iter().cloned().collect();
+        AuthorityAssignment::initializer_on_new_session(
+            &session_index,
+            &queued_id_to_nimbus_map,
+            &assignments.next_assignment,
         );
+*/
         // // We first initialize Configuration
         // Configuration::initializer_on_new_session(&session_index);
         // // Next: Registrar
@@ -2568,7 +2620,7 @@ impl tanssi_initializer::Config for Runtime {
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
-    type AuthorityId = ValidatorId;
+    type AuthorityId = nimbus_primitives::NimbusId;
 
     type SessionHandler = OwnApplySession;
 }

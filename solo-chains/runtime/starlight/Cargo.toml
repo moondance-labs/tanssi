@@ -50,6 +50,7 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+nimbus-primitives = { workspace = true }
 pallet-asset-rate = { workspace = true }
 pallet-authority-discovery = { workspace = true }
 pallet-authorship = { workspace = true }
@@ -67,6 +68,7 @@ pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-indices = { workspace = true }
 pallet-initializer = { workspace = true }
+pallet-invulnerables = { workspace = true }
 pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
@@ -145,6 +147,7 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
+	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
 	"pallet-authority-discovery/std",
@@ -163,6 +166,7 @@ std = [
 	"pallet-identity/std",
 	"pallet-indices/std",
 	"pallet-initializer/std",
+	"pallet-invulnerables/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-mmr/std",
