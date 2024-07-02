@@ -526,7 +526,13 @@ async fn start_node_impl(
             "container-chain-spawner-debug-state",
             None,
             crate::container_chain_monitor::monitor_task(state),
-        )
+        );
+        
+        node_builder.task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-debug-state",
+            None,
+            crate::container_chain_spawner::db_garbage_collection_task(),
+        );
     }
 
     Ok((node_builder.task_manager, node_builder.client))

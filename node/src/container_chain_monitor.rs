@@ -202,7 +202,7 @@ impl SpawnedContainersMonitor {
 /// Background task that monitors the number of running container chains.
 pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
     // Main loop frequency, doesn't need to be fast
-    let monitor_period = Duration::from_secs(300 * 0 + 10);
+    let monitor_period = Duration::from_secs(300 );
     // Max number of allowed container chains before printing warnings.
     // There should be at most 2 container chains running at the same time (1 syncing + 1 collating),
     // but add a margin of error because a container chain may take a few seconds to stop.

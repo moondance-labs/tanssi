@@ -967,6 +967,52 @@ fn check_paritydb_lock_held(db_path: &Path) -> Result<bool, std::io::Error> {
     Ok(lock_held)
 }
 
+/// Background task that cleans up unused database folders.
+/// Collators should treat the container chain database as ephemeral, because they will be rotating
+/// frequently and storing all the chains locally doesn't scale.
+///
+/// Usually the database is removed when the collator is deassigned.
+/// * When tanssi-node is manually stopped. We do not remove the db in that case because most likely
+///   this is just the collator restarting or stopping for an update or maintenance, and will be back
+///   up soon.
+///   Alternative: we could remove it the next time the node starts, if it is not assigned anymore.
+/// * When running with --keep-db. We do it in flashbox because one session is 5 minutes there, and
+///   it is not possible to warp sync some of those chains in 5 minutes.
+///
+/// Which database folders to remove?
+/// * Only those that were deregistered. To make sure, we would need to also compare the genesis
+///   block hash for existing chains, to discard the case of "deregistered and another chain with
+///   the same para id registered". Which is impossible in production btw.
+/// * All the ones that were not used in the last X hours. What is X? Shrug
+///
+///
+/// So what is the problem we want to solve?
+/// In flashbox, a chain run out of credits.
+/// It was given credits
+pub async fn db_garbage_collection_task() {
+    // Main loop frequency, doesn't need to be fast
+    const HOURS: u64 = 60 * 60;
+    let monitor_period = Duration::from_secs(48 * HOURS);
+    // For the first run we sleep a random duration, to ensure this task will eventually run at
+    // least once in collator setups where they restart frequently, and so would never be running
+    // for 48 hours.
+    use rand::Rng;
+    let mut first_run = Some(Duration::from_secs(rand::thread_rng().gen_range(0..monitor_period.as_secs())));
+
+    loop {
+        let sleep_period = first_run.take().unwrap_or(monitor_period);
+        sleep(sleep_period).await;
+        log::debug!("Monitor tick");
+        
+        // Get a list of all the container chain folders that are closed, so they don't have the
+        // parity_db lockfile.
+        // Technically this is very prone to race conditions, so either make this task run very
+        // infrequently, or add a mutex to the spawn function so that we don't run this task while
+        // the spawn function is spawning chains, and we don't spawn chains while this task is
+        // running.
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use {super::*, std::path::PathBuf};
