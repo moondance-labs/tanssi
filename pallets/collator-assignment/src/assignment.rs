@@ -23,6 +23,7 @@ use {
         mem,
         vec::Vec,
     },
+    frame_support::traits::Get,
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
 };
 
@@ -133,7 +134,7 @@ where
             .remove(&orchestrator_chain.para_id)
             .unwrap();
         // Sanity check to avoid bricking orchestrator chain
-        if orchestrator_assigned.is_empty() {
+        if orchestrator_assigned.is_empty() && !T::AllowEmptyOrchestrator::get() {
             return Err(AssignmentError::EmptyOrchestrator);
         }
         new_assigned.orchestrator_chain = orchestrator_assigned;

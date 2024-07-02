@@ -103,6 +103,7 @@ pub mod pallet {
         type CollatorAssignmentHook: CollatorAssignmentHook<BalanceOf<Self>>;
         type Currency: Currency<Self::AccountId>;
         type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
+        type AllowEmptyOrchestrator: Get<bool>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }

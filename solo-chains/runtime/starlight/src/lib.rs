@@ -28,7 +28,7 @@ use {
     },
     frame_support::{
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::FromContains,
+        traits::{ConstBool, FromContains},
     },
     pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
@@ -1533,6 +1533,7 @@ construct_runtime! {
         // FIXME: correct ordering
         TanssiInitializer: tanssi_initializer = 100,
         TanssiInvulnerables: pallet_invulnerables = 101,
+        TanssiCollatorAssignment: pallet_collator_assignment = 102,
     }
 }
 
@@ -2549,6 +2550,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         use frame_support::traits::OneSessionHandler;
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
+        log::info!("invulnerables are {:?}", invulnerables);
         let (next_collators, next_identities_changed) = (invulnerables, true);
 
 		// Queue next session keys.
@@ -2569,8 +2571,14 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
 			(queued_amalgamated, changed)
 		};
 
-        //let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
 
+    
+        let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
+        log::info!("next_collators_accounts are {:?}", next_collators_accounts);
+
+        // Next: CollatorAssignment
+        let assignments =
+            TanssiCollatorAssignment::initializer_on_new_session(&session_index, next_collators_accounts);
         // Next: CollatorAssignment
 /*
         // Ask CollatorManager who are the next collators
@@ -2615,6 +2623,9 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // );
     }
 }
+parameter_types! {
+    pub MockParaId :ParaId = 0u32.into();
+}
 
 impl tanssi_initializer::Config for Runtime {
     type SessionIndex = u32;
@@ -2623,6 +2634,65 @@ impl tanssi_initializer::Config for Runtime {
     type AuthorityId = nimbus_primitives::NimbusId;
 
     type SessionHandler = OwnApplySession;
+}
+
+pub struct ContainerChainsGetter;
+
+impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
+    fn session_container_chains(_session_index: u32) -> SessionContainerChains {
+        let parachains = vec![1000u32.into()];
+
+        let parathreads = vec![];
+
+        SessionContainerChains {
+            parachains,
+            parathreads,
+        }
+    }
+}
+
+
+// In tests, we ignore the session_index param, so changes to the configuration are instant
+
+pub struct HostConfigurationGetter;
+use tp_traits::SessionContainerChains;
+impl tp_traits::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn max_collators(_session_index: u32) -> u32 {
+        unimplemented!()
+    }
+
+    fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
+        0u32
+    }
+
+    fn max_collators_for_orchestrator(_session_index: u32) -> u32 {
+        0u32
+    }
+
+    fn collators_per_container(_session_index: u32) -> u32 {
+        1u32
+    }
+
+    fn collators_per_parathread(_session_index: u32) -> u32 {
+        1u32
+    }
+}
+
+impl pallet_collator_assignment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type HostConfiguration = HostConfigurationGetter;
+    type ContainerChains = ContainerChainsGetter;
+    type SessionIndex = u32;
+    type SelfParaId = MockParaId;
+    type ShouldRotateAllCollators = ();
+    type GetRandomnessForNextBlock = ();
+    type RemoveInvulnerables = ();
+    type RemoveParaIdsWithNoCredits = ();
+    type CollatorAssignmentHook = ();
+    type CollatorAssignmentTip = ();
+    type Currency = Balances;
+    type AllowEmptyOrchestrator = ConstBool<true>;
+    type WeightInfo = ();
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

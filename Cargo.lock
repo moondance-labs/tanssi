@@ -16286,6 +16286,7 @@ dependencies = [
  "pallet-beefy-mmr",
  "pallet-bounties",
  "pallet-child-bounties",
+ "pallet-collator-assignment",
  "pallet-collective",
  "pallet-conviction-voting",
  "pallet-democracy",
@@ -16366,6 +16367,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tiny-keccak",
  "tokio",
+ "tp-traits",
  "xcm-fee-payment-runtime-api",
 ]
 
