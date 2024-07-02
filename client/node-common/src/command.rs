@@ -16,9 +16,9 @@
 
 use {
     parity_scale_codec::Encode,
-    sc_chain_spec::ChainSpec,
+    sc_chain_spec::{construct_genesis_block, ChainSpec},
     sp_runtime::{
-        traits::{Block as BlockT, Hash as HashT, Header as HeaderT, Zero},
+        traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
         StateVersion,
     },
 };
@@ -42,19 +42,5 @@ pub fn generate_genesis_block<Block: BlockT>(
         genesis_state_version,
     );
 
-    let extrinsics_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-        Vec::new(),
-        genesis_state_version,
-    );
-
-    Ok(Block::new(
-        <<Block as BlockT>::Header as HeaderT>::new(
-            Zero::zero(),
-            extrinsics_root,
-            state_root,
-            Default::default(),
-            Default::default(),
-        ),
-        Default::default(),
-    ))
+    Ok(construct_genesis_block(state_root, genesis_state_version))
 }
