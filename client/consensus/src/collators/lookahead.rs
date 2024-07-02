@@ -31,9 +31,10 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
-use crate::collators::claim_slot_inner;
+use crate::collators::ClaimMode;
 use nimbus_primitives::NimbusId;
 use pallet_xcm_core_buyer_runtime_api::{BuyingError, XCMCoreBuyerApi};
+use sc_transaction_pool_api::TransactionStatus;
 use sp_api::ApiError;
 use sp_blockchain::HeaderMetadata;
 use sp_runtime::traits::BlockIdTo;
@@ -89,10 +90,12 @@ pub enum BuyCoreError<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> 
     NotAParathread,
     UnableToClaimSlot,
     UnableToFindKeyForSigning,
+    SlotDriftConversionOverflow,
     ApiError(ApiError),
     BuyingValidationError(BuyingError<BlockNumber>),
     UnableToCreateProof(BuyCollatorProofCreationError),
     TxSubmissionError(PoolError),
+    TxInclusionError,
 }
 
 impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
@@ -110,6 +113,7 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
                     target: crate::LOG_TARGET,
                     ?relay_parent,
                     ?para_id,
+                    ?slot,
                     "Para is not a parathread, skipping an attempt to buy core",
                 );
             }
@@ -129,6 +133,15 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
                     ?para_id,
                     ?slot,
                     "Unable to generate buy core proof as unable to find corresponding key",
+                );
+            }
+            BuyCoreError::SlotDriftConversionOverflow => {
+                tracing::error!(
+                    target: crate::LOG_TARGET,
+                    ?relay_parent,
+                    ?para_id,
+                    ?slot,
+                    "Unable to calculate container chain slot drift from orchestrator chain's slot drift",
                 );
             }
             BuyCoreError::ApiError(api_error) => {
@@ -171,6 +184,15 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
                     "Unable to send buy core unsigned extrinsic through orchestrator tx pool",
                 );
             }
+            BuyCoreError::TxInclusionError => {
+                tracing::error!(
+                    target: crate::LOG_TARGET,
+                    ?relay_parent,
+                    ?para_id,
+                    ?slot,
+                    "Unable to include the tx into a block",
+                );
+            }
         }
     }
 }
@@ -206,6 +228,9 @@ pub async fn try_to_buy_core<Block, OBlock, OBlockNumber, P, CIDP, OClient>(
     keystore: &KeystorePtr,
     orchestrator_client: Arc<OClient>,
     orchestrator_tx_pool: Arc<FullPool<OBlock, OClient>>,
+    parent_header: <Block as BlockT>::Header,
+    orchestrator_slot_duration: SlotDuration,
+    container_slot_duration: SlotDuration,
 ) -> Result<
     <OBlock as BlockT>::Hash,
     BuyCoreError<
@@ -233,44 +258,82 @@ where
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
 {
     // We do nothing if this is not a parathread
-    if aux_data.min_slot_freq.is_none() {
+    if aux_data.slot_freq.is_none() {
         return Err(BuyCoreError::NotAParathread);
     }
 
-    let current_slot = inherent_providers.slot();
-    let pubkey = claim_slot_inner::<P>(current_slot, &aux_data.authorities, keystore, false)
-        .ok_or(BuyCoreError::UnableToClaimSlot)?;
-
     let orchestrator_best_hash = orchestrator_client.info().best_hash;
+    let orchestrator_runtime_api = orchestrator_client.runtime_api();
 
-    orchestrator_client
+    let buy_core_slot_drift = orchestrator_client
         .runtime_api()
-        .is_core_buying_allowed(orchestrator_best_hash, para_id)??;
+        .get_buy_core_slot_drift(orchestrator_best_hash)?;
 
-    let nonce = orchestrator_client
-        .runtime_api()
-        .get_buy_core_signature_nonce(orchestrator_best_hash, para_id)?;
+    // Convert drift in terms of container chain slots for parity between client side calculation and
+    // orchestrator runtime calculation
+    // We tried to made this calculation as generic as possible so that it can handle
+    // arbitrary slot timings as well and won't assume anything.
+    // Formula is: (Slot_drift_in_orchestrator_slot * orchestrator_slot_duration) / container_slot_duration
+    let buy_core_container_slot_drift = buy_core_slot_drift
+        .checked_mul(orchestrator_slot_duration.as_millis())
+        .and_then(|intermediate_result| {
+            intermediate_result.checked_div(container_slot_duration.as_millis())
+        })
+        .ok_or(BuyCoreError::SlotDriftConversionOverflow)?;
+
+    let current_container_slot = inherent_providers.slot();
+
+    let slot_claim = tanssi_claim_slot::<P, Block>(
+        aux_data,
+        &parent_header,
+        current_container_slot,
+        ClaimMode::ParathreadCoreBuying {
+            drift_permitted: buy_core_container_slot_drift.into(),
+        },
+        keystore,
+    )
+    .ok_or(BuyCoreError::UnableToClaimSlot)?;
+
+    let pubkey = slot_claim.author_pub;
+
+    orchestrator_runtime_api.is_core_buying_allowed(orchestrator_best_hash, para_id)??;
+
+    let nonce =
+        orchestrator_runtime_api.get_buy_core_signature_nonce(orchestrator_best_hash, para_id)?;
 
     let collator_buy_core_proof =
         BuyCoreCollatorProof::new_with_keystore(nonce, para_id, pubkey, keystore)?
             .ok_or(BuyCoreError::UnableToFindKeyForSigning)?;
 
-    let extrinsic = orchestrator_client
-        .runtime_api()
-        .create_buy_core_unsigned_extrinsic(
-            orchestrator_best_hash,
-            para_id,
-            collator_buy_core_proof,
-        )?;
+    let extrinsic = orchestrator_runtime_api.create_buy_core_unsigned_extrinsic(
+        orchestrator_best_hash,
+        para_id,
+        collator_buy_core_proof,
+    )?;
 
-    orchestrator_tx_pool
-        .submit_one(orchestrator_best_hash, TransactionSource::Local, *extrinsic)
+    let mut tx_stream = orchestrator_tx_pool
+        .submit_and_watch(orchestrator_best_hash, TransactionSource::Local, *extrinsic)
         .await
-        .map_err(BuyCoreError::TxSubmissionError)
+        .map_err(BuyCoreError::TxSubmissionError)?
+        .fuse();
+
+    let current_time = tokio::time::Instant::now();
+    // Wait at max for 3 orchestrator slots
+    let wait_till = current_time + (orchestrator_slot_duration.as_duration() * 3);
+    loop {
+        select! {
+            _ = tokio::time::sleep_until(wait_till) => return Err(BuyCoreError::TxInclusionError),
+            tx_status = tx_stream.select_next_some() => match tx_status {
+                TransactionStatus::InBlock((block_hash, _)) | TransactionStatus::Finalized((block_hash, _)) => return Ok(block_hash),
+                _ => {},
+            }
+        }
+    }
 }
 
 /// Parameters for [`run`].
-pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH> {
+pub struct Params<GSD, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH> {
+    pub get_current_slot_duration: GSD,
     pub create_inherent_data_providers: CIDP,
     pub get_orchestrator_aux_data: GOH,
     pub block_import: BI,
@@ -283,7 +346,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH
     pub collator_key: CollatorPair,
     pub para_id: ParaId,
     pub overseer_handle: OverseerHandle,
-    pub slot_duration: SlotDuration,
+    pub orchestrator_slot_duration: SlotDuration,
     pub relay_chain_slot_duration: Duration,
     pub proposer: Proposer,
     pub collator_service: CS,
@@ -294,6 +357,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH
 
 /// Run async-backing-friendly for Tanssi Aura.
 pub fn run<
+    GSD,
     Block,
     P,
     BI,
@@ -309,7 +373,7 @@ pub fn run<
     OClient,
     OBlock,
 >(
-    mut params: Params<BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH>,
+    mut params: Params<GSD, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH>,
     orchestrator_tx_pool: Arc<FullPool<OBlock, OClient>>,
     orchestrator_client: Arc<OClient>,
 ) -> (
@@ -358,6 +422,7 @@ where
         + 'static,
     OClient::Api: TaggedTransactionQueue<OBlock>
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
+    GSD: Fn(<Block as BlockT>::Hash) -> SlotDuration + Send + 'static,
 {
     // This is an arbitrary value which is likely guaranteed to exceed any reasonable
     // limit, as it would correspond to 10 non-included blocks.
@@ -497,83 +562,13 @@ where
                     let mut parent_hash = initial_parent.hash;
                     let mut parent_header = initial_parent.header;
 
-                    // TODO: Currently we use just the first core here, but for elastic scaling
-                    // we iterate and build on all of the cores returned.
-                    // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
-                    let core_index = if let Some(core_index) = cores_scheduled_for_para(
+                    let core_indices = cores_scheduled_for_para(
                         relay_parent,
                         params.para_id,
                         &mut params.overseer_handle,
                         &params.relay_client,
                     )
-                    .await.first()
-                    {
-                        *core_index
-                    } else {
-                        tracing::trace!(
-                            target: crate::LOG_TARGET,
-                            ?relay_parent,
-                            ?params.para_id,
-                            "Para is not scheduled on any core, skipping import notification",
-                        );
-
-                        // TODO: See if derivation of validation_data and aux_data can be optimized to
-                        // be done only one time for particular parent.
-
-                        // If it is parathread then we need to check from runtime if we are eligible
-                        let validation_data = PersistedValidationData {
-                            parent_head: parent_header.encode().into(),
-                            relay_parent_number: *relay_parent_header.number(),
-                            relay_parent_storage_root: *relay_parent_header.state_root(),
-                            max_pov_size,
-                        };
-
-
-                        let aux_data = match params
-                            .get_orchestrator_aux_data
-                            .retrieve_authorities_from_orchestrator(
-                                parent_hash,
-                                (relay_parent_header.hash(), validation_data.clone()),
-                            )
-                            .await
-                        {
-                            Err(e) => {
-                                tracing::error!(target: crate::LOG_TARGET, ?e);
-                                break;
-                            }
-                            Ok(h) => h,
-                        };
-
-
-                        let inherent_providers = match params
-                            .create_inherent_data_providers
-                            .create_inherent_data_providers(
-                                parent_hash,
-                                (relay_parent_header.hash(), validation_data.clone()),
-                            )
-                            .await
-                        {
-                            Err(e) => {
-                                tracing::error!(target: crate::LOG_TARGET, ?e, "Unable to create InherentDataProviders object");
-                                break;
-                            }
-                            Ok(h) => h,
-                        };
-
-                        let slot = inherent_providers.slot();
-
-                        match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _>(params.para_id, aux_data, inherent_providers, &params.keystore, orchestrator_client.clone(), orchestrator_tx_pool.clone()).await {
-                            Ok(block_hash) => {
-                                tracing::trace!(target: crate::LOG_TARGET, ?block_hash, "Sent unsigned extrinsic to buy the core");
-                            },
-                            Err(buy_core_error) => {
-                                buy_core_error.log_error(slot, params.para_id, relay_parent);
-                            }
-                        };
-
-                        continue;
-
-                    };
+                    .await;
 
                     let overseer_handle = &mut params.overseer_handle;
 
@@ -616,6 +611,34 @@ where
                                 break;
                             }
                             Ok(h) => h,
+                        };
+
+                        // TODO: Currently we use just the first core here, but for elastic scaling
+                        // we iterate and build on all of the cores returned.
+                        // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
+                        let (is_parachain, core_index) = match (&aux_data.slot_freq, core_indices.first()) {
+                            (None, None) => break, // We are parachain and we do not have core allocated, nothing to do,
+                            (None, Some(core_index)) => (true, core_index), // We are parachain and we have core allocated, let's continue
+
+                            (Some(_slot_frequency), None) => {
+                                // We are parathread and core is not allocated. Let's try to buy core
+                                let slot = inherent_providers.slot();
+                                let container_chain_slot_duration = (params.get_current_slot_duration)(parent_header.hash());
+
+                                match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _>(params.para_id, aux_data, inherent_providers, &params.keystore, orchestrator_client.clone(), orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await {
+                                    Ok(block_hash) => {
+                                        tracing::trace!(target: crate::LOG_TARGET, ?block_hash, "Sent unsigned extrinsic to buy the core");
+                                    },
+                                    Err(buy_core_error) => {
+                                        buy_core_error.log_error(slot, params.para_id, relay_parent);
+                                    }
+                                };
+                                break; // No point in continuing as we need to wait for few relay blocks in order for our core to be available.
+                            },
+                            (Some(_slot_frequency), Some(core_index)) => {
+                                tracing::error!(target: crate::LOG_TARGET, ?core_index, "Not a parachain but we have a core (most likely from previous buy order)");
+                                (false, core_index) // We are parathread and we do have core, let's continue
+                            }
                         };
 
                         let mut slot_claim = match can_build_upon(
@@ -698,7 +721,7 @@ where
                                                 parent_head: parent_header.encode().into(),
                                                 validation_code_hash,
                                                 result_sender: None,
-                                                core_index
+                                                core_index: *core_index
                                             },
                                         ),
                                         "SubmitCollation",
@@ -715,6 +738,13 @@ where
                                 tracing::error!(target: crate::LOG_TARGET, ?err);
                                 break;
                             }
+                        }
+
+                        // If it is parathread, no point in async backing as we would have to do
+                        // buy core first
+                        if !is_parachain {
+                            tracing::trace!(target: crate::LOG_TARGET, "Not a parachain so terminated at {:?}", n_built);
+                            break;
                         }
                     }
                 },
@@ -751,8 +781,15 @@ where
     P::Signature: Codec,
 {
     let runtime_api = client.runtime_api();
+
+    let claim_mode = if force_authoring {
+        ClaimMode::ForceAuthoring
+    } else {
+        ClaimMode::NormalAuthoring
+    };
+
     let slot_claim =
-        tanssi_claim_slot::<P, Block>(aux_data, &parent_header, slot, force_authoring, keystore);
+        tanssi_claim_slot::<P, Block>(aux_data, &parent_header, slot, claim_mode, keystore);
 
     // Here we lean on the property that building on an empty unincluded segment must always
     // be legal. Skipping the runtime API query here allows us to seamlessly run this
@@ -763,7 +800,7 @@ where
         return Ok(None);
     }
 
-    slot_claim
+    Ok(slot_claim)
 }
 
 /// Reads allowed ancestry length parameter from the relay chain storage at the given relay parent.

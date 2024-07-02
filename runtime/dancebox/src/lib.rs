@@ -88,7 +88,8 @@ use {
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_consensus_aura::{Slot, SlotDuration},
+    sp_consensus_aura::SlotDuration,
+    sp_consensus_slots::Slot,
     sp_core::{
         crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
     },
@@ -2601,6 +2602,10 @@ impl_runtime_apis! {
 
         fn get_buy_core_signature_nonce(para_id: ParaId) -> u64 {
             pallet_xcm_core_buyer::CollatorSignatureNonce::<Runtime>::get(para_id)
+        }
+
+        fn get_buy_core_slot_drift() -> Slot {
+            <Runtime as pallet_xcm_core_buyer::Config>::BuyCoreSlotDrift::get()
         }
     }
 

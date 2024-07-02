@@ -72,12 +72,18 @@
                     "name": "Collator-04",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator-05",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 }
             ]
         },
         {
             "id": 2000,
             "chain_spec_path": "specs/parathreads-template-container-2000.json",
+            "onboard_as_parachain": false,
             "collators": [
                 {
                     "name": "FullNode-2000",
@@ -92,6 +98,7 @@
         {
             "id": 2001,
             "chain_spec_path": "specs/parathreads-template-container-2001.json",
+            "onboard_as_parachain": false,
             "collators": [
                 {
                     "name": "FullNode-2001",

@@ -19,6 +19,7 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-api = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 thiserror = { workspace = true, optional = true }
@@ -34,6 +35,7 @@ std = [
 	"serde",
 	"serde?/std",
 	"sp-api/std",
+	"sp-consensus-slots/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"thiserror",

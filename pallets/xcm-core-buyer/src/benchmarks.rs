@@ -96,7 +96,6 @@ mod benchmarks {
         Pallet::<T>::buy_core(
             RawOrigin::None,
             para_id,
-            caller,
             BuyCoreCollatorProof::new(0, para_id, nimbus_key)
                 .expect("Collator proof generation must succeed"),
         );

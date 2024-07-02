@@ -735,6 +735,7 @@ fn start_consensus_container(
     let orchestrator_client_for_cidp = orchestrator_client.clone();
     let client_for_cidp = client.clone();
     let client_for_hash_provider = client.clone();
+    let client_for_slot_duration = client.clone();
 
     let code_hash_provider = move |block_hash| {
         client_for_hash_provider
@@ -745,6 +746,15 @@ fn start_consensus_container(
     };
 
     let params = LookaheadTanssiAuraParams {
+        get_current_slot_duration: move |block_hash| {
+            // Default to 12s if runtime API does not exist
+            let slot_duration_ms = client_for_slot_duration
+                .runtime_api()
+                .slot_duration(block_hash)
+                .unwrap_or(12_000);
+
+            SlotDuration::from_millis(slot_duration_ms)
+        },
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
@@ -824,7 +834,7 @@ fn start_consensus_container(
                     latest_header
                 );
 
-                let min_slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
                     orchestrator_client_for_cidp.as_ref(),
                     &latest_header.hash(),
                     para_id,
@@ -832,7 +842,7 @@ fn start_consensus_container(
 
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
-                    min_slot_freq,
+                    slot_freq,
                 };
 
                 Ok(aux_data)
@@ -846,7 +856,7 @@ fn start_consensus_container(
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
+        orchestrator_slot_duration: slot_duration,
         force_authoring,
         relay_chain_slot_duration,
         proposer,
@@ -860,7 +870,7 @@ fn start_consensus_container(
     };
 
     let (fut, _exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
             params,
             orchestrator_tx_pool,
             orchestrator_client,
@@ -904,6 +914,7 @@ fn start_consensus_orchestrator(
     let client_set_aside_for_cidp = client.clone();
     let client_set_aside_for_orch = client.clone();
     let client_for_hash_provider = client.clone();
+    let client_for_slot_duration_provider = client.clone();
 
     let code_hash_provider = move |block_hash| {
         client_for_hash_provider
@@ -916,6 +927,13 @@ fn start_consensus_orchestrator(
     let cancellation_token = CancellationToken::new();
 
     let params = LookaheadTanssiAuraParams {
+        get_current_slot_duration: move |block_hash| {
+            sc_consensus_aura::standalone::slot_duration_at(
+                &*client_for_slot_duration_provider,
+                block_hash,
+            )
+            .expect("Slot duration should be set")
+        },
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
@@ -981,7 +999,7 @@ fn start_consensus_orchestrator(
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
                     // This is the orchestrator consensus, it does not have a slot frequency
-                    min_slot_freq: None,
+                    slot_freq: None,
                 };
 
                 Ok(aux_data)
@@ -995,7 +1013,7 @@ fn start_consensus_orchestrator(
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
+        orchestrator_slot_duration: slot_duration,
         relay_chain_slot_duration,
         force_authoring,
         proposer,
@@ -1008,7 +1026,7 @@ fn start_consensus_orchestrator(
     };
 
     let (fut, exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
             params,
             orchestrator_tx_pool,
             client,

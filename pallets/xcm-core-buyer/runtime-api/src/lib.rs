@@ -20,6 +20,7 @@
 
 use frame_support::sp_runtime;
 pub use pallet_xcm_core_buyer::BuyingError;
+use sp_consensus_slots::Slot;
 use sp_runtime::traits::Block as BlockT;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::boxed::Box;
@@ -30,5 +31,6 @@ sp_api::decl_runtime_apis! {
         fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>>;
         fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<CollatorPublicKey>) -> Box<<Block as BlockT>::Extrinsic>;
         fn get_buy_core_signature_nonce(para_id: ParaId) -> u64;
+        fn get_buy_core_slot_drift() -> Slot;
     }
 }

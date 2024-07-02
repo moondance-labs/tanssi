@@ -43,7 +43,7 @@ use {
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::EncodeLike,
-    sp_consensus_aura::Slot,
+    sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
     staging_xcm::{
@@ -182,6 +182,10 @@ pub mod pallet {
         /// after which the in flight orders can be cleaned up by anyone.
         #[pallet::constant]
         type AdditionalTtlForInflightOrders: Get<BlockNumberFor<Self>>;
+
+        /// Slot drift allowed for core buying
+        #[pallet::constant]
+        type BuyCoreSlotDrift: Get<Slot>;
 
         #[pallet::constant]
         type UniversalLocation: Get<InteriorLocation>;
@@ -559,7 +563,7 @@ pub mod pallet {
                 let current_slot = T::SlotBeacon::slot();
                 if !parathread_params.slot_frequency.should_parathread_buy_core(
                     Slot::from(current_slot as u64),
-                    Slot::from(2u64),
+                    T::BuyCoreSlotDrift::get(),
                     latest_author_info.latest_slot_number,
                 ) {
                     // TODO: Take max slots to produce a block from config

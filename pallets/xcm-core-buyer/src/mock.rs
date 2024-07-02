@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_consensus_slots::Slot;
 use {
     crate::{
         self as pallet_xcm_core_buyer, CheckCollatorValidity, GetPurchaseCoreCall,
@@ -210,6 +211,7 @@ parameter_types! {
     pub const CoreBuyingXCMQueryTtl: u32 = 100;
     pub const AdditionalTtlForInflightOrders: u32 = 5;
     pub UniversalLocation: InteriorLocation = X2([GlobalConsensus(NetworkId::Westend), Parachain(1000)].into());
+    pub BuyCoreSlotDrift: Slot = Slot::from(2u64);
 }
 
 impl pallet_xcm_core_buyer::Config for Test {
@@ -227,6 +229,7 @@ impl pallet_xcm_core_buyer::Config for Test {
     type PendingBlocksTtl = PendingBlocksTtl;
     type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type BuyCoreSlotDrift = BuyCoreSlotDrift;
     type UniversalLocation = UniversalLocation;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;

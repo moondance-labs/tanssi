@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::get_para_id_authorities;
+use crate::{get_para_id_authorities, CollatorAssignment, Session, System};
+use pallet_session::ShouldEndSession;
+use sp_consensus_slots::Slot;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
@@ -504,6 +506,7 @@ parameter_types! {
     pub const CoreBuyingXCMQueryTtl: BlockNumber = 100;
     pub const AdditionalTtlForInflightOrders: BlockNumber = 5;
     pub const PendingBlockTtl: BlockNumber = 10;
+    pub BuyCoreSlotDrift: Slot = Slot::from(2u64);
 }
 
 impl pallet_xcm_core_buyer::Config for Runtime {
@@ -522,6 +525,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type PendingBlocksTtl = PendingBlockTtl;
     type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type BuyCoreSlotDrift = BuyCoreSlotDrift;
     type UniversalLocation = UniversalLocation;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
@@ -529,7 +533,6 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type LatestAuthorInfoFetcher = AuthorNoting;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type CollatorPublicKey = NimbusId;
-
     type WeightInfo = weights::pallet_xcm_core_buyer::SubstrateWeight<Runtime>;
 }
 

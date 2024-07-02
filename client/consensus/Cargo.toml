@@ -39,6 +39,7 @@ substrate-prometheus-endpoint = { workspace = true }
 dp-consensus = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
+tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
