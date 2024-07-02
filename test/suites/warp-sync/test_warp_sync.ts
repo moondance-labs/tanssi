@@ -260,8 +260,7 @@ describeSuite({
                     "[Container-2000] Warp sync is complete",
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
-                    "[Orchestrator] Container chain sync mode: Warp",
-                    "[Container-2000] Can't use warp sync mode with a partially synced database. Reverting to full sync mode.",
+                    "[Orchestrator] Container chain sync mode: Full",
                 ]);
             },
         });
