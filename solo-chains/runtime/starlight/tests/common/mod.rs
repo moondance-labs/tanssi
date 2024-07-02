@@ -30,7 +30,7 @@ use {
     //     sp_consensus_aura::AURA_ENGINE_ID,
     //     sp_consensus_slots::Slot,
     //     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::{Dispatchable,SaturatedConversion,}, BuildStorage, Digest, DigestItem},
     //     sp_std::collections::btree_map::BTreeMap,
     //     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     //     cumulus_primitives_parachain_inherent::ParachainInherentData,
@@ -39,73 +39,42 @@ use {
 };
 
 pub use starlight_runtime::{
-    AccountId, Balance, Balances, Initializer, Runtime, Session, System, TransactionPayment,
+    AccountId, Babe, Balance, Balances, Initializer, Runtime, Session, System, TransactionPayment,
 };
 
-// pub fn session_to_block(n: u32) -> u32 {
-//     let block_number = starlight_runtime::Period::get() * n;
+pub fn session_to_block(n: u32) -> u32 {
+    // let block_number = flashbox_runtime::Period::get() * n;
+    let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
 
-//     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
-//     // so this is the first block of the new session that can actually be used
-//     block_number + 1
-// }
+    // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+    // so this is the first block of the new session that can actually be used
+    block_number + 1
+}
 
-// #[derive(Debug, Clone, Eq, PartialEq)]
-// pub struct RunSummary {
-//     pub author_id: AccountId,
-//     pub inflation: Balance,
-// }
+pub fn run_to_session(n: u32) {
+    run_to_block(session_to_block(n));
+}
 
-// pub fn run_to_session(n: u32) {
-//     run_to_block(session_to_block(n));
-// }
+/// Utility function that advances the chain to the desired block number.
+///
+/// After this function returns, the current block number will be `n`, and the block will be "open",
+/// meaning that on_initialize has been executed, but on_finalize has not. To execute on_finalize as
+/// well, for example to test a runtime api, manually call `end_block` after this, run the test, and
+/// call `start_block` to ensure that this function keeps working as expected.
+/// Extrinsics should always be executed before on_finalize.
+pub fn run_to_block(n: u32) {
+    let current_block_number = System::block_number();
+    assert!(
+        current_block_number < n,
+        "run_to_block called with block {} when current block is {}",
+        n,
+        current_block_number
+    );
 
-// /// Utility function that advances the chain to the desired block number.
-// ///
-// /// After this function returns, the current block number will be `n`, and the block will be "open",
-// /// meaning that on_initialize has been executed, but on_finalize has not. To execute on_finalize as
-// /// well, for example to test a runtime api, manually call `end_block` after this, run the test, and
-// /// call `start_block` to ensure that this function keeps working as expected.
-// /// Extrinsics should always be executed before on_finalize.
-// pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
-//     let current_block_number = System::block_number();
-//     assert!(
-//         current_block_number < n,
-//         "run_to_block called with block {} when current block is {}",
-//         n,
-//         current_block_number
-//     );
-//     let mut summaries = BTreeMap::new();
-
-//     while System::block_number() < n {
-//         let summary = run_block();
-//         let block_number = System::block_number();
-//         summaries.insert(block_number, summary);
-//     }
-
-//     summaries
-// }
-
-// pub fn insert_authorities_and_slot_digests(slot: u64) {
-//     let authorities =
-//         Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
-
-//     let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
-
-//     let pre_digest = Digest {
-//         logs: vec![
-//             DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
-//             DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
-//         ],
-//     };
-
-//     System::reset_events();
-//     System::initialize(
-//         &(System::block_number() + 1),
-//         &System::parent_hash(),
-//         &pre_digest,
-//     );
-// }
+    while System::block_number() < n {
+        let summary = run_block();
+    }
+}
 
 // Used to create the next block inherent data
 #[derive(Clone, Encode, Decode, Default, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
@@ -170,12 +139,13 @@ fn advance_block_state_machine(new_state: RunBlockState) {
 pub fn start_block() {
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::Start(block_number + 1));
-    // let mut slot = current_slot() + 1;
-    // if block_number == 0 {
-    //     // Hack to avoid breaking all tests. When the current block is 1, the slot number should be
-    //     // 1. But all of our tests assume it will be 0. So use slot number = block_number - 1.
-    //     slot = 0;
-    // }
+
+    let mut slot = current_slot() + 1;
+    if block_number == 0 {
+        // Hack to avoid breaking all tests. When the current block is 1, the slot number should be
+        // 1. But all of our tests assume it will be 0. So use slot number = block_number - 1.
+        slot = 0;
+    }
 
     // let maybe_mock_inherent = take_new_inherent_data();
 
@@ -186,6 +156,7 @@ pub fn start_block() {
     // insert_authorities_and_slot_digests(slot);
 
     // Initialize the new block
+    Babe::on_initialize(System::block_number());
     // CollatorAssignment::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
@@ -213,6 +184,7 @@ pub fn end_block() {
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
+    Babe::on_finalize(System::block_number());
     // CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
@@ -225,59 +197,6 @@ pub fn run_block() {
 
     start_block()
 }
-
-/// Mock the inherent that sets validation data in ParachainSystem, which
-/// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
-/// source of randomness.
-// pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
-//     use {
-//         cumulus_primitives_core::relay_chain::well_known_keys,
-//         cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-//     };
-
-//     let relay_sproof = RelayStateSproofBuilder {
-//         para_id: 100u32.into(),
-//         included_para_head: Some(HeadData(vec![1, 2, 3])),
-//         current_slot: (current_slot()).into(),
-//         additional_key_values: if mock_inherent_data.random_seed.is_some() {
-//             vec![(
-//                 well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
-//                 Some(mock_inherent_data.random_seed).encode(),
-//             )]
-//         } else {
-//             vec![]
-//         },
-//         ..Default::default()
-//     };
-
-//     let (relay_parent_storage_root, relay_chain_state) = relay_sproof.into_state_root_and_proof();
-//     let vfp = PersistedValidationData {
-//         relay_parent_number: 1u32,
-//         relay_parent_storage_root,
-//         ..Default::default()
-//     };
-//     let parachain_inherent_data = ParachainInherentData {
-//         validation_data: vfp,
-//         relay_chain_state,
-//         downward_messages: Default::default(),
-//         horizontal_messages: Default::default(),
-//     };
-
-//     // Delete existing flag to avoid error
-//     // 'ValidationData must be updated only once in a block'
-//     // TODO: this is a hack
-//     frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
-//         b"ParachainSystem",
-//         b"ValidationData",
-//     ));
-
-//     assert_ok!(RuntimeCall::ParachainSystem(
-//         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
-//             data: parachain_inherent_data
-//         }
-//     )
-//     .dispatch(inherent_origin()));
-// }
 
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
@@ -486,74 +405,26 @@ impl ExtBuilder {
         let t = self.build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
 
-        // ext.execute_with(|| {
-        //     // Start block 1
-        //     start_block();
-        //     set_parachain_inherent_data(Default::default());
-        // });
+        ext.execute_with(|| {
+            // Start block 1
+            start_block();
+            // set_parachain_inherent_data(Default::default());
+        });
         ext
     }
 }
 
-// pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
-//     <Runtime as frame_system::Config>::RuntimeOrigin::root()
-// }
+pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
+    <Runtime as frame_system::Config>::RuntimeOrigin::root()
+}
 
-// pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::RuntimeOrigin {
-//     <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
-// }
+pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::RuntimeOrigin {
+    <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
+}
 
-// pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
-//     <Runtime as frame_system::Config>::RuntimeOrigin::none()
-// }
-
-// /// Helper function to generate a crypto pair from seed
-// pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
-//     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
-//         .expect("static values are valid; qed")
-//         .public()
-//         .into()
-// }
-
-// pub fn get_orchestrator_current_author() -> Option<AccountId> {
-//     let slot: u64 = current_slot();
-//     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
-//     let author_index = slot % orchestrator_collators.len() as u64;
-//     let account = orchestrator_collators.get(author_index as usize)?;
-//     Some(account.clone())
-// }
-// /// Mocks the author noting inherent to insert the data we
-// pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
-//     let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
-
-//     // For now we directly touch parachain_system storage to set the relay state root.
-//     // TODO: Properly set the parachain_system inherent, which require a sproof builder combining
-//     // what is required by parachain_system and author_noting.
-//     frame_support::storage::unhashed::put(
-//         &frame_support::storage::storage_prefix(b"ParachainSystem", b"ValidationData"),
-//         &PersistedValidationData {
-//             parent_head: HeadData(Default::default()),
-//             relay_parent_number: 0u32,
-//             relay_parent_storage_root: relay_storage_root,
-//             max_pov_size: 0u32,
-//         },
-//     );
-
-//     // But we also need to store the new proof submitted
-//     frame_support::storage::unhashed::put(
-//         &frame_support::storage::storage_prefix(b"ParachainSystem", b"RelayStateProof"),
-//         &relay_storage_proof,
-//     );
-
-//     assert_ok!(RuntimeCall::AuthorNoting(
-//         pallet_author_noting::Call::<Runtime>::set_latest_author_data {
-//             data: tp_author_noting_inherent::OwnParachainInherentData {
-//                 relay_storage_proof,
-//             }
-//         }
-//     )
-//     .dispatch(inherent_origin()));
-// }
+pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
+    <Runtime as frame_system::Config>::RuntimeOrigin::none()
+}
 
 pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
@@ -566,49 +437,9 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     }
 }
 
-// pub fn current_slot() -> u64 {
-//     u64::from(
-//         pallet_async_backing::SlotInfo::<Runtime>::get()
-//             .unwrap_or_default()
-//             .0,
-//     )
-// }
-
-// pub fn authorities() -> Vec<NimbusId> {
-//     let session_index = Session::current_index();
-
-//     AuthorityAssignment::collator_container_chain(session_index)
-//         .expect("authorities should be set")
-//         .orchestrator_chain
-// }
-
-// pub fn current_author() -> AccountId {
-//     let current_session = Session::current_index();
-//     let mapping =
-//         pallet_authority_mapping::Pallet::<Runtime>::authority_id_mapping(current_session)
-//             .expect("there is a mapping for the current session");
-
-//     let author = pallet_author_inherent::Author::<Runtime>::get()
-//         .expect("there should be a registered author");
-
-//     mapping
-//         .get(&author)
-//         .expect("there is a mapping for the current author")
-//         .clone()
-// }
-
-// pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
-//     let block_cost = BlockProductionCost::block_cost(&para_id).0;
-//     u128::from(number_of_blocks).saturating_mul(block_cost)
-// }
-
-// pub fn collator_assignment_credits_to_required_balance(
-//     number_of_sessions: u32,
-//     para_id: ParaId,
-// ) -> Balance {
-//     let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
-//     u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
-// }
+pub fn current_slot() -> u64 {
+    Babe::current_slot().into()
+}
 
 pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
