@@ -112,7 +112,7 @@ pub struct FullDeps<C, P: ?Sized, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P: ?Sized, BE, A>(
+pub fn create_full<C, P, BE, A>(
     deps: FullDeps<C, P, A, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
@@ -132,7 +132,7 @@ where
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block> + 'static + ?Sized,
 {
     use {
         fc_rpc::{
