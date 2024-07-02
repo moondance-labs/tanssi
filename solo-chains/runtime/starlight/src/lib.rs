@@ -27,9 +27,11 @@ use {
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
     frame_support::{
+        dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::FromContains,
     },
+    frame_system::EnsureNever,
     pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -1484,6 +1486,8 @@ construct_runtime! {
         Crowdloan: crowdloan = 73,
         Coretime: coretime = 74,
 
+        ContainerRegistrar: pallet_registrar = 90,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 99,
 
@@ -1701,6 +1705,140 @@ impl pallet_state_trie_migration::Config for Runtime {
     // Use same weights as substrate ones.
     type WeightInfo = pallet_state_trie_migration::weights::SubstrateWeight<Runtime>;
     type MaxKeyLen = MigrationMaxKeyLen;
+}
+
+pub struct NoRelayStorageRoots;
+
+impl tp_traits::RelayStorageRootProvider for NoRelayStorageRoots {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
+        // We can probably get this from frame_system::Digest, but this is needed to do relay storage proofs
+        // which doesn't make sense since we are the relay chain now, so the register_with_proof extrinsic
+        // should be disabled in this runtime
+        None
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(_relay_block_number: u32, _storage_root: Option<H256>) {}
+}
+
+pub struct CurrentSessionIndexGetter;
+
+impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        Session::current_index()
+    }
+}
+
+parameter_types! {
+    pub const DepositAmount: Balance = 100 * UNITS;
+    pub const MaxLengthTokenSymbol: u32 = 255;
+    #[derive(Clone)]
+    pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
+}
+impl pallet_registrar::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
+    type MaxLengthParaIds = MaxLengthParaIds;
+    type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
+    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
+    type RelayStorageRootProvider = NoRelayStorageRoots;
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type Currency = Balances;
+    type DepositAmount = DepositAmount;
+    type RegistrarHooks = StarlightRegistrarHooks;
+    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+}
+
+pub struct StarlightRegistrarHooks;
+
+impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
+    fn para_marked_valid_for_collating(_para_id: ParaId) -> Weight {
+        // Give free credits but only once per para id
+        // TODO: uncomment when ServicesPayment pallet exists
+        //ServicesPayment::give_free_credits(&para_id)
+        Weight::default()
+    }
+
+    fn para_deregistered(_para_id: ParaId) -> Weight {
+        // Clear pallet_author_noting storage
+        // TODO: uncomment when pallets exists
+        /*
+        if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
+            log::warn!(
+                "Failed to kill_author_data after para id {} deregistered: {:?}",
+                u32::from(para_id),
+                e,
+            );
+        }
+        // Remove bootnodes from pallet_data_preservers
+        DataPreservers::para_deregistered(para_id);
+
+        ServicesPayment::para_deregistered(para_id);
+
+        XcmCoreBuyer::para_deregistered(para_id);
+         */
+
+        Weight::default()
+    }
+
+    fn check_valid_for_collating(_para_id: ParaId) -> DispatchResult {
+        // TODO: uncomment when DataPreservers pallet exists
+        // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+        //DataPreservers::check_valid_for_collating(para_id)
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {
+        // TODO: uncomment when pallets exist and we run benchmarks for this runtime
+        todo!("benchmarks_ensure_valid_for_collating not implemented yet")
+        /*
+        use {
+            frame_support::traits::EnsureOriginWithArg,
+            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        };
+
+        let profile = Profile {
+            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .expect("to fit in BoundedVec"),
+            para_ids: ParaIdsFilter::AnyParaId,
+            mode: ProfileMode::Bootnode,
+            assignment_request: PreserversAssignementPaymentRequest::Free,
+        };
+
+        let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
+        let profile_owner = AccountId::new([1u8; 32]);
+        DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
+            .expect("profile create to succeed");
+
+        let para_manager =
+            <Runtime as pallet_data_preservers::Config>::AssignmentOrigin::try_successful_origin(
+                &para_id,
+            )
+                .expect("should be able to get para manager");
+
+        DataPreservers::start_assignment(
+            para_manager,
+            profile_id,
+            para_id,
+            PreserversAssignementPaymentExtra::Free,
+        )
+            .expect("assignement to work");
+
+        assert!(
+            pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
+            "profile should be correctly assigned"
+        );
+         */
+    }
 }
 
 frame_support::ord_parameter_types! {

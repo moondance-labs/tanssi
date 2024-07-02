@@ -9585,7 +9585,6 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "pallet-balances",
- "pallet-configuration",
  "parity-scale-codec",
  "polkadot-runtime-common",
  "scale-info",
@@ -16305,6 +16304,7 @@ dependencies = [
  "pallet-ranked-collective",
  "pallet-recovery",
  "pallet-referenda",
+ "pallet-registrar",
  "pallet-root-testing",
  "pallet-scheduler",
  "pallet-session",
@@ -16364,6 +16364,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tiny-keccak",
  "tokio",
+ "tp-traits",
  "xcm-fee-payment-runtime-api",
 ]
 
