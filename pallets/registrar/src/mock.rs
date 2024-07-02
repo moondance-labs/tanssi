@@ -21,6 +21,7 @@ use {
         weights::Weight,
     },
     parity_scale_codec::{Decode, Encode},
+    serde::{Deserialize, Serialize},
     sp_core::{ed25519, parameter_types, ConstU32, Pair, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
@@ -167,11 +168,10 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
-        pub fn get() -> Mocks {
+        pub fn mock() -> Mocks {
             Mock::<T>::get()
         }
         pub fn mutate<F, R>(f: F) -> R
@@ -183,8 +183,16 @@ pub mod mock_data {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    Serialize,
+    Deserialize,
+)]
 pub enum HookCall {
     MarkedValid(ParaId),
     Deregistered(ParaId),
@@ -226,9 +234,16 @@ impl<T> RegistrarHooks for mock_data::Pallet<T> {
 impl mock_data::Config for Test {}
 
 #[derive(
-    Clone, Default, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo,
+    Clone,
+    Default,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    Serialize,
+    Deserialize,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub called_hooks: Vec<HookCall>,
     pub relay_storage_roots: BTreeMap<u32, H256>,

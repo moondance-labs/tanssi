@@ -257,8 +257,11 @@ jobs:
               run: |
                   mkdir -p binaries
                   cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-                  cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
                   cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
             - name: Upload binary
               uses: actions/upload-artifact@v4
               with:
@@ -493,6 +496,43 @@ jobs:
                   cd test
                   pnpm install
                   pnpm moonwall test dev_dancebox_specs
+
+    typescript-tests-relay:
+      runs-on: ubuntu-latest
+      needs: ["set-tags", "build"]
+      steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+            with:
+                ref: ${{ needs.set-tags.outputs.git_ref }}
+          - name: Pnpm
+            uses: pnpm/action-setup@v3.0.0
+            with:
+                version: 8
+          - name: "Download binaries"
+            uses: actions/download-artifact@v4
+            with:
+                name: binaries
+                path: target/release
+          - name: "Setup Node"
+            uses: actions/setup-node@v4
+            with:
+                node-version: 20.x
+                cache: "pnpm"
+          - name: "Generate typescript api"
+            run: |
+                chmod uog+x target/release/tanssi-node
+                cd typescript-api
+                pnpm install
+                pnpm create-local-interfaces
+          - name: "Run Dev tests"
+            run: |
+                chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+                cd test
+                pnpm moonwall test dev_tanssi_relay
 
     zombienet-tests:
         runs-on: self-hosted
@@ -881,6 +921,63 @@ jobs:
                 cd test
                 pnpm install
                 pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
+
+    zombienet-tests-tanssi-relay:
+      runs-on: self-hosted
+      needs: ["set-tags", "build"]
+      steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+            with:
+                ref: ${{ needs.set-tags.outputs.git_ref }}
+
+          - name: Pnpm
+            uses: pnpm/action-setup@v3.0.0
+            with:
+                version: 8
+
+          - name: Setup Node
+            uses: actions/setup-node@v4
+            with:
+                node-version: 20.x
+                cache: "pnpm"
+
+          - name: "Download binaries"
+            uses: actions/download-artifact@v4
+            with:
+                name: binaries
+                path: target/release
+
+          - name: "Run zombie test"
+            run: |
+                chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+                chmod uog+x target/release/container-chain-simple-node
+
+                cd test
+                pnpm install
+
+                ## Run tests
+
+                pnpm moonwall test zombie_tanssi_relay
+
+          - name: "Gather zombie logs"
+            if: failure()
+            run: |
+                ls -ltr /tmp
+                latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+                logs_dir="logs"
+                mkdir -p "$logs_dir"
+                find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
+
+          - name: "Upload zombie logs"
+            if: failure()
+            uses: actions/upload-artifact@v4
+            with:
+                name: logs-tanssi-relay
+                path: logs
 
     docker-tanssi:
         runs-on: ubuntu-latest

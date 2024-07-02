@@ -18,7 +18,7 @@ log = { workspace = true }
 num_enum = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
@@ -94,6 +94,7 @@ polkadot-runtime-common = { workspace = true }
 staging-xcm = { workspace = true }
 staging-xcm-builder = { workspace = true }
 staging-xcm-executor = { workspace = true }
+xcm-fee-payment-runtime-api = { workspace = true }
 
 # Cumulus
 cumulus-pallet-dmp-queue = { workspace = true }
@@ -205,8 +206,7 @@ std = [
 	"polkadot-runtime-common/std",
 	"precompile-utils/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
@@ -226,6 +226,7 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tanssi-runtime-common/std",
+	"xcm-fee-payment-runtime-api/std",
 	"xcm-primitives/std",
 ]
 

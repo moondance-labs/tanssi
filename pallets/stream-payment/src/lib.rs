@@ -29,9 +29,6 @@ mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use {
     core::cmp::min,
     frame_support::{
@@ -48,6 +45,7 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::{FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
+    serde::{Deserialize, Serialize},
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
         ArithmeticError,
@@ -176,8 +174,9 @@ pub mod pallet {
     /// A stream payment from source to target.
     /// Stores the last time the stream was updated, which allows to compute
     /// elapsed time and perform payment.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct Stream<AccountId, Unit, AssetId, Balance> {
         /// Payer, source of the stream.
         pub source: AccountId,
@@ -210,8 +209,9 @@ pub mod pallet {
     }
 
     /// Stream configuration.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct StreamConfig<Unit, AssetId, Balance> {
         /// Unit in which time is measured using a `TimeProvider`.
         pub time_unit: Unit,
@@ -222,8 +222,9 @@ pub mod pallet {
     }
 
     /// Origin of a change request.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum Party {
         Source,
         Target,
@@ -239,8 +240,9 @@ pub mod pallet {
     }
 
     /// Kind of change requested.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum ChangeKind<Time> {
         /// The requested change is a suggestion, and the other party doesn't
         /// need to accept it.
@@ -252,8 +254,9 @@ pub mod pallet {
     }
 
     /// Describe how the deposit should change.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum DepositChange<Balance> {
         /// Increase deposit by given amount.
         Increase(Balance),
@@ -264,8 +267,9 @@ pub mod pallet {
     }
 
     /// A request to change a stream config.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
         pub requester: Party,
         pub kind: ChangeKind<Balance>,
@@ -352,6 +356,8 @@ pub mod pallet {
         ChangingAssetRequiresAbsoluteDepositChange,
         TargetCantChangeDeposit,
         ImmediateDepositChangeRequiresSameAssetId,
+        DeadlineCantBeInPast,
+        CantFetchStatusBeforeLastTimeUpdated,
     }
 
     #[pallet::event]
@@ -524,6 +530,13 @@ pub mod pallet {
 
             if stream.config == new_config && deposit_change.is_none() {
                 return Ok(().into());
+            }
+
+            if let ChangeKind::Mandatory { deadline } = kind {
+                let now = T::TimeProvider::now(&stream.config.time_unit)
+                    .ok_or(Error::<T>::CantFetchCurrentTime)?;
+
+                ensure!(deadline >= now, Error::<T>::DeadlineCantBeInPast);
             }
 
             // If asset id and time unit are the same, we allow to make the change
@@ -810,7 +823,8 @@ pub mod pallet {
         /// The stream is considered stalled if no funds are left or if the provided
         /// time is past a mandatory request deadline. If the provided `now` is `None`
         /// then the current time will be fetched. Being able to provide a custom `now`
-        /// allows to check the status in the future.
+        /// allows to check the status in the future. It is invalid to provide a `now` that is
+        /// before `last_time_updated`.
         pub fn stream_payment_status(
             stream_id: T::StreamId,
             now: Option<T::Balance>,
@@ -823,6 +837,12 @@ pub mod pallet {
             };
 
             let last_time_updated = stream.last_time_updated;
+
+            ensure!(
+                now >= last_time_updated,
+                Error::<T>::CantFetchStatusBeforeLastTimeUpdated
+            );
+
             Self::stream_payment_status_by_ref(&stream, last_time_updated, now)
         }
 
@@ -831,6 +851,8 @@ pub mod pallet {
             last_time_updated: T::Balance,
             mut now: T::Balance,
         ) -> Result<StreamPaymentStatus<T::Balance>, Error<T>> {
+            let mut stalled_by_deadline = false;
+
             // Take into account mandatory change request deadline. Note that
             // while it'll perform payment up to deadline,
             // `stream.last_time_updated` is still the "real now" to avoid
@@ -841,6 +863,10 @@ pub mod pallet {
             }) = &stream.pending_request
             {
                 now = min(now, *deadline);
+
+                if now == *deadline {
+                    stalled_by_deadline = true;
+                }
             }
 
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
@@ -874,7 +900,7 @@ pub mod pallet {
             // we pay all that is left.
             let (deposit_left, stalled) = match stream.deposit.checked_sub(&payment) {
                 Some(v) if v.is_zero() => (v, true),
-                Some(v) => (v, false),
+                Some(v) => (v, stalled_by_deadline),
                 None => {
                     payment = stream.deposit;
                     (Zero::zero(), true)

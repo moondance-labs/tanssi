@@ -65,7 +65,6 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn authority_id_mapping)]
     pub type AuthorityIdMapping<T: Config> = StorageMap<
         _,
         Twox64Concat,
@@ -89,6 +88,12 @@ pub mod pallet {
             let assignation: BTreeMap<T::AuthorityId, T::AccountId> =
                 authorities.iter().cloned().map(|(a, b)| (b, a)).collect();
             AuthorityIdMapping::<T>::insert(session_index, assignation);
+        }
+
+        pub fn authority_id_mapping(
+            session_index: T::SessionIndex,
+        ) -> Option<BTreeMap<T::AuthorityId, T::AccountId>> {
+            AuthorityIdMapping::<T>::get(session_index)
         }
     }
 }

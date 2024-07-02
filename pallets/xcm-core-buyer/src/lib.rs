@@ -34,8 +34,6 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use tp_traits::{AuthorNotingHook, BlockNumber, SlotFrequency};
-
 use {
     dp_core::ParaId,
     frame_support::{
@@ -52,7 +50,9 @@ use {
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },
-    tp_traits::{LatestAuthorInfoFetcher, ParathreadParams},
+    tp_traits::{
+        AuthorNotingHook, BlockNumber, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
+    },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
@@ -77,16 +77,16 @@ impl<T: Config> XCMNotifier<T> for () {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
 pub struct InFlightCoreBuyingOrder<BN> {
     para_id: ParaId,
     query_id: QueryId,
     ttl: BN,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo, Serialize, Deserialize,
+)]
 pub enum BuyingError<BlockNumber> {
     OrderAlreadyExists {
         ttl: BlockNumber,
