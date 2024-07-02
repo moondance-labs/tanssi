@@ -62,6 +62,11 @@ use {
     std::{str::FromStr, sync::Arc},
 };
 
+type FullBasicPool<T> = sc_transaction_pool::BasicPool<
+    sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
+    BlockOf<T>,
+>;
+
 /// Trait to configure the main types the builder rely on, bundled in a single
 /// type to reduce verbosity and the amount of type parameters.
 pub trait NodeBuilderConfig {
@@ -205,7 +210,7 @@ where
     fn new(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
-    ) -> Result<Self, sc_service::Error>  {
+    ) -> Result<Self, sc_service::Error> {
         // Refactor: old new_partial
 
         let telemetry = parachain_config
@@ -267,7 +272,7 @@ where
                 parachain_config.prometheus_registry(),
                 task_manager.spawn_essential_handle(),
                 client.clone(),
-        );
+            );
 
         Ok(Self {
             client,
@@ -637,15 +642,19 @@ where
         if let Some(deadline) = soft_deadline {
             env.set_soft_deadline(deadline);
         }
+        let basic_pool = self
+            .transaction_pool
+            .as_any()
+            .downcast_ref::<FullBasicPool<T>>()
+            .unwrap();
 
         let commands_stream: Box<
             dyn Stream<Item = EngineCommand<BlockHashOf<T>>> + Send + Sync + Unpin,
         > = match sealing {
             Sealing::Instant => {
-                todo!();
-                /*Box::new(
+                Box::new(
                     // This bit cribbed from the implementation of instant seal.
-                    self.transaction_pool
+                    basic_pool
                         .pool()
                         .validated_pool()
                         .import_notification_stream()
@@ -655,7 +664,7 @@ where
                             parent_hash: None,
                             sender: None,
                         }),
-                )*/
+                )
             }
             Sealing::Manual => {
                 let (sink, stream) = futures::channel::mpsc::channel(1000);

@@ -695,9 +695,7 @@ fn start_consensus_container(
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<
-        sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient>,
-    >,
+    transaction_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,

@@ -73,7 +73,7 @@ pub use eth::*;
 mod finality;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, BE> {
+pub struct FullDeps<C, P: ?Sized, A: ChainApi, BE> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -112,7 +112,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE, A>(
+pub fn create_full<C, P: ?Sized, BE, A>(
     deps: FullDeps<C, P, A, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
