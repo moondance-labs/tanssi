@@ -54,6 +54,9 @@ type ParachainBlockImport = TParachainBlockImport<
     ParachainBackend,
 >;
 
+type FullPool<Client> =
+    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<Client, Block>, Block>;
+
 pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
@@ -246,6 +249,10 @@ async fn start_node_impl(
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
+            let basic_pool = pool
+                .as_any()
+                .downcast_ref::<FullPool<ParachainClient>>()
+                .unwrap();
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -255,8 +262,8 @@ async fn start_node_impl(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: pool.pool().clone(),
-                pool: pool.clone(),
+                graph: basic_pool.pool().clone(),
+                pool: Arc::clone(&pool),
                 max_past_logs,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
@@ -497,6 +504,11 @@ pub async fn start_dev_node(
         let block_data_cache = block_data_cache;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
+            let basic_pool = pool
+                .as_any()
+                .downcast_ref::<FullPool<ParachainClient>>()
+                .unwrap();
+
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -506,8 +518,8 @@ pub async fn start_dev_node(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: pool.pool().clone(),
-                pool: pool.clone(),
+                graph: basic_pool.pool().clone(),
+                pool: Arc::clone(&pool),
                 max_past_logs,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
