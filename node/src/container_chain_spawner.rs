@@ -253,20 +253,50 @@ async fn try_spawn(
         .database_params
         .database = Some(Database::ParityDb);
 
-    container_chain_cli.base.base.network_params.sync =
-        select_sync_mode(&orchestrator_client, container_chain_para_id)?;
-    log::info!(
-        "Container chain sync mode: {:?}",
-        container_chain_cli.base.base.network_params.sync
-    );
+    let keep_db = container_chain_cli.base.keep_db;
+
+    // Get a closure that checks if db_path exists.Need this to know when to use full sync instead of warp sync.
+    let check_db_exists = {
+        // Get db_path from config
+        let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+            &container_chain_cli,
+            &container_chain_cli,
+            tokio_handle.clone(),
+        )
+        .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+        // Change database path to make it depend on container chain para id
+        // So instead of the usual "db/full" we have "db/full-container-2000"
+        let mut db_path = container_chain_cli_config
+            .database
+            .path()
+            .ok_or_else(|| "Failed to get database path".to_string())?
+            .to_owned();
+        db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
+        container_chain_cli_config.database.set_path(&db_path);
+
+        // Return a closure because we may need to check if the db exists multiple times
+        move || db_path.exists()
+    };
 
     // Start container chain node. After starting, check if the database is good or needs to
     // be removed. If the db needs to be removed, this function will handle the node restart, and
     // return the components of a running container chain node.
     // This should be a separate function, but it has so many arguments that I prefer to have it as a closure for now
-    let start_node_impl_container_with_restart = || async {
+    let start_node_impl_container_with_restart = || async move {
         // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
         for _ in 0..2 {
+            let db_existed_before = check_db_exists();
+            container_chain_cli.base.base.network_params.sync = select_sync_mode(
+                db_existed_before,
+                &orchestrator_client,
+                container_chain_para_id,
+            )?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+
             let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
                 &container_chain_cli,
@@ -283,7 +313,6 @@ async fn try_spawn(
                 .to_owned();
             db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
             container_chain_cli_config.database.set_path(&db_path);
-            let db_existed_before = db_path.exists();
 
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
                 start_node_impl_container(
@@ -346,6 +375,25 @@ async fn try_spawn(
                     // removing the db. Apparently closures cannot be recursive so fake recursion by
                     // using a loop + continue
                     continue;
+                }
+            }
+
+            // If using full sync, print a warning if the local db is at block 0 and the chain has thousands of blocks
+            if container_chain_cli.base.base.network_params.sync == SyncMode::Full {
+                let last_container_block_temp = node_parts.1.chain_info().best_number;
+                let cc_block_num = get_latest_container_block_number_from_orchestrator(
+                    &orchestrator_client,
+                    container_chain_para_id,
+                )
+                .unwrap_or(0);
+                if last_container_block_temp == 0 && cc_block_num > MAX_BLOCK_DIFF_FOR_FULL_SYNC {
+                    let db_folder = format!("full-container-{}", container_chain_para_id);
+                    log::error!("\
+                        Existing database for container chain {} is at block 0, assuming that warp sync failed.\n\
+                        The node will now use full sync, which has to download {} blocks.\n\
+                        If running as collator, it may not finish syncing on time and miss block rewards.\n\
+                        To force using warp sync, stop tanssi-node and manually remove the db folder: {:?}\n\
+                        ", container_chain_para_id, cc_block_num, db_folder)
                 }
             }
 
@@ -423,7 +471,7 @@ async fn try_spawn(
                 // container chain has been unassigned, and will be `Err` if the handle has been dropped,
                 // which means that the node is stopping.
                 // Delete existing database if running as collator
-                if validator && stop_unassigned == Ok(false) && !container_chain_cli.base.keep_db {
+                if validator && stop_unassigned == Ok(false) && !keep_db {
                     // If this breaks after a code change, make sure that all the variables that
                     // may keep the chain alive are dropped before the call to `wait_for_paritydb_lock`.
                     drop(container_chain_task_manager_future);
@@ -744,9 +792,15 @@ fn handle_update_assignment_state_change(
 /// If it was interrupted during the block history download, the node will use full sync but also
 /// finish the block history download in the background, even if sync mode is set to full sync.
 fn select_sync_mode(
+    db_exists: bool,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
 ) -> sc_service::error::Result<SyncMode> {
+    if db_exists {
+        // If the user wants to use warp sync, they should have already removed the database
+        return Ok(SyncMode::Full);
+    }
+
     // The following check is only needed because of this bug:
     // https://github.com/paritytech/polkadot-sdk/issues/1930
 
@@ -764,6 +818,20 @@ fn select_sync_mode(
     } else {
         Ok(SyncMode::Warp)
     }
+}
+
+fn get_latest_container_block_number_from_orchestrator(
+    orchestrator_client: &Arc<ParachainClient>,
+    container_chain_para_id: ParaId,
+) -> Option<u32> {
+    let orchestrator_runtime_api = orchestrator_client.runtime_api();
+    let orchestrator_chain_info = orchestrator_client.chain_info();
+    // Get the container chain's latest block from orchestrator chain and compare with client's one
+    let last_container_block_from_orchestrator = orchestrator_runtime_api
+        .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+        .unwrap_or_default();
+
+    last_container_block_from_orchestrator
 }
 
 #[derive(Debug)]
@@ -799,16 +867,12 @@ fn db_needs_removal(
         if last_container_block_temp == 0 {
             // Don't remove an empty database, as it may be in the process of a warp sync
         } else {
-            let orchestrator_runtime_api = orchestrator_client.runtime_api();
-            let orchestrator_chain_info = orchestrator_client.chain_info();
-            // Get the container chain's latest block from orchestrator chain and compare with client's one
-            let last_container_block_from_orchestrator = orchestrator_runtime_api
-                .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .unwrap_or_default();
-
-            if last_container_block_from_orchestrator
-                .unwrap_or(0)
-                .abs_diff(last_container_block_temp)
+            if get_latest_container_block_number_from_orchestrator(
+                orchestrator_client,
+                container_chain_para_id,
+            )
+            .unwrap_or(0)
+            .abs_diff(last_container_block_temp)
                 > MAX_BLOCK_DIFF_FOR_FULL_SYNC
             {
                 // if the diff is big, delete db and restart using warp sync
