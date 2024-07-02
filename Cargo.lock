@@ -16278,6 +16278,7 @@ dependencies = [
  "log",
  "nimbus-primitives",
  "pallet-asset-rate",
+ "pallet-authority-assignment",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",

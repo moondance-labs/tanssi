@@ -52,6 +52,7 @@ frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-asset-rate = { workspace = true }
+pallet-authority-assignment = { workspace = true }
 pallet-authority-discovery = { workspace = true }
 pallet-authorship = { workspace = true }
 pallet-babe = { workspace = true }
@@ -152,6 +153,7 @@ std = [
 	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
+	"pallet-authority-assignment/std",
 	"pallet-authority-discovery/std",
 	"pallet-authorship/std",
 	"pallet-babe/std",

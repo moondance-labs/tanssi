@@ -1534,6 +1534,7 @@ construct_runtime! {
         TanssiInitializer: tanssi_initializer = 100,
         TanssiInvulnerables: pallet_invulnerables = 101,
         TanssiCollatorAssignment: pallet_collator_assignment = 102,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 103,
     }
 }
 
@@ -2571,56 +2572,19 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
 			(queued_amalgamated, changed)
 		};
 
-
-    
         let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
         log::info!("next_collators_accounts are {:?}", next_collators_accounts);
 
         // Next: CollatorAssignment
         let assignments =
             TanssiCollatorAssignment::initializer_on_new_session(&session_index, next_collators_accounts);
-        // Next: CollatorAssignment
-/*
-        // Ask CollatorManager who are the next collators
-        let next_collators = CollatorManager::collators();
 
-        // Ask pallet-session for the keys of each of these collators
-        for collator in next_collators {
-            let collators_keys = 
-        }
-        //
-        let collator_and_keys = Vec(collator, keys);
-
-        // Next: CollatorAssignment
-        let assignments =
-            CollatorAssignment::initializer_on_new_session(&session_index, collator_and_keys);
-
-        let queued_id_to_nimbus_map = collator_and_keys.iter().cloned().collect();
-        AuthorityAssignment::initializer_on_new_session(
+        let queued_id_to_nimbus_map = queued_amalgamated.iter().cloned().collect();
+        TanssiAuthorityAssignment::initializer_on_new_session(
             &session_index,
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
-*/
-        // // We first initialize Configuration
-        // Configuration::initializer_on_new_session(&session_index);
-        // // Next: Registrar
-        // Registrar::initializer_on_new_session(&session_index);
-        // // Next: AuthorityMapping
-        // AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
-
-        // let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
-
-        // // Next: CollatorAssignment
-        // let assignments =
-        //     CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
-
-        // let queued_id_to_validator_map = queued.iter().cloned().collect();
-        // AuthorityAssignment::initializer_on_new_session(
-        //     &session_index,
-        //     &queued_id_to_validator_map,
-        //     &assignments.next_assignment,
-        // );
     }
 }
 parameter_types! {
@@ -2693,6 +2657,11 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type AllowEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();
+}
+
+impl pallet_authority_assignment::Config for Runtime {
+    type SessionIndex = u32;
+    type AuthorityId = nimbus_primitives::NimbusId;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]
