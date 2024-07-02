@@ -172,7 +172,7 @@ impl mock_data::Config for Test {}
 )]
 pub struct Mocks {
     pub latest_author_info: BTreeMap<ParaId, ContainerChainBlockInfo<AccountId>>,
-    pub container_chain_collators: BTreeMap<ParaId, Vec<(AccountId, NimbusId)>>,
+    pub container_chain_collators: BTreeMap<ParaId, Vec<NimbusId>>,
     pub parathread_params: BTreeMap<ParaId, ParathreadParams>,
 }
 
@@ -190,10 +190,7 @@ impl Default for Mocks {
                     latest_slot_number: Default::default(),
                 },
             )]),
-            container_chain_collators: BTreeMap::from_iter([(
-                ParaId::from(3333),
-                vec![(AccountId::from(BOB), nimbus_id)],
-            )]),
+            container_chain_collators: BTreeMap::from_iter([(ParaId::from(3333), vec![nimbus_id])]),
             parathread_params: BTreeMap::from_iter([(
                 ParaId::from(3333),
                 ParathreadParams {
@@ -283,25 +280,25 @@ impl nimbus_primitives::SlotBeacon for DummyBeacon {
 pub struct CheckCollatorValidityImpl;
 
 impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
-    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) -> bool {
+    fn is_valid_collator(para_id: ParaId, public_key: NimbusId) -> bool {
         MockData::mock()
             .container_chain_collators
             .get(&para_id)
-            .is_some_and(|collators| collators.contains(&(account_id, public_key)))
+            .is_some_and(|collators| collators.contains(&public_key))
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) {
+    fn set_valid_collator(para_id: ParaId, _account_id: AccountId, public_key: NimbusId) {
         let mock_data = MockData::mock();
         let mut maybe_para_id_collators =
             mock_data.container_chain_collators.get(&para_id).cloned();
 
         let new_para_id_collators =
             if let Some(mut para_id_collators) = maybe_para_id_collators.take() {
-                para_id_collators.push((account_id, public_key));
+                para_id_collators.push(public_key);
                 para_id_collators.clone()
             } else {
-                vec![(account_id, public_key)]
+                vec![public_key]
             };
 
         MockData::mutate(|mocks| {

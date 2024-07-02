@@ -118,6 +118,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::app_crypto::AppCrypto;
     use {
         super::*, nimbus_primitives::SlotBeacon, pallet_xcm::ensure_response,
         sp_runtime::RuntimeAppPublic,
@@ -203,6 +204,7 @@ pub mod pallet {
         type CollatorPublicKey: Member
             + Parameter
             + RuntimeAppPublic
+            + AppCrypto
             + MaybeSerializeDeserialize
             + MaxEncodedLen;
 
@@ -332,8 +334,7 @@ pub mod pallet {
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
-            // Below parameter are already validated during `validate_unsigned` call
-            _collator_account_id: T::AccountId,
+            // Below parameter are already validated during `validate_unsigned` cal
             _proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
         ) -> DispatchResult {
             ensure_none(origin)?;
@@ -699,12 +700,7 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if let Call::buy_core {
-                para_id,
-                collator_account_id,
-                proof,
-            } = call
-            {
+            if let Call::buy_core { para_id, proof } = call {
                 let block_number = <frame_system::Pallet<T>>::block_number();
 
                 let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
@@ -712,11 +708,8 @@ pub mod pallet {
                     return InvalidTransaction::Call.into();
                 }
 
-                let is_valid_collator = T::CheckCollatorValidity::is_valid_collator(
-                    *para_id,
-                    collator_account_id.clone(),
-                    proof.public_key.clone(),
-                );
+                let is_valid_collator =
+                    T::CheckCollatorValidity::is_valid_collator(*para_id, proof.public_key.clone());
                 if !is_valid_collator {
                     return InvalidTransaction::Call.into();
                 }
@@ -753,7 +746,7 @@ pub trait GetPurchaseCoreCall<RelayChain> {
 }
 
 pub trait CheckCollatorValidity<AccountId, PublicKey> {
-    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn is_valid_collator(para_id: ParaId, public_key: PublicKey) -> bool;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey);
