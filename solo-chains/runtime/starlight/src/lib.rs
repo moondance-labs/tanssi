@@ -1403,7 +1403,6 @@ impl pallet_configuration::Config for Runtime {
 }
 
 parameter_types! {
-    // pub const DepositAmount: Balance = 100 * UNIT;
     pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
