@@ -47,7 +47,7 @@ where
 }
 
 /// Helper function to generate stash, controller and session key from seed
-fn get_authority_keys_from_seed(
+pub fn get_authority_keys_from_seed(
     seed: &str,
 ) -> (
     AccountId,

@@ -16266,6 +16266,7 @@ version = "0.1.0"
 dependencies = [
  "binary-merkle-tree",
  "bitvec",
+ "cumulus-primitives-core",
  "frame-benchmarking",
  "frame-executive",
  "frame-remote-externalities",
@@ -16286,6 +16287,7 @@ dependencies = [
  "pallet-bounties",
  "pallet-child-bounties",
  "pallet-collective",
+ "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-democracy",
  "pallet-elections-phragmen",
@@ -16305,6 +16307,7 @@ dependencies = [
  "pallet-ranked-collective",
  "pallet-recovery",
  "pallet-referenda",
+ "pallet-registrar-runtime-api",
  "pallet-root-testing",
  "pallet-scheduler",
  "pallet-session",
@@ -16364,6 +16367,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tiny-keccak",
  "tokio",
+ "tp-traits",
  "xcm-fee-payment-runtime-api",
 ]
 
