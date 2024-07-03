@@ -229,6 +229,7 @@ std = [
 	"sp-version/std",
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
+	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
@@ -286,6 +287,7 @@ runtime-benchmarks = [
 	"runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 ]
