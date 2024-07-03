@@ -16,30 +16,21 @@
 
 use {
     crate::UNIT,
-    cumulus_primitives_core::{ParaId, PersistedValidationData},
-    frame_support::{
-        assert_ok,
-        traits::{OnFinalize, OnInitialize},
+    babe_primitives::{
+        digests::{PreDigest, SecondaryPlainPreDigest},
+        BABE_ENGINE_ID,
     },
-    //     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
-    //     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
+    cumulus_primitives_core::ParaId,
+    frame_support::traits::{OnFinalize, OnInitialize},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    //     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
-    //     polkadot_parachain_primitives::primitives::HeadData,
-    babe_primitives::{BABE_ENGINE_ID, digests::{PreDigest, SecondaryPlainPreDigest},},
-    //     sp_consensus_slots::Slot,
-    //     sp_core::{Get, Pair},
-    sp_runtime::{traits::{Dispatchable,SaturatedConversion,}, BuildStorage, Digest, DigestItem},
-    //     sp_std::collections::btree_map::BTreeMap,
-    //     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    //     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    //     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
+    sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
     starlight_runtime::MaxLengthTokenSymbol,
 };
 
 pub use starlight_runtime::{
-    AccountId, Babe, Balance, Balances, Initializer, Runtime, Session, System, TransactionPayment, CollatorConfiguration
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Balances,
+    CollatorConfiguration, Initializer, Runtime, Session, System, TransactionPayment,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -78,13 +69,14 @@ pub fn run_to_block(n: u32) {
 
 pub fn insert_authorities_and_slot_digests(slot: u64) {
     let pre_digest = Digest {
-        logs: vec![
-            DigestItem::PreRuntime(
-                BABE_ENGINE_ID,
-                PreDigest::SecondaryPlain(SecondaryPlainPreDigest { slot: slot.into(), authority_index: 42 })
-                    .encode(),
-            ),
-        ],
+        logs: vec![DigestItem::PreRuntime(
+            BABE_ENGINE_ID,
+            PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
+                slot: slot.into(),
+                authority_index: 0,
+            })
+            .encode(),
+        )],
     };
 
     System::reset_events();
@@ -93,19 +85,6 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
         &System::parent_hash(),
         &pre_digest,
     );
-}
-
-// Used to create the next block inherent data
-#[derive(Clone, Encode, Decode, Default, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
-pub struct MockInherentData {
-    pub random_seed: Option<[u8; 32]>,
-}
-
-fn take_new_inherent_data() -> Option<MockInherentData> {
-    let data: Option<MockInherentData> =
-        frame_support::storage::unhashed::take(b"__mock_new_inherent_data");
-
-    data
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
@@ -159,23 +138,12 @@ pub fn start_block() {
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::Start(block_number + 1));
 
-    let mut slot = current_slot() + 1;
-    if block_number == 0 {
-        // Hack to avoid breaking all tests. When the current block is 1, the slot number should be
-        // 1. But all of our tests assume it will be 0. So use slot number = block_number - 1.
-        slot = 0;
-    }
-
-    insert_authorities_and_slot_digests(slot);
+    insert_authorities_and_slot_digests(current_slot() + 1);
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
-    println!("current_slot {:?}", Babe::current_slot());
-    println!("current_epoch_start {:?}", Babe::current_epoch_start());
-    println!("epoch_index {:?}", Babe::epoch_index());
-    println!("current_index {:?}", Session::current_index());
 }
 
 pub fn end_block() {
@@ -183,10 +151,8 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
-    // CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
-    // AuthorInherent::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
 }
 
@@ -243,6 +209,8 @@ pub fn default_config() -> pallet_configuration::HostConfiguration {
 pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
+    // [validator, amount]
+    validators: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // sudo key
@@ -262,10 +230,11 @@ impl Default for ExtBuilder {
                 (AccountId::from(ALICE), 210_000 * UNIT),
                 (AccountId::from(BOB), 100_000 * UNIT),
             ],
-            collators: vec![
+            validators: vec![
                 (AccountId::from(ALICE), 210 * UNIT),
                 (AccountId::from(BOB), 100 * UNIT),
             ],
+            collators: Default::default(),
             sudo: Default::default(),
             para_ids: Default::default(),
             config: default_config(),
@@ -282,6 +251,11 @@ impl ExtBuilder {
 
     pub fn with_sudo(mut self, sudo: AccountId) -> Self {
         self.sudo = Some(sudo);
+        self
+    }
+
+    pub fn with_validators(mut self, validators: Vec<(AccountId, Balance)>) -> Self {
+        self.validators = validators;
         self
     }
 
@@ -306,7 +280,9 @@ impl ExtBuilder {
             .build_storage()
             .unwrap();
 
-        pallet_babe::GenesisConfig::<Runtime> { ..Default::default() }
+        pallet_babe::GenesisConfig::<Runtime> {
+            ..Default::default()
+        }
         .assimilate_storage(&mut t)
         .unwrap();
 
@@ -323,10 +299,31 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        pallet_session::GenesisConfig::<Runtime>::default()
-            .assimilate_storage(&mut t)
-            .unwrap();
-        
+        if !self.validators.is_empty() {
+            let keys: Vec<_> = self
+                .validators
+                .into_iter()
+                .map(|(account, _balance)| {
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    (
+                        account.clone(),
+                        account,
+                        starlight_runtime::SessionKeys {
+                            babe: authority_keys.2.clone(),
+                            grandpa: authority_keys.3.clone(),
+                            para_validator: authority_keys.4.clone(),
+                            para_assignment: authority_keys.5.clone(),
+                            authority_discovery: authority_keys.6.clone(),
+                            beefy: authority_keys.7.clone(),
+                        },
+                    )
+                })
+                .collect();
+            pallet_session::GenesisConfig::<Runtime> { keys }
+                .assimilate_storage(&mut t)
+                .unwrap();
+        }
+
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
             .unwrap();
@@ -340,7 +337,6 @@ impl ExtBuilder {
         ext.execute_with(|| {
             // Start block 1
             start_block();
-            // set_parachain_inherent_data(Default::default());
         });
         ext
     }
@@ -356,17 +352,6 @@ pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::Ru
 
 pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
-}
-
-pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
-    ContainerChainGenesisData {
-        storage: Default::default(),
-        name: Default::default(),
-        id: Default::default(),
-        fork_id: Default::default(),
-        extensions: Default::default(),
-        properties: Default::default(),
-    }
 }
 
 pub fn current_slot() -> u64 {

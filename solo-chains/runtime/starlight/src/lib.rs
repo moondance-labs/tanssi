@@ -145,7 +145,7 @@ use {
 #[cfg(test)]
 mod tests;
 
-mod genesis_config_presets;
+pub mod genesis_config_presets;
 mod validator_manager;
 
 impl_runtime_weights!(starlight_runtime_constants);

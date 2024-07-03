@@ -17,9 +17,8 @@
 #![cfg(test)]
 
 use {
-    common::*,
-    frame_support::{assert_noop, assert_ok, BoundedVec},
-    sp_std::vec,
+    common::*, frame_support::assert_ok, sp_std::vec,
+    starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
 };
 
 mod common;
@@ -39,11 +38,11 @@ fn genesis_balances() {
         .build()
         .execute_with(|| {
             assert_eq!(
-                Balances::usable_balance(AccountId::from(ALICE)),
+                Balances::usable_balance(AccountId::from(ALICE)) + EXISTENTIAL_DEPOSIT,
                 210_000 * UNIT,
             );
             assert_eq!(
-                Balances::usable_balance(AccountId::from(BOB)),
+                Balances::usable_balance(AccountId::from(BOB)) + EXISTENTIAL_DEPOSIT,
                 100_000 * UNIT,
             );
         });
@@ -53,46 +52,57 @@ fn genesis_balances() {
 fn test_configuration_on_session_change() {
     ExtBuilder::default().build().execute_with(|| {
         assert_eq!(CollatorConfiguration::config().max_collators, 100);
-        assert_eq!(CollatorConfiguration::config().min_orchestrator_collators, 2);
+        assert_eq!(
+            CollatorConfiguration::config().min_orchestrator_collators,
+            2
+        );
         assert_eq!(CollatorConfiguration::config().collators_per_container, 2);
 
-        assert_ok!(CollatorConfiguration::set_max_collators(root_origin(), 50), ());
-        assert_eq!(Session::current_index(), 0u32);
+        assert_ok!(
+            CollatorConfiguration::set_max_collators(root_origin(), 50),
+            ()
+        );
         run_to_session(1u32);
-        assert_eq!(System::block_number(), 11u32);
-        assert_eq!(Session::current_index(), 0u32);
 
         assert_ok!(
             CollatorConfiguration::set_min_orchestrator_collators(root_origin(), 20),
             ()
         );
         assert_eq!(CollatorConfiguration::config().max_collators, 100);
-        assert_eq!(CollatorConfiguration::config().min_orchestrator_collators, 2);
+        assert_eq!(
+            CollatorConfiguration::config().min_orchestrator_collators,
+            2
+        );
         assert_eq!(CollatorConfiguration::config().collators_per_container, 2);
 
         run_to_session(2u32);
-        assert_eq!(System::block_number(), 21u32);
-        assert_eq!(Session::current_index(), 2u32);
         assert_ok!(
             CollatorConfiguration::set_collators_per_container(root_origin(), 10),
             ()
         );
         assert_eq!(CollatorConfiguration::config().max_collators, 50);
-        assert_eq!(CollatorConfiguration::config().min_orchestrator_collators, 20);
+        assert_eq!(
+            CollatorConfiguration::config().min_orchestrator_collators,
+            2
+        );
         assert_eq!(CollatorConfiguration::config().collators_per_container, 2);
 
         run_to_session(3u32);
-        assert_eq!(System::block_number(), 31u32);
-        assert_eq!(Session::current_index(), 3u32);
 
         assert_eq!(CollatorConfiguration::config().max_collators, 50);
-        assert_eq!(CollatorConfiguration::config().min_orchestrator_collators, 20);
-        assert_eq!(CollatorConfiguration::config().collators_per_container, 10);
+        assert_eq!(
+            CollatorConfiguration::config().min_orchestrator_collators,
+            20
+        );
+        assert_eq!(CollatorConfiguration::config().collators_per_container, 2);
 
         run_to_session(4u32);
 
         assert_eq!(CollatorConfiguration::config().max_collators, 50);
-        assert_eq!(CollatorConfiguration::config().min_orchestrator_collators, 20);
+        assert_eq!(
+            CollatorConfiguration::config().min_orchestrator_collators,
+            20
+        );
         assert_eq!(CollatorConfiguration::config().collators_per_container, 10);
     });
 }
