@@ -784,7 +784,8 @@ fn handle_update_assignment_state_change(
 }
 
 /// Select [SyncMode] to use for a container chain.
-/// We want to use warp sync unless the container chain is still at genesis block (because of a warp sync bug in that case).
+/// We want to use warp sync unless the db still exists, or the container chain is
+/// still at genesis block (because of a warp sync bug in that case).
 ///
 /// Remember that warp sync doesn't work if a partially synced database already exists, it falls
 /// back to full sync instead. The only exception is if the previous instance of the database was
