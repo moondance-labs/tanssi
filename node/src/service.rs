@@ -16,7 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use tokio_util::sync::CancellationToken;
 #[allow(deprecated)]
 use {
     crate::{
@@ -48,6 +47,7 @@ use {
     },
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     futures::{Stream, StreamExt},
+    nimbus_primitives::NimbusId,
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -79,9 +79,10 @@ use {
         collators::lookahead::{
             self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
         },
-        OrchestratorAuraWorkerAuxData,
+        OnDemandBlockProductionApi, OrchestratorAuraWorkerAuxData, TanssiAuthorityAssignmentApi,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
+    tokio_util::sync::CancellationToken,
 };
 
 mod mocked_relay_keys;
@@ -543,9 +544,8 @@ fn container_log_str(para_id: ParaId) -> String {
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
-    orchestrator_client: Arc<ParachainClient>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
     collator_key: Option<CollatorPair>,
     keystore: KeystorePtr,
     para_id: ParaId,
@@ -638,7 +638,6 @@ pub async fn start_node_impl_container(
         start_consensus_container(
             node_client.clone(),
             node_backend.clone(),
-            orchestrator_client.clone(),
             block_import.clone(),
             prometheus_registry.clone(),
             node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
@@ -686,13 +685,12 @@ fn build_manual_seal_import_queue(
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
-    orchestrator_client: Arc<ParachainClient>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
@@ -704,9 +702,6 @@ fn start_consensus_container(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
-        .expect("start_consensus_container: slot duration should exist");
-
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
         client.clone(),
@@ -726,7 +721,7 @@ fn start_consensus_container(
 
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client;
+    let orchestrator_chain_interface_for_orch = orchestrator_chain_interface.clone();
     let client_for_cidp = client.clone();
     let client_for_hash_provider = client.clone();
 
@@ -783,7 +778,8 @@ fn start_consensus_container(
         },
         get_orchestrator_aux_data: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
-            let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
+            let orchestrator_chain_interface_for_orch =
+                orchestrator_chain_interface_for_orch.clone();
 
             async move {
                 let latest_header =
@@ -800,11 +796,9 @@ fn start_consensus_container(
                     )
                 })?;
 
-                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                let authorities = orchestrator_chain_interface_for_orch
+                    .authorities(latest_header.hash(), para_id)
+                    .await?;
 
                 let authorities = authorities.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
@@ -818,11 +812,9 @@ fn start_consensus_container(
                     latest_header
                 );
 
-                let min_slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                let min_slot_freq = orchestrator_chain_interface_for_orch
+                    .min_slot_freq(latest_header.hash(), para_id)
+                    .await?;
 
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
@@ -840,7 +832,6 @@ fn start_consensus_container(
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
         force_authoring,
         relay_chain_slot_duration,
         proposer,
@@ -877,9 +868,6 @@ fn start_consensus_orchestrator(
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
-        .expect("start_consensus_orchestrator: slot duration should exist");
-
     let proposer = Proposer::new(proposer_factory);
 
     let collator_service = CollatorService::new(
@@ -984,7 +972,7 @@ fn start_consensus_orchestrator(
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
+        // slot_duration,
         relay_chain_slot_duration,
         force_authoring,
         proposer,
@@ -1269,7 +1257,7 @@ struct OrchestratorChainInProcessInterfaceBuilder {
 }
 
 impl OrchestratorChainInProcessInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>> {
         Arc::new(OrchestratorChainInProcessInterface::new(
             self.client,
             self.backend,
@@ -1324,7 +1312,11 @@ where
         + UsageProvider<Block>
         + Sync
         + Send,
+    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>,
+    Client::Api: OnDemandBlockProductionApi<Block, ParaId, Slot>,
 {
+    type AuthorityId = NimbusId;
+
     async fn get_storage_by_key(
         &self,
         orchestrator_parent: PHash,
@@ -1384,5 +1376,45 @@ where
             .finality_notification_stream()
             .map(|notification| notification.header);
         Ok(Box::pin(notification_stream))
+    }
+
+    /// Return the set of authorities assigned to the paraId where
+    /// the first eligible key from the keystore is collating
+    async fn authorities(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<Vec<Self::AuthorityId>>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        let Ok(authorities) = runtime_api.para_id_authorities(orchestrator_parent, para_id) else {
+            return Ok(None);
+        };
+
+        log::info!(
+            "Authorities found for para {:?} are {:?}",
+            para_id,
+            authorities
+        );
+
+        Ok(authorities)
+    }
+
+    /// Returns the minimum slot frequency for this para id.
+    async fn min_slot_freq(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<Slot>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        let Ok(slot_frequency) =
+            runtime_api.parathread_slot_frequency(orchestrator_parent, para_id)
+        else {
+            return Ok(None);
+        };
+
+        log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
+        Ok(slot_frequency.map(|slot_frequency| u64::from(slot_frequency.min).into()))
     }
 }

@@ -33,6 +33,7 @@ use {
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     fs2::FileExt,
     futures::FutureExt,
+    nimbus_primitives::NimbusId,
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig},
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
@@ -63,7 +64,7 @@ use {
 
 pub struct ContainerChainSpawner {
     // Start container chain params
-    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -328,7 +329,6 @@ impl ContainerChainSpawner {
             let (mut container_chain_task_manager, container_chain_client, container_chain_db) =
                 start_node_impl_container(
                     container_chain_cli_config,
-                    orchestrator_client.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface.clone(),
                     collator_key.clone(),

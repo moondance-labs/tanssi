@@ -282,7 +282,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
 
             runner.run_node_until_exit(|_config| async move {
-                let client: Box<dyn OrchestratorChainInterface>;
+                let client: Box<dyn OrchestratorChainInterface<AuthorityId = ()>>;
                 let mut task_manager;
 
                 if cmd.orchestrator_endpoints.is_empty() {
