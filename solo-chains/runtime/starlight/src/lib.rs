@@ -1387,16 +1387,16 @@ impl OnSwap for SwapLeases {
 
 pub struct CurrentSessionIndexGetter;
 
-impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
     /// Returns current session index.
-    fn session_index() -> u32 {
+    fn session_index() -> SessionIndex {
         Session::current_index()
     }
 }
 
 impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
-    type SessionIndex = u32;
+    type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = BeefyId;
     type WeightInfo = ();
@@ -1406,23 +1406,6 @@ parameter_types! {
     // pub const DepositAmount: Balance = 100 * UNIT;
     pub const MaxLengthTokenSymbol: u32 = 255;
 }
-// impl pallet_registrar::Config for Runtime {
-//     type RuntimeEvent = RuntimeEvent;
-//     type RegistrarOrigin = EnsureRoot<AccountId>;
-//     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
-//     type MaxLengthParaIds = MaxLengthParaIds;
-//     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-//     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
-//     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
-//     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
-//     type SessionDelay = ConstU32<2>;
-//     type SessionIndex = u32;
-//     type CurrentSessionIndex = CurrentSessionIndexGetter;
-//     type Currency = Balances;
-//     type DepositAmount = DepositAmount;
-//     type RegistrarHooks = FlashboxRegistrarHooks;
-//     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
-// }
 
 construct_runtime! {
     pub enum Runtime
