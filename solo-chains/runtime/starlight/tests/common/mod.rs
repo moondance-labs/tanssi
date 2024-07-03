@@ -27,7 +27,7 @@ use {
     //     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     //     polkadot_parachain_primitives::primitives::HeadData,
-    //     sp_consensus_aura::AURA_ENGINE_ID,
+    babe_primitives::{BABE_ENGINE_ID, digests::{PreDigest, SecondaryPlainPreDigest},},
     //     sp_consensus_slots::Slot,
     //     sp_core::{Get, Pair},
     sp_runtime::{traits::{Dispatchable,SaturatedConversion,}, BuildStorage, Digest, DigestItem},
@@ -39,7 +39,7 @@ use {
 };
 
 pub use starlight_runtime::{
-    AccountId, Babe, Balance, Balances, Initializer, Runtime, Session, System, TransactionPayment,
+    AccountId, Babe, Balance, Balances, Initializer, Runtime, Session, System, TransactionPayment, CollatorConfiguration
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -72,8 +72,27 @@ pub fn run_to_block(n: u32) {
     );
 
     while System::block_number() < n {
-        let summary = run_block();
+        run_block();
     }
+}
+
+pub fn insert_authorities_and_slot_digests(slot: u64) {
+    let pre_digest = Digest {
+        logs: vec![
+            DigestItem::PreRuntime(
+                BABE_ENGINE_ID,
+                PreDigest::SecondaryPlain(SecondaryPlainPreDigest { slot: slot.into(), authority_index: 42 })
+                    .encode(),
+            ),
+        ],
+    };
+
+    System::reset_events();
+    System::initialize(
+        &(System::block_number() + 1),
+        &System::parent_hash(),
+        &pre_digest,
+    );
 }
 
 // Used to create the next block inherent data
@@ -147,37 +166,16 @@ pub fn start_block() {
         slot = 0;
     }
 
-    // let maybe_mock_inherent = take_new_inherent_data();
-
-    // if let Some(mock_inherent_data) = maybe_mock_inherent {
-    //     set_parachain_inherent_data(mock_inherent_data);
-    // }
-
-    // insert_authorities_and_slot_digests(slot);
+    insert_authorities_and_slot_digests(slot);
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
-    // CollatorAssignment::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
-    // AuthorInherent::on_initialize(System::block_number());
-
-    // `Initializer::on_finalize` needs to run at least one to have
-    // author mapping setup.
-    // let author_id = current_author();
-
-    // let current_issuance = Balances::total_issuance();
-    // InflationRewards::on_initialize(System::block_number());
-    // let new_issuance = Balances::total_issuance();
-
-    // frame_support::storage::unhashed::put(
-    //     &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
-    //     // TODO: this should be 0?
-    //     &(Slot::from(slot), 1),
-    // );
-
-    // pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
-    //     .expect("author inherent to dispatch correctly");
+    println!("current_slot {:?}", Babe::current_slot());
+    println!("current_epoch_start {:?}", Babe::current_epoch_start());
+    println!("epoch_index {:?}", Babe::epoch_index());
+    println!("current_index {:?}", Session::current_index());
 }
 
 pub fn end_block() {
@@ -297,6 +295,7 @@ impl ExtBuilder {
         self
     }
 
+    // Maybe change to with_collators_config?
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
         self
@@ -307,45 +306,15 @@ impl ExtBuilder {
             .build_storage()
             .unwrap();
 
+        pallet_babe::GenesisConfig::<Runtime> { ..Default::default() }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         pallet_balances::GenesisConfig::<Runtime> {
             balances: self.balances,
         }
         .assimilate_storage(&mut t)
         .unwrap();
-
-        // // We need to initialize these pallets first. When initializing pallet-session,
-        // // these values will be taken into account for collator-assignment.
-
-        // pallet_registrar::GenesisConfig::<Runtime> {
-        //     para_ids: self
-        //         .para_ids
-        //         .iter()
-        //         .cloned()
-        //         .map(|registered_para| {
-        //             (registered_para.para_id.into(), registered_para.genesis_data)
-        //         })
-        //         .collect(),
-        // }
-        // .assimilate_storage(&mut t)
-        // .unwrap();
-
-        // pallet_services_payment::GenesisConfig::<Runtime> {
-        //     para_id_credits: self
-        //         .para_ids
-        //         .clone()
-        //         .into_iter()
-        //         .map(|registered_para| {
-        //             (
-        //                 registered_para.para_id.into(),
-        //                 registered_para.block_production_credits,
-        //                 registered_para.collator_assignment_credits,
-        //             )
-        //                 .into()
-        //         })
-        //         .collect(),
-        // }
-        // .assimilate_storage(&mut t)
-        // .unwrap();
 
         pallet_configuration::GenesisConfig::<Runtime> {
             config: self.config,
@@ -354,47 +323,10 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        // if let Some(own_para_id) = self.own_para_id {
-        //     parachain_info::GenesisConfig::<Runtime> {
-        //         parachain_id: own_para_id,
-        //         ..Default::default()
-        //     }
-        //     .assimilate_storage(&mut t)
-        //     .unwrap();
-        // }
-
-        // if !self.collators.is_empty() {
-        //     // We set invulnerables in pallet_invulnerables
-        //     let invulnerables: Vec<AccountId> = self
-        //         .collators
-        //         .clone()
-        //         .into_iter()
-        //         .map(|(account, _balance)| account)
-        //         .collect();
-
-        //     pallet_invulnerables::GenesisConfig::<Runtime> {
-        //         invulnerables: invulnerables.clone(),
-        //     }
-        //     .assimilate_storage(&mut t)
-        //     .unwrap();
-
-        //     // But we also initialize their keys in the session pallet
-        //     let keys: Vec<_> = self
-        //         .collators
-        //         .into_iter()
-        //         .map(|(account, _balance)| {
-        //             let nimbus_id = get_aura_id_from_seed(&account.to_string());
-        //             (
-        //                 account.clone(),
-        //                 account,
-        //                 starlight_runtime::SessionKeys { nimbus: nimbus_id },
-        //             )
-        //         })
-        //         .collect();
-        //     pallet_session::GenesisConfig::<Runtime> { keys }
-        //         .assimilate_storage(&mut t)
-        //         .unwrap();
-        // }
+        pallet_session::GenesisConfig::<Runtime>::default()
+            .assimilate_storage(&mut t)
+            .unwrap();
+        
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
             .unwrap();
