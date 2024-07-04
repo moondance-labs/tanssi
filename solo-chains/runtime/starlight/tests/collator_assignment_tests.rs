@@ -61,6 +61,11 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
             let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
 
+            let key_mapping_session_0 =
+                TanssiAuthorityAssignment::collator_container_chain(0).unwrap();
+
+            println!("KEY MAPPING SESSION 0: {:?}", key_mapping_session_0);
+
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 starlight_runtime::SessionKeys {
@@ -128,6 +133,176 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             assert!(
                 authorities_for_container(1000u32.into())
                     == Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
+            );
+        });
+}
+
+#[test]
+fn test_session_keys_with_authority_assignment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
+
+            let alice_keys_2 = get_authority_keys_from_seed("ALICE2");
+            let bob_keys_2 = get_authority_keys_from_seed("BOB2");
+
+            let key_mapping_session_0 =
+                TanssiAuthorityAssignment::collator_container_chain(0).unwrap();
+            assert_eq!(
+                key_mapping_session_0.container_chains[&1000u32.into()],
+                vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()],
+            );
+
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1000u32.into()],
+                vec![ALICE.into(), BOB.into()],
+            );
+
+            let key_mapping_session_1 =
+                TanssiAuthorityAssignment::collator_container_chain(1).unwrap();
+            assert_eq!(key_mapping_session_1, key_mapping_session_0,);
+            let old_assignment_session_1 =
+                TanssiCollatorAssignment::pending_collator_container_chain().unwrap();
+            assert_eq!(
+                old_assignment_session_1,
+                TanssiCollatorAssignment::collator_container_chain(),
+            );
+
+            let key_mapping_session_2 = TanssiAuthorityAssignment::collator_container_chain(2);
+            assert!(key_mapping_session_2.is_none());
+
+            // Let's check Babe authorities to ensure nothing breaks
+            assert_eq!(
+                authorities(),
+                vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
+            );
+
+            // Change Alice and Bob keys to something different
+            // for now lets change it to alice_keys_2 and bob_keys_2
+            assert_ok!(Session::set_keys(
+                origin_of(ALICE.into()),
+                starlight_runtime::SessionKeys {
+                    babe: alice_keys_2.babe.clone(),
+                    grandpa: alice_keys_2.grandpa.clone(),
+                    para_validator: alice_keys_2.para_validator.clone(),
+                    para_assignment: alice_keys_2.para_assignment.clone(),
+                    authority_discovery: alice_keys_2.authority_discovery.clone(),
+                    beefy: alice_keys_2.beefy.clone(),
+                    nimbus: alice_keys_2.nimbus.clone(),
+                },
+                vec![]
+            ));
+
+            assert_ok!(Session::set_keys(
+                origin_of(BOB.into()),
+                starlight_runtime::SessionKeys {
+                    babe: bob_keys_2.babe.clone(),
+                    grandpa: bob_keys_2.grandpa.clone(),
+                    para_validator: bob_keys_2.para_validator.clone(),
+                    para_assignment: bob_keys_2.para_assignment.clone(),
+                    authority_discovery: bob_keys_2.authority_discovery.clone(),
+                    beefy: bob_keys_2.beefy.clone(),
+                    nimbus: bob_keys_2.nimbus.clone(),
+                },
+                vec![]
+            ));
+
+            run_to_session(1u32);
+            let old_key_mapping_session_1 = key_mapping_session_1;
+
+            // Session 0 got removed
+            let key_mapping_session_0 = TanssiAuthorityAssignment::collator_container_chain(0);
+            assert!(key_mapping_session_0.is_none());
+
+            // The values at session 1 did not change
+            let key_mapping_session_1 =
+                TanssiAuthorityAssignment::collator_container_chain(1).unwrap();
+            assert_eq!(key_mapping_session_1, old_key_mapping_session_1,);
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain(),
+                old_assignment_session_1,
+            );
+
+            // Session 2 uses the new keys
+            let key_mapping_session_2 =
+                TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
+            assert_eq!(
+                key_mapping_session_2.container_chains[&1000u32.into()],
+                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+            );
+            assert_eq!(
+                TanssiCollatorAssignment::pending_collator_container_chain(),
+                None
+            );
+
+            let key_mapping_session_3 = TanssiAuthorityAssignment::collator_container_chain(3);
+            assert!(key_mapping_session_3.is_none());
+
+            // Check Babe authorities again
+            assert_eq!(
+                authorities(),
+                vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
+            );
+
+            run_to_session(2u32);
+
+            // Session 1 got removed
+            let key_mapping_session_1 = TanssiAuthorityAssignment::collator_container_chain(1);
+            assert!(key_mapping_session_1.is_none());
+
+            // Session 2 uses the new keys
+            let key_mapping_session_2 =
+                TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
+            assert_eq!(
+                key_mapping_session_2.container_chains[&1000u32.into()],
+                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+            );
+            assert_eq!(
+                old_assignment_session_1,
+                TanssiCollatorAssignment::collator_container_chain(),
+            );
+
+            // Session 3 uses the new keys
+            let key_mapping_session_3 =
+                TanssiAuthorityAssignment::collator_container_chain(3).unwrap();
+            assert_eq!(
+                key_mapping_session_3.container_chains[&1000u32.into()],
+                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+            );
+            assert_eq!(
+                TanssiCollatorAssignment::pending_collator_container_chain(),
+                None
+            );
+
+            let key_mapping_session_4 = TanssiAuthorityAssignment::collator_container_chain(4);
+            assert!(key_mapping_session_4.is_none());
+
+            // Check Babe authorities for the last time
+            assert_eq!(
+                authorities(),
+                vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
             );
         });
 }
