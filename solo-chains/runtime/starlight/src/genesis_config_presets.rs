@@ -47,7 +47,7 @@ where
 }
 
 /// Helper function to generate stash, controller and session key from seed
-fn get_authority_keys_from_seed(
+pub fn get_authority_keys_from_seed(
     seed: &str,
 ) -> (
     AccountId,
@@ -70,8 +70,7 @@ fn get_authority_keys_from_seed(
         keys.5,
         keys.6,
         get_from_seed::<BeefyId>(seed),
-        get_aura_id_from_seed(seed)
-
+        get_aura_id_from_seed(seed),
     )
 }
 
@@ -139,7 +138,7 @@ fn starlight_session_keys(
         para_assignment,
         authority_discovery,
         beefy,
-        nimbus
+        nimbus,
     }
 }
 
@@ -208,7 +207,7 @@ fn starlight_testnet_genesis(
         AssignmentId,
         AuthorityDiscoveryId,
         BeefyId,
-        nimbus_primitives::NimbusId
+        nimbus_primitives::NimbusId,
     )>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
@@ -280,7 +279,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
         AssignmentId,
         AuthorityDiscoveryId,
         BeefyId,
-        nimbus_primitives::NimbusId
+        nimbus_primitives::NimbusId,
     )> = Vec::from([
         (
             //5EHZkbp22djdbuMFH9qt1DVzSCvqi3zWpj6DAYfANa828oei
@@ -334,7 +333,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
             hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"]
-            .unchecked_into(),
+                .unchecked_into(),
         ),
         (
             //5FPMzsezo1PRxYbVpJMWK7HNbR2kUxidsAAxH4BosHa4wd6S
@@ -360,7 +359,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
             hex!["039d065fe4f9234f0a4f13cc3ae585f2691e9c25afa469618abb6645111f607a53"]
                 .unchecked_into(),
             hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"]
-                .unchecked_into(), 
+                .unchecked_into(),
         ),
         (
             //5DMNx7RoX6d7JQ38NEM7DWRcW2THu92LBYZEWvBRhJeqcWgR

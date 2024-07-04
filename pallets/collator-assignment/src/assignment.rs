@@ -16,6 +16,7 @@
 
 use {
     dp_collator_assignment::AssignedCollators,
+    frame_support::traits::Get,
     sp_std::{
         cmp,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -23,7 +24,6 @@ use {
         mem,
         vec::Vec,
     },
-    frame_support::traits::Get,
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
 };
 

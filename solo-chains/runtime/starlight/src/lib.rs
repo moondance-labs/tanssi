@@ -34,12 +34,11 @@ use {
     pallet_nis::WithMaximumOf,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance, BlockNumber,
-        CandidateEvent, CandidateHash, CommittedCandidateReceipt, CoreIndex, CoreState,
-        DisputeState, ExecutorParams, GroupRotationInfo, Hash, Id as ParaId,
-        InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
-        OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes, SessionInfo,
-        Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
+        slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
+        CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
+        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
+        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
+        SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
@@ -117,7 +116,11 @@ use {
     xcm_builder::PayOverXcm,
 };
 
-pub use {frame_system::Call as SystemCall, pallet_balances::Call as BalancesCall};
+pub use {
+    frame_system::Call as SystemCall,
+    pallet_balances::Call as BalancesCall,
+    primitives::{AccountId, Balance},
+};
 
 /// Constant values used within the runtime.
 use starlight_runtime_constants::{currency::*, fee::*, time::*};
@@ -142,7 +145,7 @@ use {
 #[cfg(test)]
 mod tests;
 
-mod genesis_config_presets;
+pub mod genesis_config_presets;
 mod validator_manager;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -1399,6 +1402,22 @@ impl pallet_invulnerables::Config for Runtime {
     type Currency = Balances;
 }
 
+pub struct CurrentSessionIndexGetter;
+
+impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> SessionIndex {
+        Session::current_index()
+    }
+}
+
+impl pallet_configuration::Config for Runtime {
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = SessionIndex;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type AuthorityId = BeefyId;
+    type WeightInfo = ();
+}
 
 construct_runtime! {
     pub enum Runtime
@@ -1531,10 +1550,11 @@ construct_runtime! {
         Sudo: pallet_sudo = 255,
 
         // FIXME: correct ordering
-        TanssiInitializer: tanssi_initializer = 100,
-        TanssiInvulnerables: pallet_invulnerables = 101,
-        TanssiCollatorAssignment: pallet_collator_assignment = 102,
-        TanssiAuthorityAssignment: pallet_authority_assignment = 103,
+        CollatorConfiguration: pallet_configuration = 100,
+        TanssiInitializer: tanssi_initializer = 101,
+        TanssiInvulnerables: pallet_invulnerables = 102,
+        TanssiCollatorAssignment: pallet_collator_assignment = 103,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 104,
     }
 }
 
@@ -2543,42 +2563,50 @@ sp_api::impl_runtime_apis! {
 pub struct OwnApplySession;
 impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
-        changed: bool,
+        _changed: bool,
         session_index: u32,
         _all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
         _queued: Vec<(AccountId, nimbus_primitives::NimbusId)>,
     ) {
-        use frame_support::traits::OneSessionHandler;
+        // Order is same as in tanssi
+        // 1.
+        // We first initialize Configuration
+        CollatorConfiguration::initializer_on_new_session(&session_index);
+        // 2. Second, registrar
+
+        // 3. AuthorityMapping
+
+        // 4. CollatorAssignment
+        // Unlike in tanssi, where the input to this function are the correct
+        // queued keys & collators, here we get the input refers to the validators
+        // and not the collators. Therefore we need to do a similar thing that
+        // pallet-session does but in this function
+        // This is, get the collators, fetch their respective keys, and queue the
+        // assignment
+
+        // CollatorAssignment
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
-        log::info!("invulnerables are {:?}", invulnerables);
-        let (next_collators, next_identities_changed) = (invulnerables, true);
+        let next_collators = invulnerables;
 
-		// Queue next session keys.
-		let (queued_amalgamated, next_changed) = {
-			// until we are certain there has been a change, iterate the prior
-			// validators along with the current and check for changes
-			let mut changed = next_identities_changed;
+        // Queue next session keys.
+        let queued_amalgamated = next_collators
+            .into_iter()
+            .filter_map(|a| {
+                let k = pallet_session::NextKeys::<Runtime>::get(&a)?;
 
-			let queued_amalgamated = next_collators
-				.into_iter()
-				.filter_map(|a| {
-					let k = pallet_session::NextKeys::<Runtime>::get(&a)?;
-
-					Some((a, k.nimbus))
-				})
-				.collect::<Vec<_>>();
-
-			(queued_amalgamated, changed)
-		};
+                Some((a, k.nimbus))
+            })
+            .collect::<Vec<_>>();
 
         let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
-        log::info!("next_collators_accounts are {:?}", next_collators_accounts);
 
-        // Next: CollatorAssignment
-        let assignments =
-            TanssiCollatorAssignment::initializer_on_new_session(&session_index, next_collators_accounts);
+        let assignments = TanssiCollatorAssignment::initializer_on_new_session(
+            &session_index,
+            next_collators_accounts,
+        );
 
+        // 5. AuthorityAssignment
         let queued_id_to_nimbus_map = queued_amalgamated.iter().cloned().collect();
         TanssiAuthorityAssignment::initializer_on_new_session(
             &session_index,
@@ -2614,7 +2642,6 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
         }
     }
 }
-
 
 // In tests, we ignore the session_index param, so changes to the configuration are instant
 

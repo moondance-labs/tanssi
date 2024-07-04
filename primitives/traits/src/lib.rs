@@ -211,7 +211,7 @@ pub trait ShouldRotateAllCollators<SessionIndex> {
 }
 
 impl<SessionIndex> ShouldRotateAllCollators<SessionIndex> for () {
-    fn should_rotate_all_collators(session_index: SessionIndex) -> bool {
+    fn should_rotate_all_collators(_session_index: SessionIndex) -> bool {
         false
     }
 }
@@ -251,11 +251,11 @@ pub trait RemoveParaIdsWithNoCredits {
 
 impl RemoveParaIdsWithNoCredits for () {
     fn remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
-        currently_assigned: &BTreeSet<ParaId>,
-    ) {}
+        _para_ids: &mut Vec<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
+    ) {
+    }
 }
-
 
 pub trait RelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256>;
