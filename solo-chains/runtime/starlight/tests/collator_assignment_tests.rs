@@ -131,28 +131,3 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             );
         });
 }
-
-#[test]
-fn test_author_collation_aura_change_of_authorities_on_session_2() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 2,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
-            collators_per_container: 2,
-            ..Default::default()
-        })
-        .build()
-        .execute_with(|| {});
-}
