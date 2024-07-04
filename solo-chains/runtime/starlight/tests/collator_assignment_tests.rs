@@ -64,8 +64,6 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             let key_mapping_session_0 =
                 TanssiAuthorityAssignment::collator_container_chain(0).unwrap();
 
-            println!("KEY MAPPING SESSION 0: {:?}", key_mapping_session_0);
-
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 starlight_runtime::SessionKeys {
