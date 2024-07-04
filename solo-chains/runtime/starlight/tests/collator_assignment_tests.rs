@@ -64,13 +64,13 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 starlight_runtime::SessionKeys {
-                    babe: charlie_keys.2.clone(),
-                    grandpa: charlie_keys.3.clone(),
-                    para_validator: charlie_keys.4.clone(),
-                    para_assignment: charlie_keys.5.clone(),
-                    authority_discovery: charlie_keys.6.clone(),
-                    beefy: charlie_keys.7.clone(),
-                    nimbus: charlie_keys.8.clone(),
+                    babe: charlie_keys.babe.clone(),
+                    grandpa: charlie_keys.grandpa.clone(),
+                    para_validator: charlie_keys.para_validator.clone(),
+                    para_assignment: charlie_keys.para_assignment.clone(),
+                    authority_discovery: charlie_keys.authority_discovery.clone(),
+                    beefy: charlie_keys.beefy.clone(),
+                    nimbus: charlie_keys.nimbus.clone(),
                 },
                 vec![]
             ));
@@ -78,13 +78,13 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
                 starlight_runtime::SessionKeys {
-                    babe: dave_keys.2.clone(),
-                    grandpa: dave_keys.3.clone(),
-                    para_validator: dave_keys.4.clone(),
-                    para_assignment: dave_keys.5.clone(),
-                    authority_discovery: dave_keys.6.clone(),
-                    beefy: dave_keys.7.clone(),
-                    nimbus: dave_keys.8.clone(),
+                    babe: dave_keys.babe.clone(),
+                    grandpa: dave_keys.grandpa.clone(),
+                    para_validator: dave_keys.para_validator.clone(),
+                    para_assignment: dave_keys.para_assignment.clone(),
+                    authority_discovery: dave_keys.authority_discovery.clone(),
+                    beefy: dave_keys.beefy.clone(),
+                    nimbus: dave_keys.nimbus.clone(),
                 },
                 vec![]
             ));
@@ -109,25 +109,50 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
 
             assert!(
                 authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.8.clone(), bob_keys.8.clone()])
+                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
 
-            assert!(authorities() == vec![alice_keys.2.clone(), bob_keys.2.clone()]);
+            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.8.clone(), bob_keys.8.clone()])
+                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // Invulnerables should have triggered on new session authorities change
             run_to_session(2u32);
 
-            assert!(authorities() == vec![alice_keys.2.clone(), bob_keys.2.clone()]);
+            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
-                    == Some(vec![charlie_keys.8.clone(), dave_keys.8.clone()])
+                    == Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
             );
         });
+}
+
+#[test]
+fn test_author_collation_aura_change_of_authorities_on_session_2() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {});
 }

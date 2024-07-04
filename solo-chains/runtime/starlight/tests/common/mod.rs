@@ -341,13 +341,13 @@ impl ExtBuilder {
                         account.clone(),
                         account,
                         starlight_runtime::SessionKeys {
-                            babe: authority_keys.2.clone(),
-                            grandpa: authority_keys.3.clone(),
-                            para_validator: authority_keys.4.clone(),
-                            para_assignment: authority_keys.5.clone(),
-                            authority_discovery: authority_keys.6.clone(),
-                            beefy: authority_keys.7.clone(),
-                            nimbus: authority_keys.8.clone(),
+                            babe: authority_keys.babe.clone(),
+                            grandpa: authority_keys.grandpa.clone(),
+                            para_validator: authority_keys.para_validator.clone(),
+                            para_assignment: authority_keys.para_assignment.clone(),
+                            authority_discovery: authority_keys.authority_discovery.clone(),
+                            beefy: authority_keys.beefy.clone(),
+                            nimbus: authority_keys.nimbus.clone(),
                         },
                     )
                 })
@@ -392,13 +392,13 @@ impl ExtBuilder {
                             account.clone(),
                             account,
                             starlight_runtime::SessionKeys {
-                                babe: authority_keys.2.clone(),
-                                grandpa: authority_keys.3.clone(),
-                                para_validator: authority_keys.4.clone(),
-                                para_assignment: authority_keys.5.clone(),
-                                authority_discovery: authority_keys.6.clone(),
-                                beefy: authority_keys.7.clone(),
-                                nimbus: authority_keys.8.clone(),
+                                babe: authority_keys.babe.clone(),
+                                grandpa: authority_keys.grandpa.clone(),
+                                para_validator: authority_keys.para_validator.clone(),
+                                para_assignment: authority_keys.para_assignment.clone(),
+                                authority_discovery: authority_keys.authority_discovery.clone(),
+                                beefy: authority_keys.beefy.clone(),
+                                nimbus: authority_keys.nimbus.clone(),
                             },
                         ))
                     }
