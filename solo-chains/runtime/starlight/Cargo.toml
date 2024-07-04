@@ -79,7 +79,6 @@ pallet-proxy = { workspace = true }
 pallet-ranked-collective = { workspace = true }
 pallet-recovery = { workspace = true }
 pallet-referenda = { workspace = true }
-pallet-registrar = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-session = { workspace = true }
@@ -113,7 +112,15 @@ xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 xcm-fee-payment-runtime-api = { workspace = true }
 
+# Cumulus
+cumulus-primitives-core = { workspace = true }
+
+# Tanssi
 tp-traits = { workspace = true }
+
+pallet-configuration = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
@@ -137,6 +144,7 @@ std = [
 	"binary-merkle-tree/std",
 	"bitvec/std",
 	"block-builder-api/std",
+	"cumulus-primitives-core/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -159,6 +167,7 @@ std = [
 	"pallet-bounties/std",
 	"pallet-child-bounties/std",
 	"pallet-collective/std",
+	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
@@ -178,6 +187,7 @@ std = [
 	"pallet-ranked-collective/std",
 	"pallet-recovery/std",
 	"pallet-referenda/std",
+	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
@@ -230,6 +240,7 @@ std = [
 ]
 no_std = []
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
@@ -240,6 +251,7 @@ runtime-benchmarks = [
 	"pallet-bounties/runtime-benchmarks",
 	"pallet-child-bounties/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
@@ -298,6 +310,7 @@ try-runtime = [
 	"pallet-bounties/try-runtime",
 	"pallet-child-bounties/try-runtime",
 	"pallet-collective/try-runtime",
+	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
