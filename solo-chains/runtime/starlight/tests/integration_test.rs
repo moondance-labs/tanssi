@@ -17,7 +17,12 @@
 #![cfg(test)]
 
 use {
-    common::*, frame_support::assert_ok, sp_std::vec,
+    common::*,
+    frame_support::{assert_ok, BoundedVec},
+    pallet_registrar_runtime_api::{
+        runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
+    },
+    sp_std::vec,
     starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
 };
 
@@ -45,6 +50,172 @@ fn genesis_balances() {
                 Balances::usable_balance(AccountId::from(BOB)) + EXISTENTIAL_DEPOSIT,
                 100_000 * UNIT,
             );
+        });
+}
+
+#[test]
+fn genesis_para_registrar() {
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+        });
+}
+
+#[test]
+fn genesis_para_registrar_deregister() {
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+
+            run_to_block(2);
+            assert_ok!(
+                ContainerRegistrar::deregister(root_origin(), 1002.into()),
+                ()
+            );
+
+            // Pending
+            assert_eq!(
+                ContainerRegistrar::pending_registered_para_ids(),
+                vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
+            );
+
+            run_to_session(1);
+            assert_eq!(
+                ContainerRegistrar::pending_registered_para_ids(),
+                vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
+            );
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+
+            run_to_session(2);
+            assert_eq!(ContainerRegistrar::pending_registered_para_ids(), vec![]);
+            assert_eq!(ContainerRegistrar::registered_para_ids(), vec![1001.into()]);
+        });
+}
+
+#[test]
+fn genesis_para_registrar_runtime_api() {
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+
+            run_to_block(2);
+            assert_ok!(
+                ContainerRegistrar::deregister(root_origin(), 1002.into()),
+                ()
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+
+            run_to_session(1);
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+
+            run_to_session(2);
+            assert_eq!(ContainerRegistrar::registered_para_ids(), vec![1001.into()]);
+            assert_eq!(Runtime::registered_paras(), vec![1001.into()]);
+        });
+}
+
+#[test]
+fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
+    let genesis_data_1001 = empty_genesis_data();
+    let genesis_data_1002 = ContainerChainGenesisData {
+        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: vec![],
+        properties: Default::default(),
+    };
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, genesis_data_1001.clone(), u32::MAX, u32::MAX).into(),
+            (1002, genesis_data_1002.clone(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(
+                ContainerRegistrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+
+            assert_eq!(
+                Runtime::genesis_data(1001.into()).as_ref(),
+                Some(&genesis_data_1001)
+            );
+            assert_eq!(
+                Runtime::genesis_data(1002.into()).as_ref(),
+                Some(&genesis_data_1002)
+            );
+            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
+
+            // This API cannot be used to get the genesis data of the orchestrator chain,
+            // with id 100
+            // TODO: where is that 100 defined?
+            assert_eq!(Runtime::genesis_data(100.into()).as_ref(), None);
+
+            run_to_block(2);
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1002.into()), ());
+
+            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
+
+            let genesis_data_1003 = ContainerChainGenesisData {
+                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: vec![],
+                properties: Default::default(),
+            };
+            assert_ok!(
+                ContainerRegistrar::register(
+                    origin_of(ALICE.into()),
+                    1003.into(),
+                    genesis_data_1003.clone()
+                ),
+                ()
+            );
+
+            // Registered container chains are inserted immediately
+            assert_eq!(
+                Runtime::genesis_data(1003.into()).as_ref(),
+                Some(&genesis_data_1003)
+            );
+
+            // Deregistered container chain genesis data is removed after 2 sessions
+            run_to_session(2u32);
+            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), None);
         });
 }
 

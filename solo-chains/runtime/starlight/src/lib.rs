@@ -34,6 +34,8 @@ use {
     frame_system::EnsureNever,
     pallet_initializer as tanssi_initializer,
     pallet_nis::WithMaximumOf,
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_session::ShouldEndSession,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
         slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
@@ -76,6 +78,7 @@ use {
         prelude::*,
     },
     starlight_runtime_constants::system_parachain::BROKER_ID,
+    tp_traits::{GetSessionContainerChains, Slot, SlotFrequency},
 };
 
 #[cfg(any(feature = "std", test))]
@@ -2419,6 +2422,63 @@ sp_api::impl_runtime_apis! {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
             // have a backtrace here.
             Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
+        }
+    }
+
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+        /// Return the registered para ids
+        fn registered_paras() -> Vec<ParaId> {
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
+
+            let container_chains = ContainerRegistrar::session_container_chains(session_index);
+            let mut para_ids = vec![];
+            para_ids.extend(container_chains.parachains);
+            para_ids.extend(container_chains.parathreads.into_iter().map(|(para_id, _)| para_id));
+
+            para_ids
+        }
+
+        /// Fetch genesis data for this para id
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+            ContainerRegistrar::para_genesis_data(para_id)
+        }
+
+        /// Fetch boot_nodes for this para id
+        fn boot_nodes(_para_id: ParaId) -> Vec<Vec<u8>> {
+            // TODO: uncomment when DataPreservers pallet exists
+            /*DataPreservers::assignments_profiles(para_id)
+                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
+                .map(|profile| profile.url.into())
+                .collect()*/
+            vec![]
+        }
+    }
+
+    impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
+        /// Returns slot frequency for particular para thread. Slot frequency specifies amount of slot
+        /// need to be passed between two parathread blocks. It is expressed as `(min, max)` pair where `min`
+        /// indicates amount of slot must pass before we produce another block and `max` indicates amount of
+        /// blocks before this parathread must produce the block.
+        ///
+        /// Simply put, parathread must produce a block after `min`  but before `(min+max)` slots.
+        ///
+        /// # Returns
+        ///
+        /// * `Some(slot_frequency)`.
+        /// * `None` if the `para_id` is not a parathread.
+        fn parathread_slot_frequency(para_id: ParaId) -> Option<SlotFrequency> {
+            ContainerRegistrar::parathread_params(para_id).map(|params| {
+                params.slot_frequency
+            })
         }
     }
 
