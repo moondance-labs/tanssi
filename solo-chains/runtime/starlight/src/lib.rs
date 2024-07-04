@@ -1415,7 +1415,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = BeefyId;
+    type AllowEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();
 }
 
@@ -2628,6 +2628,7 @@ impl tanssi_initializer::Config for Runtime {
     type SessionHandler = OwnApplySession;
 }
 
+use tp_traits::SessionContainerChains;
 pub struct ContainerChainsGetter;
 
 impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
@@ -2643,35 +2644,9 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     }
 }
 
-// In tests, we ignore the session_index param, so changes to the configuration are instant
-
-pub struct HostConfigurationGetter;
-use tp_traits::SessionContainerChains;
-impl tp_traits::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn max_collators(_session_index: u32) -> u32 {
-        unimplemented!()
-    }
-
-    fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
-        0u32
-    }
-
-    fn max_collators_for_orchestrator(_session_index: u32) -> u32 {
-        0u32
-    }
-
-    fn collators_per_container(_session_index: u32) -> u32 {
-        1u32
-    }
-
-    fn collators_per_parathread(_session_index: u32) -> u32 {
-        1u32
-    }
-}
-
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type HostConfiguration = HostConfigurationGetter;
+    type HostConfiguration = CollatorConfiguration;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
     type SelfParaId = MockParaId;
@@ -2689,6 +2664,10 @@ impl pallet_collator_assignment::Config for Runtime {
 impl pallet_authority_assignment::Config for Runtime {
     type SessionIndex = u32;
     type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+parameter_types! {
+    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

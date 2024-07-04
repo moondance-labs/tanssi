@@ -24,6 +24,7 @@ use {
     },
     cumulus_primitives_core::ParaId,
     frame_support::traits::{OnFinalize, OnInitialize},
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
@@ -32,7 +33,8 @@ use {
 
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Balances,
-    CollatorConfiguration, Initializer, Runtime, Session, System, TransactionPayment,
+    CollatorConfiguration, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
+    TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -42,6 +44,32 @@ pub fn session_to_block(n: u32) -> u32 {
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
     block_number + 1
+}
+
+pub fn authorities() -> Vec<babe_primitives::AuthorityId> {
+    let session_index = Session::current_index();
+
+    Babe::authorities()
+        .iter()
+        .map(|(key, weight)| key.clone())
+        .collect()
+}
+
+pub fn authorities_for_container(para_id: ParaId) -> Option<Vec<NimbusId>> {
+    let session_index = Session::current_index();
+
+    TanssiAuthorityAssignment::collator_container_chain(session_index)
+        .expect("authorities should be set")
+        .container_chains
+        .get(&para_id)
+        .cloned()
+}
+
+pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
+    TanssiCollatorAssignment::collator_container_chain()
+        .container_chains
+        .get(&para_id)
+        .cloned()
 }
 
 pub fn run_to_session(n: u32) {
@@ -301,9 +329,11 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        let mut keys: Vec<_> = Vec::new();
         if !self.validators.is_empty() {
-            let keys: Vec<_> = self
+            let validator_keys: Vec<_> = self
                 .validators
+                .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
                     let authority_keys = get_authority_keys_from_seed(&account.to_string());
@@ -317,14 +347,69 @@ impl ExtBuilder {
                             para_assignment: authority_keys.5.clone(),
                             authority_discovery: authority_keys.6.clone(),
                             beefy: authority_keys.7.clone(),
+                            nimbus: authority_keys.8.clone(),
                         },
                     )
                 })
                 .collect();
-            pallet_session::GenesisConfig::<Runtime> { keys }
-                .assimilate_storage(&mut t)
-                .unwrap();
+            keys.extend(validator_keys)
         }
+
+        if !self.collators.is_empty() {
+            // We set invulnerables in pallet_invulnerables
+            let invulnerables: Vec<AccountId> = self
+                .collators
+                .clone()
+                .into_iter()
+                .map(|(account, _balance)| account)
+                .collect();
+
+            pallet_invulnerables::GenesisConfig::<Runtime> {
+                invulnerables: invulnerables.clone(),
+            }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+            // But we also initialize their keys in the session pallet
+            // We discard those that had the key initialized already
+            // from the validator list
+            // in other words, for testing purposes we allow to inject a validator account
+            // in the collator list
+            let validator_unique_accounts: Vec<_> = self
+                .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect();
+            let collator_keys: Vec<_> = self
+                .collators
+                .into_iter()
+                .filter_map(|(account, _balance)| {
+                    if validator_unique_accounts.contains(&account) {
+                        None
+                    } else {
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                        Some((
+                            account.clone(),
+                            account,
+                            starlight_runtime::SessionKeys {
+                                babe: authority_keys.2.clone(),
+                                grandpa: authority_keys.3.clone(),
+                                para_validator: authority_keys.4.clone(),
+                                para_assignment: authority_keys.5.clone(),
+                                authority_discovery: authority_keys.6.clone(),
+                                beefy: authority_keys.7.clone(),
+                                nimbus: authority_keys.8.clone(),
+                            },
+                        ))
+                    }
+                })
+                .collect();
+            keys.extend(collator_keys)
+        }
+
+        pallet_session::GenesisConfig::<Runtime> { keys }
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
