@@ -2698,7 +2698,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // We first initialize Configuration
         CollatorConfiguration::initializer_on_new_session(&session_index);
         // Next: Registrar
-        Registrar::initializer_on_new_session(&session_index);
+        ContainerRegistrar::initializer_on_new_session(&session_index);
         // // Next: AuthorityMapping
         // AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
 
