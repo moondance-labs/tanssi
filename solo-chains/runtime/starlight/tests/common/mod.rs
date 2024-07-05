@@ -32,7 +32,7 @@ use {
 };
 
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Initializer,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa, Initializer,
     Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
     TransactionPayment,
 };
@@ -46,10 +46,15 @@ pub fn session_to_block(n: u32) -> u32 {
     block_number + 1
 }
 
-pub fn authorities() -> Vec<babe_primitives::AuthorityId> {
-    let session_index = Session::current_index();
-
+pub fn babe_authorities() -> Vec<babe_primitives::AuthorityId> {
     Babe::authorities()
+        .iter()
+        .map(|(key, _)| key.clone())
+        .collect()
+}
+
+pub fn grandpa_authorities() -> Vec<pallet_grandpa::AuthorityId> {
+    Grandpa::grandpa_authorities()
         .iter()
         .map(|(key, _)| key.clone())
         .collect()
@@ -181,6 +186,7 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
+    Grandpa::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());

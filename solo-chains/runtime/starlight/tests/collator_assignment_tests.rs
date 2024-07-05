@@ -115,7 +115,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
 
-            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
+            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
                     == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
@@ -124,7 +124,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Invulnerables should have triggered on new session authorities change
             run_to_session(2u32);
 
-            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
+            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
                     == Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
@@ -191,7 +191,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Let's check Babe authorities to ensure nothing breaks
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -258,7 +258,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Check Babe authorities again
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -297,7 +297,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Check Babe authorities for the last time
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
             );
         });

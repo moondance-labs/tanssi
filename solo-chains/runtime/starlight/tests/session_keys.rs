@@ -16,7 +16,11 @@
 
 #![cfg(test)]
 
-use {crate::common::*, frame_support::{assert_ok, assert_noop}, sp_std::vec, starlight_runtime::Sudo};
+use {
+    crate::common::*,
+    frame_support::{assert_noop, assert_ok},
+    sp_std::vec,
+};
 
 mod common;
 const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -31,43 +35,57 @@ fn session_key_changes_are_reflected_after_two_sessions() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_sudo(AccountId::from(ALICE))
         .build()
         .execute_with(|| {
             run_to_block(2);
-            // Alice should be able to execute this extrinsic
-            assert_ok!(Sudo::sudo(
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
+
+            // let's assert that session keys in all pallets are this
+            // Babe
+            assert!(babe_authorities().contains(&alice_keys.babe.clone()));
+            assert!(grandpa_authorities().contains(&alice_keys.grandpa.clone()));
+            assert!(!babe_authorities().contains(&dave_keys.babe.clone()));
+            assert!(!grandpa_authorities().contains(&dave_keys.grandpa.clone()));
+
+            assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                Box::new(
-                    pallet_sudo::Call::set_key {
-                        new: AccountId::from(BOB).into()
-                    }
-                    .into()
-                )
+                starlight_runtime::SessionKeys {
+                    babe: dave_keys.babe.clone(),
+                    grandpa: dave_keys.grandpa.clone(),
+                    para_validator: dave_keys.para_validator.clone(),
+                    para_assignment: dave_keys.para_assignment.clone(),
+                    authority_discovery: dave_keys.authority_discovery.clone(),
+                    beefy: dave_keys.beefy.clone(),
+                    nimbus: dave_keys.nimbus.clone(),
+                },
+                vec![]
             ));
 
-            // Now Bob should be the sudo account. Trying again with Alice should not work
-            assert_noop!(
-                Sudo::sudo(
-                    origin_of(ALICE.into()),
-                    Box::new(
-                        pallet_sudo::Call::set_key {
-                            new: AccountId::from(BOB).into()
-                        }
-                        .into()
-                    )
-                ),
-                pallet_sudo::Error::<Runtime>::RequireSudo
-            );
+            // In session one keys are not yet set
+            run_to_session(1u32);
+            assert!(babe_authorities().contains(&alice_keys.babe.clone()));
+            assert!(grandpa_authorities().contains(&alice_keys.grandpa.clone()));
+            assert!(!babe_authorities().contains(&dave_keys.babe.clone()));
+            assert!(!grandpa_authorities().contains(&dave_keys.grandpa.clone()));
 
-            assert_ok!(Sudo::sudo(
-                origin_of(BOB.into()),
-                Box::new(
-                    pallet_sudo::Call::set_key {
-                        new: AccountId::from(ALICE).into()
-                    }
-                    .into()
-                )
-            ));
+            // In session  2 they should be set
+            run_to_session(2u32);
+
+            // While Babe changes are applied immediately (on_initialize)
+            // Grandpa changes are applied on-finalize
+            // Our tests only stop at on_initialize of the target block,
+            // thus we need to create one more block
+            assert!(babe_authorities().contains(&dave_keys.babe.clone()));
+            assert!(!babe_authorities().contains(&alice_keys.babe.clone()));
+            assert!(grandpa_authorities().contains(&alice_keys.grandpa.clone()));
+            assert!(!grandpa_authorities().contains(&dave_keys.grandpa.clone()));
+
+            let block_number = System::block_number();
+            run_to_block(block_number +1);
+            assert!(babe_authorities().contains(&dave_keys.babe.clone()));
+            assert!(!babe_authorities().contains(&alice_keys.babe.clone()));
+            assert!(grandpa_authorities().contains(&dave_keys.grandpa.clone()));
+            assert!(!grandpa_authorities().contains(&alice_keys.grandpa.clone()));
         });
 }

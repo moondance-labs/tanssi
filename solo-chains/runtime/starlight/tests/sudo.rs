@@ -16,7 +16,12 @@
 
 #![cfg(test)]
 
-use {crate::common::*, frame_support::{assert_ok, assert_noop}, sp_std::vec, starlight_runtime::Sudo};
+use {
+    crate::common::*,
+    frame_support::{assert_noop, assert_ok},
+    sp_std::vec,
+    starlight_runtime::Sudo,
+};
 
 mod common;
 const UNIT: Balance = 1_000_000_000_000_000_000;
