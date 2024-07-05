@@ -32,9 +32,9 @@ use {
 };
 
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Balances,
-    CollatorConfiguration, ContainerRegistrar, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
-    TanssiCollatorAssignment, TransactionPayment,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Initializer,
+    Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    TransactionPayment,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -51,7 +51,7 @@ pub fn authorities() -> Vec<babe_primitives::AuthorityId> {
 
     Babe::authorities()
         .iter()
-        .map(|(key, weight)| key.clone())
+        .map(|(key, _)| key.clone())
         .collect()
 }
 

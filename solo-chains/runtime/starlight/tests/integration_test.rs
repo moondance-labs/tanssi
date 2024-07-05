@@ -23,6 +23,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     sp_std::vec,
+    starlight_runtime::{Balances, CollatorConfiguration, ContainerRegistrar},
     starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
 };
 

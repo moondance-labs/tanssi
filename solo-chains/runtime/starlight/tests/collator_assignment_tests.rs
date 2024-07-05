@@ -17,11 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::common::*,
-    frame_support::assert_ok,
-    sp_std::vec,
-    starlight_runtime::{genesis_config_presets::get_aura_id_from_seed, TanssiInvulnerables},
-    starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
+    crate::common::*, frame_support::assert_ok, sp_std::vec, starlight_runtime::TanssiInvulnerables,
 };
 
 mod common;
@@ -49,6 +45,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             collators_per_container: 2,
             ..Default::default()
         })
+        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -156,6 +153,7 @@ fn test_session_keys_with_authority_assignment() {
             collators_per_container: 2,
             ..Default::default()
         })
+        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
         .build()
         .execute_with(|| {
             run_to_block(2);
