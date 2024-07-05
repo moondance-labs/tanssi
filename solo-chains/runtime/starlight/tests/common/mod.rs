@@ -32,8 +32,8 @@ use {
 };
 
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa, Initializer,
-    Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
+    Initializer, Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
     TransactionPayment,
 };
 
@@ -256,6 +256,7 @@ pub struct ExtBuilder {
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
     own_para_id: Option<ParaId>,
+    next_free_para_id: ParaId,
 }
 
 impl Default for ExtBuilder {
@@ -275,6 +276,7 @@ impl Default for ExtBuilder {
             para_ids: Default::default(),
             config: default_config(),
             own_para_id: Default::default(),
+            next_free_para_id: Default::default(),
         }
     }
 }
@@ -311,6 +313,12 @@ impl ExtBuilder {
         self
     }
 
+    // Maybe change to with_collators_config?
+    pub fn with_next_free_para_id(mut self, para_id: ParaId) -> Self {
+        self.next_free_para_id = para_id;
+        self
+    }
+
     pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::<Runtime>::default()
             .build_storage()
@@ -340,6 +348,13 @@ impl ExtBuilder {
                     (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        runtime_common::paras_registrar::GenesisConfig::<Runtime> {
+            next_free_para_id: self.next_free_para_id,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();

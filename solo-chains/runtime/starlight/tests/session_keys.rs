@@ -82,7 +82,7 @@ fn session_key_changes_are_reflected_after_two_sessions() {
             assert!(!grandpa_authorities().contains(&dave_keys.grandpa.clone()));
 
             let block_number = System::block_number();
-            run_to_block(block_number +1);
+            run_to_block(block_number + 1);
             assert!(babe_authorities().contains(&dave_keys.babe.clone()));
             assert!(!babe_authorities().contains(&alice_keys.babe.clone()));
             assert!(grandpa_authorities().contains(&dave_keys.grandpa.clone()));
