@@ -33,7 +33,7 @@ use {
 
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Balances,
-    CollatorConfiguration, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
+    CollatorConfiguration, ContainerRegistrar, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
 
@@ -322,6 +322,24 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        // We need to initialize these pallets first. When initializing pallet-session,
+        // these values will be taken into account for collator-assignment.
+
+        pallet_registrar::GenesisConfig::<Runtime> {
+            para_ids: self
+                .para_ids
+                .iter()
+                .cloned()
+                .map(|registered_para| {
+                    (registered_para.para_id.into(), registered_para.genesis_data)
+                })
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        // TODO: add here pallet_services_payment::GenesisConfig
+
         pallet_configuration::GenesisConfig::<Runtime> {
             config: self.config,
             ..Default::default()
@@ -439,6 +457,17 @@ pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::Ru
 
 pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
+}
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: Default::default(),
+        properties: Default::default(),
+    }
 }
 
 pub fn current_slot() -> u64 {
