@@ -46,20 +46,19 @@ use {
     xcm_emulator::{Chain, RelayChain},
 };
 
-pub(crate) const PARATHREAD_ID: u32 = 3333;
-pub(crate) const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
-pub(crate) const BUY_EXECUTION_COST: u128 =
-    dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
+pub const PARATHREAD_ID: u32 = 3333;
+pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
+pub const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-pub(crate) const BUY_EXECUTION_REFUND: u128 = 3334777;
+pub const BUY_EXECUTION_REFUND: u128 = 3334777;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-pub(crate) const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
+pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
 
-pub(crate) const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
+pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
-pub(crate) fn assert_relay_order_event_not_emitted() {
+pub fn assert_relay_order_event_not_emitted() {
     type RuntimeEvent = <Rococo as Chain>::RuntimeEvent;
 
     let events = <Rococo as Chain>::events();
@@ -75,7 +74,7 @@ pub(crate) fn assert_relay_order_event_not_emitted() {
     }
 }
 
-pub(crate) fn assert_xcm_notification_event_not_emitted() {
+pub fn assert_xcm_notification_event_not_emitted() {
     type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
 
     let events = <Dancebox as Chain>::events();
@@ -91,7 +90,7 @@ pub(crate) fn assert_xcm_notification_event_not_emitted() {
     }
 }
 
-pub(crate) fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
+pub fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
     type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
 
     let events = <Dancebox as Chain>::events();
@@ -115,19 +114,19 @@ pub(crate) fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
     );
 }
 
-pub(crate) fn assert_query_response_success(para_id: ParaId, query_id: QueryId) {
+pub fn assert_query_response_success(para_id: ParaId, query_id: QueryId) {
     assert_query_response(para_id, query_id, true, true);
 }
 
-pub(crate) fn assert_query_response_failure(para_id: ParaId, query_id: QueryId) {
+pub fn assert_query_response_failure(para_id: ParaId, query_id: QueryId) {
     assert_query_response(para_id, query_id, true, false);
 }
 
-pub(crate) fn assert_query_response_not_received(para_id: ParaId, query_id: QueryId) {
+pub fn assert_query_response_not_received(para_id: ParaId, query_id: QueryId) {
     assert_query_response(para_id, query_id, false, false);
 }
 
-pub(crate) fn assert_query_response(
+pub fn assert_query_response(
     para_id: ParaId,
     query_id: QueryId,
     response_received: bool,
@@ -177,7 +176,7 @@ pub(crate) fn assert_query_response(
 
 /// Get parathread tank address in relay chain. This is derived from the Dancebox para id and the
 /// parathread para id.
-pub(crate) fn get_parathread_tank_relay_address() -> AccountId32 {
+pub fn get_parathread_tank_relay_address() -> AccountId32 {
     Dancebox::execute_with(|| {
         let parathread_tank_multilocation = XcmCoreBuyer::relay_relative_multilocation(
             XcmCoreBuyer::interior_multilocation(PARATHREAD_ID.into()),
@@ -189,7 +188,7 @@ pub(crate) fn get_parathread_tank_relay_address() -> AccountId32 {
     })
 }
 
-pub(crate) fn get_on_demand_base_fee() -> u128 {
+pub fn get_on_demand_base_fee() -> u128 {
     Rococo::execute_with(|| {
         let config = configuration::ActiveConfig::<<Rococo as Chain>::Runtime>::get();
 
@@ -197,7 +196,7 @@ pub(crate) fn get_on_demand_base_fee() -> u128 {
     })
 }
 
-pub(crate) fn set_on_demand_base_fee(on_demand_base_fee: u128) {
+pub fn set_on_demand_base_fee(on_demand_base_fee: u128) {
     Rococo::execute_with(|| {
         let mut config = configuration::ActiveConfig::<<Rococo as Chain>::Runtime>::get();
         config.scheduler_params.on_demand_base_fee = on_demand_base_fee;
@@ -210,7 +209,7 @@ pub(crate) fn set_on_demand_base_fee(on_demand_base_fee: u128) {
 /// Each test has a different value of
 /// * tank_account_balance: the balance of the parachain tank account in the relay chain
 /// * spot_price: the price of a core
-pub(crate) fn do_test(
+pub fn do_test(
     tank_account_balance: u128,
     set_max_core_price: Option<u128>,
     is_forced: bool,
