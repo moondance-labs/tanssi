@@ -2675,7 +2675,7 @@ export default {
             },
         },
     },
-    /** Lookup293: tp_container_chain_genesis_data::ContainerChainGenesisData<MaxLengthTokenSymbol> */
+    /** Lookup293: dp_container_chain_genesis_data::ContainerChainGenesisData */
     TpContainerChainGenesisDataContainerChainGenesisData: {
         storage: "Vec<TpContainerChainGenesisDataContainerChainGenesisDataItem>",
         name: "Bytes",
@@ -2684,17 +2684,17 @@ export default {
         extensions: "Bytes",
         properties: "TpContainerChainGenesisDataProperties",
     },
-    /** Lookup295: tp_container_chain_genesis_data::ContainerChainGenesisDataItem */
+    /** Lookup295: dp_container_chain_genesis_data::ContainerChainGenesisDataItem */
     TpContainerChainGenesisDataContainerChainGenesisDataItem: {
         key: "Bytes",
         value: "Bytes",
     },
-    /** Lookup297: tp_container_chain_genesis_data::Properties<MaxLengthTokenSymbol> */
+    /** Lookup297: dp_container_chain_genesis_data::Properties<MaxLengthTokenSymbol> */
     TpContainerChainGenesisDataProperties: {
         tokenMetadata: "TpContainerChainGenesisDataTokenMetadata",
         isEthereum: "bool",
     },
-    /** Lookup298: tp_container_chain_genesis_data::TokenMetadata<MaxLengthTokenSymbol> */
+    /** Lookup298: dp_container_chain_genesis_data::TokenMetadata<MaxLengthTokenSymbol> */
     TpContainerChainGenesisDataTokenMetadata: {
         tokenSymbol: "Bytes",
         ss58Format: "u32",

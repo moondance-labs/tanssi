@@ -282,7 +282,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
 
             runner.run_node_until_exit(|_config| async move {
-                let client: Box<dyn OrchestratorChainInterface<AuthorityId = ()>>;
+                let client: Box<dyn OrchestratorChainInterface<nimbus_primitives::NimbusId>>;
                 let mut task_manager;
 
                 if cmd.orchestrator_endpoints.is_empty() {
@@ -291,10 +291,10 @@ pub fn run() -> Result<()> {
                     task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
                         .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
-                    client = dc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
-                        cmd.orchestrator_endpoints.clone(),
-                        &mut task_manager,
-                        None,
+                    client = tc_orchestrator_chain_rpc_interface::create_client_and_start_worker::<
+                        nimbus_primitives::NimbusId,
+                    >(
+                        cmd.orchestrator_endpoints.clone(), &mut task_manager, None
                     )
                     .await
                     .map(Box::new)

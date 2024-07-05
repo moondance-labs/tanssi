@@ -40,11 +40,12 @@ pallet-configuration = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
+tc-consensus = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
-tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }
-tc-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+dp-core = { workspace = true }
 
 
 # Nimbus

@@ -31,12 +31,12 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
+    dp_core::Hash as PHash,
     fs2::FileExt,
     futures::FutureExt,
     nimbus_primitives::NimbusId,
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig},
     pallet_author_noting_runtime_api::AuthorNotingApi,
-    pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
@@ -62,10 +62,10 @@ use {
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
 
-pub struct ContainerChainSpawner {
+pub struct ContainerChainSpawner<FSyncMode> {
     // Start container chain params
-    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
-    pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    pub orchestrator_block_hash: PHash,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,
@@ -76,6 +76,7 @@ pub struct ContainerChainSpawner {
     pub orchestrator_para_id: ParaId,
     pub validator: bool,
     pub spawn_handle: SpawnTaskHandle,
+    pub select_sync_mode: FSyncMode,
 
     // State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -125,7 +126,11 @@ pub enum CcSpawnMsg {
     },
 }
 
-impl ContainerChainSpawner {
+impl<FSyncMode> ContainerChainSpawner<FSyncMode>
+where
+    FSyncMode:
+        Send + Sync + Clone + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>) + 'static,
+{
     /// Try to start a new container chain. In case of an error, this does not stop the node, and
     /// the container chain will be attempted to spawn again when the collator is reassigned to it.
     #[must_use]
@@ -136,7 +141,6 @@ impl ContainerChainSpawner {
     ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         let (
             orchestrator_chain_interface,
-            orchestrator_client,
             mut container_chain_cli,
             tokio_handle,
             chain_type,
@@ -148,9 +152,9 @@ impl ContainerChainSpawner {
             validator,
             spawn_handle,
             state,
+            select_sync_mode,
         ) = (
             self.orchestrator_chain_interface.clone(),
-            self.orchestrator_client.clone(),
             self.container_chain_cli.clone(),
             self.tokio_handle.clone(),
             self.chain_type.clone(),
@@ -162,8 +166,11 @@ impl ContainerChainSpawner {
             self.validator,
             self.spawn_handle.clone(),
             self.state.clone(),
+            self.select_sync_mode.clone(),
         );
         let state2 = state.clone();
+
+        let orchestrator_block_hash = self.orchestrator_block_hash;
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
             // Preload genesis data from orchestrator chain storage.
@@ -172,21 +179,21 @@ impl ContainerChainSpawner {
 
             // TODO: the orchestrator chain node may not be fully synced yet,
             // in that case we will be reading an old state.
-            let orchestrator_chain_info = orchestrator_client.chain_info();
-            log::info!(
-                "Reading container chain genesis data from orchestrator chain at block #{} {}",
-                orchestrator_chain_info.best_number,
-                orchestrator_chain_info.best_hash,
-            );
-            let orchestrator_runtime_api = orchestrator_client.runtime_api();
+            // let orchestrator_chain_info = orchestrator_client.chain_info();
+            // log::info!(
+            //     "Reading container chain genesis data from orchestrator chain at block #{} {}",
+            //     orchestrator_chain_info.best_number,
+            //     orchestrator_chain_info.best_hash,
+            // );
 
             log::info!(
                 "Detected assignment for container chain {}",
                 container_chain_para_id
             );
 
-            let genesis_data = orchestrator_runtime_api
-                .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
+            let genesis_data = orchestrator_chain_interface
+                .genesis_data(orchestrator_block_hash, container_chain_para_id)
+                .await
                 .map_err(|e| format!("Failed to call genesis_data runtime api: {}", e))?
                 .ok_or_else(|| {
                     format!(
@@ -195,8 +202,9 @@ impl ContainerChainSpawner {
                     )
                 })?;
 
-            let boot_nodes_raw = orchestrator_runtime_api
-                .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
+            let boot_nodes_raw = orchestrator_chain_interface
+                .boot_nodes(orchestrator_block_hash, container_chain_para_id)
+                .await
                 .map_err(|e| format!("Failed to call boot_nodes runtime api: {}", e))?;
             if boot_nodes_raw.is_empty() {
                 log::warn!(
@@ -282,11 +290,13 @@ impl ContainerChainSpawner {
                 open_and_maybe_delete_db(
                     container_chain_cli_config,
                     &db_path,
-                    &orchestrator_client,
+                    &orchestrator_chain_interface,
+                    orchestrator_block_hash,
                     container_chain_para_id,
                     &container_chain_cli,
                     container_chain_cli.base.keep_db,
-                )?;
+                )
+                .await?;
                 // Wait here to for the partial components created in`open_and_maybe_delete_db` to close.
                 // Dropping is not enough because there is some background process that keeps the database open,
                 // so we check the paritydb lock file directly.
@@ -308,11 +318,8 @@ impl ContainerChainSpawner {
             // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
             // or the block number is 0 (because of a warp sync bug in that case).
             let db_still_exists = db_path.exists();
-            container_chain_cli.base.base.network_params.sync = select_sync_mode(
-                db_still_exists,
-                &orchestrator_client,
-                container_chain_para_id,
-            )?;
+            container_chain_cli.base.base.network_params.sync =
+                select_sync_mode(db_still_exists, container_chain_para_id)?;
             log::info!(
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
@@ -677,7 +684,7 @@ fn handle_update_assignment_state_change(
 /// Select `SyncMode` to use for a container chain.
 /// We want to use warp sync unless the db still exists, or the block number is 0 (because of a warp sync bug in that case).
 /// The reason is that warp sync doesn't work if a database already exists, it falls back to full sync instead.
-fn select_sync_mode(
+pub fn select_sync_mode_based_on_api(
     db_exists: bool,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
@@ -723,10 +730,11 @@ fn select_sync_mode(
 /// give the database enough time to close.
 // TODO: instead of waiting, we could also return Weak references to the components `temp_cli.backend`
 // and `temp_cli.client`, and then the caller would only need to check if the reference counts are 0.
-fn open_and_maybe_delete_db(
+async fn open_and_maybe_delete_db<AuthorityId>(
     container_chain_cli_config: sc_service::Configuration,
     db_path: &Path,
-    orchestrator_client: &Arc<ParachainClient>,
+    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface<AuthorityId>>,
+    orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
@@ -738,11 +746,12 @@ fn open_and_maybe_delete_db(
         // Get latest block number from the container chain client
         let last_container_block_temp = temp_cli.client.chain_info().best_number;
 
-        let orchestrator_runtime_api = orchestrator_client.runtime_api();
-        let orchestrator_chain_info = orchestrator_client.chain_info();
+        // let orchestrator_runtime_api = orchestrator_client.runtime_api();
+        // let orchestrator_chain_info = orchestrator_client.chain_info();
         // Get the container chain's latest block from orchestrator chain and compare with client's one
-        let last_container_block_from_orchestrator = orchestrator_runtime_api
-            .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+        let last_container_block_from_orchestrator = orchestrator_chain_interface
+            .latest_block_number(orchestrator_block_hash, container_chain_para_id)
+            .await
             .unwrap_or_default();
 
         let max_block_diff_allowed = 100u32;

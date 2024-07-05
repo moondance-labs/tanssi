@@ -44,6 +44,7 @@ pub use pallet::*;
 
 use {
     dp_chain_state_snapshot::GenericStateProof,
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
         pallet_prelude::*,
         traits::{Currency, EnsureOriginWithArg, ReservableCurrency},
@@ -57,7 +58,6 @@ use {
         Saturating,
     },
     sp_std::{collections::btree_set::BTreeSet, prelude::*},
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         ParathreadParams as ParathreadParamsTy, RelayStorageRootProvider, SessionContainerChains,
@@ -77,7 +77,8 @@ pub mod pallet {
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         /// Para ids
-        pub para_ids: Vec<(ParaId, ContainerChainGenesisData<T::MaxLengthTokenSymbol>)>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
+        pub _phantom: PhantomData<T>,
     }
 
     #[pallet::genesis_build]
@@ -180,13 +181,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn para_genesis_data)]
-    pub type ParaGenesisData<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
-        OptionQuery,
-    >;
+    pub type ParaGenesisData<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_verification)]
@@ -420,7 +416,7 @@ pub mod pallet {
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
-            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::do_register(account, para_id, genesis_data)?;
@@ -526,7 +522,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             slot_frequency: SlotFrequency,
-            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::do_register(account, para_id, genesis_data)?;
@@ -593,7 +589,7 @@ pub mod pallet {
             relay_proof_block_number: u32,
             relay_storage_proof: sp_trie::StorageProof,
             manager_signature: cumulus_primitives_core::relay_chain::Signature,
-            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
             let relay_storage_root =
@@ -756,7 +752,7 @@ pub mod pallet {
         fn do_register(
             account: T::AccountId,
             para_id: ParaId,
-            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let deposit = T::DepositAmount::get();
 

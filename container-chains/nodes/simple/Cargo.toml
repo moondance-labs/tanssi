@@ -27,8 +27,8 @@ url = { workspace = true }
 
 # Dancekit
 dc-orchestrator-chain-interface = { workspace = true }
-dc-orchestrator-chain-rpc-interface = { workspace = true }
 dp-core = { workspace = true }
+tc-orchestrator-chain-rpc-interface = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }

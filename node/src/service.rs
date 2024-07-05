@@ -20,7 +20,9 @@
 use {
     crate::{
         cli::ContainerChainCli,
-        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
+        container_chain_spawner::{
+            select_sync_mode_based_on_api, CcSpawnMsg, ContainerChainSpawner,
+        },
     },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -43,14 +45,17 @@ use {
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash, PHeader,
+        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
+        OrchestratorChainResult, PHash, PHeader,
     },
+    dp_core::AccountId,
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     futures::{Stream, StreamExt},
     nimbus_primitives::NimbusId,
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
+    pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     parity_scale_codec::Encode,
     polkadot_cli::ProvideRuntimeApi,
@@ -496,9 +501,12 @@ async fn start_node_impl(
         // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = node_builder.client.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
+
+        let orchestrator_block_hash = orchestrator_client.chain_info().best_hash;
+
         let container_chain_spawner = ContainerChainSpawner {
             orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
-            orchestrator_client,
+            orchestrator_block_hash,
             container_chain_cli,
             tokio_handle,
             chain_type,
@@ -512,6 +520,9 @@ async fn start_node_impl(
             state: Default::default(),
             collate_on_tanssi,
             collation_cancellation_constructs: None,
+            select_sync_mode: move |db_exists, para_id| {
+                select_sync_mode_based_on_api(db_exists, &orchestrator_client, para_id)
+            },
         };
         let state = container_chain_spawner.state.clone();
 
@@ -545,7 +556,7 @@ fn container_log_str(para_id: ParaId) -> String {
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
     collator_key: Option<CollatorPair>,
     keystore: KeystorePtr,
     para_id: ParaId,
@@ -690,7 +701,7 @@ fn start_consensus_container(
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
@@ -1257,7 +1268,7 @@ struct OrchestratorChainInProcessInterfaceBuilder {
 }
 
 impl OrchestratorChainInProcessInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn OrchestratorChainInterface<AuthorityId = NimbusId>> {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface<NimbusId>> {
         Arc::new(OrchestratorChainInProcessInterface::new(
             self.client,
             self.backend,
@@ -1304,7 +1315,7 @@ impl<T> Clone for OrchestratorChainInProcessInterface<T> {
 }
 
 #[async_trait::async_trait]
-impl<Client> OrchestratorChainInterface for OrchestratorChainInProcessInterface<Client>
+impl<Client> OrchestratorChainInterface<NimbusId> for OrchestratorChainInProcessInterface<Client>
 where
     Client: ProvideRuntimeApi<Block>
         + BlockchainEvents<Block>
@@ -1312,11 +1323,11 @@ where
         + UsageProvider<Block>
         + Sync
         + Send,
-    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>,
-    Client::Api: OnDemandBlockProductionApi<Block, ParaId, Slot>,
+    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
+        + OnDemandBlockProductionApi<Block, ParaId, Slot>
+        + RegistrarApi<Block, ParaId>
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
 {
-    type AuthorityId = NimbusId;
-
     async fn get_storage_by_key(
         &self,
         orchestrator_parent: PHash,
@@ -1384,12 +1395,10 @@ where
         &self,
         orchestrator_parent: PHash,
         para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<Vec<Self::AuthorityId>>> {
+    ) -> OrchestratorChainResult<Option<Vec<NimbusId>>> {
         let runtime_api = self.full_client.runtime_api();
 
-        let Ok(authorities) = runtime_api.para_id_authorities(orchestrator_parent, para_id) else {
-            return Ok(None);
-        };
+        let authorities = runtime_api.para_id_authorities(orchestrator_parent, para_id)?;
 
         log::info!(
             "Authorities found for para {:?} are {:?}",
@@ -1408,13 +1417,39 @@ where
     ) -> OrchestratorChainResult<Option<Slot>> {
         let runtime_api = self.full_client.runtime_api();
 
-        let Ok(slot_frequency) =
-            runtime_api.parathread_slot_frequency(orchestrator_parent, para_id)
-        else {
-            return Ok(None);
-        };
+        let slot_frequency = runtime_api.parathread_slot_frequency(orchestrator_parent, para_id)?;
 
         log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
         Ok(slot_frequency.map(|slot_frequency| u64::from(slot_frequency.min).into()))
+    }
+
+    async fn genesis_data(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.genesis_data(orchestrator_parent, para_id)?)
+    }
+
+    async fn boot_nodes(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.boot_nodes(orchestrator_parent, para_id)?)
+    }
+
+    async fn latest_block_number(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<BlockNumber>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.latest_block_number(orchestrator_parent, para_id)?)
     }
 }

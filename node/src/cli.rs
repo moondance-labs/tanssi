@@ -16,14 +16,14 @@
 
 use {
     crate::chain_spec::RawGenesisConfig,
+    dp_container_chain_genesis_data::json::properties_to_map,
     node_common::service::Sealing,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_chain_spec::ChainSpec,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
-    sp_runtime::{traits::Get, Storage},
+    sp_runtime::Storage,
     std::{collections::BTreeMap, path::PathBuf},
-    tp_container_chain_genesis_data::json::properties_to_map,
 };
 
 /// Sub-commands supported by the collator.
@@ -312,9 +312,9 @@ impl ContainerChainCli {
         }
     }
 
-    pub fn chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    pub fn chain_spec_from_genesis_data(
         para_id: u32,
-        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        genesis_data: ContainerChainGenesisData,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
         boot_nodes: Vec<MultiaddrWithPeerId>,
@@ -367,10 +367,10 @@ impl ContainerChainCli {
         Ok(chain_spec)
     }
 
-    pub fn preload_chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    pub fn preload_chain_spec_from_genesis_data(
         &mut self,
         para_id: u32,
-        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        genesis_data: ContainerChainGenesisData,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
         boot_nodes: Vec<MultiaddrWithPeerId>,
