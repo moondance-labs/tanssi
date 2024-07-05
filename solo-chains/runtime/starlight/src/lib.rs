@@ -46,7 +46,7 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        assigned_slots, auctions, claims, crowdloan, identity_migrator, impl_runtime_weights,
+        assigned_slots, auctions, claims, crowdloan, impl_runtime_weights,
         impls::{
             ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
             VersionedLocationConverter,
@@ -97,7 +97,7 @@ use {
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
         PalletId,
     },
-    frame_system::{EnsureRoot, EnsureSigned},
+    frame_system::EnsureRoot,
     pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId},
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
@@ -132,10 +132,6 @@ use starlight_runtime_constants::{currency::*, fee::*, time::*};
 
 // XCM configurations.
 pub mod xcm_config;
-
-// Implemented types.
-mod impls;
-use impls::ToParachainIdentityReaper;
 
 // Governance and configurations.
 pub mod governance;
@@ -1205,13 +1201,6 @@ impl auctions::Config for Runtime {
     type WeightInfo = auctions::TestWeightInfo;
 }
 
-impl identity_migrator::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Reaper = EnsureSigned<AccountId>;
-    type ReapIdentityHandler = ToParachainIdentityReaper<Runtime, Self::AccountId>;
-    type WeightInfo = ();
-}
-
 type NisCounterpartInstance = pallet_balances::Instance2;
 impl pallet_balances::Config<NisCounterpartInstance> for Runtime {
     type Balance = Balance;
@@ -1523,17 +1512,11 @@ construct_runtime! {
         Mmr: pallet_mmr = 241,
         MmrLeaf: pallet_beefy_mmr = 242,
 
-        // Pallet for migrating Identity to a parachain. To be removed post-migration.
-        IdentityMigrator: identity_migrator = 248,
-
         ParasSudoWrapper: paras_sudo_wrapper = 250,
         AssignedSlots: assigned_slots = 251,
 
         // Validator Manager pallet.
         ValidatorManager: validator_manager = 252,
-
-        // State trie migration pallet, only temporary.
-        StateTrieMigration: pallet_state_trie_migration = 254,
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,
@@ -1713,28 +1696,6 @@ pub type Executive = frame_executive::Executive<
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
-parameter_types! {
-    // The deposit configuration for the singed migration. Specially if you want to allow any signed account to do the migration (see `SignedFilter`, these deposits should be high)
-    pub const MigrationSignedDepositPerItem: Balance = 1 * CENTS;
-    pub const MigrationSignedDepositBase: Balance = 20 * CENTS * 100;
-    pub const MigrationMaxKeyLen: u32 = 512;
-}
-
-impl pallet_state_trie_migration::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type RuntimeHoldReason = RuntimeHoldReason;
-    type SignedDepositPerItem = MigrationSignedDepositPerItem;
-    type SignedDepositBase = MigrationSignedDepositBase;
-    type ControlOrigin = EnsureRoot<AccountId>;
-    // specific account for the migration, can trigger the signed migrations.
-    type SignedFilter = frame_system::EnsureSignedBy<MigController, AccountId>;
-
-    // Use same weights as substrate ones.
-    type WeightInfo = pallet_state_trie_migration::weights::SubstrateWeight<Runtime>;
-    type MaxKeyLen = MigrationMaxKeyLen;
-}
-
 pub struct NoRelayStorageRoots;
 
 impl tp_traits::RelayStorageRootProvider for NoRelayStorageRoots {
@@ -1874,7 +1835,6 @@ mod benches {
         [runtime_common::coretime, Coretime]
         [runtime_common::crowdloan, Crowdloan]
         [runtime_common::claims, Claims]
-        [runtime_common::identity_migrator, IdentityMigrator]
         [runtime_common::slots, Slots]
         [runtime_common::paras_registrar, Registrar]
         [runtime_parachains::configuration, Configuration]
