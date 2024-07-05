@@ -1750,20 +1750,6 @@ impl pallet_state_trie_migration::Config for Runtime {
     type MaxKeyLen = MigrationMaxKeyLen;
 }
 
-pub struct NoRelayStorageRoots;
-
-impl tp_traits::RelayStorageRootProvider for NoRelayStorageRoots {
-    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
-        // We can probably get this from frame_system::Digest, but this is needed to do relay storage proofs
-        // which doesn't make sense since we are the relay chain now, so the register_with_proof extrinsic
-        // should be disabled in this runtime
-        None
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn set_relay_storage_root(_relay_block_number: u32, _storage_root: Option<H256>) {}
-}
-
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
@@ -1778,7 +1764,7 @@ impl pallet_registrar::Config for Runtime {
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
-    type RelayStorageRootProvider = NoRelayStorageRoots;
+    type RelayStorageRootProvider = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
