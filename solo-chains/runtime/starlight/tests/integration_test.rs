@@ -28,7 +28,6 @@ use {
 };
 
 mod common;
-
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
