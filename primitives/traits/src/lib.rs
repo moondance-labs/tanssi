@@ -265,12 +265,12 @@ pub trait RelayStorageRootProvider {
 }
 
 impl RelayStorageRootProvider for () {
-    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
         None
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {}
+    fn set_relay_storage_root(_relay_block_number: u32, _storage_root: Option<H256>) {}
 }
 
 /// Information extracted from the latest container chain header

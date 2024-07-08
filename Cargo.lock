@@ -16265,7 +16265,9 @@ version = "0.1.0"
 dependencies = [
  "binary-merkle-tree",
  "bitvec",
+ "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
+ "dp-consensus",
  "frame-benchmarking",
  "frame-executive",
  "frame-remote-externalities",
@@ -16278,6 +16280,7 @@ dependencies = [
  "log",
  "nimbus-primitives",
  "pallet-asset-rate",
+ "pallet-author-noting",
  "pallet-authority-assignment",
  "pallet-authority-discovery",
  "pallet-authority-mapping",

@@ -46,7 +46,7 @@ use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
-    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, RuntimeAppPublic, Saturating},
+    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
 };

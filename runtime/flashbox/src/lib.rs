@@ -924,6 +924,10 @@ impl pallet_author_noting::Config for Runtime {
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type RelayOrPara = pallet_author_noting::ParaStuff<
+        parachain_info::Pallet<Runtime>,
+        cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
+    >;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
