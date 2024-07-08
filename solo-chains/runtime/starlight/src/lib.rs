@@ -1561,6 +1561,7 @@ construct_runtime! {
         TanssiInvulnerables: pallet_invulnerables = 103,
         TanssiCollatorAssignment: pallet_collator_assignment = 104,
         TanssiAuthorityAssignment: pallet_authority_assignment = 105,
+        TanssiAuthorityMapping: pallet_authority_mapping = 106,
     }
 }
 
@@ -2738,7 +2739,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         _changed: bool,
         session_index: u32,
-        _all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
+        all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
         _queued: Vec<(AccountId, nimbus_primitives::NimbusId)>,
     ) {
         // Order is same as in tanssi
@@ -2749,6 +2750,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         ContainerRegistrar::initializer_on_new_session(&session_index);
 
         // 3. AuthorityMapping
+        TanssiAuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
 
         // 4. CollatorAssignment
         // Unlike in tanssi, where the input to this function are the correct
@@ -2821,6 +2823,12 @@ impl pallet_collator_assignment::Config for Runtime {
 
 impl pallet_authority_assignment::Config for Runtime {
     type SessionIndex = u32;
+    type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+impl pallet_authority_mapping::Config for Runtime {
+    type SessionIndex = u32;
+    type SessionRemovalBoundary = ConstU32<2>;
     type AuthorityId = nimbus_primitives::NimbusId;
 }
 
