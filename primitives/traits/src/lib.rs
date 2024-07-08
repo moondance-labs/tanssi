@@ -255,6 +255,9 @@ impl RemoveParaIdsWithNoCredits for () {
         _currently_assigned: &BTreeSet<ParaId>,
     ) {
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(_para_ids: &[ParaId]) {}
 }
 
 pub trait RelayStorageRootProvider {
