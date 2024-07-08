@@ -1866,10 +1866,8 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = ContainerRegistrar;
-    type SelfParaId = ();
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type RelayChainStateProvider = NoRelayChainStateProvider;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
@@ -1877,7 +1875,7 @@ impl pallet_author_noting::Config for Runtime {
     type AuthorNotingHook = ();
     // TODO: uncomment when pallets exist
     //type AuthorNotingHook = (InflationRewards, ServicesPayment);
-    type RelayOrPara = pallet_author_noting::RelayStuff;
+    type RelayOrPara = pallet_author_noting::RelayMode;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 

@@ -8229,7 +8229,6 @@ dependencies = [
  "bounded-collections 0.1.9",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
- "dp-chain-state-snapshot",
  "dp-core",
  "frame-benchmarking",
  "frame-support",
@@ -17758,6 +17757,7 @@ name = "tp-traits"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
  "frame-support",
  "impl-trait-for-tuples",
  "macro_rules_attribute",

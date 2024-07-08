@@ -30,7 +30,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use dp_chain_state_snapshot::*;
 use {
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
@@ -47,8 +46,9 @@ use {
     sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
-        AuthorNotingHook, ContainerChainBlockInfo, GetContainerChainAuthor,
-        GetCurrentContainerChains,
+        AuthorNotingHook, ContainerChainBlockInfo, GenericStateProof, GenericStorageReader,
+        GetContainerChainAuthor, GetCurrentContainerChains, LatestAuthorInfoFetcher,
+        NativeStorageReader, ReadEntryErr,
     },
 };
 
@@ -66,7 +66,6 @@ mod benchmarks;
 mod mock_proof;
 
 pub use pallet::*;
-use tp_traits::LatestAuthorInfoFetcher;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -79,12 +78,9 @@ pub mod pallet {
 
         type ContainerChains: GetCurrentContainerChains;
 
-        type SelfParaId: Get<ParaId>;
         type SlotBeacon: SlotBeacon;
 
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
-
-        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
         /// An entry-point for higher-level logic to react to containers chains authoring.
         ///
@@ -312,7 +308,7 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
     /// Fetch author and block number from a proof of header
-    fn fetch_block_info_from_proof<S: StorageReaderG>(
+    fn fetch_block_info_from_proof<S: GenericStorageReader>(
         relay_state_proof: &S,
         para_id: ParaId,
         tanssi_slot: Slot,
@@ -429,43 +425,38 @@ impl<T: Config> LatestAuthorInfoFetcher<T::AccountId> for Pallet<T> {
     }
 }
 
-pub struct RelayStuff;
-// If ParaStuff needs more than 2 generics, we could create a MiniConfig trait similar to Config but smaller
-pub struct ParaStuff<SelfParaId, RCSP>(PhantomData<(SelfParaId, RCSP)>);
-
+/// This pallet has slightly different behavior when used in a parachain vs when used in a relay chain
+/// (solochain). The main difference is:
+/// * In relay mode, we don't need a storage proof, so the inherent doesn't need any input argument,
+/// and instead of reading from a storage proof we read from storage directly.
 pub trait RelayOrPara {
     type InherentArg: TypeInfo + Clone + PartialEq + Encode + Decode + core::fmt::Debug;
-    type StorageReaderG: StorageReaderG;
+    type GenericStorageReader: GenericStorageReader;
 
     fn create_inherent_arg(data: &InherentData) -> Self::InherentArg;
-    fn create_storage_reader(data: Self::InherentArg) -> Self::StorageReaderG;
-
-    fn self_para_id() -> Option<ParaId>;
+    fn create_storage_reader(data: Self::InherentArg) -> Self::GenericStorageReader;
 }
 
-impl RelayOrPara for RelayStuff {
+pub struct RelayMode;
+pub struct ParaMode<RCSP: RelaychainStateProvider>(PhantomData<RCSP>);
+
+impl RelayOrPara for RelayMode {
     type InherentArg = ();
-    type StorageReaderG = NativeStorageReader;
+    type GenericStorageReader = NativeStorageReader;
 
     fn create_inherent_arg(_data: &InherentData) -> Self::InherentArg {
         // This ignores the inherent data entirely, so it is compatible with clients that don't add our inherent
         ()
     }
 
-    fn create_storage_reader(_data: Self::InherentArg) -> Self::StorageReaderG {
+    fn create_storage_reader(_data: Self::InherentArg) -> Self::GenericStorageReader {
         NativeStorageReader
-    }
-
-    fn self_para_id() -> Option<ParaId> {
-        None
     }
 }
 
-impl<SelfParaId: Get<ParaId>, RCSP: RelaychainStateProvider> RelayOrPara
-    for ParaStuff<SelfParaId, RCSP>
-{
+impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
     type InherentArg = tp_author_noting_inherent::OwnParachainInherentData;
-    type StorageReaderG = GenericStateProof<cumulus_primitives_core::relay_chain::Block>;
+    type GenericStorageReader = GenericStateProof<cumulus_primitives_core::relay_chain::Block>;
 
     fn create_inherent_arg(data: &InherentData) -> Self::InherentArg {
         let data/*: tp_author_noting_inherent::OwnParachainInherentData*/ = data
@@ -477,7 +468,7 @@ impl<SelfParaId: Get<ParaId>, RCSP: RelaychainStateProvider> RelayOrPara
         data
     }
 
-    fn create_storage_reader(data: Self::InherentArg) -> Self::StorageReaderG {
+    fn create_storage_reader(data: Self::InherentArg) -> Self::GenericStorageReader {
         let tp_author_noting_inherent::OwnParachainInherentData {
             relay_storage_proof,
         } = data;
@@ -489,30 +480,5 @@ impl<SelfParaId: Get<ParaId>, RCSP: RelaychainStateProvider> RelayOrPara
                 .expect("Invalid relay chain state proof");
 
         relay_storage_rooted_proof
-    }
-
-    fn self_para_id() -> Option<ParaId> {
-        Some(SelfParaId::get())
-    }
-}
-
-pub trait StorageReaderG {
-    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>;
-}
-
-impl StorageReaderG for GenericStateProof<cumulus_primitives_core::relay_chain::Block> {
-    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr> {
-        GenericStateProof::read_entry(self, key, fallback)
-    }
-}
-
-// Relay chain impl, read directly from storage
-pub struct NativeStorageReader;
-impl StorageReaderG for NativeStorageReader {
-    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr> {
-        match frame_support::storage::unhashed::get(key).or(fallback) {
-            Some(x) => Ok(x),
-            None => Err(ReadEntryErr::Absent),
-        }
     }
 }
