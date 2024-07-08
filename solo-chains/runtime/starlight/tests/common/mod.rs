@@ -47,7 +47,7 @@ pub fn session_to_block(n: u32) -> u32 {
 }
 
 pub fn authorities() -> Vec<babe_primitives::AuthorityId> {
-    let session_index = Session::current_index();
+    let _session_index = Session::current_index();
 
     Babe::authorities()
         .iter()
