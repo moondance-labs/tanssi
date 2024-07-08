@@ -62,8 +62,8 @@ pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
 pallet-bounties = { workspace = true }
 pallet-child-bounties = { workspace = true }
-pallet-collective = { workspace = true }
 pallet-collator-assignment = { workspace = true }
+pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }

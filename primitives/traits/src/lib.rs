@@ -265,7 +265,7 @@ pub trait RelayStorageRootProvider {
 }
 
 impl RelayStorageRootProvider for () {
-    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
         None
     }
 
