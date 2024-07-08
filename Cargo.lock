@@ -16318,7 +16318,6 @@ dependencies = [
  "pallet-session",
  "pallet-society",
  "pallet-staking",
- "pallet-state-trie-migration",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-tips",
