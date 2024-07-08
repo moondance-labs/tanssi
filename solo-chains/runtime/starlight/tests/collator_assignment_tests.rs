@@ -423,7 +423,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Check Babe authorities
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -482,7 +482,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Let's check Babe again
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -513,7 +513,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Babe should be using the new keys
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
             );
         });
