@@ -1326,7 +1326,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AllowEmptyOrchestrator = ConstBool<true>;
+    type ForceEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();
 }
 

@@ -83,7 +83,7 @@ impl pallet_configuration::Config for Test {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AllowEmptyOrchestrator = ConstBool<false>;
+    type ForceEmptyOrchestrator = ConstBool<false>;
 }
 
 // Build genesis storage according to the mock runtime.
