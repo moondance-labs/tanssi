@@ -46,14 +46,12 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        assigned_slots, auctions, claims, crowdloan, impl_runtime_weights,
+        claims, impl_runtime_weights,
         impls::{
             ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
             VersionedLocationConverter,
         },
-        paras_registrar, paras_sudo_wrapper, prod_or_fast, slots,
-        traits::{Leaser, OnSwap},
-        BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_coretime as parachains_assigner_coretime,
@@ -137,8 +135,7 @@ pub mod xcm_config;
 pub mod governance;
 use {
     governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, LeaseAdmin, Treasurer,
-        TreasurySpender,
+        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
@@ -890,10 +887,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
 				// Specifically omitting Registrar `swap`
-				RuntimeCall::Registrar(paras_registrar::Call::reserve {..}) |
-				RuntimeCall::Crowdloan(..) |
-				RuntimeCall::Slots(..) |
-				RuntimeCall::Auctions(..) // Specifically omitting the entire XCM Pallet
+				RuntimeCall::Registrar(paras_registrar::Call::reserve {..})
             ),
             ProxyType::Governance => matches!(
                 c,
@@ -918,14 +912,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
                 )
             }
-            ProxyType::Auction => matches!(
-                c,
-                RuntimeCall::Auctions { .. }
-                    | RuntimeCall::Crowdloan { .. }
-                    | RuntimeCall::Registrar { .. }
-                    | RuntimeCall::Multisig(..)
-                    | RuntimeCall::Slots { .. }
-            ),
+            ProxyType::Auction => {
+                matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
+            }
             ProxyType::Society => matches!(c, RuntimeCall::Society(..)),
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
         }
@@ -1141,64 +1130,10 @@ impl paras_registrar::Config for Runtime {
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
-    type OnSwap = (Crowdloan, Slots, SwapLeases);
+    type OnSwap = ();
     type ParaDeposit = ParaDeposit;
     type DataDepositPerByte = DataDepositPerByte;
     type WeightInfo = paras_registrar::TestWeightInfo;
-}
-
-parameter_types! {
-    pub LeasePeriod: BlockNumber = prod_or_fast!(1 * DAYS, 1 * DAYS, "ROC_LEASE_PERIOD");
-}
-
-impl slots::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type Registrar = Registrar;
-    type LeasePeriod = LeasePeriod;
-    type LeaseOffset = ();
-    type ForceOrigin = EitherOf<EnsureRoot<Self::AccountId>, LeaseAdmin>;
-    type WeightInfo = slots::TestWeightInfo;
-}
-
-parameter_types! {
-    pub const CrowdloanId: PalletId = PalletId(*b"py/cfund");
-    pub const SubmissionDeposit: Balance = 3 * GRAND;
-    pub const MinContribution: Balance = 3_000 * CENTS;
-    pub const RemoveKeysLimit: u32 = 1000;
-    // Allow 32 bytes for an additional memo to a crowdloan.
-    pub const MaxMemoLength: u8 = 32;
-}
-
-impl crowdloan::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type PalletId = CrowdloanId;
-    type SubmissionDeposit = SubmissionDeposit;
-    type MinContribution = MinContribution;
-    type RemoveKeysLimit = RemoveKeysLimit;
-    type Registrar = Registrar;
-    type Auctioneer = Auctions;
-    type MaxMemoLength = MaxMemoLength;
-    type WeightInfo = crowdloan::TestWeightInfo;
-}
-
-parameter_types! {
-    // The average auction is 7 days long, so this will be 70% for ending period.
-    // 5 Days = 72000 Blocks @ 6 sec per block
-    pub const EndingPeriod: BlockNumber = 5 * DAYS;
-    // ~ 1000 samples per day -> ~ 20 blocks per sample -> 2 minute samples
-    pub const SampleLength: BlockNumber = 2 * MINUTES;
-}
-
-impl auctions::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Leaser = Slots;
-    type Registrar = Registrar;
-    type EndingPeriod = EndingPeriod;
-    type SampleLength = SampleLength;
-    type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
-    type InitiateOrigin = EitherOf<EnsureRoot<Self::AccountId>, AuctionAdmin>;
-    type WeightInfo = auctions::TestWeightInfo;
 }
 
 type NisCounterpartInstance = pallet_balances::Instance2;
@@ -1334,16 +1269,6 @@ parameter_types! {
     pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
 }
 
-impl assigned_slots::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type AssignSlotOrigin = EnsureRoot<AccountId>;
-    type Leaser = Slots;
-    type PermanentSlotLeasePeriodLength = PermanentSlotLeasePeriodLength;
-    type TemporarySlotLeasePeriodLength = TemporarySlotLeasePeriodLength;
-    type MaxTemporarySlotPerLeasePeriod = MaxTemporarySlotPerLeasePeriod;
-    type WeightInfo = assigned_slots::TestWeightInfo;
-}
-
 impl validator_manager::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type PrivilegedOrigin = EnsureRoot<AccountId>;
@@ -1369,14 +1294,6 @@ impl pallet_asset_rate::Config for Runtime {
     type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
-}
-
-// Notify `coretime` pallet when a lease swap occurs
-pub struct SwapLeases;
-impl OnSwap for SwapLeases {
-    fn on_swap(one: ParaId, other: ParaId) {
-        coretime::Pallet::<Runtime>::on_legacy_lease_swap(one, other);
-    }
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -1497,9 +1414,6 @@ construct_runtime! {
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
-        Slots: slots = 71,
-        Auctions: auctions = 72,
-        Crowdloan: crowdloan = 73,
         Coretime: coretime = 74,
 
         // Pallet for sending XCM.
@@ -1513,7 +1427,6 @@ construct_runtime! {
         MmrLeaf: pallet_beefy_mmr = 242,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
-        AssignedSlots: assigned_slots = 251,
 
         // Validator Manager pallet.
         ValidatorManager: validator_manager = 252,
@@ -1571,28 +1484,6 @@ pub mod migrations {
 
     use {frame_support::traits::LockIdentifier, frame_system::pallet_prelude::BlockNumberFor};
 
-    pub struct GetLegacyLeaseImpl;
-    impl coretime::migration::GetLegacyLease<BlockNumber> for GetLegacyLeaseImpl {
-        fn get_parachain_lease_in_blocks(para: ParaId) -> Option<BlockNumber> {
-            let now = frame_system::Pallet::<Runtime>::block_number();
-            let lease = slots::Leases::<Runtime>::get(para);
-            if lease.is_empty() {
-                return None;
-            }
-            // Lease not yet started, ignore:
-            if lease.iter().any(Option::is_none) {
-                return None;
-            }
-            let (index, _) =
-                <slots::Pallet<Runtime> as Leaser<BlockNumber>>::lease_period_index(now)?;
-            Some(
-                index
-                    .saturating_add(lease.len() as u32)
-                    .saturating_mul(LeasePeriod::get()),
-            )
-        }
-    }
-
     parameter_types! {
         pub const DemocracyPalletName: &'static str = "Democracy";
         pub const CouncilPalletName: &'static str = "Council";
@@ -1643,7 +1534,6 @@ pub mod migrations {
     pub type Unreleased = (
 		pallet_society::migrations::MigrateToV2<Runtime, (), ()>,
 		parachains_configuration::migration::v7::MigrateToV7<Runtime>,
-		assigned_slots::migration::v1::MigrateToV1<Runtime>,
 		parachains_scheduler::migration::MigrateV1ToV2<Runtime>,
 		parachains_configuration::migration::v8::MigrateToV8<Runtime>,
 		parachains_configuration::migration::v9::MigrateToV9<Runtime>,
@@ -1673,7 +1563,6 @@ pub mod migrations {
 		pallet_identity::migration::versioned::V0ToV1<Runtime, IDENTITY_MIGRATION_KEY_LIMIT>,
 		parachains_configuration::migration::v11::MigrateToV11<Runtime>,
 		// This needs to come after the `parachains_configuration` above as we are reading the configuration.
-		coretime::migration::MigrateToCoretime<Runtime, crate::xcm_config::XcmRouter, GetLegacyLeaseImpl>,
 		parachains_configuration::migration::v12::MigrateToV12<Runtime>,
 		parachains_assigner_on_demand::migration::MigrateV0ToV1<Runtime>,
 
@@ -1830,12 +1719,8 @@ mod benches {
         // Polkadot
         // NOTE: Make sure to prefix these with `runtime_common::` so
         // the that path resolves correctly in the generated file.
-        [runtime_common::assigned_slots, AssignedSlots]
-        [runtime_common::auctions, Auctions]
         [runtime_common::coretime, Coretime]
-        [runtime_common::crowdloan, Crowdloan]
         [runtime_common::claims, Claims]
-        [runtime_common::slots, Slots]
         [runtime_common::paras_registrar, Registrar]
         [runtime_parachains::configuration, Configuration]
         [runtime_parachains::hrmp, Hrmp]
