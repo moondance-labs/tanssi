@@ -892,7 +892,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentHook = ServicesPayment;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
-    type AllowEmptyOrchestrator = ConstBool<false>;
+    type ForceEmptyOrchestrator = ConstBool<false>;
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 

@@ -2676,7 +2676,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentHook = ();
     type CollatorAssignmentTip = ();
     type Currency = Balances;
-    type AllowEmptyOrchestrator = ConstBool<true>;
+    type ForceEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();
 }
 

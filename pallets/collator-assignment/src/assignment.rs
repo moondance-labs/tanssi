@@ -134,7 +134,7 @@ where
             .remove(&orchestrator_chain.para_id)
             .unwrap();
         // Sanity check to avoid bricking orchestrator chain
-        if orchestrator_assigned.is_empty() && !T::AllowEmptyOrchestrator::get() {
+        if orchestrator_assigned.is_empty() && !T::ForceEmptyOrchestrator::get() {
             return Err(AssignmentError::EmptyOrchestrator);
         }
         new_assigned.orchestrator_chain = orchestrator_assigned;
