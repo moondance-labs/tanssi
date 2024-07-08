@@ -417,8 +417,6 @@ fn test_session_keys_with_authority_mapping() {
             let alice_keys_2 = get_authority_keys_from_seed("ALICE2");
             let bob_keys_2 = get_authority_keys_from_seed("BOB2");
 
-            println!("KEY MAPPING 0: {:?}", key_mapping_session_0);
-
             assert_eq!(key_mapping_session_0.len(), 2);
             assert_eq!(
                 key_mapping_session_0.get(&alice_keys.nimbus),
@@ -479,7 +477,6 @@ fn test_session_keys_with_authority_mapping() {
 
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
 
-            println!("KEY MAPPING 1: {:?}", key_mapping_session_1);
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
                 key_mapping_session_1.get(&alice_keys_2.nimbus),
