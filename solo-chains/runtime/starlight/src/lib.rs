@@ -2598,7 +2598,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         _changed: bool,
         session_index: u32,
-        all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
+        _all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
         _queued: Vec<(AccountId, nimbus_primitives::NimbusId)>,
     ) {
         // Order is same as in tanssi
@@ -2608,18 +2608,6 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // 2. Second, registrar
         ContainerRegistrar::initializer_on_new_session(&session_index);
 
-        // 3. AuthorityMapping
-        TanssiAuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
-
-        // 4. CollatorAssignment
-        // Unlike in tanssi, where the input to this function are the correct
-        // queued keys & collators, here we get the input refers to the validators
-        // and not the collators. Therefore we need to do a similar thing that
-        // pallet-session does but in this function
-        // This is, get the collators, fetch their respective keys, and queue the
-        // assignment
-
-        // CollatorAssignment
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
         let next_collators = invulnerables;
@@ -2636,6 +2624,18 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
 
         let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
 
+        // 3. AuthorityMapping
+        TanssiAuthorityMapping::initializer_on_new_session(&session_index, &queued_amalgamated);
+
+        // 4. CollatorAssignment
+        // Unlike in tanssi, where the input to this function are the correct
+        // queued keys & collators, here we get the input refers to the validators
+        // and not the collators. Therefore we need to do a similar thing that
+        // pallet-session does but in this function
+        // This is, get the collators, fetch their respective keys, and queue the
+        // assignment
+
+        // CollatorAssignment
         let assignments = TanssiCollatorAssignment::initializer_on_new_session(
             &session_index,
             next_collators_accounts,

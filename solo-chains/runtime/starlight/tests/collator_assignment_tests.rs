@@ -396,6 +396,10 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
             min_orchestrator_collators: 0,
@@ -412,6 +416,8 @@ fn test_session_keys_with_authority_mapping() {
 
             let alice_keys_2 = get_authority_keys_from_seed("ALICE2");
             let bob_keys_2 = get_authority_keys_from_seed("BOB2");
+
+            println!("KEY MAPPING 0: {:?}", key_mapping_session_0);
 
             assert_eq!(key_mapping_session_0.len(), 2);
             assert_eq!(
@@ -472,13 +478,15 @@ fn test_session_keys_with_authority_mapping() {
             );
 
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
+
+            println!("KEY MAPPING 1: {:?}", key_mapping_session_1);
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
-                key_mapping_session_1.get(&alice_keys.nimbus),
+                key_mapping_session_1.get(&alice_keys_2.nimbus),
                 Some(&ALICE.into())
             );
             assert_eq!(
-                key_mapping_session_1.get(&bob_keys.nimbus),
+                key_mapping_session_1.get(&bob_keys_2.nimbus),
                 Some(&BOB.into())
             );
 
@@ -494,11 +502,11 @@ fn test_session_keys_with_authority_mapping() {
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
-                key_mapping_session_1.get(&alice_keys.nimbus),
+                key_mapping_session_1.get(&alice_keys_2.nimbus),
                 Some(&ALICE.into())
             );
             assert_eq!(
-                key_mapping_session_1.get(&bob_keys.nimbus),
+                key_mapping_session_1.get(&bob_keys_2.nimbus),
                 Some(&BOB.into())
             );
 
