@@ -54,6 +54,7 @@ nimbus-primitives = { workspace = true }
 pallet-asset-rate = { workspace = true }
 pallet-authority-assignment = { workspace = true }
 pallet-authority-discovery = { workspace = true }
+pallet-authority-mapping = { workspace = true }
 pallet-authorship = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-balances = { workspace = true }
@@ -165,6 +166,7 @@ std = [
 	"pallet-asset-rate/std",
 	"pallet-authority-assignment/std",
 	"pallet-authority-discovery/std",
+	"pallet-authority-mapping/std",
 	"pallet-authorship/std",
 	"pallet-babe/std",
 	"pallet-balances/std",

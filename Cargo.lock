@@ -16280,6 +16280,7 @@ dependencies = [
  "pallet-asset-rate",
  "pallet-authority-assignment",
  "pallet-authority-discovery",
+ "pallet-authority-mapping",
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
