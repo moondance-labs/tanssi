@@ -1999,7 +1999,7 @@ dependencies = [
  "pallet-foreign-asset-creator",
  "pallet-maintenance-mode",
  "pallet-message-queue",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "pallet-multisig",
  "pallet-parameters",
  "pallet-proxy",
@@ -2082,7 +2082,7 @@ dependencies = [
  "pallet-foreign-asset-creator",
  "pallet-maintenance-mode",
  "pallet-message-queue",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "pallet-multisig",
  "pallet-proxy",
  "pallet-root-testing",
@@ -3165,7 +3165,7 @@ dependencies = [
  "pallet-invulnerables",
  "pallet-maintenance-mode",
  "pallet-message-queue",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "pallet-multisig",
  "pallet-pooled-staking",
  "pallet-proxy",
@@ -4552,7 +4552,7 @@ dependencies = [
  "pallet-initializer",
  "pallet-invulnerables",
  "pallet-maintenance-mode",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "pallet-multisig",
  "pallet-proxy",
  "pallet-registrar",
@@ -9305,6 +9305,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-migrations"
+version = "1.0.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#6748a662c1d172b6c9aa6f559506fe0a0eb3f53a"
+dependencies = [
+ "docify",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-mmr"
 version = "27.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
@@ -10152,7 +10170,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -16296,6 +16314,8 @@ dependencies = [
  "pallet-initializer",
  "pallet-membership",
  "pallet-message-queue",
+ "pallet-migrations 0.1.0",
+ "pallet-migrations 1.0.0",
  "pallet-mmr",
  "pallet-multisig",
  "pallet-nis",
@@ -17137,7 +17157,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-foreign-asset-creator",
  "pallet-invulnerables",
- "pallet-migrations",
+ "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",
  "pallet-services-payment",

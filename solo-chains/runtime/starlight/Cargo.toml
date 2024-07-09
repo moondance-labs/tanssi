@@ -70,6 +70,7 @@ pallet-initializer = { workspace = true }
 pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-nis = { workspace = true }
 pallet-offences = { workspace = true }
@@ -120,6 +121,9 @@ tp-traits = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+
+# Moonkit
+pallet-migrations = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
@@ -235,6 +239,8 @@ std = [
 	"xcm-executor/std",
 	"xcm-fee-payment-runtime-api/std",
 	"xcm/std",
+	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std"
 ]
 no_std = []
 runtime-benchmarks = [
@@ -290,6 +296,8 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
+	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-executive/try-runtime",
@@ -345,6 +353,8 @@ try-runtime = [
 	"runtime-common/try-runtime",
 	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
