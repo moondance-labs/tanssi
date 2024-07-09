@@ -295,7 +295,7 @@ impl pallet_collator_assignment::Config for Test {
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
     type CollatorAssignmentHook = MockCollatorAssignmentHook;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
-    type AllowEmptyOrchestrator = ConstBool<false>;
+    type ForceEmptyOrchestrator = ConstBool<false>;
     type Currency = ();
     type WeightInfo = ();
 }
