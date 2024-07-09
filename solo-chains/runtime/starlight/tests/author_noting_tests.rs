@@ -27,8 +27,6 @@ use {
     sp_runtime::generic::DigestItem,
     sp_runtime::traits::BlakeTwo256,
     sp_std::vec,
-    starlight_runtime::RuntimeCall,
-    starlight_runtime::{CollatorConfiguration, TanssiAuthorityMapping, TanssiInvulnerables},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::ContainerChainBlockInfo,
     tp_traits::ParaId,
@@ -64,11 +62,12 @@ fn test_author_noting_not_self_para() {
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
-            // Charlie and Dave to 1001
+            // In starlight there is no orchestrator chain, so instead of Charlie and Dave
+            // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                vec![ALICE.into(), BOB.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {
@@ -91,7 +90,7 @@ fn test_author_noting_not_self_para() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE),
+                    author: AccountId::from(BOB),
                     latest_slot_number: 0.into(),
                 })
             );
@@ -126,7 +125,7 @@ fn test_author_noting_set_author_and_kill_author_data() {
                 root_origin(),
                 other_para,
                 1,
-                AccountId::from(DAVE),
+                AccountId::from(BOB),
                 1.into()
             ));
 
@@ -134,7 +133,7 @@ fn test_author_noting_set_author_and_kill_author_data() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE),
+                    author: AccountId::from(BOB),
                     latest_slot_number: 1.into(),
                 })
             );
@@ -174,7 +173,7 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
                     origin_of(ALICE.into()),
                     other_para,
                     1,
-                    AccountId::from(DAVE),
+                    AccountId::from(BOB),
                     1.into()
                 ),
                 BadOrigin
@@ -213,11 +212,12 @@ fn test_author_noting_runtime_api() {
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
-            // Charlie and Dave to 1001
+            // In starlight there is no orchestrator chain, so instead of Charlie and Dave
+            // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                vec![ALICE.into(), BOB.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {
@@ -240,14 +240,14 @@ fn test_author_noting_runtime_api() {
                 AuthorNoting::latest_author(other_para),
                 Some(ContainerChainBlockInfo {
                     block_number: 1,
-                    author: AccountId::from(DAVE),
+                    author: AccountId::from(BOB),
                     latest_slot_number: 0.into(),
                 })
             );
 
             assert_eq!(
                 Runtime::latest_author(other_para),
-                Some(AccountId::from(DAVE))
+                Some(AccountId::from(BOB))
             );
             assert_eq!(Runtime::latest_block_number(other_para), Some(1));
         });
