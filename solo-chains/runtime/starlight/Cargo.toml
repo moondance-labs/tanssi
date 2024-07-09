@@ -247,6 +247,7 @@ runtime-benchmarks = [
 	"pallet-asset-rate/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
@@ -287,7 +288,6 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
-	"pallet-collator-assignment/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-executive/try-runtime",
