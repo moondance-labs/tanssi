@@ -33,7 +33,6 @@ use {
     },
     frame_system::EnsureNever,
     pallet_initializer as tanssi_initializer,
-    pallet_nis::WithMaximumOf,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -46,7 +45,7 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        claims, impl_runtime_weights,
+        impl_runtime_weights,
         impls::{
             ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
             VersionedLocationConverter,
@@ -88,9 +87,9 @@ use {
         parameter_types,
         traits::{
             fungible::HoldConsideration, tokens::UnityOrOuterConversion, Contains, EitherOf,
-            EitherOfDiverse, EnsureOrigin, EnsureOriginWithArg, EverythingBut, InstanceFilter,
+            EitherOfDiverse, EnsureOriginWithArg, EverythingBut, InstanceFilter,
             KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
-            ProcessMessageError, StorageMapShim, WithdrawReasons,
+            ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
         PalletId,
@@ -100,12 +99,12 @@ use {
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{ConstU128, ConstU8, OpaqueMetadata, H256},
+    sp_core::{ConstU8, OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            BlakeTwo256, Block as BlockT, ConstU32, ConvertInto, Extrinsic as ExtrinsicT,
-            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
+            BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, IdentityLookup,
+            Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -255,18 +254,6 @@ pub mod dynamic_params {
 
     #[dynamic_pallet_params]
     #[codec(index = 0)]
-    pub mod nis {
-        use super::*;
-
-        #[codec(index = 0)]
-        pub static Target: Perquintill = Perquintill::zero();
-
-        #[codec(index = 1)]
-        pub static MinBid: Balance = 100 * UNITS;
-    }
-
-    #[dynamic_pallet_params]
-    #[codec(index = 1)]
     pub mod preimage {
         use super::*;
 
@@ -297,11 +284,9 @@ impl EnsureOriginWithArg<RuntimeOrigin, RuntimeParametersKey> for DynamicParamet
         origin: RuntimeOrigin,
         key: &RuntimeParametersKey,
     ) -> Result<Self::Success, RuntimeOrigin> {
-        use crate::{dynamic_params::*, governance::*, RuntimeParametersKey::*};
+        use crate::RuntimeParametersKey::*;
 
         match key {
-            Nis(nis::ParametersKey::MinBid(_)) => StakingAdmin::ensure_origin(origin.clone()),
-            Nis(nis::ParametersKey::Target(_)) => GeneralAdmin::ensure_origin(origin.clone()),
             Preimage(_) => frame_system::ensure_root(origin.clone()),
         }
         .map_err(|_| origin)
@@ -518,10 +503,10 @@ impl pallet_treasury::Config for Runtime {
     type ProposalBondMaximum = ProposalBondMaximum;
     type SpendPeriod = SpendPeriod;
     type Burn = Burn;
-    type BurnDestination = Society;
+    type BurnDestination = ();
     type MaxApprovals = MaxApprovals;
     type WeightInfo = ();
-    type SpendFunds = Bounties;
+    type SpendFunds = ();
     type SpendOrigin = TreasurySpender;
     type AssetKind = VersionedLocatableAsset;
     type Beneficiary = VersionedLocation;
@@ -548,44 +533,6 @@ impl pallet_treasury::Config for Runtime {
     type PayoutPeriod = PayoutSpendPeriod;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = runtime_common::impls::benchmarks::TreasuryArguments;
-}
-
-parameter_types! {
-    pub const BountyDepositBase: Balance = 100 * CENTS;
-    pub const BountyDepositPayoutDelay: BlockNumber = 4 * DAYS;
-    pub const BountyUpdatePeriod: BlockNumber = 90 * DAYS;
-    pub const MaximumReasonLength: u32 = 16384;
-    pub const CuratorDepositMultiplier: Permill = Permill::from_percent(50);
-    pub const CuratorDepositMin: Balance = 10 * CENTS;
-    pub const CuratorDepositMax: Balance = 500 * CENTS;
-    pub const BountyValueMinimum: Balance = 200 * CENTS;
-}
-
-impl pallet_bounties::Config for Runtime {
-    type BountyDepositBase = BountyDepositBase;
-    type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
-    type BountyUpdatePeriod = BountyUpdatePeriod;
-    type CuratorDepositMultiplier = CuratorDepositMultiplier;
-    type CuratorDepositMin = CuratorDepositMin;
-    type CuratorDepositMax = CuratorDepositMax;
-    type BountyValueMinimum = BountyValueMinimum;
-    type ChildBountyManager = ChildBounties;
-    type DataDepositPerByte = DataDepositPerByte;
-    type RuntimeEvent = RuntimeEvent;
-    type MaximumReasonLength = MaximumReasonLength;
-    type WeightInfo = ();
-}
-
-parameter_types! {
-    pub const MaxActiveChildBountyCount: u32 = 100;
-    pub ChildBountyValueMinimum: Balance = BountyValueMinimum::get() / 10;
-}
-
-impl pallet_child_bounties::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
-    type ChildBountyValueMinimum = ChildBountyValueMinimum;
-    type WeightInfo = ();
 }
 
 impl pallet_offences::Config for Runtime {
@@ -680,18 +627,6 @@ where
 }
 
 parameter_types! {
-    pub Prefix: &'static [u8] = b"Pay ROCs to the Starlight account:";
-}
-
-impl claims::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type VestingSchedule = Vesting;
-    type Prefix = Prefix;
-    type MoveClaimOrigin = EnsureRoot<AccountId>;
-    type WeightInfo = claims::TestWeightInfo;
-}
-
-parameter_types! {
     // Minimum 100 bytes/STAR deposited (1 CENT/byte)
     pub const BasicDeposit: Balance = 1000 * CENTS;       // 258 bytes on-chain
     pub const ByteDeposit: Balance = deposit(0, 1);
@@ -766,44 +701,6 @@ impl pallet_recovery::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SocietyPalletId: PalletId = PalletId(*b"py/socie");
-}
-
-impl pallet_society::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
-    type GraceStrikes = ConstU32<1>;
-    type PeriodSpend = ConstU128<{ 50_000 * CENTS }>;
-    type VotingPeriod = ConstU32<{ 5 * DAYS }>;
-    type ClaimPeriod = ConstU32<{ 2 * DAYS }>;
-    type MaxLockDuration = ConstU32<{ 36 * 30 * DAYS }>;
-    type FounderSetOrigin = EnsureRoot<AccountId>;
-    type ChallengePeriod = ConstU32<{ 7 * DAYS }>;
-    type MaxPayouts = ConstU32<8>;
-    type MaxBids = ConstU32<512>;
-    type PalletId = SocietyPalletId;
-    type WeightInfo = ();
-}
-
-parameter_types! {
-    pub const MinVestedTransfer: Balance = 100 * CENTS;
-    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
-        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
-}
-
-impl pallet_vesting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type BlockNumberToBalance = ConvertInto;
-    type MinVestedTransfer = MinVestedTransfer;
-    type WeightInfo = ();
-    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
-    type BlockNumberProvider = System;
-    const MAX_VESTING_SCHEDULES: u32 = 28;
-}
-
-parameter_types! {
     // One storage item; key size 32, value size 8; .
     pub const ProxyDepositBase: Balance = deposit(1, 8);
     // Additional storage item size of 33 bytes.
@@ -835,7 +732,6 @@ pub enum ProxyType {
     IdentityJudgement,
     CancelProxy,
     Auction,
-    Society,
     OnDemandOrdering,
 }
 impl Default for ProxyType {
@@ -860,31 +756,22 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Session(..) |
 				RuntimeCall::Grandpa(..) |
 				RuntimeCall::Treasury(..) |
-				RuntimeCall::Bounties(..) |
-				RuntimeCall::ChildBounties(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::FellowshipCollective(..) |
 				RuntimeCall::FellowshipReferenda(..) |
 				RuntimeCall::Whitelist(..) |
-				RuntimeCall::Claims(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
-				RuntimeCall::Society(..) |
 				RuntimeCall::Recovery(pallet_recovery::Call::as_recovered {..}) |
 				RuntimeCall::Recovery(pallet_recovery::Call::vouch_recovery {..}) |
 				RuntimeCall::Recovery(pallet_recovery::Call::claim_recovery {..}) |
 				RuntimeCall::Recovery(pallet_recovery::Call::close_recovery {..}) |
 				RuntimeCall::Recovery(pallet_recovery::Call::remove_recovery {..}) |
 				RuntimeCall::Recovery(pallet_recovery::Call::cancel_recovered {..}) |
-				// Specifically omitting Recovery `create_recovery`, `initiate_recovery`
-				RuntimeCall::Vesting(pallet_vesting::Call::vest {..}) |
-				RuntimeCall::Vesting(pallet_vesting::Call::vest_other {..}) |
-				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
 				RuntimeCall::Multisig(..) |
-				RuntimeCall::Nis(..) |
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
 				// Specifically omitting Registrar `swap`
@@ -892,9 +779,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ),
             ProxyType::Governance => matches!(
                 c,
-                RuntimeCall::Bounties(..) |
-					RuntimeCall::Utility(..) |
-					RuntimeCall::ChildBounties(..) |
+                RuntimeCall::Utility(..) |
 					// OpenGov calls
 					RuntimeCall::ConvictionVoting(..) |
 					RuntimeCall::Referenda(..) |
@@ -916,7 +801,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ProxyType::Auction => {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
-            ProxyType::Society => matches!(c, RuntimeCall::Society(..)),
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
         }
     }
@@ -1137,62 +1021,6 @@ impl paras_registrar::Config for Runtime {
     type WeightInfo = paras_registrar::TestWeightInfo;
 }
 
-type NisCounterpartInstance = pallet_balances::Instance2;
-impl pallet_balances::Config<NisCounterpartInstance> for Runtime {
-    type Balance = Balance;
-    type DustRemoval = ();
-    type RuntimeEvent = RuntimeEvent;
-    type ExistentialDeposit = ConstU128<10_000_000_000>; // One RTC cent
-    type AccountStore = StorageMapShim<
-        pallet_balances::Account<Runtime, NisCounterpartInstance>,
-        AccountId,
-        pallet_balances::AccountData<u128>,
-    >;
-    type MaxLocks = ConstU32<4>;
-    type MaxReserves = ConstU32<4>;
-    type ReserveIdentifier = [u8; 8];
-    type WeightInfo = ();
-    type RuntimeHoldReason = RuntimeHoldReason;
-    type RuntimeFreezeReason = RuntimeFreezeReason;
-    type FreezeIdentifier = ();
-    type MaxFreezes = ConstU32<1>;
-}
-
-parameter_types! {
-    pub const NisBasePeriod: BlockNumber = 30 * DAYS;
-    pub MinReceipt: Perquintill = Perquintill::from_rational(1u64, 10_000_000u64);
-    pub const IntakePeriod: BlockNumber = 5 * MINUTES;
-    pub MaxIntakeWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 10;
-    pub const ThawThrottle: (Perquintill, BlockNumber) = (Perquintill::from_percent(25), 5);
-    pub const NisPalletId: PalletId = PalletId(*b"py/nis  ");
-}
-
-impl pallet_nis::Config for Runtime {
-    type WeightInfo = ();
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type CurrencyBalance = Balance;
-    type FundOrigin = frame_system::EnsureSigned<AccountId>;
-    type Counterpart = NisCounterpartBalances;
-    type CounterpartAmount = WithMaximumOf<ConstU128<21_000_000_000_000_000_000u128>>;
-    type Deficit = (); // Mint
-    type IgnoredIssuance = ();
-    type Target = dynamic_params::nis::Target;
-    type PalletId = NisPalletId;
-    type QueueCount = ConstU32<300>;
-    type MaxQueueLen = ConstU32<1000>;
-    type FifoQueueLen = ConstU32<250>;
-    type BasePeriod = NisBasePeriod;
-    type MinBid = dynamic_params::nis::MinBid;
-    type MinReceipt = MinReceipt;
-    type IntakePeriod = IntakePeriod;
-    type MaxIntakeWeight = MaxIntakeWeight;
-    type ThawThrottle = ThawThrottle;
-    type RuntimeHoldReason = RuntimeHoldReason;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkSetup = ();
-}
-
 impl pallet_parameters::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeParameters = RuntimeParameters;
@@ -1365,8 +1193,6 @@ construct_runtime! {
         FellowshipReferenda: pallet_referenda::<Instance2> = 23,
         Origins: pallet_custom_origins = 43,
         Whitelist: pallet_whitelist = 44,
-        // Claims. Usable initially.
-        Claims: claims = 19,
 
         // Utility module.
         Utility: pallet_utility = 24,
@@ -1374,14 +1200,8 @@ construct_runtime! {
         // Less simple identity module.
         Identity: pallet_identity = 25,
 
-        // Society module.
-        Society: pallet_society = 26,
-
         // Social recovery module.
         Recovery: pallet_recovery = 27,
-
-        // Vesting. Usable initially, but removed once all vesting is finished.
-        Vesting: pallet_vesting = 28,
 
         // System scheduler.
         Scheduler: pallet_scheduler = 29,
@@ -1397,15 +1217,6 @@ construct_runtime! {
 
         // Asset rate.
         AssetRate: pallet_asset_rate = 39,
-
-        // Bounties modules.
-        Bounties: pallet_bounties = 35,
-        ChildBounties: pallet_child_bounties = 40,
-
-        // NIS pallet.
-        Nis: pallet_nis = 38,
-        // pub type NisCounterpartInstance = pallet_balances::Instance2;
-        NisCounterpartBalances: pallet_balances::<Instance2> = 45,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -1548,7 +1359,6 @@ pub mod migrations {
 
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = (
-		pallet_society::migrations::MigrateToV2<Runtime, (), ()>,
 		parachains_configuration::migration::v7::MigrateToV7<Runtime>,
 		parachains_scheduler::migration::MigrateV1ToV2<Runtime>,
 		parachains_configuration::migration::v8::MigrateToV8<Runtime>,
@@ -1736,7 +1546,6 @@ mod benches {
         // NOTE: Make sure to prefix these with `runtime_common::` so
         // the that path resolves correctly in the generated file.
         [runtime_common::coretime, Coretime]
-        [runtime_common::claims, Claims]
         [runtime_common::paras_registrar, Registrar]
         [runtime_parachains::configuration, Configuration]
         [runtime_parachains::hrmp, Hrmp]
@@ -1748,12 +1557,8 @@ mod benches {
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
         // Substrate
         [pallet_balances, Balances]
-        [pallet_balances, NisCounterpartBalances]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
-        [pallet_bounties, Bounties]
-        [pallet_child_bounties, ChildBounties]
         [pallet_conviction_voting, ConvictionVoting]
-        [pallet_nis, Nis]
         [pallet_identity, Identity]
         [pallet_indices, Indices]
         [pallet_message_queue, MessageQueue]
@@ -1771,7 +1576,6 @@ mod benches {
         [pallet_timestamp, Timestamp]
         [pallet_treasury, Treasury]
         [pallet_utility, Utility]
-        [pallet_vesting, Vesting]
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         // XCM
