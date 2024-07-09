@@ -3841,14 +3841,13 @@ declare module "@polkadot/api-base/types/submittable" {
             buyCore: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    collatorAccountId: AccountId32 | string | Uint8Array,
                     proof:
                         | TpXcmCoreBuyerBuyCoreCollatorProof
                         | { nonce?: any; publicKey?: any; signature?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, AccountId32, TpXcmCoreBuyerBuyCoreCollatorProof]
+                [u32, TpXcmCoreBuyerBuyCoreCollatorProof]
             >;
             cleanUpExpiredInFlightOrders: AugmentedSubmittable<
                 (expiredInFlightOrders: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,

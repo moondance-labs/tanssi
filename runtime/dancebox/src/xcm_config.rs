@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{get_para_id_authorities, CollatorAssignment, Session, System};
+use crate::get_para_id_authorities;
+#[cfg(feature = "runtime-benchmarks")]
+use crate::{CollatorAssignment, Session, System};
+#[cfg(feature = "runtime-benchmarks")]
 use pallet_session::ShouldEndSession;
 use sp_consensus_slots::Slot;
 #[cfg(feature = "runtime-benchmarks")]
