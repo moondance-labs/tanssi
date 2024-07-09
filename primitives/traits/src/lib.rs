@@ -42,7 +42,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, vec, vec::Vec},
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
@@ -227,7 +227,7 @@ pub trait RemoveInvulnerables<AccountId> {
 
 impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        _collators: &mut Vec<AccountId>,
         _num_invulnerables: usize,
     ) -> Vec<AccountId> {
         // Default impl: no collators are invulnerables
