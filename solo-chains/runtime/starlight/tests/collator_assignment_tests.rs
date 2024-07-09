@@ -411,6 +411,8 @@ fn test_session_keys_with_authority_mapping() {
         .execute_with(|| {
             run_to_block(2);
             let key_mapping_session_0 = TanssiAuthorityMapping::authority_id_mapping(0).unwrap();
+            let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
+
             let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
 
@@ -424,6 +426,17 @@ fn test_session_keys_with_authority_mapping() {
             );
             assert_eq!(
                 key_mapping_session_0.get(&bob_keys.nimbus),
+                Some(&BOB.into())
+            );
+
+            // keys for session 1 should be identical
+            assert_eq!(key_mapping_session_1.len(), 2);
+            assert_eq!(
+                key_mapping_session_1.get(&alice_keys.nimbus),
+                Some(&ALICE.into())
+            );
+            assert_eq!(
+                key_mapping_session_1.get(&bob_keys.nimbus),
                 Some(&BOB.into())
             );
 
@@ -484,6 +497,19 @@ fn test_session_keys_with_authority_mapping() {
             );
             assert_eq!(
                 key_mapping_session_1.get(&bob_keys.nimbus),
+                Some(&BOB.into())
+            );
+
+            // Keys have been scheduled for session 2
+            let key_mapping_session_2 = TanssiAuthorityMapping::authority_id_mapping(2).unwrap();
+
+            assert_eq!(key_mapping_session_2.len(), 2);
+            assert_eq!(
+                key_mapping_session_2.get(&alice_keys_2.nimbus),
+                Some(&ALICE.into())
+            );
+            assert_eq!(
+                key_mapping_session_2.get(&bob_keys_2.nimbus),
                 Some(&BOB.into())
             );
 
