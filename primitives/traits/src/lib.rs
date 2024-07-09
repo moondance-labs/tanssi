@@ -230,6 +230,7 @@ impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
         collators: &mut Vec<AccountId>,
         _num_invulnerables: usize,
     ) -> Vec<AccountId> {
+        // Default impl: no collators are invulnerables
         vec![]
     }
 }
