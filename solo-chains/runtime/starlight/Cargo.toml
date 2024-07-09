@@ -33,6 +33,7 @@ inherents = { workspace = true }
 offchain-primitives = { workspace = true }
 sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
+sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
@@ -124,9 +125,11 @@ cumulus-primitives-core = { workspace = true }
 
 # Tanssi
 dp-consensus = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
 pallet-author-noting = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
@@ -138,6 +141,7 @@ separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }
 sp-trie = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
 
@@ -170,6 +174,7 @@ std = [
 	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
+	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
 	"pallet-authority-discovery/std",
@@ -234,6 +239,7 @@ std = [
 	"serde_json/std",
 	"sp-api/std",
 	"sp-arithmetic/std",
+	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
@@ -248,6 +254,8 @@ std = [
 	"sp-version/std",
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
+	"test-relay-sproof-builder/std",
+	"tp-author-noting-inherent/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",

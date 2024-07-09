@@ -16,6 +16,9 @@
 
 #![allow(dead_code)]
 
+use frame_support::assert_ok;
+use polkadot_parachain_primitives::primitives::HeadData;
+use primitives::PersistedValidationData;
 use {
     crate::UNIT,
     babe_primitives::{
@@ -27,13 +30,15 @@ use {
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    sp_runtime::traits::Dispatchable,
     sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
-    starlight_runtime::MaxLengthTokenSymbol,
+    starlight_runtime::{MaxLengthTokenSymbol, RuntimeCall},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Initializer,
-    Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
+    Initializer, Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
     TransactionPayment,
 };
 
@@ -457,6 +462,36 @@ pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::Ru
 
 pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
+}
+
+/// This function is different in solochains: instead of creating a storage proof and calling the
+/// `set_latest_author_data` inherent with that proof as argument, this writes to storage directly.
+pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
+    let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
+
+    // For now we directly touch parachain_system storage to set the relay state root.
+    // TODO: Properly set the parachain_system inherent, which require a sproof builder combining
+    // what is required by parachain_system and author_noting.
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"ParachainSystem", b"ValidationData"),
+        &PersistedValidationData {
+            parent_head: HeadData(Default::default()),
+            relay_parent_number: 0u32,
+            relay_parent_storage_root: relay_storage_root,
+            max_pov_size: 0u32,
+        },
+    );
+
+    // But we also need to store the new proof submitted
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"ParachainSystem", b"RelayStateProof"),
+        &relay_storage_proof,
+    );
+
+    assert_ok!(RuntimeCall::AuthorNoting(
+        pallet_author_noting::Call::<Runtime>::set_latest_author_data { data: () }
+    )
+    .dispatch(inherent_origin()));
 }
 
 pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
