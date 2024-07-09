@@ -105,7 +105,7 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, ConstU32, ConvertInto, Extrinsic as ExtrinsicT,
-            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify,
+            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -2625,7 +2625,18 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
 
         // 3. AuthorityMapping
-        TanssiAuthorityMapping::initializer_on_new_session(&session_index, &queued_amalgamated);
+        if session_index.is_zero() {
+            // On the genesis sesion index we need to store current as well
+            TanssiAuthorityMapping::initializer_on_new_session(&session_index, &queued_amalgamated);
+        }
+        // Otherwise we always store one sessio ahead
+        // IMPORTANT: this changes with respect to dancebox/flashbox because here we dont have
+        // the current collators and their keys.
+        // In contrast, we have the keys for the validators only
+        TanssiAuthorityMapping::initializer_on_new_session(
+            &(session_index + 1),
+            &queued_amalgamated,
+        );
 
         // 4. CollatorAssignment
         // Unlike in tanssi, where the input to this function are the correct
@@ -2687,7 +2698,7 @@ impl pallet_authority_assignment::Config for Runtime {
 
 impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
-    type SessionRemovalBoundary = ConstU32<2>;
+    type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
 }
 

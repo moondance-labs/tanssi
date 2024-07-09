@@ -479,11 +479,11 @@ fn test_session_keys_with_authority_mapping() {
 
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
-                key_mapping_session_1.get(&alice_keys_2.nimbus),
+                key_mapping_session_1.get(&alice_keys.nimbus),
                 Some(&ALICE.into())
             );
             assert_eq!(
-                key_mapping_session_1.get(&bob_keys_2.nimbus),
+                key_mapping_session_1.get(&bob_keys.nimbus),
                 Some(&BOB.into())
             );
 
@@ -499,11 +499,11 @@ fn test_session_keys_with_authority_mapping() {
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
-                key_mapping_session_1.get(&alice_keys_2.nimbus),
+                key_mapping_session_1.get(&alice_keys.nimbus),
                 Some(&ALICE.into())
             );
             assert_eq!(
-                key_mapping_session_1.get(&bob_keys_2.nimbus),
+                key_mapping_session_1.get(&bob_keys.nimbus),
                 Some(&BOB.into())
             );
 
