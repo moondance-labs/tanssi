@@ -21,6 +21,7 @@
 #![recursion_limit = "512"]
 
 use frame_system::pallet_prelude::BlockNumberFor;
+use sp_runtime::traits::BlockNumberProvider;
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -1538,10 +1539,23 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     }
 }
 
+pub struct BabeSlotBeacon;
+
+impl BlockNumberProvider for BabeSlotBeacon {
+    type BlockNumber = u32;
+
+    fn current_block_number() -> Self::BlockNumber {
+        // TODO: nimbus_primitives::SlotBeacon requires u32, but this is a u64 in pallet_babe, and
+        // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
+        // this intermediate u32 conversion, such as using a different trait
+        u64::from(pallet_babe::CurrentSlot::<Runtime>::get()) as u32
+    }
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = ContainerRegistrar;
-    type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type SlotBeacon = BabeSlotBeacon;
     type ContainerChainAuthor = TanssiCollatorAssignment;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
     #[cfg(feature = "runtime-benchmarks")]
