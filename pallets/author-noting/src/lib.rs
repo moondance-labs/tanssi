@@ -435,6 +435,9 @@ pub trait RelayOrPara {
 
     fn create_inherent_arg(data: &InherentData) -> Self::InherentArg;
     fn create_storage_reader(data: Self::InherentArg) -> Self::GenericStorageReader;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: cumulus_pallet_parachain_system::RelayChainState);
 }
 
 pub struct RelayMode;
@@ -446,12 +449,14 @@ impl RelayOrPara for RelayMode {
 
     fn create_inherent_arg(_data: &InherentData) -> Self::InherentArg {
         // This ignores the inherent data entirely, so it is compatible with clients that don't add our inherent
-        ()
     }
 
     fn create_storage_reader(_data: Self::InherentArg) -> Self::GenericStorageReader {
         NativeStorageReader
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: cumulus_pallet_parachain_system::RelayChainState) {}
 }
 
 impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
@@ -480,5 +485,10 @@ impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
                 .expect("Invalid relay chain state proof");
 
         relay_storage_rooted_proof
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: cumulus_pallet_parachain_system::RelayChainState) {
+        RCSP::set_current_relay_chain_state(state)
     }
 }

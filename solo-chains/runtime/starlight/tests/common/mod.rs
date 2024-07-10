@@ -39,8 +39,8 @@ use {
 #[allow(unused_imports)]
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Initializer, Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
-    TransactionPayment,
+    Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
+    TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub fn session_to_block(n: u32) -> u32 {

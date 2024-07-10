@@ -18,7 +18,7 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
+    crate::{Call, Config, Pallet, RelayOrPara},
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     frame_benchmarking::{account, benchmarks},
     frame_support::assert_ok,
@@ -73,12 +73,21 @@ benchmarks! {
 
         let (root, proof) = sproof_builder.into_state_root_and_proof();
 
-        let data = tp_author_noting_inherent::OwnParachainInherentData {
-            relay_storage_proof: proof,
+        // In benchmarks
+        use core::any::TypeId;
+        use core::any::Any;
+        let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
+            let data = tp_author_noting_inherent::OwnParachainInherentData {
+                relay_storage_proof: proof,
+            };
+
+            *(Box::new(data) as Box<dyn Any>).downcast().unwrap()
+        } else {
+            unreachable!()
         };
 
         T::ContainerChains::set_current_container_chains(&container_chains);
-        T::RelayChainStateProvider::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
+        T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
             state_root: root,
             number: 0,
         });
