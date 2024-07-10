@@ -21,7 +21,6 @@ use {
     crate::common::*,
     frame_support::{assert_noop, assert_ok},
     runtime_common::paras_registrar,
-    runtime_parachains::paras as parachains_paras,
     sp_std::vec,
     starlight_runtime::{Paras, Registrar},
 };

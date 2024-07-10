@@ -46,7 +46,7 @@ use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
-    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, RuntimeAppPublic, Saturating},
+    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
 };
@@ -178,7 +178,7 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        type AllowEmptyOrchestrator: Get<bool>;
+        type ForceEmptyOrchestrator: Get<bool>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -222,7 +222,7 @@ pub mod pallet {
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             self.config
-                .panic_if_not_consistent(T::AllowEmptyOrchestrator::get());
+                .panic_if_not_consistent(T::ForceEmptyOrchestrator::get());
             ActiveConfig::<T>::put(&self.config);
         }
     }
@@ -469,7 +469,7 @@ pub mod pallet {
                 .map(|(_, config)| config.clone())
                 .unwrap_or_else(Self::config);
             let base_config_consistent = base_config
-                .check_consistency(T::AllowEmptyOrchestrator::get())
+                .check_consistency(T::ForceEmptyOrchestrator::get())
                 .is_ok();
 
             // Now, we need to decide what the new configuration should be.
@@ -485,7 +485,7 @@ pub mod pallet {
                     target: LOG_TARGET,
                     "Bypassing the consistency check for the configuration change!",
                 );
-            } else if let Err(e) = new_config.check_consistency(T::AllowEmptyOrchestrator::get()) {
+            } else if let Err(e) = new_config.check_consistency(T::ForceEmptyOrchestrator::get()) {
                 if base_config_consistent {
                     // Base configuration is consistent and the new configuration is inconsistent.
                     // This means that the value set by the `updater` is invalid and we can return

@@ -42,7 +42,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, vec, vec::Vec},
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
@@ -227,10 +227,11 @@ pub trait RemoveInvulnerables<AccountId> {
 
 impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
     fn remove_invulnerables(
-        collators: &mut Vec<AccountId>,
+        _collators: &mut Vec<AccountId>,
         _num_invulnerables: usize,
     ) -> Vec<AccountId> {
-        collators.clone()
+        // Default impl: no collators are invulnerables
+        vec![]
     }
 }
 
@@ -255,6 +256,9 @@ impl RemoveParaIdsWithNoCredits for () {
         _currently_assigned: &BTreeSet<ParaId>,
     ) {
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(_para_ids: &[ParaId]) {}
 }
 
 pub trait RelayStorageRootProvider {
@@ -265,7 +269,7 @@ pub trait RelayStorageRootProvider {
 }
 
 impl RelayStorageRootProvider for () {
-    fn get_relay_storage_root(relay_block_number: u32) -> Option<H256> {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
         None
     }
 

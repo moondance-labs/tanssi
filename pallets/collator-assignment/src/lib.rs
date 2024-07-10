@@ -103,7 +103,7 @@ pub mod pallet {
         type CollatorAssignmentHook: CollatorAssignmentHook<BalanceOf<Self>>;
         type Currency: Currency<Self::AccountId>;
         type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
-        type AllowEmptyOrchestrator: Get<bool>;
+        type ForceEmptyOrchestrator: Get<bool>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -206,15 +206,24 @@ pub mod pallet {
                 })
             }
 
-            let orchestrator_chain = ChainNumCollators {
-                para_id: T::SelfParaId::get(),
-                min_collators: T::HostConfiguration::min_collators_for_orchestrator(
-                    target_session_index,
-                ),
-                max_collators: T::HostConfiguration::max_collators_for_orchestrator(
-                    target_session_index,
-                ),
+            let orchestrator_chain: ChainNumCollators = if T::ForceEmptyOrchestrator::get() {
+                ChainNumCollators {
+                    para_id: T::SelfParaId::get(),
+                    min_collators: 0u32,
+                    max_collators: 0u32,
+                }
+            } else {
+                ChainNumCollators {
+                    para_id: T::SelfParaId::get(),
+                    min_collators: T::HostConfiguration::min_collators_for_orchestrator(
+                        target_session_index,
+                    ),
+                    max_collators: T::HostConfiguration::max_collators_for_orchestrator(
+                        target_session_index,
+                    ),
+                }
             };
+
             // Initialize list of chains as `[container1, container2, parathread1, parathread2]`.
             // The order means priority: the first chain in the list will be the first one to get assigned collators.
             // Chains will not be assigned less than `min_collators`, except the orchestrator chain.

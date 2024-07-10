@@ -20,7 +20,9 @@ use {
     crate::common::*,
     frame_support::assert_ok,
     sp_std::vec,
-    starlight_runtime::{CollatorConfiguration, TanssiAuthorityMapping, TanssiInvulnerables},
+    starlight_runtime::{
+        CollatorConfiguration, ContainerRegistrar, TanssiAuthorityMapping, TanssiInvulnerables,
+    },
 };
 
 mod common;
@@ -394,6 +396,10 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
             min_orchestrator_collators: 0,
@@ -405,6 +411,8 @@ fn test_session_keys_with_authority_mapping() {
         .execute_with(|| {
             run_to_block(2);
             let key_mapping_session_0 = TanssiAuthorityMapping::authority_id_mapping(0).unwrap();
+            let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
+
             let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
 
@@ -418,6 +426,17 @@ fn test_session_keys_with_authority_mapping() {
             );
             assert_eq!(
                 key_mapping_session_0.get(&bob_keys.nimbus),
+                Some(&BOB.into())
+            );
+
+            // keys for session 1 should be identical
+            assert_eq!(key_mapping_session_1.len(), 2);
+            assert_eq!(
+                key_mapping_session_1.get(&alice_keys.nimbus),
+                Some(&ALICE.into())
+            );
+            assert_eq!(
+                key_mapping_session_1.get(&bob_keys.nimbus),
                 Some(&BOB.into())
             );
 
@@ -480,6 +499,19 @@ fn test_session_keys_with_authority_mapping() {
                 Some(&BOB.into())
             );
 
+            // Keys have been scheduled for session 2
+            let key_mapping_session_2 = TanssiAuthorityMapping::authority_id_mapping(2).unwrap();
+
+            assert_eq!(key_mapping_session_2.len(), 2);
+            assert_eq!(
+                key_mapping_session_2.get(&alice_keys_2.nimbus),
+                Some(&ALICE.into())
+            );
+            assert_eq!(
+                key_mapping_session_2.get(&bob_keys_2.nimbus),
+                Some(&BOB.into())
+            );
+
             // Let's check Babe again
             assert_eq!(
                 babe_authorities(),
@@ -515,6 +547,94 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(
                 babe_authorities(),
                 vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
+            );
+        });
+}
+
+#[test]
+fn test_authors_paras_inserted_a_posteriori() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(
+                babe_authorities(),
+                vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
+            );
+
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+
+            // TODO: uncomment when we add DataPreservers
+            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
+
+            // TODO: uncomment when we add ServicesPayment
+            /*  assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                block_credits_to_required_balance(1000, 1001.into())
+            )); */
+
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                1002.into(),
+                empty_genesis_data()
+            ));
+
+            // TODO: uncomment when we add DataPreservers
+            // set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
+            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
+                root_origin(),
+                1002.into()
+            ));
+
+            // TODO: uncomment when we add ServicesPayment
+            /*  assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1002.into(),
+                block_credits_to_required_balance(1000, 1002.into())
+            )); */
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+
+            // Alice and Bob should be assigned to para 1001
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
             );
         });
 }

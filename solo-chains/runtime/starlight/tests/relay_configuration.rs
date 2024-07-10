@@ -17,15 +17,9 @@
 #![cfg(test)]
 
 use {
-    common::*,
-    frame_support::{assert_ok, BoundedVec},
-    pallet_registrar_runtime_api::{
-        runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
-    },
+    common::*, frame_support::assert_ok,
     runtime_parachains::configuration as parachains_configuration,
-    sp_std::vec,
-    starlight_runtime::{Balances, Configuration},
-    starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
+    starlight_runtime::Configuration,
 };
 
 mod common;
