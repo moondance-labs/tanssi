@@ -91,8 +91,10 @@ function bench {
         ))
         echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
         for PALLET in "${ALL_PALLETS[@]}"; do
+            TEMPLATE_TO_USE=$TEMPLATE_PATH
             if [[ "$PALLET" == *"pallet_xcm_benchmarks"* ]]; then
-                TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+                echo "Using pallet xcm benchmarks for $PALLET"
+                TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
             fi
             OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
@@ -103,13 +105,14 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template="${TEMPLATE_PATH}" \
+            --template="${TEMPLATE_TO_USE}" \
             --json-file raw.json \
             --output "${OUTPUT}"
         done
     else
+        TEMPLATE_TO_USE=$TEMPLATE_PATH
         if [[ "${1}" == *"pallet_xcm_benchmarks"* ]]; then
-            TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+            TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
         fi
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
@@ -119,7 +122,7 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template="${TEMPLATE_PATH}" \
+            --template="${TEMPLATE_TO_USE}" \
             --json-file raw.json \
             --output "${OUTPUT}"
     fi
