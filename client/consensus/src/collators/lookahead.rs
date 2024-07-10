@@ -70,7 +70,6 @@ use {
     sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
     sc_consensus::BlockImport,
     sc_consensus_slots::InherentDataProviderExt,
-    sc_transaction_pool::FullPool,
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_blockchain::HeaderBackend,
@@ -95,7 +94,8 @@ pub enum BuyCoreError<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> 
     BuyingValidationError(BuyingError<BlockNumber>),
     UnableToCreateProof(BuyCollatorProofCreationError),
     TxSubmissionError(PoolError),
-    TxInclusionError,
+    TxInclusionTimeout,
+    TxDroppedFromPool,
 }
 
 impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
@@ -184,13 +184,22 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
                     "Unable to send buy core unsigned extrinsic through orchestrator tx pool",
                 );
             }
-            BuyCoreError::TxInclusionError => {
+            BuyCoreError::TxInclusionTimeout => {
                 tracing::error!(
                     target: crate::LOG_TARGET,
                     ?relay_parent,
                     ?para_id,
                     ?slot,
-                    "Unable to include the tx into a block",
+                    "Unable to include the tx into a block due to timeout",
+                );
+            }
+            BuyCoreError::TxDroppedFromPool => {
+                tracing::error!(
+                    target: crate::LOG_TARGET,
+                    ?relay_parent,
+                    ?para_id,
+                    ?slot,
+                    "Unable to include the tx into a block as tx was dropped from the tx pool",
                 );
             }
         }
@@ -221,13 +230,13 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> From<BuyCollatorP
     }
 }
 
-pub async fn try_to_buy_core<Block, OBlock, OBlockNumber, P, CIDP, OClient>(
+pub async fn try_to_buy_core<Block, OBlock, OBlockNumber, P, CIDP, TxPool, OClient>(
     para_id: ParaId,
     aux_data: OrchestratorAuraWorkerAuxData<P>,
     inherent_providers: CIDP::InherentDataProviders,
     keystore: &KeystorePtr,
     orchestrator_client: Arc<OClient>,
-    orchestrator_tx_pool: Arc<FullPool<OBlock, OClient>>,
+    orchestrator_tx_pool: Arc<TxPool>,
     parent_header: <Block as BlockT>::Header,
     orchestrator_slot_duration: SlotDuration,
     container_slot_duration: SlotDuration,
@@ -235,7 +244,7 @@ pub async fn try_to_buy_core<Block, OBlock, OBlockNumber, P, CIDP, OClient>(
     <OBlock as BlockT>::Hash,
     BuyCoreError<
         <<OBlock as BlockT>::Header as HeaderT>::Number,
-        <FullPool<OBlock, OClient> as TransactionPool>::Error,
+        <TxPool as TransactionPool>::Error,
     >,
 >
 where
@@ -256,6 +265,7 @@ where
         + 'static,
     OClient::Api: TaggedTransactionQueue<OBlock>
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
+    TxPool: TransactionPool<Block = OBlock>,
 {
     // We do nothing if this is not a parathread
     if aux_data.slot_freq.is_none() {
@@ -296,7 +306,11 @@ where
 
     let pubkey = slot_claim.author_pub;
 
-    orchestrator_runtime_api.is_core_buying_allowed(orchestrator_best_hash, para_id)??;
+    orchestrator_runtime_api.is_core_buying_allowed(
+        orchestrator_best_hash,
+        para_id,
+        pubkey.clone(),
+    )??;
 
     let nonce =
         orchestrator_runtime_api.get_buy_core_signature_nonce(orchestrator_best_hash, para_id)?;
@@ -317,22 +331,39 @@ where
         .map_err(BuyCoreError::TxSubmissionError)?
         .fuse();
 
-    let current_time = tokio::time::Instant::now();
-    // Wait at max for 3 orchestrator slots
-    let wait_till = current_time + (orchestrator_slot_duration.as_duration() * 3);
+    // We wait at max till 3 slots
+    let sleep = tokio::time::sleep(orchestrator_slot_duration.as_duration() * 3);
+    // We need to pin it as we are using the same sleep object multiple times in a loop
+    tokio::pin!(sleep);
+
     loop {
         select! {
-            _ = tokio::time::sleep_until(wait_till) => return Err(BuyCoreError::TxInclusionError),
-            tx_status = tx_stream.select_next_some() => match tx_status {
-                TransactionStatus::InBlock((block_hash, _)) | TransactionStatus::Finalized((block_hash, _)) => return Ok(block_hash),
-                _ => {},
+            _ = &mut sleep => return Err(BuyCoreError::TxInclusionTimeout),
+            tx_status = tx_stream.next() => match tx_status {
+                None => return Err(BuyCoreError::TxDroppedFromPool),
+                Some(TransactionStatus::InBlock((block_hash, _))) | Some(TransactionStatus::Finalized((block_hash, _))) => return Ok(block_hash),
+                Some(_) => {},
             }
         }
     }
 }
 
 /// Parameters for [`run`].
-pub struct Params<GSD, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH> {
+pub struct Params<
+    GSD,
+    BI,
+    CIDP,
+    Client,
+    Backend,
+    RClient,
+    CHP,
+    SO,
+    Proposer,
+    CS,
+    GOH,
+    TxPool,
+    OClient,
+> {
     pub get_current_slot_duration: GSD,
     pub create_inherent_data_providers: CIDP,
     pub get_orchestrator_aux_data: GOH,
@@ -353,6 +384,8 @@ pub struct Params<GSD, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS
     pub authoring_duration: Duration,
     pub force_authoring: bool,
     pub cancellation_token: CancellationToken,
+    pub orchestrator_tx_pool: Arc<TxPool>,
+    pub orchestrator_client: Arc<OClient>,
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -370,12 +403,25 @@ pub fn run<
     Proposer,
     CS,
     GOH,
+    TxPool,
     OClient,
     OBlock,
 >(
-    mut params: Params<GSD, BI, CIDP, Client, Backend, RClient, CHP, SO, Proposer, CS, GOH>,
-    orchestrator_tx_pool: Arc<FullPool<OBlock, OClient>>,
-    orchestrator_client: Arc<OClient>,
+    mut params: Params<
+        GSD,
+        BI,
+        CIDP,
+        Client,
+        Backend,
+        RClient,
+        CHP,
+        SO,
+        Proposer,
+        CS,
+        GOH,
+        TxPool,
+        OClient,
+    >,
 ) -> (
     impl Future<Output = ()> + Send + 'static,
     oneshot::Receiver<()>,
@@ -422,6 +468,7 @@ where
         + 'static,
     OClient::Api: TaggedTransactionQueue<OBlock>
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
+    TxPool: TransactionPool<Block = OBlock> + 'static,
     GSD: Fn(<Block as BlockT>::Hash) -> SlotDuration + Send + 'static,
 {
     // This is an arbitrary value which is likely guaranteed to exceed any reasonable
@@ -617,15 +664,20 @@ where
                         // we iterate and build on all of the cores returned.
                         // More info: https://github.com/paritytech/polkadot-sdk/issues/1829
                         let (is_parachain, core_index) = match (&aux_data.slot_freq, core_indices.first()) {
-                            (None, None) => break, // We are parachain and we do not have core allocated, nothing to do,
-                            (None, Some(core_index)) => (true, core_index), // We are parachain and we have core allocated, let's continue
-
-                            (Some(_slot_frequency), None) => {
-                                // We are parathread and core is not allocated. Let's try to buy core
+                            (None, None) => {
+                                tracing::warn!(target: crate::LOG_TARGET, para_id = ?params.para_id, "We are parachain and we do not have core allocated, nothing to do");
+                                break;
+                            }, // We are parachain and we do not have core allocated, nothing to do,
+                            (None, Some(core_index)) => {
+                                tracing::trace!(target: crate::LOG_TARGET, para_id = ?params.para_id, ?core_index, "We are parachain and we core allocated, let's collate the block");
+                                (true, core_index)
+                            }, // We are parachain and we have core allocated, let's continue
+                            (Some(_slot_frequency), None) => { // We are parathread and core is not allocated. Let's try to buy core
+                                tracing::trace!(target: crate::LOG_TARGET, para_id = ?params.para_id, "We are parathread and we do not have core allocated, let's try to buy the core");
                                 let slot = inherent_providers.slot();
                                 let container_chain_slot_duration = (params.get_current_slot_duration)(parent_header.hash());
 
-                                match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _>(params.para_id, aux_data, inherent_providers, &params.keystore, orchestrator_client.clone(), orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await {
+                                match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await {
                                     Ok(block_hash) => {
                                         tracing::trace!(target: crate::LOG_TARGET, ?block_hash, "Sent unsigned extrinsic to buy the core");
                                     },
@@ -635,9 +687,9 @@ where
                                 };
                                 break; // No point in continuing as we need to wait for few relay blocks in order for our core to be available.
                             },
-                            (Some(_slot_frequency), Some(core_index)) => {
-                                tracing::error!(target: crate::LOG_TARGET, ?core_index, "Not a parachain but we have a core (most likely from previous buy order)");
-                                (false, core_index) // We are parathread and we do have core, let's continue
+                            (Some(_slot_frequency), Some(core_index)) => { // We are parathread and we do have core, let's continue
+                                tracing::trace!(target: crate::LOG_TARGET, ?core_index, "We are parathread and we do have core allocated, let's collate the block");
+                                (false, core_index)
                             }
                         };
 

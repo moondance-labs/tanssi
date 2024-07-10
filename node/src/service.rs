@@ -867,13 +867,13 @@ fn start_consensus_container(
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
         cancellation_token: CancellationToken::new(),
+        orchestrator_tx_pool,
+        orchestrator_client,
     };
 
     let (fut, _exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _, _>(
             params,
-            orchestrator_tx_pool,
-            orchestrator_client,
         );
     spawner.spawn("tanssi-aura-container", None, fut);
 }
@@ -1023,13 +1023,13 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
+        orchestrator_tx_pool,
+        orchestrator_client: client,
     };
 
     let (fut, exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _>(
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _, _>(
             params,
-            orchestrator_tx_pool,
-            client,
         );
     spawner.spawn("tanssi-aura", None, fut);
 

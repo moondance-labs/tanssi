@@ -2585,8 +2585,8 @@ impl_runtime_apis! {
     }
 
     impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId, NimbusId> for Runtime {
-        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
-            XcmCoreBuyer::is_core_buying_allowed(para_id)
+        fn is_core_buying_allowed(para_id: ParaId, collator_public_key: NimbusId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id, Some(collator_public_key))
         }
 
         fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<NimbusId>) -> Box<<Block as BlockT>::Extrinsic> {

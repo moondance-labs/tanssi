@@ -339,14 +339,14 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             // Below parameter are already validated during `validate_unsigned` cal
-            _proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
+            proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
         ) -> DispatchResult {
             ensure_none(origin)?;
 
             let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
             CollatorSignatureNonce::<T>::set(para_id, current_nonce + 1);
 
-            Self::on_collator_instantaneous_core_requested(para_id)
+            Self::on_collator_instantaneous_core_requested(para_id, Some(proof.public_key))
         }
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
@@ -355,7 +355,7 @@ pub mod pallet {
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
-            Self::on_collator_instantaneous_core_requested(para_id)
+            Self::on_collator_instantaneous_core_requested(para_id, None)
         }
 
         #[pallet::call_index(2)]
@@ -524,6 +524,7 @@ pub mod pallet {
 
         pub fn is_core_buying_allowed(
             para_id: ParaId,
+            _maybe_collator_public_key: Option<<T as Config>::CollatorPublicKey>,
         ) -> Result<(), BuyingError<BlockNumberFor<T>>> {
             // If an in flight order is pending (i.e we did not receive the notification yet) and our
             // record is not expired yet, we should not allow the collator to buy another core.
@@ -579,8 +580,12 @@ pub mod pallet {
         }
 
         /// Send an XCM message to the relay chain to try to buy a core for this para_id.
-        fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
-            Self::is_core_buying_allowed(para_id).map_err(Into::<Error<T>>::into)?;
+        fn on_collator_instantaneous_core_requested(
+            para_id: ParaId,
+            maybe_collator_public_key: Option<<T as Config>::CollatorPublicKey>,
+        ) -> DispatchResult {
+            Self::is_core_buying_allowed(para_id, maybe_collator_public_key)
+                .map_err(Into::<Error<T>>::into)?;
 
             let xcm_weights_storage =
                 RelayXcmWeightConfig::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;

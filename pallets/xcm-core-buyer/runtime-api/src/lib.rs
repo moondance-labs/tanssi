@@ -28,7 +28,7 @@ use tp_xcm_core_buyer::BuyCoreCollatorProof;
 
 sp_api::decl_runtime_apis! {
     pub trait XCMCoreBuyerApi<BlockNumber, ParaId, CollatorPublicKey> where ParaId: parity_scale_codec::Codec, BlockNumber: parity_scale_codec::Codec, BuyingError<BlockNumber>: parity_scale_codec::Codec, CollatorPublicKey: RuntimeAppPublic + Clone + core::fmt::Debug + parity_scale_codec::Codec,  {
-        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>>;
+        fn is_core_buying_allowed(para_id: ParaId, collator_public_key: CollatorPublicKey) -> Result<(), BuyingError<BlockNumber>>;
         fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<CollatorPublicKey>) -> Box<<Block as BlockT>::Extrinsic>;
         fn get_buy_core_signature_nonce(para_id: ParaId) -> u64;
         fn get_buy_core_slot_drift() -> Slot;
