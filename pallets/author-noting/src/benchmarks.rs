@@ -19,7 +19,7 @@
 //! Benchmarking
 use {
     crate::{Call, Config, Pallet, RelayOrPara},
-    cumulus_pallet_parachain_system::RelaychainStateProvider,
+    core::any::{Any, TypeId},
     frame_benchmarking::{account, benchmarks},
     frame_support::assert_ok,
     frame_system::RawOrigin,
@@ -57,40 +57,45 @@ benchmarks! {
         // Depend on the number of parachains registered
         let x in 0..100;
 
-        let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
         let mut container_chains = vec![];
 
-        for para_id in 0..x {
-            let para_id = para_id.into();
-            container_chains.push(para_id);
-            // Mock assigned authors for this para id
-            let author: T::AccountId = account("account id", 0u32, 0u32);
-            // Use the max allowed value for num_each_container_chain
-            let num_each_container_chain = 2;
-            T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
-            sproof_builder.num_items += 1;
-        }
-
-        let (root, proof) = sproof_builder.into_state_root_and_proof();
-
-        // In benchmarks
-        use core::any::TypeId;
-        use core::any::Any;
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
-            let data = tp_author_noting_inherent::OwnParachainInherentData {
+            let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
+
+            for para_id in 0..x {
+                let para_id = para_id.into();
+                container_chains.push(para_id);
+                // Mock assigned authors for this para id
+                let author: T::AccountId = account("account id", 0u32, 0u32);
+                // Use the max allowed value for num_each_container_chain
+                let num_each_container_chain = 2;
+                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
+                sproof_builder.num_items += 1;
+            }
+
+            let (root, proof) = sproof_builder.into_state_root_and_proof();
+
+            T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
+                state_root: root,
+                number: 0,
+            });
+
+            let arg = tp_author_noting_inherent::OwnParachainInherentData {
                 relay_storage_proof: proof,
             };
 
-            *(Box::new(data) as Box<dyn Any>).downcast().unwrap()
+            *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
+        } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
+            // TODO: we need to write to storage the elements from the proof
+            unimplemented!("Benchmark will fail because headers have not been written to storage");
+            //let arg = ();
+            //*(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else {
-            unreachable!()
+            unreachable!("Unknown InherentArg")
         };
 
         T::ContainerChains::set_current_container_chains(&container_chains);
-        T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
-            state_root: root,
-            number: 0,
-        });
+
     }: _(RawOrigin::None, data)
 
     set_author {

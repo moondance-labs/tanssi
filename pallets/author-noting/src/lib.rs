@@ -456,7 +456,7 @@ impl RelayOrPara for RelayMode {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_relay_chain_state(state: cumulus_pallet_parachain_system::RelayChainState) {}
+    fn set_current_relay_chain_state(_state: cumulus_pallet_parachain_system::RelayChainState) {}
 }
 
 impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
