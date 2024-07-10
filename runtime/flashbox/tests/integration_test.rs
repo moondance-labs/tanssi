@@ -4105,3 +4105,53 @@ fn test_migration_data_preservers_assignments() {
         );
     })
 }
+
+#[test]
+fn test_migration_registrar_reserves_to_hold() {
+    ExtBuilder::default()
+    .with_balances(vec![
+        (AccountId::from(DAVE), 100_000 * UNIT),
+    ]).build().execute_with(|| {
+        use {
+            pallet_registrar::DepositInfo,
+            tanssi_runtime_common::migrations::RegistrarReserveToHoldMigration,
+            frame_support::traits::{fungible::InspectHold, ReservableCurrency},
+        };
+
+        let deposit: Balance = 100 * UNIT;
+        let account: AccountId = DAVE.into();
+
+        assert_ok!(Balances::reserve(&account, deposit.clone()));
+
+        pallet_registrar::RegistrarDeposit::<Runtime>::insert(
+            ParaId::from(1001),
+            DepositInfo {
+                creator: account.clone(),
+                deposit: deposit.clone(),
+            },
+        );
+        assert_eq!(
+            Balances::reserved_balance(&account),
+            deposit.clone(),
+        );
+        // Apply migration
+        let migration = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        assert_eq!(
+            Balances::reserved_balance(&account),
+            deposit.clone(),
+        );
+        // Check reserve is 0 and is now on hold
+        assert_eq!(
+            Balances::reserved_balance(&account),
+            0u128.into()
+        );
+        assert_eq!(
+            Balances::balance_on_hold(
+                &pallet_registrar::HoldReason::RegistrarDeposit.into(),
+                &account.into()
+            ),deposit.into()
+        );
+    })
+}

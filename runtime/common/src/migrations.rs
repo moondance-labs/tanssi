@@ -492,6 +492,8 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use frame_support::traits::fungible::InspectHold;
+
         for (_para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
             ensure!(
                 pallet_balances::Pallet::<T>::reserved_balance(&deposit.creator)
@@ -512,6 +514,8 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use frame_support::traits::fungible::InspectHold;
+
         for (_para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
             ensure!(
                 pallet_balances::Pallet::<T>::balance_on_hold(
