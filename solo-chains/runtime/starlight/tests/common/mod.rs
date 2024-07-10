@@ -52,10 +52,15 @@ pub fn session_to_block(n: u32) -> u32 {
     block_number + 1
 }
 
-pub fn authorities() -> Vec<babe_primitives::AuthorityId> {
-    let _session_index = Session::current_index();
-
+pub fn babe_authorities() -> Vec<babe_primitives::AuthorityId> {
     Babe::authorities()
+        .iter()
+        .map(|(key, _)| key.clone())
+        .collect()
+}
+
+pub fn grandpa_authorities() -> Vec<pallet_grandpa::AuthorityId> {
+    Grandpa::grandpa_authorities()
         .iter()
         .map(|(key, _)| key.clone())
         .collect()
@@ -187,6 +192,7 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
+    Grandpa::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
@@ -256,6 +262,7 @@ pub struct ExtBuilder {
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
     own_para_id: Option<ParaId>,
+    next_free_para_id: ParaId,
 }
 
 impl Default for ExtBuilder {
@@ -275,6 +282,7 @@ impl Default for ExtBuilder {
             para_ids: Default::default(),
             config: default_config(),
             own_para_id: Default::default(),
+            next_free_para_id: Default::default(),
         }
     }
 }
@@ -311,6 +319,12 @@ impl ExtBuilder {
         self
     }
 
+    // Maybe change to with_collators_config?
+    pub fn with_next_free_para_id(mut self, para_id: ParaId) -> Self {
+        self.next_free_para_id = para_id;
+        self
+    }
+
     pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::<Runtime>::default()
             .build_storage()
@@ -340,6 +354,13 @@ impl ExtBuilder {
                     (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        runtime_common::paras_registrar::GenesisConfig::<Runtime> {
+            next_free_para_id: self.next_free_para_id,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();
