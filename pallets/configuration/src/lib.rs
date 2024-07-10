@@ -46,7 +46,7 @@ use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
-    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, RuntimeAppPublic, Saturating},
+    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
 };
@@ -121,11 +121,14 @@ impl HostConfiguration {
     /// # Errors
     ///
     /// This function returns an error if the configuration is inconsistent.
-    pub fn check_consistency(&self) -> Result<(), InconsistentError> {
+    pub fn check_consistency(
+        &self,
+        allow_empty_orchestrator: bool,
+    ) -> Result<(), InconsistentError> {
         if self.max_collators < 1 {
             return Err(InconsistentError::MaxCollatorsTooLow);
         }
-        if self.min_orchestrator_collators < 1 {
+        if self.min_orchestrator_collators < 1 && !allow_empty_orchestrator {
             return Err(InconsistentError::MinOrchestratorCollatorsTooLow);
         }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
@@ -145,8 +148,8 @@ impl HostConfiguration {
     /// # Panics
     ///
     /// This function panics if the configuration is inconsistent.
-    pub fn panic_if_not_consistent(&self) {
-        if let Err(err) = self.check_consistency() {
+    pub fn panic_if_not_consistent(&self, allow_empty_orchestrator: bool) {
+        if let Err(err) = self.check_consistency(allow_empty_orchestrator) {
             panic!("Host configuration is inconsistent: {:?}", err);
         }
     }
@@ -175,12 +178,7 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        /// The identifier type for an authority.
-        type AuthorityId: Member
-            + Parameter
-            + RuntimeAppPublic
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen;
+        type ForceEmptyOrchestrator: Get<bool>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -223,7 +221,8 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            self.config.panic_if_not_consistent();
+            self.config
+                .panic_if_not_consistent(T::ForceEmptyOrchestrator::get());
             ActiveConfig::<T>::put(&self.config);
         }
     }
@@ -469,7 +468,9 @@ pub mod pallet {
                 .last()
                 .map(|(_, config)| config.clone())
                 .unwrap_or_else(Self::config);
-            let base_config_consistent = base_config.check_consistency().is_ok();
+            let base_config_consistent = base_config
+                .check_consistency(T::ForceEmptyOrchestrator::get())
+                .is_ok();
 
             // Now, we need to decide what the new configuration should be.
             // We also move the `base_config` to `new_config` to empahsize that the base config was
@@ -484,7 +485,7 @@ pub mod pallet {
                     target: LOG_TARGET,
                     "Bypassing the consistency check for the configuration change!",
                 );
-            } else if let Err(e) = new_config.check_consistency() {
+            } else if let Err(e) = new_config.check_consistency(T::ForceEmptyOrchestrator::get()) {
                 if base_config_consistent {
                     // Base configuration is consistent and the new configuration is inconsistent.
                     // This means that the value set by the `updater` is invalid and we can return
