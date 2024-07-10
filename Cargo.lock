@@ -16289,8 +16289,6 @@ dependencies = [
  "pallet-balances",
  "pallet-beefy",
  "pallet-beefy-mmr",
- "pallet-bounties",
- "pallet-child-bounties",
  "pallet-collator-assignment",
  "pallet-collective",
  "pallet-configuration",

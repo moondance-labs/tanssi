@@ -62,8 +62,6 @@ pallet-babe = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
-pallet-bounties = { workspace = true }
-pallet-child-bounties = { workspace = true }
 pallet-collator-assignment = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
@@ -267,8 +265,6 @@ runtime-benchmarks = [
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
-	"pallet-bounties/runtime-benchmarks",
-	"pallet-child-bounties/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
@@ -330,8 +326,6 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-beefy/try-runtime",
-	"pallet-bounties/try-runtime",
-	"pallet-child-bounties/try-runtime",
 	"pallet-collator-assignment/try-runtime",
 	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
