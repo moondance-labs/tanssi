@@ -117,7 +117,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
 
-            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
+            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
                     == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
@@ -126,7 +126,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Invulnerables should have triggered on new session authorities change
             run_to_session(2u32);
 
-            assert!(authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
+            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
             assert!(
                 authorities_for_container(1000u32.into())
                     == Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
@@ -274,7 +274,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Let's check Babe authorities to ensure nothing breaks
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -341,7 +341,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Check Babe authorities again
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -380,7 +380,7 @@ fn test_session_keys_with_authority_assignment() {
 
             // Check Babe authorities for the last time
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
             );
         });
@@ -442,7 +442,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Check Babe authorities
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -489,7 +489,6 @@ fn test_session_keys_with_authority_mapping() {
             );
 
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
-
             assert_eq!(key_mapping_session_1.len(), 2);
             assert_eq!(
                 key_mapping_session_1.get(&alice_keys.nimbus),
@@ -515,7 +514,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Let's check Babe again
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
@@ -546,7 +545,7 @@ fn test_session_keys_with_authority_mapping() {
 
             // Babe should be using the new keys
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys_2.babe.clone(), bob_keys_2.babe.clone()]
             );
         });
@@ -581,7 +580,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
 
             assert_eq!(
-                authorities(),
+                babe_authorities(),
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 

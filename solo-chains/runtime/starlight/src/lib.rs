@@ -1411,20 +1411,6 @@ pub type Executive = frame_executive::Executive<
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
-pub struct NoRelayStorageRoots;
-
-impl tp_traits::RelayStorageRootProvider for NoRelayStorageRoots {
-    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
-        // We can probably get this from frame_system::Digest, but this is needed to do relay storage proofs
-        // which doesn't make sense since we are the relay chain now, so the register_with_proof extrinsic
-        // should be disabled in this runtime
-        None
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn set_relay_storage_root(_relay_block_number: u32, _storage_root: Option<H256>) {}
-}
-
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
