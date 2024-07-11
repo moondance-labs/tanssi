@@ -50,15 +50,17 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+nimbus-primitives = { workspace = true }
 pallet-asset-rate = { workspace = true }
+pallet-authority-assignment = { workspace = true }
 pallet-authority-discovery = { workspace = true }
+pallet-authority-mapping = { workspace = true }
 pallet-authorship = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
-pallet-bounties = { workspace = true }
-pallet-child-bounties = { workspace = true }
+pallet-collator-assignment = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
@@ -67,11 +69,11 @@ pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-indices = { workspace = true }
 pallet-initializer = { workspace = true }
+pallet-invulnerables = { workspace = true }
 pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
 pallet-multisig = { workspace = true }
-pallet-nis = { workspace = true }
 pallet-offences = { workspace = true }
 pallet-parameters = { workspace = true }
 pallet-preimage = { workspace = true }
@@ -82,9 +84,7 @@ pallet-referenda = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-session = { workspace = true }
-pallet-society = { workspace = true }
 pallet-staking = { workspace = true }
-pallet-state-trie-migration = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-tips = { workspace = true }
@@ -92,7 +92,6 @@ pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-treasury = { workspace = true }
 pallet-utility = { workspace = true }
-pallet-vesting = { workspace = true }
 pallet-whitelist = { workspace = true }
 pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
@@ -111,6 +110,16 @@ xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 xcm-fee-payment-runtime-api = { workspace = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true }
+
+# Tanssi
+tp-traits = { workspace = true }
+
+pallet-configuration = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
@@ -134,6 +143,7 @@ std = [
 	"binary-merkle-tree/std",
 	"bitvec/std",
 	"block-builder-api/std",
+	"cumulus-primitives-core/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -145,17 +155,20 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
+	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
+	"pallet-authority-assignment/std",
 	"pallet-authority-discovery/std",
+	"pallet-authority-mapping/std",
 	"pallet-authorship/std",
 	"pallet-babe/std",
 	"pallet-balances/std",
 	"pallet-beefy-mmr/std",
 	"pallet-beefy/std",
-	"pallet-bounties/std",
-	"pallet-child-bounties/std",
+	"pallet-collator-assignment/std",
 	"pallet-collective/std",
+	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
@@ -163,11 +176,11 @@ std = [
 	"pallet-identity/std",
 	"pallet-indices/std",
 	"pallet-initializer/std",
+	"pallet-invulnerables/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-mmr/std",
 	"pallet-multisig/std",
-	"pallet-nis/std",
 	"pallet-offences/std",
 	"pallet-parameters/std",
 	"pallet-preimage/std",
@@ -175,12 +188,12 @@ std = [
 	"pallet-ranked-collective/std",
 	"pallet-recovery/std",
 	"pallet-referenda/std",
+	"pallet-registrar-runtime-api/std",
+	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
 	"pallet-session/std",
-	"pallet-society/std",
 	"pallet-staking/std",
-	"pallet-state-trie-migration/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-tips/std",
@@ -188,7 +201,6 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-treasury/std",
 	"pallet-utility/std",
-	"pallet-vesting/std",
 	"pallet-whitelist/std",
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm/std",
@@ -217,6 +229,7 @@ std = [
 	"sp-version/std",
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
+	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
@@ -225,27 +238,29 @@ std = [
 ]
 no_std = []
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
-	"pallet-bounties/runtime-benchmarks",
-	"pallet-child-bounties/runtime-benchmarks",
+	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-indices/runtime-benchmarks",
+	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-mmr/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
-	"pallet-nis/runtime-benchmarks",
 	"pallet-offences/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
@@ -253,16 +268,14 @@ runtime-benchmarks = [
 	"pallet-ranked-collective/runtime-benchmarks",
 	"pallet-recovery/runtime-benchmarks",
 	"pallet-referenda/runtime-benchmarks",
+	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
-	"pallet-society/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
-	"pallet-state-trie-migration/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tips/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
-	"pallet-vesting/runtime-benchmarks",
 	"pallet-whitelist/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
@@ -272,6 +285,7 @@ runtime-benchmarks = [
 	"runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 ]
@@ -281,16 +295,19 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime",
 	"frame-try-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
 	"pallet-asset-rate/try-runtime",
+	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-discovery/try-runtime",
+	"pallet-authority-mapping/try-runtime",
 	"pallet-authorship/try-runtime",
 	"pallet-babe/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-beefy/try-runtime",
-	"pallet-bounties/try-runtime",
-	"pallet-child-bounties/try-runtime",
+	"pallet-collator-assignment/try-runtime",
 	"pallet-collective/try-runtime",
+	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
@@ -298,11 +315,11 @@ try-runtime = [
 	"pallet-identity/try-runtime",
 	"pallet-indices/try-runtime",
 	"pallet-initializer/try-runtime",
+	"pallet-invulnerables/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-mmr/try-runtime",
 	"pallet-multisig/try-runtime",
-	"pallet-nis/try-runtime",
 	"pallet-offences/try-runtime",
 	"pallet-parameters/try-runtime",
 	"pallet-preimage/try-runtime",
@@ -310,19 +327,17 @@ try-runtime = [
 	"pallet-ranked-collective/try-runtime",
 	"pallet-recovery/try-runtime",
 	"pallet-referenda/try-runtime",
+	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-scheduler/try-runtime",
 	"pallet-session/try-runtime",
-	"pallet-society/try-runtime",
 	"pallet-staking/try-runtime",
-	"pallet-state-trie-migration/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-tips/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-treasury/try-runtime",
 	"pallet-utility/try-runtime",
-	"pallet-vesting/try-runtime",
 	"pallet-whitelist/try-runtime",
 	"pallet-xcm/try-runtime",
 	"runtime-common/try-runtime",

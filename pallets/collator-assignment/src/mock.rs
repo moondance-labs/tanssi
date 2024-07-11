@@ -21,7 +21,7 @@ use {
     },
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64, Hooks},
+        traits::{ConstBool, ConstU16, ConstU64, Hooks},
         weights::Weight,
     },
     frame_system as system,
@@ -295,6 +295,7 @@ impl pallet_collator_assignment::Config for Test {
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
     type CollatorAssignmentHook = MockCollatorAssignmentHook;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
+    type ForceEmptyOrchestrator = ConstBool<false>;
     type Currency = ();
     type WeightInfo = ();
 }
