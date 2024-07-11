@@ -34,7 +34,6 @@
 use crate::collators::ClaimMode;
 use nimbus_primitives::NimbusId;
 use pallet_xcm_core_buyer_runtime_api::{BuyingError, XCMCoreBuyerApi};
-use sc_transaction_pool_api::TransactionStatus;
 use sp_api::ApiError;
 use sp_blockchain::HeaderMetadata;
 use sp_runtime::traits::BlockIdTo;
@@ -94,8 +93,6 @@ pub enum BuyCoreError<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> 
     BuyingValidationError(BuyingError<BlockNumber>),
     UnableToCreateProof(BuyCollatorProofCreationError),
     TxSubmissionError(PoolError),
-    TxInclusionTimeout,
-    TxDroppedFromPool,
 }
 
 impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
@@ -184,24 +181,6 @@ impl<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug>
                     "Unable to send buy core unsigned extrinsic through orchestrator tx pool",
                 );
             }
-            BuyCoreError::TxInclusionTimeout => {
-                tracing::error!(
-                    target: crate::LOG_TARGET,
-                    ?relay_parent,
-                    ?para_id,
-                    ?slot,
-                    "Unable to include the tx into a block due to timeout",
-                );
-            }
-            BuyCoreError::TxDroppedFromPool => {
-                tracing::error!(
-                    target: crate::LOG_TARGET,
-                    ?relay_parent,
-                    ?para_id,
-                    ?slot,
-                    "Unable to include the tx into a block as tx was dropped from the tx pool",
-                );
-            }
         }
     }
 }
@@ -241,7 +220,7 @@ pub async fn try_to_buy_core<Block, OBlock, OBlockNumber, P, CIDP, TxPool, OClie
     orchestrator_slot_duration: SlotDuration,
     container_slot_duration: SlotDuration,
 ) -> Result<
-    <OBlock as BlockT>::Hash,
+    <TxPool as TransactionPool>::Hash,
     BuyCoreError<
         <<OBlock as BlockT>::Header as HeaderT>::Number,
         <TxPool as TransactionPool>::Error,
@@ -325,27 +304,10 @@ where
         collator_buy_core_proof,
     )?;
 
-    let mut tx_stream = orchestrator_tx_pool
-        .submit_and_watch(orchestrator_best_hash, TransactionSource::Local, *extrinsic)
+    orchestrator_tx_pool
+        .submit_one(orchestrator_best_hash, TransactionSource::Local, *extrinsic)
         .await
-        .map_err(BuyCoreError::TxSubmissionError)?
-        .fuse();
-
-    // We wait at max till 3 slots
-    let sleep = tokio::time::sleep(orchestrator_slot_duration.as_duration() * 3);
-    // We need to pin it as we are using the same sleep object multiple times in a loop
-    tokio::pin!(sleep);
-
-    loop {
-        select! {
-            _ = &mut sleep => return Err(BuyCoreError::TxInclusionTimeout),
-            tx_status = tx_stream.next() => match tx_status {
-                None => return Err(BuyCoreError::TxDroppedFromPool),
-                Some(TransactionStatus::InBlock((block_hash, _))) | Some(TransactionStatus::Finalized((block_hash, _))) => return Ok(block_hash),
-                Some(_) => {},
-            }
-        }
-    }
+        .map_err(BuyCoreError::TxSubmissionError)
 }
 
 /// Parameters for [`run`].
