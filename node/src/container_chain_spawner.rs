@@ -21,7 +21,6 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
-use sc_transaction_pool::FullPool;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -66,7 +65,7 @@ pub struct ContainerChainSpawner {
     // Start container chain params
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub orchestrator_client: Arc<ParachainClient>,
-    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
+    pub orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<OpaqueBlock, ParachainClient>>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,

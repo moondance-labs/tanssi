@@ -244,7 +244,7 @@ where
         + 'static,
     OClient::Api: TaggedTransactionQueue<OBlock>
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
-    TxPool: TransactionPool<Block = OBlock>,
+    TxPool: TransactionPool<Block = OBlock> + ?Sized,
 {
     // We do nothing if this is not a parathread
     if aux_data.slot_freq.is_none() {
@@ -323,7 +323,7 @@ pub struct Params<
     Proposer,
     CS,
     GOH,
-    TxPool,
+    TxPool: ?Sized,
     OClient,
 > {
     pub get_current_slot_duration: GSD,
@@ -430,7 +430,7 @@ where
         + 'static,
     OClient::Api: TaggedTransactionQueue<OBlock>
         + XCMCoreBuyerApi<OBlock, <<OBlock as BlockT>::Header as HeaderT>::Number, ParaId, NimbusId>,
-    TxPool: TransactionPool<Block = OBlock> + 'static,
+    TxPool: TransactionPool<Block = OBlock> + 'static + ?Sized,
     GSD: Fn(<Block as BlockT>::Hash) -> SlotDuration + Send + 'static,
 {
     // This is an arbitrary value which is likely guaranteed to exceed any reasonable

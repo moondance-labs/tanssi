@@ -549,7 +549,7 @@ fn container_log_str(para_id: ParaId) -> String {
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
     orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
@@ -694,7 +694,7 @@ fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -898,7 +898,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
