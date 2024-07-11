@@ -138,7 +138,7 @@ pub mod pallet {
         #[pallet::weight((T::WeightInfo::set_latest_author_data(<T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains::get()), DispatchClass::Mandatory))]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
-            data: <<T as pallet::Config>::RelayOrPara as RelayOrPara>::InherentArg,
+            data: InherentDataOf<T>,
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
 
@@ -439,6 +439,8 @@ pub trait RelayOrPara {
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_relay_chain_state(state: cumulus_pallet_parachain_system::RelayChainState);
 }
+
+pub type InherentDataOf<T> = <<T as Config>::RelayOrPara as RelayOrPara>::InherentArg;
 
 pub struct RelayMode;
 pub struct ParaMode<RCSP: RelaychainStateProvider>(PhantomData<RCSP>);

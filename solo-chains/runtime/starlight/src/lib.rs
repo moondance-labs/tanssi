@@ -20,8 +20,6 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
-use frame_system::pallet_prelude::BlockNumberFor;
-use sp_runtime::traits::BlockNumberProvider;
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -72,6 +70,7 @@ use {
     },
     scale_info::TypeInfo,
     sp_genesis_builder::PresetId,
+    sp_runtime::traits::BlockNumberProvider,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, vec_deque::VecDeque},
@@ -1552,28 +1551,6 @@ impl pallet_author_noting::Config for Runtime {
     //type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
-}
-
-pub struct NoRelayChainStateProvider;
-
-impl cumulus_pallet_parachain_system::RelaychainStateProvider for NoRelayChainStateProvider {
-    fn current_relay_chain_state() -> cumulus_pallet_parachain_system::RelayChainState {
-        // Private storage item
-        //let number = frame_system::Number::get();
-        const FRAME_SYSTEM_NUMBER: &[u8] =
-            &hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac");
-        let number: BlockNumberFor<Runtime> =
-            frame_support::storage::unhashed::get(FRAME_SYSTEM_NUMBER)
-                .expect("configuration.activeConfig should have value");
-
-        cumulus_pallet_parachain_system::RelayChainState {
-            number,
-            state_root: Default::default(),
-        }
-    }
-    fn current_relay_state_proof() -> Option<sp_trie::StorageProof> {
-        None
-    }
 }
 
 frame_support::ord_parameter_types! {
