@@ -42,7 +42,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, vec, vec::Vec},
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
@@ -218,6 +218,12 @@ pub trait ShouldRotateAllCollators<SessionIndex> {
     fn should_rotate_all_collators(session_index: SessionIndex) -> bool;
 }
 
+impl<SessionIndex> ShouldRotateAllCollators<SessionIndex> for () {
+    fn should_rotate_all_collators(_session_index: SessionIndex) -> bool {
+        false
+    }
+}
+
 /// Helper trait for pallet_collator_assignment to be able to give priority to invulnerables
 pub trait RemoveInvulnerables<AccountId> {
     /// Remove the first n invulnerables from the list of collators. The order should be respected.
@@ -225,6 +231,16 @@ pub trait RemoveInvulnerables<AccountId> {
         collators: &mut Vec<AccountId>,
         num_invulnerables: usize,
     ) -> Vec<AccountId>;
+}
+
+impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
+    fn remove_invulnerables(
+        _collators: &mut Vec<AccountId>,
+        _num_invulnerables: usize,
+    ) -> Vec<AccountId> {
+        // Default impl: no collators are invulnerables
+        vec![]
+    }
 }
 
 /// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
@@ -242,11 +258,31 @@ pub trait RemoveParaIdsWithNoCredits {
     fn make_valid_para_ids(para_ids: &[ParaId]);
 }
 
+impl RemoveParaIdsWithNoCredits for () {
+    fn remove_para_ids_with_no_credits(
+        _para_ids: &mut Vec<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
+    ) {
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(_para_ids: &[ParaId]) {}
+}
+
 pub trait RelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256>;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>);
+}
+
+impl RelayStorageRootProvider for () {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
+        None
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {}
 }
 
 /// Information extracted from the latest container chain header

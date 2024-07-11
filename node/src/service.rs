@@ -66,7 +66,6 @@ use {
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::TelemetryHandle,
-    sc_transaction_pool::FullPool,
     sp_api::StorageProof,
     sp_consensus::{EnableProofRecording, SyncOracle},
     sp_consensus_slots::{Slot, SlotDuration},
@@ -125,9 +124,11 @@ pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
-type ParachainProposerFactory =
-    ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
-
+type ParachainProposerFactory = ProposerFactory<
+    sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>,
+    ParachainClient,
+    EnableProofRecording,
+>;
 // Container chains types
 type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
@@ -352,6 +353,7 @@ async fn start_node_impl(
 
     let rpc_builder = {
         let client = node_builder.client.clone();
+
         let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
@@ -699,7 +701,7 @@ fn start_consensus_container(
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
+    transaction_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,
@@ -1207,7 +1209,14 @@ pub fn start_dev_node(
     // This node RPC builder.
     let rpc_builder = {
         let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
+        let transaction_pool = sc_transaction_pool::Builder::new()
+            .with_options(parachain_config.transaction_pool.clone())
+            .build(
+                parachain_config.role.is_authority().into(),
+                parachain_config.prometheus_registry(),
+                node_builder.task_manager.spawn_essential_handle(),
+                client.clone(),
+            );
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {

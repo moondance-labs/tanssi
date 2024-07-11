@@ -24,6 +24,7 @@ use {
     },
     cumulus_primitives_core::ParaId,
     frame_support::traits::{OnFinalize, OnInitialize},
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
@@ -31,8 +32,8 @@ use {
 };
 
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Balances,
-    CollatorConfiguration, ContainerRegistrar, Initializer, Runtime, Session, System,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
+    Initializer, Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
     TransactionPayment,
 };
 
@@ -43,6 +44,37 @@ pub fn session_to_block(n: u32) -> u32 {
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
     block_number + 1
+}
+
+pub fn babe_authorities() -> Vec<babe_primitives::AuthorityId> {
+    Babe::authorities()
+        .iter()
+        .map(|(key, _)| key.clone())
+        .collect()
+}
+
+pub fn grandpa_authorities() -> Vec<pallet_grandpa::AuthorityId> {
+    Grandpa::grandpa_authorities()
+        .iter()
+        .map(|(key, _)| key.clone())
+        .collect()
+}
+
+pub fn authorities_for_container(para_id: ParaId) -> Option<Vec<NimbusId>> {
+    let session_index = Session::current_index();
+
+    TanssiAuthorityAssignment::collator_container_chain(session_index)
+        .expect("authorities should be set")
+        .container_chains
+        .get(&para_id)
+        .cloned()
+}
+
+pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
+    TanssiCollatorAssignment::collator_container_chain()
+        .container_chains
+        .get(&para_id)
+        .cloned()
 }
 
 pub fn run_to_session(n: u32) {
@@ -154,6 +186,7 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
+    Grandpa::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
@@ -223,6 +256,7 @@ pub struct ExtBuilder {
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
     own_para_id: Option<ParaId>,
+    next_free_para_id: ParaId,
 }
 
 impl Default for ExtBuilder {
@@ -242,6 +276,7 @@ impl Default for ExtBuilder {
             para_ids: Default::default(),
             config: default_config(),
             own_para_id: Default::default(),
+            next_free_para_id: Default::default(),
         }
     }
 }
@@ -278,6 +313,12 @@ impl ExtBuilder {
         self
     }
 
+    // Maybe change to with_collators_config?
+    pub fn with_next_free_para_id(mut self, para_id: ParaId) -> Self {
+        self.next_free_para_id = para_id;
+        self
+    }
+
     pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::<Runtime>::default()
             .build_storage()
@@ -311,6 +352,13 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        runtime_common::paras_registrar::GenesisConfig::<Runtime> {
+            next_free_para_id: self.next_free_para_id,
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         // TODO: add here pallet_services_payment::GenesisConfig
 
         pallet_configuration::GenesisConfig::<Runtime> {
@@ -320,11 +368,11 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        // TODO: add here pallet_xcm::GenesisConfig
-
+        let mut keys: Vec<_> = Vec::new();
         if !self.validators.is_empty() {
-            let keys: Vec<_> = self
+            let validator_keys: Vec<_> = self
                 .validators
+                .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
                     let authority_keys = get_authority_keys_from_seed(&account.to_string());
@@ -332,20 +380,75 @@ impl ExtBuilder {
                         account.clone(),
                         account,
                         starlight_runtime::SessionKeys {
-                            babe: authority_keys.2.clone(),
-                            grandpa: authority_keys.3.clone(),
-                            para_validator: authority_keys.4.clone(),
-                            para_assignment: authority_keys.5.clone(),
-                            authority_discovery: authority_keys.6.clone(),
-                            beefy: authority_keys.7.clone(),
+                            babe: authority_keys.babe.clone(),
+                            grandpa: authority_keys.grandpa.clone(),
+                            para_validator: authority_keys.para_validator.clone(),
+                            para_assignment: authority_keys.para_assignment.clone(),
+                            authority_discovery: authority_keys.authority_discovery.clone(),
+                            beefy: authority_keys.beefy.clone(),
+                            nimbus: authority_keys.nimbus.clone(),
                         },
                     )
                 })
                 .collect();
-            pallet_session::GenesisConfig::<Runtime> { keys }
-                .assimilate_storage(&mut t)
-                .unwrap();
+            keys.extend(validator_keys)
         }
+
+        if !self.collators.is_empty() {
+            // We set invulnerables in pallet_invulnerables
+            let invulnerables: Vec<AccountId> = self
+                .collators
+                .clone()
+                .into_iter()
+                .map(|(account, _balance)| account)
+                .collect();
+
+            pallet_invulnerables::GenesisConfig::<Runtime> {
+                invulnerables: invulnerables.clone(),
+            }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+            // But we also initialize their keys in the session pallet
+            // We discard those that had the key initialized already
+            // from the validator list
+            // in other words, for testing purposes we allow to inject a validator account
+            // in the collator list
+            let validator_unique_accounts: Vec<_> = self
+                .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect();
+            let collator_keys: Vec<_> = self
+                .collators
+                .into_iter()
+                .filter_map(|(account, _balance)| {
+                    if validator_unique_accounts.contains(&account) {
+                        None
+                    } else {
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                        Some((
+                            account.clone(),
+                            account,
+                            starlight_runtime::SessionKeys {
+                                babe: authority_keys.babe.clone(),
+                                grandpa: authority_keys.grandpa.clone(),
+                                para_validator: authority_keys.para_validator.clone(),
+                                para_assignment: authority_keys.para_assignment.clone(),
+                                authority_discovery: authority_keys.authority_discovery.clone(),
+                                beefy: authority_keys.beefy.clone(),
+                                nimbus: authority_keys.nimbus.clone(),
+                            },
+                        ))
+                    }
+                })
+                .collect();
+            keys.extend(collator_keys)
+        }
+
+        pallet_session::GenesisConfig::<Runtime> { keys }
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)

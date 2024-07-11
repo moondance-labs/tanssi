@@ -29,7 +29,7 @@ use {
     frame_support::{
         dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::FromContains,
+        traits::{ConstBool, FromContains},
     },
     frame_system::EnsureNever,
     pallet_initializer as tanssi_initializer,
@@ -104,7 +104,7 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, IdentityLookup,
-            Keccak256, OpaqueKeys, SaturatedConversion, Verify,
+            Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -423,10 +423,11 @@ impl_opaque_keys! {
     pub struct SessionKeys {
         pub grandpa: Grandpa,
         pub babe: Babe,
-        pub para_validator: TanssiInitializer,
+        pub para_validator: Initializer,
         pub para_assignment: ParaSessionInfo,
         pub authority_discovery: AuthorityDiscovery,
         pub beefy: Beefy,
+        pub nimbus: TanssiInitializer,
     }
 }
 
@@ -1124,6 +1125,22 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
 }
 
+parameter_types! {
+    pub const MaxInvulnerables: u32 = 100;
+}
+
+impl pallet_invulnerables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type MaxInvulnerables = MaxInvulnerables;
+    type CollatorId = <Self as frame_system::Config>::AccountId;
+    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorRegistration = Session;
+    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
+}
+
 pub struct CurrentSessionIndexGetter;
 
 impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
@@ -1137,12 +1154,8 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = BeefyId;
+    type ForceEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();
-}
-
-parameter_types! {
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
 construct_runtime! {
@@ -1249,10 +1262,13 @@ construct_runtime! {
         Sudo: pallet_sudo = 255,
 
         // FIXME: correct ordering
-        TanssiInitializer: tanssi_initializer = 100,
+        ContainerRegistrar: pallet_registrar = 100,
         CollatorConfiguration: pallet_configuration = 101,
-        ContainerRegistrar: pallet_registrar = 102,
-
+        TanssiInitializer: tanssi_initializer = 102,
+        TanssiInvulnerables: pallet_invulnerables = 103,
+        TanssiCollatorAssignment: pallet_collator_assignment = 104,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 105,
+        TanssiAuthorityMapping: pallet_authority_mapping = 106,
     }
 }
 
@@ -1395,20 +1411,6 @@ pub type Executive = frame_executive::Executive<
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
-pub struct NoRelayStorageRoots;
-
-impl tp_traits::RelayStorageRootProvider for NoRelayStorageRoots {
-    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
-        // We can probably get this from frame_system::Digest, but this is needed to do relay storage proofs
-        // which doesn't make sense since we are the relay chain now, so the register_with_proof extrinsic
-        // should be disabled in this runtime
-        None
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn set_relay_storage_root(_relay_block_number: u32, _storage_root: Option<H256>) {}
-}
-
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
@@ -1423,7 +1425,7 @@ impl pallet_registrar::Config for Runtime {
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
-    type RelayStorageRootProvider = NoRelayStorageRoots;
+    type RelayStorageRootProvider = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -2384,55 +2386,114 @@ sp_api::impl_runtime_apis! {
 pub struct OwnApplySession;
 impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
-        changed: bool,
+        _changed: bool,
         session_index: u32,
-        all_validators: Vec<(AccountId, ValidatorId)>,
-        queued: Vec<(AccountId, ValidatorId)>,
+        _all_validators: Vec<(AccountId, nimbus_primitives::NimbusId)>,
+        _queued: Vec<(AccountId, nimbus_primitives::NimbusId)>,
     ) {
-        use frame_support::traits::OneSessionHandler;
-        let all_validators_initializer: Vec<(&AccountId, ValidatorId)> = all_validators
-            .iter()
-            .map(|(validator, key)| (validator, key.clone()))
-            .collect();
-        let queued_initializer: Vec<(&AccountId, ValidatorId)> = queued
-            .iter()
-            .map(|(validator, key)| (validator, key.clone()))
-            .collect();
-
-        Initializer::on_new_session(
-            changed,
-            all_validators_initializer.into_iter(),
-            queued_initializer.into_iter(),
-        );
+        // Order is same as in tanssi
+        // 1.
         // We first initialize Configuration
         CollatorConfiguration::initializer_on_new_session(&session_index);
-        // Next: Registrar
+        // 2. Second, registrar
         ContainerRegistrar::initializer_on_new_session(&session_index);
-        // // Next: AuthorityMapping
-        // AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
 
-        // let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
+        let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
-        // // Next: CollatorAssignment
-        // let assignments =
-        //     CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+        let next_collators = invulnerables;
 
-        // let queued_id_to_validator_map = queued.iter().cloned().collect();
-        // AuthorityAssignment::initializer_on_new_session(
-        //     &session_index,
-        //     &queued_id_to_validator_map,
-        //     &assignments.next_assignment,
-        // );
+        // Queue next session keys.
+        let queued_amalgamated = next_collators
+            .into_iter()
+            .filter_map(|a| {
+                let k = pallet_session::NextKeys::<Runtime>::get(&a)?;
+
+                Some((a, k.nimbus))
+            })
+            .collect::<Vec<_>>();
+
+        let next_collators_accounts = queued_amalgamated.iter().map(|(a, _)| a.clone()).collect();
+
+        // 3. AuthorityMapping
+        if session_index.is_zero() {
+            // On the genesis sesion index we need to store current as well
+            TanssiAuthorityMapping::initializer_on_new_session(&session_index, &queued_amalgamated);
+        }
+        // Otherwise we always store one sessio ahead
+        // IMPORTANT: this changes with respect to dancebox/flashbox because here we dont have
+        // the current collators and their keys.
+        // In contrast, we have the keys for the validators only
+        TanssiAuthorityMapping::initializer_on_new_session(
+            &(session_index + 1),
+            &queued_amalgamated,
+        );
+
+        // 4. CollatorAssignment
+        // Unlike in tanssi, where the input to this function are the correct
+        // queued keys & collators, here we get the input refers to the validators
+        // and not the collators. Therefore we need to do a similar thing that
+        // pallet-session does but in this function
+        // This is, get the collators, fetch their respective keys, and queue the
+        // assignment
+
+        // CollatorAssignment
+        let assignments = TanssiCollatorAssignment::initializer_on_new_session(
+            &session_index,
+            next_collators_accounts,
+        );
+
+        // 5. AuthorityAssignment
+        let queued_id_to_nimbus_map = queued_amalgamated.iter().cloned().collect();
+        TanssiAuthorityAssignment::initializer_on_new_session(
+            &session_index,
+            &queued_id_to_nimbus_map,
+            &assignments.next_assignment,
+        );
     }
+}
+parameter_types! {
+    pub MockParaId :ParaId = 0u32.into();
 }
 
 impl tanssi_initializer::Config for Runtime {
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
-    type AuthorityId = ValidatorId;
+    type AuthorityId = nimbus_primitives::NimbusId;
 
     type SessionHandler = OwnApplySession;
+}
+
+impl pallet_collator_assignment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type HostConfiguration = CollatorConfiguration;
+    type ContainerChains = ContainerRegistrar;
+    type SessionIndex = u32;
+    type SelfParaId = MockParaId;
+    type ShouldRotateAllCollators = ();
+    type GetRandomnessForNextBlock = ();
+    type RemoveInvulnerables = ();
+    type RemoveParaIdsWithNoCredits = ();
+    type CollatorAssignmentHook = ();
+    type CollatorAssignmentTip = ();
+    type Currency = Balances;
+    type ForceEmptyOrchestrator = ConstBool<true>;
+    type WeightInfo = ();
+}
+
+impl pallet_authority_assignment::Config for Runtime {
+    type SessionIndex = u32;
+    type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+impl pallet_authority_mapping::Config for Runtime {
+    type SessionIndex = u32;
+    type SessionRemovalBoundary = ConstU32<3>;
+    type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+parameter_types! {
+    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]
