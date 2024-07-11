@@ -50,33 +50,33 @@
                     "name": "FullNode-1000",
                     "validator": false,
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"],
                     "ws_port": 9948
                 },
                 {
                     "name": "Collator-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"]
                 },
                 {
                     "name": "Collator-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"]
                 },
                 {
                     "name": "Collator-03",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"]
                 },
                 {
                     "name": "Collator-04",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"]
                 },
                 {
                     "name": "Collator-05",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "--pool-type=fork-aware"]
                 }
             ]
         },
