@@ -30,5 +30,5 @@ std = [
 	"parity-scale-codec/std",
 	"polkadot-runtime-parachains/std",
 	"rococo-runtime-constants/std",
-	"rococo-runtime/std"
+	"rococo-runtime/std",
 ]

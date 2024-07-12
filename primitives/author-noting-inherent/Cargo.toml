@@ -31,22 +31,26 @@ cumulus-primitives-parachain-inherent = { workspace = true, optional = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 futures = { workspace = true }
-sc-client-api = { workspace = true }
+hex-literal = { workspace = true }
 polkadot-primitives = { workspace = true }
+sc-client-api = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
-	"cumulus-primitives-core",
-	"cumulus-primitives-parachain-inherent",
 	"async-trait",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core",
+	"cumulus-primitives-core?/std",
+	"cumulus-primitives-parachain-inherent",
+	"cumulus-primitives-parachain-inherent?/std",
 	"cumulus-relay-chain-interface",
 	"cumulus-relay-chain-interface",
 	"dp-core/std",
 	"parity-scale-codec/std",
+	"polkadot-primitives/std",
 	"scale-info/std",
 	"scale-info/std",
 	"sp-consensus-aura",
@@ -57,8 +61,4 @@ std = [
 	"sp-state-machine/std",
 	"sp-trie/std",
 	"test-relay-sproof-builder/std",
-	"cumulus-primitives-core?/std",
-	"cumulus-primitives-parachain-inherent?/std",
-	"cumulus-pallet-parachain-system/std",
-	"polkadot-primitives/std"
 ]
