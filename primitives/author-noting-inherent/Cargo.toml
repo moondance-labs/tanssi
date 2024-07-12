@@ -11,8 +11,6 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true, optional = true }
-hex-literal = { workspace = true }
-log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 
@@ -20,60 +18,47 @@ dp-core = { workspace = true, optional = true }
 test-relay-sproof-builder = { workspace = true, optional = true }
 
 # Substrate
-frame-support = { workspace = true, optional = true }
-sc-client-api = { workspace = true, optional = true }
-sp-api = { workspace = true, optional = true }
 sp-consensus-aura = { workspace = true, optional = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
-sp-io = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
 sp-state-machine = { workspace = true, optional = true }
-sp-std = { workspace = true }
-sp-storage = { workspace = true, optional = true }
 sp-trie = { workspace = true }
 
 # Cumulus
-cumulus-pallet-parachain-system = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-primitives-core = { workspace = true, optional = true }
+cumulus-primitives-parachain-inherent = { workspace = true, optional = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
-polkadot-primitives = { workspace = true, optional = true }
 
 [dev-dependencies]
+hex-literal = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true }
 futures = { workspace = true }
+sc-client-api = { workspace = true }
+polkadot-primitives = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
+	"cumulus-primitives-core",
+	"cumulus-primitives-parachain-inherent",
 	"async-trait",
-	"cumulus-pallet-parachain-system/std",
-	"cumulus-primitives-core/std",
-	"cumulus-primitives-parachain-inherent/std",
 	"cumulus-relay-chain-interface",
 	"cumulus-relay-chain-interface",
 	"dp-core/std",
-	"frame-support",
-	"frame-support?/std",
-	"log/std",
 	"parity-scale-codec/std",
-	"polkadot-primitives",
-	"polkadot-primitives?/std",
-	"sc-client-api",
 	"scale-info/std",
 	"scale-info/std",
-	"sp-api",
-	"sp-api?/std",
 	"sp-consensus-aura",
 	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-inherents/std",
-	"sp-io/std",
 	"sp-runtime/std",
 	"sp-state-machine/std",
-	"sp-std/std",
-	"sp-storage",
-	"sp-storage?/std",
 	"sp-trie/std",
 	"test-relay-sproof-builder/std",
+	"cumulus-primitives-core?/std",
+	"cumulus-primitives-parachain-inherent?/std",
+	"cumulus-pallet-parachain-system/std",
+	"polkadot-primitives/std"
 ]
