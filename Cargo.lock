@@ -3234,6 +3234,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
+ "tp-xcm-core-buyer",
  "westend-runtime",
  "westend-runtime-constants",
  "xcm-emulator",
@@ -7037,6 +7038,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "macro_rules_attribute"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a82271f7bc033d84bbca59a3ce3e4159938cb08a9c3aebbe54d215131518a13"
+dependencies = [
+ "macro_rules_attribute-proc_macro",
+ "paste",
+]
+
+[[package]]
+name = "macro_rules_attribute-proc_macro"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8dd856d451cc0da70e2ef2ce95a18e39a93b7558bedf10201ad28503f918568"
+
+[[package]]
 name = "manual-xcm-rpc"
 version = "0.1.0"
 dependencies = [
@@ -9569,7 +9586,6 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "pallet-balances",
- "pallet-configuration",
  "parity-scale-codec",
  "polkadot-runtime-common",
  "scale-info",
@@ -10104,7 +10120,7 @@ dependencies = [
  "scale-info",
  "serde",
  "similar-asserts",
- "sp-consensus-aura",
+ "sp-consensus-slots",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -10125,7 +10141,11 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
+ "sp-consensus-slots",
+ "sp-runtime",
+ "sp-std",
  "thiserror",
+ "tp-xcm-core-buyer",
 ]
 
 [[package]]
@@ -16250,6 +16270,7 @@ version = "0.1.0"
 dependencies = [
  "binary-merkle-tree",
  "bitvec",
+ "cumulus-primitives-core",
  "frame-benchmarking",
  "frame-executive",
  "frame-remote-externalities",
@@ -16260,27 +16281,31 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
+ "nimbus-primitives",
  "pallet-asset-rate",
+ "pallet-authority-assignment",
  "pallet-authority-discovery",
+ "pallet-authority-mapping",
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
  "pallet-beefy",
  "pallet-beefy-mmr",
- "pallet-bounties",
- "pallet-child-bounties",
+ "pallet-collator-assignment",
  "pallet-collective",
+ "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-democracy",
  "pallet-elections-phragmen",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-indices",
+ "pallet-initializer",
+ "pallet-invulnerables",
  "pallet-membership",
  "pallet-message-queue",
  "pallet-mmr",
  "pallet-multisig",
- "pallet-nis",
  "pallet-offences",
  "pallet-parameters",
  "pallet-preimage",
@@ -16288,12 +16313,12 @@ dependencies = [
  "pallet-ranked-collective",
  "pallet-recovery",
  "pallet-referenda",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
  "pallet-root-testing",
  "pallet-scheduler",
  "pallet-session",
- "pallet-society",
  "pallet-staking",
- "pallet-state-trie-migration",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-tips",
@@ -16301,7 +16326,6 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
  "pallet-utility",
- "pallet-vesting",
  "pallet-whitelist",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
@@ -16347,6 +16371,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tiny-keccak",
  "tokio",
+ "tp-traits",
  "xcm-fee-payment-runtime-api",
 ]
 
@@ -17165,6 +17190,7 @@ dependencies = [
  "nimbus-consensus",
  "nimbus-primitives",
  "pallet-registrar-runtime-api",
+ "pallet-xcm-core-buyer-runtime-api",
  "parity-scale-codec",
  "parking_lot 0.12.3",
  "polkadot-core-primitives",
@@ -17182,6 +17208,8 @@ dependencies = [
  "sc-keystore",
  "sc-network-test",
  "sc-telemetry",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
  "sp-api",
  "sp-application-crypto",
  "sp-block-builder",
@@ -17196,11 +17224,14 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-timestamp",
+ "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "substrate-test-runtime-client",
  "tempfile",
  "tokio",
  "tokio-util",
+ "tp-traits",
+ "tp-xcm-core-buyer",
  "tracing",
 ]
 
@@ -17731,6 +17762,7 @@ dependencies = [
  "cumulus-primitives-core",
  "frame-support",
  "impl-trait-for-tuples",
+ "macro_rules_attribute",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -17746,7 +17778,9 @@ dependencies = [
  "frame-support",
  "parity-scale-codec",
  "scale-info",
+ "sp-keystore",
  "sp-runtime",
+ "sp-std",
  "tp-traits",
 ]
 

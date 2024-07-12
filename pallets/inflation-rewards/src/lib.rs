@@ -175,9 +175,9 @@ pub mod pallet {
 
     /// Container chains to reward per block
     #[pallet::storage]
-    #[pallet::getter(fn container_chains_to_reward)]
     pub(super) type ChainsToReward<T: Config> =
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
+
     #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
@@ -225,6 +225,10 @@ pub mod pallet {
             }
 
             total_weight
+        }
+
+        pub fn container_chains_to_reward() -> Option<ChainsToRewardValue<T>> {
+            ChainsToReward::<T>::get()
         }
     }
 }

@@ -13,13 +13,13 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 
 dp-core = { workspace = true }
 log = { workspace = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
-sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-keystore = { workspace = true }
 staging-xcm = { workspace = true }
 
@@ -58,9 +58,8 @@ std = [
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
-	"sp-consensus-aura/std",
+	"serde/std",
+	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-keystore/std",

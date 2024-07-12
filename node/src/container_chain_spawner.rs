@@ -29,7 +29,7 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::Block,
+    dancebox_runtime::{opaque::Block as OpaqueBlock, Block},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     fs2::FileExt,
     futures::FutureExt,
@@ -40,6 +40,7 @@ use {
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
+    sc_transaction_pool::FullPool,
     sp_api::ProvideRuntimeApi,
     sp_core::H256,
     sp_keystore::KeystorePtr,
@@ -95,6 +96,7 @@ pub struct ContainerChainSpawner {
 pub struct ContainerChainSpawnParams {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,
@@ -166,6 +168,7 @@ async fn try_spawn(
         orchestrator_para_id,
         validator,
         spawn_handle,
+        orchestrator_tx_pool,
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
 
@@ -318,6 +321,7 @@ async fn try_spawn(
                 start_node_impl_container(
                     container_chain_cli_config,
                     orchestrator_client.clone(),
+                    orchestrator_tx_pool.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface.clone(),
                     collator_key.clone(),

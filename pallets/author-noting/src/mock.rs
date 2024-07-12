@@ -103,7 +103,6 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
@@ -121,8 +120,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct Mocks {
     pub container_chains: BoundedVec<ParaId, ConstU32<100>>,
 }
@@ -161,7 +168,7 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     type MaxContainerChains = ConstU32<100>;
 
     fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
-        MockData::mock().container_chains
+        mock_data::Mock::<Test>::get().container_chains
     }
 
     #[cfg(feature = "runtime-benchmarks")]

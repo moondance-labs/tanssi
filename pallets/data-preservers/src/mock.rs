@@ -116,11 +116,10 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
-        pub fn get() -> Mocks {
+        pub fn mock() -> Mocks {
             Mock::<T>::get()
         }
         pub fn mutate<F, R>(f: F) -> R
@@ -134,8 +133,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct Mocks {
     /// List of container chains, with the corresponding "manager" account.
     /// In dancebox, the manager is the one who put the deposit in pallet_registrar.
@@ -180,7 +187,7 @@ where
             // This check will only pass if both are true:
             // * The para_id has a deposit in pallet_registrar
             // * The deposit creator is the signed_account
-            MockData::get()
+            MockData::mock()
                 .container_chain_managers
                 .get(para_id)
                 .and_then(|inner| *inner)
@@ -211,7 +218,7 @@ where
         });
 
         // This panics if the container chain was registered by root (None)
-        let o = MockData::get()
+        let o = MockData::mock()
             .container_chain_managers
             .get(para_id)
             .unwrap()
@@ -245,7 +252,7 @@ where
         // This check will only pass if both are true:
         // * The para_id has a deposit in pallet_registrar
         // * The deposit creator is the signed_account
-        MockData::get()
+        MockData::mock()
             .container_chain_managers
             .get(para_id)
             .and_then(|inner| *inner)
@@ -275,7 +282,7 @@ where
         });
 
         // This panics if the container chain was registered by root (None)
-        let o = MockData::get()
+        let o = MockData::mock()
             .container_chain_managers
             .get(para_id)
             .unwrap()

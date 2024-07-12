@@ -85,9 +85,11 @@ use {
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::{prelude::format, TypeInfo},
+    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_consensus_aura::{Slot, SlotDuration},
+    sp_consensus_aura::SlotDuration,
+    sp_consensus_slots::Slot,
     sp_core::{
         crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
     },
@@ -106,9 +108,11 @@ use {
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains,
-        RelayStorageRootProvider, RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
+        apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, SlotFrequency,
     },
+    tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
 pub use {
@@ -890,6 +894,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentHook = ServicesPayment;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
+    type ForceEmptyOrchestrator = ConstBool<false>;
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
@@ -952,52 +957,22 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
     // TODO: Add Stream Payment (with deposit)
 }
 
-#[derive(
-    RuntimeDebug,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    Copy,
-    Clone,
-    TypeInfo,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)
@@ -1143,7 +1118,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = NimbusId;
+    type ForceEmptyOrchestrator = ConstBool<false>;
     type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
@@ -1302,10 +1277,8 @@ impl pallet_utility::Config for Runtime {
 }
 
 /// The type used to represent the kinds of proxying allowed.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
-)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1963,6 +1936,31 @@ mod benches {
     );
 }
 
+pub fn get_para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
+    let parent_number = System::block_number();
+
+    let should_end_session =
+        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
+            parent_number + 1,
+        );
+
+    let session_index = if should_end_session {
+        Session::current_index() + 1
+    } else {
+        Session::current_index()
+    };
+
+    let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
+    let self_para_id = ParachainInfo::get();
+
+    if para_id == self_para_id {
+        Some(assigned_authorities.orchestrator_chain)
+    } else {
+        assigned_authorities.container_chains.get(&para_id).cloned()
+    }
+}
+
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
@@ -2494,26 +2492,7 @@ impl_runtime_apis! {
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let parent_number = System::block_number();
-
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-
-            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
-
-            let self_para_id = ParachainInfo::get();
-
-            if para_id == self_para_id {
-                Some(assigned_authorities.orchestrator_chain)
-            } else {
-                assigned_authorities.container_chains.get(&para_id).cloned()
-            }
+            get_para_id_authorities(para_id)
         }
 
         /// Return the paraId assigned to a given authority
@@ -2606,9 +2585,28 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
-        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
-            XcmCoreBuyer::is_core_buying_allowed(para_id)
+    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId, NimbusId> for Runtime {
+        fn is_core_buying_allowed(para_id: ParaId, collator_public_key: NimbusId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id, Some(collator_public_key))
+        }
+
+        fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<NimbusId>) -> Box<<Block as BlockT>::Extrinsic> {
+            let call = RuntimeCall::XcmCoreBuyer(pallet_xcm_core_buyer::Call::buy_core {
+                para_id,
+                proof
+            });
+
+            let unsigned_extrinsic = UncheckedExtrinsic::new_unsigned(call);
+
+            Box::new(unsigned_extrinsic)
+        }
+
+        fn get_buy_core_signature_nonce(para_id: ParaId) -> u64 {
+            pallet_xcm_core_buyer::CollatorSignatureNonce::<Runtime>::get(para_id)
+        }
+
+        fn get_buy_core_slot_drift() -> Slot {
+            <Runtime as pallet_xcm_core_buyer::Config>::BuyCoreSlotDrift::get()
         }
     }
 

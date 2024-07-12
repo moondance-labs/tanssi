@@ -116,11 +116,10 @@ pub mod mock_data {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn mock)]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
-        pub fn get() -> Mocks {
+        pub fn mock() -> Mocks {
             Mock::<T>::get()
         }
         pub fn mutate<F, R>(f: F) -> R
@@ -134,8 +133,16 @@ pub mod mock_data {
 
 impl mock_data::Config for Test {}
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct Mocks {
     pub container_chains: BoundedVec<ParaId, ConstU32<5>>,
     pub orchestrator_author: AccountId,
