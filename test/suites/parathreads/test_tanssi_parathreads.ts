@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
+import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair, getBlockArray } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { Signer } from "ethers";
 import fs from "fs/promises";
@@ -10,6 +10,8 @@ import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts
 import jsonBg from "json-bigint";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
 import { getKeyringNimbusIdHex } from "../../util/keys.ts";
+import Bottleneck from "bottleneck";
+import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 describeSuite({
@@ -154,7 +156,6 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(0);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx4), alice);
 
                 const tx = paraApi.tx.sudo.sudo(
                     paraApi.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
@@ -167,7 +168,7 @@ describeSuite({
                 );
                 const setRelayChainTx = paraApi.tx.sudo.sudo(paraApi.tx.xcmCoreBuyer.setRelayChain("Rococo"));
                 await signAndSendAndInclude(
-                    paraApi.tx.sudo.sudo(paraApi.tx.utility.batch([tx, setRelayChainTx])),
+                    paraApi.tx.sudo.sudo(paraApi.tx.utility.batch([tx4, tx, setRelayChainTx])),
                     alice
                 );
             },
@@ -268,7 +269,7 @@ describeSuite({
             id: "T04",
             title: "Blocks are being produced on container 2000",
             test: async function () {
-                // Produces 1 block every 5 slots, which is every 60 seconds
+                // Produces 1 block every 5 slots, which is every 30 seconds
                 // Give it a bit more time just in case
                 await sleep(120000);
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
@@ -280,7 +281,7 @@ describeSuite({
             id: "T05",
             title: "Blocks are being produced on container 2001",
             test: async function () {
-                // Produces 1 block every 5 slots, which is every 60 seconds
+                // Produces 1 block every 5 slots, which is every 30 seconds
                 // Give it a bit more time just in case
                 await sleep(120000);
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
@@ -386,26 +387,23 @@ describeSuite({
                 expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
             },
         });
-        /* Commented out as block generation frequency for parathread is
         it({
             id: "T12",
             title: "Check block frequency of parathreads",
             timeout: 240000,
             test: async function () {
                 // Wait 2 sessions so that parathreads have produced at least a few blocks each
-                await waitSessions(context, paraApi, 4);
+                await waitSessions(context, paraApi, 2);
 
                 // TODO: calculate block frequency somehow
                 assertSlotFrequency(await getBlockData(paraApi), 1);
-                assertSlotFrequency(await getBlockData(container2000Api), 14);
-                assertSlotFrequency(await getBlockData(container2001Api), 11);
+                assertSlotFrequency(await getBlockData(container2000Api), 10);
+                assertSlotFrequency(await getBlockData(container2001Api), 10);
             },
         });
-         */
     },
 });
 
-/*
 async function getBlockData(api) {
     const timePeriod = 1 * 60 * 60 * 1000; // 1 hour
     const blockNumArray = await getBlockArray(api, timePeriod);
@@ -452,9 +450,8 @@ async function assertSlotFrequency(blockData, expectedSlotDiff) {
     expect(
         Math.abs(avgSlotDiff - expectedSlotDiff),
         `Average slot time is different from expected: average ${avgSlotDiff}, expected ${expectedSlotDiff}`
-    ).to.be.lessThan(0.5);
+    ).to.be.lessThan(3);
 }
- */
 
 /// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
 function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
