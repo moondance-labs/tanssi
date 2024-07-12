@@ -434,6 +434,7 @@ async fn start_node_impl(
             let node_backend = node_builder.backend.clone();
             let relay_interface = relay_chain_interface.clone();
             let node_sync_service = node_builder.network.sync_service.clone();
+            let orchestrator_tx_pool = node_builder.transaction_pool.clone();
             let overseer = overseer_handle.clone();
             let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
                 node_spawn_handle.clone(),
@@ -459,6 +460,7 @@ async fn start_node_impl(
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),
+                    orchestrator_tx_pool.clone(),
                 )
             }
         };
@@ -498,6 +500,7 @@ async fn start_node_impl(
         let container_chain_spawner = ContainerChainSpawner {
             orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
             orchestrator_client,
+            orchestrator_tx_pool: node_builder.transaction_pool.clone(),
             container_chain_cli,
             tokio_handle,
             chain_type,
@@ -544,6 +547,7 @@ fn container_log_str(para_id: ParaId) -> String {
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
     orchestrator_client: Arc<ParachainClient>,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
@@ -639,6 +643,7 @@ pub async fn start_node_impl_container(
             node_client.clone(),
             node_backend.clone(),
             orchestrator_client.clone(),
+            orchestrator_tx_pool.clone(),
             block_import.clone(),
             prometheus_registry.clone(),
             node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
@@ -687,6 +692,7 @@ fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -726,9 +732,10 @@ fn start_consensus_container(
 
     let relay_chain_interace_for_cidp = relay_chain_interface.clone();
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client;
+    let orchestrator_client_for_cidp = orchestrator_client.clone();
     let client_for_cidp = client.clone();
     let client_for_hash_provider = client.clone();
+    let client_for_slot_duration = client.clone();
 
     let code_hash_provider = move |block_hash| {
         client_for_hash_provider
@@ -739,6 +746,15 @@ fn start_consensus_container(
     };
 
     let params = LookaheadTanssiAuraParams {
+        get_current_slot_duration: move |block_hash| {
+            // Default to 12s if runtime API does not exist
+            let slot_duration_ms = client_for_slot_duration
+                .runtime_api()
+                .slot_duration(block_hash)
+                .unwrap_or(12_000);
+
+            SlotDuration::from_millis(slot_duration_ms)
+        },
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
@@ -818,7 +834,7 @@ fn start_consensus_container(
                     latest_header
                 );
 
-                let min_slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
                     orchestrator_client_for_cidp.as_ref(),
                     &latest_header.hash(),
                     para_id,
@@ -826,7 +842,7 @@ fn start_consensus_container(
 
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
-                    min_slot_freq,
+                    slot_freq,
                 };
 
                 Ok(aux_data)
@@ -840,7 +856,7 @@ fn start_consensus_container(
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
+        orchestrator_slot_duration: slot_duration,
         force_authoring,
         relay_chain_slot_duration,
         proposer,
@@ -851,10 +867,14 @@ fn start_consensus_container(
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
         cancellation_token: CancellationToken::new(),
+        orchestrator_tx_pool,
+        orchestrator_client,
     };
 
     let (fut, _exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _, _>(
+            params,
+        );
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
@@ -876,6 +896,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
+    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
@@ -893,6 +914,7 @@ fn start_consensus_orchestrator(
     let client_set_aside_for_cidp = client.clone();
     let client_set_aside_for_orch = client.clone();
     let client_for_hash_provider = client.clone();
+    let client_for_slot_duration_provider = client.clone();
 
     let code_hash_provider = move |block_hash| {
         client_for_hash_provider
@@ -905,6 +927,13 @@ fn start_consensus_orchestrator(
     let cancellation_token = CancellationToken::new();
 
     let params = LookaheadTanssiAuraParams {
+        get_current_slot_duration: move |block_hash| {
+            sc_consensus_aura::standalone::slot_duration_at(
+                &*client_for_slot_duration_provider,
+                block_hash,
+            )
+            .expect("Slot duration should be set")
+        },
         create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
@@ -970,21 +999,21 @@ fn start_consensus_orchestrator(
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
                     // This is the orchestrator consensus, it does not have a slot frequency
-                    min_slot_freq: None,
+                    slot_freq: None,
                 };
 
                 Ok(aux_data)
             }
         },
         block_import,
-        para_client: client,
+        para_client: client.clone(),
         relay_client: relay_chain_interface,
         sync_oracle,
         keystore,
         collator_key,
         para_id,
         overseer_handle,
-        slot_duration,
+        orchestrator_slot_duration: slot_duration,
         relay_chain_slot_duration,
         force_authoring,
         proposer,
@@ -994,10 +1023,14 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
+        orchestrator_tx_pool,
+        orchestrator_client: client,
     };
 
     let (fut, exit_notification_receiver) =
-        lookahead_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _, _, _>(params);
+        lookahead_tanssi_aura::run::<_, Block, NimbusPair, _, _, _, _, _, _, _, _, _, _, _, _, _>(
+            params,
+        );
     spawner.spawn("tanssi-aura", None, fut);
 
     (cancellation_token, exit_notification_receiver)
