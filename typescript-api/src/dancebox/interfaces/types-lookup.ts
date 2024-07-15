@@ -5151,7 +5151,6 @@ declare module "@polkadot/types/lookup" {
         readonly isBuyCore: boolean;
         readonly asBuyCore: {
             readonly paraId: u32;
-            readonly collatorAccountId: AccountId32;
             readonly proof: TpXcmCoreBuyerBuyCoreCollatorProof;
         } & Struct;
         readonly isForceBuyCore: boolean;

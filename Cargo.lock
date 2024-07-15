@@ -439,21 +439,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "assert_cmd"
-version = "2.0.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed72493ac66d5804837f480ab3766c72bdfab91a65e565fc54fa9e42db0073a8"
-dependencies = [
- "anstyle",
- "bstr 1.9.1",
- "doc-comment",
- "predicates 3.1.0",
- "predicates-core",
- "predicates-tree",
- "wait-timeout",
-]
-
-[[package]]
 name = "assert_matches"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1245,17 +1230,6 @@ dependencies = [
  "lazy_static",
  "memchr",
  "regex-automata 0.1.10",
-]
-
-[[package]]
-name = "bstr"
-version = "1.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05efc5cfd9110c8416e471df0e96702d58690178e206e61b7173706673c93706"
-dependencies = [
- "memchr",
- "regex-automata 0.4.5",
- "serde",
 ]
 
 [[package]]
@@ -3234,6 +3208,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
+ "tp-xcm-core-buyer",
  "westend-runtime",
  "westend-runtime-constants",
  "xcm-emulator",
@@ -3506,12 +3481,6 @@ dependencies = [
  "quote",
  "syn 2.0.66",
 ]
-
-[[package]]
-name = "doc-comment"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "docify"
@@ -7058,12 +7027,10 @@ version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "flume 0.10.14",
- "futures 0.3.30",
  "hex-literal 0.3.4",
  "jsonrpsee",
  "parity-scale-codec",
  "staging-xcm",
- "tokio",
 ]
 
 [[package]]
@@ -7134,15 +7101,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe751422e4a8caa417e13c3ea66452215d7d63e19e604f4980461212f3ae1322"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "memoffset"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5de893c32cde5f383baa4c04c5d6dbdd735cfd4a794b0debdb2bb1b421da5ff4"
-dependencies = [
- "autocfg",
 ]
 
 [[package]]
@@ -7288,7 +7246,7 @@ dependencies = [
  "fragile",
  "lazy_static",
  "mockall_derive",
- "predicates 2.1.5",
+ "predicates",
  "predicates-tree",
 ]
 
@@ -7677,8 +7635,6 @@ dependencies = [
  "bitflags 1.3.2",
  "cfg-if",
  "libc",
- "memoffset 0.7.1",
- "pin-utils",
 ]
 
 [[package]]
@@ -9181,7 +9137,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -9471,7 +9426,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -10118,7 +10072,7 @@ dependencies = [
  "scale-info",
  "serde",
  "similar-asserts",
- "sp-consensus-aura",
+ "sp-consensus-slots",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -10139,7 +10093,11 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
+ "sp-consensus-slots",
+ "sp-runtime",
+ "sp-std",
  "thiserror",
+ "tp-xcm-core-buyer",
 ]
 
 [[package]]
@@ -12064,17 +12022,6 @@ dependencies = [
  "normalize-line-endings",
  "predicates-core",
  "regex",
-]
-
-[[package]]
-name = "predicates"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68b87bfd4605926cdfefc1c3b5f8fe560e3feca9d5552cf68c466d3d8236c7e8"
-dependencies = [
- "anstyle",
- "difflib",
- "predicates-core",
 ]
 
 [[package]]
@@ -15007,7 +14954,7 @@ version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32fea41aca09ee824cc9724996433064c89f7777e60762749a4170a14abbfa21"
 dependencies = [
- "bstr 0.2.17",
+ "bstr",
  "unicode-segmentation",
 ]
 
@@ -16387,7 +16334,6 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-weights",
- "staging-xcm",
  "staging-xcm-builder",
 ]
 
@@ -16449,7 +16395,6 @@ dependencies = [
 name = "stream-payment-rpc"
 version = "0.1.0"
 dependencies = [
- "futures 0.3.30",
  "jsonrpsee",
  "pallet-stream-payment-runtime-api",
  "parity-scale-codec",
@@ -16934,9 +16879,7 @@ dependencies = [
 name = "tanssi-relay"
 version = "0.1.0"
 dependencies = [
- "assert_cmd",
  "color-eyre",
- "nix 0.26.4",
  "polkadot-core-primitives",
  "polkadot-node-core-pvf",
  "polkadot-node-core-pvf-common",
@@ -16955,7 +16898,6 @@ dependencies = [
 name = "tanssi-relay-cli"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "clap 4.5.4",
  "frame-benchmarking-cli",
  "futures 0.3.30",
@@ -16986,19 +16928,10 @@ name = "tanssi-relay-encoder"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
- "frame-support",
- "frame-system",
- "frame-try-runtime",
- "hex-literal 0.3.4",
- "pallet-balances",
  "parity-scale-codec",
  "polkadot-runtime-parachains",
  "rococo-runtime",
  "rococo-runtime-constants",
- "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -17191,6 +17124,7 @@ dependencies = [
  "nimbus-consensus",
  "nimbus-primitives",
  "pallet-registrar-runtime-api",
+ "pallet-xcm-core-buyer-runtime-api",
  "parity-scale-codec",
  "parking_lot 0.12.3",
  "polkadot-core-primitives",
@@ -17208,6 +17142,8 @@ dependencies = [
  "sc-keystore",
  "sc-network-test",
  "sc-telemetry",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
  "sp-api",
  "sp-application-crypto",
  "sp-block-builder",
@@ -17222,11 +17158,14 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-timestamp",
+ "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "substrate-test-runtime-client",
  "tempfile",
  "tokio",
  "tokio-util",
+ "tp-traits",
+ "tp-xcm-core-buyer",
  "tracing",
 ]
 
@@ -17699,23 +17638,17 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "dp-core",
- "frame-support",
  "futures 0.3.30",
  "hex-literal 0.3.4",
- "log",
  "parity-scale-codec",
  "polkadot-primitives",
  "sc-client-api",
  "scale-info",
- "sp-api",
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
- "sp-io",
  "sp-runtime",
  "sp-state-machine",
- "sp-std",
- "sp-storage",
  "sp-trie",
  "test-relay-sproof-builder",
 ]
@@ -17735,10 +17668,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core",
- "sp-runtime",
- "sp-state-machine",
  "sp-std",
- "sp-trie",
  "tp-traits",
 ]
 
@@ -17774,7 +17704,9 @@ dependencies = [
  "frame-support",
  "parity-scale-codec",
  "scale-info",
+ "sp-keystore",
  "sp-runtime",
+ "sp-std",
  "tp-traits",
 ]
 
@@ -18230,15 +18162,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wait-timeout"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "waker-fn"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18637,7 +18560,7 @@ dependencies = [
  "log",
  "mach",
  "memfd",
- "memoffset 0.8.0",
+ "memoffset",
  "paste",
  "rand 0.8.5",
  "rustix 0.36.17",

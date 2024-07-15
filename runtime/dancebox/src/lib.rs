@@ -88,7 +88,8 @@ use {
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_consensus_aura::{Slot, SlotDuration},
+    sp_consensus_aura::SlotDuration,
+    sp_consensus_slots::Slot,
     sp_core::{
         crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
     },
@@ -111,6 +112,7 @@ use {
         GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
         RemoveParaIdsWithNoCredits, SlotFrequency,
     },
+    tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
 };
 pub use {
@@ -1935,6 +1937,31 @@ mod benches {
     );
 }
 
+pub fn get_para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
+    let parent_number = System::block_number();
+
+    let should_end_session =
+        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
+            parent_number + 1,
+        );
+
+    let session_index = if should_end_session {
+        Session::current_index() + 1
+    } else {
+        Session::current_index()
+    };
+
+    let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
+    let self_para_id = ParachainInfo::get();
+
+    if para_id == self_para_id {
+        Some(assigned_authorities.orchestrator_chain)
+    } else {
+        assigned_authorities.container_chains.get(&para_id).cloned()
+    }
+}
+
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
@@ -2466,26 +2493,7 @@ impl_runtime_apis! {
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let parent_number = System::block_number();
-
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-
-            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
-
-            let self_para_id = ParachainInfo::get();
-
-            if para_id == self_para_id {
-                Some(assigned_authorities.orchestrator_chain)
-            } else {
-                assigned_authorities.container_chains.get(&para_id).cloned()
-            }
+            get_para_id_authorities(para_id)
         }
 
         /// Return the paraId assigned to a given authority
@@ -2578,9 +2586,28 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
-        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
-            XcmCoreBuyer::is_core_buying_allowed(para_id)
+    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId, NimbusId> for Runtime {
+        fn is_core_buying_allowed(para_id: ParaId, collator_public_key: NimbusId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id, Some(collator_public_key))
+        }
+
+        fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<NimbusId>) -> Box<<Block as BlockT>::Extrinsic> {
+            let call = RuntimeCall::XcmCoreBuyer(pallet_xcm_core_buyer::Call::buy_core {
+                para_id,
+                proof
+            });
+
+            let unsigned_extrinsic = UncheckedExtrinsic::new_unsigned(call);
+
+            Box::new(unsigned_extrinsic)
+        }
+
+        fn get_buy_core_signature_nonce(para_id: ParaId) -> u64 {
+            pallet_xcm_core_buyer::CollatorSignatureNonce::<Runtime>::get(para_id)
+        }
+
+        fn get_buy_core_slot_drift() -> Slot {
+            <Runtime as pallet_xcm_core_buyer::Config>::BuyCoreSlotDrift::get()
         }
     }
 

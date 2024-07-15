@@ -153,6 +153,14 @@ impl SlotFrequency {
                 .saturating_add(Slot::from(u64::from(self.min)))
                 .saturating_sub(max_slot_required_to_complete_purchase)
     }
+
+    pub fn should_parathread_author_block(
+        &self,
+        current_slot: Slot,
+        last_block_slot: Slot,
+    ) -> bool {
+        current_slot >= last_block_slot.saturating_add(Slot::from(u64::from(self.min)))
+    }
 }
 
 impl Default for SlotFrequency {
