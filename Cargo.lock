@@ -17196,6 +17196,7 @@ dependencies = [
  "polkadot-core-primitives",
  "polkadot-node-primitives",
  "polkadot-node-subsystem",
+ "polkadot-node-subsystem-test-helpers",
  "polkadot-overseer",
  "polkadot-parachain-primitives",
  "polkadot-primitives",

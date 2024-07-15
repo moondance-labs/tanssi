@@ -86,3 +86,4 @@ sc-network-test = { workspace = true }
 sp-keyring = { workspace = true }
 substrate-test-runtime-client = { workspace = true }
 tempfile = { workspace = true }
+polkadot-node-subsystem-test-helpers = { workspace = true }

@@ -22,17 +22,19 @@ use crate::collators::ClaimMode;
 use tp_traits::SlotFrequency;
 use {
     crate::{
-        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        collators::{tanssi_claim_slot, Collator, Params as CollatorParams, lookahead::Params as LookAheadParams},
         OrchestratorAuraWorkerAuxData,
     },
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
+    cumulus_client_consensus_common::ValidationCodeHashProvider,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
     cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
     },
+    polkadot_node_subsystem_test_helpers::TestSubsystemSender,
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     futures::prelude::*,
     nimbus_primitives::{
@@ -73,12 +75,18 @@ use {
         time::Duration,
     },
     substrate_test_runtime_client::TestClient,
+    polkadot_overseer::dummy::dummy_overseer_builder,
+    sp_consensus::NoNetwork as DummyOracle,
+    substrate_test_runtime_client::TestClientBuilder,
 };
+use polkadot_node_subsystem::messages::{CollationGenerationMessage, RuntimeApiMessage};
 
 // Duration of slot time
 const SLOT_DURATION_MS: u64 = 1000;
 
 type Error = sp_blockchain::Error;
+type VirtualOverseer =
+	polkadot_node_subsystem_test_helpers::TestSubsystemContextHandle<RuntimeApiMessage>;
 
 #[derive(Clone)]
 struct DummyFactory(Arc<TestClient>);
@@ -356,6 +364,14 @@ impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
 
         block.finalized = self.finalized;
         Ok(block)
+    }
+}
+
+use cumulus_primitives_core::relay_chain::ValidationCodeHash;
+struct DummyCodeHashProvider;
+impl ValidationCodeHashProvider<PHash> for DummyCodeHashProvider {
+    fn code_hash_at(&self, at: PHash) -> Option<ValidationCodeHash> {
+        Some(PHash::default().into())
     }
 }
 
@@ -684,4 +700,170 @@ async fn authorities_runtime_api_tests() {
     );
 
     assert_eq!(authorities, Some(vec![Keyring::Alice.public().into()]));
+}
+
+/// Helper function to generate a crypto pair from seed
+fn get_aura_id_from_seed(seed: &str) -> NimbusId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
+}
+
+/// Helper function to generate a crypto pair from seed
+fn get_pair_from_seed(seed: &str) -> sp_core::sr25519::Pair {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+}
+
+struct MockSupportsParachains;
+
+#[async_trait]
+impl polkadot_overseer::HeadSupportsParachains for MockSupportsParachains {
+	async fn head_supports_parachains(&self, _head: &Hash) -> bool {
+		true
+	}
+}
+
+use polkadot_primitives::CollatorPair;  
+#[tokio::test]
+async fn collate_lookahead_returns_correct_block() {
+    use tokio_util::sync::CancellationToken;
+    use substrate_test_runtime_client::DefaultTestClientBuilderExt;
+    let net = AuraTestNet::new(4);
+
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+
+    // Copy of the keystore needed for tanssi_claim_slot()
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let net = Arc::new(Mutex::new(net));
+
+    let mut net = net.lock();
+    let peer = net.peer(3);
+    let builder = TestClientBuilder::new();
+    let backend = builder.backend();
+    let client = peer.client().as_client();
+    let environ = DummyFactory(client.clone());
+    let spawner = DummySpawner;
+    let relay_client = RelayChain;
+	let spawner = sp_core::testing::TaskExecutor::new();
+
+    let (overseer, handle) =
+    dummy_overseer_builder(spawner, MockSupportsParachains, None)
+        .unwrap()
+        .build()
+        .unwrap();
+	spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+
+    // Build the collator
+    let mut collator = {
+        let params = LookAheadParams {
+            create_inherent_data_providers: {
+                let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                    Timestamp::current(),
+                    SlotDuration::from_millis(SLOT_DURATION_MS),
+                );
+
+                Ok((slot,))
+            },
+            block_import: client.clone(),
+            relay_client: relay_client.clone(),
+            keystore: keystore.into(),
+            para_id: 1000.into(),
+            proposer: ConsensusProposer::new(environ.clone()),
+            collator_service: CollatorService::new(
+                client.clone(),
+                Arc::new(spawner),
+                Arc::new(move |_, _| {}),
+                Arc::new(environ),
+            ),
+            authoring_duration: Duration::from_millis(500),
+            cancellation_token: CancellationToken::new(),
+            code_hash_provider: DummyCodeHashProvider,
+            collator_key: CollatorPair::generate().0,
+            force_authoring: false,
+            get_orchestrator_aux_data: {
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities: vec![alice_public],
+                    // This is the orchestrator consensus, it does not have a slot frequency
+                    min_slot_freq: None,
+                };
+
+                Ok(aux_data)
+            },
+			overseer_handle: OverseerHandle::new(handle),
+            relay_chain_slot_duration: Duration::from_secs(6),
+            slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+            para_client: client,
+            sync_oracle: DummyOracle,
+            para_backend: backend
+        };
+
+        Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
+    };
+
+    let mut head = client.expect_header(client.info().genesis_hash).unwrap();
+
+    // Modify the state root of the genesis header for it to match
+    // the one inside propose() function
+    let (relay_parent_storage_root, _proof) =
+        RelayStateSproofBuilder::default().into_state_root_and_proof();
+    head.state_root = relay_parent_storage_root;
+
+    // First we create inherent data
+    let (parachain_inherent_data, other_inherent_data) = collator
+        .create_inherent_data(
+            Default::default(),
+            &Default::default(),
+            head.clone().hash(),
+            None,
+        )
+        .await
+        .unwrap();
+
+    // Params for tanssi_claim_slot()
+    let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+        Timestamp::current(),
+        SlotDuration::from_millis(SLOT_DURATION_MS),
+    );
+    let keystore_ptr: KeystorePtr = keystore_copy.into();
+
+    let mut claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+        OrchestratorAuraWorkerAuxData {
+            authorities: vec![alice_public.into()],
+            min_slot_freq: None,
+        },
+        &head,
+        *slot,
+        false,
+        &keystore_ptr,
+    )
+    .unwrap()
+    .unwrap();
+
+    // At the end we call collate() function
+    let res = collator
+        .collate(
+            &head,
+            &mut claim,
+            None,
+            (parachain_inherent_data, other_inherent_data),
+            Duration::from_millis(500),
+            3_500_000usize,
+        )
+        .await
+        .unwrap()
+        .unwrap()
+        .1;
+
+    // The returned block should be imported and we should be able to get its header by now.
+    assert!(client.header(res.header().hash()).unwrap().is_some());
 }
