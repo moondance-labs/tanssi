@@ -34,8 +34,6 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use tp_traits::{AuthorNotingHook, BlockNumber, SlotFrequency};
-
 use {
     dp_core::ParaId,
     frame_support::{
@@ -45,14 +43,16 @@ use {
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::EncodeLike,
-    sp_consensus_aura::Slot,
+    sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
     staging_xcm::{
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },
-    tp_traits::{LatestAuthorInfoFetcher, ParathreadParams},
+    tp_traits::{
+        AuthorNotingHook, BlockNumber, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
+    },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
@@ -77,16 +77,16 @@ impl<T: Config> XCMNotifier<T> for () {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
 pub struct InFlightCoreBuyingOrder<BN> {
     para_id: ParaId,
     query_id: QueryId,
     ttl: BN,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo, Serialize, Deserialize,
+)]
 pub enum BuyingError<BlockNumber> {
     OrderAlreadyExists {
         ttl: BlockNumber,
@@ -118,6 +118,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::app_crypto::AppCrypto;
     use {
         super::*, nimbus_primitives::SlotBeacon, pallet_xcm::ensure_response,
         sp_runtime::RuntimeAppPublic,
@@ -182,6 +183,10 @@ pub mod pallet {
         #[pallet::constant]
         type AdditionalTtlForInflightOrders: Get<BlockNumberFor<Self>>;
 
+        /// Slot drift allowed for core buying
+        #[pallet::constant]
+        type BuyCoreSlotDrift: Get<Slot>;
+
         #[pallet::constant]
         type UniversalLocation: Get<InteriorLocation>;
 
@@ -203,6 +208,7 @@ pub mod pallet {
         type CollatorPublicKey: Member
             + Parameter
             + RuntimeAppPublic
+            + AppCrypto
             + MaybeSerializeDeserialize
             + MaxEncodedLen;
 
@@ -332,16 +338,15 @@ pub mod pallet {
         pub fn buy_core(
             origin: OriginFor<T>,
             para_id: ParaId,
-            // Below parameter are already validated during `validate_unsigned` call
-            _collator_account_id: T::AccountId,
-            _proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
+            // Below parameter are already validated during `validate_unsigned` cal
+            proof: BuyCoreCollatorProof<T::CollatorPublicKey>,
         ) -> DispatchResult {
             ensure_none(origin)?;
 
             let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
             CollatorSignatureNonce::<T>::set(para_id, current_nonce + 1);
 
-            Self::on_collator_instantaneous_core_requested(para_id)
+            Self::on_collator_instantaneous_core_requested(para_id, Some(proof.public_key))
         }
 
         /// Buy core for para id as root. Does not require any proof, useful in tests.
@@ -350,7 +355,7 @@ pub mod pallet {
         pub fn force_buy_core(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             ensure_root(origin)?;
 
-            Self::on_collator_instantaneous_core_requested(para_id)
+            Self::on_collator_instantaneous_core_requested(para_id, None)
         }
 
         #[pallet::call_index(2)]
@@ -519,6 +524,7 @@ pub mod pallet {
 
         pub fn is_core_buying_allowed(
             para_id: ParaId,
+            _maybe_collator_public_key: Option<<T as Config>::CollatorPublicKey>,
         ) -> Result<(), BuyingError<BlockNumberFor<T>>> {
             // If an in flight order is pending (i.e we did not receive the notification yet) and our
             // record is not expired yet, we should not allow the collator to buy another core.
@@ -558,7 +564,7 @@ pub mod pallet {
                 let current_slot = T::SlotBeacon::slot();
                 if !parathread_params.slot_frequency.should_parathread_buy_core(
                     Slot::from(current_slot as u64),
-                    Slot::from(2u64),
+                    T::BuyCoreSlotDrift::get(),
                     latest_author_info.latest_slot_number,
                 ) {
                     // TODO: Take max slots to produce a block from config
@@ -574,8 +580,12 @@ pub mod pallet {
         }
 
         /// Send an XCM message to the relay chain to try to buy a core for this para_id.
-        fn on_collator_instantaneous_core_requested(para_id: ParaId) -> DispatchResult {
-            Self::is_core_buying_allowed(para_id).map_err(Into::<Error<T>>::into)?;
+        fn on_collator_instantaneous_core_requested(
+            para_id: ParaId,
+            maybe_collator_public_key: Option<<T as Config>::CollatorPublicKey>,
+        ) -> DispatchResult {
+            Self::is_core_buying_allowed(para_id, maybe_collator_public_key)
+                .map_err(Into::<Error<T>>::into)?;
 
             let xcm_weights_storage =
                 RelayXcmWeightConfig::<T>::get().ok_or(Error::<T>::XcmWeightStorageNotSet)?;
@@ -699,12 +709,7 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if let Call::buy_core {
-                para_id,
-                collator_account_id,
-                proof,
-            } = call
-            {
+            if let Call::buy_core { para_id, proof } = call {
                 let block_number = <frame_system::Pallet<T>>::block_number();
 
                 let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
@@ -712,11 +717,8 @@ pub mod pallet {
                     return InvalidTransaction::Call.into();
                 }
 
-                let is_valid_collator = T::CheckCollatorValidity::is_valid_collator(
-                    *para_id,
-                    collator_account_id.clone(),
-                    proof.public_key.clone(),
-                );
+                let is_valid_collator =
+                    T::CheckCollatorValidity::is_valid_collator(*para_id, proof.public_key.clone());
                 if !is_valid_collator {
                     return InvalidTransaction::Call.into();
                 }
@@ -753,7 +755,7 @@ pub trait GetPurchaseCoreCall<RelayChain> {
 }
 
 pub trait CheckCollatorValidity<AccountId, PublicKey> {
-    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn is_valid_collator(para_id: ParaId, public_key: PublicKey) -> bool;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_valid_collator(para_id: ParaId, account_id: AccountId, public_key: PublicKey);

@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 dp-core = { workspace = true }
 log = { workspace = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true }
 tp-maths = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -50,8 +50,7 @@ std = [
 	"pallet-balances/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",

@@ -23,17 +23,14 @@ use {
     core::{cmp::Ordering, marker::PhantomData},
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
+    serde::{Deserialize, Serialize},
     sp_core::{Get, RuntimeDebug},
     sp_runtime::traits::Zero,
     tp_maths::{ErrAdd, ErrSub},
 };
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 /// Eligible candidate with its stake.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
 pub struct EligibleCandidate<C, S> {
     pub candidate: C,
     pub stake: S,

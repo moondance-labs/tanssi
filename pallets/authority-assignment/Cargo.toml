@@ -19,7 +19,7 @@ frame-system = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
@@ -37,8 +37,7 @@ std = [
 	"log/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",

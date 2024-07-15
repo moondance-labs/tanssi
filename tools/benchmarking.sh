@@ -91,10 +91,14 @@ function bench {
         ))
         echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
         for PALLET in "${ALL_PALLETS[@]}"; do
-            if [[ "$PALLET" == *"pallet_xcm_benchmarks"* ]]; then
-                TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
-            fi
+            TEMPLATE_TO_USE=$TEMPLATE_PATH
             OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
+            if [[ "$PALLET" == *"pallet_xcm_benchmarks"* ]]; then
+                echo "Using pallet xcm benchmarks for $PALLET"
+                TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+                MODIFIED_PALLET_FILE=${PALLET/::/_}
+                OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
+            fi
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \
@@ -103,13 +107,17 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template="${TEMPLATE_PATH}" \
+            --template="${TEMPLATE_TO_USE}" \
             --json-file raw.json \
             --output "${OUTPUT}"
         done
     else
+        TEMPLATE_TO_USE=$TEMPLATE_PATH
+        OUTPUT="${OUTPUT_PATH}/${1}.rs"
         if [[ "${1}" == *"pallet_xcm_benchmarks"* ]]; then
-            TEMPLATE_PATH="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+            TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+            MODIFIED_PALLET_FILE=${1/::/_}
+            OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
@@ -119,7 +127,7 @@ function bench {
             --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
-            --template="${TEMPLATE_PATH}" \
+            --template="${TEMPLATE_TO_USE}" \
             --json-file raw.json \
             --output "${OUTPUT}"
     fi

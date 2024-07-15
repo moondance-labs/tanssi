@@ -313,6 +313,7 @@ hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
 impls = "1.0.3"
 log = { version = "0.4.21", default-features = false }
+macro_rules_attribute = { version = "0.2.0" }
 num_enum = { version = "0.7.1", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 serde = { version = "1.0.197", default-features = false }

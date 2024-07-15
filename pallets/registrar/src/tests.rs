@@ -683,13 +683,13 @@ fn mark_valid_for_collating_calls_registered_hook() {
             42.into(),
             empty_genesis_data()
         ));
-        assert_eq!(Mock::get().called_hooks, vec![]);
+        assert_eq!(Mock::mock().called_hooks, vec![]);
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
             42.into(),
         ));
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![HookCall::MarkedValid(42.into())]
         );
     });
@@ -994,7 +994,7 @@ fn deregister_2_container_chains_in_same_block() {
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 43.into(),));
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![
                 HookCall::MarkedValid(42.into()),
                 HookCall::MarkedValid(43.into()),
@@ -1012,7 +1012,7 @@ fn deregister_2_container_chains_in_same_block() {
             None
         );
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![
                 HookCall::MarkedValid(42.into()),
                 HookCall::MarkedValid(43.into()),
@@ -1076,7 +1076,7 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         );
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 43.into(),));
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![
                 HookCall::MarkedValid(42.into()),
                 HookCall::MarkedValid(43.into()),
@@ -1094,7 +1094,7 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
             Some(&empty_genesis_data())
         );
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![
                 HookCall::MarkedValid(42.into()),
                 HookCall::MarkedValid(43.into()),
@@ -1113,7 +1113,7 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
             None
         );
         assert_eq!(
-            Mock::get().called_hooks,
+            Mock::mock().called_hooks,
             vec![
                 HookCall::MarkedValid(42.into()),
                 HookCall::MarkedValid(43.into()),

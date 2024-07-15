@@ -134,23 +134,19 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn free_block_production_credits)]
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn free_collator_assignment_credits)]
     pub type CollatorAssignmentCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, u32, OptionQuery>;
 
     /// List of para ids that have already been given free credits
     #[pallet::storage]
-    #[pallet::getter(fn given_free_credits)]
     pub type GivenFreeCredits<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
 
     /// Refund address
     #[pallet::storage]
-    #[pallet::getter(fn refund_address)]
     pub type RefundAddress<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
 
@@ -160,7 +156,6 @@ pub mod pallet {
 
     /// Max tip for collator assignment on congestion
     #[pallet::storage]
-    #[pallet::getter(fn max_tip)]
     pub type MaxTip<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, BalanceOf<T>, OptionQuery>;
 
     #[pallet::call]
@@ -425,6 +420,26 @@ pub mod pallet {
                 para_id: *para_id,
                 credits: free_collator_block_production_credits,
             });
+        }
+
+        pub fn free_block_production_credits(para_id: ParaId) -> Option<BlockNumberFor<T>> {
+            BlockProductionCredits::<T>::get(para_id)
+        }
+
+        pub fn free_collator_assignment_credits(para_id: ParaId) -> Option<u32> {
+            CollatorAssignmentCredits::<T>::get(para_id)
+        }
+
+        pub fn given_free_credits(para_id: ParaId) -> Option<()> {
+            GivenFreeCredits::<T>::get(para_id)
+        }
+
+        pub fn refund_address(para_id: ParaId) -> Option<T::AccountId> {
+            RefundAddress::<T>::get(para_id)
+        }
+
+        pub fn max_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+            MaxTip::<T>::get(para_id)
         }
     }
 

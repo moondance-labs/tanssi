@@ -16,11 +16,10 @@
 
 use {
     crate::{self as pallet_configuration, HostConfiguration},
-    frame_support::traits::{ConstU16, ConstU64},
+    frame_support::traits::{ConstBool, ConstU16, ConstU64},
     frame_system as system,
     sp_core::{ConstU32, H256},
     sp_runtime::{
-        testing::UintAuthorityId,
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
@@ -84,7 +83,7 @@ impl pallet_configuration::Config for Test {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = UintAuthorityId;
+    type ForceEmptyOrchestrator = ConstBool<false>;
 }
 
 // Build genesis storage according to the mock runtime.

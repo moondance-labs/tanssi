@@ -281,7 +281,6 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T::AccountId>, OptionQuery>;
 
@@ -400,6 +399,10 @@ impl<T: Config> Pallet<T> {
         } else {
             Err(Error::<T>::NonAuraDigest)
         }
+    }
+
+    pub fn latest_author(para_id: ParaId) -> Option<ContainerChainBlockInfo<T::AccountId>> {
+        LatestAuthor::<T>::get(para_id)
     }
 }
 

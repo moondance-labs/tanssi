@@ -110,7 +110,11 @@ where
 
 /// Return the set of authorities assigned to the paraId where
 /// the first eligible key from the keystore is collating
-pub fn min_slot_freq<B, C, P>(client: &C, parent_hash: &B::Hash, para_id: ParaId) -> Option<Slot>
+pub fn min_slot_freq<B, C, P>(
+    client: &C,
+    parent_hash: &B::Hash,
+    para_id: ParaId,
+) -> Option<SlotFrequency>
 where
     P: Pair + Send + Sync + 'static,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
@@ -126,10 +130,12 @@ where
         .parathread_slot_frequency(*parent_hash, para_id)
         .ok()?;
     log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
-    slot_frequency.map(|slot_frequency| u64::from(slot_frequency.min).into())
+    slot_frequency
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
+use tp_traits::SlotFrequency;
+
 /// Grab the first eligible nimbus key from the keystore
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.

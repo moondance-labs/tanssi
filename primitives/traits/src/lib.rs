@@ -19,9 +19,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::{
-    relay_chain::{BlockNumber, Slot},
-    ParaId,
+pub mod alias;
+
+pub use {
+    alias::*,
+    cumulus_primitives_core::{
+        relay_chain::{BlockNumber, Slot},
+        ParaId,
+    },
 };
 use {
     core::marker::PhantomData,
@@ -30,13 +35,14 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
+    serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, vec, vec::Vec},
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
@@ -120,8 +126,9 @@ pub trait GetCurrentContainerChains {
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
 /// tanssi slot time, 12 seconds by default.
 // TODO: this is currently ignored
-#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
     /// every `x >= 10` slots, but they are not enforced to. If collators produce a block after less than 10
@@ -145,6 +152,14 @@ impl SlotFrequency {
                 .saturating_add(Slot::from(u64::from(self.min)))
                 .saturating_sub(max_slot_required_to_complete_purchase)
     }
+
+    pub fn should_parathread_author_block(
+        &self,
+        current_slot: Slot,
+        last_block_slot: Slot,
+    ) -> bool {
+        current_slot >= last_block_slot.saturating_add(Slot::from(u64::from(self.min)))
+    }
 }
 
 impl Default for SlotFrequency {
@@ -153,8 +168,9 @@ impl Default for SlotFrequency {
     }
 }
 
-#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct ParathreadParams {
     pub slot_frequency: SlotFrequency,
 }
@@ -202,6 +218,12 @@ pub trait ShouldRotateAllCollators<SessionIndex> {
     fn should_rotate_all_collators(session_index: SessionIndex) -> bool;
 }
 
+impl<SessionIndex> ShouldRotateAllCollators<SessionIndex> for () {
+    fn should_rotate_all_collators(_session_index: SessionIndex) -> bool {
+        false
+    }
+}
+
 /// Helper trait for pallet_collator_assignment to be able to give priority to invulnerables
 pub trait RemoveInvulnerables<AccountId> {
     /// Remove the first n invulnerables from the list of collators. The order should be respected.
@@ -209,6 +231,16 @@ pub trait RemoveInvulnerables<AccountId> {
         collators: &mut Vec<AccountId>,
         num_invulnerables: usize,
     ) -> Vec<AccountId>;
+}
+
+impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
+    fn remove_invulnerables(
+        _collators: &mut Vec<AccountId>,
+        _num_invulnerables: usize,
+    ) -> Vec<AccountId> {
+        // Default impl: no collators are invulnerables
+        vec![]
+    }
 }
 
 /// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
@@ -226,11 +258,31 @@ pub trait RemoveParaIdsWithNoCredits {
     fn make_valid_para_ids(para_ids: &[ParaId]);
 }
 
+impl RemoveParaIdsWithNoCredits for () {
+    fn remove_para_ids_with_no_credits(
+        _para_ids: &mut Vec<ParaId>,
+        _currently_assigned: &BTreeSet<ParaId>,
+    ) {
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(_para_ids: &[ParaId]) {}
+}
+
 pub trait RelayStorageRootProvider {
     fn get_relay_storage_root(relay_block_number: u32) -> Option<H256>;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>);
+}
+
+impl RelayStorageRootProvider for () {
+    fn get_relay_storage_root(_relay_block_number: u32) -> Option<H256> {
+        None
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_relay_storage_root(relay_block_number: u32, storage_root: Option<H256>) {}
 }
 
 /// Information extracted from the latest container chain header
@@ -243,8 +295,9 @@ pub trait RelayStorageRootProvider {
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
     MaxEncodedLen,
+    Serialize,
+    Deserialize,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContainerChainBlockInfo<AccountId> {
     pub block_number: BlockNumber,
     pub author: AccountId,

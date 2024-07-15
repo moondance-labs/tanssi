@@ -23,10 +23,12 @@ extern crate alloc;
 use {
     alloc::string::String,
     parity_scale_codec::{Decode, Encode},
+    serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo, Serialize, Deserialize,
+)]
 pub struct StreamPaymentApiStatus<Balance> {
     pub payment: Balance,
     pub deposit_left: Balance,
