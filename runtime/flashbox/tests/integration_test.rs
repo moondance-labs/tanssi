@@ -4121,13 +4121,13 @@ fn test_migration_registrar_reserves_to_hold() {
             let deposit: Balance = 100 * UNIT;
             let account: AccountId = DAVE.into();
 
-            assert_ok!(Balances::reserve(&account, deposit.clone()));
+            assert_ok!(Balances::reserve(&account, deposit));
 
             pallet_registrar::RegistrarDeposit::<Runtime>::insert(
                 ParaId::from(1001),
                 DepositInfo {
                     creator: account.clone(),
-                    deposit: deposit.clone(),
+                    deposit: deposit,
                 },
             );
             assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);
@@ -4142,9 +4142,9 @@ fn test_migration_registrar_reserves_to_hold() {
             assert_eq!(
                 Balances::balance_on_hold(
                     &pallet_registrar::HoldReason::RegistrarDeposit.into(),
-                    &account.into()
+                    &account
                 ),
-                deposit.into()
+                deposit
             );
         })
 }
