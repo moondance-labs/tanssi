@@ -306,7 +306,6 @@ pub fn do_test(
             core_buyer_sign_collator_nonce(
                 PARATHREAD_ID.into(),
                 get_aura_pair_from_seed(&crate::AccountId::from(crate::BOB).to_string()),
-                crate::AccountId::from(crate::BOB),
             );
         }
 
@@ -328,11 +327,7 @@ pub fn do_test(
     query_id
 }
 
-fn core_buyer_sign_collator_nonce(
-    para_id: ParaId,
-    id: nimbus_primitives::NimbusPair,
-    account: crate::AccountId,
-) {
+fn core_buyer_sign_collator_nonce(para_id: ParaId, id: nimbus_primitives::NimbusPair) {
     let nonce =
         pallet_xcm_core_buyer::CollatorSignatureNonce::<dancebox_runtime::Runtime>::get(para_id);
 
@@ -347,14 +342,12 @@ fn core_buyer_sign_collator_nonce(
     };
     XcmCoreBuyer::pre_dispatch(&pallet_xcm_core_buyer::Call::buy_core {
         para_id: para_id,
-        collator_account_id: account.clone(),
         proof: proof.clone(),
     })
     .expect("collator signature predispatch should go through");
     assert_ok!(XcmCoreBuyer::buy_core(
         RuntimeOrigin::none(),
         para_id,
-        account,
         proof
     ));
 }
