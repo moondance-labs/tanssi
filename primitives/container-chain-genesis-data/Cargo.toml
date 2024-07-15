@@ -26,10 +26,7 @@ frame-support = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
-sp-runtime = { workspace = true, optional = true }
-sp-state-machine = { workspace = true, optional = true }
 sp-std = { workspace = true }
-sp-trie = { workspace = true, optional = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true, optional = true }
@@ -52,10 +49,7 @@ std = [
 	"serde/std",
 	"serde_json?/std",
 	"sp-core/std",
-	"sp-runtime/std",
-	"sp-state-machine/std",
 	"sp-std/std",
-	"sp-trie/std",
 	"tp-traits/std",
 ]
 json = [ "hex", "serde_json" ]
