@@ -4109,47 +4109,42 @@ fn test_migration_data_preservers_assignments() {
 #[test]
 fn test_migration_registrar_reserves_to_hold() {
     ExtBuilder::default()
-    .with_balances(vec![
-        (AccountId::from(DAVE), 100_000 * UNIT),
-    ]).build().execute_with(|| {
-        use {
-            pallet_registrar::DepositInfo,
-            tanssi_runtime_common::migrations::RegistrarReserveToHoldMigration,
-            frame_support::traits::{fungible::InspectHold, ReservableCurrency},
-        };
+        .with_balances(vec![(AccountId::from(DAVE), 100_000 * UNIT)])
+        .build()
+        .execute_with(|| {
+            use {
+                frame_support::traits::{fungible::InspectHold, ReservableCurrency},
+                pallet_registrar::DepositInfo,
+                tanssi_runtime_common::migrations::RegistrarReserveToHoldMigration,
+            };
 
-        let deposit: Balance = 100 * UNIT;
-        let account: AccountId = DAVE.into();
+            let deposit: Balance = 100 * UNIT;
+            let account: AccountId = DAVE.into();
 
-        assert_ok!(Balances::reserve(&account, deposit.clone()));
+            assert_ok!(Balances::reserve(&account, deposit.clone()));
 
-        pallet_registrar::RegistrarDeposit::<Runtime>::insert(
-            ParaId::from(1001),
-            DepositInfo {
-                creator: account.clone(),
-                deposit: deposit.clone(),
-            },
-        );
-        assert_eq!(
-            Balances::reserved_balance(&account),
-            deposit.clone(),
-        );
-        // Apply migration
-        let migration = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        migration.migrate(Default::default());
+            pallet_registrar::RegistrarDeposit::<Runtime>::insert(
+                ParaId::from(1001),
+                DepositInfo {
+                    creator: account.clone(),
+                    deposit: deposit.clone(),
+                },
+            );
+            assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);
+            // Apply migration
+            let migration = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+            migration.migrate(Default::default());
 
-        // Holds also count as reserved balance, so the total reserved amount 
-        // shouldn't change after the migration
-        assert_eq!(
-            Balances::reserved_balance(&account),
-            deposit.clone(),
-        );
+            // Holds also count as reserved balance, so the total reserved amount
+            // shouldn't change after the migration
+            assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);
 
-        assert_eq!(
-            Balances::balance_on_hold(
-                &pallet_registrar::HoldReason::RegistrarDeposit.into(),
-                &account.into()
-            ),deposit.into()
-        );
-    })
+            assert_eq!(
+                Balances::balance_on_hold(
+                    &pallet_registrar::HoldReason::RegistrarDeposit.into(),
+                    &account.into()
+                ),
+                deposit.into()
+            );
+        })
 }
