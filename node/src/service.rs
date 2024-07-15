@@ -16,7 +16,9 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use tc_container_chain_spawner::{ContainerChainBlockImport, ContainerChainClient};
+use tc_container_chain_spawner::{
+    container_chain_monitor, ContainerChainBlockImport, ContainerChainClient,
+};
 #[allow(deprecated)]
 use {
     crate::container_chain_spawner::select_sync_mode_based_on_api,
@@ -493,7 +495,7 @@ async fn start_node_impl(
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-debug-state",
             None,
-            crate::container_chain_monitor::monitor_task(state),
+            container_chain_monitor::monitor_task(state),
         )
     }
 
