@@ -37,10 +37,9 @@ fn core_buying_nonce_behaviour_is_correct() {
                 // Add another chain apart from default
                 let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
-                mocks.container_chain_collators.insert(
-                    another_para_id,
-                    vec![(AccountId::from(BOB), another_chain_nimbus_id)],
-                );
+                mocks
+                    .container_chain_collators
+                    .insert(another_para_id, vec![another_chain_nimbus_id]);
                 MockData::mutate(|stored_mock_data| {
                     stored_mock_data.container_chain_collators = mocks.container_chain_collators;
                     stored_mock_data.parathread_params.insert(
@@ -62,12 +61,11 @@ fn core_buying_nonce_behaviour_is_correct() {
                 "collator data must contain at least one element"
             );
             let collator = collator_data[0].clone();
-            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1)
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator)
                 .expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
@@ -81,7 +79,6 @@ fn core_buying_nonce_behaviour_is_correct() {
             assert_ok!(XcmCoreBuyer::buy_core(
                 RuntimeOrigin::none(),
                 para_id,
-                BOB,
                 proof
             ));
 
@@ -102,11 +99,10 @@ fn core_buying_nonce_behaviour_is_correct() {
                 .get(&another_para_id)
                 .expect("Collator data for test paraid must exists");
             let another_collator = collator_data[0].clone();
-            let proof = BuyCoreCollatorProof::new(0, another_para_id, another_collator.1)
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, another_collator)
                 .expect("creating collator proof must succeed");
             let call = Call::buy_core {
                 para_id: another_para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
@@ -120,7 +116,6 @@ fn core_buying_nonce_behaviour_is_correct() {
             assert_ok!(XcmCoreBuyer::buy_core(
                 RuntimeOrigin::none(),
                 another_para_id,
-                BOB,
                 proof
             ));
 
@@ -144,10 +139,9 @@ fn core_buying_proof_is_validated_correctly() {
                 // Add another chain apart from default
                 let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
-                mocks.container_chain_collators.insert(
-                    another_para_id,
-                    vec![(AccountId::from(BOB), another_chain_nimbus_id)],
-                );
+                mocks
+                    .container_chain_collators
+                    .insert(another_para_id, vec![another_chain_nimbus_id]);
                 MockData::mutate(|stored_mock_data| {
                     stored_mock_data.container_chain_collators = mocks.container_chain_collators;
                     stored_mock_data.parathread_params.insert(
@@ -169,12 +163,11 @@ fn core_buying_proof_is_validated_correctly() {
                 "collator data must contain at least one element"
             );
             let collator = collator_data[0].clone();
-            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.clone())
                 .expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
@@ -184,13 +177,12 @@ fn core_buying_proof_is_validated_correctly() {
             ));
 
             // If we change the public key in the proof, it should not work
-            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             proof.public_key = NimbusId::generate_pair(None);
 
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
@@ -203,16 +195,14 @@ fn core_buying_proof_is_validated_correctly() {
             );
 
             // If we change the signature, it should not work
-            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             let incorrect_signature = collator
-                .1
                 .sign(&vec![1, 2, 3])
                 .expect("signature creation must succeed.");
             proof.signature = incorrect_signature;
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
@@ -225,12 +215,11 @@ fn core_buying_proof_is_validated_correctly() {
             );
 
             // If we change the nonce, it should not work
-            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+            let mut proof = BuyCoreCollatorProof::new(0, para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             proof.nonce = 12;
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
             assert_noop!(
@@ -242,11 +231,10 @@ fn core_buying_proof_is_validated_correctly() {
             );
 
             // If we change para id, it should not work
-            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone())
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             let call = Call::buy_core {
                 para_id: another_para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
             assert_noop!(
@@ -257,11 +245,10 @@ fn core_buying_proof_is_validated_correctly() {
                 TransactionValidityError::Invalid(InvalidTransaction::Call)
             );
 
-            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone())
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             let call = Call::buy_core {
                 para_id: another_para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
             assert_noop!(
@@ -272,11 +259,10 @@ fn core_buying_proof_is_validated_correctly() {
                 TransactionValidityError::Invalid(InvalidTransaction::Call)
             );
 
-            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone())
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.clone())
                 .expect("creating collator proof must succeed");
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
             assert_noop!(
@@ -304,7 +290,7 @@ fn slot_frequency_is_taken_into_account() {
                 // Add another chain apart from default
                 let mut mocks = MockData::mock();
                 let another_chain_nimbus_id = NimbusId::generate_pair(None);
-                mocks.container_chain_collators.insert(another_para_id, vec![(AccountId::from(BOB), another_chain_nimbus_id)]);
+                mocks.container_chain_collators.insert(another_para_id, vec![another_chain_nimbus_id]);
                 MockData::mutate(|stored_mock_data| {
                     stored_mock_data.container_chain_collators = mocks.container_chain_collators;
                     stored_mock_data.parathread_params.insert(another_para_id, ParathreadParams { slot_frequency: SlotFrequency { min: 10, max: 10 } });
@@ -316,16 +302,15 @@ fn slot_frequency_is_taken_into_account() {
             let collator_data = mocks.container_chain_collators.get(&para_id).expect("Collator data for test paraid must exists");
             assert!(!collator_data.is_empty(), "collator data must contain at least one element");
             let collator = collator_data[0].clone();
-            let proof = BuyCoreCollatorProof::new(0, para_id, collator.1.clone()).expect("creating collator proof must succeed");
+            let proof = BuyCoreCollatorProof::new(0, para_id, collator.clone()).expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
             assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
-            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, BOB, proof));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, proof));
 
 
             // Clear data to able to attempt to buy core again
@@ -339,16 +324,15 @@ fn slot_frequency_is_taken_into_account() {
             assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Error(BoundedVec::new()))));
 
             // We should be able to buy slot once again for min: 1 Slot frequency
-            let proof = BuyCoreCollatorProof::new(1, para_id, collator.1.clone()).expect("creating collator proof must succeed");
+            let proof = BuyCoreCollatorProof::new(1, para_id, collator.clone()).expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
             assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
-            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, BOB, proof));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), para_id, proof));
 
 
             // For a para id with min: 10 slot frequency, only possible to buy after 10 - 2(advance slot allowed to buy)
@@ -357,16 +341,15 @@ fn slot_frequency_is_taken_into_account() {
             assert!(!collator_data.is_empty(), "collator data must contain at least one element");
             let collator = collator_data[0].clone();
 
-            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.1.clone()).expect("creating collator proof must succeed");
+            let proof = BuyCoreCollatorProof::new(0, another_para_id, collator.clone()).expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id: another_para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
             assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
-            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, proof));
 
             let mut system_events = events();
             system_events.reverse(); // Hack to get the newest query id
@@ -387,25 +370,24 @@ fn slot_frequency_is_taken_into_account() {
                 });
             });
 
-            let proof = BuyCoreCollatorProof::new(1, another_para_id, collator.1.clone()).expect("creating collator proof must succeed");
+            let proof = BuyCoreCollatorProof::new(1, another_para_id, collator.clone()).expect("creating collator proof must succeed");
 
             let call = Call::buy_core {
                 para_id: another_para_id,
-                collator_account_id: collator.0,
                 proof: proof.clone(),
             };
 
             assert_ok!(<XcmCoreBuyer as ValidateUnsigned>::validate_unsigned(TransactionSource::External, &call));
             // We are not able to buy due to slot frequency being min: 10-2 = 8
-            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
+            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
 
             // We are still one slot short
             run_to_block(7);
-            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
+            assert_noop!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, proof.clone()), Error::<Test>::NotAllowedToProduceBlockRightNow);
 
             // We should be able to produce block at slot: 8
             run_to_block(8);
-            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, BOB, proof));
+            assert_ok!(XcmCoreBuyer::buy_core(RuntimeOrigin::none(), another_para_id, proof));
         })
 }
 
@@ -829,7 +811,7 @@ fn cannot_force_buy_invalid_para_id() {
             MockData::mutate(|m| {
                 // Mock para_id 2000 as a container chain with collators, but not a parathread
                 m.container_chain_collators
-                    .insert(2000.into(), vec![(ALICE, NimbusId::generate_pair(None))]);
+                    .insert(2000.into(), vec![NimbusId::generate_pair(None)]);
             });
 
             assert_noop!(

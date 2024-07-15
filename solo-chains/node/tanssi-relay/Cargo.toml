@@ -36,8 +36,6 @@ polkadot-overseer = { workspace = true }
 tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
 
 [dev-dependencies]
-assert_cmd = { workspace = true }
-nix = { workspace = true, features = [ "signal" ] }
 polkadot-core-primitives = { workspace = true }
 substrate-rpc-client = { workspace = true }
 tempfile = { workspace = true }
@@ -48,12 +46,6 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 fast-runtime = [ "tanssi-relay-cli/fast-runtime" ]
-jemalloc-allocator = [
-	"dep:tikv-jemallocator",
-	"polkadot-node-core-pvf-prepare-worker/jemalloc-allocator",
-	"polkadot-node-core-pvf/jemalloc-allocator",
-	"polkadot-overseer/jemalloc-allocator",
-]
 pyroscope = [ "tanssi-relay-cli/pyroscope" ]
 runtime-benchmarks = [ "tanssi-relay-cli/runtime-benchmarks" ]
 runtime-metrics = [ "tanssi-relay-cli/runtime-metrics" ]

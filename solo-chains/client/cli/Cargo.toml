@@ -17,7 +17,6 @@ crate-type = [ "cdylib", "rlib" ]
 workspace = true
 
 [dependencies]
-cfg-if = { workspace = true }
 clap = { workspace = true, optional = true }
 futures = { workspace = true }
 log = { workspace = true }

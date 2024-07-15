@@ -17,6 +17,8 @@ sc-consensus-aura = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
 sc-consensus-slots = { workspace = true }
 sc-telemetry = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true, features = [ "full_crypto", "std" ] }
 sp-block-builder = { workspace = true }
@@ -30,11 +32,15 @@ sp-keystore = { workspace = true }
 sp-runtime = { workspace = true }
 sp-state-machine = { workspace = true }
 sp-timestamp = { workspace = true }
+sp-transaction-pool = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own
 dp-consensus = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-xcm-core-buyer-runtime-api = { workspace = true }
+tp-traits = { workspace = true }
+tp-xcm-core-buyer = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
 cumulus-client-collator = { workspace = true }
