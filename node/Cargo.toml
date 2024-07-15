@@ -41,6 +41,7 @@ pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-consensus = { workspace = true }
+tc-container-chain-spawner = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }

@@ -16,13 +16,12 @@
 
 use {
     dp_container_chain_genesis_data::json::properties_to_map,
-    node_common::service::Sealing,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_service::PrometheusConfig,
     sc_chain_spec::ChainSpec,
     sc_cli::{
         CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams,
-        NodeKeyParams, SharedParams, SubstrateCli,
+        SharedParams, SubstrateCli,
     },
     sc_network::config::MultiaddrWithPeerId,
     sc_service::BasePath,
@@ -206,8 +205,8 @@ impl SubstrateCli for ContainerChainCli {
 
         match &self.preloaded_chain_spec {
             Some(spec) => {
-                let spec_para_id =
-                    crate::chain_spec::Extensions::try_get(&**spec).map(|extension| extension.para_id);
+                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
+                    .map(|extension| extension.para_id);
 
                 if spec_para_id == Some(para_id) {
                     Ok(spec.cloned_box())

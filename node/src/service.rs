@@ -16,14 +16,10 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use tc_container_chain_spawner::{ContainerChainBlockImport, ContainerChainClient};
 #[allow(deprecated)]
 use {
-    crate::{
-        cli::ContainerChainCli,
-        container_chain_spawner::{
-            select_sync_mode_based_on_api, CcSpawnMsg, ContainerChainSpawner,
-        },
-    },
+    crate::container_chain_spawner::select_sync_mode_based_on_api,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{
@@ -66,7 +62,7 @@ use {
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::{BasicQueue, BlockImport, ImportQueue},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
@@ -85,6 +81,11 @@ use {
             self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
         },
         OnDemandBlockProductionApi, OrchestratorAuraWorkerAuxData, TanssiAuthorityAssignmentApi,
+    },
+    tc_container_chain_spawner::cli::ContainerChainCli,
+    tc_container_chain_spawner::{
+        container_chain_import_queue, container_chain_spawner::CcSpawnMsg, container_log_str,
+        ContainerChainNodeConfig, ContainerChainSpawner,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
     tokio_util::sync::CancellationToken,
@@ -116,15 +117,6 @@ impl NodeBuilderConfig for NodeConfig {
     type ParachainExecutor = ParachainExecutor;
 }
 
-pub struct ContainerChainNodeConfig;
-impl NodeBuilderConfig for ContainerChainNodeConfig {
-    type Block = Block;
-    // TODO: RuntimeApi here should be the subset of runtime apis available for all containers
-    // Currently we are using the orchestrator runtime apis
-    type RuntimeApi = RuntimeApi;
-    type ParachainExecutor = ContainerChainExecutor;
-}
-
 // Orchestrator chain types
 type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
@@ -133,13 +125,6 @@ type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainCli
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 type ParachainProposerFactory =
     ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
-
-// Container chains types
-type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
-pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
-pub type ContainerChainBackend = ParachainBackend;
-type ContainerChainBlockImport =
-    TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
 
@@ -251,33 +236,6 @@ pub fn import_queue(
     // in the runtime
     let block_import =
         ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
-
-    let import_queue = nimbus_consensus::import_queue(
-        node_builder.client.clone(),
-        block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-            Ok((time,))
-        },
-        &node_builder.task_manager.spawn_essential_handle(),
-        parachain_config.prometheus_registry(),
-        false,
-    )
-    .expect("function never fails");
-
-    (block_import, import_queue)
-}
-
-pub fn container_chain_import_queue(
-    parachain_config: &Configuration,
-    node_builder: &NodeBuilder<ContainerChainNodeConfig>,
-) -> (ContainerChainBlockImport, BasicQueue<Block>) {
-    // The nimbus import queue ONLY checks the signature correctness
-    // Any other checks corresponding to the author-correctness should be done
-    // in the runtime
-    let block_import =
-        ContainerChainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
 
     let import_queue = nimbus_consensus::import_queue(
         node_builder.client.clone(),
@@ -540,13 +498,6 @@ async fn start_node_impl(
     }
 
     Ok((node_builder.task_manager, node_builder.client))
-}
-
-// Log string that will be shown for the container chain: `[Container-2000]`.
-// This needs to be a separate function because the `prefix_logs_with` macro
-// has trouble parsing expressions.
-fn container_log_str(para_id: ParaId) -> String {
-    format!("Container-{}", para_id)
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.

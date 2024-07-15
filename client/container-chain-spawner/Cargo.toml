@@ -1,5 +1,5 @@
 [package]
-name = "cc-spawner"
+name = "tc-container-chain-spawner"
 authors = { workspace = true }
 build = "build.rs"
 edition = "2021"

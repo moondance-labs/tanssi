@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
+        cli::{Cli, RelayChainCli, Subcommand},
         service::{self, IdentifyVariant, NodeConfig},
     },
     cumulus_client_cli::extract_genesis_wasm,
@@ -37,6 +37,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
+    tc_container_chain_spawner::cli::ContainerChainCli,
 };
 
 fn load_spec(
@@ -174,81 +175,6 @@ impl SubstrateCli for RelayChainCli {
                 .load_spec(id),
         }
     }
-}
-
-impl SubstrateCli for ContainerChainCli {
-    fn impl_name() -> String {
-        "Container chain".into()
-    }
-
-    fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
-    }
-
-    fn description() -> String {
-        format!(
-            "Container chain\n\nThe command-line arguments provided first will be \
-		passed to the orchestrator chain node, while the arguments provided after -- will be passed \
-		to the container chain node, and the arguments provided after another -- will be passed \
-		to the relay chain node\n\n\
-		{} [orchestrator-args] -- [container-chain-args] -- [relay-chain-args] -- ",
-            Self::executable_name()
-        )
-    }
-
-    fn author() -> String {
-        env!("CARGO_PKG_AUTHORS").into()
-    }
-
-    fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
-    }
-
-    fn copyright_start_year() -> i32 {
-        2020
-    }
-
-    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-        // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
-        // functions to generate it, and this function is not async.
-        let para_id = parse_container_chain_id_str(id)?;
-
-        match &self.preloaded_chain_spec {
-            Some(spec) => {
-                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
-                    .map(|extension| extension.para_id);
-
-                if spec_para_id == Some(para_id) {
-                    Ok(spec.cloned_box())
-                } else {
-                    Err(format!(
-                        "Expected ChainSpec for id {}, found ChainSpec for id {:?} instead",
-                        para_id, spec_para_id
-                    ))
-                }
-            }
-            None => Err(format!("ChainSpec for {} not found", id)),
-        }
-    }
-}
-
-/// Parse ParaId(2000) from a string like "container-chain-2000"
-fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
-    // The id has been created using format!("container-chain-{}", para_id), so here we need
-    // to reverse that.
-    id.strip_prefix("container-chain-")
-        .and_then(|s| {
-            let id: u32 = s.parse().ok()?;
-
-            // `.parse()` ignores leading zeros, so convert the id back to string to check
-            // if we get the same string, this way we ensure a 1:1 mapping
-            if id.to_string() == s {
-                Some(id)
-            } else {
-                None
-            }
-        })
-        .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
 }
 
 macro_rules! construct_async_run {
@@ -572,134 +498,6 @@ impl CliConfiguration<Self> for RelayChainCli {
         } else {
             chain_id
         })
-    }
-
-    fn role(&self, is_dev: bool) -> Result<sc_service::Role> {
-        self.base.base.role(is_dev)
-    }
-
-    fn transaction_pool(&self, is_dev: bool) -> Result<sc_service::config::TransactionPoolOptions> {
-        self.base.base.transaction_pool(is_dev)
-    }
-
-    fn trie_cache_maximum_size(&self) -> Result<Option<usize>> {
-        self.base.base.trie_cache_maximum_size()
-    }
-
-    fn rpc_methods(&self) -> Result<sc_service::config::RpcMethods> {
-        self.base.base.rpc_methods()
-    }
-
-    fn rpc_max_connections(&self) -> Result<u32> {
-        self.base.base.rpc_max_connections()
-    }
-
-    fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
-        self.base.base.rpc_cors(is_dev)
-    }
-
-    fn default_heap_pages(&self) -> Result<Option<u64>> {
-        self.base.base.default_heap_pages()
-    }
-
-    fn force_authoring(&self) -> Result<bool> {
-        self.base.base.force_authoring()
-    }
-
-    fn disable_grandpa(&self) -> Result<bool> {
-        self.base.base.disable_grandpa()
-    }
-
-    fn max_runtime_instances(&self) -> Result<Option<usize>> {
-        self.base.base.max_runtime_instances()
-    }
-
-    fn announce_block(&self) -> Result<bool> {
-        self.base.base.announce_block()
-    }
-
-    fn telemetry_endpoints(
-        &self,
-        chain_spec: &Box<dyn ChainSpec>,
-    ) -> Result<Option<sc_telemetry::TelemetryEndpoints>> {
-        self.base.base.telemetry_endpoints(chain_spec)
-    }
-
-    fn node_name(&self) -> Result<String> {
-        self.base.base.node_name()
-    }
-}
-
-impl DefaultConfigurationValues for ContainerChainCli {
-    fn p2p_listen_port() -> u16 {
-        30335
-    }
-
-    fn rpc_listen_port() -> u16 {
-        9946
-    }
-
-    fn prometheus_listen_port() -> u16 {
-        9617
-    }
-}
-
-impl CliConfiguration<Self> for ContainerChainCli {
-    fn shared_params(&self) -> &SharedParams {
-        self.base.base.shared_params()
-    }
-
-    fn import_params(&self) -> Option<&ImportParams> {
-        self.base.base.import_params()
-    }
-
-    fn network_params(&self) -> Option<&NetworkParams> {
-        self.base.base.network_params()
-    }
-
-    fn keystore_params(&self) -> Option<&KeystoreParams> {
-        self.base.base.keystore_params()
-    }
-
-    fn base_path(&self) -> Result<Option<BasePath>> {
-        Ok(self
-            .shared_params()
-            .base_path()?
-            .or_else(|| Some(self.base_path.clone().into())))
-    }
-
-    fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.base.base.rpc_addr(default_listen_port)
-    }
-
-    fn prometheus_config(
-        &self,
-        default_listen_port: u16,
-        chain_spec: &Box<dyn ChainSpec>,
-    ) -> Result<Option<PrometheusConfig>> {
-        self.base
-            .base
-            .prometheus_config(default_listen_port, chain_spec)
-    }
-
-    fn init<F>(
-        &self,
-        _support_url: &String,
-        _impl_version: &String,
-        _logger_hook: F,
-        _config: &sc_service::Configuration,
-    ) -> Result<()>
-    where
-        F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
-    {
-        unreachable!("PolkadotCli is never initialized; qed");
-    }
-
-    fn chain_id(&self, _is_dev: bool) -> Result<String> {
-        self.base
-            .para_id
-            .map(|para_id| format!("container-chain-{}", para_id))
-            .ok_or("no para-id in container chain args".into())
     }
 
     fn role(&self, is_dev: bool) -> Result<sc_service::Role> {

@@ -79,6 +79,7 @@ stream-payment-rpc = { path = "client/stream-payment" }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
+tc-container-chain-spawner = { path = "client/container-chain-spawner" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }

@@ -21,18 +21,15 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
-
-mod cli;
-mod container_chain_monitor;
-mod container_chain_spawner;
-mod rpc;
-mod chain_spec;
+pub mod chain_spec;
+pub mod cli;
+pub mod container_chain_monitor;
+pub mod container_chain_spawner;
+pub mod rpc;
 
 use {
     cumulus_client_collator::service::CollatorService,
-    cumulus_client_consensus_common::{
-        ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
-    },
+    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_service::{
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, ParachainHostFunctions,
@@ -46,20 +43,18 @@ use {
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{NodeBuilder, NodeBuilderConfig},
-    sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_consensus::BasicQueue,
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::WasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
         Configuration, ImportQueue, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::TelemetryHandle,
-    serde::{Deserialize, Serialize},
     sp_api::ProvideRuntimeApi,
-    sp_consensus_slots::{Slot, SlotDuration},
+    sp_consensus_slots::SlotDuration,
     sp_keystore::KeystorePtr,
-    std::{collections::BTreeMap, sync::Arc, time::Duration},
+    std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::{
@@ -70,6 +65,7 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
+pub use container_chain_spawner::ContainerChainSpawner;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -82,13 +78,11 @@ impl NodeBuilderConfig for ContainerChainNodeConfig {
     type ParachainExecutor = ContainerChainExecutor;
 }
 
-
-
 // Container chains types
-type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
+pub type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
 pub type ContainerChainBackend = TFullBackend<Block>;
-type ContainerChainBlockImport =
+pub type ContainerChainBlockImport =
     TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
@@ -222,7 +216,7 @@ pub async fn start_node_impl_container(
 // Log string that will be shown for the container chain: `[Container-2000]`.
 // This needs to be a separate function because the `prefix_logs_with` macro
 // has trouble parsing expressions.
-fn container_log_str(para_id: ParaId) -> String {
+pub fn container_log_str(para_id: ParaId) -> String {
     format!("Container-{}", para_id)
 }
 
