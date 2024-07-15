@@ -1,0 +1,36 @@
+[package]
+name = "starlight-runtime-constants"
+description = "Constants used throughout the Starlight network."
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+smallvec = { workspace = true }
+
+frame-support = { workspace = true }
+primitives = { workspace = true }
+runtime-common = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-weights = { workspace = true }
+
+xcm-builder = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-support/std",
+	"primitives/std",
+	"runtime-common/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-weights/std",
+	"xcm-builder/std",
+]
+
+# Set timing constants (e.g. session period) to faster versions to speed up testing.
+fast-runtime = []

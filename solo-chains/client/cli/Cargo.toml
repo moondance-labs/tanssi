@@ -1,0 +1,85 @@
+[package]
+name = "tanssi-relay-cli"
+description = "Tanssi Relay-chain Client Node"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.wasm-pack.profile.release]
+# `wasm-opt` has some problems on Linux, see
+# https://github.com/rustwasm/wasm-pack/issues/781 etc.
+wasm-opt = false
+
+[lib]
+crate-type = [ "cdylib", "rlib" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = { workspace = true, optional = true }
+futures = { workspace = true }
+log = { workspace = true }
+pyro = { workspace = true, optional = true }
+pyroscope_pprofrs = { workspace = true, optional = true }
+thiserror = { workspace = true }
+
+polkadot-service = { workspace = true, optional = true }
+tanssi-relay-service = { workspace = true, optional = true }
+
+frame-benchmarking-cli = { workspace = true, optional = true }
+polkadot-node-metrics = { workspace = true }
+polkadot-node-primitives = { workspace = true }
+sc-cli = { workspace = true, optional = true }
+sc-executor = { workspace = true }
+sc-service = { workspace = true, optional = true }
+sc-storage-monitor = { workspace = true }
+sc-sysinfo = { workspace = true }
+sc-tracing = { workspace = true, optional = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-keyring = { workspace = true }
+sp-maybe-compressed-blob = { workspace = true }
+sp-runtime = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
+[features]
+default = [ "cli", "db", "full-node" ]
+cli = [
+	"clap",
+	"frame-benchmarking-cli",
+	"polkadot-service",
+	"sc-cli",
+	"sc-service",
+	"sc-tracing",
+	"tanssi-relay-service",
+]
+db = [ "polkadot-service/db" ]
+fast-runtime = [ "polkadot-service/fast-runtime", "tanssi-relay-service" ]
+full-node = [ "polkadot-service/full-node" ]
+pyroscope = [ "pyro", "pyroscope_pprofrs" ]
+runtime-benchmarks = [
+	"frame-benchmarking-cli?/runtime-benchmarks",
+	"polkadot-node-metrics/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
+	"sc-service?/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"tanssi-relay-service/runtime-benchmarks",
+]
+try-runtime = [
+	"polkadot-service/try-runtime",
+	"sp-runtime/try-runtime",
+	"tanssi-relay-service/try-runtime",
+]
+
+# Configure the native runtimes to use.
+starlight-native = [ "tanssi-relay-service/starlight-native" ]
+
+malus = [ "full-node", "polkadot-service/malus" ]
+runtime-metrics = [
+	"polkadot-node-metrics/runtime-metrics",
+	"polkadot-service/runtime-metrics",
+	"tanssi-relay-service/runtime-metrics",
+]

@@ -219,7 +219,7 @@ describeSuite({
                     signature: signature,
                 });
 
-                const tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                const tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, proof);
                 await tx.send();
 
                 await context.createBlock();
@@ -239,8 +239,6 @@ describeSuite({
 
                 const nimbusPublicKey = collatorNimbusKey.publicKey;
 
-                const collatorAccountId = context.polkadotJs().createType("AccountId", collatorAccountKey.publicKey);
-
                 // Older nonce will not work
                 let dataToEncode: ITuple<[u64, ParaId]> = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
                 let signature = u8aToHex(collatorNimbusKey.sign(dataToEncode.toU8a()));
@@ -249,7 +247,7 @@ describeSuite({
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
                 });
-                let tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                let tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, proof);
                 await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
 
                 // Passing different nonce while signing and creating proof object is rejected
@@ -260,7 +258,7 @@ describeSuite({
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
                 });
-                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, proof);
                 await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
 
                 dataToEncode = polkadotJs.createType("(u64, ParaId)", [0, paraId]);
@@ -270,7 +268,7 @@ describeSuite({
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
                 });
-                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, proof);
                 await expect(tx.send()).rejects.toThrow("1010: Invalid Transaction: Transaction call is not expected");
 
                 // Correct nonce should be successful
@@ -281,7 +279,7 @@ describeSuite({
                     publicKey: u8aToHex(nimbusPublicKey),
                     signature: signature,
                 });
-                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, collatorAccountId, proof);
+                tx = polkadotJs.tx.xcmCoreBuyer.buyCore(paraId, proof);
                 await tx.send();
             },
         });

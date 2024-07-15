@@ -29,9 +29,6 @@ mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use {
     core::cmp::min,
     frame_support::{
@@ -48,6 +45,7 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::{FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
+    serde::{Deserialize, Serialize},
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
         ArithmeticError,
@@ -176,8 +174,9 @@ pub mod pallet {
     /// A stream payment from source to target.
     /// Stores the last time the stream was updated, which allows to compute
     /// elapsed time and perform payment.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct Stream<AccountId, Unit, AssetId, Balance> {
         /// Payer, source of the stream.
         pub source: AccountId,
@@ -210,8 +209,9 @@ pub mod pallet {
     }
 
     /// Stream configuration.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct StreamConfig<Unit, AssetId, Balance> {
         /// Unit in which time is measured using a `TimeProvider`.
         pub time_unit: Unit,
@@ -222,8 +222,9 @@ pub mod pallet {
     }
 
     /// Origin of a change request.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum Party {
         Source,
         Target,
@@ -239,8 +240,9 @@ pub mod pallet {
     }
 
     /// Kind of change requested.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum ChangeKind<Time> {
         /// The requested change is a suggestion, and the other party doesn't
         /// need to accept it.
@@ -252,8 +254,9 @@ pub mod pallet {
     }
 
     /// Describe how the deposit should change.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub enum DepositChange<Balance> {
         /// Increase deposit by given amount.
         Increase(Balance),
@@ -264,8 +267,9 @@ pub mod pallet {
     }
 
     /// A request to change a stream config.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(
+        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+    )]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
         pub requester: Party,
         pub kind: ChangeKind<Balance>,

@@ -51,7 +51,6 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn collator_container_chain)]
     pub type CollatorContainerChain<T: Config> = StorageMap<
         _,
         Twox64Concat,
@@ -108,6 +107,12 @@ pub mod pallet {
                 queued_id_to_nimbus_map,
                 next_collator_assignment,
             )
+        }
+
+        pub fn collator_container_chain(
+            session_index: T::SessionIndex,
+        ) -> Option<AssignedCollators<T::AuthorityId>> {
+            CollatorContainerChain::<T>::get(session_index)
         }
     }
 }

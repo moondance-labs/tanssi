@@ -1,0 +1,60 @@
+[package]
+name = "tanssi-relay"
+default-run = "tanssi-relay"
+description = "Implementation of a `https://tanssi.network` node in Rust based on the Substrate framework."
+edition = "2021"
+license = "GPL-3.0-only"
+readme = "README.md"
+version = "0.1.0"
+
+[[bin]]
+name = "tanssi-relay"
+path = "src/main.rs"
+
+[[bin]]
+name = "tanssi-relay-execute-worker"
+path = "src/bin/execute-worker.rs"
+
+[[bin]]
+name = "tanssi-relay-prepare-worker"
+path = "src/bin/prepare-worker.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+color-eyre = { workspace = true, default-features = false }
+tikv-jemallocator = { workspace = true, optional = true, features = [ "unprefixed_malloc_on_supported_platforms" ] }
+
+# Crates in our workspace, defined as dependencies so we can pass them feature flags.
+polkadot-node-core-pvf = { workspace = true }
+polkadot-node-core-pvf-common = { workspace = true }
+polkadot-node-core-pvf-execute-worker = { workspace = true }
+polkadot-node-core-pvf-prepare-worker = { workspace = true }
+
+polkadot-overseer = { workspace = true }
+tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
+
+[dev-dependencies]
+polkadot-core-primitives = { workspace = true }
+substrate-rpc-client = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
+[features]
+fast-runtime = [ "tanssi-relay-cli/fast-runtime" ]
+pyroscope = [ "tanssi-relay-cli/pyroscope" ]
+runtime-benchmarks = [ "tanssi-relay-cli/runtime-benchmarks" ]
+runtime-metrics = [ "tanssi-relay-cli/runtime-metrics" ]
+try-runtime = [ "tanssi-relay-cli/try-runtime" ]
+
+
+# Enables timeout-based tests supposed to be run only in CI environment as they may be flaky
+# when run locally depending on system load
+ci-only-tests = [ "polkadot-node-core-pvf/ci-only-tests" ]
+
+[target."cfg(target_os = \"linux\")".dependencies]
+tikv-jemallocator = { workspace = true, features = [ "unprefixed_malloc_on_supported_platforms" ] }

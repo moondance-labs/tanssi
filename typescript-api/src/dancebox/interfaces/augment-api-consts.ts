@@ -400,6 +400,8 @@ declare module "@polkadot/api-base/types/consts" {
              * after which the in flight orders can be cleaned up by anyone.
              */
             additionalTtlForInflightOrders: u32 & AugmentedConst<ApiType>;
+            /** Slot drift allowed for core buying */
+            buyCoreSlotDrift: u64 & AugmentedConst<ApiType>;
             /** TTL to be used in xcm's notify query */
             coreBuyingXCMQueryTtl: u32 & AugmentedConst<ApiType>;
             /** TTL for pending blocks entry, which prevents anyone to submit another core buying xcm. */

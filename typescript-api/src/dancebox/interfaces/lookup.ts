@@ -3779,7 +3779,6 @@ export default {
         _enum: {
             buy_core: {
                 paraId: "u32",
-                collatorAccountId: "AccountId32",
                 proof: "TpXcmCoreBuyerBuyCoreCollatorProof",
             },
             force_buy_core: {

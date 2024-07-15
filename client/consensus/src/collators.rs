@@ -299,33 +299,34 @@ impl<Pub: Clone> SlotClaim<Pub> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum ClaimMode {
+    ForceAuthoring,
+    NormalAuthoring,
+    ParathreadCoreBuying { drift_permitted: Slot },
+}
+
 /// Attempt to claim a slot locally.
 pub fn tanssi_claim_slot<P, B>(
     aux_data: OrchestratorAuraWorkerAuxData<P>,
     chain_head: &B::Header,
     slot: Slot,
-    force_authoring: bool,
+    claim_mode: ClaimMode,
     keystore: &KeystorePtr,
-) -> Result<Option<SlotClaim<P::Public>>, Box<dyn Error>>
+) -> Option<SlotClaim<P::Public>>
 where
     P: Pair + Send + Sync + 'static,
     P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
     B: BlockT,
 {
-    let author_pub = {
-        let res = claim_slot_inner::<P>(slot, &aux_data.authorities, keystore, force_authoring);
-        match res {
-            Some(p) => p,
-            None => return Ok(None),
-        }
-    };
+    let author_pub = claim_slot_inner::<P>(slot, &aux_data.authorities, keystore, claim_mode)?;
 
-    if is_parathread_and_should_skip_slot::<P, B>(&aux_data, chain_head, slot) {
-        return Ok(None);
+    if is_parathread_and_should_skip_slot::<P, B>(&aux_data, chain_head, slot, claim_mode) {
+        return None;
     }
 
-    Ok(Some(SlotClaim::unchecked::<P>(author_pub, slot)))
+    Some(SlotClaim::unchecked::<P>(author_pub, slot))
 }
 
 /// Returns true if this container chain is a parathread and the collator should skip this slot and not produce a block
@@ -333,6 +334,7 @@ pub fn is_parathread_and_should_skip_slot<P, B>(
     aux_data: &OrchestratorAuraWorkerAuxData<P>,
     chain_head: &B::Header,
     slot: Slot,
+    claim_mode: ClaimMode,
 ) -> bool
 where
     P: Pair + Send + Sync + 'static,
@@ -344,14 +346,19 @@ where
         // Always produce on slot 0 (for tests)
         return false;
     }
-    if let Some(min_slot_freq) = aux_data.min_slot_freq {
+    if let Some(slot_freq) = &aux_data.slot_freq {
         if let Ok(chain_head_slot) = find_pre_digest::<B, P::Signature>(chain_head) {
-            let slot_diff = slot.saturating_sub(chain_head_slot);
-
             // TODO: this doesn't take into account force authoring.
             // So a node with `force_authoring = true` will not propose a block for a parathread until the
             // `min_slot_freq` has elapsed.
-            slot_diff < min_slot_freq
+            match claim_mode {
+                ClaimMode::NormalAuthoring | ClaimMode::ForceAuthoring => {
+                    !slot_freq.should_parathread_author_block(slot, chain_head_slot)
+                }
+                ClaimMode::ParathreadCoreBuying { drift_permitted } => {
+                    !slot_freq.should_parathread_buy_core(slot, drift_permitted, chain_head_slot)
+                }
+            }
         } else {
             // In case of error always propose
             false
@@ -367,7 +374,7 @@ pub fn claim_slot_inner<P>(
     slot: Slot,
     authorities: &Vec<AuthorityId<P>>,
     keystore: &KeystorePtr,
-    force_authoring: bool,
+    claim_mode: ClaimMode,
 ) -> Option<P::Public>
 where
     P: Pair,
@@ -375,8 +382,15 @@ where
     P::Signature: Codec,
 {
     let expected_author = crate::slot_author::<P>(slot, authorities.as_slice());
+    // if running with force-authoring, as long as you are in the authority set, propose
+    if claim_mode == ClaimMode::ForceAuthoring {
+        authorities
+            .iter()
+            .find(|key| keystore.has_keys(&[(key.to_raw_vec(), NIMBUS_KEY_ID)]))
+            .cloned()
+    }
     // if not running with force-authoring, just do the usual slot check
-    if !force_authoring {
+    else {
         expected_author.and_then(|p| {
             if keystore.has_keys(&[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
                 Some(p.clone())
@@ -384,14 +398,6 @@ where
                 None
             }
         })
-    }
-    // if running with force-authoring, as long as you are in the authority set,
-    // propose
-    else {
-        authorities
-            .iter()
-            .find(|key| keystore.has_keys(&[(key.to_raw_vec(), NIMBUS_KEY_ID)]))
-            .cloned()
     }
 }
 

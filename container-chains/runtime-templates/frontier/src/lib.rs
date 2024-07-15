@@ -578,7 +578,6 @@ impl pallet_utility::Config for Runtime {
 }
 
 /// The type used to represent the kinds of proxying allowed.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
 )]

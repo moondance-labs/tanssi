@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, features = [ "derive" ] }
 sp-api = { workspace = true }
 thiserror = { workspace = true, optional = true }
 
@@ -24,8 +24,7 @@ default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"serde",
-	"serde?/std",
+	"serde/std",
 	"sp-api/std",
 	"thiserror",
 ]
