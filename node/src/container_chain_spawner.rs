@@ -33,7 +33,6 @@ use {
     dc_orchestrator_chain_interface::{OrchestratorChainInterface, PHash},
     fs2::FileExt,
     futures::FutureExt,
-    nimbus_primitives::NimbusId,
     node_common::command::generate_genesis_block,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     polkadot_primitives::CollatorPair,
@@ -105,7 +104,7 @@ pub struct ContainerChainSpawner<SelectSyncMode> {
 #[derive(Clone)]
 pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub orchestrator_block_hash: PHash,
-    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,
@@ -836,7 +835,7 @@ pub fn select_sync_mode_using_client(
 }
 
 async fn get_latest_container_block_number_from_orchestrator(
-    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
@@ -870,7 +869,7 @@ enum DbRemovalReason {
 /// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
 async fn db_needs_removal(
     container_chain_client: &Arc<ContainerChainClient>,
-    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
     container_chain_cli: &ContainerChainCli,

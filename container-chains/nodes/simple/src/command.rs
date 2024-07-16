@@ -27,7 +27,6 @@ use {
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     futures::stream::StreamExt,
     log::{info, warn},
-    nimbus_primitives::NimbusId,
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
     polkadot_service::{IdentifyVariant as _, TaskManager},
@@ -283,7 +282,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
 
             runner.run_node_until_exit(|_config| async move {
-                let client: Box<dyn OrchestratorChainInterface<NimbusId>>;
+                let client: Box<dyn OrchestratorChainInterface>;
                 let mut task_manager;
 
                 if cmd.orchestrator_endpoints.is_empty() {
@@ -292,10 +291,10 @@ pub fn run() -> Result<()> {
                     task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
                         .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
-                    client = tc_orchestrator_chain_rpc_interface::create_client_and_start_worker::<
-                        NimbusId,
-                    >(
-                        cmd.orchestrator_endpoints.clone(), &mut task_manager, None
+                    client = tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                        cmd.orchestrator_endpoints.clone(),
+                        &mut task_manager,
+                        None,
                     )
                     .await
                     .map(Box::new)

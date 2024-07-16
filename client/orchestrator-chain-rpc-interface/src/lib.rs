@@ -18,10 +18,10 @@ mod ws_client;
 
 use {
     async_trait::async_trait,
-    core::{marker::PhantomData, pin::Pin},
+    core::pin::Pin,
     dc_orchestrator_chain_interface::{
         BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
-        OrchestratorChainResult, PHash, PHeader, Slot,
+        OrchestratorChainResult, PHash, PHeader,
     },
     dp_core::ParaId,
     futures::{Stream, StreamExt},
@@ -62,11 +62,11 @@ fn url_to_string_with_port(url: Url) -> Option<String> {
     ))
 }
 
-pub async fn create_client_and_start_worker<T>(
+pub async fn create_client_and_start_worker(
     urls: Vec<Url>,
     task_manager: &mut TaskManager,
     overseer_handle: Option<polkadot_overseer::Handle>,
-) -> OrchestratorChainResult<OrchestratorChainRpcClient<T>> {
+) -> OrchestratorChainResult<OrchestratorChainRpcClient> {
     let urls: Vec<_> = urls
         .into_iter()
         .filter_map(url_to_string_with_port)
@@ -86,20 +86,18 @@ pub async fn create_client_and_start_worker<T>(
     let client = OrchestratorChainRpcClient {
         request_sender,
         overseer_handle,
-        _phantom: PhantomData,
     };
 
     Ok(client)
 }
 
 #[derive(Clone)]
-pub struct OrchestratorChainRpcClient<T> {
+pub struct OrchestratorChainRpcClient {
     request_sender: mpsc::Sender<WsClientRequest>,
     overseer_handle: Option<polkadot_overseer::Handle>,
-    _phantom: PhantomData<T>,
 }
 
-impl<T> OrchestratorChainRpcClient<T> {
+impl OrchestratorChainRpcClient {
     /// Call a call to `state_call` rpc method.
     pub async fn call_remote_runtime_function<R: Decode>(
         &self,
@@ -220,9 +218,7 @@ impl<T> OrchestratorChainRpcClient<T> {
 }
 
 #[async_trait]
-impl<T: Sync + Send + Decode, AuthorityId: Sync + Send + Decode>
-    OrchestratorChainInterface<AuthorityId> for OrchestratorChainRpcClient<T>
-{
+impl OrchestratorChainInterface for OrchestratorChainRpcClient {
     /// Fetch a storage item by key.
     async fn get_storage_by_key(
         &self,
@@ -286,31 +282,6 @@ impl<T: Sync + Send + Decode, AuthorityId: Sync + Send + Decode>
         let rx = self.send_register_message(WsClientRequest::RegisterFinalizationListener)?;
         let stream = tokio_stream::wrappers::ReceiverStream::new(rx);
         Ok(stream.boxed())
-    }
-
-    /// Return the set of authorities assigned to the paraId where
-    /// the first eligible key from the keystore is collating
-    async fn authorities(
-        &self,
-        orchestrator_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<Vec<AuthorityId>>> {
-        self.call_remote_runtime_function("para_id_authorities", orchestrator_parent, Some(para_id))
-            .await
-    }
-
-    /// Returns the minimum slot frequency for this para id.
-    async fn min_slot_freq(
-        &self,
-        orchestrator_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<Slot>> {
-        self.call_remote_runtime_function(
-            "parathread_slot_frequency",
-            orchestrator_parent,
-            Some(para_id),
-        )
-        .await
     }
 
     async fn genesis_data(

@@ -579,7 +579,7 @@ fn container_log_str(para_id: ParaId) -> String {
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     keystore: KeystorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
@@ -728,7 +728,7 @@ fn start_consensus_container(
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
@@ -1332,7 +1332,7 @@ struct OrchestratorChainInProcessInterfaceBuilder {
 }
 
 impl OrchestratorChainInProcessInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn OrchestratorChainInterface<NimbusId>> {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
         Arc::new(OrchestratorChainInProcessInterface::new(
             self.client,
             self.backend,
@@ -1379,7 +1379,7 @@ impl<T> Clone for OrchestratorChainInProcessInterface<T> {
 }
 
 #[async_trait::async_trait]
-impl<Client> OrchestratorChainInterface<NimbusId> for OrchestratorChainInProcessInterface<Client>
+impl<Client> OrchestratorChainInterface for OrchestratorChainInProcessInterface<Client>
 where
     Client: ProvideRuntimeApi<Block>
         + BlockchainEvents<Block>
@@ -1451,38 +1451,6 @@ where
             .finality_notification_stream()
             .map(|notification| notification.header);
         Ok(Box::pin(notification_stream))
-    }
-
-    /// Return the set of authorities assigned to the paraId where
-    /// the first eligible key from the keystore is collating
-    async fn authorities(
-        &self,
-        orchestrator_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<Vec<NimbusId>>> {
-        let runtime_api = self.full_client.runtime_api();
-
-        let authorities = runtime_api.para_id_authorities(orchestrator_parent, para_id)?;
-
-        log::info!(
-            "Authorities found for para {:?} are {:?}",
-            para_id,
-            authorities
-        );
-        Ok(authorities)
-    }
-    /// Returns the minimum slot frequency for this para id.
-    async fn min_slot_freq(
-        &self,
-        orchestrator_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<Slot>> {
-        let runtime_api = self.full_client.runtime_api();
-
-        let slot_frequency = runtime_api.parathread_slot_frequency(orchestrator_parent, para_id)?;
-
-        log::debug!("slot_freq for para {:?} is {:?}", para_id, slot_frequency);
-        Ok(slot_frequency.map(|slot_frequency| u64::from(slot_frequency.min).into()))
     }
 
     async fn genesis_data(
