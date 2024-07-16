@@ -22,12 +22,12 @@ use {
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
         Pallet, RegistrarHooks,
     },
+    dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     frame_benchmarking::{account, v2::*},
     frame_support::traits::{Currency, EnsureOrigin, EnsureOriginWithArg},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
-    tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     tp_traits::{ParaId, RelayStorageRootProvider, SlotFrequency},
 };
 
@@ -53,7 +53,7 @@ mod benchmarks {
 
     fn new_genesis_data<T: Config>(
         storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> ContainerChainGenesisData<T::MaxLengthTokenSymbol> {
+    ) -> ContainerChainGenesisData {
         ContainerChainGenesisData {
             storage,
             name: Default::default(),
@@ -69,7 +69,7 @@ mod benchmarks {
     fn max_size_genesis_data<T: Config>(
         num_keys: u32,
         max_encoded_size: u32,
-    ) -> ContainerChainGenesisData<T::MaxLengthTokenSymbol> {
+    ) -> ContainerChainGenesisData {
         let mut storage = vec![];
         // Create one big storage item
         storage.push((b"code".to_vec(), vec![1; max_encoded_size as usize]).into());

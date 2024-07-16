@@ -17,11 +17,11 @@
 use {
     crate::{mock::*, Error, Event, ParaInfo, REGISTRAR_PARAS_INDEX},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec, Hashable},
     parity_scale_codec::Encode,
     sp_core::Pair,
     sp_runtime::DispatchError,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, SlotFrequency},
 };
 

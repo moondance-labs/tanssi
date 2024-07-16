@@ -19,9 +19,7 @@ use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
-    flashbox_runtime::{
-        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxLengthTokenSymbol,
-    },
+    flashbox_runtime::{AuthorInherent, BlockProductionCost, CollatorAssignmentCost},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -292,27 +290,13 @@ pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
     para_id: u32,
-    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    genesis_data: ContainerChainGenesisData,
     block_production_credits: u32,
     collator_assignment_credits: u32,
 }
 
-impl
-    From<(
-        u32,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        u32,
-        u32,
-    )> for ParaRegistrationParams
-{
-    fn from(
-        value: (
-            u32,
-            ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            u32,
-            u32,
-        ),
-    ) -> Self {
+impl From<(u32, ContainerChainGenesisData, u32, u32)> for ParaRegistrationParams {
+    fn from(value: (u32, ContainerChainGenesisData, u32, u32)) -> Self {
         Self {
             para_id: value.0,
             genesis_data: value.1,
@@ -416,6 +400,7 @@ impl ExtBuilder {
                     (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
+            __phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -565,7 +550,7 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     .dispatch(inherent_origin()));
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),

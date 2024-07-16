@@ -2076,7 +2076,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
@@ -2099,7 +2099,7 @@ sp_api::impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             ContainerRegistrar::para_genesis_data(para_id)
         }
 

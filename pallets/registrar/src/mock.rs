@@ -16,6 +16,7 @@
 
 use {
     crate::{self as pallet_registrar, RegistrarHooks},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
         traits::{ConstU16, ConstU64},
         weights::Weight,
@@ -28,7 +29,6 @@ use {
         BuildStorage,
     },
     std::collections::BTreeMap,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, RelayStorageRootProvider},
 };
 
@@ -312,19 +312,22 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
+    para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),
         balances: Default::default(),
-        para_registrar: pallet_registrar::GenesisConfig { para_ids },
+        para_registrar: pallet_registrar::GenesisConfig {
+            para_ids,
+            __phantom: Default::default(),
+        },
     }
     .build_storage()
     .unwrap()
     .into()
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),
