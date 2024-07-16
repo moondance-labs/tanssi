@@ -100,6 +100,35 @@ jobs:
                   else
                     false
                   fi
+    check-links:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - uses: gaurav-nelson/github-action-markdown-link-check@v1
+              with:
+                  use-quiet-mode: "yes"
+                  max-depth: 4
+
+    check-rust-fmt:
+        name: "Check with rustfmt"
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            # With rustup's nice new toml format, we just need to run rustup show to install the toolchain
+            # https://github.com/actions-rs/toolchain/issues/126#issuecomment-782989659
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Format code with rustfmt
+              run: cargo fmt --all --check
+
 
     ####### Static Analyses #######
     cargo-clippy:
@@ -121,7 +150,7 @@ jobs:
               run: ./.github/scripts/check_toml_lints.sh
 
             - name: Clippy
-              run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features runtime-benchmarks
+              run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
 
     cargo-toml-feature-propagation:
         runs-on: ubuntu-latest
@@ -237,8 +266,6 @@ jobs:
                   curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
             - name: Setup Rust toolchain
               run: rustup show
-            - name: Formatter
-              run: cargo fmt --all --check
             - name: Build
               run: cargo build --features=fast-runtime --release --all
             - name: Save runtime wasm
