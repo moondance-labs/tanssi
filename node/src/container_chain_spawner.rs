@@ -101,6 +101,10 @@ pub struct ContainerChainSpawner<SelectSyncMode> {
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
 /// These params must be the same for all container chains, params that change such as the
 /// `container_chain_para_id` should be passed as separate arguments to the [try_spawn] function.
+///
+/// This struct MUST NOT contain types (outside of `Option<CollationParams>`) obtained through
+/// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
+/// connected to an orchestrator node through WebSocket. 
 #[derive(Clone)]
 pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub orchestrator_block_hash: PHash,
@@ -117,7 +121,8 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub sync_mode: SelectSyncMode,
 }
 
-/// Params specific to collation.
+/// Params specific to collation. This struct can contain types obtained through running an
+/// embeded orchestrator node.
 #[derive(Clone)]
 pub struct CollationParams {
     pub collator_key: CollatorPair,
