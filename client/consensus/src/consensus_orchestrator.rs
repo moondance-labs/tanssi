@@ -20,10 +20,10 @@
 //! It is identical to AuraWorker and AuraConsensus, except for the fact that we re-implement
 //! the ParachainConsensus trait to access the orchestrator-dicated authorities, and further
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
-use tp_traits::SlotFrequency;
 use {
     crate::{AuthorityId, Pair},
     sp_runtime::traits::Block as BlockT,
+    tp_traits::SlotFrequency,
 };
 
 #[async_trait::async_trait]

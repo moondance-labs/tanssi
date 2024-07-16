@@ -30,6 +30,7 @@ tokio-util = { workspace = true }
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 dp-slot-duration-runtime-api = { workspace = true }
 flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
@@ -41,11 +42,9 @@ pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
-tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
-
 
 # Nimbus
 nimbus-consensus = { workspace = true }

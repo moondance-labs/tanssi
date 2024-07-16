@@ -30,12 +30,12 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block as OpaqueBlock, Block},
-    dc_orchestrator_chain_interface::OrchestratorChainInterface,
+    dc_orchestrator_chain_interface::{OrchestratorChainInterface, PHash},
     fs2::FileExt,
     futures::FutureExt,
+    nimbus_primitives::NimbusId,
     node_common::command::generate_genesis_block,
     pallet_author_noting_runtime_api::AuthorNotingApi,
-    pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
@@ -70,11 +70,21 @@ const MAX_DB_RESTART_TIMEOUT: Duration = Duration::from_secs(60);
 /// Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
 const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 
+pub trait TSelectSyncMode:
+    Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>)
+{
+}
+impl<
+        T: Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>),
+    > TSelectSyncMode for T
+{
+}
+
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner {
+pub struct ContainerChainSpawner<SelectSyncMode> {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams,
+    pub params: ContainerChainSpawnParams<SelectSyncMode>,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -93,20 +103,27 @@ pub struct ContainerChainSpawner {
 /// These params must be the same for all container chains, params that change such as the
 /// `container_chain_para_id` should be passed as separate arguments to the [try_spawn] function.
 #[derive(Clone)]
-pub struct ContainerChainSpawnParams {
-    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    pub orchestrator_client: Arc<ParachainClient>,
-    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
+pub struct ContainerChainSpawnParams<SelectSyncMode> {
+    pub orchestrator_block_hash: PHash,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface<NimbusId>>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
     pub chain_type: sc_chain_spec::ChainType,
     pub relay_chain: String,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
-    pub collator_key: Option<CollatorPair>,
     pub sync_keystore: KeystorePtr,
     pub orchestrator_para_id: ParaId,
-    pub validator: bool,
     pub spawn_handle: SpawnTaskHandle,
+    pub collation_params: Option<CollationParams>,
+    pub sync_mode: SelectSyncMode,
+}
+
+/// Params specific to collation.
+#[derive(Clone)]
+pub struct CollationParams {
+    pub collator_key: CollatorPair,
+    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
+    pub orchestrator_client: Arc<ParachainClient>,
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
@@ -149,46 +166,34 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn(
-    try_spawn_params: ContainerChainSpawnParams,
+async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
+    try_spawn_params: ContainerChainSpawnParams<SelectSyncMode>,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
 ) -> sc_service::error::Result<()> {
     let ContainerChainSpawnParams {
+        orchestrator_block_hash,
         orchestrator_chain_interface,
-        orchestrator_client,
         mut container_chain_cli,
         tokio_handle,
         chain_type,
         relay_chain,
         relay_chain_interface,
-        collator_key,
         sync_keystore,
         orchestrator_para_id,
-        validator,
         spawn_handle,
-        orchestrator_tx_pool,
+        mut collation_params,
+        sync_mode,
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
 
     // TODO: the orchestrator chain node may not be fully synced yet,
     // in that case we will be reading an old state.
-    let orchestrator_chain_info = orchestrator_client.chain_info();
-    log::info!(
-        "Reading container chain genesis data from orchestrator chain at block #{} {}",
-        orchestrator_chain_info.best_number,
-        orchestrator_chain_info.best_hash,
-    );
-    let orchestrator_runtime_api = orchestrator_client.runtime_api();
 
-    log::info!(
-        "Detected assignment for container chain {}",
-        container_chain_para_id
-    );
-
-    let genesis_data = orchestrator_runtime_api
-        .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
+    let genesis_data = orchestrator_chain_interface
+        .genesis_data(orchestrator_block_hash, container_chain_para_id)
+        .await
         .map_err(|e| format!("Failed to call genesis_data runtime api: {}", e))?
         .ok_or_else(|| {
             format!(
@@ -197,9 +202,11 @@ async fn try_spawn(
             )
         })?;
 
-    let boot_nodes_raw = orchestrator_runtime_api
-        .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
+    let boot_nodes_raw = orchestrator_chain_interface
+        .boot_nodes(orchestrator_block_hash, container_chain_para_id)
+        .await
         .map_err(|e| format!("Failed to call boot_nodes runtime api: {}", e))?;
+
     if boot_nodes_raw.is_empty() {
         log::warn!(
             "No boot nodes registered on-chain for container chain {}",
@@ -235,6 +242,8 @@ async fn try_spawn(
     );
 
     if !start_collation {
+        collation_params = None;
+
         log::info!("This is a syncing container chain, using random ports");
         // Use random ports to avoid conflicts with the other running container chain
         let random_ports = [23456, 23457, 23458];
@@ -246,6 +255,8 @@ async fn try_spawn(
         container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
         container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
     }
+
+    let validator = collation_params.is_some();
 
     // Update CLI params
     container_chain_cli.base.para_id = Some(container_chain_para_id.into());
@@ -290,11 +301,8 @@ async fn try_spawn(
         // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
         for _ in 0..2 {
             let db_existed_before = check_db_exists();
-            container_chain_cli.base.base.network_params.sync = select_sync_mode(
-                db_existed_before,
-                &orchestrator_client,
-                container_chain_para_id,
-            )?;
+            container_chain_cli.base.base.network_params.sync =
+                sync_mode(db_existed_before, container_chain_para_id)?;
             log::info!(
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
@@ -320,15 +328,12 @@ async fn try_spawn(
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
                 start_node_impl_container(
                     container_chain_cli_config,
-                    orchestrator_client.clone(),
-                    orchestrator_tx_pool.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface.clone(),
-                    collator_key.clone(),
                     sync_keystore.clone(),
                     container_chain_para_id,
                     orchestrator_para_id,
-                    validator && start_collation,
+                    collation_params.clone(),
                 )
                 .await?;
 
@@ -346,11 +351,14 @@ async fn try_spawn(
                 // "shutdown error" log, and then remove it.
                 if let Some(db_removal_reason) = db_needs_removal(
                     &node_parts.1,
-                    &orchestrator_client,
+                    &orchestrator_chain_interface,
+                    orchestrator_block_hash,
                     container_chain_para_id,
                     &container_chain_cli,
                     container_chain_cli.base.keep_db,
-                )? {
+                )
+                .await?
+                {
                     let db_path = node_parts.3.clone();
                     // Important, drop `node_parts` before trying to `wait_for_paritydb_lock`
                     drop(node_parts);
@@ -386,9 +394,11 @@ async fn try_spawn(
             if container_chain_cli.base.base.network_params.sync == SyncMode::Full {
                 let last_container_block_temp = node_parts.1.chain_info().best_number;
                 let cc_block_num = get_latest_container_block_number_from_orchestrator(
-                    &orchestrator_client,
+                    &orchestrator_chain_interface,
+                    orchestrator_block_hash,
                     container_chain_para_id,
                 )
+                .await
                 .unwrap_or(0);
                 if last_container_block_temp == 0 && cc_block_num > MAX_BLOCK_DIFF_FOR_FULL_SYNC {
                     let db_folder = format!("full-container-{}", container_chain_para_id);
@@ -506,7 +516,7 @@ async fn try_spawn(
     Ok(())
 }
 
-impl ContainerChainSpawner {
+impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// Try to start a new container chain. In case of an error, this does not stop the node, and
     /// the container chain will be attempted to spawn again when the collator is reassigned to it.
     ///
@@ -796,7 +806,7 @@ fn handle_update_assignment_state_change(
 /// interrupted before it finished downloading the state, in that case the node will use warp sync.
 /// If it was interrupted during the block history download, the node will use full sync but also
 /// finish the block history download in the background, even if sync mode is set to full sync.
-fn select_sync_mode(
+pub fn select_sync_mode_using_client(
     db_exists: bool,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
@@ -825,15 +835,15 @@ fn select_sync_mode(
     }
 }
 
-fn get_latest_container_block_number_from_orchestrator(
-    orchestrator_client: &Arc<ParachainClient>,
+async fn get_latest_container_block_number_from_orchestrator(
+    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
-    let orchestrator_runtime_api = orchestrator_client.runtime_api();
-    let orchestrator_chain_info = orchestrator_client.chain_info();
     // Get the container chain's latest block from orchestrator chain and compare with client's one
-    let last_container_block_from_orchestrator = orchestrator_runtime_api
-        .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+    let last_container_block_from_orchestrator = orchestrator_chain_interface
+        .latest_block_number(orchestrator_block_hash, container_chain_para_id)
+        .await
         .unwrap_or_default();
 
     last_container_block_from_orchestrator
@@ -858,9 +868,10 @@ enum DbRemovalReason {
 /// Reasons may be:
 /// * High block diff: when the local db is outdated and it would take a long time to sync using full sync, we remove it to be able to use warp sync.
 /// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
-fn db_needs_removal(
+async fn db_needs_removal(
     container_chain_client: &Arc<ContainerChainClient>,
-    orchestrator_client: &Arc<ParachainClient>,
+    orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface<NimbusId>>,
+    orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
@@ -873,9 +884,11 @@ fn db_needs_removal(
             // Don't remove an empty database, as it may be in the process of a warp sync
         } else {
             if get_latest_container_block_number_from_orchestrator(
-                orchestrator_client,
+                orchestrator_chain_interface,
+                orchestrator_block_hash,
                 container_chain_para_id,
             )
+            .await
             .unwrap_or(0)
             .abs_diff(last_container_block_temp)
                 > MAX_BLOCK_DIFF_FOR_FULL_SYNC

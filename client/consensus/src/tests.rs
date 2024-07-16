@@ -18,11 +18,9 @@
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
-use crate::collators::ClaimMode;
-use tp_traits::SlotFrequency;
 use {
     crate::{
-        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        collators::{tanssi_claim_slot, ClaimMode, Collator, Params as CollatorParams},
         OrchestratorAuraWorkerAuxData,
     },
     async_trait::async_trait,
@@ -73,6 +71,7 @@ use {
         time::Duration,
     },
     substrate_test_runtime_client::TestClient,
+    tp_traits::SlotFrequency,
 };
 
 // Duration of slot time

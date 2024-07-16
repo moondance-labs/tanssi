@@ -42,7 +42,10 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec, vec::Vec},
+    sp_std::{
+        collections::btree_set::BTreeSet,
+        vec::{self, Vec},
+    },
 };
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
