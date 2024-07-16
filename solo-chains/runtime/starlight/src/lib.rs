@@ -1432,6 +1432,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
