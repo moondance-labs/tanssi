@@ -51,9 +51,7 @@ fn create_funded_user<T: Config>(
 mod benchmarks {
     use {super::*, parity_scale_codec::Encode};
 
-    fn new_genesis_data(
-        storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> ContainerChainGenesisData {
+    fn new_genesis_data(storage: Vec<ContainerChainGenesisDataItem>) -> ContainerChainGenesisData {
         ContainerChainGenesisData {
             storage,
             name: Default::default(),
@@ -66,10 +64,7 @@ mod benchmarks {
 
     /// Creates a `ContainerChainGenesisData` with encoded size very near to `max_encoded_size`, and
     /// with the provided number of keys.
-    fn max_size_genesis_data(
-        num_keys: u32,
-        max_encoded_size: u32,
-    ) -> ContainerChainGenesisData {
+    fn max_size_genesis_data(num_keys: u32, max_encoded_size: u32) -> ContainerChainGenesisData {
         let mut storage = vec![];
         // Create one big storage item
         storage.push((b"code".to_vec(), vec![1; max_encoded_size as usize]).into());
