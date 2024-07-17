@@ -94,7 +94,7 @@ polkadot-runtime-common = { workspace = true }
 staging-xcm = { workspace = true }
 staging-xcm-builder = { workspace = true }
 staging-xcm-executor = { workspace = true }
-xcm-fee-payment-runtime-api = { workspace = true }
+xcm-runtime-apis = { workspace = true }
 
 # Cumulus
 cumulus-pallet-dmp-queue = { workspace = true }
@@ -226,8 +226,8 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tanssi-runtime-common/std",
-	"xcm-fee-payment-runtime-api/std",
 	"xcm-primitives/std",
+	"xcm-runtime-apis/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -277,6 +277,7 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"xcm-runtime-apis/runtime-benchmarks",
 ]
 
 try-runtime = [
