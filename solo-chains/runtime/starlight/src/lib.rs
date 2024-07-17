@@ -53,7 +53,6 @@ use {
         paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
-        assigner_coretime as parachains_assigner_coretime,
         assigner_on_demand as parachains_assigner_on_demand,
         configuration as parachains_configuration, coretime,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
@@ -74,7 +73,6 @@ use {
         collections::{btree_map::BTreeMap, vec_deque::VecDeque},
         prelude::*,
     },
-    starlight_runtime_constants::system_parachain::BROKER_ID,
     tp_traits::{GetSessionContainerChains, Slot, SlotFrequency},
 };
 
@@ -870,7 +868,7 @@ impl parachains_paras::Config for Runtime {
     type QueueFootprinter = ParaInclusion;
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
-    type AssignCoretime = CoretimeAssignmentProvider;
+    type AssignCoretime = ();
 }
 
 parameter_types! {
@@ -945,22 +943,61 @@ impl parachains_paras_inherent::Config for Runtime {
 impl parachains_scheduler::Config for Runtime {
     // If you change this, make sure the `Assignment` type of the new provider is binary compatible,
     // otherwise provide a migration.
-    type AssignmentProvider = CoretimeAssignmentProvider;
+    type AssignmentProvider = CollatorAssignmentProvider;
 }
 
-parameter_types! {
-    pub const BrokerId: u32 = BROKER_ID;
-    pub MaxXcmTransactWeight: Weight = Weight::from_parts(200_000_000, 20_000);
-}
+use frame_system::pallet_prelude::BlockNumberFor;
+use parachains_scheduler::common::Assignment;
+pub struct CollatorAssignmentProvider;
+impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>> for CollatorAssignmentProvider {
+    fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
+        let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
+        let assigned_paras: Vec<ParaId> = assigned_collators.container_chains.iter().map(|(&para_id, _)| para_id).collect();
+        let scheduled_para_id = assigned_paras.get(core_idx.0 as usize)?;
+        if Paras::is_parachain(*scheduled_para_id) {
+            Some(Assignment::Bulk((*scheduled_para_id).into()))
+        }
+        else {
+            parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(core_idx)
+        }
+    }
+    fn report_processed(assignment: Assignment) {
+		match assignment {
+			Assignment::Pool { para_id, core_index } =>
+                parachains_assigner_on_demand::Pallet::<Runtime>::report_processed(para_id, core_index),
+			Assignment::Bulk(_) => {},
+		}
+	}
+    /// Push an assignment back to the front of the queue.
+	///
+	/// The assignment has not been processed yet. Typically used on session boundaries.
+	/// Parameters:
+	/// - `assignment`: The on demand assignment.
+	fn push_back_assignment(assignment: Assignment) {
+		match assignment {
+			Assignment::Pool { para_id, core_index } =>
+                parachains_assigner_on_demand::Pallet::<Runtime>::push_back_assignment(para_id, core_index),
+			Assignment::Bulk(_) => {
+				// Session changes are rough. We just drop assignments that did not make it on a
+				// session boundary. This seems sensible as bulk is region based. Meaning, even if
+				// we made the effort catching up on those dropped assignments, this would very
+				// likely lead to other assignments not getting served at the "end" (when our
+				// assignment set gets replaced).
+			},
+		}
+    }
 
-impl coretime::Config for Runtime {
-    type RuntimeOrigin = RuntimeOrigin;
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type BrokerId = BrokerId;
-    type WeightInfo = coretime::TestWeightInfo;
-    type SendXcm = crate::xcm_config::XcmRouter;
-    type MaxXcmTransactWeight = MaxXcmTransactWeight;
+	#[cfg(any(feature = "runtime-benchmarks", test))]
+	fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
+		// Given that we are not tracking anything in `Bulk` assignments, it is safe to always
+		// return a bulk assignment.
+		Assignment::Bulk(para_id)
+	}
+
+	fn session_core_count() -> u32 {
+		let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+		config.scheduler_params.num_cores
+	}
 }
 
 parameter_types! {
@@ -974,13 +1011,12 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type WeightInfo = parachains_assigner_on_demand::TestWeightInfo;
 }
 
-impl parachains_assigner_coretime::Config for Runtime {}
 
 impl parachains_initializer::Config for Runtime {
     type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
     type ForceOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
-    type CoretimeOnNewSession = Coretime;
+    type CoretimeOnNewSession = ();
 }
 
 impl parachains_disputes::Config for Runtime {
@@ -1234,11 +1270,9 @@ construct_runtime! {
         ParasSlashing: parachains_slashing = 63,
         MessageQueue: pallet_message_queue = 64,
         OnDemandAssignmentProvider: parachains_assigner_on_demand = 66,
-        CoretimeAssignmentProvider: parachains_assigner_coretime = 68,
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
-        Coretime: coretime = 74,
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 99,
