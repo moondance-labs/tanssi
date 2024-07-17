@@ -51,7 +51,7 @@ fn create_funded_user<T: Config>(
 mod benchmarks {
     use {super::*, parity_scale_codec::Encode};
 
-    fn new_genesis_data<T: Config>(
+    fn new_genesis_data(
         storage: Vec<ContainerChainGenesisDataItem>,
     ) -> ContainerChainGenesisData {
         ContainerChainGenesisData {
@@ -66,7 +66,7 @@ mod benchmarks {
 
     /// Creates a `ContainerChainGenesisData` with encoded size very near to `max_encoded_size`, and
     /// with the provided number of keys.
-    fn max_size_genesis_data<T: Config>(
+    fn max_size_genesis_data(
         num_keys: u32,
         max_encoded_size: u32,
     ) -> ContainerChainGenesisData {
@@ -78,7 +78,7 @@ mod benchmarks {
             storage.push((b"".to_vec(), b"".to_vec()).into());
         }
         // Calculate resulting encoded size
-        let size = new_genesis_data::<T>(storage.clone()).encoded_size();
+        let size = new_genesis_data(storage.clone()).encoded_size();
         // Should be bigger than max
         assert!(
             size >= max_encoded_size as usize,
@@ -95,7 +95,7 @@ mod benchmarks {
         );
         first_value.truncate(first_value.len() - size_diff);
 
-        let genesis_data = new_genesis_data::<T>(storage);
+        let genesis_data = new_genesis_data(storage);
 
         // Verify new size matches max exactly
         let size = genesis_data.encoded_size();
@@ -116,7 +116,7 @@ mod benchmarks {
 
     #[benchmark]
     fn register(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
-        let storage = max_size_genesis_data::<T>(z, x);
+        let storage = max_size_genesis_data(z, x);
 
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
@@ -137,7 +137,7 @@ mod benchmarks {
         // This extrinsic is disabled in flashbox runtime, return 0 weight there
         let _origin = T::RegisterWithRelayProofOrigin::try_successful_origin()
             .map_err(|_| BenchmarkError::Weightless)?;
-        let storage = max_size_genesis_data::<T>(z, x);
+        let storage = max_size_genesis_data(z, x);
 
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
@@ -181,7 +181,7 @@ mod benchmarks {
     fn deregister_immediate() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -212,7 +212,7 @@ mod benchmarks {
     fn deregister_scheduled() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
 
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
@@ -266,7 +266,7 @@ mod benchmarks {
             .map_err(|_| BenchmarkError::Weightless)?;
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -315,7 +315,7 @@ mod benchmarks {
             .map_err(|_| BenchmarkError::Weightless)?;
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -379,7 +379,7 @@ mod benchmarks {
     fn mark_valid_for_collating() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
 
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
@@ -433,7 +433,7 @@ mod benchmarks {
     fn pause_container_chain() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -497,7 +497,7 @@ mod benchmarks {
     fn unpause_container_chain() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -559,7 +559,7 @@ mod benchmarks {
 
     #[benchmark]
     fn register_parathread(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
-        let storage = max_size_genesis_data::<T>(z, x);
+        let storage = max_size_genesis_data(z, x);
         let slot_frequency = SlotFrequency::default();
 
         let (caller, _deposit_amount) =
@@ -582,7 +582,7 @@ mod benchmarks {
     fn set_parathread_params() {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
-        let storage = max_size_genesis_data::<T>(1, x);
+        let storage = max_size_genesis_data(1, x);
         let slot_frequency = SlotFrequency::default();
 
         // Deregister all the existing chains to avoid conflicts with the new ones
