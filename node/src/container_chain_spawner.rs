@@ -104,7 +104,7 @@ pub struct ContainerChainSpawner<SelectSyncMode> {
 ///
 /// This struct MUST NOT contain types (outside of `Option<CollationParams>`) obtained through
 /// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
-/// connected to an orchestrator node through WebSocket. 
+/// connected to an orchestrator node through WebSocket.
 #[derive(Clone)]
 pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub orchestrator_block_hash: PHash,

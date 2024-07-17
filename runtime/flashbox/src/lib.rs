@@ -1083,7 +1083,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1091,7 +1090,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;

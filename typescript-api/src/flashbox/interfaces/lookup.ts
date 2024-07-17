@@ -1416,7 +1416,7 @@ export default {
         _enum: {
             register: {
                 paraId: "u32",
-                genesisData: "TpContainerChainGenesisDataContainerChainGenesisData",
+                genesisData: "DpContainerChainGenesisDataContainerChainGenesisData",
             },
             deregister: {
                 paraId: "u32",
@@ -1434,7 +1434,7 @@ export default {
             register_parathread: {
                 paraId: "u32",
                 slotFrequency: "TpTraitsSlotFrequency",
-                genesisData: "TpContainerChainGenesisDataContainerChainGenesisData",
+                genesisData: "DpContainerChainGenesisDataContainerChainGenesisData",
             },
             set_parathread_params: {
                 paraId: "u32",
@@ -1450,7 +1450,7 @@ export default {
                 relayProofBlockNumber: "u32",
                 relayStorageProof: "SpTrieStorageProof",
                 managerSignature: "SpRuntimeMultiSignature",
-                genesisData: "TpContainerChainGenesisDataContainerChainGenesisData",
+                genesisData: "DpContainerChainGenesisDataContainerChainGenesisData",
             },
             deregister_with_relay_proof: {
                 paraId: "u32",
@@ -1459,27 +1459,27 @@ export default {
             },
         },
     },
-    /** Lookup208: tp_container_chain_genesis_data::ContainerChainGenesisData<MaxLengthTokenSymbol> */
-    TpContainerChainGenesisDataContainerChainGenesisData: {
-        storage: "Vec<TpContainerChainGenesisDataContainerChainGenesisDataItem>",
+    /** Lookup208: dp_container_chain_genesis_data::ContainerChainGenesisData */
+    DpContainerChainGenesisDataContainerChainGenesisData: {
+        storage: "Vec<DpContainerChainGenesisDataContainerChainGenesisDataItem>",
         name: "Bytes",
         id: "Bytes",
         forkId: "Option<Bytes>",
         extensions: "Bytes",
-        properties: "TpContainerChainGenesisDataProperties",
+        properties: "DpContainerChainGenesisDataProperties",
     },
-    /** Lookup210: tp_container_chain_genesis_data::ContainerChainGenesisDataItem */
-    TpContainerChainGenesisDataContainerChainGenesisDataItem: {
+    /** Lookup210: dp_container_chain_genesis_data::ContainerChainGenesisDataItem */
+    DpContainerChainGenesisDataContainerChainGenesisDataItem: {
         key: "Bytes",
         value: "Bytes",
     },
-    /** Lookup212: tp_container_chain_genesis_data::Properties<MaxLengthTokenSymbol> */
-    TpContainerChainGenesisDataProperties: {
-        tokenMetadata: "TpContainerChainGenesisDataTokenMetadata",
+    /** Lookup212: dp_container_chain_genesis_data::Properties */
+    DpContainerChainGenesisDataProperties: {
+        tokenMetadata: "DpContainerChainGenesisDataTokenMetadata",
         isEthereum: "bool",
     },
-    /** Lookup213: tp_container_chain_genesis_data::TokenMetadata<MaxLengthTokenSymbol> */
-    TpContainerChainGenesisDataTokenMetadata: {
+    /** Lookup213: dp_container_chain_genesis_data::TokenMetadata */
+    DpContainerChainGenesisDataTokenMetadata: {
         tokenSymbol: "Bytes",
         ss58Format: "u32",
         tokenDecimals: "u32",

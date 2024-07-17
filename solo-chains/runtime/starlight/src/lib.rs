@@ -1423,7 +1423,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
     type RelayStorageRootProvider = ();
     type SessionDelay = ConstU32<2>;
@@ -2490,10 +2489,6 @@ impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
-}
-
-parameter_types! {
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

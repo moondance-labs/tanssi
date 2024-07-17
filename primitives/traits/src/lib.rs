@@ -42,11 +42,12 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError,
     },
-    sp_std::{
-        collections::btree_set::BTreeSet,
-        vec::{self, Vec},
-    },
+    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
+
+// Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
+// of the macro.
+use sp_std::vec;
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
 pub trait CollatorAssignmentHook<Balance> {

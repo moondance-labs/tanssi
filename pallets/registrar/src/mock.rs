@@ -132,7 +132,6 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -140,7 +139,6 @@ impl pallet_registrar::Config for Test {
     type MarkValidForCollatingOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = frame_system::EnsureSigned<u64>;
     type RelayStorageRootProvider = MockRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;

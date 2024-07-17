@@ -108,8 +108,7 @@ pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancek
 pallet-xcm-executor-utils = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
-# dp-container-chain-genesis-data = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false}
-dp-container-chain-genesis-data = { path = "/home/nanocryk/Documents/Tanssi/dancekit/primitives/container-chain-genesis-data", default-features = false }
+dp-container-chain-genesis-data = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # Dancekit (client)
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0" }

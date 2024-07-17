@@ -35,6 +35,7 @@ import type {
     DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
+    DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
     FrameSystemCodeUpgradeAuthorization,
@@ -85,7 +86,6 @@ import type {
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     StagingXcmV4Location,
-    TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     XcmVersionedAssetId,
@@ -956,7 +956,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<TpContainerChainGenesisDataContainerChainGenesisData>>,
+                ) => Observable<Option<DpContainerChainGenesisDataContainerChainGenesisData>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

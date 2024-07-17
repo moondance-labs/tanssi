@@ -139,9 +139,6 @@ pub mod pallet {
         #[pallet::constant]
         type MaxGenesisDataSize: Get<u32>;
 
-        #[pallet::constant]
-        type MaxLengthTokenSymbol: Get<u32>;
-
         type RegisterWithRelayProofOrigin: EnsureOrigin<
             Self::RuntimeOrigin,
             Success = Self::AccountId,
