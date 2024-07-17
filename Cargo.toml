@@ -463,7 +463,6 @@ service = { package = "sc-service", git = "https://github.com/moondance-labs/pol
 telemetry = { package = "sc-telemetry", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # Tanssi Relay Chain CLI
-cfg-if = "1.0"
 pyro = { package = "pyroscope", version = "0.5.3" }
 pyroscope_pprofrs = { version = "0.2" }
 
@@ -472,9 +471,7 @@ sc-storage-monitor = { git = "https://github.com/moondance-labs/polkadot-sdk", b
 sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
 # Tanssi Relay Chain
-assert_cmd = "2.0.4"
 color-eyre = { version = "0.6.1", default-features = false }
-nix = { version = "0.26.1", features = [ "signal" ] }
 tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }

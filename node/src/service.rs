@@ -16,12 +16,11 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use tokio_util::sync::CancellationToken;
 #[allow(deprecated)]
 use {
     crate::{
         cli::ContainerChainCli,
-        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
+        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawnParams, ContainerChainSpawner},
     },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -82,6 +81,7 @@ use {
         OrchestratorAuraWorkerAuxData,
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
+    tokio_util::sync::CancellationToken,
 };
 
 mod mocked_relay_keys;
@@ -496,21 +496,24 @@ async fn start_node_impl(
 
         // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = node_builder.client.clone();
+        let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
-            orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
-            orchestrator_client,
-            orchestrator_tx_pool: node_builder.transaction_pool.clone(),
-            container_chain_cli,
-            tokio_handle,
-            chain_type,
-            relay_chain,
-            relay_chain_interface,
-            collator_key,
-            sync_keystore,
-            orchestrator_para_id: para_id,
-            validator,
-            spawn_handle,
+            params: ContainerChainSpawnParams {
+                orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
+                orchestrator_client,
+                orchestrator_tx_pool,
+                container_chain_cli,
+                tokio_handle,
+                chain_type,
+                relay_chain,
+                relay_chain_interface,
+                collator_key,
+                sync_keystore,
+                orchestrator_para_id: para_id,
+                validator,
+                spawn_handle,
+            },
             state: Default::default(),
             collate_on_tanssi,
             collation_cancellation_constructs: None,
