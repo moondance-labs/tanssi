@@ -949,55 +949,73 @@ impl parachains_scheduler::Config for Runtime {
 use frame_system::pallet_prelude::BlockNumberFor;
 use parachains_scheduler::common::Assignment;
 pub struct CollatorAssignmentProvider;
-impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>> for CollatorAssignmentProvider {
+impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
+    for CollatorAssignmentProvider
+{
     fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
         let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
-        let assigned_paras: Vec<ParaId> = assigned_collators.container_chains.iter().map(|(&para_id, _)| para_id).collect();
-        let scheduled_para_id = assigned_paras.get(core_idx.0 as usize)?;
-        if Paras::is_parachain(*scheduled_para_id) {
-            Some(Assignment::Bulk((*scheduled_para_id).into()))
-        }
-        else {
+        let assigned_paras: Vec<ParaId> = assigned_collators
+            .container_chains
+            .iter()
+            .filter_map(|(&para_id, _)| {
+                if Paras::is_parachain(para_id) {
+                    Some(para_id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
+            Some(Assignment::Bulk((*para_id).into()))
+        } else {
             parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(core_idx)
         }
     }
     fn report_processed(assignment: Assignment) {
-		match assignment {
-			Assignment::Pool { para_id, core_index } =>
-                parachains_assigner_on_demand::Pallet::<Runtime>::report_processed(para_id, core_index),
-			Assignment::Bulk(_) => {},
-		}
-	}
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::report_processed(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {}
+        }
+    }
     /// Push an assignment back to the front of the queue.
-	///
-	/// The assignment has not been processed yet. Typically used on session boundaries.
-	/// Parameters:
-	/// - `assignment`: The on demand assignment.
-	fn push_back_assignment(assignment: Assignment) {
-		match assignment {
-			Assignment::Pool { para_id, core_index } =>
-                parachains_assigner_on_demand::Pallet::<Runtime>::push_back_assignment(para_id, core_index),
-			Assignment::Bulk(_) => {
-				// Session changes are rough. We just drop assignments that did not make it on a
-				// session boundary. This seems sensible as bulk is region based. Meaning, even if
-				// we made the effort catching up on those dropped assignments, this would very
-				// likely lead to other assignments not getting served at the "end" (when our
-				// assignment set gets replaced).
-			},
-		}
+    ///
+    /// The assignment has not been processed yet. Typically used on session boundaries.
+    /// Parameters:
+    /// - `assignment`: The on demand assignment.
+    fn push_back_assignment(assignment: Assignment) {
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::push_back_assignment(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {
+                // Session changes are rough. We just drop assignments that did not make it on a
+                // session boundary. This seems sensible as bulk is region based. Meaning, even if
+                // we made the effort catching up on those dropped assignments, this would very
+                // likely lead to other assignments not getting served at the "end" (when our
+                // assignment set gets replaced).
+            }
+        }
     }
 
-	#[cfg(any(feature = "runtime-benchmarks", test))]
-	fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
-		// Given that we are not tracking anything in `Bulk` assignments, it is safe to always
-		// return a bulk assignment.
-		Assignment::Bulk(para_id)
-	}
+    #[cfg(any(feature = "runtime-benchmarks", test))]
+    fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
+        // Given that we are not tracking anything in `Bulk` assignments, it is safe to always
+        // return a bulk assignment.
+        Assignment::Bulk(para_id)
+    }
 
-	fn session_core_count() -> u32 {
-		let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-		config.scheduler_params.num_cores
-	}
+    fn session_core_count() -> u32 {
+        let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        config.scheduler_params.num_cores
+    }
 }
 
 parameter_types! {
@@ -1010,7 +1028,6 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type TrafficDefaultValue = OnDemandTrafficDefaultValue;
     type WeightInfo = parachains_assigner_on_demand::TestWeightInfo;
 }
-
 
 impl parachains_initializer::Config for Runtime {
     type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
