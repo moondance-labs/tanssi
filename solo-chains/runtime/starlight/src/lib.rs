@@ -1161,7 +1161,7 @@ impl pallet_configuration::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = ();
+    type MigrationsList = (tanssi_runtime_common::migrations::StarlightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 

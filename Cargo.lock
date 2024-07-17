@@ -16331,6 +16331,7 @@ dependencies = [
  "starlight-runtime-constants",
  "static_assertions",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "tiny-keccak",
  "tokio",
  "tp-traits",
