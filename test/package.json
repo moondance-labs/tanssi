@@ -25,8 +25,8 @@
     "devDependencies": {
         "@acala-network/chopsticks": "0.11.0",
         "@moonbeam-network/api-augment": "0.2801.0",
-        "@moonwall/cli": "5.1.1",
-        "@moonwall/util": "5.1.1",
+        "@moonwall/cli": "5.3.3",
+        "@moonwall/util": "5.3.3",
         "@polkadot/api": "11.2.1",
         "@polkadot/api-augment": "11.2.1",
         "@polkadot/keyring": "12.6.2",
@@ -59,7 +59,7 @@
         "yargs": "17.7.2"
     },
     "dependencies": {
-        "@zombienet/orchestrator": "0.0.86",
+        "@zombienet/orchestrator": "0.0.87",
         "inquirer": "9.2.16",
         "ps-node": "0.1.6"
     }
