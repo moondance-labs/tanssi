@@ -552,7 +552,7 @@
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
                 "build-spec-single-container.sh",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-tanssi-1000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
             ],
             "foundation": {
                 "type": "zombie",
