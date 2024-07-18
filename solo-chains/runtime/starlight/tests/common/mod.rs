@@ -23,17 +23,18 @@ use {
         BABE_ENGINE_ID,
     },
     cumulus_primitives_core::ParaId,
-    frame_support::traits::{OnFinalize, OnInitialize},
+    frame_support::{traits::{OnFinalize, OnInitialize}, assert_ok},
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
-    sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::{SaturatedConversion, Dispatchable}, BuildStorage, Digest, DigestItem},
     starlight_runtime::MaxLengthTokenSymbol,
+    runtime_parachains::paras_inherent as parachains_paras_inherent,
 };
 
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
-    Initializer, Runtime, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
     TransactionPayment,
 };
 
@@ -501,3 +502,28 @@ pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
+
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
+    let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
+        frame_support::storage::unhashed::take(b"__mock_new_inherent_data");
+
+    data
+}
+
+fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
+    frame_support::storage::unhashed::put(b"__mock_new_inherent_data", &Some(data));
+}
+
+/// Mock the inherent that sets validation data in ParachainSystem, which
+/// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
+/// source of randomness.
+pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
+    assert_ok!(RuntimeCall::ParaInherent(
+        parachains_paras_inherent::Call::<Runtime>::enter {
+            data,
+        }
+    )
+    .dispatch(inherent_origin()));
+}
+
+use std::collections::BTreeMap;

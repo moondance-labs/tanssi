@@ -965,7 +965,12 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 }
             })
             .collect();
+        log::info!("pop assigned collators {:?}",  assigned_paras);
+        log::info!("looking for core idx {:?}",  core_idx);
+
         if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
+            log::info!("outputing assignment for  {:?}",  para_id);
+
             Some(Assignment::Bulk((*para_id).into()))
         } else {
             parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(core_idx)
@@ -1005,7 +1010,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
         }
     }
 
-    #[cfg(any(feature = "runtime-benchmarks", test))]
+    #[cfg(feature = "runtime-benchmarks")]
     fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
         // Given that we are not tracking anything in `Bulk` assignments, it is safe to always
         // return a bulk assignment.
@@ -1014,6 +1019,8 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
     fn session_core_count() -> u32 {
         let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        log::info!("session core count is {:?}",  config.scheduler_params.num_cores);
+
         config.scheduler_params.num_cores
     }
 }
