@@ -198,7 +198,7 @@ pub fn starlight_development_config(
     .with_name("Development")
     .with_id("starlight_dev")
     .with_chain_type(ChainType::Development)
-    .with_genesis_config(starlight_development_config_genesis(
+    .with_genesis_config_patch(starlight_development_config_genesis(
         container_chains,
         invulnerables
     ))
@@ -239,7 +239,7 @@ pub fn starlight_local_testnet_config(
     .with_name("Starlight Local Testnet")
     .with_id("starlight_local_testnet")
     .with_chain_type(ChainType::Local)
-    .with_genesis_config(starlight_local_testnet_genesis(
+    .with_genesis_config_patch(starlight_local_testnet_genesis(
         container_chains,
         invulnerables
     ))
