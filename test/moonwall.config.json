@@ -557,7 +557,6 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "skipBlockCheck": ["Container2000"],
                     "configPath": "./configs/zombieStarlight.json"
                 }
             },
@@ -568,9 +567,9 @@
                     "endpoints": ["ws://127.0.0.1:9947"]
                 },
                 {
-                    "name": "Container2000",
+                    "name": "Container1000",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9949"]
+                    "endpoints": ["ws://127.0.0.1:9948"]
                 }
             ]
         },
