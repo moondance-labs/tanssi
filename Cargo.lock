@@ -16313,6 +16313,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tiny-keccak",
  "tokio",
+ "tp-container-chain-genesis-data",
  "tp-traits",
  "xcm-fee-payment-runtime-api",
 ]
@@ -16935,6 +16936,7 @@ dependencies = [
  "assert_matches",
  "async-trait",
  "bitvec",
+ "cumulus-primitives-core",
  "env_logger 0.11.3",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -17050,6 +17052,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tempfile",
  "thiserror",
+ "tp-container-chain-genesis-data",
  "tracing-gum",
  "xcm-fee-payment-runtime-api",
 ]

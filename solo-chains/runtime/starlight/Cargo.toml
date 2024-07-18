@@ -116,6 +116,7 @@ cumulus-primitives-core = { workspace = true }
 
 # Tanssi
 tp-traits = { workspace = true }
+tp-container-chain-genesis-data = { workspace = true }
 
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
@@ -230,6 +231,7 @@ std = [
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tp-traits/std",
+	"tp-container-chain-genesis-data/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",

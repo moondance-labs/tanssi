@@ -22,6 +22,13 @@ use {
     polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
+    tp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+    },
+    cumulus_primitives_core::ParaId,
+    starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
+    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
+    sp_runtime::traits::Get,
 };
 
 #[cfg(any(feature = "starlight-native"))]
@@ -161,7 +168,29 @@ pub fn get_authority_keys_from_seed_no_beefy(
 
 /// Starlight development config (single validator Alice)
 #[cfg(feature = "starlight-native")]
-pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
+pub fn starlight_development_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+
+    let container_chains: Vec<_> = container_chains
+    .iter()
+    .map(|x| {
+        container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+            panic!(
+                "Failed to build genesis data for container chain {:?}: {}",
+                x, e
+            )
+        })
+    })
+    .chain(
+        mock_container_chains
+            .iter()
+            .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+    )
+    .collect();
+    
     Ok(StarlightChainSpec::builder(
         starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
@@ -169,14 +198,39 @@ pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
     .with_name("Development")
     .with_id("starlight_dev")
     .with_chain_type(ChainType::Development)
-    .with_genesis_config_preset_name("development")
+    .with_genesis_config(starlight_development_config_genesis(
+        container_chains,
+        invulnerables
+    ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
 }
 
 /// Starlight local testnet config (multivalidator Alice + Bob)
 #[cfg(feature = "starlight-native")]
-pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
+pub fn starlight_local_testnet_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+
+    let container_chains: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
     Ok(StarlightChainSpec::builder(
         starlight::fast_runtime_binary::WASM_BINARY
             .ok_or("Starlight development wasm not available")?,
@@ -185,7 +239,24 @@ pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
     .with_name("Starlight Local Testnet")
     .with_id("starlight_local_testnet")
     .with_chain_type(ChainType::Local)
-    .with_genesis_config_preset_name("local_testnet")
+    .with_genesis_config(starlight_local_testnet_genesis(
+        container_chains,
+        invulnerables
+    ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
+}
+
+
+fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    para_id: ParaId,
+) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+    ContainerChainGenesisData {
+        storage: vec![],
+        name: format!("Container Chain {}", para_id).into(),
+        id: format!("container-chain-{}", para_id).into(),
+        fork_id: None,
+        extensions: vec![],
+        properties: Default::default(),
+    }
 }

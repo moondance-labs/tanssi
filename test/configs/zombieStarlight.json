@@ -17,7 +17,8 @@
                                 "max_candidate_depth": 3
                             },
                             "scheduler_params": {
-                                "scheduling_lookahead": 2
+                                "scheduling_lookahead": 2,
+                                "num_cores": 1
                             }
                         }
                     }

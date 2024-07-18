@@ -24,7 +24,7 @@ use {clap::Parser, std::path::PathBuf};
 #[derive(Debug, Parser)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(sc_cli::BuildSpecCmd),
+    BuildSpec(BuildSpecCmd),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -56,6 +56,39 @@ pub enum Subcommand {
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
 }
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct BuildSpecCmd {
+    #[clap(flatten)]
+    pub base: sc_cli::BuildSpecCmd,
+
+    /// List of container chain chain spec paths to add to genesis.
+    #[arg(long)]
+    pub add_container_chain: Option<Vec<String>>,
+
+    /// List of container chain chain spec mocks to add to genesis.
+    #[arg(long)]
+    pub mock_container_chain: Option<Vec<u32>>,
+
+    /// List of invulnerable collators to write to pallet_invulnerables genesis.
+    #[arg(long)]
+    pub invulnerable: Option<Vec<String>>,
+}
+
+use sc_cli::CliConfiguration;
+use sc_cli::SharedParams;
+use sc_cli::NodeKeyParams;
+impl CliConfiguration for BuildSpecCmd {
+    fn shared_params(&self) -> &SharedParams {
+        &self.base.shared_params
+    }
+
+    fn node_key_params(&self) -> Option<&NodeKeyParams> {
+        Some(&self.base.node_key_params)
+    }
+}
+
 
 #[allow(missing_docs)]
 #[derive(Debug, Parser)]

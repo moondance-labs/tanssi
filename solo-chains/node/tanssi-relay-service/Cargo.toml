@@ -142,6 +142,9 @@ polkadot-statement-distribution = { workspace = true, optional = true }
 xcm = { workspace = true }
 xcm-fee-payment-runtime-api = { workspace = true }
 
+tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+cumulus-primitives-core = {workspace = true }
+
 [dev-dependencies]
 assert_matches = { workspace = true }
 env_logger = { workspace = true }
