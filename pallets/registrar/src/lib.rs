@@ -77,7 +77,11 @@ pub mod pallet {
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         /// Para ids
-        pub para_ids: Vec<(ParaId, ContainerChainGenesisData<T::MaxLengthTokenSymbol>)>,
+        pub para_ids: Vec<(
+            ParaId,
+            ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            Option<ParathreadParamsTy>,
+        )>,
     }
 
     #[pallet::genesis_build]
@@ -97,7 +101,7 @@ pub mod pallet {
 
             let mut bounded_para_ids = BoundedVec::default();
 
-            for (para_id, genesis_data) in para_ids {
+            for (para_id, genesis_data, parathread_params) in para_ids {
                 bounded_para_ids
                     .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
@@ -112,6 +116,10 @@ pub mod pallet {
                     );
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
+
+                if let Some(parathread_params) = parathread_params {
+                    <ParathreadParams<T>>::insert(para_id, parathread_params);
+                }
             }
 
             <RegisteredParaIds<T>>::put(bounded_para_ids);

@@ -216,7 +216,7 @@ fn testnet_genesis(
         .collect();
     let para_ids: Vec<_> = para_ids
         .into_iter()
-        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
+        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
         .collect();
 
     let accounts_with_ed = [
