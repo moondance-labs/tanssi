@@ -972,7 +972,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
         if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
             log::info!("outputing assignment for  {:?}", para_id);
 
-            Some(Assignment::Bulk((*para_id).into()))
+            Some(Assignment::Bulk(*para_id))
         } else {
             parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(core_idx)
         }
