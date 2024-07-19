@@ -479,49 +479,6 @@ where
     }
 }
 
-pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
-
-impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
-where
-    Runtime: pallet_balances::Config,
-    Runtime: pallet_configuration::Config,
-    Runtime: pallet_registrar::Config,
-    Runtime: pallet_data_preservers::Config,
-    Runtime: pallet_services_payment::Config,
-    Runtime: pallet_data_preservers::Config,
-    Runtime::AccountId: From<[u8; 32]>,
-{
-    fn get_migrations() -> Vec<Box<dyn Migration>> {
-        //let migrate_services_payment =
-        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
-
-        let migrate_add_collator_assignment_credits =
-            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_registrar_pending_verification =
-            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
-        let migrate_registrar_manager =
-            RegistrarParaManagerMigration::<Runtime>(Default::default());
-        let migrate_data_preservers_assignments =
-            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
-
-        vec![
-            // Applied in runtime 400
-            //Box::new(migrate_services_payment),
-            // Applied in runtime 400
-            //Box::new(migrate_boot_nodes),
-            // Applied in runtime 400
-            Box::new(migrate_config_parathread_params),
-            Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_registrar_pending_verification),
-            Box::new(migrate_registrar_manager),
-            Box::new(migrate_data_preservers_assignments),
-        ]
-    }
-}
-
 pub struct DataPreserversAssignmentsMigration<T>(pub PhantomData<T>);
 impl<T> Migration for DataPreserversAssignmentsMigration<T>
 where
@@ -664,6 +621,128 @@ where
     }
 }
 
+pub struct ForeignAssetCreatorMigration<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
+where
+    Runtime: pallet_foreign_asset_creator::Config,
+    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
+        TryFrom<staging_xcm::v3::MultiLocation>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_ForeignAssetCreatorMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use frame_support::pallet_prelude::*;
+
+        use staging_xcm::v3::MultiLocation as OldLocation;
+
+        let pallet_prefix = AssetIdToForeignAsset::<Runtime>::pallet_prefix();
+        let asset_id_to_foreign_asset_storage_prefix =
+            AssetIdToForeignAsset::<Runtime>::storage_prefix();
+        let foreign_asset_to_asset_id_prefix = ForeignAssetToAssetId::<Runtime>::storage_prefix();
+
+        // Data required to migrate ForeignAsset values
+        // Read all the data into memory.
+        let asset_id_to_foreign_asset_data: Vec<_> =
+            storage_key_iter::<AssetId<Runtime>, OldLocation, Blake2_128Concat>(
+                pallet_prefix,
+                asset_id_to_foreign_asset_storage_prefix,
+            )
+            .drain()
+            .collect();
+
+        // Data required to migrate ForeignAsset keys
+        let foreign_asset_to_asset_id_data: Vec<_> =
+            storage_key_iter::<OldLocation, AssetId<Runtime>, Blake2_128Concat>(
+                pallet_prefix,
+                foreign_asset_to_asset_id_prefix,
+            )
+            .drain()
+            .collect();
+
+        let migrated_count = asset_id_to_foreign_asset_data
+            .len()
+            .saturating_add(foreign_asset_to_asset_id_data.len());
+
+        log::info!("Migrating {:?} elements", migrated_count);
+
+        // Write to the new storage with removed and added fields
+        for (asset_id, old_location) in asset_id_to_foreign_asset_data {
+            if let Ok(new_location) = Runtime::ForeignAsset::try_from(old_location) {
+                AssetIdToForeignAsset::<Runtime>::insert(asset_id, new_location);
+            } else {
+                log::warn!("Location could not be converted safely to xcmV4")
+            }
+        }
+
+        for (old_location, asset_id) in foreign_asset_to_asset_id_data {
+            if let Ok(new_location) = Runtime::ForeignAsset::try_from(old_location) {
+                ForeignAssetToAssetId::<Runtime>::insert(new_location, asset_id);
+            } else {
+                log::warn!("Location could not be converted safely to xcmV4")
+            }
+        }
+
+        // One db read and one db write per element, plus the on-chain storage
+        Runtime::DbWeight::get().reads_writes(migrated_count as u64, 2 * migrated_count as u64)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), DispatchError> {
+        Ok(())
+    }
+}
+
+pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
+where
+    Runtime: pallet_balances::Config,
+    Runtime: pallet_configuration::Config,
+    Runtime: pallet_registrar::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_services_payment::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime::AccountId: From<[u8; 32]>,
+{
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        //let migrate_services_payment =
+        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
+
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        let migrate_registrar_pending_verification =
+            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        let migrate_registrar_manager =
+            RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+
+        vec![
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
+            // Applied in runtime 400
+            Box::new(migrate_config_parathread_params),
+            Box::new(migrate_add_collator_assignment_credits),
+            Box::new(migrate_registrar_pending_verification),
+            Box::new(migrate_registrar_manager),
+            Box::new(migrate_data_preservers_assignments),
+        ]
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
@@ -742,81 +821,10 @@ where
     }
 }
 
-pub struct ForeignAssetCreatorMigration<Runtime>(pub PhantomData<Runtime>);
+pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
 
-impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
-where
-    Runtime: pallet_foreign_asset_creator::Config,
-    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_ForeignAssetCreatorMigration"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        use frame_support::pallet_prelude::*;
-
-        use staging_xcm::v3::MultiLocation as OldLocation;
-
-        let pallet_prefix = AssetIdToForeignAsset::<Runtime>::pallet_prefix();
-        let asset_id_to_foreign_asset_storage_prefix =
-            AssetIdToForeignAsset::<Runtime>::storage_prefix();
-        let foreign_asset_to_asset_id_prefix = ForeignAssetToAssetId::<Runtime>::storage_prefix();
-
-        // Data required to migrate ForeignAsset values
-        // Read all the data into memory.
-        let asset_id_to_foreign_asset_data: Vec<_> =
-            storage_key_iter::<AssetId<Runtime>, OldLocation, Blake2_128Concat>(
-                pallet_prefix,
-                asset_id_to_foreign_asset_storage_prefix,
-            )
-            .drain()
-            .collect();
-
-        // Data required to migrate ForeignAsset keys
-        let foreign_asset_to_asset_id_data: Vec<_> =
-            storage_key_iter::<OldLocation, AssetId<Runtime>, Blake2_128Concat>(
-                pallet_prefix,
-                foreign_asset_to_asset_id_prefix,
-            )
-            .drain()
-            .collect();
-
-        let migrated_count = asset_id_to_foreign_asset_data
-            .len()
-            .saturating_add(foreign_asset_to_asset_id_data.len());
-
-        log::info!("Migrating {:?} elements", migrated_count);
-
-        // Write to the new storage with removed and added fields
-        for (asset_id, old_location) in asset_id_to_foreign_asset_data {
-            if let Ok(new_location) = Runtime::ForeignAsset::try_from(old_location) {
-                AssetIdToForeignAsset::<Runtime>::insert(asset_id, new_location);
-            } else {
-                log::warn!("Location could not be converted safely to xcmV4")
-            }
-        }
-
-        for (old_location, asset_id) in foreign_asset_to_asset_id_data {
-            if let Ok(new_location) = Runtime::ForeignAsset::try_from(old_location) {
-                ForeignAssetToAssetId::<Runtime>::insert(new_location, asset_id);
-            } else {
-                log::warn!("Location could not be converted safely to xcmV4")
-            }
-        }
-
-        // One db read and one db write per element, plus the on-chain storage
-        Runtime::DbWeight::get().reads_writes(migrated_count as u64, 2 * migrated_count as u64)
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, DispatchError> {
-        Ok(vec![])
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), DispatchError> {
-        Ok(())
+impl<Runtime> GetMigrations for StarlightMigrations<Runtime> {
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        vec![]
     }
 }
