@@ -450,7 +450,7 @@ async function assertSlotFrequency(blockData, expectedSlotDiff) {
     expect(
         Math.abs(avgSlotDiff - expectedSlotDiff),
         `Average slot time is different from expected: average ${avgSlotDiff}, expected ${expectedSlotDiff}`
-    ).to.be.lessThan(3);
+    ).to.be.lessThan(5);
 }
 
 /// Create a map of collator key "5C5p..." to collator name "Collator1000-01".

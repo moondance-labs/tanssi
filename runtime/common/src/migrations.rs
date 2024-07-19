@@ -554,54 +554,6 @@ where
     }
 }
 
-pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
-
-impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
-where
-    Runtime: pallet_balances::Config,
-    Runtime: pallet_configuration::Config,
-    Runtime: pallet_registrar::Config,
-    Runtime: pallet_data_preservers::Config,
-    Runtime: pallet_services_payment::Config,
-    Runtime: pallet_data_preservers::Config,
-    Runtime::AccountId: From<[u8; 32]>,
-    <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
-    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
-    <Runtime as pallet_balances::Config>::Balance: From<u128>,
-{
-    fn get_migrations() -> Vec<Box<dyn Migration>> {
-        //let migrate_services_payment =
-        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
-
-        let migrate_add_collator_assignment_credits =
-            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_registrar_pending_verification =
-            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
-        let migrate_registrar_manager =
-            RegistrarParaManagerMigration::<Runtime>(Default::default());
-        let migrate_data_preservers_assignments =
-            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
-        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-
-        vec![
-            // Applied in runtime 400
-            //Box::new(migrate_services_payment),
-            // Applied in runtime 400
-            //Box::new(migrate_boot_nodes),
-            // Applied in runtime 400
-            Box::new(migrate_config_parathread_params),
-            Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_registrar_pending_verification),
-            Box::new(migrate_registrar_manager),
-            Box::new(migrate_data_preservers_assignments),
-            Box::new(migrate_registrar_reserves),
-        ]
-    }
-}
-
 pub struct DataPreserversAssignmentsMigration<T>(pub PhantomData<T>);
 impl<T> Migration for DataPreserversAssignmentsMigration<T>
 where
@@ -744,89 +696,6 @@ where
     }
 }
 
-pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
-
-impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
-where
-    Runtime: pallet_pooled_staking::Config,
-    Runtime: pallet_registrar::Config,
-    Runtime: pallet_balances::Config,
-    Runtime: pallet_configuration::Config,
-    Runtime: pallet_services_payment::Config,
-    Runtime: cumulus_pallet_xcmp_queue::Config,
-    Runtime: pallet_data_preservers::Config,
-    Runtime: pallet_xcm::Config,
-    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
-        From<pallet_pooled_staking::HoldReason>,
-    Runtime: pallet_foreign_asset_creator::Config,
-    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
-    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
-        From<pallet_registrar::HoldReason>,
-    Runtime::AccountId: From<[u8; 32]>,
-    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
-    <Runtime as pallet_balances::Config>::Balance: From<u128>,
-{
-    fn get_migrations() -> Vec<Box<dyn Migration>> {
-        // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
-        // let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
-        // let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
-        // let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
-        // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
-        // let migrate_services_payment =
-        //     MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        // let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        // let migrate_hold_reason_runtime_enum =
-        //     MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
-
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
-        let migrate_add_collator_assignment_credits =
-            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
-        let migrate_registrar_pending_verification =
-            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
-        let migrate_registrar_manager =
-            RegistrarParaManagerMigration::<Runtime>(Default::default());
-        let migrate_data_preservers_assignments =
-            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
-
-        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let foreign_asset_creator_migration =
-            ForeignAssetCreatorMigration::<Runtime>(Default::default());
-
-        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-
-        vec![
-            // Applied in runtime 200
-            //Box::new(migrate_invulnerables),
-            // Applied in runtime 200
-            //Box::new(migrate_holds),
-            // Applied in runtime 300
-            //Box::new(migrate_config),
-            // Applied in runtime 300
-            //Box::new(migrate_xcm),
-            // Applied in runtime 300
-            //Box::new(migrate_xcmp_queue),
-            // Applied in runtime 400
-            //Box::new(migrate_services_payment),
-            // Applied in runtime 400
-            //Box::new(migrate_hold_reason_runtime_enum),
-            // Applied in runtime 400
-            //Box::new(migrate_boot_nodes),
-            Box::new(migrate_config_parathread_params),
-            Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_xcmp_queue_v4),
-            Box::new(migrate_registrar_pending_verification),
-            Box::new(migrate_registrar_manager),
-            Box::new(migrate_pallet_xcm_v4),
-            Box::new(foreign_asset_creator_migration),
-            Box::new(migrate_data_preservers_assignments),
-            Box::new(migrate_registrar_reserves),
-        ]
-    }
-}
-
 pub struct ForeignAssetCreatorMigration<Runtime>(pub PhantomData<Runtime>);
 
 impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
@@ -903,5 +772,143 @@ where
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         Ok(())
+    }
+}
+
+pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
+where
+    Runtime: pallet_balances::Config,
+    Runtime: pallet_configuration::Config,
+    Runtime: pallet_registrar::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_services_payment::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime::AccountId: From<[u8; 32]>,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
+    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
+    <Runtime as pallet_balances::Config>::Balance: From<u128>,
+{
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        //let migrate_services_payment =
+        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
+
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        let migrate_registrar_pending_verification =
+            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        let migrate_registrar_manager =
+            RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+
+        vec![
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
+            // Applied in runtime 400
+            Box::new(migrate_config_parathread_params),
+            Box::new(migrate_add_collator_assignment_credits),
+            Box::new(migrate_registrar_pending_verification),
+            Box::new(migrate_registrar_manager),
+            Box::new(migrate_data_preservers_assignments),
+            Box::new(migrate_registrar_reserves),
+        ]
+    }
+}
+
+pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
+where
+    Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_registrar::Config,
+    Runtime: pallet_balances::Config,
+    Runtime: pallet_configuration::Config,
+    Runtime: pallet_services_payment::Config,
+    Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_xcm::Config,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
+        From<pallet_pooled_staking::HoldReason>,
+    Runtime: pallet_foreign_asset_creator::Config,
+    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
+        TryFrom<staging_xcm::v3::MultiLocation>,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
+        From<pallet_registrar::HoldReason>,
+    Runtime::AccountId: From<[u8; 32]>,
+    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
+    <Runtime as pallet_balances::Config>::Balance: From<u128>,
+{
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+        // let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
+        // let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+        // let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
+        // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
+        // let migrate_services_payment =
+        //     MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        // let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        // let migrate_hold_reason_runtime_enum =
+        //     MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
+
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        let migrate_registrar_pending_verification =
+            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        let migrate_registrar_manager =
+            RegistrarParaManagerMigration::<Runtime>(Default::default());
+        let migrate_data_preservers_assignments =
+            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+
+        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let foreign_asset_creator_migration =
+            ForeignAssetCreatorMigration::<Runtime>(Default::default());
+        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+
+        vec![
+            // Applied in runtime 200
+            //Box::new(migrate_invulnerables),
+            // Applied in runtime 200
+            //Box::new(migrate_holds),
+            // Applied in runtime 300
+            //Box::new(migrate_config),
+            // Applied in runtime 300
+            //Box::new(migrate_xcm),
+            // Applied in runtime 300
+            //Box::new(migrate_xcmp_queue),
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_hold_reason_runtime_enum),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
+            Box::new(migrate_config_parathread_params),
+            Box::new(migrate_add_collator_assignment_credits),
+            Box::new(migrate_xcmp_queue_v4),
+            Box::new(migrate_registrar_pending_verification),
+            Box::new(migrate_registrar_manager),
+            Box::new(migrate_pallet_xcm_v4),
+            Box::new(foreign_asset_creator_migration),
+            Box::new(migrate_data_preservers_assignments),
+            Box::new(migrate_registrar_reserves)
+        ]
+    }
+}
+
+pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> GetMigrations for StarlightMigrations<Runtime> {
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        vec![]
     }
 }
