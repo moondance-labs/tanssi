@@ -107,7 +107,6 @@ pub struct ContainerChainSpawner<SelectSyncMode> {
 /// connected to an orchestrator node through WebSocket.
 #[derive(Clone)]
 pub struct ContainerChainSpawnParams<SelectSyncMode> {
-    pub orchestrator_block_hash: PHash,
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -177,7 +176,6 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
     start_collation: bool,
 ) -> sc_service::error::Result<()> {
     let ContainerChainSpawnParams {
-        orchestrator_block_hash,
         orchestrator_chain_interface,
         mut container_chain_cli,
         tokio_handle,
@@ -194,6 +192,10 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
 
     // TODO: the orchestrator chain node may not be fully synced yet,
     // in that case we will be reading an old state.
+    let orchestrator_block_hash = orchestrator_chain_interface
+        .finalized_block_hash()
+        .await
+        .map_err(|e| format!("Failed to get latest block hash: {e}"))?;
 
     let genesis_data = orchestrator_chain_interface
         .genesis_data(orchestrator_block_hash, container_chain_para_id)

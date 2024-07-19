@@ -317,7 +317,7 @@ pub fn new_test_ext_with_genesis(
         balances: Default::default(),
         para_registrar: pallet_registrar::GenesisConfig {
             para_ids,
-            __phantom: Default::default(),
+            phantom: Default::default(),
         },
     }
     .build_storage()

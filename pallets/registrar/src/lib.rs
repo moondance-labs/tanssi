@@ -78,7 +78,7 @@ pub mod pallet {
     pub struct GenesisConfig<T: Config> {
         /// Para ids
         pub para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
-        pub __phantom: PhantomData<T>,
+        pub phantom: PhantomData<T>,
     }
 
     #[pallet::genesis_build]

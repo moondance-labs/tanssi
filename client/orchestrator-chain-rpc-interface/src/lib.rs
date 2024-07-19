@@ -310,4 +310,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         self.call_remote_runtime_function("latest_block_number", orchestrator_parent, Some(para_id))
             .await
     }
+
+    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        self.request("chain_getHead", rpc_params![]).await
+    }
+
+    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        self.request("chain_getFinalizedHead", rpc_params![]).await
+    }
 }

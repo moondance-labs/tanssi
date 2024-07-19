@@ -506,15 +506,9 @@ async fn start_node_impl(
         let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
 
-        // TODO: the orchestrator chain node may not be fully synced yet,
-        // in that case we will be reading an old state.
-        let orchestrator_chain_info = orchestrator_client.chain_info();
-        let orchestrator_block_hash = orchestrator_chain_info.best_hash;
-
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
                 orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
-                orchestrator_block_hash,
                 container_chain_cli,
                 tokio_handle,
                 chain_type,
@@ -1481,5 +1475,13 @@ where
         let runtime_api = self.full_client.runtime_api();
 
         Ok(runtime_api.latest_block_number(orchestrator_parent, para_id)?)
+    }
+
+    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().best_hash)
+    }
+
+    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().finalized_hash)
     }
 }

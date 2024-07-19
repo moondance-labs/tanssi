@@ -263,7 +263,7 @@ fn testnet_genesis(
         configuration,
         registrar: RegistrarConfig {
             para_ids,
-            __phantom: Default::default(),
+            phantom: Default::default(),
         },
         services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {
