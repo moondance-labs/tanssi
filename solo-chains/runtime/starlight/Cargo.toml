@@ -110,7 +110,7 @@ runtime-parachains = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
-xcm-fee-payment-runtime-api = { workspace = true }
+xcm-runtime-apis = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -240,7 +240,7 @@ std = [
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
-	"xcm-fee-payment-runtime-api/std",
+	"xcm-runtime-apis/std",
 	"xcm/std",
 ]
 no_std = []
@@ -298,6 +298,7 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
+	"xcm-runtime-apis/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-executive/try-runtime",
