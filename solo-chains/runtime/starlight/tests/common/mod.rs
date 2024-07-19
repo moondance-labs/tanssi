@@ -23,19 +23,25 @@ use {
         BABE_ENGINE_ID,
     },
     cumulus_primitives_core::ParaId,
-    frame_support::{traits::{OnFinalize, OnInitialize}, assert_ok},
+    frame_support::{
+        assert_ok,
+        traits::{OnFinalize, OnInitialize},
+    },
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
-    sp_runtime::{traits::{SaturatedConversion, Dispatchable}, BuildStorage, Digest, DigestItem},
-    starlight_runtime::MaxLengthTokenSymbol,
     runtime_parachains::paras_inherent as parachains_paras_inherent,
+    sp_runtime::{
+        traits::{Dispatchable, SaturatedConversion},
+        BuildStorage, Digest, DigestItem,
+    },
+    starlight_runtime::MaxLengthTokenSymbol,
 };
 
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
-    Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
-    TransactionPayment,
+    Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
+    TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -518,12 +524,10 @@ fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentDat
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
 pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
-    assert_ok!(RuntimeCall::ParaInherent(
-        parachains_paras_inherent::Call::<Runtime>::enter {
-            data,
-        }
-    )
-    .dispatch(inherent_origin()));
+    assert_ok!(
+        RuntimeCall::ParaInherent(parachains_paras_inherent::Call::<Runtime>::enter { data })
+            .dispatch(inherent_origin())
+    );
 }
 
 use std::collections::BTreeMap;

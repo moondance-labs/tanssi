@@ -77,8 +77,8 @@ pub struct BuildSpecCmd {
 }
 
 use sc_cli::CliConfiguration;
-use sc_cli::SharedParams;
 use sc_cli::NodeKeyParams;
+use sc_cli::SharedParams;
 impl CliConfiguration for BuildSpecCmd {
     fn shared_params(&self) -> &SharedParams {
         &self.base.shared_params
@@ -88,7 +88,6 @@ impl CliConfiguration for BuildSpecCmd {
         Some(&self.base.node_key_params)
     }
 }
-
 
 #[allow(missing_docs)]
 #[derive(Debug, Parser)]

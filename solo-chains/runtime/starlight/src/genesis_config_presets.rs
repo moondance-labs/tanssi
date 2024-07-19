@@ -24,12 +24,12 @@ use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     grandpa_primitives::AuthorityId as GrandpaId,
-    primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     nimbus_primitives::NimbusId,
+    primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::IdentifyAccount,
-    sp_std::vec::Vec,
     sp_std::vec,
+    sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::ParaId,
@@ -210,12 +210,19 @@ fn starlight_testnet_genesis(
     initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
-    container_chains: Vec<(ParaId, ContainerChainGenesisData<crate::MaxLengthTokenSymbol>, Vec<Vec<u8>>)>,
-    invulnerables: Vec<String>
+    container_chains: Vec<(
+        ParaId,
+        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    )>,
+    invulnerables: Vec<String>,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
-    let invulnerables: Vec<_> = invulnerables.iter().map(|seed| get_authority_keys_from_seed(seed)).collect();
-    
+    let invulnerables: Vec<_> = invulnerables
+        .iter()
+        .map(|seed| get_authority_keys_from_seed(seed))
+        .collect();
+
     let para_ids: Vec<_> = container_chains
         .into_iter()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
@@ -520,7 +527,11 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 
 //development
 pub fn starlight_development_config_genesis(
-    container_chains: Vec<(ParaId, ContainerChainGenesisData<crate::MaxLengthTokenSymbol>, Vec<Vec<u8>>)>,
+    container_chains: Vec<(
+        ParaId,
+        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    )>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
@@ -528,13 +539,17 @@ pub fn starlight_development_config_genesis(
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
         container_chains,
-        invulnerables
+        invulnerables,
     )
 }
 
 //local_testnet
 pub fn starlight_local_testnet_genesis(
-    container_chains: Vec<(ParaId, ContainerChainGenesisData<crate::MaxLengthTokenSymbol>, Vec<Vec<u8>>)>,
+    container_chains: Vec<(
+        ParaId,
+        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    )>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
@@ -545,7 +560,7 @@ pub fn starlight_local_testnet_genesis(
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
         container_chains,
-        invulnerables
+        invulnerables,
     )
 }
 

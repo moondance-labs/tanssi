@@ -18,17 +18,17 @@
 
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    cumulus_primitives_core::ParaId,
     grandpa::AuthorityId as GrandpaId,
     polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
+    sp_runtime::traits::Get,
+    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
+    starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
-    cumulus_primitives_core::ParaId,
-    starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
-    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
-    sp_runtime::traits::Get,
 };
 
 #[cfg(any(feature = "starlight-native"))]
@@ -173,24 +173,23 @@ pub fn starlight_development_config(
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
 ) -> Result<StarlightChainSpec, String> {
-
     let container_chains: Vec<_> = container_chains
-    .iter()
-    .map(|x| {
-        container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
-            panic!(
-                "Failed to build genesis data for container chain {:?}: {}",
-                x, e
-            )
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
         })
-    })
-    .chain(
-        mock_container_chains
-            .iter()
-            .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
-    )
-    .collect();
-    
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
     Ok(StarlightChainSpec::builder(
         starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
@@ -200,7 +199,7 @@ pub fn starlight_development_config(
     .with_chain_type(ChainType::Development)
     .with_genesis_config_patch(starlight_development_config_genesis(
         container_chains,
-        invulnerables
+        invulnerables,
     ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
@@ -213,7 +212,6 @@ pub fn starlight_local_testnet_config(
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
 ) -> Result<StarlightChainSpec, String> {
-
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
@@ -241,12 +239,11 @@ pub fn starlight_local_testnet_config(
     .with_chain_type(ChainType::Local)
     .with_genesis_config_patch(starlight_local_testnet_genesis(
         container_chains,
-        invulnerables
+        invulnerables,
     ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
 }
-
 
 fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
     para_id: ParaId,

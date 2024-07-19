@@ -74,9 +74,7 @@ impl SubstrateCli for Cli {
         "tanssi".into()
     }
 
-    fn load_spec(&self,
-        id: &str,
-        ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(id, vec![], vec![2000, 2001], None)
     }
 }
@@ -447,13 +445,12 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-
 fn load_spec(
     id: &str,
     container_chains: Vec<String>,
     mock_container_chains: Vec<u32>,
-    invulnerables: Option<Vec<String>>
-    ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+    invulnerables: Option<Vec<String>>,
+) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
     let id = if id.is_empty() {
         let n = get_exec_name().unwrap_or_default();
         ["starlight"]
@@ -471,21 +468,21 @@ fn load_spec(
         #[cfg(feature = "starlight-native")]
         "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
         #[cfg(feature = "starlight-native")]
-        "dev" | "starlight-dev" => {
-            Box::new(tanssi_relay_service::chain_spec::starlight_development_config(
+        "dev" | "starlight-dev" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_development_config(
                 container_chains,
                 mock_container_chains,
                 invulnerables,
-            )?)
-        }
+            )?,
+        ),
         #[cfg(feature = "starlight-native")]
-        "starlight-local" => {
-            Box::new(tanssi_relay_service::chain_spec::starlight_local_testnet_config(
+        "starlight-local" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_local_testnet_config(
                 container_chains,
                 mock_container_chains,
                 invulnerables,
-            )?)
-        }
+            )?,
+        ),
         #[cfg(feature = "starlight-native")]
         "starlight-staging" => {
             Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
