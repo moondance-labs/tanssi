@@ -117,9 +117,9 @@ fn genesis_balances() {
 #[test]
 fn genesis_para_registrar() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -133,9 +133,9 @@ fn genesis_para_registrar() {
 #[test]
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -172,9 +172,9 @@ fn genesis_para_registrar_deregister() {
 #[test]
 fn genesis_para_registrar_runtime_api() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -213,9 +213,9 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
         properties: Default::default(),
     };
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), u32::MAX, u32::MAX).into(),
-            (1002, genesis_data_1002.clone(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -277,9 +277,9 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 #[test]
 fn test_author_collation_aura() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -307,9 +307,9 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -383,7 +383,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
+        .with_empty_parachains(vec![
             (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
@@ -899,9 +899,9 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -961,9 +961,9 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1027,9 +1027,9 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
             (AccountId::from(ALICE), 210_000 * UNIT),
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1096,9 +1096,9 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1253,9 +1253,9 @@ fn test_consensus_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1344,9 +1344,9 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1456,9 +1456,9 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1658,9 +1658,9 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1718,9 +1718,9 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1765,9 +1765,9 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1807,9 +1807,9 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1875,9 +1875,9 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -1955,9 +1955,9 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -2273,7 +2273,7 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
+        .with_empty_parachains(vec![
             (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
             (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
         ])
@@ -2326,9 +2326,9 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
         ])
         .build()
         .execute_with(|| {
@@ -3542,7 +3542,7 @@ fn test_max_collators_uses_pending_value() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![(1001, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_empty_parachains(vec![1001])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 1,
@@ -3643,10 +3643,10 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
+            1003,
         ])
         .build()
         .execute_with(|| {
@@ -3698,10 +3698,10 @@ fn test_collator_assignment_tip_charged_on_congestion() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
+            1003,
         ])
         .build()
         .execute_with(|| {
@@ -3746,10 +3746,10 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
+            1003,
         ])
         .build()
         .execute_with(|| {
@@ -3799,10 +3799,10 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
             (AccountId::from(EVE), 100 * UNIT),
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
+            1003,
         ])
         .build()
         .execute_with(|| {
@@ -3871,10 +3871,10 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             (AccountId::from(EVE), 100 * UNIT),
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1003, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        .with_empty_parachains(vec![
+            1001,
+            1002,
+            1003,
         ])
         .build()
         .execute_with(|| {
