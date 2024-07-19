@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_registrar, RegistrarHooks},
+    crate::{self as pallet_registrar, ParathreadParamsTy, RegistrarHooks},
     frame_support::{
         traits::{ConstU16, ConstU64},
         weights::Weight,
@@ -312,7 +312,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
+    para_ids: Vec<(
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Option<ParathreadParamsTy>,
+    )>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),

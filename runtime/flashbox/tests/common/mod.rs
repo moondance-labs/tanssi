@@ -295,6 +295,7 @@ pub struct ParaRegistrationParams {
     genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
     block_production_credits: u32,
     collator_assignment_credits: u32,
+    parathread_params: Option<tp_traits::ParathreadParams>,
 }
 
 impl
@@ -318,6 +319,7 @@ impl
             genesis_data: value.1,
             block_production_credits: value.2,
             collator_assignment_credits: value.3,
+            parathread_params: None,
         }
     }
 }
@@ -413,7 +415,11 @@ impl ExtBuilder {
                 .iter()
                 .cloned()
                 .map(|registered_para| {
-                    (registered_para.para_id.into(), registered_para.genesis_data)
+                    (
+                        registered_para.para_id.into(),
+                        registered_para.genesis_data,
+                        registered_para.parathread_params,
+                    )
                 })
                 .collect(),
         }
