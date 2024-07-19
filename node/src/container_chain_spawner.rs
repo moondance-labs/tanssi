@@ -197,6 +197,11 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         .await
         .map_err(|e| format!("Failed to get latest block hash: {e}"))?;
 
+    log::info!(
+        "Detected assignment for container chain {}",
+        container_chain_para_id
+    );
+
     let genesis_data = orchestrator_chain_interface
         .genesis_data(orchestrator_block_hash, container_chain_para_id)
         .await
