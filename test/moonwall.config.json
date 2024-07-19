@@ -552,12 +552,11 @@
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
                 "build-spec-single-container.sh",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-tanssi-1000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
             ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "skipBlockCheck": ["Container2000"],
                     "configPath": "./configs/zombieStarlight.json"
                 }
             },
@@ -568,9 +567,9 @@
                     "endpoints": ["ws://127.0.0.1:9947"]
                 },
                 {
-                    "name": "Container2000",
+                    "name": "Container1000",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9949"]
+                    "endpoints": ["ws://127.0.0.1:9948"]
                 }
             ]
         },
