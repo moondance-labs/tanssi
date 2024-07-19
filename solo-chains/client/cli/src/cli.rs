@@ -60,6 +60,7 @@ pub enum Subcommand {
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
 pub struct BuildSpecCmd {
+    /// Base cmd.
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
 
