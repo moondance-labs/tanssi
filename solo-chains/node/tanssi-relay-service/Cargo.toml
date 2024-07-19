@@ -192,6 +192,7 @@ starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants
 
 fast-runtime = [ "starlight-runtime?/fast-runtime" ]
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -208,7 +209,6 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"cumulus-primitives-core/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-support/try-runtime",
