@@ -136,7 +136,7 @@ use {
     governance::{
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
-    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
+    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -220,6 +220,7 @@ impl frame_system::Config for Runtime {
     type SystemWeightInfo = ();
     type SS58Prefix = SS58Prefix;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type MultiBlockMigrator = MultiBlockMigrations;
 }
 
 parameter_types! {
@@ -1158,6 +1159,31 @@ impl pallet_configuration::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = (tanssi_runtime_common::migrations::StarlightMigrations<Runtime>,);
+    type XcmExecutionManager = ();
+}
+
+parameter_types! {
+    pub MbmServiceWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
+}
+
+impl pallet_multiblock_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type Migrations = ();
+    // Benchmarks need mocked migrations to guarantee that they succeed.
+    #[cfg(feature = "runtime-benchmarks")]
+    type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
+    type CursorMaxLen = ConstU32<65_536>;
+    type IdentifierMaxLen = ConstU32<256>;
+    type MigrationStatusHandler = ();
+    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type MaxServiceWeight = MbmServiceWeight;
+    type WeightInfo = ();
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1269,6 +1295,8 @@ construct_runtime! {
         TanssiCollatorAssignment: pallet_collator_assignment = 104,
         TanssiAuthorityAssignment: pallet_authority_assignment = 105,
         TanssiAuthorityMapping: pallet_authority_mapping = 106,
+        Migrations: pallet_migrations = 107,
+        MultiBlockMigrations: pallet_multiblock_migrations = 108,
     }
 }
 
@@ -1298,105 +1326,11 @@ pub type SignedExtra = (
 pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
-/// All migrations that will run on the next runtime upgrade.
-///
-/// This contains the combined migrations of the last 10 releases. It allows to skip runtime
-/// upgrades in case governance decides to do so. THE ORDER IS IMPORTANT.
-pub type Migrations = migrations::Unreleased;
-
 /// The runtime migrations per release.
 #[allow(deprecated, missing_docs)]
 pub mod migrations {
-    use super::*;
-
-    use {frame_support::traits::LockIdentifier, frame_system::pallet_prelude::BlockNumberFor};
-
-    parameter_types! {
-        pub const DemocracyPalletName: &'static str = "Democracy";
-        pub const CouncilPalletName: &'static str = "Council";
-        pub const TechnicalCommitteePalletName: &'static str = "TechnicalCommittee";
-        pub const PhragmenElectionPalletName: &'static str = "PhragmenElection";
-        pub const TechnicalMembershipPalletName: &'static str = "TechnicalMembership";
-        pub const TipsPalletName: &'static str = "Tips";
-        pub const PhragmenElectionPalletId: LockIdentifier = *b"phrelect";
-    }
-
-    // Special Config for Gov V1 pallets, allowing us to run migrations for them without
-    // implementing their configs on [`Runtime`].
-    pub struct UnlockConfig;
-    impl pallet_democracy::migrations::unlock_and_unreserve_all_funds::UnlockConfig for UnlockConfig {
-        type Currency = Balances;
-        type MaxVotes = ConstU32<100>;
-        type MaxDeposits = ConstU32<100>;
-        type AccountId = AccountId;
-        type BlockNumber = BlockNumberFor<Runtime>;
-        type DbWeight = <Runtime as frame_system::Config>::DbWeight;
-        type PalletName = DemocracyPalletName;
-    }
-    impl pallet_elections_phragmen::migrations::unlock_and_unreserve_all_funds::UnlockConfig
-        for UnlockConfig
-    {
-        type Currency = Balances;
-        type MaxVotesPerVoter = ConstU32<16>;
-        type PalletId = PhragmenElectionPalletId;
-        type AccountId = AccountId;
-        type DbWeight = <Runtime as frame_system::Config>::DbWeight;
-        type PalletName = PhragmenElectionPalletName;
-    }
-    impl pallet_tips::migrations::unreserve_deposits::UnlockConfig<()> for UnlockConfig {
-        type Currency = Balances;
-        type Hash = Hash;
-        type DataDepositPerByte = DataDepositPerByte;
-        type TipReportDepositBase = TipReportDepositBase;
-        type AccountId = AccountId;
-        type BlockNumber = BlockNumberFor<Runtime>;
-        type DbWeight = <Runtime as frame_system::Config>::DbWeight;
-        type PalletName = TipsPalletName;
-    }
-
-    // We don't have a limit in the Relay Chain.
-    const IDENTITY_MIGRATION_KEY_LIMIT: u64 = u64::MAX;
-
     /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = (
-		parachains_configuration::migration::v7::MigrateToV7<Runtime>,
-		parachains_scheduler::migration::MigrateV1ToV2<Runtime>,
-		parachains_configuration::migration::v8::MigrateToV8<Runtime>,
-		parachains_configuration::migration::v9::MigrateToV9<Runtime>,
-		paras_registrar::migration::MigrateToV1<Runtime, ()>,
-		pallet_referenda::migration::v1::MigrateV0ToV1<Runtime, ()>,
-		pallet_referenda::migration::v1::MigrateV0ToV1<Runtime, pallet_referenda::Instance2>,
-
-		// Unlock & unreserve Gov1 funds
-
-		pallet_elections_phragmen::migrations::unlock_and_unreserve_all_funds::UnlockAndUnreserveAllFunds<UnlockConfig>,
-		pallet_democracy::migrations::unlock_and_unreserve_all_funds::UnlockAndUnreserveAllFunds<UnlockConfig>,
-		pallet_tips::migrations::unreserve_deposits::UnreserveDeposits<UnlockConfig, ()>,
-
-		// Delete all Gov v1 pallet storage key/values.
-
-		frame_support::migrations::RemovePallet<DemocracyPalletName, <Runtime as frame_system::Config>::DbWeight>,
-		frame_support::migrations::RemovePallet<CouncilPalletName, <Runtime as frame_system::Config>::DbWeight>,
-		frame_support::migrations::RemovePallet<TechnicalCommitteePalletName, <Runtime as frame_system::Config>::DbWeight>,
-		frame_support::migrations::RemovePallet<PhragmenElectionPalletName, <Runtime as frame_system::Config>::DbWeight>,
-		frame_support::migrations::RemovePallet<TechnicalMembershipPalletName, <Runtime as frame_system::Config>::DbWeight>,
-		frame_support::migrations::RemovePallet<TipsPalletName, <Runtime as frame_system::Config>::DbWeight>,
-
-		pallet_grandpa::migrations::MigrateV4ToV5<Runtime>,
-		parachains_configuration::migration::v10::MigrateToV10<Runtime>,
-
-		// Migrate Identity pallet for Usernames
-		pallet_identity::migration::versioned::V0ToV1<Runtime, IDENTITY_MIGRATION_KEY_LIMIT>,
-		parachains_configuration::migration::v11::MigrateToV11<Runtime>,
-		// This needs to come after the `parachains_configuration` above as we are reading the configuration.
-		parachains_configuration::migration::v12::MigrateToV12<Runtime>,
-		parachains_assigner_on_demand::migration::MigrateV0ToV1<Runtime>,
-
-		// permanent
-		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-
-		parachains_inclusion::migration::MigrateToV1<Runtime>,
-	);
+    pub type Unreleased = ();
 }
 
 /// Executive: handles dispatch to the various modules.
@@ -1406,7 +1340,7 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    Migrations,
+    migrations::Unreleased,
 >;
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
@@ -1586,7 +1520,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+    impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3 | 4) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);

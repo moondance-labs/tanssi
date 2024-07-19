@@ -73,6 +73,7 @@ pallet-invulnerables = { workspace = true }
 pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-offences = { workspace = true }
 pallet-parameters = { workspace = true }
@@ -109,17 +110,20 @@ runtime-parachains = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
-xcm-fee-payment-runtime-api = { workspace = true }
+xcm-runtime-apis = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
 
 # Tanssi
-tp-traits = { workspace = true }
-
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+tanssi-runtime-common = { workspace = true }
+tp-traits = { workspace = true }
+
+# Moonkit
+pallet-migrations = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
@@ -179,7 +183,9 @@ std = [
 	"pallet-invulnerables/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
+	"pallet-migrations/std",
 	"pallet-mmr/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-offences/std",
 	"pallet-parameters/std",
@@ -229,11 +235,12 @@ std = [
 	"sp-version/std",
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
+	"tanssi-runtime-common/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
-	"xcm-fee-payment-runtime-api/std",
+	"xcm-runtime-apis/std",
 	"xcm/std",
 ]
 no_std = []
@@ -259,7 +266,9 @@ runtime-benchmarks = [
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
+	"pallet-migrations/runtime-benchmarks",
 	"pallet-mmr/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-offences/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
@@ -285,9 +294,11 @@ runtime-benchmarks = [
 	"runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
+	"xcm-runtime-apis/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-executive/try-runtime",
@@ -318,7 +329,9 @@ try-runtime = [
 	"pallet-invulnerables/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-mmr/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-offences/try-runtime",
 	"pallet-parameters/try-runtime",
@@ -343,6 +356,7 @@ try-runtime = [
 	"runtime-common/try-runtime",
 	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
+	"tanssi-runtime-common/try-runtime",
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
