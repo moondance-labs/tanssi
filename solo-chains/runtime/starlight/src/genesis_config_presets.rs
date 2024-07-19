@@ -60,7 +60,7 @@ pub struct AuthorityKeys {
     pub para_assignment: AssignmentId,
     pub authority_discovery: AuthorityDiscoveryId,
     pub beefy: BeefyId,
-    pub nimbus: nimbus_primitives::NimbusId,
+    pub nimbus: NimbusId,
 }
 
 /// Helper function to generate stash, controller and session key from seed
@@ -81,7 +81,7 @@ pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
@@ -135,7 +135,7 @@ fn starlight_session_keys(
     para_assignment: AssignmentId,
     authority_discovery: AuthorityDiscoveryId,
     beefy: BeefyId,
-    nimbus: nimbus_primitives::NimbusId,
+    nimbus: NimbusId,
 ) -> SessionKeys {
     SessionKeys {
         babe,

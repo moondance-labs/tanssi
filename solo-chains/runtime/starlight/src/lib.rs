@@ -54,7 +54,7 @@ use {
     },
     runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand,
-        configuration as parachains_configuration, coretime,
+        configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
         inclusion::{self as parachains_inclusion, AggregateMessageOrigin, UmpQueueId},
