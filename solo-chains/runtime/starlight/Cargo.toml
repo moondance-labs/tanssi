@@ -116,13 +116,11 @@ xcm-runtime-apis = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Tanssi
-tp-traits = { workspace = true }
-tp-container-chain-genesis-data = { workspace = true }
-
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
 
 # Moonkit
@@ -239,8 +237,8 @@ std = [
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
-	"tp-traits/std",
 	"tp-container-chain-genesis-data/std",
+	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
 	"xcm-executor/std",

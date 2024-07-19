@@ -142,8 +142,8 @@ polkadot-statement-distribution = { workspace = true, optional = true }
 xcm = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
+cumulus-primitives-core = { workspace = true }
 tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
-cumulus-primitives-core = {workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
@@ -208,6 +208,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-support/try-runtime",
