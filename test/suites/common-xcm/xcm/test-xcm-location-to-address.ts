@@ -15,13 +15,12 @@ describeSuite({
                 const convertLocation = await context
                     .polkadotJs()
                     .call.locationToAccountApi.convertLocation(RELAY_V3_SOURCE_LOCATION);
-                
+
                 expect(convertLocation.isOk).to.be.true;
 
                 if (chain == "frontier-template")
-                    expect(convertLocation.asOk.toHuman()).to.eq("0x506172656E740000000000000000000000000000"); 
-                else
-                    expect(convertLocation.asOk.toHuman()).to.eq("5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG");
+                    expect(convertLocation.asOk.toHuman()).to.eq("0x506172656E740000000000000000000000000000");
+                else expect(convertLocation.asOk.toHuman()).to.eq("5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG");
             },
         });
     },

@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
+import { KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { u8aToHex } from "@polkadot/util";
 import { XcmFragment } from "util/xcm.ts";
 
 const runtimeApi = {
@@ -174,7 +175,7 @@ describeSuite({
                 const balancesPalletIndex = metadata.asLatest.pallets
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
-                const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
+                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
                 const xcmMessage = new XcmFragment({
                     assets: [
@@ -188,7 +189,7 @@ describeSuite({
                             fungible: 1_000_000_000_000_000n,
                         },
                     ],
-                    beneficiary: randomReceiver,
+                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .reserve_asset_deposited()
                     .clear_origin()
