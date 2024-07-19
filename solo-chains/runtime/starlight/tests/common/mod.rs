@@ -529,5 +529,3 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentDa
             .dispatch(inherent_origin())
     );
 }
-
-use std::collections::BTreeMap;

@@ -40,7 +40,7 @@
     "parachains": [
         {
             "id": 1000,
-            "chain_spec_path": "specs/single-container-tanssi-1000.json",
+            "chain_spec_path": "specs/single-dancebox-container-1000.json",
             "collators": [
                 {
                     "name": "FullNode-1000",
