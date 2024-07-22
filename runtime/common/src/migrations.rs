@@ -42,13 +42,17 @@ use {
     frame_support::{
         migration::{clear_storage_prefix, storage_key_iter},
         pallet_prelude::GetStorageVersion,
-        traits::{OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
+        traits::{
+            fungible::MutateHold, OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency,
+            StorageVersion,
+        },
         weights::Weight,
         Blake2_128Concat, BoundedVec, StoragePrefixedMap,
     },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::{GetMigrations, Migration},
+    pallet_registrar::HoldReason,
     sp_core::Get,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
@@ -454,6 +458,77 @@ where
     }
 }
 
+pub struct RegistrarReserveToHoldMigration<T>(pub PhantomData<T>);
+impl<T> Migration for RegistrarReserveToHoldMigration<T>
+where
+    T: pallet_registrar::Config,
+    T: pallet_balances::Config,
+    <T as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
+    <T as pallet_balances::Config>::Balance: From<
+        <<T as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<
+            T::AccountId,
+        >>::Balance,
+    >,
+    <T as pallet_balances::Config>::Balance: From<u128>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_RegistrarReserveToHoldMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        let mut total_weight = Weight::default();
+        for (_para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
+            pallet_balances::Pallet::<T>::unreserve(&deposit.creator, deposit.deposit.into());
+            let _ = pallet_balances::Pallet::<T>::hold(
+                &HoldReason::RegistrarDeposit.into(),
+                &deposit.creator,
+                deposit.deposit.into(),
+            );
+            total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(2, 2));
+        }
+
+        total_weight
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use frame_support::traits::fungible::InspectHold;
+
+        for (_para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
+            ensure!(
+                pallet_balances::Pallet::<T>::reserved_balance(&deposit.creator)
+                    >= deposit.deposit.into(),
+                "Reserved balanced cannot be less than deposit amount"
+            );
+
+            ensure!(
+                pallet_balances::Pallet::<T>::balance_on_hold(
+                    &HoldReason::RegistrarDeposit.into(),
+                    &deposit.creator
+                ) == 0u128.into(),
+                "Balance on hold for RegistrarDeposit should be 0"
+            );
+        }
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use frame_support::traits::fungible::InspectHold;
+
+        for (_para_id, deposit) in pallet_registrar::RegistrarDeposit::<T>::iter() {
+            ensure!(
+                pallet_balances::Pallet::<T>::balance_on_hold(
+                    &HoldReason::RegistrarDeposit.into(),
+                    &deposit.creator
+                ) >= deposit.deposit.into(),
+                "Balance on hold for RegistrarDeposit should be deposit"
+            );
+        }
+
+        Ok(())
+    }
+}
 pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
 impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
 where
@@ -690,12 +765,12 @@ where
     }
 
     #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, DispatchError> {
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
         Ok(vec![])
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), DispatchError> {
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         Ok(())
     }
 }
@@ -711,6 +786,9 @@ where
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime::AccountId: From<[u8; 32]>,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
+    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
+    <Runtime as pallet_balances::Config>::Balance: From<u128>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         //let migrate_services_payment =
@@ -727,6 +805,7 @@ where
             RegistrarParaManagerMigration::<Runtime>(Default::default());
         let migrate_data_preservers_assignments =
             DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -739,6 +818,7 @@ where
             Box::new(migrate_registrar_pending_verification),
             Box::new(migrate_registrar_manager),
             Box::new(migrate_data_preservers_assignments),
+            Box::new(migrate_registrar_reserves),
         ]
     }
 }
@@ -761,8 +841,10 @@ where
     <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
         TryFrom<staging_xcm::v3::MultiLocation>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
-        From<pallet_pooled_staking::HoldReason>,
+        From<pallet_registrar::HoldReason>,
     Runtime::AccountId: From<[u8; 32]>,
+    <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
+    <Runtime as pallet_balances::Config>::Balance: From<u128>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
@@ -791,6 +873,7 @@ where
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let foreign_asset_creator_migration =
             ForeignAssetCreatorMigration::<Runtime>(Default::default());
+        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -817,6 +900,7 @@ where
             Box::new(migrate_pallet_xcm_v4),
             Box::new(foreign_asset_creator_migration),
             Box::new(migrate_data_preservers_assignments),
+            Box::new(migrate_registrar_reserves)
         ]
     }
 }
