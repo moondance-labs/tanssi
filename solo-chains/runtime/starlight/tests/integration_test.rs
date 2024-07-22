@@ -56,10 +56,7 @@ fn genesis_balances() {
 #[test]
 fn genesis_para_registrar() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -72,10 +69,7 @@ fn genesis_para_registrar() {
 #[test]
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -114,10 +108,7 @@ fn genesis_para_registrar_deregister() {
 #[test]
 fn genesis_para_registrar_runtime_api() {
     ExtBuilder::default()
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -159,8 +150,19 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     };
     ExtBuilder::default()
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), u32::MAX, u32::MAX).into(),
-            (1002, genesis_data_1002.clone(), u32::MAX, u32::MAX).into(),
+                       ParaRegistrationParams {
+                para_id: 1001,
+                genesis_data: genesis_data_1001.clone(),
+                block_production_credits: u32::MAX,
+                collator_assignment_credits: u32::MAX,
+                parathread_params: None,
+            },ParaRegistrationParams {
+                para_id: 1002,
+                genesis_data: genesis_data_1002.clone(),
+                block_production_credits: u32::MAX,
+                collator_assignment_credits: u32::MAX,
+                parathread_params: None,
+            },
         ])
         .build()
         .execute_with(|| {

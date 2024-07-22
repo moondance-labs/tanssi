@@ -304,37 +304,11 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
-    para_id: u32,
-    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
-    block_production_credits: u32,
-    collator_assignment_credits: u32,
-    parathread_params: Option<tp_traits::ParathreadParams>,
-}
-
-impl
-    From<(
-        u32,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        u32,
-        u32,
-    )> for ParaRegistrationParams
-{
-    fn from(
-        value: (
-            u32,
-            ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            u32,
-            u32,
-        ),
-    ) -> Self {
-        Self {
-            para_id: value.0,
-            genesis_data: value.1,
-            block_production_credits: value.2,
-            collator_assignment_credits: value.3,
-            parathread_params: None,
-        }
-    }
+    pub para_id: u32,
+    pub genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    pub block_production_credits: u32,
+    pub collator_assignment_credits: u32,
+    pub parathread_params: Option<tp_traits::ParathreadParams>,
 }
 
 pub fn default_config() -> pallet_configuration::HostConfiguration {
@@ -402,6 +376,22 @@ impl ExtBuilder {
 
     pub fn with_para_ids(mut self, para_ids: Vec<ParaRegistrationParams>) -> Self {
         self.para_ids = para_ids;
+        self
+    }
+
+    /// Helper function like `with_para_ids` but registering parachains with an empty genesis data,
+    /// and max amount of credits.
+    pub fn with_empty_parachains(mut self, para_ids: Vec<u32>) -> Self {
+        self.para_ids = para_ids
+            .into_iter()
+            .map(|para_id| ParaRegistrationParams {
+                para_id,
+                genesis_data: empty_genesis_data(),
+                block_production_credits: u32::MAX,
+                collator_assignment_credits: u32::MAX,
+                parathread_params: None,
+            })
+            .collect();
         self
     }
 

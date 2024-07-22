@@ -117,10 +117,7 @@ fn genesis_balances() {
 #[test]
 fn genesis_para_registrar() {
     ExtBuilder::default()
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -133,10 +130,7 @@ fn genesis_para_registrar() {
 #[test]
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -172,10 +166,7 @@ fn genesis_para_registrar_deregister() {
 #[test]
 fn genesis_para_registrar_runtime_api() {
     ExtBuilder::default()
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -213,10 +204,20 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
         properties: Default::default(),
     };
     ExtBuilder::default()
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_para_ids(vec![
+            ParaRegistrationParams {
+                para_id: 1001,
+                genesis_data: genesis_data_1001.clone(),
+                block_production_credits: u32::MAX,
+                collator_assignment_credits: u32::MAX,
+                parathread_params: None,
+            },ParaRegistrationParams {
+                para_id: 1002,
+                genesis_data: genesis_data_1002.clone(),
+                block_production_credits: u32::MAX,
+                collator_assignment_credits: u32::MAX,
+                parathread_params: None,
+            },        ])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -277,10 +278,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 #[test]
 fn test_author_collation_aura() {
     ExtBuilder::default()
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(5);
@@ -307,10 +305,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -383,10 +378,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -899,10 +891,7 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -961,10 +950,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1027,10 +1013,7 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
             (AccountId::from(ALICE), 210_000 * UNIT),
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1096,10 +1079,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1253,10 +1233,7 @@ fn test_consensus_runtime_api() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1344,10 +1321,7 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1456,10 +1430,7 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1658,10 +1629,7 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let mut sproof = ParaHeaderSproofBuilder::default();
@@ -1718,10 +1686,7 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let other_para: ParaId = 1001u32.into();
@@ -1765,10 +1730,7 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let other_para: ParaId = 1001u32.into();
@@ -1807,10 +1769,7 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let mut sproof = ParaHeaderSproofBuilder::default();
@@ -1875,10 +1834,7 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1955,10 +1911,7 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2273,10 +2226,7 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2326,10 +2276,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2615,6 +2562,50 @@ fn test_register_parathread() {
             ));
 
             run_to_session(2);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&ParaId::from(3001)],
+                vec![CHARLIE.into()]
+            );
+        });
+}
+
+#[test]
+fn test_register_parathread_genesis() {
+    let parathread_params = tp_traits::ParathreadParams {
+        slot_frequency: SlotFrequency { min: 1, max: 1 },
+    };
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 3001,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: Some(parathread_params.clone()),
+        }])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            assert_eq!(Registrar::registered_para_ids(), vec![3001.into()]);
+            assert_eq!(
+                pallet_registrar::ParathreadParams::<Runtime>::get(ParaId::from(3001)),
+                Some(parathread_params)
+            );
+
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&ParaId::from(3001)],
@@ -3643,11 +3634,7 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-            1003,
-        ])
+        .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let para_id = 1003u32;
@@ -3698,11 +3685,7 @@ fn test_collator_assignment_tip_charged_on_congestion() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-            1003,
-        ])
+        .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
@@ -3746,11 +3729,7 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-            1003,
-        ])
+        .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 1 * UNIT;
@@ -3799,11 +3778,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
             (AccountId::from(EVE), 100 * UNIT),
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-            1003,
-        ])
+        .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
@@ -3871,11 +3846,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             (AccountId::from(EVE), 100 * UNIT),
             (AccountId::from(FERDIE), 100 * UNIT),
         ])
-        .with_empty_parachains(vec![
-            1001,
-            1002,
-            1003,
-        ])
+        .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;

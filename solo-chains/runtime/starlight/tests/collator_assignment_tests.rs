@@ -50,7 +50,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             collators_per_container: 2,
             ..Default::default()
         })
-        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_empty_parachains(vec![1000])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -155,7 +155,7 @@ fn test_collators_per_container() {
             collators_per_container: 2,
             ..Default::default()
         })
-        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_empty_parachains(vec![1000])
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -236,7 +236,7 @@ fn test_session_keys_with_authority_assignment() {
             collators_per_container: 2,
             ..Default::default()
         })
-        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_empty_parachains(vec![1000])
         .build()
         .execute_with(|| {
             run_to_block(2);
