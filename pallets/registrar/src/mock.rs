@@ -92,7 +92,7 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type RuntimeHoldReason = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = ();
     type WeightInfo = ();
 }
@@ -146,6 +146,7 @@ impl pallet_registrar::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
     type WeightInfo = ();
 }

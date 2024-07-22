@@ -122,6 +122,7 @@ import type {
     PalletRegistrarDepositInfo,
     PalletRegistrarError,
     PalletRegistrarEvent,
+    PalletRegistrarHoldReason,
     PalletRootTestingCall,
     PalletRootTestingEvent,
     PalletServicesPaymentCall,
@@ -308,6 +309,7 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
+        PalletRegistrarHoldReason: PalletRegistrarHoldReason;
         PalletRootTestingCall: PalletRootTestingCall;
         PalletRootTestingEvent: PalletRootTestingEvent;
         PalletServicesPaymentCall: PalletServicesPaymentCall;
