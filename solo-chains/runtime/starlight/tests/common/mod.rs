@@ -200,11 +200,11 @@ pub fn run_block() {
 
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
-    para_id: u32,
-    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
-    block_production_credits: u32,
-    collator_assignment_credits: u32,
-    parathread_params: Option<tp_traits::ParathreadParams>,
+    pub para_id: u32,
+    pub genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    pub block_production_credits: u32,
+    pub collator_assignment_credits: u32,
+    pub parathread_params: Option<tp_traits::ParathreadParams>,
 }
 
 pub fn default_config() -> pallet_configuration::HostConfiguration {
