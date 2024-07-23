@@ -43,7 +43,9 @@ pub use starlight_runtime::{
     Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
-
+use sp_core::Pair;
+use cumulus_primitives_core::relay_chain::CollatorPair;
+use runtime_parachains::paras::{ParaKind, ParaGenesisArgs};
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
     let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
@@ -262,6 +264,7 @@ pub struct ExtBuilder {
     para_ids: Vec<ParaRegistrationParams>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
+    relay_config: runtime_parachains::configuration::HostConfiguration::<BlockNumberFor<Runtime>>,
     own_para_id: Option<ParaId>,
     next_free_para_id: ParaId,
 }
@@ -282,6 +285,7 @@ impl Default for ExtBuilder {
             sudo: Default::default(),
             para_ids: Default::default(),
             config: default_config(),
+            relay_config: Default::default(),
             own_para_id: Default::default(),
             next_free_para_id: Default::default(),
         }
@@ -317,6 +321,12 @@ impl ExtBuilder {
     // Maybe change to with_collators_config?
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
+        self
+    }
+
+    // Maybe change to with_collators_config?
+    pub fn with_relay_config(mut self, relay_config: runtime_parachains::configuration::HostConfiguration::<BlockNumberFor<Runtime>>) -> Self {
+        self.relay_config = relay_config;
         self
     }
 
@@ -359,6 +369,25 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        // We register mock wasm
+        runtime_parachains::paras::GenesisConfig::<Runtime> {
+            paras: self
+            .para_ids
+            .iter()
+            .cloned()
+            .map(|registered_para| {
+                (registered_para.para_id.into(), ParaGenesisArgs {
+                    validation_code: mock_validation_code(), 
+                    para_kind: ParaKind::Parachain,
+                    genesis_head: HeadData::from(vec![0u8])
+                })
+            })
+            .collect(),
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         runtime_common::paras_registrar::GenesisConfig::<Runtime> {
             next_free_para_id: self.next_free_para_id,
             ..Default::default()
@@ -371,6 +400,12 @@ impl ExtBuilder {
         pallet_configuration::GenesisConfig::<Runtime> {
             config: self.config,
             ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        runtime_parachains::configuration::GenesisConfig::<Runtime> {
+            config: self.relay_config
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -685,6 +720,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         &self,
         paras_with_backed_candidates: &BTreeMap<u32, u32>,
     ) -> Vec<BackedCandidate<T::Hash>> {
+        println!("creating backed candidates");
         let current_session = runtime_parachains::shared::CurrentSessionIndex::<T>::get();
         // We need to refetch validators since they have been shuffled.
         let validators_shuffled =
@@ -710,11 +746,13 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         // Advance core index.
                         current_core_idx += 1;
                         let group_idx =
-                            Self::group_assigned_to_core(core_idx, Self::block_number()).unwrap();
-
+                            Self::group_assigned_to_core(core_idx, Self::block_number()).unwrap_or_else(|| panic!("Validator group not assigned to core {:?}", core_idx));
                         // This generates a pair and adds it to the keystore, returning just the
                         // public.
-                        let collator_public = CollatorId::generate_pair(None);
+                        println!("group idx");
+
+                        println!("group idx after");
+
                         let header = Self::header(Self::block_number());
                         let relay_parent = header.hash();
 
@@ -752,7 +790,11 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 &pov_hash,
                                 &validation_code_hash,
                             );
-                        let signature = collator_public.sign(&payload).unwrap();
+                        println!("sigining collator");
+
+                        let collator_pair = CollatorPair::generate().0;
+
+                        let signature = collator_pair.sign(&payload);
 
                         let group_validators = Self::group_validators(group_idx).unwrap();
 
@@ -760,7 +802,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             descriptor: CandidateDescriptor::<T::Hash> {
                                 para_id,
                                 relay_parent,
-                                collator: collator_public,
+                                collator: collator_pair.public(),
                                 persisted_validation_data_hash,
                                 pov_hash,
                                 erasure_root: Default::default(),
@@ -778,12 +820,14 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             },
                         };
 
+                        println!("after signing collator");
                         let candidate_hash = candidate.hash();
 
                         let validity_votes: Vec<_> = group_validators
                             .iter()
                             .take(*num_votes as usize)
                             .map(|val_idx| {
+                                println!("signing validator");
                                 let public = validators_shuffled.get(*val_idx).unwrap();
                                 let sig = UncheckedSigned::<CompactStatement>::benchmark_sign(
                                     public,
@@ -833,6 +877,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         }
 
         let validator_groups = runtime_parachains::scheduler::ValidatorGroups::<T>::get();
+
+        println!("validator_groups {:?}", validator_groups);
+        println!("session_start_block {:?}", session_start_block);
+        println!("config {:?}", config);
 
         if core.0 as usize >= validator_groups.len() {
             return None;
@@ -893,6 +941,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .iter()
             .enumerate()
             .map(|(i, public)| {
+                println!("about to sign");
                 let unchecked_signed = UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
                     public,
                     availability_bitvec.clone(),

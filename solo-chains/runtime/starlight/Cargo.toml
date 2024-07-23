@@ -131,6 +131,7 @@ keyring = { workspace = true }
 remote-externalities = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
+sc-keystore = { workspace = true }
 sp-tracing = { workspace = true }
 sp-trie = { workspace = true }
 tiny-keccak = { workspace = true }
