@@ -687,17 +687,21 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         &self,
         paras_with_backed_candidates: &BTreeMap<u32, u32>,
     ) -> Vec<BackedCandidate<T::Hash>> {
-        let validators = self
-            .validators
-            .as_ref()
-            .expect("must have some validators prior to calling");
+        let current_session = runtime_parachains::shared::CurrentSessionIndex::<T>::get();
+        // We need to refetch validators since they have been shuffled.
+        let validators_shuffled =
+            runtime_parachains::session_info::Sessions::<T>::get(current_session)
+                .unwrap()
+                .validators
+                .clone();
+
         let config = runtime_parachains::configuration::ActiveConfig::<T>::get();
 
         let mut current_core_idx = 0u32;
         paras_with_backed_candidates
             .iter()
             .flat_map(|(seed, num_votes)| {
-                assert!(*num_votes <= validators.len() as u32);
+                assert!(*num_votes <= validators_shuffled.len() as u32);
 
                 let para_id = ParaId::from(*seed);
                 let mut prev_head = None;
@@ -782,7 +786,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             .iter()
                             .take(*num_votes as usize)
                             .map(|val_idx| {
-                                let public = validators.get(*val_idx).unwrap();
+                                let public = validators_shuffled.get(*val_idx).unwrap();
                                 let sig = UncheckedSigned::<CompactStatement>::benchmark_sign(
                                     public,
                                     CompactStatement::Valid(candidate_hash),
