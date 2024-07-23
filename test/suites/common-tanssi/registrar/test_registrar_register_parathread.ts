@@ -45,7 +45,7 @@ describeSuite({
                     max: 1,
                 });
                 const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
                             {
                                 key: "0x636f6465",

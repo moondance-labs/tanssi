@@ -38,6 +38,7 @@ use {
         ParaId,
     },
     cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
+    dancebox_runtime::AccountId,
     dancebox_runtime::{
         opaque::{Block, Hash},
         RuntimeApi,
@@ -80,8 +81,14 @@ use {
         },
         OrchestratorAuraWorkerAuxData,
     },
+    tc_consensus::{OnDemandBlockProductionApi, TanssiAuthorityAssignmentApi},
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
     tokio_util::sync::CancellationToken,
+};
+use {
+    dc_orchestrator_chain_interface::{BlockNumber, ContainerChainGenesisData},
+    nimbus_primitives::NimbusId,
+    pallet_author_noting_runtime_api::AuthorNotingApi,
 };
 
 mod mocked_relay_keys;
@@ -498,21 +505,37 @@ async fn start_node_impl(
         let orchestrator_client = node_builder.client.clone();
         let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
+
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
                 orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
-                orchestrator_client,
-                orchestrator_tx_pool,
                 container_chain_cli,
                 tokio_handle,
                 chain_type,
                 relay_chain,
                 relay_chain_interface,
-                collator_key,
                 sync_keystore,
                 orchestrator_para_id: para_id,
-                validator,
+                collation_params: if validator {
+                    Some(crate::container_chain_spawner::CollationParams {
+                        orchestrator_client: orchestrator_client.clone(),
+                        orchestrator_tx_pool,
+                        collator_key: collator_key
+                            .expect("there should be a collator key if we're a validator"),
+                    })
+                } else {
+                    None
+                },
                 spawn_handle,
+                sync_mode: {
+                    move |db_exists, para_id| {
+                        crate::container_chain_spawner::select_sync_mode_using_client(
+                            db_exists,
+                            &orchestrator_client.clone(),
+                            para_id,
+                        )
+                    }
+                },
             },
             state: Default::default(),
             collate_on_tanssi,
@@ -549,15 +572,12 @@ fn container_log_str(para_id: ParaId) -> String {
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
-    orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    collator_key: Option<CollatorPair>,
     keystore: KeystorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
-    collator: bool,
+    collation_params: Option<crate::container_chain_spawner::CollationParams>,
 ) -> sc_service::error::Result<(
     TaskManager,
     Arc<ContainerChainClient>,
@@ -572,7 +592,7 @@ pub async fn start_node_impl_container(
         container_chain_import_queue(&parachain_config, &node_builder);
     let import_queue_service = import_queue.service();
 
-    log::info!("are we collators? {:?}", collator);
+    log::info!("are we collators? {:?}", collation_params.is_some());
     let node_builder = node_builder
         .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
             &parachain_config,
@@ -622,7 +642,7 @@ pub async fn start_node_impl_container(
         para_id,
         relay_chain_interface: relay_chain_interface.clone(),
         task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if collator {
+        da_recovery_profile: if collation_params.is_some() {
             DARecoveryProfile::Collator
         } else {
             DARecoveryProfile::FullNode
@@ -633,11 +653,12 @@ pub async fn start_node_impl_container(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
-    if collator {
-        let collator_key = collator_key
-            .clone()
-            .expect("Command line arguments do not allow this. qed");
-
+    if let Some(crate::container_chain_spawner::CollationParams {
+        collator_key,
+        orchestrator_tx_pool,
+        orchestrator_client,
+    }) = collation_params
+    {
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
         let node_backend = node_builder.backend.clone();
@@ -1360,6 +1381,10 @@ where
         + UsageProvider<Block>
         + Sync
         + Send,
+    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
+        + OnDemandBlockProductionApi<Block, ParaId, Slot>
+        + RegistrarApi<Block, ParaId>
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1420,5 +1445,43 @@ where
             .finality_notification_stream()
             .map(|notification| notification.header);
         Ok(Box::pin(notification_stream))
+    }
+
+    async fn genesis_data(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.genesis_data(orchestrator_parent, para_id)?)
+    }
+
+    async fn boot_nodes(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.boot_nodes(orchestrator_parent, para_id)?)
+    }
+
+    async fn latest_block_number(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<BlockNumber>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.latest_block_number(orchestrator_parent, para_id)?)
+    }
+
+    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().best_hash)
+    }
+
+    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().finalized_hash)
     }
 }

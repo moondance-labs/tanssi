@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_consensus_slots::Slot;
 use {
     crate::{
         self as pallet_xcm_core_buyer, CheckCollatorValidity, GetPurchaseCoreCall,
@@ -30,6 +29,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_xcm::Origin,
     serde::{Deserialize, Serialize},
+    sp_consensus_slots::Slot,
     sp_core::H256,
     sp_io::TestExternalities,
     sp_keystore::{testing::MemoryKeystore, KeystoreExt},

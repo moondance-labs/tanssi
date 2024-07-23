@@ -291,7 +291,7 @@ pub fn run() -> Result<()> {
                     task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
                         .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
-                    client = dc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                    client = tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
                         cmd.orchestrator_endpoints.clone(),
                         &mut task_manager,
                         None,

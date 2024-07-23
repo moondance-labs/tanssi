@@ -1932,7 +1932,7 @@ declare module "@polkadot/types/lookup" {
         readonly isRegister: boolean;
         readonly asRegister: {
             readonly paraId: u32;
-            readonly genesisData: TpContainerChainGenesisDataContainerChainGenesisData;
+            readonly genesisData: DpContainerChainGenesisDataContainerChainGenesisData;
         } & Struct;
         readonly isDeregister: boolean;
         readonly asDeregister: {
@@ -1954,7 +1954,7 @@ declare module "@polkadot/types/lookup" {
         readonly asRegisterParathread: {
             readonly paraId: u32;
             readonly slotFrequency: TpTraitsSlotFrequency;
-            readonly genesisData: TpContainerChainGenesisDataContainerChainGenesisData;
+            readonly genesisData: DpContainerChainGenesisDataContainerChainGenesisData;
         } & Struct;
         readonly isSetParathreadParams: boolean;
         readonly asSetParathreadParams: {
@@ -1973,7 +1973,7 @@ declare module "@polkadot/types/lookup" {
             readonly relayProofBlockNumber: u32;
             readonly relayStorageProof: SpTrieStorageProof;
             readonly managerSignature: SpRuntimeMultiSignature;
-            readonly genesisData: TpContainerChainGenesisDataContainerChainGenesisData;
+            readonly genesisData: DpContainerChainGenesisDataContainerChainGenesisData;
         } & Struct;
         readonly isDeregisterWithRelayProof: boolean;
         readonly asDeregisterWithRelayProof: {
@@ -1994,30 +1994,30 @@ declare module "@polkadot/types/lookup" {
             | "DeregisterWithRelayProof";
     }
 
-    /** @name TpContainerChainGenesisDataContainerChainGenesisData (208) */
-    interface TpContainerChainGenesisDataContainerChainGenesisData extends Struct {
-        readonly storage: Vec<TpContainerChainGenesisDataContainerChainGenesisDataItem>;
+    /** @name DpContainerChainGenesisDataContainerChainGenesisData (208) */
+    interface DpContainerChainGenesisDataContainerChainGenesisData extends Struct {
+        readonly storage: Vec<DpContainerChainGenesisDataContainerChainGenesisDataItem>;
         readonly name: Bytes;
         readonly id: Bytes;
         readonly forkId: Option<Bytes>;
         readonly extensions: Bytes;
-        readonly properties: TpContainerChainGenesisDataProperties;
+        readonly properties: DpContainerChainGenesisDataProperties;
     }
 
-    /** @name TpContainerChainGenesisDataContainerChainGenesisDataItem (210) */
-    interface TpContainerChainGenesisDataContainerChainGenesisDataItem extends Struct {
+    /** @name DpContainerChainGenesisDataContainerChainGenesisDataItem (210) */
+    interface DpContainerChainGenesisDataContainerChainGenesisDataItem extends Struct {
         readonly key: Bytes;
         readonly value: Bytes;
     }
 
-    /** @name TpContainerChainGenesisDataProperties (212) */
-    interface TpContainerChainGenesisDataProperties extends Struct {
-        readonly tokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+    /** @name DpContainerChainGenesisDataProperties (212) */
+    interface DpContainerChainGenesisDataProperties extends Struct {
+        readonly tokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         readonly isEthereum: bool;
     }
 
-    /** @name TpContainerChainGenesisDataTokenMetadata (213) */
-    interface TpContainerChainGenesisDataTokenMetadata extends Struct {
+    /** @name DpContainerChainGenesisDataTokenMetadata (213) */
+    interface DpContainerChainGenesisDataTokenMetadata extends Struct {
         readonly tokenSymbol: Bytes;
         readonly ss58Format: u32;
         readonly tokenDecimals: u32;
