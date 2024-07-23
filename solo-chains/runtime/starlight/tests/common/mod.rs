@@ -529,3 +529,335 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentDa
             .dispatch(inherent_origin())
     );
 }
+
+use bitvec::prelude::BitVec;
+use cumulus_primitives_core::relay_chain::node_features::FeatureIndex;
+use cumulus_primitives_core::relay_chain::{
+    AvailabilityBitfield, BackedCandidate, CandidateCommitments, CandidateDescriptor, CollatorId,
+    CommittedCandidateReceipt, CompactStatement, CoreIndex, GroupIndex, HeadData, IndexedVec,
+    PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode, ValidatorId,
+    ValidatorIndex, ValidityAttestation,
+};
+use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::pallet_prelude::HeaderFor;
+use sp_core::H256;
+use sp_runtime::traits::Header;
+use sp_runtime::traits::One;
+use sp_runtime::traits::Zero;
+use sp_runtime::RuntimeAppPublic;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_set::BTreeSet;
+
+pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent::Config> {
+    /// Active validators. Validators should be declared prior to all other setup.
+    validators: Option<IndexedVec<ValidatorIndex, ValidatorId>>,
+    /// Starting block number; we expect it to get incremented on session setup.
+    block_number: BlockNumberFor<T>,
+    /// Paras here will both be backed in the inherent data and already occupying a core (which is
+    /// freed via bitfields).
+    ///
+    /// Map from para id to number of validity votes. Core indices are generated based on
+    /// `elastic_paras` configuration. Each para id in `elastic_paras` gets the
+    /// specified amount of consecutive cores assigned to it. If a para id is not present
+    /// in `elastic_paras` it get assigned to a single core.
+    backed_and_concluding_paras: BTreeMap<u32, u32>,
+
+    /// Paras which don't yet occupy a core, but will after the inherent has been processed.
+    backed_in_inherent_paras: BTreeMap<u32, u32>,
+    _phantom: core::marker::PhantomData<T>,
+}
+
+fn mock_validation_code() -> ValidationCode {
+    ValidationCode(vec![1, 2, 3])
+}
+
+#[allow(dead_code)]
+impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> {
+    /// Create a new `BenchBuilder` with some opinionated values that should work with the rest
+    /// of the functions in this implementation.
+    pub(crate) fn new() -> Self {
+        ParasInherentTestBuilder {
+            validators: None,
+            block_number: Zero::zero(),
+            backed_and_concluding_paras: Default::default(),
+            backed_in_inherent_paras: Default::default(),
+            _phantom: core::marker::PhantomData::<T>,
+        }
+    }
+
+    /// Set a map from para id seed to number of validity votes.
+    pub(crate) fn set_backed_and_concluding_paras(
+        mut self,
+        backed_and_concluding_paras: BTreeMap<u32, u32>,
+    ) -> Self {
+        self.backed_and_concluding_paras = backed_and_concluding_paras;
+        self
+    }
+
+    /// Set a map from para id seed to number of validity votes for votes in inherent data.
+    pub(crate) fn set_backed_in_inherent_paras(mut self, backed: BTreeMap<u32, u32>) -> Self {
+        self.backed_in_inherent_paras = backed;
+        self
+    }
+
+    /// Mock header.
+    pub(crate) fn header(block_number: BlockNumberFor<T>) -> HeaderFor<T> {
+        HeaderFor::<T>::new(
+            block_number,       // `block_number`,
+            Default::default(), // `extrinsics_root`,
+            Default::default(), // `storage_root`,
+            Default::default(), // `parent_hash`,
+            Default::default(), // digest,
+        )
+    }
+
+    /// Maximum number of validators that may be part of a validator group.
+    pub(crate) fn fallback_max_validators() -> u32 {
+        runtime_parachains::configuration::ActiveConfig::<T>::get()
+            .max_validators
+            .unwrap_or(200)
+    }
+
+    /// Maximum number of validators participating in parachains consensus (a.k.a. active
+    /// validators).
+    fn max_validators(&self) -> u32 {
+        Self::fallback_max_validators()
+    }
+
+    /// Maximum number of validators per core (a.k.a. max validators per group). This value is used
+    /// if none is explicitly set on the builder.
+    pub(crate) fn fallback_max_validators_per_core() -> u32 {
+        runtime_parachains::configuration::ActiveConfig::<T>::get()
+            .scheduler_params
+            .max_validators_per_core
+            .unwrap_or(5)
+    }
+
+    /// Get the maximum number of validators per core.
+    fn max_validators_per_core(&self) -> u32 {
+        Self::fallback_max_validators_per_core()
+    }
+
+    /// Get the maximum number of cores we expect from this configuration.
+    pub(crate) fn max_cores(&self) -> u32 {
+        self.max_validators() / self.max_validators_per_core()
+    }
+
+    /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
+    /// that is concluding and `cores` is the total number of cores in the system.
+    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
+        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
+        for i in 0..cores {
+            if concluding_cores.contains(&(i as u32)) {
+                bitfields.push(true);
+            } else {
+                bitfields.push(false)
+            }
+        }
+
+        bitfields.into()
+    }
+
+    /// Create a bitvec of `validators` length with all yes votes.
+    fn validator_availability_votes_yes(validators: usize) -> BitVec<u8, bitvec::order::Lsb0> {
+        // every validator confirms availability.
+        bitvec::bitvec![u8, bitvec::order::Lsb0; 1; validators as usize]
+    }
+
+    fn mock_head_data() -> HeadData {
+        let max_head_size =
+            runtime_parachains::configuration::ActiveConfig::<T>::get().max_head_data_size;
+        HeadData(vec![0xFF; max_head_size as usize])
+    }
+
+    /// Number of the relay parent block.
+    fn relay_parent_number(&self) -> u32 {
+        (self.block_number - One::one())
+            .try_into()
+            .map_err(|_| ())
+            .expect("self.block_number is u32")
+    }
+
+    /// Create backed candidates for `cores_with_backed_candidates`. You need these cores to be
+    /// scheduled _within_ paras inherent, which requires marking the available bitfields as fully
+    /// available.
+    /// - `cores_with_backed_candidates` Mapping of `para_id` seed to number of
+    /// validity votes.
+    fn create_backed_candidates(
+        &self,
+        paras_with_backed_candidates: &BTreeMap<u32, u32>,
+    ) -> Vec<BackedCandidate<T::Hash>> {
+        let validators = self
+            .validators
+            .as_ref()
+            .expect("must have some validators prior to calling");
+        let config = runtime_parachains::configuration::ActiveConfig::<T>::get();
+
+        let mut current_core_idx = 0u32;
+        paras_with_backed_candidates
+            .iter()
+            .flat_map(|(seed, num_votes)| {
+                assert!(*num_votes <= validators.len() as u32);
+
+                let para_id = ParaId::from(*seed);
+                let mut prev_head = None;
+                // How many chained candidates we want to build ?
+                (0..1)
+                    .map(|chain_idx| {
+                        let core_idx = CoreIndex::from(current_core_idx);
+                        // Advance core index.
+                        current_core_idx += 1;
+                        let group_idx =
+                            Self::group_assigned_to_core(core_idx, self.block_number).unwrap();
+
+                        // This generates a pair and adds it to the keystore, returning just the
+                        // public.
+                        let collator_public = CollatorId::generate_pair(None);
+                        let header = Self::header(self.block_number);
+                        let relay_parent = header.hash();
+
+                        // Set the head data so it can be used while validating the signatures on
+                        // the candidate receipt.
+                        let mut head_data = Self::mock_head_data();
+
+                        if chain_idx == 0 {
+                            // Only first parahead of the chain needs to be set in storage.
+                            Self::heads_insert(&para_id, head_data.clone());
+                        } else {
+                            // Make each candidate head data unique to avoid cycles.
+                            head_data.0[0] = chain_idx;
+                        }
+
+                        let persisted_validation_data_hash = PersistedValidationData::<H256> {
+                            // To form a chain we set parent head to previous block if any, or
+                            // default to what is in storage already setup.
+                            parent_head: prev_head.take().unwrap_or(head_data.clone()),
+                            relay_parent_number: self.relay_parent_number(),
+                            relay_parent_storage_root: Default::default(),
+                            max_pov_size: config.max_pov_size,
+                        }
+                        .hash();
+
+                        prev_head = Some(head_data.clone());
+
+                        let pov_hash = Default::default();
+                        let validation_code_hash = mock_validation_code().hash();
+                        let payload =
+                            cumulus_primitives_core::relay_chain::collator_signature_payload(
+                                &relay_parent,
+                                &para_id,
+                                &persisted_validation_data_hash,
+                                &pov_hash,
+                                &validation_code_hash,
+                            );
+                        let signature = collator_public.sign(&payload).unwrap();
+
+                        let group_validators = Self::group_validators(group_idx).unwrap();
+
+                        let candidate = CommittedCandidateReceipt::<T::Hash> {
+                            descriptor: CandidateDescriptor::<T::Hash> {
+                                para_id,
+                                relay_parent,
+                                collator: collator_public,
+                                persisted_validation_data_hash,
+                                pov_hash,
+                                erasure_root: Default::default(),
+                                signature,
+                                para_head: head_data.hash(),
+                                validation_code_hash,
+                            },
+                            commitments: CandidateCommitments::<u32> {
+                                upward_messages: Default::default(),
+                                horizontal_messages: Default::default(),
+                                new_validation_code: None,
+                                head_data,
+                                processed_downward_messages: 0,
+                                hrmp_watermark: self.relay_parent_number(),
+                            },
+                        };
+
+                        let candidate_hash = candidate.hash();
+
+                        let validity_votes: Vec<_> = group_validators
+                            .iter()
+                            .take(*num_votes as usize)
+                            .map(|val_idx| {
+                                let public = validators.get(*val_idx).unwrap();
+                                let sig = UncheckedSigned::<CompactStatement>::benchmark_sign(
+                                    public,
+                                    CompactStatement::Valid(candidate_hash),
+                                    &SigningContext {
+                                        parent_hash: Self::header(self.block_number).hash(),
+                                        session_index: Session::current_index(),
+                                    },
+                                    *val_idx,
+                                )
+                                .benchmark_signature();
+
+                                ValidityAttestation::Explicit(sig.clone())
+                            })
+                            .collect();
+
+                        // Check if the elastic scaling bit is set, if so we need to supply the core
+                        // index in the generated candidate.
+                        let core_idx = runtime_parachains::configuration::ActiveConfig::<T>::get()
+                            .node_features
+                            .get(FeatureIndex::ElasticScalingMVP as usize)
+                            .map(|_the_bit| core_idx);
+
+                        BackedCandidate::<T::Hash>::new(
+                            candidate,
+                            validity_votes,
+                            bitvec::bitvec![u8, bitvec::order::Lsb0; 1; group_validators.len()],
+                            core_idx,
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect()
+    }
+    /// Get the group assigned to a specific core by index at the current block number. Result
+    /// undefined if the core index is unknown or the block number is less than the session start
+    /// index.
+    pub(crate) fn group_assigned_to_core(
+        core: CoreIndex,
+        at: BlockNumberFor<T>,
+    ) -> Option<GroupIndex> {
+        let config = runtime_parachains::configuration::ActiveConfig::<T>::get();
+        let session_start_block = runtime_parachains::scheduler::SessionStartBlock::<T>::get();
+
+        if at < session_start_block {
+            return None;
+        }
+
+        let validator_groups = runtime_parachains::scheduler::ValidatorGroups::<T>::get();
+
+        if core.0 as usize >= validator_groups.len() {
+            return None;
+        }
+
+        let rotations_since_session_start: BlockNumberFor<T> =
+            (at - session_start_block) / config.scheduler_params.group_rotation_frequency;
+
+        let rotations_since_session_start =
+            <BlockNumberFor<T> as TryInto<u32>>::try_into(rotations_since_session_start)
+                .unwrap_or(0);
+        // Error case can only happen if rotations occur only once every u32::max(),
+        // so functionally no difference in behavior.
+
+        let group_idx =
+            (core.0 as usize + rotations_since_session_start as usize) % validator_groups.len();
+        Some(GroupIndex(group_idx as u32))
+    }
+
+    /// Get the validators in the given group, if the group index is valid for this session.
+    pub(crate) fn group_validators(group_index: GroupIndex) -> Option<Vec<ValidatorIndex>> {
+        runtime_parachains::scheduler::ValidatorGroups::<T>::get()
+            .get(group_index.0 as usize)
+            .map(|g| g.clone())
+    }
+
+    pub fn heads_insert(para_id: &ParaId, head_data: HeadData) {
+        runtime_parachains::paras::Heads::<T>::insert(para_id, head_data);
+    }
+}
