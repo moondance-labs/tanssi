@@ -541,6 +541,7 @@ use cumulus_primitives_core::relay_chain::{
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::HeaderFor;
 use sp_core::H256;
+use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Header;
 use sp_runtime::traits::One;
 use sp_runtime::traits::Zero;
@@ -549,8 +550,6 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
 pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent::Config> {
-    /// Active validators. Validators should be declared prior to all other setup.
-    validators: Option<IndexedVec<ValidatorIndex, ValidatorId>>,
     /// Starting block number; we expect it to get incremented on session setup.
     block_number: BlockNumberFor<T>,
     /// Paras here will both be backed in the inherent data and already occupying a core (which is
@@ -577,7 +576,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// of the functions in this implementation.
     pub(crate) fn new() -> Self {
         ParasInherentTestBuilder {
-            validators: None,
             block_number: Zero::zero(),
             backed_and_concluding_paras: Default::default(),
             backed_in_inherent_paras: Default::default(),
@@ -672,10 +670,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
     /// Number of the relay parent block.
     fn relay_parent_number(&self) -> u32 {
-        (self.block_number - One::one())
+        (Self::block_number() - One::one())
             .try_into()
             .map_err(|_| ())
-            .expect("self.block_number is u32")
+            .expect("Self::block_number() is u32")
     }
 
     /// Create backed candidates for `cores_with_backed_candidates`. You need these cores to be
@@ -712,12 +710,12 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         // Advance core index.
                         current_core_idx += 1;
                         let group_idx =
-                            Self::group_assigned_to_core(core_idx, self.block_number).unwrap();
+                            Self::group_assigned_to_core(core_idx, Self::block_number()).unwrap();
 
                         // This generates a pair and adds it to the keystore, returning just the
                         // public.
                         let collator_public = CollatorId::generate_pair(None);
-                        let header = Self::header(self.block_number);
+                        let header = Self::header(Self::block_number());
                         let relay_parent = header.hash();
 
                         // Set the head data so it can be used while validating the signatures on
@@ -791,7 +789,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                     public,
                                     CompactStatement::Valid(candidate_hash),
                                     &SigningContext {
-                                        parent_hash: Self::header(self.block_number).hash(),
+                                        parent_hash: Self::header(Self::block_number()).hash(),
                                         session_index: Session::current_index(),
                                     },
                                     *val_idx,
@@ -872,10 +870,12 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// `backed_and_concluding_paras.len() + dispute_sessions.len() + backed_in_inherent_paras` must
     /// be less than the max number of cores.
     pub(crate) fn build(self) -> ParachainsInherentData<HeaderFor<T>> {
-        let validators = self
+        let current_session = runtime_parachains::shared::CurrentSessionIndex::<T>::get();
+        // We need to refetch validators since they have been shuffled.
+        let validators = runtime_parachains::session_info::Sessions::<T>::get(current_session)
+            .unwrap()
             .validators
-            .as_ref()
-            .expect("must have some validators prior to calling");
+            .clone();
 
         let max_cores = self.max_cores() as usize;
 
@@ -897,7 +897,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                     public,
                     availability_bitvec.clone(),
                     &SigningContext {
-                        parent_hash: Self::header(self.block_number).hash(),
+                        parent_hash: Self::header(Self::block_number()).hash(),
                         session_index: Session::current_index(),
                     },
                     ValidatorIndex(i as u32),
@@ -911,7 +911,11 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             bitfields,
             backed_candidates,
             disputes: vec![],
-            parent_header: Self::header(self.block_number),
+            parent_header: Self::header(Self::block_number()),
         }
+    }
+
+    pub(crate) fn block_number() -> BlockNumberFor<T> {
+        frame_system::Pallet::<T>::block_number()
     }
 }
