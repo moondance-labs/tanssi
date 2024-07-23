@@ -535,8 +535,8 @@ use cumulus_primitives_core::relay_chain::node_features::FeatureIndex;
 use cumulus_primitives_core::relay_chain::{
     AvailabilityBitfield, BackedCandidate, CandidateCommitments, CandidateDescriptor, CollatorId,
     CommittedCandidateReceipt, CompactStatement, CoreIndex, GroupIndex, HeadData, IndexedVec,
-    PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode, ValidatorId,
-    ValidatorIndex, ValidityAttestation,
+    InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
+    UncheckedSigned, ValidationCode, ValidatorId, ValidatorIndex, ValidityAttestation,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::HeaderFor;
@@ -645,10 +645,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
     /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
     /// that is concluding and `cores` is the total number of cores in the system.
-    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
+    fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
         let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
         for i in 0..cores {
-            if concluding_cores.contains(&(i as u32)) {
+            if i < used_cores {
                 bitfields.push(true);
             } else {
                 bitfields.push(false)
@@ -859,5 +859,55 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
     pub fn heads_insert(para_id: &ParaId, head_data: HeadData) {
         runtime_parachains::paras::Heads::<T>::insert(para_id, head_data);
+    }
+
+    /// Build a scenario for testing.
+    ///
+    /// Note that this API only allows building scenarios where the `backed_and_concluding_paras`
+    /// are mutually exclusive with the cores for disputes. So
+    /// `backed_and_concluding_paras.len() + dispute_sessions.len() + backed_in_inherent_paras` must
+    /// be less than the max number of cores.
+    pub(crate) fn build(self) -> ParachainsInherentData<HeaderFor<T>> {
+        let validators = self
+            .validators
+            .as_ref()
+            .expect("must have some validators prior to calling");
+
+        let max_cores = self.max_cores() as usize;
+
+        let used_cores =
+            self.backed_and_concluding_paras.len() + self.backed_in_inherent_paras.len();
+        assert!(used_cores <= max_cores);
+        let mut backed_in_inherent = BTreeMap::new();
+        backed_in_inherent.append(&mut self.backed_and_concluding_paras.clone());
+        backed_in_inherent.append(&mut self.backed_in_inherent_paras.clone());
+        let backed_candidates = self.create_backed_candidates(&backed_in_inherent);
+
+        let availability_bitvec = Self::availability_bitvec(used_cores, max_cores);
+
+        let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = validators
+            .iter()
+            .enumerate()
+            .map(|(i, public)| {
+                let unchecked_signed = UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
+                    public,
+                    availability_bitvec.clone(),
+                    &SigningContext {
+                        parent_hash: Self::header(self.block_number).hash(),
+                        session_index: Session::current_index(),
+                    },
+                    ValidatorIndex(i as u32),
+                );
+
+                unchecked_signed
+            })
+            .collect();
+
+        ParachainsInherentData {
+            bitfields,
+            backed_candidates,
+            disputes: vec![],
+            parent_header: Self::header(self.block_number),
+        }
     }
 }
