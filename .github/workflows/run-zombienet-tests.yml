@@ -59,10 +59,17 @@ jobs:
             ' test/moonwall.config.json | jq -c '.')
           fi          
           echo "Will run tests: $tests"
-          echo "::set-output name=tests::$tests"
+          if [ -z "$tests" ]; then
+            echo "No tests found. Exiting."
+            exit 1
+          fi
+
+          echo "tests=$(echo $tests | jq -c)" >> $GITHUB_ENV
+
   ####### Building binaries #######
   build:
     runs-on: self-hosted
+    needs: [ "get-tests" ]
     env:
       TMP_TARGET: "/tmp/target"
       CARGO_TARGET_DIR: "target"
@@ -125,7 +132,7 @@ jobs:
     needs: ["get-tests", "build"]
     strategy:
       matrix:
-        test_name: ${{ fromJson(needs.get-tests.outputs.tests) }}
+        test_name: ${{ fromJson(env.tests) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
