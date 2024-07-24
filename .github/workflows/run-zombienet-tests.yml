@@ -134,7 +134,7 @@ jobs:
   # Run each test as a separate job using a matrix strategy
   run-tests:
     runs-on: self-hosted
-    needs: [ "set-tags", "build" ]
+    needs: [ "get-tests", "build" ]
     strategy:
       matrix:
         test_name: ${{ fromJson(needs.get-tests.outputs.tests) }}
