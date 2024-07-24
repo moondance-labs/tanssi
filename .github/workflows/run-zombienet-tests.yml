@@ -1,6 +1,9 @@
 name: Manually run all zombienet tests
 
 on:
+  pull_request:
+    branches:
+      - *
   workflow_dispatch:
     inputs:
       test_name:
@@ -12,6 +15,7 @@ on:
         description: Foundation type to filter tests, select zombie to run all zombienet tests
         required: true
         type: choice
+        default: "zombie"
         options:
           - "*"
           - zombie
@@ -42,14 +46,14 @@ jobs:
         id: get_tests
         run: |
           # Read and filter the tests from the config file
-          if [ "${{ github.event.inputs.foundation_type }}" = "*" ]; then
-            tests=$(jq -r --arg regex "${{ github.event.inputs.test_name }}" '
+          if [ "${{ github.event.inputs.foundation_type || 'zombie' }}" = "*" ]; then
+            tests=$(jq -r --arg regex "${{ github.event.inputs.test_name || '*' }}" '
               .environments
               | map(select(.name | test($regex)))
               | map(.name)
             ' test/moonwall.config.json | jq -c '.')
           else
-            tests=$(jq -r --arg type "${{ github.event.inputs.foundation_type }}" --arg regex "${{ github.event.inputs.test_name }}" '
+            tests=$(jq -r --arg type "${{ github.event.inputs.foundation_type || 'zombie' }}" --arg regex "${{ github.event.inputs.test_name || '*' }}" '
               .environments
               | map(select(.foundation.type == $type))
               | map(select(.name | test($regex)))
