@@ -34,8 +34,8 @@ fn session_key_changes_are_reflected_after_two_sessions() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
 
             // let's assert that session keys in all pallets are this
             // Babe

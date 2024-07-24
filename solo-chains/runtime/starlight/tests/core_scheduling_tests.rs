@@ -68,33 +68,15 @@ fn test_cannot_propose_a_block_without_availability() {
 }
 
 use cumulus_primitives_core::relay_chain::ValidatorId;
-use sc_keystore::Keystore;
 use sc_keystore::LocalKeystore;
+use sp_keystore::{Keystore, KeystorePtr};
+use std::sync::Arc;
 fn validator_pubkeys(val_ids: &[Sr25519Keyring]) -> Vec<ValidatorId> {
     val_ids.iter().map(|v| v.public().into()).collect()
 }
 use keyring::Sr25519Keyring;
-use std::sync::Arc;
 #[test]
 fn test_should_have_availability_for_registered_parachain() {
-    let crypto_store = LocalKeystore::in_memory();
-    let crypto_store = Arc::new(crypto_store) as KeystorePtr;
-    let validators = vec![
-			Sr25519Keyring::Alice,
-			Sr25519Keyring::Bob,
-			Sr25519Keyring::Charlie,
-			Sr25519Keyring::Dave,
-		];
-	for validator in validators.iter() {
-		Keystore::sr25519_generate_new(
-			&*crypto_store,
-			cumulus_primitives_core::relay_chain::PARACHAIN_KEY_TYPE_ID,
-			Some(&validator.to_seed()),
-		)
-	    .unwrap();
-		}
-	let validator_public = validator_pubkeys(&validators);
-
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -122,6 +104,7 @@ fn test_should_have_availability_for_registered_parachain() {
             ..Default::default()
         })
         .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_keystore(Arc::new(LocalKeystore::in_memory()))
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -129,8 +112,8 @@ fn test_should_have_availability_for_registered_parachain() {
 			    = vec![(0u32, Session::validators().len() as u32)]
 				.into_iter()
 				.collect();
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
-            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
             
             assert!(
                 authorities_for_container(1000u32.into())

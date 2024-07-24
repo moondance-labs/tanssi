@@ -43,9 +43,12 @@ pub use starlight_runtime::{
     Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
+use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
+use std::sync::Arc;
 use sp_core::Pair;
 use cumulus_primitives_core::relay_chain::CollatorPair;
 use runtime_parachains::paras::{ParaKind, ParaGenesisArgs};
+use sp_keystore::KeystorePtr;
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
     let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
@@ -251,6 +254,7 @@ pub fn default_config() -> pallet_configuration::HostConfiguration {
     }
 }
 
+#[derive(Clone)]
 pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
@@ -267,6 +271,7 @@ pub struct ExtBuilder {
     relay_config: runtime_parachains::configuration::HostConfiguration::<BlockNumberFor<Runtime>>,
     own_para_id: Option<ParaId>,
     next_free_para_id: ParaId,
+    keystore: Option<KeystorePtr>
 }
 
 impl Default for ExtBuilder {
@@ -288,6 +293,7 @@ impl Default for ExtBuilder {
             relay_config: Default::default(),
             own_para_id: Default::default(),
             next_free_para_id: Default::default(),
+            keystore: None
         }
     }
 }
@@ -333,6 +339,12 @@ impl ExtBuilder {
     // Maybe change to with_collators_config?
     pub fn with_next_free_para_id(mut self, para_id: ParaId) -> Self {
         self.next_free_para_id = para_id;
+        self
+    }
+
+    // Maybe change to with_collators_config?
+    pub fn with_keystore(mut self, keystore: KeystorePtr) -> Self {
+        self.keystore = Some(keystore);
         self
     }
 
@@ -417,7 +429,7 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
                     (
                         account.clone(),
                         account,
@@ -468,7 +480,7 @@ impl ExtBuilder {
                     if validator_unique_accounts.contains(&account) {
                         None
                     } else {
-                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string(), None);
                         Some((
                             account.clone(),
                             account,
@@ -499,9 +511,11 @@ impl ExtBuilder {
     }
 
     pub fn build(self) -> sp_io::TestExternalities {
-        let t = self.build_storage();
+        let t = self.clone().build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
-
+        if let Some(keystore) = self.keystore.clone() {
+            ext.register_extension(KeystoreExt(keystore));
+        }
         ext.execute_with(|| {
             // Start block 1
             start_block();
@@ -829,6 +843,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             .map(|val_idx| {
                                 println!("signing validator");
                                 let public = validators_shuffled.get(*val_idx).unwrap();
+                                println!("after {:?}", public);
+                                let incorrect_signature = public
+                                .sign(&vec![1, 2, 3]);
+                                println!("error {:?}", incorrect_signature);
                                 let sig = UncheckedSigned::<CompactStatement>::benchmark_sign(
                                     public,
                                     CompactStatement::Valid(candidate_hash),
@@ -839,6 +857,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                     *val_idx,
                                 )
                                 .benchmark_signature();
+                                println!("after 2");
 
                                 ValidityAttestation::Explicit(sig.clone())
                             })

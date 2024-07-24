@@ -23,10 +23,11 @@ use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
-    sp_core::{sr25519, Pair, Public},
+    sp_core::{sr25519, Pair, Public, crypto::{KeyTypeId, key_types}, ByteArray},
     sp_runtime::traits::IdentifyAccount,
     sp_std::vec,
     sp_std::vec::Vec,
@@ -35,11 +36,20 @@ use {
     tp_traits::ParaId,
 };
 
+use sp_keystore::{Keystore, KeystorePtr};
+
 /// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
+fn get_from_seed<TPublic: Public>(seed: &str, add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>) -> <TPublic::Pair as Pair>::Public {
+    let secret_uri = format!("//{}", seed); 
+    let pair = TPublic::Pair::from_string(&secret_uri, None)
+        .expect("static values are valid; qed");
+    
+    let public = pair.public();
+
+    if let Some((keystore, key_type)) = add_to_keystore {
+        keystore.insert(key_type, &secret_uri, &public.to_raw_vec()).unwrap();
+    }
+    public
 }
 
 /// Helper function to generate an account ID from seed
@@ -47,7 +57,7 @@ fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
     AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+    AccountPublic::from(get_from_seed::<TPublic>(seed, None)).into_account()
 }
 
 #[derive(Clone, Debug)]
@@ -64,8 +74,8 @@ pub struct AuthorityKeys {
 }
 
 /// Helper function to generate stash, controller and session key from seed
-pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
-    let keys = get_authority_keys_from_seed_no_beefy(seed);
+pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) -> AuthorityKeys {
+    let keys = get_authority_keys_from_seed_no_beefy(seed, keystore);
 
     AuthorityKeys {
         stash: keys.0,
@@ -75,7 +85,7 @@ pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
         para_validator: keys.4,
         para_assignment: keys.5,
         authority_discovery: keys.6,
-        beefy: get_from_seed::<BeefyId>(seed),
+        beefy: get_from_seed::<BeefyId>(seed, None),
         nimbus: get_aura_id_from_seed(seed),
     }
 }
@@ -91,6 +101,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 /// Helper function to generate stash, controller and session key from seed
 fn get_authority_keys_from_seed_no_beefy(
     seed: &str,
+    keystore: Option<&KeystorePtr>
 ) -> (
     AccountId,
     AccountId,
@@ -103,11 +114,11 @@ fn get_authority_keys_from_seed_no_beefy(
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_from_seed::<BabeId>(seed, keystore.map(|k| (k, key_types::BABE))),
+        get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
+        get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
+        get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
+        get_from_seed::<AuthorityDiscoveryId>(seed, keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY))),
     )
 }
 
@@ -220,7 +231,7 @@ fn starlight_testnet_genesis(
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
     let invulnerables: Vec<_> = invulnerables
         .iter()
-        .map(|seed| get_authority_keys_from_seed(seed))
+        .map(|seed| get_authority_keys_from_seed(seed, None))
         .collect();
 
     let para_ids: Vec<_> = container_chains
@@ -535,7 +546,7 @@ pub fn starlight_development_config_genesis(
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
-        Vec::from([get_authority_keys_from_seed("Alice")]),
+        Vec::from([get_authority_keys_from_seed("Alice", None)]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
         container_chains,
@@ -554,8 +565,8 @@ pub fn starlight_local_testnet_genesis(
 ) -> serde_json::Value {
     starlight_testnet_genesis(
         Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
+            get_authority_keys_from_seed("Alice", None),
+            get_authority_keys_from_seed("Bob", None),
         ]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
