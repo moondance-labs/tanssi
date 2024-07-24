@@ -69,7 +69,7 @@ jobs:
 
       - name: Set tests output
         id: set_tests
-        run: echo "tests=${{ env.tests }}" >> $GITHUB_ENV
+        run: echo "tests=${{ env.tests }}" >> $GITHUB_OUTPUT
 
   ####### Building binaries #######
   build:
