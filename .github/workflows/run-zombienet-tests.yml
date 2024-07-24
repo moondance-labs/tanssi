@@ -2,8 +2,6 @@ name: Manually run all zombienet tests
 
 on:
   pull_request:
-    branches:
-      - *
   workflow_dispatch:
     inputs:
       test_name:
