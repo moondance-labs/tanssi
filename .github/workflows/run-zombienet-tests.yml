@@ -25,6 +25,8 @@ jobs:
   # Preliminary job to get the list of tests
   get-tests:
     runs-on: self-hosted
+    outputs:
+      tests: ${{ steps.get_tests.outputs.tests }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +59,7 @@ jobs:
               | map(select(.name | test($regex)))
               | map(.name)
             ' test/moonwall.config.json | jq -c '.')
-          fi          
+          fi
           echo "Will run tests: $tests"
           if [ -z "$tests" ]; then
             echo "No tests found. Exiting."
@@ -131,7 +133,7 @@ jobs:
     needs: ["get-tests", "build"]
     strategy:
       matrix:
-        test_name: ${{ fromJson(env.tests) }}
+        test_name: ${{ fromJson(needs.get-tests.outputs.tests) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
