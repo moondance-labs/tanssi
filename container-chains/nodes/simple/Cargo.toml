@@ -36,6 +36,7 @@ container-chain-template-simple-runtime = { workspace = true, features = [ "std"
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
+tc-service-container-chain = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }

@@ -1913,6 +1913,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-rpc-interface",
+ "tc-service-container-chain",
  "tokio",
  "url",
 ]
