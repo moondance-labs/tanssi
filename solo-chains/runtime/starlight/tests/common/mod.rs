@@ -38,17 +38,17 @@ use {
     starlight_runtime::MaxLengthTokenSymbol,
 };
 
+use cumulus_primitives_core::relay_chain::CollatorPair;
+use runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
+use sp_core::Pair;
+use sp_keystore::KeystorePtr;
+use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
     Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
-use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
 use std::sync::Arc;
-use sp_core::Pair;
-use cumulus_primitives_core::relay_chain::CollatorPair;
-use runtime_parachains::paras::{ParaKind, ParaGenesisArgs};
-use sp_keystore::KeystorePtr;
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
     let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
@@ -191,6 +191,10 @@ pub fn start_block() {
     Babe::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
+    let maybe_mock_inherent = take_new_inherent_data();
+    if let Some(mock_inherent_data) = maybe_mock_inherent {
+        set_paras_inherent(mock_inherent_data);
+    }
 }
 
 pub fn end_block() {
@@ -268,10 +272,10 @@ pub struct ExtBuilder {
     para_ids: Vec<ParaRegistrationParams>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
-    relay_config: runtime_parachains::configuration::HostConfiguration::<BlockNumberFor<Runtime>>,
+    relay_config: runtime_parachains::configuration::HostConfiguration<BlockNumberFor<Runtime>>,
     own_para_id: Option<ParaId>,
     next_free_para_id: ParaId,
-    keystore: Option<KeystorePtr>
+    keystore: Option<KeystorePtr>,
 }
 
 impl Default for ExtBuilder {
@@ -293,7 +297,7 @@ impl Default for ExtBuilder {
             relay_config: Default::default(),
             own_para_id: Default::default(),
             next_free_para_id: Default::default(),
-            keystore: None
+            keystore: None,
         }
     }
 }
@@ -331,7 +335,10 @@ impl ExtBuilder {
     }
 
     // Maybe change to with_collators_config?
-    pub fn with_relay_config(mut self, relay_config: runtime_parachains::configuration::HostConfiguration::<BlockNumberFor<Runtime>>) -> Self {
+    pub fn with_relay_config(
+        mut self,
+        relay_config: runtime_parachains::configuration::HostConfiguration<BlockNumberFor<Runtime>>,
+    ) -> Self {
         self.relay_config = relay_config;
         self
     }
@@ -384,17 +391,20 @@ impl ExtBuilder {
         // We register mock wasm
         runtime_parachains::paras::GenesisConfig::<Runtime> {
             paras: self
-            .para_ids
-            .iter()
-            .cloned()
-            .map(|registered_para| {
-                (registered_para.para_id.into(), ParaGenesisArgs {
-                    validation_code: mock_validation_code(), 
-                    para_kind: ParaKind::Parachain,
-                    genesis_head: HeadData::from(vec![0u8])
+                .para_ids
+                .iter()
+                .cloned()
+                .map(|registered_para| {
+                    (
+                        registered_para.para_id.into(),
+                        ParaGenesisArgs {
+                            validation_code: mock_validation_code(),
+                            para_kind: ParaKind::Parachain,
+                            genesis_head: HeadData::from(vec![0u8]),
+                        },
+                    )
                 })
-            })
-            .collect(),
+                .collect(),
             ..Default::default()
         }
         .assimilate_storage(&mut t)
@@ -417,7 +427,7 @@ impl ExtBuilder {
         .unwrap();
 
         runtime_parachains::configuration::GenesisConfig::<Runtime> {
-            config: self.relay_config
+            config: self.relay_config,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -429,7 +439,8 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys = get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
+                    let authority_keys =
+                        get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
                     (
                         account.clone(),
                         account,
@@ -480,7 +491,8 @@ impl ExtBuilder {
                     if validator_unique_accounts.contains(&account) {
                         None
                     } else {
-                        let authority_keys = get_authority_keys_from_seed(&account.to_string(), None);
+                        let authority_keys =
+                            get_authority_keys_from_seed(&account.to_string(), None);
                         Some((
                             account.clone(),
                             account,
@@ -560,23 +572,33 @@ pub const FERDIE: [u8; 32] = [9u8; 32];
 
 fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
     let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
-        frame_support::storage::unhashed::take(b"__mock_new_inherent_data");
+        frame_support::storage::unhashed::take(b"ParasInherent");
 
     data
 }
 
-fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
-    frame_support::storage::unhashed::put(b"__mock_new_inherent_data", &Some(data));
+pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
+    frame_support::storage::unhashed::put(b"ParasInherent", &data);
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
 pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
+    // In order for this inherent to work, we need to match the parent header
+    // the parent header does not play a significant role in the rest of the framework so
+    // we are simply going to mock it
+    System::set_parent_hash(data.parent_header.hash());
+    let validation_code_hash =
+        runtime_parachains::paras::CurrentCodeHash::<Runtime>::get(ParaId::from(1000u32));
     assert_ok!(
         RuntimeCall::ParaInherent(parachains_paras_inherent::Call::<Runtime>::enter { data })
             .dispatch(inherent_origin())
     );
+    frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
+        b"ParaInherent",
+        b"Included",
+    ));
 }
 
 use bitvec::prelude::BitVec;
@@ -734,7 +756,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         &self,
         paras_with_backed_candidates: &BTreeMap<u32, u32>,
     ) -> Vec<BackedCandidate<T::Hash>> {
-        println!("creating backed candidates");
         let current_session = runtime_parachains::shared::CurrentSessionIndex::<T>::get();
         // We need to refetch validators since they have been shuffled.
         let validators_shuffled =
@@ -744,7 +765,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                 .clone();
 
         let config = runtime_parachains::configuration::ActiveConfig::<T>::get();
-
         let mut current_core_idx = 0u32;
         paras_with_backed_candidates
             .iter()
@@ -752,7 +772,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                 assert!(*num_votes <= validators_shuffled.len() as u32);
 
                 let para_id = ParaId::from(*seed);
-                let mut prev_head = None;
+                let prev_head_non_mut = runtime_parachains::paras::Heads::<T>::get(para_id);
+                let mut prev_head = prev_head_non_mut.unwrap_or(Self::mock_head_data());
                 // How many chained candidates we want to build ?
                 (0..1)
                     .map(|chain_idx| {
@@ -760,12 +781,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         // Advance core index.
                         current_core_idx += 1;
                         let group_idx =
-                            Self::group_assigned_to_core(core_idx, Self::block_number()).unwrap_or_else(|| panic!("Validator group not assigned to core {:?}", core_idx));
-                        // This generates a pair and adds it to the keystore, returning just the
-                        // public.
-                        println!("group idx");
-
-                        println!("group idx after");
+                            Self::group_assigned_to_core(core_idx, Self::block_number())
+                                .unwrap_or_else(|| {
+                                    panic!("Validator group not assigned to core {:?}", core_idx)
+                                });
 
                         let header = Self::header(Self::block_number());
                         let relay_parent = header.hash();
@@ -776,23 +795,22 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                         if chain_idx == 0 {
                             // Only first parahead of the chain needs to be set in storage.
-                            Self::heads_insert(&para_id, head_data.clone());
+                            Self::heads_insert(&para_id, prev_head.clone());
                         } else {
                             // Make each candidate head data unique to avoid cycles.
                             head_data.0[0] = chain_idx;
                         }
 
-                        let persisted_validation_data_hash = PersistedValidationData::<H256> {
+                        let persisted_validation_data = PersistedValidationData::<T::Hash> {
                             // To form a chain we set parent head to previous block if any, or
                             // default to what is in storage already setup.
-                            parent_head: prev_head.take().unwrap_or(head_data.clone()),
-                            relay_parent_number: self.relay_parent_number(),
+                            parent_head: prev_head.clone(),
+                            relay_parent_number: self.relay_parent_number() + 1,
                             relay_parent_storage_root: Default::default(),
                             max_pov_size: config.max_pov_size,
-                        }
-                        .hash();
+                        };
 
-                        prev_head = Some(head_data.clone());
+                        let persisted_validation_data_hash = persisted_validation_data.hash();
 
                         let pov_hash = Default::default();
                         let validation_code_hash = mock_validation_code().hash();
@@ -804,7 +822,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 &pov_hash,
                                 &validation_code_hash,
                             );
-                        println!("sigining collator");
 
                         let collator_pair = CollatorPair::generate().0;
 
@@ -821,43 +838,38 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 pov_hash,
                                 erasure_root: Default::default(),
                                 signature,
-                                para_head: head_data.hash(),
+                                para_head: prev_head.hash().clone(),
                                 validation_code_hash,
                             },
                             commitments: CandidateCommitments::<u32> {
                                 upward_messages: Default::default(),
                                 horizontal_messages: Default::default(),
                                 new_validation_code: None,
-                                head_data,
+                                head_data: prev_head.clone(),
                                 processed_downward_messages: 0,
-                                hrmp_watermark: self.relay_parent_number(),
+                                hrmp_watermark: self.relay_parent_number() + 1,
                             },
                         };
 
-                        println!("after signing collator");
                         let candidate_hash = candidate.hash();
 
                         let validity_votes: Vec<_> = group_validators
                             .iter()
                             .take(*num_votes as usize)
                             .map(|val_idx| {
-                                println!("signing validator");
                                 let public = validators_shuffled.get(*val_idx).unwrap();
-                                println!("after {:?}", public);
-                                let incorrect_signature = public
-                                .sign(&vec![1, 2, 3]);
-                                println!("error {:?}", incorrect_signature);
+
+                                let signature_ctx = SigningContext {
+                                    parent_hash: Self::header(Self::block_number()).hash(),
+                                    session_index: Session::current_index(),
+                                };
                                 let sig = UncheckedSigned::<CompactStatement>::benchmark_sign(
                                     public,
                                     CompactStatement::Valid(candidate_hash),
-                                    &SigningContext {
-                                        parent_hash: Self::header(Self::block_number()).hash(),
-                                        session_index: Session::current_index(),
-                                    },
+                                    &signature_ctx,
                                     *val_idx,
                                 )
                                 .benchmark_signature();
-                                println!("after 2");
 
                                 ValidityAttestation::Explicit(sig.clone())
                             })
@@ -896,10 +908,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         }
 
         let validator_groups = runtime_parachains::scheduler::ValidatorGroups::<T>::get();
-
-        println!("validator_groups {:?}", validator_groups);
-        println!("session_start_block {:?}", session_start_block);
-        println!("config {:?}", config);
 
         if core.0 as usize >= validator_groups.len() {
             return None;
@@ -960,7 +968,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .iter()
             .enumerate()
             .map(|(i, public)| {
-                println!("about to sign");
                 let unchecked_signed = UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
                     public,
                     availability_bitvec.clone(),

@@ -56,11 +56,13 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             run_to_block(2);
             // We change invulnerables
             // We first need to set the keys
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
 
             // Set CHARLIE and DAVE keys
-            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
             let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
 
             assert_ok!(Session::set_keys(
@@ -159,9 +161,11 @@ fn test_collators_per_container() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
-            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
 
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
@@ -240,7 +244,8 @@ fn test_session_keys_with_authority_assignment() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
 
             let alice_keys_2 = get_authority_keys_from_seed("ALICE2", None);
@@ -413,7 +418,8 @@ fn test_session_keys_with_authority_mapping() {
             let key_mapping_session_0 = TanssiAuthorityMapping::authority_id_mapping(0).unwrap();
             let key_mapping_session_1 = TanssiAuthorityMapping::authority_id_mapping(1).unwrap();
 
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
 
             let alice_keys_2 = get_authority_keys_from_seed("ALICE2", None);
@@ -576,7 +582,8 @@ fn test_authors_paras_inserted_a_posteriori() {
         .execute_with(|| {
             run_to_block(2);
 
-            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
 
             assert_eq!(

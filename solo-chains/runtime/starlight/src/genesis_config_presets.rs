@@ -27,7 +27,10 @@ use {
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
-    sp_core::{sr25519, Pair, Public, crypto::{KeyTypeId, key_types}, ByteArray},
+    sp_core::{
+        crypto::{key_types, KeyTypeId},
+        sr25519, ByteArray, Pair, Public,
+    },
     sp_runtime::traits::IdentifyAccount,
     sp_std::vec,
     sp_std::vec::Vec,
@@ -39,15 +42,19 @@ use {
 use sp_keystore::{Keystore, KeystorePtr};
 
 /// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str, add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>) -> <TPublic::Pair as Pair>::Public {
-    let secret_uri = format!("//{}", seed); 
-    let pair = TPublic::Pair::from_string(&secret_uri, None)
-        .expect("static values are valid; qed");
-    
+fn get_from_seed<TPublic: Public>(
+    seed: &str,
+    add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>,
+) -> <TPublic::Pair as Pair>::Public {
+    let secret_uri = format!("//{}", seed);
+    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+
     let public = pair.public();
 
     if let Some((keystore, key_type)) = add_to_keystore {
-        keystore.insert(key_type, &secret_uri, &public.to_raw_vec()).unwrap();
+        keystore
+            .insert(key_type, &secret_uri, &public.to_raw_vec())
+            .unwrap();
     }
     public
 }
@@ -101,7 +108,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 /// Helper function to generate stash, controller and session key from seed
 fn get_authority_keys_from_seed_no_beefy(
     seed: &str,
-    keystore: Option<&KeystorePtr>
+    keystore: Option<&KeystorePtr>,
 ) -> (
     AccountId,
     AccountId,
@@ -118,7 +125,10 @@ fn get_authority_keys_from_seed_no_beefy(
         get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
         get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
         get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
-        get_from_seed::<AuthorityDiscoveryId>(seed, keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY))),
+        get_from_seed::<AuthorityDiscoveryId>(
+            seed,
+            keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY)),
+        ),
     )
 }
 
