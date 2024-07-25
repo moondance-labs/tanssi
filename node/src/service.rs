@@ -19,14 +19,10 @@
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
-    cumulus_client_consensus_common::{
-        ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
-    },
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{
-        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, ParachainHostFunctions,
-        StartRelayChainTasksParams,
+        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
@@ -41,7 +37,6 @@ use {
         BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
         OrchestratorChainResult, PHash, PHeader,
     },
-    dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
@@ -51,25 +46,22 @@ use {
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
-    sc_basic_authorship::ProposerFactory,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
-    sc_consensus::{BasicQueue, BlockImport, ImportQueue},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_consensus::BasicQueue,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
+    sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
-    sp_consensus::{EnableProofRecording, SyncOracle},
-    sp_consensus_slots::{Slot, SlotDuration},
+    sp_consensus::SyncOracle,
+    sp_consensus_slots::Slot,
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{pin::Pin, sync::Arc, time::Duration},
-    substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::lookahead::{
             self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
@@ -92,21 +84,6 @@ use {
 mod mocked_relay_keys;
 
 type FullBackend = TFullBackend<Block>;
-
-/// Native executor type.
-pub struct ParachainNativeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = ParachainHostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        dancebox_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        dancebox_runtime::native_version()
-    }
-}
 
 pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
@@ -505,13 +482,6 @@ async fn start_node_impl(
     Ok((node_builder.task_manager, node_builder.client))
 }
 
-// Log string that will be shown for the container chain: `[Container-2000]`.
-// This needs to be a separate function because the `prefix_logs_with` macro
-// has trouble parsing expressions.
-fn container_log_str(para_id: ParaId) -> String {
-    format!("Container-{}", para_id)
-}
-
 /// Build the import queue for the parachain runtime (manual seal).
 fn build_manual_seal_import_queue(
     _client: Arc<ParachainClient>,
@@ -894,48 +864,6 @@ impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
         self.chain_type() == sc_chain_spec::ChainType::Development
     }
 }
-
-/// Orchestrator Parachain Block import. We cannot use the one in cumulus as it overrides the best
-/// chain selection rule
-#[derive(Clone)]
-pub struct OrchestratorParachainBlockImport<BI> {
-    inner: BI,
-}
-
-impl<BI> OrchestratorParachainBlockImport<BI> {
-    /// Create a new instance.
-    pub fn new(inner: BI) -> Self {
-        Self { inner }
-    }
-}
-
-/// We simply rely on the inner
-#[async_trait::async_trait]
-impl<BI> BlockImport<Block> for OrchestratorParachainBlockImport<BI>
-where
-    BI: BlockImport<Block> + Send,
-{
-    type Error = BI::Error;
-
-    async fn check_block(
-        &mut self,
-        block: sc_consensus::BlockCheckParams<Block>,
-    ) -> Result<sc_consensus::ImportResult, Self::Error> {
-        self.inner.check_block(block).await
-    }
-
-    async fn import_block(
-        &mut self,
-        params: sc_consensus::BlockImportParams<Block>,
-    ) -> Result<sc_consensus::ImportResult, Self::Error> {
-        let res = self.inner.import_block(params).await?;
-
-        Ok(res)
-    }
-}
-
-/// But we need to implement the ParachainBlockImportMarker trait to fullfil
-impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 /// Builder for a concrete relay chain interface, created from a full node. Builds
 /// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.

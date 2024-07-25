@@ -44,7 +44,7 @@ use {
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::FullPool,
     sp_api::ProvideRuntimeApi,
-    sp_consensus::{EnableProofRecording, Proposer, SyncOracle},
+    sp_consensus::EnableProofRecording,
     sp_consensus_aura::SlotDuration,
     sp_keystore::KeystorePtr,
     std::{sync::Arc, time::Duration},

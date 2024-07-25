@@ -21,7 +21,6 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
-    std::collections::BTreeMap,
 };
 
 pub mod dancebox;

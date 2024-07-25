@@ -15,15 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    dp_container_chain_genesis_data::json::properties_to_map,
     node_common::service::Sealing,
-    pallet_registrar_runtime_api::ContainerChainGenesisData,
-    sc_chain_spec::ChainSpec,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    sc_network::config::MultiaddrWithPeerId,
-    sp_runtime::Storage,
-    std::{collections::BTreeMap, path::PathBuf},
-    tc_service_container_chain::chain_spec::RawGenesisConfig,
+    std::path::PathBuf,
 };
 
 /// Sub-commands supported by the collator.

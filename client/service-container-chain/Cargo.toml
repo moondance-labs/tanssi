@@ -83,3 +83,21 @@ nimbus-primitives = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"dancebox-runtime/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"dancebox-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"sp-runtime/try-runtime",
+]
+
+fast-runtime = [ "dancebox-runtime/fast-runtime" ]
