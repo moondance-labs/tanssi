@@ -41,6 +41,7 @@ pallet-configuration = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
+tc-service-container-chain = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }
@@ -112,8 +113,10 @@ cumulus-client-pov-recovery = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+
 [dev-dependencies]
 sp-panic-handler = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

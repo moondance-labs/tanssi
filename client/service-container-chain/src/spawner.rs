@@ -24,7 +24,7 @@
 use {
     crate::{
         cli::ContainerChainCli,
-        container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
+        monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, ContainerChainClient, ParachainClient},
     },
     cumulus_primitives_core::ParaId,

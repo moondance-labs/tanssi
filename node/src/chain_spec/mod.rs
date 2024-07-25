@@ -27,46 +27,6 @@ use {
 pub mod dancebox;
 pub mod flashbox;
 
-/// Specialized `ChainSpec` for container chains that only allows raw genesis format.
-pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
-
-/// Helper type that implements the traits needed to be used as a "GenesisConfig",
-/// but whose implementation panics because we only expect it to be used with raw ChainSpecs,
-/// so it will never be serialized or deserialized.
-/// This is because container chains must use raw chain spec files where the "genesis"
-/// field only has one field: "raw".
-pub struct RawGenesisConfig {
-    pub storage_raw: BTreeMap<Vec<u8>, Vec<u8>>,
-}
-
-impl Serialize for RawGenesisConfig {
-    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        panic!("RawGenesisConfigDummy should never be serialized")
-    }
-}
-
-impl<'de> Deserialize<'de> for RawGenesisConfig {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        panic!("Attempted to read a non-raw ContainerChain ChainSpec.\nHelp: add `--raw` flag to `build-spec` command to generate a raw chain spec")
-    }
-}
-
-impl sp_runtime::BuildStorage for RawGenesisConfig {
-    fn assimilate_storage(&self, storage: &mut sp_core::storage::Storage) -> Result<(), String> {
-        storage
-            .top
-            .extend(self.storage_raw.iter().map(|(k, v)| (k.clone(), v.clone())));
-
-        Ok(())
-    }
-}
-
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
     TPublic::Pair::from_string(&format!("//{}", seed), None)

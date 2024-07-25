@@ -12,20 +12,11 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Substrate Parachain Node Template CLI
-
-#![warn(missing_docs)]
-
-mod chain_spec;
-mod cli;
-mod command;
-mod rpc;
-mod service;
-#[cfg(test)]
-mod tests;
-
-fn main() -> sc_cli::Result<()> {
-    command::run()
-}
+pub mod chain_spec;
+pub mod cli;
+pub mod monitor;
+pub mod rpc;
+pub mod service;
+pub mod spawner;
