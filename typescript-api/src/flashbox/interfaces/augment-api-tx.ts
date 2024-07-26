@@ -17,6 +17,7 @@ import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
+    DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeOriginCaller,
     FlashboxRuntimePreserversAssignementPaymentExtra,
     FlashboxRuntimePreserversAssignementPaymentWitness,
@@ -35,7 +36,6 @@ import type {
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
-    TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
@@ -1485,12 +1485,12 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, DpContainerChainGenesisDataContainerChainGenesisData]
             >;
             /** Register parathread */
             registerParathread: AugmentedSubmittable<
@@ -1498,12 +1498,12 @@ declare module "@polkadot/api-base/types/submittable" {
                     paraId: u32 | AnyNumber | Uint8Array,
                     slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData]
             >;
             /** Register parachain or parathread */
             registerWithRelayProof: AugmentedSubmittable<
@@ -1526,7 +1526,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
@@ -1537,7 +1537,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     u32,
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
-                    TpContainerChainGenesisDataContainerChainGenesisData
+                    DpContainerChainGenesisDataContainerChainGenesisData
                 ]
             >;
             setParaManager: AugmentedSubmittable<

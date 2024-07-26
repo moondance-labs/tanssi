@@ -18,19 +18,18 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use tp_container_chain_genesis_data::ContainerChainGenesisData;
-use {frame_support::traits::Get, scale_info::prelude::vec::Vec, tp_traits::SlotFrequency};
+pub use dp_container_chain_genesis_data::ContainerChainGenesisData;
+use {scale_info::prelude::vec::Vec, tp_traits::SlotFrequency};
 
 sp_api::decl_runtime_apis! {
-    pub trait RegistrarApi<ParaId, MaxLengthTokenSymbol> where
+    pub trait RegistrarApi<ParaId> where
         ParaId: parity_scale_codec::Codec,
-        MaxLengthTokenSymbol: Get<u32>,
     {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId>;
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>>;
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData>;
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>>;

@@ -43,6 +43,10 @@ import type {
     DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
+    DpContainerChainGenesisDataContainerChainGenesisData,
+    DpContainerChainGenesisDataContainerChainGenesisDataItem,
+    DpContainerChainGenesisDataProperties,
+    DpContainerChainGenesisDataTokenMetadata,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -166,6 +170,7 @@ import type {
     PalletRegistrarDepositInfo,
     PalletRegistrarError,
     PalletRegistrarEvent,
+    PalletRegistrarHoldReason,
     PalletRootTestingCall,
     PalletRootTestingEvent,
     PalletServicesPaymentCall,
@@ -261,10 +266,6 @@ import type {
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
-    TpContainerChainGenesisDataContainerChainGenesisData,
-    TpContainerChainGenesisDataContainerChainGenesisDataItem,
-    TpContainerChainGenesisDataProperties,
-    TpContainerChainGenesisDataTokenMetadata,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -357,6 +358,10 @@ declare module "@polkadot/types/types/registry" {
         DanceboxRuntimeXcmConfigRelayChain: DanceboxRuntimeXcmConfigRelayChain;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
+        DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
+        DpContainerChainGenesisDataContainerChainGenesisDataItem: DpContainerChainGenesisDataContainerChainGenesisDataItem;
+        DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
+        DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
@@ -480,6 +485,7 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
+        PalletRegistrarHoldReason: PalletRegistrarHoldReason;
         PalletRootTestingCall: PalletRootTestingCall;
         PalletRootTestingEvent: PalletRootTestingEvent;
         PalletServicesPaymentCall: PalletServicesPaymentCall;
@@ -575,10 +581,6 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
-        TpContainerChainGenesisDataContainerChainGenesisData: TpContainerChainGenesisDataContainerChainGenesisData;
-        TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
-        TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
-        TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;

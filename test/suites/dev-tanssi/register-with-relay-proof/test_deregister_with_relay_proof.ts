@@ -1,9 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { filterAndApply, KeyringPair } from "@moonwall/util";
+import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { jumpSessions, fetchStorageProofFromValidationData } from "../../../util/block";
-import { EventRecord } from "@polkadot/types/interfaces";
+import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
 
 describeSuite({
     id: "CT1101",
@@ -31,7 +30,7 @@ describeSuite({
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
                 const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
                             {
                                 key: "0x636f6465",
@@ -160,19 +159,11 @@ describeSuite({
                 expect(balanceBeforeAlice.reserved.toBigInt()).to.be.eq(expectedDepositValue);
                 expect(balanceAfterAlice.reserved.toBigInt()).to.be.eq(0n);
 
-                // Find a Deposit(100000000000000) event for bob address
                 const events = await polkadotJs.query.system.events();
-                const filtered = filterAndApply(events, "balances", ["Deposit"], ({ event }: EventRecord) =>
-                    (event.data as unknown as { amount: u128 }).toJSON()
+                const fee = extractFeeAuthor(events, bob.address).amount.toBigInt();
+                expect(balanceAfterBob.free.toBigInt()).toEqual(
+                    balanceBeforeBob.free.toBigInt() + expectedDepositValue - fee
                 );
-                const bobDepositEvent = filtered.find(
-                    (event) => event[0] === bob.address && BigInt(event[1]) === expectedDepositValue
-                );
-                if (!bobDepositEvent) {
-                    console.log("deposit events: ", filtered);
-                }
-                expect(bobDepositEvent).to.not.be.undefined;
-                expect(balanceAfterBob.free.toBigInt()).toBeGreaterThan(balanceBeforeBob.free.toBigInt());
 
                 // Checking that in session 2 paras are registered
                 await jumpSessions(context, 2);

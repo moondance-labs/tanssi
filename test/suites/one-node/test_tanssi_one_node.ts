@@ -156,7 +156,7 @@ async function registerEmptyParathread(api, manager, paraId) {
     paraId = parseInt(paraId);
 
     const emptyGenesisData = () => {
-        const g = api.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+        const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
             storage: [
                 {
                     key: "0x636f6465",

@@ -121,7 +121,7 @@ pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
-tp-container-chain-genesis-data = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
 
 # Moonkit
@@ -240,7 +240,7 @@ std = [
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
-	"tp-container-chain-genesis-data/std",
+	"dp-container-chain-genesis-data/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",

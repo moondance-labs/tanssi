@@ -35,7 +35,7 @@ use {
     sp_std::vec,
     sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::ParaId,
 };
 
@@ -219,8 +219,8 @@ fn default_parachains_host_configuration(
     }
 }
 use scale_info::prelude::string::String;
-pub type ContainerChainGenesisDataResult<T> =
-    Result<(ParaId, ContainerChainGenesisData<T>, Vec<Vec<u8>>), String>;
+pub type ContainerChainGenesisDataResult =
+    Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String>;
 
 #[test]
 fn default_parachains_host_configuration_is_consistent() {
@@ -233,7 +233,7 @@ fn starlight_testnet_genesis(
     endowed_accounts: Option<Vec<AccountId>>,
     container_chains: Vec<(
         ParaId,
-        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        ContainerChainGenesisData,
         Vec<Vec<u8>>,
     )>,
     invulnerables: Vec<String>,
@@ -295,7 +295,7 @@ fn starlight_testnet_genesis(
         "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
             invulnerables: invulnerables.iter().cloned().map(|x| x.stash.clone()).collect(),
         },
-        "containerRegistrar": crate::ContainerRegistrarConfig { para_ids },
+        "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
     })
 }
 
@@ -550,7 +550,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 pub fn starlight_development_config_genesis(
     container_chains: Vec<(
         ParaId,
-        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        ContainerChainGenesisData,
         Vec<Vec<u8>>,
     )>,
     invulnerables: Vec<String>,
@@ -568,7 +568,7 @@ pub fn starlight_development_config_genesis(
 pub fn starlight_local_testnet_genesis(
     container_chains: Vec<(
         ParaId,
-        ContainerChainGenesisData<crate::MaxLengthTokenSymbol>,
+        ContainerChainGenesisData,
         Vec<Vec<u8>>,
     )>,
     invulnerables: Vec<String>,

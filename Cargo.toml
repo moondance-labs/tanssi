@@ -87,8 +87,8 @@ tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = fals
 tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
+tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
@@ -108,9 +108,10 @@ pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancek
 pallet-xcm-executor-utils = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 
+dp-container-chain-genesis-data = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
+
 # Dancekit (client)
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0" }
-dc-orchestrator-chain-rpc-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0" }
 
 # Moonkit (wasm)
 async-backing-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.11.0", default-features = false }
@@ -206,6 +207,7 @@ sc-network-test = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 sc-network-transactions = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
 sc-offchain = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
 sc-rpc = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
+sc-rpc-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0", default-features = false }
 sc-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
 sc-sysinfo = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
 sc-telemetry = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0" }
@@ -342,6 +344,7 @@ similar-asserts = "1.1.0"
 tempfile = "3.1.0"
 thiserror = { version = "1.0.48" }
 tokio = { version = "1.32.0", default-features = false }
+tokio-stream = "0.1.15"
 tokio-util = { version = "0.7.10", default-features = false }
 tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.18" }

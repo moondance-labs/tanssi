@@ -26,7 +26,7 @@ use {
     sp_runtime::traits::Get,
     starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
     starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
-    tp_container_chain_genesis_data::{
+    dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
 };
@@ -245,9 +245,9 @@ pub fn starlight_local_testnet_config(
     .build())
 }
 
-fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+fn mock_container_chain_genesis_data(
     para_id: ParaId,
-) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),

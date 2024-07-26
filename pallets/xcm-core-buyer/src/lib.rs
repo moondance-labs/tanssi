@@ -118,10 +118,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_runtime::app_crypto::AppCrypto;
     use {
-        super::*, nimbus_primitives::SlotBeacon, pallet_xcm::ensure_response,
-        sp_runtime::RuntimeAppPublic,
+        super::*,
+        nimbus_primitives::SlotBeacon,
+        pallet_xcm::ensure_response,
+        sp_runtime::{app_crypto::AppCrypto, RuntimeAppPublic},
     };
 
     #[pallet::pallet]

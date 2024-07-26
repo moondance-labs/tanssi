@@ -1240,7 +1240,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1248,7 +1247,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureSigned<AccountId>;
     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
@@ -1257,6 +1255,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -2422,7 +2421,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
@@ -2445,7 +2444,7 @@ impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
         }
 

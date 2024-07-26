@@ -35,7 +35,6 @@ use {
         traits::{Dispatchable, SaturatedConversion},
         BuildStorage, Digest, DigestItem,
     },
-    starlight_runtime::MaxLengthTokenSymbol,
 };
 
 use cumulus_primitives_core::relay_chain::CollatorPair;
@@ -217,27 +216,13 @@ pub fn run_block() {
 #[derive(Default, Clone)]
 pub struct ParaRegistrationParams {
     para_id: u32,
-    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    genesis_data: ContainerChainGenesisData,
     block_production_credits: u32,
     collator_assignment_credits: u32,
 }
 
-impl
-    From<(
-        u32,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        u32,
-        u32,
-    )> for ParaRegistrationParams
-{
-    fn from(
-        value: (
-            u32,
-            ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            u32,
-            u32,
-        ),
-    ) -> Self {
+impl From<(u32, ContainerChainGenesisData, u32, u32)> for ParaRegistrationParams {
+    fn from(value: (u32, ContainerChainGenesisData, u32, u32)) -> Self {
         Self {
             para_id: value.0,
             genesis_data: value.1,
@@ -384,6 +369,7 @@ impl ExtBuilder {
                     (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
+            phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -548,7 +534,7 @@ pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),
