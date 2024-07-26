@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+pub use tc_service_container_chain::chain_spec::Extensions;
 use {
     dancebox_runtime::{AccountId, Signature},
     nimbus_primitives::NimbusId,
-    sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
-    serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
 };
@@ -31,23 +30,6 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
     TPublic::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
-}
-
-/// The extensions for the [`ChainSpec`].
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
-#[serde(deny_unknown_fields)]
-pub struct Extensions {
-    /// The relay chain of the Parachain.
-    pub relay_chain: String,
-    /// The id of the Parachain.
-    pub para_id: u32,
-}
-
-impl Extensions {
-    /// Try to get the extension from the given `ChainSpec`.
-    pub fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
-        sc_chain_spec::get_extension(chain_spec.extensions())
-    }
 }
 
 type AccountPublic = <Signature as Verify>::Signer;
