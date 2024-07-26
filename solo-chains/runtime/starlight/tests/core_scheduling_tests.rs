@@ -17,6 +17,7 @@
 #![cfg(test)]
 
 use frame_system::pallet_prelude::BlockNumberFor;
+use runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
 use sp_keystore::testing::MemoryKeystore;
 use sp_std::collections::btree_map::BTreeMap;
 use {
@@ -25,9 +26,10 @@ use {
     frame_support::assert_ok,
     sp_std::vec,
     starlight_runtime::{
-        CollatorConfiguration, ContainerRegistrar, OnDemandAssignmentProvider,
-        TanssiAuthorityMapping, TanssiInvulnerables,
+        CollatorConfiguration, ContainerRegistrar, OnDemandAssignmentProvider, Paras,
+        ParasSudoWrapper, TanssiAuthorityMapping, TanssiInvulnerables,
     },
+    tp_traits::SlotFrequency,
 };
 mod common;
 
@@ -141,7 +143,7 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
                 origin_of(ALICE.into()),
                 100 * UNIT,
                 1000u32.into()
-            ),);
+            ));
             run_block();
             // Now we try to create the block
             let cores_with_backed: BTreeMap<_, _> =
@@ -155,6 +157,212 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             set_new_inherent_data(inherent_data);
             // This should filter out, as we dont have any collators assigned to it
             run_block();
+        })
+}
+
+#[test]
+#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+// This test does not panic when producing the candidate, but when injecting it as backed
+// the inclusion pallet will filter it as it does not have a core assigned
+fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
+            BlockNumberFor<Runtime>,
+        > {
+            scheduler_params: SchedulerParams {
+                num_cores: 2,
+                // A very high number to avoid group rotation in tests
+                // Otherwise we get a 1 by default, which changes groups every block
+                group_rotation_frequency: 10000000,
+                ..Default::default()
+            },
+            async_backing_params: AsyncBackingParams {
+                allowed_ancestry_len: 1,
+                max_candidate_depth: 0,
+            },
+            minimum_backing_votes: 1,
+            max_head_data_size: 5,
+            ..Default::default()
+        })
+        .with_keystore(Arc::new(MemoryKeystore::new()))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Register
+            assert_ok!(ContainerRegistrar::register_parathread(
+                origin_of(ALICE.into()),
+                1000.into(),
+                SlotFrequency { min: 1, max: 1 },
+                empty_genesis_data()
+            ));
+            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
+                root_origin(),
+                1000.into()
+            ));
+            assert_ok!(ParasSudoWrapper::sudo_schedule_para_initialize(
+                root_origin(),
+                1000.into(),
+                ParaGenesisArgs {
+                    genesis_head: ParasInherentTestBuilder::<Runtime>::mock_head_data(),
+                    validation_code: mock_validation_code(),
+                    para_kind: ParaKind::Parathread,
+                },
+            ));
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                mock_validation_code()
+            ));
+            run_to_session(3);
+            // Now the parathread should be there
+            assert!(Paras::is_parathread(1000u32.into()));
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+
+            // Parathread should have collators
+            assert!(
+                authorities_for_container(1000u32.into()) == Some(vec![alice_keys.nimbus.clone()])
+            );
+
+            // We try producing without having an on-demand core, this should panic
+            let cores_with_backed: BTreeMap<_, _> =
+                vec![(1000u32, Session::validators().len() as u32)]
+                    .into_iter()
+                    .collect();
+
+            let inherent_data = ParasInherentTestBuilder::<Runtime>::new()
+                .set_backed_and_concluding_paras(cores_with_backed)
+                .build();
+            set_new_inherent_data(inherent_data);
+            // This should filter out, as we dont have an on-demand core bought
+            run_block();
+        })
+}
+
+#[test]
+// This test does not panic when producing the candidate, but when injecting it as backed
+// the inclusion pallet will filter it as it does not have a core assigned
+fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
+            BlockNumberFor<Runtime>,
+        > {
+            scheduler_params: SchedulerParams {
+                num_cores: 2,
+                // A very high number to avoid group rotation in tests
+                // Otherwise we get a 1 by default, which changes groups every block
+                group_rotation_frequency: 10000000,
+                ..Default::default()
+            },
+            async_backing_params: AsyncBackingParams {
+                allowed_ancestry_len: 1,
+                max_candidate_depth: 0,
+            },
+            minimum_backing_votes: 1,
+            max_head_data_size: 5,
+            ..Default::default()
+        })
+        .with_keystore(Arc::new(MemoryKeystore::new()))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Register
+            assert_ok!(ContainerRegistrar::register_parathread(
+                origin_of(ALICE.into()),
+                1000.into(),
+                SlotFrequency { min: 1, max: 1 },
+                empty_genesis_data()
+            ));
+            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
+                root_origin(),
+                1000.into()
+            ));
+            assert_ok!(ParasSudoWrapper::sudo_schedule_para_initialize(
+                root_origin(),
+                1000.into(),
+                ParaGenesisArgs {
+                    genesis_head: ParasInherentTestBuilder::<Runtime>::mock_head_data(),
+                    validation_code: mock_validation_code(),
+                    para_kind: ParaKind::Parathread,
+                },
+            ));
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                mock_validation_code()
+            ));
+            run_to_session(3);
+            // Now the parathread should be there
+            assert!(Paras::is_parathread(1000u32.into()));
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+
+            // Parathread should have collators
+            assert!(
+                authorities_for_container(1000u32.into()) == Some(vec![alice_keys.nimbus.clone()])
+            );
+
+            // let's buy core
+            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+                origin_of(ALICE.into()),
+                100 * UNIT,
+                1000u32.into()
+            ));
+            run_block();
+
+            // We try producing having an on-demand core
+            let cores_with_backed: BTreeMap<_, _> =
+                vec![(1000u32, Session::validators().len() as u32)]
+                    .into_iter()
+                    .collect();
+
+            let inherent_data = ParasInherentTestBuilder::<Runtime>::new()
+                .set_backed_and_concluding_paras(cores_with_backed)
+                .build();
+            set_new_inherent_data(inherent_data);
+
+            let availability_before = Runtime::candidates_pending_availability(1000u32.into());
+            // Before there is no availability as we never injected a candidate
+            assert_eq!(availability_before.len(), 0);
+            // This should work
+            run_block();
+            let availability_after = Runtime::candidates_pending_availability(1000u32.into());
+            // After the availability length is 1 as we have one candidate succesfully backed
+            assert_eq!(availability_after.len(), 1);
         })
 }
 

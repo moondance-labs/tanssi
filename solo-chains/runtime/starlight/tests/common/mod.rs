@@ -637,7 +637,7 @@ pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent
     _phantom: core::marker::PhantomData<T>,
 }
 
-fn mock_validation_code() -> ValidationCode {
+pub fn mock_validation_code() -> ValidationCode {
     ValidationCode(vec![1, 2, 3])
 }
 
@@ -733,7 +733,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         bitvec::bitvec![u8, bitvec::order::Lsb0; 1; validators as usize]
     }
 
-    fn mock_head_data() -> HeadData {
+    pub fn mock_head_data() -> HeadData {
         let max_head_size =
             runtime_parachains::configuration::ActiveConfig::<T>::get().max_head_data_size;
         HeadData(vec![0xFF; max_head_size as usize])
