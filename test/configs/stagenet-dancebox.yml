@@ -1,4 +1,4 @@
-endpoint: wss://fraa-stagebox-rpc.a.stagenet.tanssi.network
+endpoint: wss://stagebox.tanssi-dev.network
 block: ${env.STAGEBOX_BLOCK_NUMBER}
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
