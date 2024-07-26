@@ -974,7 +974,22 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
             Some(Assignment::Bulk(*para_id))
         } else {
-            parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(core_idx)
+            // We dont want to assign affinity to a parathread that has not collators assigned
+            // Even if we did they would need their own collators to produce blocks, but for now
+            // I prefer to forbid.
+            // In this case the parathread would have bought the core for nothing
+            let assignment =
+                parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(
+                    core_idx,
+                )?;
+            if assigned_collators
+                .container_chains
+                .contains_key(&assignment.para_id())
+            {
+                Some(assignment)
+            } else {
+                None
+            }
         }
     }
     fn report_processed(assignment: Assignment) {

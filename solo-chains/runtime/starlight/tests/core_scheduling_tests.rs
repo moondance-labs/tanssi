@@ -25,7 +25,8 @@ use {
     frame_support::assert_ok,
     sp_std::vec,
     starlight_runtime::{
-        CollatorConfiguration, ContainerRegistrar, TanssiAuthorityMapping, TanssiInvulnerables,
+        CollatorConfiguration, ContainerRegistrar, OnDemandAssignmentProvider,
+        TanssiAuthorityMapping, TanssiInvulnerables,
     },
 };
 mod common;
@@ -79,7 +80,7 @@ fn test_cannot_propose_a_block_without_availability() {
         .execute_with(|| {
             run_to_block(2);
             let cores_with_backed: BTreeMap<_, _> =
-                vec![(0u32, Session::validators().len() as u32)]
+                vec![(1000u32, Session::validators().len() as u32)]
                     .into_iter()
                     .collect();
 
@@ -87,6 +88,72 @@ fn test_cannot_propose_a_block_without_availability() {
                 .set_backed_and_concluding_paras(cores_with_backed)
                 .build();
             set_new_inherent_data(inherent_data);
+            run_block();
+        })
+}
+
+#[test]
+#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+// This test does not panic when producing the candidate, but when injecting it as backed
+// the inclusion pallet will filter it as it does not have a core assigned
+fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
+            BlockNumberFor<Runtime>,
+        > {
+            scheduler_params: SchedulerParams {
+                num_cores: 2,
+                // A very high number to avoid group rotation in tests
+                // Otherwise we get a 1 by default, which changes groups every block
+                group_rotation_frequency: 10000000,
+                ..Default::default()
+            },
+            async_backing_params: AsyncBackingParams {
+                allowed_ancestry_len: 1,
+                max_candidate_depth: 0,
+            },
+            minimum_backing_votes: 1,
+            max_head_data_size: 5,
+            ..Default::default()
+        })
+        .with_keystore(Arc::new(MemoryKeystore::new()))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Here para-id is not registered, but we can indeed buy a on-demand core for a non-existing para
+            // however we should not be able to produce for it
+            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+                origin_of(ALICE.into()),
+                100 * UNIT,
+                1000u32.into()
+            ),);
+            run_block();
+            // Now we try to create the block
+            let cores_with_backed: BTreeMap<_, _> =
+                vec![(1000u32, Session::validators().len() as u32)]
+                    .into_iter()
+                    .collect();
+
+            let inherent_data = ParasInherentTestBuilder::<Runtime>::new()
+                .set_backed_and_concluding_paras(cores_with_backed)
+                .build();
+            set_new_inherent_data(inherent_data);
+            // This should filter out, as we dont have any collators assigned to it
             run_block();
         })
 }
