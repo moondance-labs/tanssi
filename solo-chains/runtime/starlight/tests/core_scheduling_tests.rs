@@ -26,8 +26,8 @@ use {
     frame_support::assert_ok,
     sp_std::vec,
     starlight_runtime::{
-        CollatorConfiguration, ContainerRegistrar, OnDemandAssignmentProvider, Paras,
-        ParasSudoWrapper, TanssiAuthorityMapping, TanssiInvulnerables,
+        ContainerRegistrar, OnDemandAssignmentProvider, Paras,
+        ParasSudoWrapper
     },
     tp_traits::SlotFrequency,
 };
@@ -366,17 +366,9 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
         })
 }
 
-use cumulus_primitives_core::relay_chain::ValidatorId;
-use sc_keystore::LocalKeystore;
-use sp_keystore::{Keystore, KeystorePtr};
 use std::sync::Arc;
-fn validator_pubkeys(val_ids: &[Sr25519Keyring]) -> Vec<ValidatorId> {
-    val_ids.iter().map(|v| v.public().into()).collect()
-}
 use cumulus_primitives_core::relay_chain::AsyncBackingParams;
-use keyring::Sr25519Keyring;
 use primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11;
-use starlight_runtime::RuntimeEvent;
 
 #[test]
 fn test_should_have_availability_for_registered_parachain() {
@@ -422,10 +414,6 @@ fn test_should_have_availability_for_registered_parachain() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            let validators_shuffled = runtime_parachains::session_info::Sessions::<Runtime>::get(0)
-                .unwrap()
-                .validators
-                .clone();
 
             let cores_with_backed: BTreeMap<_, _> =
                 vec![(1000u32, Session::validators().len() as u32)]
