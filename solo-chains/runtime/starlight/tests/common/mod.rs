@@ -41,13 +41,12 @@ use cumulus_primitives_core::relay_chain::CollatorPair;
 use runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
 use sp_core::Pair;
 use sp_keystore::KeystorePtr;
-use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
+use sp_keystore::KeystoreExt;
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
     Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
-use std::sync::Arc;
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
     let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
@@ -575,8 +574,6 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentDa
     // the parent header does not play a significant role in the rest of the framework so
     // we are simply going to mock it
     System::set_parent_hash(data.parent_header.hash());
-    let validation_code_hash =
-        runtime_parachains::paras::CurrentCodeHash::<Runtime>::get(ParaId::from(1000u32));
     assert_ok!(
         RuntimeCall::ParaInherent(parachains_paras_inherent::Call::<Runtime>::enter { data })
             .dispatch(inherent_origin())
@@ -590,21 +587,17 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentDa
 use bitvec::prelude::BitVec;
 use cumulus_primitives_core::relay_chain::node_features::FeatureIndex;
 use cumulus_primitives_core::relay_chain::{
-    AvailabilityBitfield, BackedCandidate, CandidateCommitments, CandidateDescriptor, CollatorId,
-    CommittedCandidateReceipt, CompactStatement, CoreIndex, GroupIndex, HeadData, IndexedVec,
+    AvailabilityBitfield, BackedCandidate, CandidateCommitments, CandidateDescriptor,
+    CommittedCandidateReceipt, CompactStatement, CoreIndex, GroupIndex, HeadData,
     InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
-    UncheckedSigned, ValidationCode, ValidatorId, ValidatorIndex, ValidityAttestation,
+    UncheckedSigned, ValidationCode, ValidatorIndex, ValidityAttestation,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::HeaderFor;
-use sp_core::H256;
-use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Header;
 use sp_runtime::traits::One;
 use sp_runtime::traits::Zero;
-use sp_runtime::RuntimeAppPublic;
 use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
 
 pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent::Config> {
     /// Starting block number; we expect it to get incremented on session setup.
@@ -759,7 +752,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                 let para_id = ParaId::from(*seed);
                 let prev_head_non_mut = runtime_parachains::paras::Heads::<T>::get(para_id);
-                let mut prev_head = prev_head_non_mut.unwrap_or(Self::mock_head_data());
+                let prev_head = prev_head_non_mut.unwrap_or(Self::mock_head_data());
                 // How many chained candidates we want to build ?
                 (0..1)
                     .map(|chain_idx| {
