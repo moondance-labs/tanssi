@@ -817,7 +817,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 pov_hash,
                                 erasure_root: Default::default(),
                                 signature,
-                                para_head: prev_head.hash().clone(),
+                                para_head: prev_head.hash(),
                                 validation_code_hash,
                             },
                             commitments: CandidateCommitments::<u32> {
