@@ -18,7 +18,11 @@
 
 pub use polkadot_node_primitives::NODE_VERSION;
 
-use {clap::Parser, std::path::PathBuf};
+use {
+    clap::Parser,
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    std::path::PathBuf,
+};
 
 #[allow(missing_docs)]
 #[derive(Debug, Parser)]
@@ -77,9 +81,6 @@ pub struct BuildSpecCmd {
     pub invulnerable: Option<Vec<String>>,
 }
 
-use sc_cli::CliConfiguration;
-use sc_cli::NodeKeyParams;
-use sc_cli::SharedParams;
 impl CliConfiguration for BuildSpecCmd {
     fn shared_params(&self) -> &SharedParams {
         &self.base.shared_params

@@ -28,18 +28,18 @@ use {
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
+    scale_info::prelude::string::String,
     sp_core::{
         crypto::{key_types, KeyTypeId},
         sr25519, ByteArray, Pair, Public,
     },
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
     sp_std::vec,
     sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
 };
-
-use sp_keystore::{Keystore, KeystorePtr};
 
 /// Helper function to generate a crypto pair from seed
 fn get_from_seed<TPublic: Public>(
@@ -218,7 +218,6 @@ fn default_parachains_host_configuration(
         ..Default::default()
     }
 }
-use scale_info::prelude::string::String;
 pub type ContainerChainGenesisDataResult =
     Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String>;
 

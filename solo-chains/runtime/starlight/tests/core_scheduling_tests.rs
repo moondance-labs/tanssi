@@ -16,21 +16,20 @@
 
 #![cfg(test)]
 
-use frame_system::pallet_prelude::BlockNumberFor;
-use runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
-use sp_keystore::testing::MemoryKeystore;
-use sp_std::collections::btree_map::BTreeMap;
 use {
     crate::common::*,
-    cumulus_primitives_core::relay_chain::vstaging::SchedulerParams,
+    cumulus_primitives_core::relay_chain::{vstaging::SchedulerParams, AsyncBackingParams},
     frame_support::assert_ok,
-    sp_std::vec,
-    starlight_runtime::{
-        ContainerRegistrar, OnDemandAssignmentProvider, Paras,
-        ParasSudoWrapper
-    },
+    frame_system::pallet_prelude::BlockNumberFor,
+    primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
+    runtime_parachains::paras::{ParaGenesisArgs, ParaKind},
+    sp_keystore::testing::MemoryKeystore,
+    sp_std::{collections::btree_map::BTreeMap, vec},
+    starlight_runtime::{ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasSudoWrapper},
+    std::sync::Arc,
     tp_traits::SlotFrequency,
 };
+
 mod common;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -365,10 +364,6 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             assert_eq!(availability_after.len(), 1);
         })
 }
-
-use std::sync::Arc;
-use cumulus_primitives_core::relay_chain::AsyncBackingParams;
-use primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11;
 
 #[test]
 fn test_should_have_availability_for_registered_parachain() {

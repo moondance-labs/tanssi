@@ -26,8 +26,9 @@ use {
     polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
-    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
-    starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
+    starlight_runtime::genesis_config_presets::{
+        starlight_development_config_genesis, starlight_local_testnet_genesis,
+    },
 };
 
 #[cfg(any(feature = "starlight-native"))]

@@ -31,10 +31,11 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{ConstBool, FromContains},
     },
-    frame_system::EnsureNever,
+    frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     pallet_initializer as tanssi_initializer,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
+    parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
         slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
@@ -947,8 +948,6 @@ impl parachains_scheduler::Config for Runtime {
     type AssignmentProvider = CollatorAssignmentProvider;
 }
 
-use frame_system::pallet_prelude::BlockNumberFor;
-use parachains_scheduler::common::Assignment;
 pub struct CollatorAssignmentProvider;
 impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
     for CollatorAssignmentProvider

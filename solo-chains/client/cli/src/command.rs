@@ -23,7 +23,7 @@ use {
         benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
         HeaderBackend, IdentifyVariant, ParaId,
     },
-    sc_cli::SubstrateCli,
+    sc_cli::{CliConfiguration, SubstrateCli},
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
@@ -193,7 +193,6 @@ where
     })
 }
 
-use sc_cli::CliConfiguration;
 /// Parses polkadot specific CLI arguments and run the service.
 pub fn run() -> Result<()> {
     let cli: Cli = Cli::from_args();
