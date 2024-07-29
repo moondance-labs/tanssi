@@ -368,7 +368,7 @@ impl ExtBuilder {
                     (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
-            phantom: Default::default(),
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();
