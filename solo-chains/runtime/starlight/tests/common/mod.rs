@@ -40,8 +40,8 @@ use {
 use cumulus_primitives_core::relay_chain::CollatorPair;
 use runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
 use sp_core::Pair;
-use sp_keystore::KeystorePtr;
 use sp_keystore::KeystoreExt;
+use sp_keystore::KeystorePtr;
 pub use starlight_runtime::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
     Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
