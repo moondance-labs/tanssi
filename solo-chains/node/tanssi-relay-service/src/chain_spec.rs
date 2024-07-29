@@ -19,16 +19,15 @@
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
+    dp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+    },
     grandpa::AuthorityId as GrandpaId,
     polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
-    sp_runtime::traits::Get,
     starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
     starlight_runtime::genesis_config_presets::starlight_local_testnet_genesis,
-    dp_container_chain_genesis_data::{
-        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
-    },
 };
 
 #[cfg(any(feature = "starlight-native"))]
@@ -245,9 +244,7 @@ pub fn starlight_local_testnet_config(
     .build())
 }
 
-fn mock_container_chain_genesis_data(
-    para_id: ParaId,
-) -> ContainerChainGenesisData {
+fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),

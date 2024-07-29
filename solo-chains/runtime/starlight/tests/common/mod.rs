@@ -716,7 +716,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// Create a bitvec of `validators` length with all yes votes.
     fn validator_availability_votes_yes(validators: usize) -> BitVec<u8, bitvec::order::Lsb0> {
         // every validator confirms availability.
-        bitvec::bitvec![u8, bitvec::order::Lsb0; 1; validators as usize]
+        bitvec::bitvec![u8, bitvec::order::Lsb0; 1; validators]
     }
 
     pub fn mock_head_data() -> HeadData {

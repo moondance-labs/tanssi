@@ -24,6 +24,7 @@ use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
@@ -35,7 +36,6 @@ use {
     sp_std::vec,
     sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
-    dp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::ParaId,
 };
 
@@ -231,11 +231,7 @@ fn starlight_testnet_genesis(
     initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
-    container_chains: Vec<(
-        ParaId,
-        ContainerChainGenesisData,
-        Vec<Vec<u8>>,
-    )>,
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
@@ -548,11 +544,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 
 //development
 pub fn starlight_development_config_genesis(
-    container_chains: Vec<(
-        ParaId,
-        ContainerChainGenesisData,
-        Vec<Vec<u8>>,
-    )>,
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
@@ -566,11 +558,7 @@ pub fn starlight_development_config_genesis(
 
 //local_testnet
 pub fn starlight_local_testnet_genesis(
-    container_chains: Vec<(
-        ParaId,
-        ContainerChainGenesisData,
-        Vec<Vec<u8>>,
-    )>,
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
