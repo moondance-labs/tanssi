@@ -34,9 +34,9 @@ offchain-primitives = { workspace = true }
 sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
 sp-core = { workspace = true }
-sp-keystore = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
+sp-keystore = { workspace = true }
 sp-mmr-primitives = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -117,11 +117,11 @@ xcm-runtime-apis = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Tanssi
+dp-container-chain-genesis-data = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
-dp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
 
 # Moonkit
@@ -130,9 +130,9 @@ pallet-migrations = { workspace = true }
 [dev-dependencies]
 keyring = { workspace = true }
 remote-externalities = { workspace = true }
+sc-keystore = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
-sc-keystore = { workspace = true }
 sp-tracing = { workspace = true }
 sp-trie = { workspace = true }
 tiny-keccak = { workspace = true }
@@ -151,6 +151,7 @@ std = [
 	"bitvec/std",
 	"block-builder-api/std",
 	"cumulus-primitives-core/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -240,7 +241,6 @@ std = [
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
-	"dp-container-chain-genesis-data/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
