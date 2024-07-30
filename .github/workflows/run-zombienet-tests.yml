@@ -71,7 +71,6 @@ jobs:
         id: set_tests
         run: |
           include_tests=$(echo '${{ env.tests }}' | jq -c '{include: . | map({test_name: .})}')
-          echo "Formatted tests JSON: $include_tests"
           echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
   ####### Building binaries #######
@@ -146,13 +145,3 @@ jobs:
         uses: ./.github/workflow-templates/zombienet-tests
         with:
           test_name: ${{ matrix.test_name }}
-
-  # Debugging outputs and fromJSON
-  # TODO: remove before merging
-  job2:
-    needs: [ "get-tests" ]
-    runs-on: self-hosted
-    strategy:
-      matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
-    steps:
-      - run: echo "Matrix - Test ${{ matrix.test_name }}"
