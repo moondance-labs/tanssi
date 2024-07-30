@@ -27,6 +27,7 @@ pub use {
         relay_chain::{BlockNumber, Slot},
         ParaId,
     },
+    dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
 };
 use {
     core::marker::PhantomData,
@@ -340,5 +341,28 @@ where
             .ok_or(ArithmeticError::Overflow)?;
 
         Ok(deposit)
+    }
+}
+
+/// Trait to abstract away relay storage proofs, and allow the same logic to work on both parachains and solochains.
+/// Parachains should use relay storage proofs, while solochains should read from storage directly.
+pub trait GenericStorageReader {
+    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>;
+}
+
+impl GenericStorageReader for GenericStateProof<cumulus_primitives_core::relay_chain::Block> {
+    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr> {
+        GenericStateProof::read_entry(self, key, fallback)
+    }
+}
+
+/// Solo chain impl, read directly from storage
+pub struct NativeStorageReader;
+impl GenericStorageReader for NativeStorageReader {
+    fn read_entry<T: Decode>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr> {
+        match frame_support::storage::unhashed::get(key).or(fallback) {
+            Some(x) => Ok(x),
+            None => Err(ReadEntryErr::Absent),
+        }
     }
 }
