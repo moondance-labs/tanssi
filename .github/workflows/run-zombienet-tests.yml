@@ -138,8 +138,7 @@ jobs:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
     strategy:
-      matrix:
-        test_name: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
     steps:
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
