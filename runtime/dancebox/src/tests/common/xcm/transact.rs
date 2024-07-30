@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::common::xcm::*;
+use crate::tests::common::xcm::*;
 
 use {
     crate::{
         assert_expected_events,
-        common::xcm::mocknets::{
+        tests::common::xcm::mocknets::{
             DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
             FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate,
             SimpleTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet,
@@ -114,10 +114,10 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     let origin_kind = OriginKind::Superuser;
 
     let buy_execution_fee_amount =
-        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
+        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -176,12 +176,11 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     let require_weight_at_most = Weight::from_parts(1000000000, 200000);
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -227,7 +226,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender == ParentIsPreset::<dancebox_runtime::AccountId>::convert_location(&Location::parent()).unwrap(),
+                    sender: *sender == ParentIsPreset::<crate::AccountId>::convert_location(&Location::parent()).unwrap(),
                 },
             ]
         );
@@ -255,12 +254,11 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     let require_weight_at_most = Weight::from_parts(1000000000, 200000);
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -338,12 +336,11 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     let require_weight_at_most = Weight::from_parts(1000000000, 200000);
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 

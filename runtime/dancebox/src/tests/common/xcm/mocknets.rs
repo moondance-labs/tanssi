@@ -19,7 +19,8 @@ use {
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, rococo, simple_template, westend,
     },
-    crate::Junctions::X1,
+    crate::tests::common::ExtBuilder,
+    cumulus_primitives_core::Junctions::X1,
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
@@ -74,11 +75,11 @@ decl_test_relay_chains! {
 decl_test_parachains! {
     // Parachains
     pub struct Dancebox {
-        genesis = crate::ExtBuilder::default()
+        genesis = ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
-            (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::ALICE), 210_000 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
             (ParentIsPreset::<crate::AccountId>::convert_location(&Location::parent()).unwrap(), 100_000 * crate::UNIT),
             // And to sovereigns
@@ -97,23 +98,23 @@ decl_test_parachains! {
         .with_own_para_id(2000u32.into())
         .build_storage(),
         on_init = {
-            dancebox_runtime::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
+            crate::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
         },
-        runtime = dancebox_runtime,
+        runtime = crate,
         core = {
-            XcmpMessageHandler: dancebox_runtime::XcmpQueue,
-            LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: dancebox_runtime::ParachainInfo,
+            XcmpMessageHandler: crate::XcmpQueue,
+            LocationToAccountId: crate::xcm_config::LocationToAccountId,
+            ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
-            System: dancebox_runtime::System,
-            Balances: dancebox_runtime::Balances,
-            ParachainSystem: dancebox_runtime::ParachainSystem,
-            PolkadotXcm: dancebox_runtime::PolkadotXcm,
-            ForeignAssets:  dancebox_runtime::ForeignAssets,
-            AssetRate:  dancebox_runtime::AssetRate,
-            ForeignAssetsCreator: dancebox_runtime::ForeignAssetsCreator,
+            System: crate::System,
+            Balances: crate::Balances,
+            ParachainSystem: crate::ParachainSystem,
+            PolkadotXcm: crate::PolkadotXcm,
+            ForeignAssets:  crate::ForeignAssets,
+            AssetRate:  crate::AssetRate,
+            ForeignAssetsCreator: crate::ForeignAssetsCreator,
         }
     },
     pub struct FrontierTemplate {
@@ -159,11 +160,11 @@ decl_test_parachains! {
 
     // Parachains
     pub struct DanceboxRococo {
-        genesis = crate::ExtBuilder::default()
+        genesis = ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
-            (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::ALICE), 210_000 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
             (ParentIsPreset::<crate::AccountId>::convert_location(&Location::parent()).unwrap(), 100_000 * crate::UNIT),
             // And to sovereigns
@@ -181,8 +182,8 @@ decl_test_parachains! {
 
         ])
         .with_collators(vec![
-            (crate::AccountId::from(crate::ALICE), 210 * crate::UNIT),
-            (crate::AccountId::from(crate::BOB), 100 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::ALICE), 210 * crate::UNIT),
+            (crate::AccountId::from(crate::tests::common::BOB), 100 * crate::UNIT),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -197,23 +198,23 @@ decl_test_parachains! {
         .with_own_para_id(2000u32.into())
         .build_storage(),
         on_init = {
-            dancebox_runtime::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
+            crate::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
         },
-        runtime = dancebox_runtime,
+        runtime = crate,
         core = {
-            XcmpMessageHandler: dancebox_runtime::XcmpQueue,
-            LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: dancebox_runtime::ParachainInfo,
+            XcmpMessageHandler: crate::XcmpQueue,
+            LocationToAccountId: crate::xcm_config::LocationToAccountId,
+            ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
-            System: dancebox_runtime::System,
-            Balances: dancebox_runtime::Balances,
-            ParachainSystem: dancebox_runtime::ParachainSystem,
-            PolkadotXcm: dancebox_runtime::PolkadotXcm,
-            ForeignAssets:  dancebox_runtime::ForeignAssets,
-            AssetRate:  dancebox_runtime::AssetRate,
-            ForeignAssetsCreator: dancebox_runtime::ForeignAssetsCreator,
+            System: crate::System,
+            Balances: crate::Balances,
+            ParachainSystem: crate::ParachainSystem,
+            PolkadotXcm: crate::PolkadotXcm,
+            ForeignAssets:  crate::ForeignAssets,
+            AssetRate:  crate::AssetRate,
+            ForeignAssetsCreator: crate::ForeignAssetsCreator,
         }
     },
     pub struct FrontierTemplateRococo {
@@ -295,9 +296,9 @@ parameter_types! {
     pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
 
     // Dancebox
-    pub DanceboxSender: dancebox_runtime::AccountId = crate::AccountId::from(crate::ALICE);
-    pub DanceboxReceiver: dancebox_runtime::AccountId = crate::AccountId::from(crate::BOB);
-    pub DanceboxEmptyReceiver: dancebox_runtime::AccountId = DanceboxPara::account_id_of(RANDOM);
+    pub DanceboxSender: crate::AccountId = crate::AccountId::from(crate::tests::common::ALICE);
+    pub DanceboxReceiver: crate::AccountId = crate::AccountId::from(crate::tests::common::BOB);
+    pub DanceboxEmptyReceiver: crate::AccountId = DanceboxPara::account_id_of(RANDOM);
 
     // SimpleTemplate
     pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(ALICE);

@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,
                 SimpleTemplateReceiver, WestendRelay as Westend, WestendRelayPallet, WestendSender,

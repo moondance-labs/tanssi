@@ -17,18 +17,16 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
-                EthereumReceiver, FrontierTemplatePara as FrontierTemplate,
-                FrontierTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet,
-                WestendSender,
+                DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
+                WestendRelay as Westend, WestendRelayPallet, WestendSender,
             },
             *,
         },
     },
     frame_support::{
         assert_ok,
-        traits::tokens::ConversionToAssetBalance,
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
@@ -41,21 +39,21 @@ use {
 
 #[allow(unused_assignments)]
 #[test]
-fn receive_tokens_from_the_relay_to_frontier_template() {
+fn receive_tokens_from_the_relay_to_tanssi() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedLocation = Location {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1([Parachain(2001u32)].into()),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedLocation = Location {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1([AccountKey20 {
+        interior: X1([AccountId32 {
             network: None,
-            key: EthereumReceiver::get().into(),
+            id: DanceboxReceiver::get().into(),
         }]
         .into()),
     }
@@ -68,27 +66,25 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
     let westend_token_asset_id = 1u16;
 
     // Register the asset first
-    FrontierTemplate::execute_with(|| {
-        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
+    Dancebox::execute_with(|| {
+        let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 Location::parent(),
                 westend_token_asset_id,
-                EthereumReceiver::get(),
+                DanceboxReceiver::get(),
                 true,
                 1
             )
         );
 
-        assert_ok!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
-                root_origin,
-                bx!(1),
-                FixedU128::from_u32(1_000_000u32)
-            )
-        );
+        assert_ok!(<Dancebox as DanceboxParaPallet>::AssetRate::create(
+            root_origin,
+            bx!(1),
+            FixedU128::from_u32(1)
+        ));
     });
 
     // Send XCM message from Westend
@@ -96,8 +92,8 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
-                bx!(frontier_template_dest),
-                bx!(frontier_template_beneficiary),
+                bx!(dancebox_dest),
+                bx!(dancebox_beneficiary),
                 bx!(assets.into()),
                 fee_asset_item,
                 WeightLimit::Unlimited,
@@ -105,11 +101,11 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         );
     });
     // We should have received the tokens
-    FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
         assert_expected_events!(
-            FrontierTemplate,
+            Dancebox,
             vec![
                 RuntimeEvent::MessageQueue(
                     pallet_message_queue::Event::Processed {
@@ -124,45 +120,38 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
                     },
             ]
         );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        let native_balance =
-            container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(&outcome_weight);
-
-        // We need to convert this to asset-balance charged.
-        let asset_balance = <<FrontierTemplate as FrontierTemplateParaPallet>::AssetRate as ConversionToAssetBalance<_,_,_>>::to_asset_balance(
-            native_balance,
-            1
-        ).unwrap();
+        let native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 westend_token_asset_id,
-                &EthereumReceiver::get(),
+                &DanceboxReceiver::get(),
             ),
-            amount_to_send - asset_balance
+            amount_to_send - native_balance
         );
     });
 }
 
 #[test]
-fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template() {
+fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedLocation = Location {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1([Parachain(2001u32)].into()),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedLocation = Location {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1([AccountKey20 {
+        interior: X1([AccountId32 {
             network: None,
-            key: EthereumReceiver::get().into(),
+            id: DanceboxReceiver::get().into(),
         }]
         .into()),
     }
@@ -175,15 +164,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
     let westend_token_asset_id = 1u16;
 
     // Register the asset first
-    FrontierTemplate::execute_with(|| {
-        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
+    Dancebox::execute_with(|| {
+        let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 Location::parent(),
                 westend_token_asset_id,
-                EthereumReceiver::get(),
+                DanceboxReceiver::get(),
                 true,
                 1
             )
@@ -196,8 +185,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
-                bx!(frontier_template_dest),
-                bx!(frontier_template_beneficiary),
+                bx!(dancebox_dest),
+                bx!(dancebox_beneficiary),
                 bx!(assets.into()),
                 fee_asset_item,
                 WeightLimit::Unlimited,
@@ -205,26 +194,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         );
     });
     // We should have received the tokens
-    FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            FrontierTemplate,
-            vec![
-                RuntimeEvent::MessageQueue(
-                    pallet_message_queue::Event::Processed {
-                        success: false,
-                        ..
-                    }) => {
-                    },
-            ]
-        );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
+    Dancebox::execute_with(|| {
+        Dancebox::assert_dmp_queue_incomplete(None);
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 westend_token_asset_id,
-                &EthereumReceiver::get(),
+                &DanceboxReceiver::get(),
             ),
             0
         );
@@ -236,17 +214,17 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
-    let frontier_template_dest: VersionedLocation = Location {
+    let dancebox_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1([Parachain(2001u32)].into()),
+        interior: X1([Parachain(2000u32)].into()),
     }
     .into();
 
-    let frontier_template_beneficiary: VersionedLocation = Location {
+    let dancebox_beneficiary: VersionedLocation = Location {
         parents: 0,
-        interior: X1([AccountKey20 {
+        interior: X1([AccountId32 {
             network: None,
-            key: EthereumReceiver::get().into(),
+            id: DanceboxReceiver::get().into(),
         }]
         .into()),
     }
@@ -263,8 +241,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
-                bx!(frontier_template_dest),
-                bx!(frontier_template_beneficiary),
+                bx!(dancebox_dest),
+                bx!(dancebox_beneficiary),
                 bx!(assets.into()),
                 fee_asset_item,
                 WeightLimit::Unlimited,
@@ -272,26 +250,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
         );
     });
     // We should have received the tokens
-    FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            FrontierTemplate,
-            vec![
-                RuntimeEvent::MessageQueue(
-                    pallet_message_queue::Event::Processed {
-                        success: false,
-                        ..
-                    }) => {
-                    },
-            ]
-        );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
+    Dancebox::execute_with(|| {
+        Dancebox::assert_dmp_queue_incomplete(None);
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 westend_token_asset_id,
-                &EthereumReceiver::get(),
+                &DanceboxReceiver::get(),
             ),
             0
         );

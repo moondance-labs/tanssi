@@ -17,12 +17,12 @@
 #![cfg(test)]
 
 use {
-    common::*,
-    cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
+    crate::tests::common::*,
+    crate::{
         xcm_config::ForeignAssetsInstance, RewardsCollatorCommission, StreamPayment,
         StreamPaymentAssetId, TimeUnit, TransactionPayment,
     },
+    cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
     frame_support::{
@@ -66,10 +66,6 @@ use {
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
 };
-
-mod common;
-
-const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
 fn genesis_balances() {
@@ -314,14 +310,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -390,12 +386,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys { nimbus: charlie_id },
+                crate::SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys { nimbus: dave_id },
+                crate::SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -725,7 +721,7 @@ fn test_paras_registered_but_not_enough_credits() {
                 0
             ));
             // Purchase 1 credit less that what is needed
-            let credits_1001 = dancebox_runtime::Period::get() - 1;
+            let credits_1001 = crate::Period::get() - 1;
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
@@ -804,7 +800,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 0
             ));
             // Purchase only enough credits for 1 session
-            let credits_1001 = dancebox_runtime::Period::get();
+            let credits_1001 = crate::Period::get();
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
@@ -1124,12 +1120,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys { nimbus: charlie_id },
+                crate::SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys { nimbus: dave_id },
+                crate::SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -1271,14 +1267,14 @@ fn test_consensus_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1362,14 +1358,14 @@ fn test_consensus_runtime_api_session_changes() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1382,7 +1378,7 @@ fn test_consensus_runtime_api_session_changes() {
             ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
-            let session_two_edge = dancebox_runtime::Period::get() * 2;
+            let session_two_edge = crate::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
@@ -1492,14 +1488,14 @@ fn test_consensus_runtime_api_next_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1512,7 +1508,7 @@ fn test_consensus_runtime_api_next_session() {
             ));
             assert_ok!(Invulnerables::add_invulnerable(root_origin(), DAVE.into()));
 
-            let session_two_edge = dancebox_runtime::Period::get() * 2;
+            let session_two_edge = crate::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
@@ -1897,10 +1893,7 @@ fn test_collator_assignment_rotation() {
 
 #[test]
 fn session_keys_key_type_id() {
-    assert_eq!(
-        dancebox_runtime::SessionKeys::key_ids(),
-        vec![NIMBUS_KEY_ID]
-    );
+    assert_eq!(crate::SessionKeys::key_ids(), vec![NIMBUS_KEY_ID]);
 }
 
 #[test]
@@ -1937,14 +1930,14 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -2034,14 +2027,14 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -2283,7 +2276,7 @@ fn check_well_known_keys() {
     // Tanssi storage. Since we cannot access the storages themselves,
     // we test the pallet prefix matches and then compute manually the full prefix.
     assert_eq!(
-        dancebox_runtime::PalletInfo::name::<AuthorityAssignment>(),
+        crate::PalletInfo::name::<AuthorityAssignment>(),
         Some("AuthorityAssignment")
     );
     assert_eq!(
@@ -2291,10 +2284,7 @@ fn check_well_known_keys() {
         frame_support::storage::storage_prefix(b"AuthorityAssignment", b"CollatorContainerChain")
     );
 
-    assert_eq!(
-        dancebox_runtime::PalletInfo::name::<Session>(),
-        Some("Session")
-    );
+    assert_eq!(crate::PalletInfo::name::<Session>(), Some("Session"));
     assert_eq!(
         well_known_keys::SESSION_INDEX,
         frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
@@ -2497,7 +2487,7 @@ fn test_staking_register_keys_after_joining() {
             let new_account_id = get_aura_id_from_seed(&new_account.to_string());
             assert_ok!(Session::set_keys(
                 origin_of(new_account.clone()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: new_account_id,
                 },
                 vec![]
@@ -3491,7 +3481,7 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3589,7 +3579,7 @@ fn test_pallet_session_limits_num_validators() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3671,7 +3661,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: bob_account_id,
                 },
                 vec![]
@@ -3679,7 +3669,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_account_id,
                 },
                 vec![]
@@ -3687,7 +3677,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3772,7 +3762,7 @@ fn test_reward_to_staking_candidate() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3972,7 +3962,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             let alice_new_key = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: alice_new_key,
                 },
                 vec![]
@@ -4113,7 +4103,7 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: bob_account_id,
                 },
                 vec![]
@@ -4121,7 +4111,7 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                crate::SessionKeys {
                     nimbus: charlie_account_id,
                 },
                 vec![]
@@ -4301,7 +4291,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 origin_of(ALICE.into()),
                 1001.into(),
                 block_credits_to_required_balance(
-                    dancebox_runtime::FreeBlockProductionCredits::get() - 1,
+                    crate::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             ));
@@ -4315,13 +4305,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(
                 balance_tank,
                 block_credits_to_required_balance(
-                    dancebox_runtime::FreeBlockProductionCredits::get() - 1,
+                    crate::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
-                dancebox_runtime::FreeBlockProductionCredits::get() - 1,
+                crate::FreeBlockProductionCredits::get() - 1,
                 1001.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
@@ -4342,7 +4332,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             let credits =
                 pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
                     .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
+            assert_eq!(credits, crate::FreeBlockProductionCredits::get());
         });
 }
 
@@ -4381,7 +4371,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             let credits =
                 pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
                     .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
+            assert_eq!(credits, crate::FreeBlockProductionCredits::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -4393,7 +4383,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                dancebox_runtime::FreeBlockProductionCredits::get()
+                crate::FreeBlockProductionCredits::get()
             );
             // Register again
             assert_ok!(Registrar::register(
@@ -4653,9 +4643,8 @@ fn test_ed_plus_block_credit_session_purchase_works() {
                 1001.into(),
                 0
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get(), 1001.into())
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+            let credits_1001 = block_credits_to_required_balance(crate::Period::get(), 1001.into())
+                + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -4750,10 +4739,9 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
                 1001.into(),
                 0
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get(), 1001.into())
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT
-                    - 1;
+            let credits_1001 = block_credits_to_required_balance(crate::Period::get(), 1001.into())
+                + crate::EXISTENTIAL_DEPOSIT
+                - 1;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -4820,8 +4808,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             ));
             // On reassignment the blocks credits needed should be enough for the current session and the next one
             let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+                block_credits_to_required_balance(crate::Period::get() * 2, 1001.into())
+                    + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -4927,8 +4915,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
                 0
             ));
             let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT
+                block_credits_to_required_balance(crate::Period::get() * 2, 1001.into())
+                    + crate::EXISTENTIAL_DEPOSIT
                     - 1;
 
             // Fill the tank
@@ -5023,11 +5011,10 @@ fn test_block_credits_with_purchase_can_be_combined() {
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
-                dancebox_runtime::Period::get()
+                crate::Period::get()
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(dancebox_runtime::Period::get(), 1001.into())
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+            let credits_1001 = block_credits_to_required_balance(crate::Period::get(), 1001.into())
+                + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -5164,7 +5151,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
                 0
             ));
             let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
-                + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+                + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -5259,7 +5246,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
                 0
             ));
             let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
-                + dancebox_runtime::EXISTENTIAL_DEPOSIT
+                + crate::EXISTENTIAL_DEPOSIT
                 - 1;
 
             // Fill the tank
@@ -5328,7 +5315,7 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             ));
             // We buy another session through the tank
             let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
-                + dancebox_runtime::EXISTENTIAL_DEPOSIT;
+                + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -5407,7 +5394,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             let collator_assignation_credits =
                 collator_assignment_credits_to_required_balance(2, 1001.into());
             let block_production_credits =
-                block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into());
+                block_credits_to_required_balance(crate::Period::get() * 2, 1001.into());
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -5415,7 +5402,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
                 1001.into(),
                 collator_assignation_credits
                     + block_production_credits
-                    + dancebox_runtime::EXISTENTIAL_DEPOSIT
+                    + crate::EXISTENTIAL_DEPOSIT
             ));
 
             // Assignment should happen after 2 sessions
@@ -5494,17 +5481,11 @@ fn test_migration_services_collator_assignment_payment() {
         let credits_1001 =
             pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1001))
                 .unwrap_or_default();
-        assert_eq!(
-            credits_1001,
-            dancebox_runtime::FreeCollatorAssignmentCredits::get()
-        );
+        assert_eq!(credits_1001, crate::FreeCollatorAssignmentCredits::get());
         let credits_1002 =
             pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1002))
                 .unwrap_or_default();
-        assert_eq!(
-            credits_1002,
-            dancebox_runtime::FreeCollatorAssignmentCredits::get()
-        );
+        assert_eq!(credits_1002, crate::FreeCollatorAssignmentCredits::get());
     });
 }
 
@@ -5674,7 +5655,7 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
             // If the block is full, the multiplier increases
             let before_multiplier = TransactionPayment::next_fee_multiplier();
             start_block();
-            let max_block_weights = dancebox_runtime::RuntimeBlockWeights::get();
+            let max_block_weights = crate::RuntimeBlockWeights::get();
             frame_support::storage::unhashed::put(
                 &frame_support::storage::storage_prefix(b"System", b"BlockWeight"),
                 &ConsumedWeight::new(|class| {
@@ -6013,7 +5994,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 fn test_migration_data_preservers_assignments() {
     ExtBuilder::default().build().execute_with(|| {
         use {
-            dancebox_runtime::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
+            crate::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
             frame_support::{
                 migration::{have_storage_value, put_storage_value},
                 Blake2_128Concat, StorageHasher,
@@ -6049,8 +6030,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = dancebox_runtime::PreserversAssignementPaymentRequest::Free;
-        let free_witness = dancebox_runtime::PreserversAssignementPaymentWitness::Free;
+        let free_request = crate::PreserversAssignementPaymentRequest::Free;
+        let free_witness = crate::PreserversAssignementPaymentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";

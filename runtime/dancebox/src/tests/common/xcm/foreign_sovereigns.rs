@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver,
                 EthereumSender, FrontierTemplatePara as FrontierTemplate,

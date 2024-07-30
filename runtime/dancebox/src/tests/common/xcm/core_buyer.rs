@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             core_buyer_common::*,
             mocknets::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet},
             *,
@@ -29,13 +29,30 @@ use {
     xcm_emulator::Chain,
 };
 
+const PARATHREAD_ID: u32 = 3333;
+const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
+const BUY_EXECUTION_COST: u128 = crate::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
+// Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
+// message, gets refunded on successful execution of core buying extrinsic.
+const BUY_EXECUTION_REFUND: u128 = 3334777;
+// Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
+// message, gets refunded on un-successful execution of core buying extrinsic.
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
+
+#[test]
+fn constants() {
+    // If these constants change, some tests may break
+    assert_eq!(ROCOCO_ED, 100_000_000 / 3);
+    assert_eq!(BUY_EXECUTION_COST, 70_000_000 + 126_666_399);
+}
+
 #[test]
 fn xcm_core_buyer_zero_balance() {
     let parathread_tank_in_relay = get_parathread_tank_relay_address();
     let balance_before = 0;
 
     // Invariant: if balance_before < BUY_EXECUTION_COST, then balance_after == balance_before
-    let query_id = do_test(balance_before, None, true);
+    let query_id = do_test(balance_before, None, false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -69,7 +86,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
     // balance_after <= (balance_before + BUY_EXECUTION_REFUND - BUY_EXECUTION_COST)
     // In this case the balance_after is 0 because BUY_EXECUTION_REFUND < ROCOCO_ED,
     // so the account gets the refund but it is immediatelly killed.
-    let query_id = do_test(balance_before, None, true);
+    let query_id = do_test(balance_before, None, false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -132,7 +149,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
     let spot_price2 = spot_price;
     let balance_before = BUY_EXECUTION_COST + spot_price;
 
-    let query_id = do_test(balance_before, None, true);
+    let query_id = do_test(balance_before, None, false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -215,7 +232,7 @@ fn xcm_core_buyer_enough_balance() {
     let spot_price2 = spot_price;
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + spot_price + 1;
 
-    let query_id = do_test(balance_before, None, true);
+    let query_id = do_test(balance_before, None, false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -298,7 +315,7 @@ fn xcm_core_buyer_core_too_expensive() {
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + 1;
     set_on_demand_base_fee(balance_before * 2);
 
-    let query_id = do_test(balance_before, None, true);
+    let query_id = do_test(balance_before, None, false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
@@ -370,7 +387,7 @@ fn xcm_core_buyer_set_max_core_price() {
 
     Dancebox::execute_with(|| {});
 
-    let query_id = do_test(balance_before, Some(max_core_price), true);
+    let query_id = do_test(balance_before, Some(max_core_price), false);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {

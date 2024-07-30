@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender, EthereumReceiver,
                 FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
@@ -61,7 +61,7 @@ fn receive_tokens_from_tanssi_to_frontier_template() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = dancebox_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
 
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,

@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
                 SimpleTemplateEmptyReceiver, SimpleTemplatePara as SimpleTemplate,
@@ -63,7 +63,7 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = dancebox_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
 
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
@@ -189,8 +189,7 @@ fn transfer_assets_relay_tanssi() {
     }
     .into();
 
-    let dancebox_amount_to_send: crate::Balance =
-        dancebox_runtime::ExistentialDeposit::get() * 1000;
+    let dancebox_amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
 
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
@@ -313,7 +312,7 @@ fn transfer_assets_relay_tanssi() {
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+        native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(
@@ -348,7 +347,7 @@ fn transfer_assets_relay_tanssi() {
                 1,
                 WeightLimit::Unlimited,
             ),
-            pallet_xcm::Error::<dancebox_runtime::Runtime>::InvalidAssetUnsupportedReserve
+            pallet_xcm::Error::<crate::Runtime>::InvalidAssetUnsupportedReserve
         );
     });
 }
@@ -394,8 +393,7 @@ fn transfer_assets_container_token_tanssi() {
     }
     .into();
 
-    let dancebox_amount_to_send: crate::Balance =
-        dancebox_runtime::ExistentialDeposit::get() * 1000;
+    let dancebox_amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
 
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
@@ -511,7 +509,7 @@ fn transfer_assets_container_token_tanssi() {
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+        native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(
@@ -734,7 +732,7 @@ fn transfer_asset_relay_token_across_tanssi_container() {
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+        native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(

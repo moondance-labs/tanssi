@@ -15,9 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::UNIT as DANCE,
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxParaPallet,
                 DanceboxSender, EthereumEmptyReceiver, EthereumSender,
@@ -28,7 +29,6 @@ use {
         },
     },
     container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
-    dancebox_runtime::UNIT as DANCE,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
@@ -52,7 +52,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     .into();
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(50 * DANCE),
     };
 

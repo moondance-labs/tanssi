@@ -248,7 +248,7 @@ pub mod rococo {
                 balances: accounts::init_balances()
                     .iter()
                     .cloned()
-                    .map(|k| (k, crate::common::xcm::constants::rococo::ENDOWMENT))
+                    .map(|k| (k, crate::tests::common::xcm::constants::rococo::ENDOWMENT))
                     .collect(),
             },
             session: rococo_runtime::SessionConfig {
@@ -258,7 +258,7 @@ pub mod rococo {
                         (
                             x.0.clone(),
                             x.0.clone(),
-                            crate::common::xcm::constants::rococo::session_keys(
+                            crate::tests::common::xcm::constants::rococo::session_keys(
                                 x.2.clone(),
                                 x.3.clone(),
                                 x.4.clone(),
@@ -276,7 +276,7 @@ pub mod rococo {
                 ..Default::default()
             },
             configuration: rococo_runtime::ConfigurationConfig {
-                config: crate::common::xcm::constants::rococo::get_host_config(),
+                config: crate::tests::common::xcm::constants::rococo::get_host_config(),
             },
             paras: rococo_runtime::ParasConfig {
                 _config: Default::default(),

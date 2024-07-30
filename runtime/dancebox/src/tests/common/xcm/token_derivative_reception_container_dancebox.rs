@@ -17,7 +17,7 @@
 use {
     crate::{
         assert_expected_events,
-        common::xcm::{
+        tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
                 SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,
@@ -138,7 +138,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+        let native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(

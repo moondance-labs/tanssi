@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::common::xcm::*;
+use crate::tests::common::xcm::*;
 
 use {
     crate::{
         assert_expected_events,
-        common::xcm::mocknets::{
+        tests::common::xcm::mocknets::{
             DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
         },
     },
@@ -39,10 +39,10 @@ fn trapping_asserts_works_with_polkadot_xcm() {
         Westend::child_location_of(Dancebox::para_id()).into();
 
     let buy_execution_fee_amount =
-        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
+        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
+        id: crate::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
