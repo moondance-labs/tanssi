@@ -45,21 +45,18 @@ jobs:
       - name: Get test names
         id: get_tests
         run: |
-          # Read and filter the tests from the config file
-          if [ "${{ github.event.inputs.foundation_type || 'zombie' }}" = "*" ]; then
-            tests=$(jq -r --arg regex "${{ github.event.inputs.test_name || '.*' }}" '
-              .environments
-              | map(select(.name | test($regex)))
-              | map(.name)
-            ' test/moonwall.config.json | jq -c '.')
-          else
-            tests=$(jq -r --arg type "${{ github.event.inputs.foundation_type || 'zombie' }}" --arg regex "${{ github.event.inputs.test_name || '.*' }}" '
-              .environments
-              | map(select(.foundation.type == $type))
-              | map(select(.name | test($regex)))
-              | map(.name)
-            ' test/moonwall.config.json | jq -c '.')
-          fi
+          foundation_type=${{ github.event.inputs.foundation_type || 'zombie' }}
+          test_name=${{ github.event.inputs.test_name || '.*' }}
+
+          # Read and filter the tests from the config file using regex and foundation type
+          # Exclude zombie upgrade tests because they need more complex logic, using docker
+          tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
+            .environments
+            | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
+            | map(.name)
+            | if $type == "zombie" then map(select(test("_upgrade$") | not)) else . end  # Exclude upgrade tests only if foundation type is zombie
+          ' test/moonwall.config.json | jq -c '.')
+
           echo "Will run tests: $tests"
           if [ -z "$tests" ]; then
             echo "No tests found. Exiting."
