@@ -70,7 +70,7 @@ jobs:
       - name: Set tests output
         id: set_tests
         run: |
-          include_tests=$(jq -c --argjson tests "${{ env.tests }}" '{include: $tests | map({test_name: .})}')
+          include_tests=$(echo "${{ env.tests }}" | jq -c '{include: . | map({test_name: .})}')
           echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
   ####### Building binaries #######
