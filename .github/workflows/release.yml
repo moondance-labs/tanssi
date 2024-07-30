@@ -556,6 +556,10 @@ jobs:
           matrix:
             test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay]
         steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+            with:
+              ref: ${{ needs.set-tags.outputs.git_ref }}
           - name: Run Zombienet Test ${{ matrix.test_name }}
             uses: ./.github/workflow-templates/zombienet-tests/action.yml
             with:
