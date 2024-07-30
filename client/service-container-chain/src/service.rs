@@ -153,7 +153,6 @@ pub async fn start_node_impl_container(
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     keystore: KeystorePtr,
     para_id: ParaId,
-    orchestrator_para_id: ParaId,
     collation_params: Option<crate::spawner::CollationParams>,
 ) -> sc_service::error::Result<(
     TaskManager,
@@ -234,6 +233,7 @@ pub async fn start_node_impl_container(
         collator_key,
         orchestrator_tx_pool,
         orchestrator_client,
+        orchestrator_para_id,
     }) = collation_params
     {
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();

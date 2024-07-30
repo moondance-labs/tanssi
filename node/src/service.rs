@@ -443,6 +443,7 @@ async fn start_node_impl(
                     Some(spawner::CollationParams {
                         orchestrator_client: orchestrator_client.clone(),
                         orchestrator_tx_pool,
+                        orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
                     })

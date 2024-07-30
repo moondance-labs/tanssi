@@ -369,8 +369,6 @@ pub fn run() -> Result<()> {
                     )?;
                     let keystore = keystore_container.keystore();
 
-                    let para_id = cli.run.parachain_id.unwrap_or(2000);
-
                     let (_cc_task_manager, _cc_client, _cc_backend) =
                         tc_service_container_chain::service::start_node_impl_container(
                             config,
@@ -378,7 +376,6 @@ pub fn run() -> Result<()> {
                             client,
                             keystore,
                             ParaId::from(2001),
-                            ParaId::from(para_id),
                             None,
                         )
                         .await?;

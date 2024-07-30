@@ -21,7 +21,6 @@
 
 #![warn(missing_docs)]
 
-pub use sc_rpc::DenyUnsafe;
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
@@ -32,6 +31,7 @@ use {
         rpc::{ManualSeal, ManualSealApiServer},
         EngineCommand,
     },
+    sc_rpc::DenyUnsafe,
     sc_transaction_pool_api::TransactionPool,
     services_payment_rpc::{
         ServicesPayment, ServicesPaymentApiServer as _, ServicesPaymentRuntimeApi,
