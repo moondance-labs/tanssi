@@ -16,6 +16,7 @@
 
 #![allow(dead_code)]
 
+use frame_support::assert_ok;
 use {
     crate::UNIT,
     babe_primitives::{
@@ -48,16 +49,20 @@ use {
     sp_core::Pair,
     sp_keystore::{KeystoreExt, KeystorePtr},
     sp_runtime::{
-        generic::Digest,
         traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
-        BuildStorage, DigestItem,
+        BuildStorage, Digest, DigestItem,
     },
     sp_std::collections::btree_map::BTreeMap,
+    starlight_runtime::RuntimeCall,
+    test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
+// The compiles breaks a bit because multiple integration tests all define `mod common`
+// We should probably move them into a folder so that we only declare `mod common` once
+#[allow(unused_imports)]
 pub use starlight_runtime::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, Babe, Balance, Grandpa,
-    Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
+    genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
+    Grandpa, Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
 
@@ -545,6 +550,19 @@ pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::Ru
 
 pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
+}
+
+/// This function is different in solochains: instead of creating a storage proof and calling the
+/// `set_latest_author_data` inherent with that proof as argument, this writes to storage directly.
+pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
+    for (k, v) in builder.key_values() {
+        frame_support::storage::unhashed::put_raw(&k, &v);
+    }
+
+    assert_ok!(RuntimeCall::AuthorNoting(
+        pallet_author_noting::Call::<Runtime>::set_latest_author_data { data: () }
+    )
+    .dispatch(inherent_origin()));
 }
 
 pub fn empty_genesis_data() -> ContainerChainGenesisData {

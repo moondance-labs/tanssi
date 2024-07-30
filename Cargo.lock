@@ -8179,7 +8179,6 @@ dependencies = [
  "bounded-collections 0.1.9",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
- "dp-chain-state-snapshot",
  "dp-core",
  "frame-benchmarking",
  "frame-support",
@@ -16224,7 +16223,9 @@ version = "0.1.0"
 dependencies = [
  "binary-merkle-tree",
  "bitvec",
+ "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
+ "dp-consensus",
  "dp-container-chain-genesis-data",
  "frame-benchmarking",
  "frame-executive",
@@ -16238,6 +16239,8 @@ dependencies = [
  "log",
  "nimbus-primitives",
  "pallet-asset-rate",
+ "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
  "pallet-authority-assignment",
  "pallet-authority-discovery",
  "pallet-authority-mapping",
@@ -16302,6 +16305,7 @@ dependencies = [
  "sp-arithmetic",
  "sp-authority-discovery",
  "sp-block-builder",
+ "sp-consensus-aura",
  "sp-consensus-babe",
  "sp-consensus-beefy",
  "sp-consensus-grandpa",
@@ -16329,8 +16333,10 @@ dependencies = [
  "static_assertions",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
+ "test-relay-sproof-builder",
  "tiny-keccak",
  "tokio",
+ "tp-author-noting-inherent",
  "tp-traits",
  "xcm-runtime-apis",
 ]
@@ -17711,6 +17717,7 @@ name = "tp-traits"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
  "frame-support",
  "impl-trait-for-tuples",
  "macro_rules_attribute",

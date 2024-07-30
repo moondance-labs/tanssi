@@ -1,0 +1,152 @@
+{
+    "settings": {
+        "timeout": 1000,
+        "provider": "native"
+    },
+    "relaychain": {
+        "chain": "rococo-local",
+        "default_command": "tmp/polkadot",
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "genesis": {
+            "runtimeGenesis": {
+                "patch": {
+                    "configuration": {
+                        "config": {
+                            "async_backing_params": {
+                                "allowed_ancestry_len": 2,
+                                "max_candidate_depth": 3
+                            },
+                            "scheduler_params": {
+                                "scheduling_lookahead": 2
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "nodes": [
+            {
+                "name": "alice",
+                "ws_port": "9947",
+                "validator": true
+            },
+            {
+                "name": "bob",
+                "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
+            }
+        ]
+    },
+    "parachains": [
+        {
+            "id": 1000,
+            "chain_spec_path": "specs/flashbox-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-flashbox.sh`",
+            "collators": [
+                {
+                    "name": "FullNode-1000",
+                    "validator": false,
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9948
+                },
+                {
+                    "name": "Collator1000-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator1000-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2000-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2000-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2001-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2001-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2002-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2002-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                }
+            ]
+        },
+        {
+            "id": 2000,
+            "chain_spec_path": "specs/template-container-2000.json",
+            "collators": [
+                {
+                    "name": "FullNode-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9949,
+                    "p2p_port": 33049
+                }
+            ]
+        },
+        {
+            "id": 2001,
+            "chain_spec_path": "specs/template-container-2001.json",
+            "collators": [
+                {
+                    "name": "FullNode-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9950,
+                    "p2p_port": 33050
+                }
+            ]
+        },
+        {
+            "id": 2002,
+            "chain_spec_path": "specs/template-container-2002.json",
+            "collators": [
+                {
+                    "name": "FullNode-2002",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9951,
+                    "p2p_port": 33051
+                }
+            ]
+        }
+    ],
+    "types": {
+        "Header": {
+            "number": "u64",
+            "parent_hash": "Hash",
+            "post_state": "Hash"
+        }
+    }
+}
