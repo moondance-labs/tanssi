@@ -31,7 +31,6 @@ sp-trie = { workspace = true }
 
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-dp-chain-state-snapshot = { workspace = true }
 dp-core = { workspace = true }
 nimbus-primitives = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
@@ -55,7 +54,6 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",
-	"dp-chain-state-snapshot/std",
 	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",

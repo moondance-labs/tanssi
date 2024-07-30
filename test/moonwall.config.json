@@ -169,6 +169,62 @@
             }
         },
         {
+            "name": "zombie_flashbox",
+            "timeout": 600000,
+            "testFileDir": ["suites/para"],
+            "runScripts": [
+                "build-spec-flashbox.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieFlashbox.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                }
+            ]
+        },
+        {
             "name": "zombie_tanssi",
             "timeout": 600000,
             "testFileDir": ["suites/para"],
@@ -599,7 +655,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
+                    "endpoints": ["wss://stagebox.tanssi-dev.network"]
                 }
             ]
         },

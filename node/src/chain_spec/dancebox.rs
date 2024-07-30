@@ -23,14 +23,14 @@ use {
         prod_or_fast, AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig,
         PolkadotXcmConfig, RegistrarConfig, ServicesPaymentConfig, SudoConfig,
     },
+    dp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+    },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
     sp_core::sr25519,
-    sp_runtime::{traits::Get, Perbill},
-    tp_container_chain_genesis_data::{
-        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
-    },
+    sp_runtime::Perbill,
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -260,7 +260,10 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         configuration,
-        registrar: RegistrarConfig { para_ids },
+        registrar: RegistrarConfig {
+            para_ids,
+            phantom: Default::default(),
+        },
         services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {
             key: Some(root_key),
@@ -286,9 +289,7 @@ fn testnet_genesis(
     serde_json::to_value(g).unwrap()
 }
 
-fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
-    para_id: ParaId,
-) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),

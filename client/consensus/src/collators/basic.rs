@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::collators::ClaimMode;
 use {
     crate::{
-        collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-        OrchestratorAuraWorkerAuxData,
+        collators as collator_util, collators::ClaimMode,
+        consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator, OrchestratorAuraWorkerAuxData,
     },
     cumulus_client_collator::{
         relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
