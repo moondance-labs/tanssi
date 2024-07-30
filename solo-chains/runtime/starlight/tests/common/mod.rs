@@ -30,7 +30,7 @@ use {
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     sp_runtime::traits::Dispatchable,
     sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
-    starlight_runtime::{MaxLengthTokenSymbol, RuntimeCall},
+    starlight_runtime::RuntimeCall,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
