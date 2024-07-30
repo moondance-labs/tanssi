@@ -17,18 +17,15 @@
 #![cfg(test)]
 
 use {
-    common::*,
+    crate::tests::common::*,
+    crate::{Balances, CollatorConfiguration, ContainerRegistrar},
     frame_support::{assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     sp_std::vec,
-    starlight_runtime::{Balances, CollatorConfiguration, ContainerRegistrar},
     starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
 };
-
-mod common;
-const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
 fn genesis_balances() {

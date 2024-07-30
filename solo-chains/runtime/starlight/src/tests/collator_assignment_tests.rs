@@ -17,17 +17,13 @@
 #![cfg(test)]
 
 use {
-    crate::common::*,
-    frame_support::assert_ok,
-    sp_std::vec,
-    starlight_runtime::{
+    crate::tests::common::*,
+    crate::{
         CollatorConfiguration, ContainerRegistrar, TanssiAuthorityMapping, TanssiInvulnerables,
     },
+    frame_support::assert_ok,
+    sp_std::vec,
 };
-
-mod common;
-
-const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
 fn test_author_collation_aura_change_of_authorities_on_session() {
@@ -65,7 +61,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
 
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: charlie_keys.babe.clone(),
                     grandpa: charlie_keys.grandpa.clone(),
                     para_validator: charlie_keys.para_validator.clone(),
@@ -79,7 +75,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
 
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: dave_keys.babe.clone(),
                     grandpa: dave_keys.grandpa.clone(),
                     para_validator: dave_keys.para_validator.clone(),
@@ -165,7 +161,7 @@ fn test_collators_per_container() {
 
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: charlie_keys.babe.clone(),
                     grandpa: charlie_keys.grandpa.clone(),
                     para_validator: charlie_keys.para_validator.clone(),
@@ -282,7 +278,7 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_keys_2 and bob_keys_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: alice_keys_2.babe.clone(),
                     grandpa: alice_keys_2.grandpa.clone(),
                     para_validator: alice_keys_2.para_validator.clone(),
@@ -296,7 +292,7 @@ fn test_session_keys_with_authority_assignment() {
 
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: bob_keys_2.babe.clone(),
                     grandpa: bob_keys_2.grandpa.clone(),
                     para_validator: bob_keys_2.para_validator.clone(),
@@ -450,7 +446,7 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_keys_2 and bob_keys_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: alice_keys_2.babe.clone(),
                     grandpa: alice_keys_2.grandpa.clone(),
                     para_validator: alice_keys_2.para_validator.clone(),
@@ -464,7 +460,7 @@ fn test_session_keys_with_authority_mapping() {
 
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: bob_keys_2.babe.clone(),
                     grandpa: bob_keys_2.grandpa.clone(),
                     para_validator: bob_keys_2.para_validator.clone(),

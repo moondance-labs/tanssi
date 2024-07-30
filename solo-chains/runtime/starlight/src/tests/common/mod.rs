@@ -18,7 +18,7 @@
 
 use frame_support::assert_ok;
 use {
-    crate::UNIT,
+    crate::RuntimeCall,
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -30,18 +30,16 @@ use {
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     sp_runtime::traits::Dispatchable,
     sp_runtime::{traits::SaturatedConversion, BuildStorage, Digest, DigestItem},
-    starlight_runtime::RuntimeCall,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-// The compiles breaks a bit because multiple integration tests all define `mod common`
-// We should probably move them into a folder so that we only declare `mod common` once
-#[allow(unused_imports)]
-pub use starlight_runtime::{
+pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
     Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
+
+pub const UNIT: Balance = 1_000_000_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
@@ -372,7 +370,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        starlight_runtime::SessionKeys {
+                        crate::SessionKeys {
                             babe: authority_keys.babe.clone(),
                             grandpa: authority_keys.grandpa.clone(),
                             para_validator: authority_keys.para_validator.clone(),
@@ -423,7 +421,7 @@ impl ExtBuilder {
                         Some((
                             account.clone(),
                             account,
-                            starlight_runtime::SessionKeys {
+                            crate::SessionKeys {
                                 babe: authority_keys.babe.clone(),
                                 grandpa: authority_keys.grandpa.clone(),
                                 para_validator: authority_keys.para_validator.clone(),

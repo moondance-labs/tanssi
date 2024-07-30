@@ -17,13 +17,9 @@
 #![cfg(test)]
 
 use {
-    common::*, frame_support::assert_ok,
+    crate::tests::common::*, crate::Configuration, frame_support::assert_ok,
     runtime_parachains::configuration as parachains_configuration,
-    starlight_runtime::Configuration,
 };
-
-mod common;
-const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
 fn test_configuration_on_session_change() {

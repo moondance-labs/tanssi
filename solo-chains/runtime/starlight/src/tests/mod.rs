@@ -20,6 +20,15 @@ use {crate::*, std::collections::HashSet};
 
 use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay};
 
+mod author_noting_tests;
+mod collator_assignment_tests;
+mod common;
+mod integration_test;
+mod relay_configuration;
+mod relay_registrar;
+mod session_keys;
+mod sudo;
+
 #[test]
 fn check_whitelist() {
     let whitelist: HashSet<String> = AllPalletsWithSystem::whitelisted_storage_keys()

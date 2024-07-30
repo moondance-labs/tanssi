@@ -16,10 +16,7 @@
 
 #![cfg(test)]
 
-use {crate::common::*, frame_support::assert_ok, sp_std::vec};
-
-mod common;
-const UNIT: Balance = 1_000_000_000_000_000_000;
+use {crate::tests::common::*, frame_support::assert_ok, sp_std::vec};
 
 #[test]
 fn session_key_changes_are_reflected_after_two_sessions() {
@@ -46,7 +43,7 @@ fn session_key_changes_are_reflected_after_two_sessions() {
 
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                starlight_runtime::SessionKeys {
+                crate::SessionKeys {
                     babe: dave_keys.babe.clone(),
                     grandpa: dave_keys.grandpa.clone(),
                     para_validator: dave_keys.para_validator.clone(),

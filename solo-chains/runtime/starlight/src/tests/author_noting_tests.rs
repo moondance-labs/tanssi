@@ -17,7 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::common::*,
+    crate::tests::common::*,
     frame_support::assert_noop,
     frame_support::assert_ok,
     frame_support::error::BadOrigin,
@@ -31,11 +31,6 @@ use {
     tp_traits::ContainerChainBlockInfo,
     tp_traits::ParaId,
 };
-
-mod common;
-
-const UNIT: Balance = 1_000_000_000_000_000_000;
-
 #[test]
 fn test_author_noting_not_self_para() {
     ExtBuilder::default()

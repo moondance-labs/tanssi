@@ -16,16 +16,13 @@
 
 #![cfg(test)]
 
-mod common;
 use {
-    crate::common::*,
+    crate::tests::common::*,
+    crate::{Paras, Registrar},
     frame_support::{assert_noop, assert_ok},
     runtime_common::paras_registrar,
     sp_std::vec,
-    starlight_runtime::{Paras, Registrar},
 };
-
-const UNIT: Balance = 1_000_000_000_000_000_000;
 
 #[test]
 fn registrar_needs_a_reserved_para_id() {
