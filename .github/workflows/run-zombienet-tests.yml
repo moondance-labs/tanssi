@@ -26,7 +26,7 @@ jobs:
   get-tests:
     runs-on: self-hosted
     outputs:
-      tests: ${{ steps.set_tests.outputs.tests }}
+      matrix: ${{ steps.set_tests.outputs.tests }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,7 +69,9 @@ jobs:
 
       - name: Set tests output
         id: set_tests
-        run: echo "tests=${{ env.tests }}" >> $GITHUB_OUTPUT
+        run: |
+          include_tests=$(jq -c --argjson tests "${{ env.tests }}" '{include: $tests | map({test_name: .})}')
+          echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
   ####### Building binaries #######
   build:
@@ -137,9 +139,19 @@ jobs:
     needs: [ "get-tests", "build" ]
     strategy:
       matrix:
-        test_name: ${{ fromJson(needs.get-tests.outputs.tests) }}
+        test_name: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
     steps:
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:
           test_name: ${{ matrix.test_name }}
+
+  # Debugging outputs and fromJSON
+  # TODO: remove before merging
+  job2:
+    needs: [ "get-tests" ]
+    runs-on: self-hosted
+    strategy:
+      matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
+    steps:
+      - run: echo "Matrix - Test ${{ matrix.test_name }}"
