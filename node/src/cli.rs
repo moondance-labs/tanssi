@@ -15,15 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::chain_spec::RawGenesisConfig,
-    dp_container_chain_genesis_data::json::properties_to_map,
     node_common::service::Sealing,
-    pallet_registrar_runtime_api::ContainerChainGenesisData,
-    sc_chain_spec::ChainSpec,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    sc_network::config::MultiaddrWithPeerId,
-    sp_runtime::Storage,
-    std::{collections::BTreeMap, path::PathBuf},
+    std::path::PathBuf,
 };
 
 /// Sub-commands supported by the collator.
@@ -248,142 +242,5 @@ impl RelayChainCli {
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
         }
-    }
-}
-
-/// The `run` command used to run a container chain node.
-#[derive(Debug, clap::Parser, Clone)]
-#[group(skip)]
-pub struct ContainerChainRunCmd {
-    /// The cumulus RunCmd inherits from sc_cli's
-    #[command(flatten)]
-    pub base: sc_cli::RunCmd,
-
-    /// Run node as collator.
-    ///
-    /// Note that this is the same as running with `--validator`.
-    #[arg(long, conflicts_with = "validator")]
-    pub collator: bool,
-
-    /// Optional container chain para id that should be used to build chain spec.
-    #[arg(long)]
-    pub para_id: Option<u32>,
-
-    /// Keep container-chain db after changing collator assignments
-    #[arg(long)]
-    pub keep_db: bool,
-}
-
-#[derive(Debug)]
-pub struct ContainerChainCli {
-    /// The actual container chain cli object.
-    pub base: ContainerChainRunCmd,
-
-    /// The base path that should be used by the container chain.
-    pub base_path: PathBuf,
-
-    /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
-    /// by calling preload_chain_spec_file.
-    pub preloaded_chain_spec: Option<Box<dyn sc_chain_spec::ChainSpec>>,
-}
-
-impl Clone for ContainerChainCli {
-    fn clone(&self) -> Self {
-        Self {
-            base: self.base.clone(),
-            base_path: self.base_path.clone(),
-            preloaded_chain_spec: self.preloaded_chain_spec.as_ref().map(|x| x.cloned_box()),
-        }
-    }
-}
-
-impl ContainerChainCli {
-    /// Parse the container chain CLI parameters using the para chain `Configuration`.
-    pub fn new<'a>(
-        para_config: &sc_service::Configuration,
-        container_chain_args: impl Iterator<Item = &'a String>,
-    ) -> Self {
-        let base_path = para_config.base_path.path().join("containers");
-
-        Self {
-            base_path,
-            base: clap::Parser::parse_from(container_chain_args),
-            preloaded_chain_spec: None,
-        }
-    }
-
-    pub fn chain_spec_from_genesis_data(
-        para_id: u32,
-        genesis_data: ContainerChainGenesisData,
-        chain_type: sc_chain_spec::ChainType,
-        relay_chain: String,
-        boot_nodes: Vec<MultiaddrWithPeerId>,
-    ) -> Result<crate::chain_spec::RawChainSpec, String> {
-        let name = String::from_utf8(genesis_data.name).map_err(|_e| "Invalid name".to_string())?;
-        let id: String =
-            String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
-        let storage_raw: BTreeMap<_, _> =
-            genesis_data.storage.into_iter().map(|x| x.into()).collect();
-        let protocol_id = format!("container-chain-{}", para_id);
-        let properties = properties_to_map(&genesis_data.properties)
-            .map_err(|e| format!("Invalid properties: {}", e))?;
-        let extensions = crate::chain_spec::Extensions {
-            relay_chain,
-            para_id,
-        };
-        let raw_genesis_config = RawGenesisConfig {
-            storage_raw: storage_raw.clone(),
-        };
-
-        let chain_spec = crate::chain_spec::RawChainSpec::builder(
-            // This code is not used, we override it in `set_storage` below
-            &[],
-            // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
-            // other extensions are being ignored
-            extensions,
-        )
-        .with_name(&name)
-        .with_id(&id)
-        .with_chain_type(chain_type)
-        .with_properties(properties)
-        .with_boot_nodes(boot_nodes)
-        .with_protocol_id(&protocol_id);
-
-        let chain_spec = if let Some(fork_id) = genesis_data.fork_id {
-            let fork_id_string =
-                String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
-            chain_spec.with_fork_id(&fork_id_string)
-        } else {
-            chain_spec
-        };
-
-        let mut chain_spec = chain_spec.build();
-
-        chain_spec.set_storage(Storage {
-            top: raw_genesis_config.storage_raw,
-            children_default: Default::default(),
-        });
-
-        Ok(chain_spec)
-    }
-
-    pub fn preload_chain_spec_from_genesis_data(
-        &mut self,
-        para_id: u32,
-        genesis_data: ContainerChainGenesisData,
-        chain_type: sc_chain_spec::ChainType,
-        relay_chain: String,
-        boot_nodes: Vec<MultiaddrWithPeerId>,
-    ) -> Result<(), String> {
-        let chain_spec = Self::chain_spec_from_genesis_data(
-            para_id,
-            genesis_data,
-            chain_type,
-            relay_chain,
-            boot_nodes,
-        )?;
-        self.preloaded_chain_spec = Some(Box::new(chain_spec));
-
-        Ok(())
     }
 }

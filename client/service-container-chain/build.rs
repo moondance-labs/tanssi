@@ -12,20 +12,12 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Substrate Parachain Node Template CLI
+use substrate_build_script_utils::{generate_cargo_keys, rerun_if_git_head_changed};
 
-#![warn(missing_docs)]
+fn main() {
+    generate_cargo_keys();
 
-mod chain_spec;
-mod cli;
-mod command;
-mod rpc;
-mod service;
-#[cfg(test)]
-mod tests;
-
-fn main() -> sc_cli::Result<()> {
-    command::run()
+    rerun_if_git_head_changed();
 }

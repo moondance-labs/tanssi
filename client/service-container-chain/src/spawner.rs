@@ -24,7 +24,7 @@
 use {
     crate::{
         cli::ContainerChainCli,
-        container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
+        monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, ContainerChainClient, ParachainClient},
     },
     cumulus_primitives_core::ParaId,
@@ -127,6 +127,7 @@ pub struct CollationParams {
     pub collator_key: CollatorPair,
     pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
     pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_para_id: ParaId,
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
@@ -183,10 +184,10 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         relay_chain,
         relay_chain_interface,
         sync_keystore,
-        orchestrator_para_id,
         spawn_handle,
         mut collation_params,
         sync_mode,
+        ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
 
@@ -343,7 +344,6 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
                     orchestrator_chain_interface.clone(),
                     sync_keystore.clone(),
                     container_chain_para_id,
-                    orchestrator_para_id,
                     collation_params.clone(),
                 )
                 .await?;
