@@ -16,7 +16,6 @@
 
 #![allow(dead_code)]
 
-use frame_support::assert_ok;
 use {
     crate::UNIT,
     babe_primitives::{
@@ -53,7 +52,6 @@ use {
         BuildStorage, Digest, DigestItem,
     },
     sp_std::collections::btree_map::BTreeMap,
-    starlight_runtime::RuntimeCall,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 

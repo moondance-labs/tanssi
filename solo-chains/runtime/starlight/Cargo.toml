@@ -120,8 +120,8 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Tanssi
-dp-container-chain-genesis-data = { workspace = true }
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -161,8 +161,8 @@ std = [
 	"block-builder-api/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
-	"dp-container-chain-genesis-data/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
