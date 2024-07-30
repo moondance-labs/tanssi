@@ -33,6 +33,7 @@ inherents = { workspace = true }
 offchain-primitives = { workspace = true }
 sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
+sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
@@ -42,6 +43,7 @@ sp-session = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
 sp-storage = { workspace = true }
+sp-trie = { workspace = true }
 sp-version = { workspace = true }
 starlight-runtime-constants = { workspace = true }
 tx-pool-api = { workspace = true }
@@ -113,14 +115,20 @@ xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
+cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Tanssi
+dp-consensus = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
+tp-traits = { workspace = true }
+
+pallet-author-noting = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
-tp-traits = { workspace = true }
 
 # Moonkit
 pallet-migrations = { workspace = true }
@@ -132,6 +140,7 @@ separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }
 sp-trie = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
 
@@ -147,7 +156,9 @@ std = [
 	"binary-merkle-tree/std",
 	"bitvec/std",
 	"block-builder-api/std",
+	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
+	"dp-consensus/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -162,6 +173,8 @@ std = [
 	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
+	"pallet-author-noting-runtime-api/std",
+	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
 	"pallet-authority-discovery/std",
 	"pallet-authority-mapping/std",
@@ -221,6 +234,7 @@ std = [
 	"serde_json/std",
 	"sp-api/std",
 	"sp-arithmetic/std",
+	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
@@ -236,6 +250,8 @@ std = [
 	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
+	"test-relay-sproof-builder/std",
+	"tp-author-noting-inherent/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
 	"xcm-builder/std",
@@ -245,15 +261,19 @@ std = [
 ]
 no_std = []
 runtime-benchmarks = [
+	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
+	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
+	"pallet-author-noting/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
@@ -301,6 +321,7 @@ runtime-benchmarks = [
 	"xcm-runtime-apis/runtime-benchmarks",
 ]
 try-runtime = [
+	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
@@ -308,6 +329,7 @@ try-runtime = [
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-asset-rate/try-runtime",
+	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-discovery/try-runtime",
 	"pallet-authority-mapping/try-runtime",

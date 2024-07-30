@@ -655,7 +655,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
+                    "endpoints": ["wss://stagebox.tanssi-dev.network"]
                 }
             ]
         },

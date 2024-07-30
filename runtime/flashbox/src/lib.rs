@@ -915,15 +915,16 @@ impl pallet_data_preservers::Config for Runtime {
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type RelayOrPara = pallet_author_noting::ParaMode<
+        cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
+    >;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
