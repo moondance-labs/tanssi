@@ -52,10 +52,7 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let mut sproof = ParaHeaderSproofBuilder::default();
@@ -113,10 +110,7 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let other_para: ParaId = 1001u32.into();
@@ -160,10 +154,7 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let other_para: ParaId = 1001u32.into();
@@ -202,10 +193,7 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
-        ])
+        .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
             let mut sproof = ParaHeaderSproofBuilder::default();
