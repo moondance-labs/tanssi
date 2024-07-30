@@ -561,7 +561,7 @@ jobs:
             with:
               ref: ${{ needs.set-tags.outputs.git_ref }}
           - name: Run Zombienet Test ${{ matrix.test_name }}
-            uses: ./.github/workflow-templates/zombienet-tests/action.yml
+            uses: ./.github/workflow-templates/zombienet-tests
             with:
               test_name: ${{ matrix.test_name }}
 
