@@ -265,7 +265,6 @@ declare module "@polkadot/api-base/types/consts" {
             maxGenesisDataSize: u32 & AugmentedConst<ApiType>;
             /** Max length of para id list */
             maxLengthParaIds: u32 & AugmentedConst<ApiType>;
-            maxLengthTokenSymbol: u32 & AugmentedConst<ApiType>;
             sessionDelay: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;

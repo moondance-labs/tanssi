@@ -1360,7 +1360,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
     type RelayStorageRootProvider = ();
     type SessionDelay = ConstU32<2>;
@@ -2043,7 +2042,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
@@ -2066,7 +2065,7 @@ sp_api::impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             ContainerRegistrar::para_genesis_data(para_id)
         }
 
@@ -2523,10 +2522,6 @@ impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
-}
-
-parameter_types! {
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

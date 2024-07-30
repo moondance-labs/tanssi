@@ -28,6 +28,7 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
+    DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
@@ -64,7 +65,6 @@ import type {
     SpRuntimeDigest,
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
-    TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
 } from "@polkadot/types/lookup";
@@ -642,7 +642,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<TpContainerChainGenesisDataContainerChainGenesisData>>,
+                ) => Observable<Option<DpContainerChainGenesisDataContainerChainGenesisData>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

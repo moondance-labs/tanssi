@@ -7,7 +7,7 @@ export function chainSpecToContainerChainGenesisData(paraApi: ApiPromise, chainS
     const storage = chainSpecStorageToOnChainStorage(chainSpec.genesis);
     const extensions = "0x";
     const properties = chainSpecPropertiesToOnChainProperties(chainSpec.properties);
-    const g = paraApi.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+    const g = paraApi.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
         storage: storage,
         name: stringToHex(chainSpec.name),
         id: stringToHex(chainSpec.id),

@@ -24,8 +24,7 @@ use {
         pallet_prelude::{Decode, Encode, TypeInfo},
         CloneNoBound, DebugNoBound,
     },
-    sp_runtime::app_crypto::AppCrypto,
-    sp_runtime::RuntimeAppPublic,
+    sp_runtime::{app_crypto::AppCrypto, RuntimeAppPublic},
     sp_std::vec::Vec,
     tp_traits::ParaId,
 };

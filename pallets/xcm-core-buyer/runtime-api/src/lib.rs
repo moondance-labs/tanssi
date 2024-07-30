@@ -18,13 +18,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::sp_runtime;
 pub use pallet_xcm_core_buyer::BuyingError;
-use sp_consensus_slots::Slot;
-use sp_runtime::traits::Block as BlockT;
-use sp_runtime::RuntimeAppPublic;
-use sp_std::boxed::Box;
-use tp_xcm_core_buyer::BuyCoreCollatorProof;
+use {
+    frame_support::sp_runtime,
+    sp_consensus_slots::Slot,
+    sp_runtime::{traits::Block as BlockT, RuntimeAppPublic},
+    sp_std::boxed::Box,
+    tp_xcm_core_buyer::BuyCoreCollatorProof,
+};
 
 sp_api::decl_runtime_apis! {
     pub trait XCMCoreBuyerApi<BlockNumber, ParaId, CollatorPublicKey> where ParaId: parity_scale_codec::Codec, BlockNumber: parity_scale_codec::Codec, BuyingError<BlockNumber>: parity_scale_codec::Codec, CollatorPublicKey: RuntimeAppPublic + Clone + core::fmt::Debug + parity_scale_codec::Codec,  {
