@@ -31,7 +31,9 @@ runs:
     - name: "Run zombie test"
       run: |
         chmod uog+x target/release/tanssi-node
-        chmod uog+x target/release/tanssi-relay tanssi-relay-prepare-worker tanssi-relay-execute-worker
+        chmod uog+x target/release/tanssi-relay
+        chmod uog+x target/release/tanssi-relay-prepare-worker
+        chmod uog+x target/release/tanssi-relay-execute-worker
         chmod uog+x target/release/container-chain-simple-node
         chmod uog+x target/release/container-chain-frontier-node
 
