@@ -70,7 +70,8 @@ jobs:
       - name: Set tests output
         id: set_tests
         run: |
-          include_tests=$(echo "${{ env.tests }}" | jq -c '{include: . | map({test_name: .})}')
+          tests_escaped=$(echo "${{ env.tests }}" | jq @json)
+          include_tests=$(echo "$tests_escaped" | jq -nc --argjson tests "$tests_escaped" '{include: $tests | map({test_name: .})}')
           echo "Formatted tests JSON: $include_tests"
           echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
