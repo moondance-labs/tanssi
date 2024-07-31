@@ -539,10 +539,10 @@ fn unpause_para_id_42_fails_not_registered() {
 #[test]
 fn genesis_loads_para_ids() {
     new_test_ext_with_genesis(vec![
-        (1.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (4.into(), empty_genesis_data()),
+        (1.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (4.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -556,10 +556,10 @@ fn genesis_loads_para_ids() {
 #[test]
 fn genesis_sorts_para_ids() {
     new_test_ext_with_genesis(vec![
-        (4.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (1.into(), empty_genesis_data()),
+        (4.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (1.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -574,10 +574,10 @@ fn genesis_sorts_para_ids() {
 #[should_panic = "Duplicate para_id: 2"]
 fn genesis_error_on_duplicate() {
     new_test_ext_with_genesis(vec![
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (4.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (4.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -595,7 +595,7 @@ fn genesis_error_genesis_data_size_too_big() {
         extensions: Default::default(),
         properties: Default::default(),
     };
-    new_test_ext_with_genesis(vec![(2.into(), genesis_data)]).execute_with(|| {
+    new_test_ext_with_genesis(vec![(2.into(), genesis_data, None)]).execute_with(|| {
         run_to_block(1);
     });
 }

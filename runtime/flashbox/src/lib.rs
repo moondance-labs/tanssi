@@ -34,6 +34,9 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+#[cfg(test)]
+mod tests;
+
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
