@@ -49,7 +49,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_consensus_slots::Slot,
-    sp_core::ConstU32,
+    sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
@@ -589,7 +589,7 @@ impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
 
 /// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
 /// pallet indices for pallet_on_demand_assignment_provider
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum RelayChain {
     #[default]
     Westend,

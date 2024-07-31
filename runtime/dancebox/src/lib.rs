@@ -964,7 +964,7 @@ parameter_types! {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
@@ -978,7 +978,7 @@ pub enum PreserversAssignementPaymentExtra {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)
