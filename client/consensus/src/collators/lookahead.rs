@@ -441,7 +441,7 @@ where
     // rules specified by the parachain's runtime and thus will never be too deep.
     const PARENT_SEARCH_DEPTH: usize = 10;
 
-    let (exit_notification_sender, exit_notification_receiver) = oneshot::channel();
+;    let (exit_notification_sender, exit_notification_receiver) = oneshot::channel();
 
     let aura_fut = async move {
         cumulus_client_collator::initialize_collator_subsystems(

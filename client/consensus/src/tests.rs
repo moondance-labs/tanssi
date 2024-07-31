@@ -619,7 +619,7 @@ impl ParachainBlockImportMarker for DummyFactory {}
 impl Proposer<TestBlock> for DummyProposer {
     type Error = Error;
     type Proposal = future::Ready<Result<Proposal<TestBlock, Self::Proof>, Error>>;
-    type ProofRecording = EnableProofRecording;
+    type ProofRecording = sp_consensus::EnableProofRecording;
     type Proof = sc_client_api::StorageProof;
 
     fn propose(
@@ -637,6 +637,9 @@ impl Proposer<TestBlock> for DummyProposer {
             .build()
             .unwrap()
             .build();
+        if let Err(ref e) = r {
+            panic!("error is {:?}", e)
+        }
         let (_relay_parent_storage_root, proof) =
             RelayStateSproofBuilder::default().into_state_root_and_proof();
 
@@ -1026,7 +1029,6 @@ async fn collate_lookahead_returns_correct_block() {
     use tokio_util::sync::CancellationToken;
     use substrate_test_runtime_client::DefaultTestClientBuilderExt;
     let net = AuraTestNet::new(4);
-
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
     let alice_public = keystore
@@ -1096,7 +1098,7 @@ async fn collate_lookahead_returns_correct_block() {
             force_authoring: false,
             get_orchestrator_aux_data:  move |_block_hash, _extra | async move {
                 let aux_data = OrchestratorAuraWorkerAuxData {
-                    authorities: vec![],
+                    authorities: vec![alice_public.into()],
                     // This is the orchestrator consensus, it does not have a slot frequency
                     slot_freq: None,
                 };
