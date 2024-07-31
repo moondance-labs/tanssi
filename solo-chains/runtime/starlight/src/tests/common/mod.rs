@@ -17,7 +17,6 @@
 #![allow(dead_code)]
 
 use {
-    crate::RuntimeCall,
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,

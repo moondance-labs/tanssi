@@ -241,7 +241,7 @@ fn starlight_testnet_genesis(
 
     let para_ids: Vec<_> = container_chains
         .into_iter()
-        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
+        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
         .collect();
 
     const ENDOWMENT: u128 = 1_000_000 * STAR;
