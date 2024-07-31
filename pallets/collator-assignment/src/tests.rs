@@ -21,6 +21,7 @@ use {
 };
 
 mod assign_full;
+mod parathread_priority;
 mod prioritize_invulnerables;
 mod select_chains;
 
