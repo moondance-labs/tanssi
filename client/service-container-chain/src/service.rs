@@ -474,8 +474,7 @@ fn start_consensus_container(
         relay_chain_slot_duration,
         proposer,
         collator_service,
-        // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: Duration::from_millis(2000),
         para_backend: backend,
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
