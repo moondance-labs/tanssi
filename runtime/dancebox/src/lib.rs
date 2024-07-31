@@ -33,6 +33,9 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+#[cfg(test)]
+mod tests;
+
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,

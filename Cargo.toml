@@ -76,6 +76,7 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
+
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
@@ -88,6 +89,8 @@ tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service", default
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
+tc-service-container-chain = { path = "client/service-container-chain" }
+
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
