@@ -285,7 +285,7 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
 // Essentially checks that the latest head we are trying to build
 // is the one included in the relay
 async fn can_build_upon_included<Block: BlockT, RClient>(
-    parent_hash: Block::Hash,
+    parent_hash:<Block as BlockT>::Hash,
     relay_client: &RClient,
     para_id: ParaId,
     relay_parent: PHash,

@@ -4121,12 +4121,14 @@ dependencies = [
 
 [[package]]
 name = "expander"
-version = "2.0.0"
+version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f86a749cf851891866c10515ef6c299b5c69661465e9c3bbe7e07a2b77fb0f7"
+checksum = "e2c470c71d91ecbd179935b24170459e926382eaaa86b590b78814e180d8a8e2"
 dependencies = [
  "blake2 0.10.6",
+ "file-guard",
  "fs-err",
+ "prettyplease 0.2.20",
  "proc-macro2",
  "quote",
  "syn 2.0.66",
@@ -4410,6 +4412,16 @@ name = "fiat-crypto"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1676f435fc1dadde4d03e43f5d62b259e1ce5f40bd4ffb21db2b42ebe59c1382"
+
+[[package]]
+name = "file-guard"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21ef72acf95ec3d7dbf61275be556299490a245f017cf084bd23b4f68cf9407c"
+dependencies = [
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "file-per-thread-logger"
@@ -4961,7 +4973,7 @@ dependencies = [
  "Inflector",
  "cfg-expr",
  "derive-syn-parse 0.2.0",
- "expander 2.0.0",
+ "expander 2.2.1",
  "frame-support-procedural-tools",
  "itertools 0.10.5",
  "macro_magic",
@@ -8034,7 +8046,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eedb646674596266dc9bb2b5c7eea7c36b32ecc7777eba0d510196972d72c4fd"
 dependencies = [
- "expander 2.0.0",
+ "expander 2.2.1",
  "indexmap 2.2.3",
  "itertools 0.11.0",
  "petgraph",
@@ -15240,7 +15252,7 @@ source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polka
 dependencies = [
  "Inflector",
  "blake2 0.10.6",
- "expander 2.0.0",
+ "expander 2.2.1",
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
@@ -15721,7 +15733,7 @@ version = "17.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
 dependencies = [
  "Inflector",
- "expander 2.0.0",
+ "expander 2.2.1",
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
@@ -17117,6 +17129,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "orchestra",
  "pallet-registrar-runtime-api",
  "pallet-xcm-core-buyer-runtime-api",
  "parity-scale-codec",
@@ -17125,6 +17138,7 @@ dependencies = [
  "polkadot-node-primitives",
  "polkadot-node-subsystem",
  "polkadot-node-subsystem-test-helpers",
+ "polkadot-node-subsystem-util",
  "polkadot-overseer",
  "polkadot-parachain-primitives",
  "polkadot-primitives",
@@ -17763,7 +17777,7 @@ name = "tracing-gum-proc-macro"
 version = "5.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.11.0#1bbb680f1a54d4568e4c00e344bccaa61e926434"
 dependencies = [
- "expander 2.0.0",
+ "expander 2.2.1",
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",

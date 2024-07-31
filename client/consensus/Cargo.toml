@@ -38,7 +38,7 @@ substrate-prometheus-endpoint = { workspace = true }
 # Own
 dp-consensus = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
-pallet-xcm-core-buyer-runtime-api = { workspace = true }
+pallet-xcm-core-buyer-runtime-api = { workspace = true, features = [ "std" ] }
 tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true, features = [ "std" ] }
 
@@ -87,3 +87,5 @@ sp-keyring = { workspace = true }
 substrate-test-runtime-client = { workspace = true }
 tempfile = { workspace = true }
 polkadot-node-subsystem-test-helpers = { workspace = true }
+polkadot-node-subsystem-util = { workspace = true }
+orchestra = { features = ["futures_channel"], workspace = true }
