@@ -134,6 +134,7 @@ jobs:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
     strategy:
+      fail-fast: false
       matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
     steps:
       - name: Run Zombienet Test ${{ matrix.test_name }}
