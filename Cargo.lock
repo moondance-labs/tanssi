@@ -16948,7 +16948,7 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-runtime-parachains",
  "rococo-runtime",
- "rococo-runtime-constants",
+ "westend-runtime",
 ]
 
 [[package]]
