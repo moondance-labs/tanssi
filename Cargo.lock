@@ -5209,6 +5209,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
 
 [[package]]
+name = "futures-time"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6404853a6824881fe5f7d662d147dc4e84ecd2259ba0378f272a71dab600758a"
+dependencies = [
+ "async-channel 1.9.0",
+ "async-io 1.13.0",
+ "futures-core",
+ "pin-project-lite 0.2.13",
+]
+
+[[package]]
 name = "futures-timer"
 version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16919,6 +16931,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "futures 0.3.30",
  "log",
+ "node-common",
  "polkadot-node-metrics",
  "polkadot-node-primitives",
  "polkadot-service",
@@ -16956,6 +16969,7 @@ name = "tanssi-relay-service"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "async-io 1.13.0",
  "async-trait",
  "bitvec",
  "env_logger 0.11.3",
@@ -16965,15 +16979,20 @@ dependencies = [
  "frame-system",
  "frame-system-rpc-runtime-api",
  "futures 0.3.30",
+ "futures-time",
  "hex-literal 0.3.4",
  "is_executable",
+ "jsonrpsee",
  "kvdb",
  "kvdb-rocksdb",
  "log",
  "mmr-gadget",
+ "mmr-rpc",
+ "node-common",
  "pallet-babe",
  "pallet-staking",
  "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-db",
  "parity-scale-codec",
@@ -17027,6 +17046,7 @@ dependencies = [
  "sc-consensus-babe",
  "sc-consensus-beefy",
  "sc-consensus-grandpa",
+ "sc-consensus-manual-seal",
  "sc-consensus-slots",
  "sc-executor",
  "sc-keystore",
@@ -17034,6 +17054,7 @@ dependencies = [
  "sc-network-common",
  "sc-network-sync",
  "sc-offchain",
+ "sc-rpc-spec-v2",
  "sc-service",
  "sc-sync-state-rpc",
  "sc-sysinfo",
@@ -17070,7 +17091,9 @@ dependencies = [
  "staging-xcm",
  "starlight-runtime",
  "starlight-runtime-constants",
+ "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "substrate-state-trie-migration-rpc",
  "tempfile",
  "thiserror",
  "tracing-gum",
