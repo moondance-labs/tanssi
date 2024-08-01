@@ -185,6 +185,15 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 1000,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: Some(tp_traits::ParathreadParams {
+                slot_frequency: SlotFrequency { min: 1, max: 1 },
+            }),
+        }])
         .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
             BlockNumberFor<Runtime>,
         > {
@@ -207,31 +216,6 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            // Register
-            assert_ok!(ContainerRegistrar::register_parathread(
-                origin_of(ALICE.into()),
-                1000.into(),
-                SlotFrequency { min: 1, max: 1 },
-                empty_genesis_data()
-            ));
-            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
-                root_origin(),
-                1000.into()
-            ));
-            assert_ok!(ParasSudoWrapper::sudo_schedule_para_initialize(
-                root_origin(),
-                1000.into(),
-                ParaGenesisArgs {
-                    genesis_head: ParasInherentTestBuilder::<Runtime>::mock_head_data(),
-                    validation_code: mock_validation_code(),
-                    para_kind: ParaKind::Parathread,
-                },
-            ));
-            assert_ok!(Paras::add_trusted_validation_code(
-                root_origin(),
-                mock_validation_code()
-            ));
-            run_to_session(3);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1000u32.into()));
             let alice_keys =
@@ -280,6 +264,15 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 1000,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: Some(tp_traits::ParathreadParams {
+                slot_frequency: SlotFrequency { min: 1, max: 1 },
+            }),
+        }])
         .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
             BlockNumberFor<Runtime>,
         > {
@@ -302,31 +295,6 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            // Register
-            assert_ok!(ContainerRegistrar::register_parathread(
-                origin_of(ALICE.into()),
-                1000.into(),
-                SlotFrequency { min: 1, max: 1 },
-                empty_genesis_data()
-            ));
-            assert_ok!(ContainerRegistrar::mark_valid_for_collating(
-                root_origin(),
-                1000.into()
-            ));
-            assert_ok!(ParasSudoWrapper::sudo_schedule_para_initialize(
-                root_origin(),
-                1000.into(),
-                ParaGenesisArgs {
-                    genesis_head: ParasInherentTestBuilder::<Runtime>::mock_head_data(),
-                    validation_code: mock_validation_code(),
-                    para_kind: ParaKind::Parathread,
-                },
-            ));
-            assert_ok!(Paras::add_trusted_validation_code(
-                root_origin(),
-                mock_validation_code()
-            ));
-            run_to_session(3);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1000u32.into()));
             let alice_keys =
