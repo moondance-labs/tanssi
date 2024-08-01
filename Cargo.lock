@@ -16295,7 +16295,6 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
- "sc-keystore",
  "scale-info",
  "separator",
  "serde",

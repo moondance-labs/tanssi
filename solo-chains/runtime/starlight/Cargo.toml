@@ -138,7 +138,6 @@ pallet-migrations = { workspace = true }
 [dev-dependencies]
 keyring = { workspace = true }
 remote-externalities = { workspace = true }
-sc-keystore = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }

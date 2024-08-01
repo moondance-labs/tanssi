@@ -218,8 +218,6 @@ fn default_parachains_host_configuration(
         ..Default::default()
     }
 }
-pub type ContainerChainGenesisDataResult =
-    Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String>;
 
 #[test]
 fn default_parachains_host_configuration_is_consistent() {

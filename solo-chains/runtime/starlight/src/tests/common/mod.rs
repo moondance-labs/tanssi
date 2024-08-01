@@ -538,9 +538,10 @@ impl ExtBuilder {
     }
 
     pub fn build(self) -> sp_io::TestExternalities {
-        let t = self.clone().build_storage();
+        let keystore = self.keystore.clone();
+        let t = self.build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
-        if let Some(keystore) = self.keystore.clone() {
+        if let Some(keystore) = keystore {
             ext.register_extension(KeystoreExt(keystore));
         }
         ext.execute_with(|| {
