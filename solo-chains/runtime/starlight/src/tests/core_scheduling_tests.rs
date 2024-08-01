@@ -30,10 +30,6 @@ use {
     tp_traits::SlotFrequency,
 };
 
-mod common;
-
-const UNIT: Balance = 1_000_000_000_000_000_000;
-
 #[test]
 #[should_panic(expected = "CandidatesFilteredDuringExecution")]
 // This test does not panic when producing the candidate, but when injecting it as backed
