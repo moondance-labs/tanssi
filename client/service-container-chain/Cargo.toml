@@ -1,0 +1,103 @@
+[package]
+name = "tc-service-container-chain"
+authors = { workspace = true }
+build = "build.rs"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+clap = { workspace = true, features = [ "derive" ] }
+flume = { workspace = true }
+fs2 = { workspace = true }
+futures = { workspace = true }
+jsonrpsee = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# Local
+ccp-authorities-noting-inherent = { workspace = true }
+dancebox-runtime = { workspace = true, features = [ "std" ] }
+manual-xcm-rpc = { workspace = true }
+node-common = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
+services-payment-rpc = { workspace = true }
+stream-payment-rpc = { workspace = true }
+tc-consensus = { workspace = true }
+
+# Dancekit
+dc-orchestrator-chain-interface = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+dp-slot-duration-runtime-api = { workspace = true }
+
+# Substrate
+sc-basic-authorship = { workspace = true }
+sc-chain-spec = { workspace = true }
+sc-cli = { workspace = true }
+sc-client-api = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-manual-seal = { workspace = true }
+sc-executor = { workspace = true }
+sc-network = { workspace = true }
+sc-network-sync = { workspace = true }
+sc-rpc = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-tracing = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
+substrate-prometheus-endpoint = { workspace = true }
+
+sp-api = { workspace = true, features = [ "std" ] }
+sp-block-builder = { workspace = true, features = [ "std" ] }
+sp-consensus-aura = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true, features = [ "std" ] }
+sp-keystore = { workspace = true, features = [ "std" ] }
+sp-runtime = { workspace = true, features = [ "std" ] }
+sp-timestamp = { workspace = true, features = [ "std" ] }
+
+# Polkadot
+polkadot-primitives = { workspace = true }
+
+# Cumulus
+cumulus-client-collator = { workspace = true }
+cumulus-client-consensus-aura = { workspace = true }
+cumulus-client-consensus-common = { workspace = true }
+cumulus-client-consensus-proposer = { workspace = true }
+cumulus-client-service = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-relay-chain-interface = { workspace = true }
+
+# Nimbus
+nimbus-consensus = { workspace = true }
+nimbus-primitives = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"dancebox-runtime/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"dancebox-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"sp-runtime/try-runtime",
+]
+
+fast-runtime = [ "dancebox-runtime/fast-runtime" ]

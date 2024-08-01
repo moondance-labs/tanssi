@@ -24,9 +24,13 @@ use {
         pallet_prelude::{Decode, Encode, TypeInfo},
         CloneNoBound, DebugNoBound,
     },
-    sp_runtime::RuntimeAppPublic,
+    sp_runtime::{app_crypto::AppCrypto, RuntimeAppPublic},
+    sp_std::vec::Vec,
     tp_traits::ParaId,
 };
+
+#[cfg(feature = "std")]
+use sp_keystore::{Keystore, KeystorePtr};
 
 /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
 #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
@@ -39,17 +43,42 @@ where
     pub signature: PublicKey::Signature,
 }
 
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub enum BuyCollatorProofCreationError {
+    SignatureDecodingError(parity_scale_codec::Error),
+    KeyStoreError(sp_keystore::Error),
+}
+
+#[cfg(feature = "std")]
+impl From<parity_scale_codec::Error> for BuyCollatorProofCreationError {
+    fn from(error: parity_scale_codec::Error) -> Self {
+        BuyCollatorProofCreationError::SignatureDecodingError(error)
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<sp_keystore::Error> for BuyCollatorProofCreationError {
+    fn from(error: sp_keystore::Error) -> Self {
+        BuyCollatorProofCreationError::KeyStoreError(error)
+    }
+}
+
 impl<PublicKey> BuyCoreCollatorProof<PublicKey>
 where
-    PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,
+    PublicKey: AppCrypto + RuntimeAppPublic + Clone + core::fmt::Debug,
 {
+    pub fn prepare_payload(nonce: u64, para_id: ParaId) -> Vec<u8> {
+        (nonce, para_id).encode()
+    }
+
     pub fn verify_signature(&self, para_id: ParaId) -> bool {
         let payload = (self.nonce, para_id).encode();
         self.public_key.verify(&payload, &self.signature)
     }
 
     pub fn new(nonce: u64, para_id: ParaId, public_key: PublicKey) -> Option<Self> {
-        let payload = (nonce, para_id).encode();
+        let payload = Self::prepare_payload(nonce, para_id);
         public_key
             .sign(&payload)
             .map(|signature| BuyCoreCollatorProof {
@@ -57,5 +86,30 @@ where
                 public_key,
                 signature,
             })
+    }
+
+    #[cfg(feature = "std")]
+    pub fn new_with_keystore(
+        nonce: u64,
+        para_id: ParaId,
+        public_key: PublicKey,
+        keystore: &KeystorePtr,
+    ) -> Result<Option<Self>, BuyCollatorProofCreationError> {
+        let payload = Self::prepare_payload(nonce, para_id);
+
+        Ok(Keystore::sign_with(
+            keystore,
+            <PublicKey as AppCrypto>::ID,
+            <PublicKey as AppCrypto>::CRYPTO_ID,
+            &public_key.to_raw_vec(),
+            payload.as_ref(),
+        )?
+        .map(|signature| Decode::decode(&mut signature.as_ref()))
+        .transpose()?
+        .map(|signature| BuyCoreCollatorProof {
+            nonce,
+            public_key,
+            signature,
+        }))
     }
 }

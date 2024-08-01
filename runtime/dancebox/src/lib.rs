@@ -33,6 +33,9 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+#[cfg(test)]
+mod tests;
+
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -88,7 +91,8 @@ use {
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_consensus_aura::{Slot, SlotDuration},
+    sp_consensus_aura::SlotDuration,
+    sp_consensus_slots::Slot,
     sp_core::{
         crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
     },
@@ -111,7 +115,11 @@ use {
         GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
         RemoveParaIdsWithNoCredits, SlotFrequency,
     },
-    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
+    tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -1064,15 +1072,16 @@ impl pallet_data_preservers::Config for Runtime {
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
+    type RelayOrPara = pallet_author_noting::ParaMode<
+        cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
+    >;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1235,7 +1244,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1243,7 +1251,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureSigned<AccountId>;
     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
@@ -1252,6 +1259,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -1934,6 +1942,31 @@ mod benches {
     );
 }
 
+pub fn get_para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
+    let parent_number = System::block_number();
+
+    let should_end_session =
+        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
+            parent_number + 1,
+        );
+
+    let session_index = if should_end_session {
+        Session::current_index() + 1
+    } else {
+        Session::current_index()
+    };
+
+    let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
+    let self_para_id = ParachainInfo::get();
+
+    if para_id == self_para_id {
+        Some(assigned_authorities.orchestrator_chain)
+    } else {
+        assigned_authorities.container_chains.get(&para_id).cloned()
+    }
+}
+
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
@@ -2392,7 +2425,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
@@ -2415,7 +2448,7 @@ impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
         }
 
@@ -2465,26 +2498,7 @@ impl_runtime_apis! {
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let parent_number = System::block_number();
-
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-
-            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
-
-            let self_para_id = ParachainInfo::get();
-
-            if para_id == self_para_id {
-                Some(assigned_authorities.orchestrator_chain)
-            } else {
-                assigned_authorities.container_chains.get(&para_id).cloned()
-            }
+            get_para_id_authorities(para_id)
         }
 
         /// Return the paraId assigned to a given authority
@@ -2577,13 +2591,32 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId> for Runtime {
-        fn is_core_buying_allowed(para_id: ParaId) -> Result<(), BuyingError<BlockNumber>> {
-            XcmCoreBuyer::is_core_buying_allowed(para_id)
+    impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId, NimbusId> for Runtime {
+        fn is_core_buying_allowed(para_id: ParaId, collator_public_key: NimbusId) -> Result<(), BuyingError<BlockNumber>> {
+            XcmCoreBuyer::is_core_buying_allowed(para_id, Some(collator_public_key))
+        }
+
+        fn create_buy_core_unsigned_extrinsic(para_id: ParaId, proof: BuyCoreCollatorProof<NimbusId>) -> Box<<Block as BlockT>::Extrinsic> {
+            let call = RuntimeCall::XcmCoreBuyer(pallet_xcm_core_buyer::Call::buy_core {
+                para_id,
+                proof
+            });
+
+            let unsigned_extrinsic = UncheckedExtrinsic::new_unsigned(call);
+
+            Box::new(unsigned_extrinsic)
+        }
+
+        fn get_buy_core_signature_nonce(para_id: ParaId) -> u64 {
+            pallet_xcm_core_buyer::CollatorSignatureNonce::<Runtime>::get(para_id)
+        }
+
+        fn get_buy_core_slot_drift() -> Slot {
+            <Runtime as pallet_xcm_core_buyer::Config>::BuyCoreSlotDrift::get()
         }
     }
 
-    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+    impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3 | 4) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
@@ -2636,6 +2669,28 @@ impl_runtime_apis! {
 
         fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
             PolkadotXcm::query_delivery_fees(destination, message)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+        }
+    }
+
+    impl xcm_runtime_apis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
+        fn convert_location(location: VersionedLocation) -> Result<
+            AccountId,
+            xcm_runtime_apis::conversions::Error
+        > {
+            xcm_runtime_apis::conversions::LocationToAccountHelper::<
+                AccountId,
+                xcm_config::LocationToAccountId,
+            >::convert_location(location)
         }
     }
 }

@@ -25,7 +25,6 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 
 # Nimbus
-nimbus-primitives = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
@@ -46,7 +45,6 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
-	"nimbus-primitives/std",
 	"pallet-balances/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
@@ -63,7 +61,6 @@ runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"nimbus-primitives/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-maths/runtime-benchmarks",
@@ -72,7 +69,6 @@ runtime-benchmarks = [
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
-	"nimbus-primitives/try-runtime",
 	"pallet-balances/try-runtime",
 	"sp-runtime/try-runtime",
 ]

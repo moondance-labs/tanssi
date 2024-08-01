@@ -101,6 +101,23 @@ jobs:
                     false
                   fi
 
+    check-rust-fmt:
+        name: "Check with rustfmt"
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            # With rustup's nice new toml format, we just need to run rustup show to install the toolchain
+            # https://github.com/actions-rs/toolchain/issues/126#issuecomment-782989659
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Format code with rustfmt
+              run: cargo fmt --all --check
+
+
     ####### Static Analyses #######
     cargo-clippy:
         runs-on: self-hosted
@@ -121,7 +138,7 @@ jobs:
               run: ./.github/scripts/check_toml_lints.sh
 
             - name: Clippy
-              run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features runtime-benchmarks
+              run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
 
     cargo-toml-feature-propagation:
         runs-on: ubuntu-latest
@@ -237,8 +254,6 @@ jobs:
                   curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
             - name: Setup Rust toolchain
               run: rustup show
-            - name: Formatter
-              run: cargo fmt --all --check
             - name: Build
               run: cargo build --features=fast-runtime --release --all
             - name: Save runtime wasm
@@ -537,228 +552,26 @@ jobs:
     zombienet-tests:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
+        strategy:
+          fail-fast: false
+          matrix:
+            test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay]
         steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
-
-            - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
-              with:
-                  version: 8
-
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20.x
-                  cache: "pnpm"
-
-            - name: "Download binaries"
-              uses: actions/download-artifact@v4
-              with:
-                  name: binaries
-                  path: target/release
-
-            - name: "Run zombie test"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
-
-                  cd test
-                  pnpm install
-
-                  ## Run tests
-
-                  pnpm moonwall test zombie_tanssi
-
-            - name: "Gather zombie logs"
-              if: failure()
-              run: |
-                  ls -ltr /tmp
-                  latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-                  logs_dir="logs"
-                  mkdir -p "$logs_dir"
-                  find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-            - name: "Upload zombie logs"
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: logs
-                  path: logs
-
-    zombienet-tests-parathreads:
-      runs-on: ubuntu-latest
-      needs: ["set-tags", "build"]
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-          with:
-            ref: ${{ needs.set-tags.outputs.git_ref }}
-
-        - name: Pnpm
-          uses: pnpm/action-setup@v3.0.0
-          with:
-            version: 8
-
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 20.x
-            cache: "pnpm"
-
-        - name: "Download binaries"
-          uses: actions/download-artifact@v4
-          with:
-            name: binaries
-            path: target/release
-
-        - name: "Run zombie test"
-          run: |
-            chmod uog+x target/release/tanssi-node
-            chmod uog+x target/release/container-chain-simple-node
-            chmod uog+x target/release/container-chain-frontier-node
-            
-            cd test
-            pnpm install
-            
-            ## Run tests
-            
-            pnpm moonwall test zombie_tanssi_parathreads
-
-        - name: "Gather zombie logs"
-          if: failure()
-          run: |
-            ls -ltr /tmp
-            latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-            logs_dir="logs"
-            mkdir -p "$logs_dir"
-            find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-        - name: "Upload zombie logs"
-          if: failure()
-          uses: actions/upload-artifact@v4
-          with:
-            name: logs-parathreads
-            path: logs
-
-    zombienet-tests-rotation:
-        runs-on: self-hosted
-        needs: ["set-tags", "build"]
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
-
-            - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
-              with:
-                  version: 8
-
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20.x
-                  cache: "pnpm"
-
-            - name: "Download binaries"
-              uses: actions/download-artifact@v4
-              with:
-                  name: binaries
-                  path: target/release
-
-            - name: "Run zombie test"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
-
-                  cd test
-                  pnpm install
-
-                  ## Run tests
-
-                  pnpm moonwall test zombie_tanssi_rotation
-
-            - name: "Gather zombie logs"
-              if: failure()
-              run: |
-                  ls -ltr /tmp
-                  latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-                  logs_dir="logs"
-                  mkdir -p "$logs_dir"
-                  find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-            - name: "Upload zombie logs"
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: logs-rotation
-                  path: logs
-
-    zombienet-tests-warp-sync:
-        runs-on: ubuntu-latest
-        needs: ["set-tags", "build"]
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
-
-            - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
-              with:
-                  version: 8
-
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20.x
-                  cache: "pnpm"
-
-            - name: "Download binaries"
-              uses: actions/download-artifact@v4
-              with:
-                  name: binaries
-                  path: target/release
-
-            - name: "Run zombie test"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
-
-                  cd test
-                  pnpm install
-
-                  ## Run tests
-
-                  pnpm moonwall test zombie_tanssi_warp_sync
-
-            - name: "Gather zombie logs"
-              if: failure()
-              run: |
-                  ls -ltr /tmp
-                  latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-                  logs_dir="logs"
-                  mkdir -p "$logs_dir"
-                  find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-            - name: "Upload zombie logs"
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: logs-warp-sync
-                  path: logs
+          - name: Checkout
+            uses: actions/checkout@v4
+            with:
+              ref: ${{ needs.set-tags.outputs.git_ref }}
+          - name: Run Zombienet Test ${{ matrix.test_name }}
+            uses: ./.github/workflow-templates/zombienet-tests
+            with:
+              test_name: ${{ matrix.test_name }}
 
     chopsticks-upgrade-test:
       runs-on:
         labels: ubuntu-latest
       needs: ["set-tags", "build"]
       strategy:
+        fail-fast: false
         matrix:
           chains: [
             { chain: "stagenet_dancebox", runtime: "dancebox" },
@@ -800,6 +613,7 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         strategy:
+            fail-fast: false
             matrix:
                 chain: ["dancebox"]
         steps:
@@ -879,6 +693,7 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         strategy:
+            fail-fast: false
             matrix:
                 chains: [
                   { chain: "frontier_template", runtime: "container-chain-template-frontier" },
@@ -922,67 +737,11 @@ jobs:
                 pnpm install
                 pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
 
-    zombienet-tests-tanssi-relay:
-      runs-on: self-hosted
-      needs: ["set-tags", "build"]
-      steps:
-          - name: Checkout
-            uses: actions/checkout@v4
-            with:
-                ref: ${{ needs.set-tags.outputs.git_ref }}
-
-          - name: Pnpm
-            uses: pnpm/action-setup@v3.0.0
-            with:
-                version: 8
-
-          - name: Setup Node
-            uses: actions/setup-node@v4
-            with:
-                node-version: 20.x
-                cache: "pnpm"
-
-          - name: "Download binaries"
-            uses: actions/download-artifact@v4
-            with:
-                name: binaries
-                path: target/release
-
-          - name: "Run zombie test"
-            run: |
-                chmod uog+x target/release/tanssi-node
-                chmod uog+x target/release/tanssi-relay
-                chmod uog+x target/release/tanssi-relay-execute-worker
-                chmod uog+x target/release/tanssi-relay-prepare-worker
-                chmod uog+x target/release/container-chain-simple-node
-
-                cd test
-                pnpm install
-
-                ## Run tests
-
-                pnpm moonwall test zombie_tanssi_relay
-
-          - name: "Gather zombie logs"
-            if: failure()
-            run: |
-                ls -ltr /tmp
-                latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-                logs_dir="logs"
-                mkdir -p "$logs_dir"
-                find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-          - name: "Upload zombie logs"
-            if: failure()
-            uses: actions/upload-artifact@v4
-            with:
-                name: logs-tanssi-relay
-                path: logs
-
     docker-tanssi:
         runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         strategy:
+            fail-fast: false
             matrix:
                 image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}

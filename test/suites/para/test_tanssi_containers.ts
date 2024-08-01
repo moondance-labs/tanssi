@@ -36,10 +36,12 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
 
-            const paraNetwork = paraApi.consts.system.version.specName.toString();
             const paraId1000 = (await paraApi.query.parachainInfo.parachainId()).toString();
-            expect(paraNetwork, "Para API incorrect").to.contain("dancebox");
             expect(paraId1000, "Para API incorrect").to.be.equal("1000");
+            const paraNetwork = paraApi.consts.system.version.specName.toString();
+            expect(paraNetwork, "Para API incorrect").to.satisfy(
+                (network) => network.includes("dancebox") || network.includes("flashbox")
+            );
 
             const container2000Network = container2000Api.consts.system.version.specName.toString();
             const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
@@ -442,8 +444,65 @@ describeSuite({
                 );
             },
         });
+
+        it({
+            id: "T18",
+            title: "Check collator logs to ensure common errors are fixed",
+            timeout: 300000,
+            test: async function () {
+                const logs = [
+                    "/Collator1000-01.log",
+                    "/Collator1000-02.log",
+                    "/Collator2000-01.log",
+                    "/Collator2000-02.log",
+                    "/Collator2001-01.log",
+                    "/Collator2001-02.log",
+                    "/Collator2002-01.log",
+                    "/Collator2002-02.log",
+                ];
+                for (const log of logs) {
+                    const logFilePath = getTmpZombiePath() + log;
+                    await checkLogsNotExist(logFilePath, [
+                        "Shutdown error",
+                        "Timeout when waiting for paritydb lock",
+                        "Error waiting for chain",
+                        "Failed to start container chain",
+                        "Shutting down container chain service",
+                    ]);
+                }
+            },
+        });
     },
 });
+
+// Read log file path and check that none of the specified logs are found.
+// Only supports single-line logs.
+async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    for (let i = 0; i < lines.length; i++) {
+        for (const log of logs) {
+            if (lines[i].includes(log)) {
+                // In case any log is found, show some context around the found log
+                const contextSize = 3;
+                const contextStart = Math.max(0, i - contextSize);
+                const contextEnd = Math.min(lines.length - 1, i + contextSize);
+                const contextLines = lines.slice(contextStart, contextEnd + 1);
+                const contextStr = contextLines.join("\n");
+
+                expect.fail(
+                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
+                );
+            }
+        }
+    }
+}
+
+/// Returns the /tmp/zombie-52234... path
+function getTmpZombiePath() {
+    return process.env.MOON_ZOMBIE_DIR;
+}
 
 /// Verify that the next `numBlocks` have no more than `numAuthors` different authors
 ///

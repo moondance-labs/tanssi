@@ -11,11 +11,9 @@ workspace = true
 
 [dependencies]
 flume = { workspace = true }
-futures = { workspace = true, features = [ "compat" ] }
 hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "macros", "server" ] }
 parity-scale-codec = { workspace = true, features = [ "std" ] }
 staging-xcm = { workspace = true }
-tokio = { workspace = true, features = [ "sync", "time" ] }
 
 cumulus-primitives-core = { workspace = true, features = [ "std" ] }

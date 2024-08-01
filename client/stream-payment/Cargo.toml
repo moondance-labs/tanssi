@@ -13,7 +13,6 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
-futures = { workspace = true }
 jsonrpsee = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true, features = [ "std" ] }
 parity-scale-codec = { workspace = true }

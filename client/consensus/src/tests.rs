@@ -20,7 +20,7 @@
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
 use {
     crate::{
-        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        collators::{tanssi_claim_slot, ClaimMode, Collator, Params as CollatorParams},
         OrchestratorAuraWorkerAuxData,
     },
     async_trait::async_trait,
@@ -71,6 +71,7 @@ use {
         time::Duration,
     },
     substrate_test_runtime_client::TestClient,
+    tp_traits::SlotFrequency,
 };
 
 // Duration of slot time
@@ -476,16 +477,16 @@ async fn current_node_authority_should_claim_slot() {
         };
         let aux_data = OrchestratorAuraWorkerAuxData {
             authorities: authorities.clone(),
-            min_slot_freq: None,
+            slot_freq: None,
         };
         let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
             aux_data,
             &dummy_head,
             slot.into(),
-            false,
+            ClaimMode::NormalAuthoring,
             &keystore_ptr,
-        )
-        .unwrap();
+        );
+
         if claim.is_some() {
             claimed_slots.push(slot);
         }
@@ -498,7 +499,7 @@ async fn current_node_authority_should_claim_slot() {
 async fn claim_slot_respects_min_slot_freq() {
     // There is only 1 authority, but it can only claim every 4 slots
     let mut authorities: Vec<NimbusId> = vec![];
-    let min_slot_freq = 4;
+    let min_slot_freq = 4u32;
 
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
@@ -531,16 +532,19 @@ async fn claim_slot_respects_min_slot_freq() {
         };
         let aux_data = OrchestratorAuraWorkerAuxData {
             authorities: authorities.clone(),
-            min_slot_freq: Some(min_slot_freq.into()),
+            slot_freq: Some(SlotFrequency {
+                min: min_slot_freq,
+                max: 0u32,
+            }),
         };
         let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
             aux_data,
             &head,
             slot.into(),
-            false,
+            ClaimMode::NormalAuthoring,
             &keystore_ptr,
-        )
-        .unwrap();
+        );
+
         if claim.is_some() {
             claimed_slots.push(slot);
         }
@@ -630,14 +634,13 @@ async fn collate_returns_correct_block() {
     let mut claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
         OrchestratorAuraWorkerAuxData {
             authorities: vec![alice_public.into()],
-            min_slot_freq: None,
+            slot_freq: None,
         },
         &head,
         *slot,
-        false,
+        ClaimMode::NormalAuthoring,
         &keystore_ptr,
     )
-    .unwrap()
     .unwrap();
 
     // At the end we call collate() function

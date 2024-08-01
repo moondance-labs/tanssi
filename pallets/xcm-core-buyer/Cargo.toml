@@ -19,7 +19,7 @@ tp-xcm-core-buyer = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
-sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-keystore = { workspace = true }
 staging-xcm = { workspace = true }
 
@@ -59,7 +59,7 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
-	"sp-consensus-aura/std",
+	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-keystore/std",

@@ -26,7 +26,7 @@ describeSuite({
                 await context.createBlock();
 
                 const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
                             {
                                 key: "0x636f6465",

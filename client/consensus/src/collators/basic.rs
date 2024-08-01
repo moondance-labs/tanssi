@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-        OrchestratorAuraWorkerAuxData,
+        collators as collator_util, collators::ClaimMode,
+        consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator, OrchestratorAuraWorkerAuxData,
     },
     cumulus_client_collator::{
         relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
@@ -214,16 +214,21 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
             Ok(h) => h,
         };
 
+        let claim_mode = if params.force_authoring {
+            ClaimMode::ForceAuthoring
+        } else {
+            ClaimMode::NormalAuthoring
+        };
+
         let mut claim = match collator_util::tanssi_claim_slot::<P, Block>(
             authorities,
             &parent_header,
             inherent_providers.slot(),
-            params.force_authoring,
+            claim_mode,
             &params.keystore,
         ) {
-            Ok(None) => continue,
-            Err(e) => reject_with_error!(e),
-            Ok(Some(h)) => h,
+            None => continue,
+            Some(h) => h,
         };
 
         // With async backing this function will be called every relay chain block.

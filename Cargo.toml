@@ -76,6 +76,7 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
+
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
@@ -87,8 +88,10 @@ tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = fals
 tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service", default-features = false }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
+tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
+tc-service-container-chain = { path = "client/service-container-chain" }
+
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
@@ -107,6 +110,8 @@ dp-core = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi
 pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-xcm-executor-utils = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
+
+dp-container-chain-genesis-data = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 
 # Dancekit (client)
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
@@ -145,6 +150,7 @@ pallet-assets = { git = "https://github.com/moondance-labs/polkadot-sdk", branch
 pallet-balances = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-identity = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-message-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
+pallet-multiblock-migrations = { package = "pallet-migrations", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-multisig = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-parameters = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 pallet-proxy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
@@ -205,6 +211,7 @@ sc-network-test = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 sc-network-transactions = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
 sc-offchain = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
 sc-rpc = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
+sc-rpc-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 sc-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
 sc-sysinfo = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
 sc-telemetry = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
@@ -241,7 +248,7 @@ staging-xcm-builder = { git = "https://github.com/moondance-labs/polkadot-sdk", 
 staging-xcm-executor = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 westend-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
-xcm-fee-payment-runtime-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
+xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix" }
@@ -341,6 +348,7 @@ similar-asserts = "1.1.0"
 tempfile = "3.1.0"
 thiserror = { version = "1.0.48" }
 tokio = { version = "1.32.0", default-features = false }
+tokio-stream = "0.1.15"
 tokio-util = { version = "0.7.10", default-features = false }
 tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.18" }
@@ -463,7 +471,6 @@ service = { package = "sc-service", git = "https://github.com/moondance-labs/pol
 telemetry = { package = "sc-telemetry", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 
 # Tanssi Relay Chain CLI
-cfg-if = "1.0"
 pyro = { package = "pyroscope", version = "0.5.3" }
 pyroscope_pprofrs = { version = "0.2" }
 
@@ -472,9 +479,7 @@ sc-storage-monitor = { git = "https://github.com/moondance-labs/polkadot-sdk", b
 sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }
 
 # Tanssi Relay Chain
-assert_cmd = "2.0.4"
 color-eyre = { version = "0.6.1", default-features = false }
-nix = { version = "0.26.1", features = [ "signal" ] }
 tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.11.0-tx-pool-fix", default-features = false }

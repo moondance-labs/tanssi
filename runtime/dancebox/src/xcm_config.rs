@@ -15,18 +15,22 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #[cfg(feature = "runtime-benchmarks")]
+use crate::{CollatorAssignment, Session, System};
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_session::ShouldEndSession;
+#[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
-        AllPalletsWithSystem, AssetRate, Balance, Balances, BlockNumber, CollatorAssignment,
-        ForeignAssets, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall,
-        RuntimeEvent, RuntimeOrigin, System, TransactionByteFee, WeightToFee, XcmpQueue,
+        AllPalletsWithSystem, AssetRate, Balance, Balances, BlockNumber, ForeignAssets,
+        ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem,
+        PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
-    crate::{weights, AuthorNoting, AuthorityMapping, Session},
+    crate::{get_para_id_authorities, weights, AuthorNoting},
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
@@ -35,7 +39,6 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
     nimbus_primitives::NimbusId,
-    pallet_session::ShouldEndSession,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_core_buyer::{
         CheckCollatorValidity, GetParathreadMaxCorePrice, GetParathreadParams, GetPurchaseCoreCall,
@@ -45,6 +48,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
+    sp_consensus_slots::Slot,
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
@@ -228,6 +232,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
+    type XcmRecorder = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -504,6 +509,7 @@ parameter_types! {
     pub const CoreBuyingXCMQueryTtl: BlockNumber = 100;
     pub const AdditionalTtlForInflightOrders: BlockNumber = 5;
     pub const PendingBlockTtl: BlockNumber = 10;
+    pub BuyCoreSlotDrift: Slot = Slot::from(5u64);
 }
 
 impl pallet_xcm_core_buyer::Config for Runtime {
@@ -522,6 +528,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type PendingBlocksTtl = PendingBlockTtl;
     type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
+    type BuyCoreSlotDrift = BuyCoreSlotDrift;
     type UniversalLocation = UniversalLocation;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
@@ -529,7 +536,6 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type LatestAuthorInfoFetcher = AuthorNoting;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type CollatorPublicKey = NimbusId;
-
     type WeightInfo = weights::pallet_xcm_core_buyer::SubstrateWeight<Runtime>;
 }
 
@@ -553,46 +559,9 @@ impl GetParathreadParams for GetParathreadParamsImpl {
 pub struct CheckCollatorValidityImpl;
 
 impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
-    fn is_valid_collator(para_id: ParaId, account_id: AccountId, public_key: NimbusId) -> bool {
-        // Check whether we need to fetch the next authorities or current ones
-        let parent_number = System::block_number();
-        let should_end_session =
-            <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(
-                parent_number + 1,
-            );
-
-        let session_index = if should_end_session {
-            Session::current_index() + 1
-        } else {
-            Session::current_index()
-        };
-
-        let possible_autority_id_mapping = AuthorityMapping::authority_id_mapping(session_index);
-        let authority_id_mapping = if let Some(authority_id_mapping) = possible_autority_id_mapping
-        {
-            authority_id_mapping
-        } else {
-            return false;
-        };
-
-        if !authority_id_mapping
-            .get(&public_key)
-            .is_some_and(|corresponding_account_id| *corresponding_account_id == account_id)
-        {
-            return false;
-        }
-
-        let account_ids_for_para_id = CollatorAssignment::collator_container_chain()
-            .container_chains
-            .get(&para_id)
-            .cloned()
-            .unwrap_or_default();
-
-        if !account_ids_for_para_id.contains(&account_id) {
-            return false;
-        }
-
-        true
+    fn is_valid_collator(para_id: ParaId, public_key: NimbusId) -> bool {
+        let maybe_public_keys = get_para_id_authorities(para_id);
+        maybe_public_keys.is_some_and(|public_keys| public_keys.contains(&public_key))
     }
 
     #[cfg(feature = "runtime-benchmarks")]

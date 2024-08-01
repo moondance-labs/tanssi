@@ -260,8 +260,23 @@ describeSuite({
                     "[Container-2000] Warp sync is complete",
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
-                    "[Orchestrator] Restarting container chain 2000",
                     "[Orchestrator] Container chain sync mode: Full",
+                ]);
+            },
+        });
+
+        it({
+            id: "T15",
+            title: "Check Collator2000-02.log to ensure shutdown error bug is fixed",
+            timeout: 300000,
+            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/Collator2000-02.log";
+                await checkLogsNotExist(logFilePath, [
+                    "Shutdown error",
+                    "Timeout when waiting for paritydb lock",
+                    "Error waiting for chain",
+                    "Failed to start container chain",
+                    "Shutting down container chain service",
                 ]);
             },
         });
@@ -299,6 +314,30 @@ async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
         expect.fail(
             `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
         );
+    }
+}
+
+// Read log file path and check that none of the specified logs are found.
+// Only supports single-line logs.
+async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    for (let i = 0; i < lines.length; i++) {
+        for (const log of logs) {
+            if (lines[i].includes(log)) {
+                // In case any log is found, show some context around the found log
+                const contextSize = 3;
+                const contextStart = Math.max(0, i - contextSize);
+                const contextEnd = Math.min(lines.length - 1, i + contextSize);
+                const contextLines = lines.slice(contextStart, contextEnd + 1);
+                const contextStr = contextLines.join("\n");
+
+                expect.fail(
+                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
+                );
+            }
+        }
     }
 }
 

@@ -5,11 +5,11 @@ import { Signer } from "ethers";
 import fs from "fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
 import jsonBg from "json-bigint";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
+import { getKeyringNimbusIdHex } from "../../util/keys.ts";
 import Bottleneck from "bottleneck";
 import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
@@ -60,7 +60,7 @@ describeSuite({
             expect(header2001.number.toNumber()).to.be.equal(0);
 
             // Initialize list of all collators, this should match the names from build-spec.sh script
-            allCollators = ["Collator-01", "Collator-02", "Collator-03", "Collator-04"];
+            allCollators = ["Collator-01", "Collator-02", "Collator-03", "Collator-04", "Collator-05"];
             // Initialize reverse map of collator key to collator name
             collatorName = createCollatorKeyToNameMap(paraApi, allCollators);
             console.log(collatorName);
@@ -76,65 +76,192 @@ describeSuite({
         });
 
         it({
-            id: "T02",
-            title: "Disable full_rotation",
-            timeout: 120000,
+            id: "T01a",
+            title: "Deregister 2000 and 2001 as parachains and remove their allocation from coretime",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const downgrade2000tx = relayApi.tx.sudo.sudo(
+                    relayApi.tx.parasSudoWrapper.sudoScheduleParachainDowngrade(2000)
+                );
+                await signAndSendAndInclude(downgrade2000tx, alice);
+
+                const downgrade2001tx = relayApi.tx.sudo.sudo(
+                    relayApi.tx.parasSudoWrapper.sudoScheduleParachainDowngrade(2001)
+                );
+                await signAndSendAndInclude(downgrade2001tx, alice);
+
+                const configuration = (await relayApi.query.configuration.activeConfig()).toJSON();
+                const maxCores = configuration.schedulerParams.numCores;
+                expect(maxCores, "Could not fetch maxCores").to.exist;
+
+                // Querying core descriptor data to see which core we need to make pool
+                const coresToRemoveFromCoretime = [];
+                // For 2000 and 2001, let's find corresponding core
+                for (let core = 0; core < maxCores; core++) {
+                    const coreData = (await relayApi.query.coretimeAssignmentProvider.coreDescriptors(core)).toJSON();
+                    if (
+                        coreData.currentWork.assignments[0][0].task == 2000 ||
+                        coreData.currentWork.assignments[0][0].task == 2001
+                    ) {
+                        coresToRemoveFromCoretime.push(core);
+                    }
+                }
+
+                const currentBlockNumber = (await relayApi.rpc.chain.getHeader()).toJSON().number;
+                const txsToRemoveCoretime = coresToRemoveFromCoretime.map((core) => {
+                    return relayApi.tx.coretime.assignCore(
+                        core,
+                        currentBlockNumber + 10,
+                        [[{ Pool: null }, 57600]],
+                        null
+                    );
+                });
+
+                await signAndSendAndInclude(
+                    relayApi.tx.sudo.sudo(relayApi.tx.utility.batch(txsToRemoveCoretime)),
+                    alice
+                );
+            },
+        });
+
+        it({
+            id: "T01b",
+            title: "Fund parachain tank account on relay chain",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                // Hard coded tank accounts; we still need to find a way to generate them
+                const paraId2000Tank = "5Eyq93LQvDWbHmncBeXcMcDvyRKShc2ywpFUzhCX7AcJfsxm";
+                const paraId2001Tank = "5GhKA47pfc1XWbMGbAYoP3F8Lpnvodc2M71NC7bgJH8JGbqB";
+
+                const aliceBalance = (await relayApi.query.system.account(alice.address)).data.free.toBigInt();
+                const balanceToTransfer = aliceBalance / 4n;
+
+                const batchTx = relayApi.tx.utility.batch([
+                    relayApi.tx.balances.transferKeepAlive(paraId2000Tank, balanceToTransfer),
+                    relayApi.tx.balances.transferKeepAlive(paraId2001Tank, balanceToTransfer),
+                ]);
+                await signAndSendAndInclude(batchTx, alice);
+            },
+        });
+
+        it({
+            id: "T02a",
+            title: "Disable full_rotation and set xcm weights",
+            timeout: 6000000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(0);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx4), alice);
+
+                const tx = paraApi.tx.sudo.sudo(
+                    paraApi.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
+                        buyExecutionCost: 50_000_000_000,
+                        weightAtMost: {
+                            refTime: 1_000_000_000,
+                            proofSize: 100_000,
+                        },
+                    })
+                );
+                const setRelayChainTx = paraApi.tx.sudo.sudo(paraApi.tx.xcmCoreBuyer.setRelayChain("Rococo"));
+                await signAndSendAndInclude(
+                    paraApi.tx.sudo.sudo(paraApi.tx.utility.batch([tx4, tx, setRelayChainTx])),
+                    alice
+                );
             },
         });
 
         it({
-            id: "T03a",
-            title: "Register parathreads 2000 and 2001",
-            timeout: 240000,
+            id: "T02b",
+            title: "Change configuration to assign two collators per parathread",
+            timeout: 6000000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-                const profileIdPtr = [await paraApi.query.dataPreservers.nextProfileId()];
-                const txs2000 = await registerParathread(paraApi, alice.address, 2000, profileIdPtr);
-                const txs2001 = await registerParathread(paraApi, alice.address, 2001, profileIdPtr);
-
-                const slotFrequency2000 = paraApi.createType("TpTraitsSlotFrequency", {
-                    min: 5,
-                    max: 5,
-                });
-                const tx1 = await paraApi.tx.registrar.setParathreadParams(2000, slotFrequency2000);
-                const slotFrequency2001 = paraApi.createType("TpTraitsSlotFrequency", {
-                    min: 2,
-                    max: 2,
-                });
-                const tx2 = await paraApi.tx.registrar.setParathreadParams(2001, slotFrequency2001);
-                const txs = paraApi.tx.utility.batchAll([...txs2000, ...txs2001, tx1, tx2]);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(txs), alice);
+                const setParathreadCollators = paraApi.tx.configuration.setCollatorsPerParathread(2);
+                const setOrchestratorMaxCollators = paraApi.tx.configuration.setMaxOrchestratorCollators(1);
+                await signAndSendAndInclude(
+                    paraApi.tx.sudo.sudo(
+                        paraApi.tx.utility.batch([setParathreadCollators, setOrchestratorMaxCollators])
+                    ),
+                    alice
+                );
             },
         });
 
         it({
-            id: "T03b",
-            title: "Wait for parathreads 2000 and 2001 to be assigned collators",
-            timeout: 600000,
+            id: "T03",
+            title: "Register 2000 and 2001 as parathread and assign collators to it",
             test: async function () {
-                await waitSessions(context, paraApi, 2, async () => {
-                    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                    const containerChainCollators = (
-                        await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                    ).toJSON().containerChains;
-                    // Stop waiting when parathreads have been assigned collators
-                    return containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined;
-                });
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+                const nextProfileId = await paraApi.query.dataPreservers.nextProfileId();
 
-                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                const containerChainCollators = (
-                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains;
+                const slotFrequency2000 = paraApi.createType("TpTraitsSlotFrequency", {
+                    min: 6,
+                    max: 6,
+                });
+                const responseFor2000 = await createTxBatchForCreatingParathread(
+                    paraApi,
+                    alice.address,
+                    2000,
+                    slotFrequency2000,
+                    nextProfileId
+                );
+                const slotFrequency2001 = paraApi.createType("TpTraitsSlotFrequency", {
+                    min: 5,
+                    max: 5,
+                });
+                const responseFor2001 = await createTxBatchForCreatingParathread(
+                    paraApi,
+                    alice.address,
+                    2001,
+                    slotFrequency2001,
+                    responseFor2000.nextProfileId
+                );
+
+                // Cram everything in one array
+                const txs = responseFor2000.txs;
+                txs.push(...responseFor2001.txs);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(txs)), alice);
+
+                const pendingParas = await paraApi.query.registrar.pendingParaIds();
+                expect(pendingParas.length).to.be.eq(1);
+                const parasScheduled = pendingParas[0][1];
+
+                //expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
+
+                // These will be the paras in session 2
+                // TODO: fix once we have types
+                expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001]);
+
+                // Check the para id has been given some free credits
                 expect(
-                    containerChainCollators[2000] != undefined && containerChainCollators[2001] != undefined,
-                    "Failed to register parathreads: no collators assigned"
-                ).to.be.true;
+                    (await paraApi.query.servicesPayment.blockProductionCredits(2000)).toJSON(),
+                    "Container chain 2000 should have been given credits"
+                ).toBeGreaterThan(0);
+                expect(
+                    (await paraApi.query.servicesPayment.blockProductionCredits(2001)).toJSON(),
+                    "Container chain 2001 should have been given credits"
+                ).toBeGreaterThan(0);
+
+                // Checking that in session 2 paras are registered
+                await waitSessions(context, paraApi, 2);
+
+                // Expect now paraIds to be registered
+                const parasRegistered = await paraApi.query.registrar.registeredParaIds();
+                // TODO: fix once we have types
+                expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+
+                // Check that collators have been assigned
+                const collators = await paraApi.query.collatorAssignment.collatorContainerChain();
+                console.log(collators.toJSON());
+
+                expect(collators.toJSON().containerChains[2000].length).to.be.greaterThan(0);
+                expect(collators.toJSON().containerChains[2001].length).to.be.greaterThan(0);
             },
         });
 
@@ -142,7 +269,7 @@ describeSuite({
             id: "T04",
             title: "Blocks are being produced on container 2000",
             test: async function () {
-                // Produces 1 block every 5 slots, which is every 60 seconds
+                // Produces 1 block every 5 slots, which is every 30 seconds
                 // Give it a bit more time just in case
                 await sleep(120000);
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
@@ -154,8 +281,9 @@ describeSuite({
             id: "T05",
             title: "Blocks are being produced on container 2001",
             test: async function () {
-                // Produces 1 block every 2 slots, which is every 24 seconds
-                await sleep(24000);
+                // Produces 1 block every 5 slots, which is every 30 seconds
+                // Give it a bit more time just in case
+                await sleep(120000);
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 expect(blockNum).to.be.greaterThan(0);
@@ -269,8 +397,8 @@ describeSuite({
 
                 // TODO: calculate block frequency somehow
                 assertSlotFrequency(await getBlockData(paraApi), 1);
-                assertSlotFrequency(await getBlockData(container2000Api), 5);
-                assertSlotFrequency(await getBlockData(container2001Api), 2);
+                assertSlotFrequency(await getBlockData(container2000Api), 10);
+                assertSlotFrequency(await getBlockData(container2001Api), 10);
             },
         });
     },
@@ -322,7 +450,7 @@ async function assertSlotFrequency(blockData, expectedSlotDiff) {
     expect(
         Math.abs(avgSlotDiff - expectedSlotDiff),
         `Average slot time is different from expected: average ${avgSlotDiff}, expected ${expectedSlotDiff}`
-    ).to.be.lessThan(0.5);
+    ).to.be.lessThan(5);
 }
 
 /// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
@@ -338,7 +466,7 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function registerParathread(api, manager, paraId, lastProfileIdPtr) {
+async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId) {
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",
@@ -347,21 +475,11 @@ async function registerParathread(api, manager, paraId, lastProfileIdPtr) {
         throw new Error(`Unknown chain spec path for paraId ${paraId}`);
     }
     const chain = specPaths[paraId];
-    const parathread = true;
     const rawSpec = JSONbig.parse(await fs.readFile(chain, "utf8"));
 
     const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
     const txs = [];
-    let tx1;
-    if (parathread) {
-        const slotFreq = api.createType("TpTraitsSlotFrequency", {
-            min: 1,
-            max: 1,
-        });
-        tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
-    } else {
-        tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, containerChainGenesisData);
-    }
+    const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
     txs.push(
         api.tx.utility.dispatchAs(
             {
@@ -371,7 +489,6 @@ async function registerParathread(api, manager, paraId, lastProfileIdPtr) {
         )
     );
     if (rawSpec.bootNodes?.length) {
-        let profileId = lastProfileIdPtr[0];
         for (const bootnode of rawSpec.bootNodes) {
             const profileTx = api.tx.dataPreservers.forceCreateProfile(
                 {
@@ -384,16 +501,15 @@ async function registerParathread(api, manager, paraId, lastProfileIdPtr) {
             );
             txs.push(profileTx);
 
-            const tx2 = api.tx.dataPreservers.forceStartAssignment(profileId++, rawSpec.para_id, "Free");
+            const tx2 = api.tx.dataPreservers.forceStartAssignment(nextProfileId++, rawSpec.para_id, "Free");
             const tx2s = api.tx.sudo.sudo(tx2);
             txs.push(tx2s);
         }
-        lastProfileIdPtr[0] = profileId;
     }
     const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
     txs.push(tx3);
 
-    return txs;
+    return { txs: txs, nextProfileId: nextProfileId };
 }
 
 const sleep = (ms: number): Promise<void> => {

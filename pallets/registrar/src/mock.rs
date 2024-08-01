@@ -15,7 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_registrar, RegistrarHooks},
+    crate::{self as pallet_registrar, ParathreadParamsTy, RegistrarHooks},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
         traits::{ConstU16, ConstU64},
         weights::Weight,
@@ -28,7 +29,6 @@ use {
         BuildStorage,
     },
     std::collections::BTreeMap,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, RelayStorageRootProvider},
 };
 
@@ -92,7 +92,7 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type RuntimeHoldReason = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = ();
     type WeightInfo = ();
 }
@@ -132,7 +132,6 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -140,7 +139,6 @@ impl pallet_registrar::Config for Test {
     type MarkValidForCollatingOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = frame_system::EnsureSigned<u64>;
     type RelayStorageRootProvider = MockRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
@@ -148,6 +146,7 @@ impl pallet_registrar::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
     type WeightInfo = ();
 }
@@ -312,19 +311,26 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
+    para_ids: Vec<(
+        ParaId,
+        ContainerChainGenesisData,
+        Option<ParathreadParamsTy>,
+    )>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),
         balances: Default::default(),
-        para_registrar: pallet_registrar::GenesisConfig { para_ids },
+        para_registrar: pallet_registrar::GenesisConfig {
+            para_ids,
+            phantom: Default::default(),
+        },
     }
     .build_storage()
     .unwrap()
     .into()
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),
