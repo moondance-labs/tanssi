@@ -25,7 +25,7 @@ describeSuite({
         });
 
         it({
-            id: "E01",
+            id: "E02",
             title: "Checking alice's balance is correct on genesis",
             test: async function () {
                 const balance = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
