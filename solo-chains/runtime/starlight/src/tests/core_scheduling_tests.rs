@@ -18,12 +18,11 @@
 
 use {
     crate::tests::common::*,
-    crate::{ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasSudoWrapper},
+    crate::{OnDemandAssignmentProvider, Paras},
     cumulus_primitives_core::relay_chain::{vstaging::SchedulerParams, AsyncBackingParams},
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
     primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
-    runtime_parachains::paras::{ParaGenesisArgs, ParaKind},
     sp_keystore::testing::MemoryKeystore,
     sp_std::{collections::btree_map::BTreeMap, vec},
     std::sync::Arc,
