@@ -405,11 +405,16 @@ impl ExtBuilder {
                 .iter()
                 .cloned()
                 .map(|registered_para| {
+                    let para_kind = if registered_para.parathread_params.is_some() {
+                        ParaKind::Parathread
+                    } else {
+                        ParaKind::Parachain
+                    };
                     (
                         registered_para.para_id.into(),
                         ParaGenesisArgs {
                             validation_code: mock_validation_code(),
-                            para_kind: ParaKind::Parachain,
+                            para_kind,
                             genesis_head: HeadData::from(vec![0u8]),
                         },
                     )

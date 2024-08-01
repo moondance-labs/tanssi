@@ -22,8 +22,8 @@ use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisp
 
 mod author_noting_tests;
 mod collator_assignment_tests;
-mod core_scheduling_tests;
 mod common;
+mod core_scheduling_tests;
 mod integration_test;
 mod relay_configuration;
 mod relay_registrar;

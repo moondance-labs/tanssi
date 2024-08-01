@@ -17,7 +17,8 @@
 #![cfg(test)]
 
 use {
-    crate::common::*,
+    crate::tests::common::*,
+    crate::{ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasSudoWrapper},
     cumulus_primitives_core::relay_chain::{vstaging::SchedulerParams, AsyncBackingParams},
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
@@ -25,7 +26,6 @@ use {
     runtime_parachains::paras::{ParaGenesisArgs, ParaKind},
     sp_keystore::testing::MemoryKeystore,
     sp_std::{collections::btree_map::BTreeMap, vec},
-    starlight_runtime::{ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasSudoWrapper},
     std::sync::Arc,
     tp_traits::SlotFrequency,
 };
@@ -109,7 +109,13 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             collators_per_container: 2,
             ..Default::default()
         })
-        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 1000,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: None,
+        }])
         .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
             BlockNumberFor<Runtime>,
         > {
@@ -400,7 +406,13 @@ fn test_should_have_availability_for_registered_parachain() {
             max_head_data_size: 5,
             ..Default::default()
         })
-        .with_para_ids(vec![(1000, empty_genesis_data(), u32::MAX, u32::MAX).into()])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 1000,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: None,
+        }])
         .with_keystore(Arc::new(MemoryKeystore::new()))
         .build()
         .execute_with(|| {
