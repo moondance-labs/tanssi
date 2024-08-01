@@ -1002,3 +1002,24 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         frame_system::Pallet::<T>::block_number()
     }
 }
+
+use frame_support::StorageHasher;
+pub fn storage_map_final_key<H: frame_support::StorageHasher>(
+	pallet_prefix: &str,
+	map_name: &str,
+	key: &[u8],
+) -> Vec<u8> {
+	let key_hashed = H::hash(key);
+	let pallet_prefix_hashed = frame_support::Twox128::hash(pallet_prefix.as_bytes());
+	let storage_prefix_hashed = frame_support::Twox128::hash(map_name.as_bytes());
+
+	let mut final_key = Vec::with_capacity(
+		pallet_prefix_hashed.len() + storage_prefix_hashed.len() + key_hashed.as_ref().len(),
+	);
+
+	final_key.extend_from_slice(&pallet_prefix_hashed[..]);
+	final_key.extend_from_slice(&storage_prefix_hashed[..]);
+	final_key.extend_from_slice(key_hashed.as_ref());
+
+	final_key
+}
