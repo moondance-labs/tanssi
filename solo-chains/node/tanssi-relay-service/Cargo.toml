@@ -12,10 +12,7 @@ workspace = true
 [dependencies]
 # Substrate Client
 babe = { workspace = true }
-beefy = { workspace = true }
 grandpa = { workspace = true }
-mmr-gadget = { workspace = true }
-mmr-rpc = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
 sc-authority-discovery = { workspace = true }
 sc-basic-authorship = { workspace = true }
@@ -40,13 +37,11 @@ sc-transaction-pool-api = { workspace = true }
 service = { workspace = true }
 sp-mmr-primitives = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
-substrate-state-trie-migration-rpc = { workspace = true }
 telemetry = { workspace = true }
 
 # Substrate Primitives
 beefy-primitives = { workspace = true }
 consensus_common = { workspace = true }
-grandpa_primitives = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-api = { workspace = true }
 sp-authority-discovery = { workspace = true }

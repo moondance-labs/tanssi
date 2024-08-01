@@ -35,7 +35,7 @@ pub use crate::error::Error;
 pub use polkadot_performance_test::PerfCheckError;
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
-use tanssi_relay_service::build_full;
+use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -207,7 +207,7 @@ where
 
         let task_manager = if config.chain_spec.is_dev() {
             log::info!("Starting service in Development mode");
-            build_full(
+            build_full_dev(
                 Sealing::Manual,
                 config,
                 polkadot_service::NewFullParams {
