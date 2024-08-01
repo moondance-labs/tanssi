@@ -39,7 +39,6 @@ use {
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,
-    fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
@@ -813,9 +812,6 @@ where
     }
 }
 
-// To match ethereum expectations
-const BLOCK_GAS_LIMIT: u64 = 15_000_000;
-
 impl pallet_evm_chain_id::Config for Runtime {}
 
 pub struct FindAuthorAdapter;
@@ -831,10 +827,28 @@ impl FindAuthor<H160> for FindAuthorAdapter {
     }
 }
 
+/// Current approximation of the gas/s consumption considering
+/// EVM execution over compiled WASM (on 4.4Ghz CPU).
+/// Given the 1000ms Weight, from which 75% only are used for transactions,
+/// the total EVM execution gas limit is: GAS_PER_SECOND * 1 * 0.75 ~= 30_000_000.
+pub const GAS_PER_SECOND: u64 = 40_000_000;
+
+/// Approximate ratio of the amount of Weight per Gas.
+/// u64 works for approximations because Weight is a very small unit compared to gas.
+pub const WEIGHT_PER_GAS: u64 = WEIGHT_REF_TIME_PER_SECOND / GAS_PER_SECOND;
+
 parameter_types! {
-    pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
+    pub BlockGasLimit: U256
+        = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
-    pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
+    pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
+    /// The amount of gas per pov. A ratio of 4 if we convert ref_time to gas and we compare
+    /// it with the pov_size for a block. E.g.
+    /// ceil(
+    ///     (max_extrinsic.ref_time() / max_extrinsic.proof_size()) / WEIGHT_PER_GAS
+    /// )
+    /// We should re-check `xcm_config::Erc20XcmBridgeTransferGasLimit` when changing this value
+    pub const GasLimitPovSizeRatio: u64 = 8;
     pub SuicideQuickClearLimit: u32 = 0;
 }
 
@@ -863,8 +877,7 @@ impl pallet_evm::Config for Runtime {
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
-    // TODO: update in the future
-    type GasLimitPovSizeRatio = ();
+    type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
     type SuicideQuickClearLimit = SuicideQuickClearLimit;
     type Timestamp = Timestamp;
     type WeightInfo = ();
