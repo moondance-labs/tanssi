@@ -594,18 +594,18 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // We need one more run block to trigger the on_finalize
             run_to_session(2);
             run_block();
-            // Now the parathread should be there
+            // Now the parachain should be there
             assert!(Paras::is_parachain(1000u32.into()));
 
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
-            // we should have authorities now: two sessions later and para is parachain already
+            // we should have authorities now: two sessions elapsed and para is parachain already
             assert_eq!(
                 authorities_for_container(1000u32.into()),
                 Some(vec![bob_keys.nimbus.clone()])
             );
 
             // 1000 should occupy core 0 now, as it is a parachains. which means if we try to buy a core (and use it)
-            // for parathread 1001 then it should assign core 1
+            // for parathread 1001 then it should assign core 1 to the parathread
             // let's buy core for 1001
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
