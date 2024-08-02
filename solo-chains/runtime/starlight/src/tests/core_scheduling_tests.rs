@@ -503,6 +503,10 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
         .with_keystore(Arc::new(MemoryKeystore::new()))
         .build()
         .execute_with(|| {
+            // IMPORTANT: we use parachain 1000 and parathread 1001 because when both cores
+            // need to be used, they will get inserted in the cores_with_backed map ordered
+            // this is, 1000 will go first, then 1001. Since we want 1000 to use core 0,
+            // the only way to achieve this is by assigning the parathread a higher para-id
             run_to_block(2);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1001u32.into()));
@@ -550,7 +554,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // we dont have authorities
             assert_eq!(authorities_for_container(1000u32.into()), None);
 
-            // let's buy core for 1000
+            // let's buy core for 1001
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
@@ -577,7 +581,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             let value_before_session: Option<CoreAffinityCount> =
                 frame_support::storage::unhashed::get(key.as_ref());
 
-            // 1000 is bounded to core 0!
+            // 1001 is bounded to core 0!
             assert_eq!(
                 value_before_session,
                 Some(CoreAffinityCount {
@@ -600,9 +604,9 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
                 Some(vec![bob_keys.nimbus.clone()])
             );
 
-            // 1001 should occupy core 0 now. which means if we try to buy a core (and use it)
-            // for par 1000, then it should assign core 1
-            // let's buy core for 1000
+            // 1000 should occupy core 0 now, as it is a parachains. which means if we try to buy a core (and use it)
+            // for parathread 1001 then it should assign core 1
+            // let's buy core for 1001
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
@@ -627,7 +631,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             let value_after_session: Option<CoreAffinityCount> =
                 frame_support::storage::unhashed::get(key.as_ref());
 
-            // 1000 is bounded to core 1!
+            // 1001 is bounded to core 1!
             assert_eq!(
                 value_after_session,
                 Some(CoreAffinityCount {
