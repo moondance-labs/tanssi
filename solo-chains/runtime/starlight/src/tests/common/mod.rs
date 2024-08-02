@@ -760,6 +760,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// available.
     /// - `cores_with_backed_candidates` Mapping of `para_id` seed to number of
     /// validity votes.
+    /// Important! this uses a BtreeMap, which means that elements will use increasing core orders
+    /// example: if we have parachains 1000, 1001, and 1002, they will use respectively cores
+    /// 0 1 and 2. There is no way in which we force 1002 to use core 0 in this setup
     fn create_backed_candidates(
         &self,
         paras_with_backed_candidates: &BTreeMap<u32, u32>,
@@ -1005,21 +1008,21 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
 use frame_support::StorageHasher;
 pub fn storage_map_final_key<H: frame_support::StorageHasher>(
-	pallet_prefix: &str,
-	map_name: &str,
-	key: &[u8],
+    pallet_prefix: &str,
+    map_name: &str,
+    key: &[u8],
 ) -> Vec<u8> {
-	let key_hashed = H::hash(key);
-	let pallet_prefix_hashed = frame_support::Twox128::hash(pallet_prefix.as_bytes());
-	let storage_prefix_hashed = frame_support::Twox128::hash(map_name.as_bytes());
+    let key_hashed = H::hash(key);
+    let pallet_prefix_hashed = frame_support::Twox128::hash(pallet_prefix.as_bytes());
+    let storage_prefix_hashed = frame_support::Twox128::hash(map_name.as_bytes());
 
-	let mut final_key = Vec::with_capacity(
-		pallet_prefix_hashed.len() + storage_prefix_hashed.len() + key_hashed.as_ref().len(),
-	);
+    let mut final_key = Vec::with_capacity(
+        pallet_prefix_hashed.len() + storage_prefix_hashed.len() + key_hashed.as_ref().len(),
+    );
 
-	final_key.extend_from_slice(&pallet_prefix_hashed[..]);
-	final_key.extend_from_slice(&storage_prefix_hashed[..]);
-	final_key.extend_from_slice(key_hashed.as_ref());
+    final_key.extend_from_slice(&pallet_prefix_hashed[..]);
+    final_key.extend_from_slice(&storage_prefix_hashed[..]);
+    final_key.extend_from_slice(key_hashed.as_ref());
 
-	final_key
+    final_key
 }
