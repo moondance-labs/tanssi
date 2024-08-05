@@ -74,7 +74,6 @@ describeSuite({
             test: async function () {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-                expect(true).to.equal(false);
             },
         });
 
