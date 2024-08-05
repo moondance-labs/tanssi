@@ -18,6 +18,7 @@ use {
     crate::cli::{Cli, Subcommand, NODE_VERSION},
     frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE},
     futures::future::TryFutureExt,
+    node_common::service::Sealing,
     polkadot_service::{
         self,
         benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
@@ -34,6 +35,7 @@ pub use crate::error::Error;
 pub use polkadot_performance_test::PerfCheckError;
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
+use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -202,33 +204,66 @@ where
             .flatten();
 
         let database_source = config.database.clone();
-        let task_manager = polkadot_service::build_full(
-            config,
-            polkadot_service::NewFullParams {
-                is_parachain_node: polkadot_service::IsParachainNode::No,
-                enable_beefy,
-                force_authoring_backoff: cli.run.force_authoring_backoff,
-                jaeger_agent,
-                telemetry_worker_handle: None,
-                node_version,
-                secure_validator_mode,
-                workers_path: cli.run.workers_path,
-                workers_names: Some((
-                    (&"tanssi-relay-prepare-worker").to_string(),
-                    (&"tanssi-relay-execute-worker").to_string(),
-                )),
-                overseer_gen,
-                overseer_message_channel_capacity_override: cli
-                    .run
-                    .overseer_channel_capacity_override,
-                malus_finality_delay: maybe_malus_finality_delay,
-                hwbench,
-                execute_workers_max_num: cli.run.execute_workers_max_num,
-                prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
-                prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
-            },
-        )
-        .map(|full| full.task_manager)?;
+
+        let task_manager = if config.chain_spec.is_dev() {
+            log::info!("Starting service in Development mode");
+            build_full_dev(
+                Sealing::Manual,
+                config,
+                polkadot_service::NewFullParams {
+                    is_parachain_node: polkadot_service::IsParachainNode::No,
+                    enable_beefy,
+                    force_authoring_backoff: cli.run.force_authoring_backoff,
+                    jaeger_agent,
+                    telemetry_worker_handle: None,
+                    node_version,
+                    secure_validator_mode,
+                    workers_path: cli.run.workers_path,
+                    workers_names: Some((
+                        (&"tanssi-relay-prepare-worker").to_string(),
+                        (&"tanssi-relay-execute-worker").to_string(),
+                    )),
+                    overseer_gen,
+                    overseer_message_channel_capacity_override: cli
+                        .run
+                        .overseer_channel_capacity_override,
+                    malus_finality_delay: maybe_malus_finality_delay,
+                    hwbench,
+                    execute_workers_max_num: cli.run.execute_workers_max_num,
+                    prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
+                    prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
+                },
+            )
+            .map(|full| full.task_manager)?
+        } else {
+            polkadot_service::build_full(
+                config,
+                polkadot_service::NewFullParams {
+                    is_parachain_node: polkadot_service::IsParachainNode::No,
+                    enable_beefy,
+                    force_authoring_backoff: cli.run.force_authoring_backoff,
+                    jaeger_agent,
+                    telemetry_worker_handle: None,
+                    node_version,
+                    secure_validator_mode,
+                    workers_path: cli.run.workers_path,
+                    workers_names: Some((
+                        (&"tanssi-relay-prepare-worker").to_string(),
+                        (&"tanssi-relay-execute-worker").to_string(),
+                    )),
+                    overseer_gen,
+                    overseer_message_channel_capacity_override: cli
+                        .run
+                        .overseer_channel_capacity_override,
+                    malus_finality_delay: maybe_malus_finality_delay,
+                    hwbench,
+                    execute_workers_max_num: cli.run.execute_workers_max_num,
+                    prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
+                    prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
+                },
+            )
+            .map(|full| full.task_manager)?
+        };
 
         if let Some(path) = database_source.path() {
             sc_storage_monitor::StorageMonitorService::try_spawn(
