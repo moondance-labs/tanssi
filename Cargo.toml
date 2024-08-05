@@ -336,7 +336,6 @@ exit-future = { version = "0.2.0" }
 flume = "0.10.9"
 fs2 = "0.4.3"
 futures = { version = "0.3.1" }
-futures-time = { version = "3.0.0" }
 futures-timer = "3.0.1"
 hex = { version = "0.4.3", default-features = false }
 jsonrpsee = { version = "0.22.5", features = [ "server" ] }

@@ -82,7 +82,6 @@ async-trait = { workspace = true }
 bitvec = { workspace = true, optional = true }
 codec = { workspace = true }
 futures = { workspace = true }
-futures-time = { workspace = true }
 gum = { workspace = true }
 hex-literal = { workspace = true }
 is_executable = { workspace = true }
