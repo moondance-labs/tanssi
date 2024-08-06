@@ -19,7 +19,7 @@ parity-scale-codec = { workspace = true, features = [ "derive" ] }
 [dev-dependencies]
 polkadot-runtime-parachains = { workspace = true }
 rococo-runtime = { workspace = true }
-rococo-runtime-constants = { workspace = true }
+westend-runtime = { workspace = true }
 
 [features]
 default = [
@@ -29,6 +29,6 @@ std = [
 	"cumulus-primitives-core/std",
 	"parity-scale-codec/std",
 	"polkadot-runtime-parachains/std",
-	"rococo-runtime-constants/std",
 	"rococo-runtime/std",
+	"westend-runtime/std",
 ]

@@ -638,8 +638,7 @@ fn start_consensus_orchestrator(
         force_authoring,
         proposer,
         collator_service,
-        // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: Duration::from_millis(2000),
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
