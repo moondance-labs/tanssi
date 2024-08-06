@@ -73,7 +73,7 @@ pub use eth::*;
 mod finality;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, BE> {
+pub struct FullDeps<C, P: ?Sized, A: ChainApi, BE> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -132,7 +132,7 @@ where
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block> + 'static + ?Sized,
 {
     use {
         fc_rpc::{

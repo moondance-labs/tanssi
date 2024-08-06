@@ -42,7 +42,6 @@ use {
         Configuration, ImportQueue, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::TelemetryHandle,
-    sc_transaction_pool::FullPool,
     sp_api::ProvideRuntimeApi,
     sp_consensus::EnableProofRecording,
     sp_consensus_aura::SlotDuration,
@@ -133,8 +132,11 @@ pub type ParachainBackend = TFullBackend<Block>;
 pub type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 pub type ParachainBlockImport =
     TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
-pub type ParachainProposerFactory =
-    ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
+pub type ParachainProposerFactory = ProposerFactory<
+    sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>,
+    ParachainClient,
+    EnableProofRecording,
+>;
 
 // Container chains types
 type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
@@ -305,14 +307,14 @@ fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
     orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
+    transaction_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,

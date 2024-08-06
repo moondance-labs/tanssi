@@ -86,7 +86,7 @@ pub struct NewFull {
 }
 
 /// Custom Deps for dev Rpc extension
-struct DevDeps<C, P> {
+struct DevDeps<C, P: ?Sized> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -119,7 +119,7 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: BlockBuilder<Block>,
-    P: TransactionPool + Sync + Send + 'static,
+    P: TransactionPool<Block = Block> + Sync + Send + 'static + ?Sized,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use sc_rpc_spec_v2::chain_spec::{ChainSpec, ChainSpecApiServer};
@@ -280,6 +280,9 @@ fn get_next_timestamp(
     }
 }
 
+type FullBasicPool =
+    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<FullClient, Block>, Block>;
+
 fn new_full<
     OverseerGenerator: OverseerGen,
     Network: sc_network::NetworkBackend<Block, <Block as BlockT>::Hash>,
@@ -357,6 +360,10 @@ fn new_full<
     }
 
     let mut command_sink = None;
+    let basic_pool = transaction_pool
+        .as_any()
+        .downcast_ref::<FullBasicPool>()
+        .unwrap();
 
     if role.is_authority() {
         let proposer = sc_basic_authorship::ProposerFactory::new(
@@ -373,7 +380,7 @@ fn new_full<
             Sealing::Instant => {
                 Box::new(
                     // This bit cribbed from the implementation of instant seal.
-                    transaction_pool
+                    basic_pool
                         .pool()
                         .validated_pool()
                         .import_notification_stream()
@@ -500,6 +507,8 @@ fn new_full<
     })
 }
 
+type FullPool<Client> = sc_transaction_pool::TransactionPoolImpl<Block, Client>;
+
 fn new_partial<ChainSelection>(
     config: &mut Configuration,
     Basics {
@@ -516,7 +525,7 @@ fn new_partial<ChainSelection>(
         FullBackend,
         ChainSelection,
         sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        FullPool<FullClient>,
         (
             BabeBlockImport<Block, FullClient, Arc<FullClient>>,
             BabeLink<Block>,
@@ -529,13 +538,14 @@ fn new_partial<ChainSelection>(
 where
     ChainSelection: 'static + SelectChain<Block>,
 {
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
-        task_manager.spawn_essential_handle(),
-        client.clone(),
-    );
+    let transaction_pool = sc_transaction_pool::Builder::new()
+        .with_options(config.transaction_pool.clone())
+        .build(
+            config.role.is_authority().into(),
+            config.prometheus_registry(),
+            task_manager.spawn_essential_handle(),
+            client.clone(),
+        );
 
     // Create babe block import queue; this is required to have correct epoch data
     // available for manual seal to produce block

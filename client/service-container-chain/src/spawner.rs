@@ -39,7 +39,6 @@ use {
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
-    sc_transaction_pool::FullPool,
     sp_api::ProvideRuntimeApi,
     sp_core::H256,
     sp_keystore::KeystorePtr,
@@ -125,7 +124,8 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
 #[derive(Clone)]
 pub struct CollationParams {
     pub collator_key: CollatorPair,
-    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
+    pub orchestrator_tx_pool:
+        Arc<sc_transaction_pool::TransactionPoolImpl<OpaqueBlock, ParachainClient>>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub orchestrator_para_id: ParaId,
 }
