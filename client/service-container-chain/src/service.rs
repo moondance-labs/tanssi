@@ -102,12 +102,12 @@ impl<BI> OrchestratorParachainBlockImport<BI> {
 #[async_trait::async_trait]
 impl<BI> BlockImport<Block> for OrchestratorParachainBlockImport<BI>
 where
-    BI: BlockImport<Block> + Send,
+    BI: BlockImport<Block> + Send + Sync,
 {
     type Error = BI::Error;
 
     async fn check_block(
-        &mut self,
+        &self,
         block: sc_consensus::BlockCheckParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         self.inner.check_block(block).await

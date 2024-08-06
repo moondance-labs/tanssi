@@ -559,7 +559,7 @@ impl pallet_async_backing::Config for Runtime {
 fn relay_chain_state_proof() -> RelayChainStateProof {
     let relay_storage_root =
         RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
-    let relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof()
+    let relay_chain_state = cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get()
         .expect("set in `set_validation_data`");
     RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
         .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
@@ -573,7 +573,8 @@ impl BabeCurrentBlockRandomnessGetter {
             let _relay_storage_root =
                 RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
 
-            let _relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof();
+            let _relay_chain_state =
+                cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get();
             let benchmarking_babe_output = Hash::default();
             return Some(benchmarking_babe_output);
         }
@@ -1704,7 +1705,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {
             TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+            TimeUnit::Timestamp => Some(Timestamp::get().into()),
         }
     }
 
@@ -1790,20 +1791,15 @@ impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryId;
     type Currency = Balances;
 
-    type ApproveOrigin = EnsureRoot<AccountId>;
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
     type SpendPeriod = ConstU32<{ 6 * DAYS }>;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
     #[cfg(feature = "runtime-benchmarks")]

@@ -274,6 +274,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
+    type MaxActiveOutboundChannels = ConstU32<128>;
+    type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
