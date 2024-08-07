@@ -65,7 +65,7 @@ use {
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         ParathreadParams as ParathreadParamsTy, RelayStorageRootProvider, SessionContainerChains,
-        SlotFrequency,
+        SlotFrequency, RegistrarHandler
     },
 };
 
@@ -166,6 +166,8 @@ pub mod pallet {
         type DepositAmount: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
 
         type RegistrarHooks: RegistrarHooks;
+
+        type InnerRegistrar: RegistrarHandler<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
     }

@@ -1100,6 +1100,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 

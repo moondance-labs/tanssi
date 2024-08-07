@@ -24,7 +24,7 @@ pub mod alias;
 pub use {
     alias::*,
     cumulus_primitives_core::{
-        relay_chain::{BlockNumber, Slot},
+        relay_chain::{BlockNumber, HeadData, Slot, ValidationCode},
         ParaId,
     },
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
@@ -33,7 +33,7 @@ use {
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
-        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
+        pallet_prelude::{Decode, DispatchResultWithPostInfo, DispatchResult, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
     serde::{Deserialize, Serialize},
@@ -364,5 +364,29 @@ impl GenericStorageReader for NativeStorageReader {
             Some(x) => Ok(x),
             None => Err(ReadEntryErr::Absent),
         }
+    }
+}
+
+pub trait RegistrarHandler<AccountId> {
+    fn register(
+        who: AccountId,
+		//deposit_override: Option<BalanceOf>,
+		id: ParaId,
+		genesis_head: HeadData,
+		validation_code: ValidationCode,
+		ensure_reserved: bool,
+    ) -> DispatchResult;
+}
+
+impl<AccountId> RegistrarHandler<AccountId> for (){
+    fn register(
+            _who: AccountId,
+            //deposit_override: Option<BalanceOf>,
+            _id: ParaId,
+            _genesis_head: HeadData,
+            _validation_code: ValidationCode,
+            _ensure_reserved: bool,
+        ) -> DispatchResult {
+        Ok(())
     }
 }

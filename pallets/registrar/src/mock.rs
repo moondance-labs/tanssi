@@ -148,6 +148,7 @@ impl pallet_registrar::Config for Test {
     type DepositAmount = DepositAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
+    type InnerRegistrar = ();
     type WeightInfo = ();
 }
 

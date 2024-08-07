@@ -52,6 +52,7 @@ use {
             VersionedLocationConverter,
         },
         paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        traits::Registrar as RegistrarInterface,
     },
     runtime_parachains::{
         assigner_coretime as parachains_assigner_coretime,
@@ -77,7 +78,7 @@ use {
         prelude::*,
     },
     starlight_runtime_constants::system_parachain::BROKER_ID,
-    tp_traits::{GetSessionContainerChains, Slot, SlotFrequency},
+    tp_traits::{GetSessionContainerChains, Slot, SlotFrequency, RegistrarHandler},
 };
 
 #[cfg(any(feature = "std", test))]
@@ -1354,6 +1355,24 @@ parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
+
+pub struct InnerRegistrarManager<AccountId, RegistrarManager>(sp_std::marker::PhantomData<(AccountId, RegistrarManager)>);
+impl<AccountId, RegistrarManager> RegistrarHandler<AccountId> for InnerRegistrarManager<AccountId, RegistrarManager> 
+where
+    RegistrarManager: RegistrarInterface,
+{
+    fn register(
+            who: AccountId,
+            //deposit_override: Option<BalanceOf>,
+            id: ParaId,
+            genesis_head: tp_traits::HeadData,
+            validation_code: ValidationCode,
+            ensure_reserved: bool,
+        ) -> DispatchResult {
+        Ok(())
+    }
+}
+
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -1369,6 +1388,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    type InnerRegistrar = ();
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
