@@ -35,7 +35,7 @@ use {
     polkadot_primitives::CollatorPair,
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::WasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
@@ -57,6 +57,9 @@ use {
     },
     tokio_util::sync::CancellationToken,
 };
+
+#[allow(deprecated)]
+use sc_executor::NativeElseWasmExecutor;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -127,6 +130,7 @@ where
 impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 // Orchestrator chain types
+#[allow(deprecated)]
 pub type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
