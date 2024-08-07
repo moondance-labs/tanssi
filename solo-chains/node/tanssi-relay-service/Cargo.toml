@@ -145,7 +145,10 @@ polkadot-statement-distribution = { workspace = true, optional = true }
 xcm = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
+cumulus-primitives-core = { workspace = true }
+
 # Own
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 node-common = { workspace = true }
 
 [dev-dependencies]
@@ -195,6 +198,7 @@ starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants
 
 fast-runtime = [ "starlight-runtime?/fast-runtime" ]
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
