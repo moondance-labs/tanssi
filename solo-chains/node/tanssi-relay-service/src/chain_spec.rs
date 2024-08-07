@@ -67,11 +67,11 @@ pub struct Extensions {
 }
 
 // Generic chain spec, in case when we don't have the native runtime.
-pub type GenericChainSpec = service::GenericChainSpec<(), Extensions>;
+pub type GenericChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the starlight runtime.
 #[cfg(feature = "starlight-native")]
-pub type StarlightChainSpec = service::GenericChainSpec<(), Extensions>;
+pub type StarlightChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the starlight runtime.
 // Dummy chain spec, but that is fine when we don't have the native runtime.

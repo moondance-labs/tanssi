@@ -26,7 +26,10 @@ use {
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
-    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::{BlockId, BlockNumber, CoreState},
+        CollationInfo, CollectCollationInfo, ParaId,
+    },
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
@@ -64,6 +67,7 @@ use {
         Digest, DigestItem,
     },
     sp_timestamp::Timestamp,
+    sp_version::RuntimeVersion,
     std::{
         collections::{BTreeMap, BTreeSet},
         pin::Pin,
@@ -259,6 +263,25 @@ impl RelayChainInterface for RelayChain {
     ) -> RelayChainResult<Option<polkadot_primitives::ValidationCodeHash>> {
         unimplemented!("Not needed for test")
     }
+
+    async fn candidates_pending_availability(
+        &self,
+        _: PHash,
+        _: ParaId,
+    ) -> RelayChainResult<Vec<CommittedCandidateReceipt>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn availability_cores(
+        &self,
+        _relay_parent: PHash,
+    ) -> RelayChainResult<Vec<CoreState<PHash, BlockNumber>>> {
+        unimplemented!("Not needed for test");
+    }
+
+    async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
+        unimplemented!("Not needed for test")
+    }
 }
 
 #[derive(Clone)]
@@ -303,7 +326,7 @@ impl SealExtractorVerfier {
 #[async_trait::async_trait]
 impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     async fn verify(
-        &mut self,
+        &self,
         mut block: sc_consensus::BlockImportParams<B>,
     ) -> Result<sc_consensus::BlockImportParams<B>, String> {
         if block.fork_choice.is_none() {

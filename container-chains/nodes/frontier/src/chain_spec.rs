@@ -29,10 +29,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<
-    container_chain_template_frontier_runtime::RuntimeGenesisConfig,
-    Extensions,
->;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Orcherstrator's parachain id
 pub const ORCHESTRATOR: ParaId = ParaId::new(1000);

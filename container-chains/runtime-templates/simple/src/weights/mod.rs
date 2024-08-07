@@ -16,7 +16,6 @@
 
 //! A list of the different weight modules for our runtime.
 
-pub mod cumulus_pallet_dmp_queue;
 pub mod cumulus_pallet_parachain_system;
 pub mod cumulus_pallet_xcmp_queue;
 pub mod frame_system;

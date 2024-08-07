@@ -34,8 +34,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec =
-    sc_service::GenericChainSpec<dancebox_runtime::RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Generate the session keys from individual elements.
 ///

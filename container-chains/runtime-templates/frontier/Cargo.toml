@@ -97,7 +97,6 @@ staging-xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
-cumulus-pallet-dmp-queue = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
@@ -135,7 +134,6 @@ default = [ "std" ]
 std = [
 	"async-backing-primitives/std",
 	"ccp-xcm/std",
-	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-xcm/std",
@@ -234,7 +232,6 @@ std = [
 force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
-	"cumulus-pallet-dmp-queue/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
@@ -281,7 +278,6 @@ runtime-benchmarks = [
 ]
 
 try-runtime = [
-	"cumulus-pallet-dmp-queue/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
 	"cumulus-pallet-xcm/try-runtime",
 	"cumulus-pallet-xcmp-queue/try-runtime",

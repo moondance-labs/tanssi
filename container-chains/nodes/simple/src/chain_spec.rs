@@ -28,10 +28,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<
-    container_chain_template_simple_runtime::RuntimeGenesisConfig,
-    Extensions,
->;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {

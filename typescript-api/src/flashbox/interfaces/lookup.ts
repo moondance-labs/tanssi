@@ -722,9 +722,6 @@ export default {
     /** Lookup72: pallet_treasury::pallet::Event<T, I> */
     PalletTreasuryEvent: {
         _enum: {
-            Proposed: {
-                proposalIndex: "u32",
-            },
             Spending: {
                 budgetRemaining: "u128",
             },
@@ -732,10 +729,6 @@ export default {
                 proposalIndex: "u32",
                 award: "u128",
                 account: "AccountId32",
-            },
-            Rejected: {
-                proposalIndex: "u32",
-                slashed: "u128",
             },
             Burnt: {
                 burntFunds: "u128",
@@ -1216,6 +1209,10 @@ export default {
             force_adjust_total_issuance: {
                 direction: "PalletBalancesAdjustmentDirection",
                 delta: "Compact<u128>",
+            },
+            burn: {
+                value: "Compact<u128>",
+                keepAlive: "bool",
             },
         },
     },
@@ -1761,16 +1758,9 @@ export default {
     /** Lookup241: pallet_treasury::pallet::Call<T, I> */
     PalletTreasuryCall: {
         _enum: {
-            propose_spend: {
-                value: "Compact<u128>",
-                beneficiary: "MultiAddress",
-            },
-            reject_proposal: {
-                proposalId: "Compact<u32>",
-            },
-            approve_proposal: {
-                proposalId: "Compact<u32>",
-            },
+            __Unused0: "Null",
+            __Unused1: "Null",
+            __Unused2: "Null",
             spend_local: {
                 amount: "Compact<u128>",
                 beneficiary: "MultiAddress",
@@ -1864,8 +1854,8 @@ export default {
         id: "[u8;8]",
         amount: "u128",
     },
-    /** Lookup265: pallet_balances::types::IdAmount<flashbox_runtime::RuntimeHoldReason, Balance> */
-    PalletBalancesIdAmountRuntimeHoldReason: {
+    /** Lookup265: frame_support::traits::tokens::misc::IdAmount<flashbox_runtime::RuntimeHoldReason, Balance> */
+    FrameSupportTokensMiscIdAmountRuntimeHoldReason: {
         id: "FlashboxRuntimeRuntimeHoldReason",
         amount: "u128",
     },
@@ -1914,8 +1904,8 @@ export default {
     PalletDataPreserversHoldReason: {
         _enum: ["ProfileDeposit"],
     },
-    /** Lookup272: pallet_balances::types::IdAmount<flashbox_runtime::RuntimeFreezeReason, Balance> */
-    PalletBalancesIdAmountRuntimeFreezeReason: {
+    /** Lookup272: frame_support::traits::tokens::misc::IdAmount<flashbox_runtime::RuntimeFreezeReason, Balance> */
+    FrameSupportTokensMiscIdAmountRuntimeFreezeReason: {
         id: "FlashboxRuntimeRuntimeFreezeReason",
         amount: "u128",
     },
@@ -2232,7 +2222,6 @@ export default {
     /** Lookup356: pallet_treasury::pallet::Error<T, I> */
     PalletTreasuryError: {
         _enum: [
-            "InsufficientProposersBalance",
             "InvalidIndex",
             "TooManyApprovals",
             "InsufficientPermission",

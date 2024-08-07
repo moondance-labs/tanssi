@@ -17,7 +17,7 @@
 use {
     crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
-    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber},
+    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber, CoreState},
     dp_core::well_known_keys::para_id_head,
     futures::executor::block_on,
     hex_literal::hex,
@@ -25,6 +25,7 @@ use {
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::InherentDataProvider,
     sp_runtime::DigestItem,
+    sp_version::RuntimeVersion,
     std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
@@ -115,6 +116,7 @@ fn header_double_encode_even_if_already_encoded() {
 
 mod mock_relay_chain_impl {
     use {
+        super::*,
         async_trait::async_trait,
         cumulus_primitives_core::{
             relay_chain::{
@@ -250,6 +252,25 @@ mod mock_relay_chain_impl {
             _para_id: ParaId,
             _occupied_core_assumption: OccupiedCoreAssumption,
         ) -> RelayChainResult<Option<polkadot_primitives::ValidationCodeHash>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn candidates_pending_availability(
+            &self,
+            _: PHash,
+            _: ParaId,
+        ) -> RelayChainResult<Vec<CommittedCandidateReceipt>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn availability_cores(
+            &self,
+            _relay_parent: PHash,
+        ) -> RelayChainResult<Vec<CoreState<PHash, BlockNumber>>> {
+            unimplemented!("Not needed for test");
+        }
+
+        async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
             unimplemented!("Not needed for test")
         }
     }
