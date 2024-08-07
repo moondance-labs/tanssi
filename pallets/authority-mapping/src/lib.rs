@@ -44,13 +44,16 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        type SessionIndex: parity_scale_codec::FullCodec
+            + TypeInfo
+            + Copy
+            + AtLeast32BitUnsigned
+            + MaxEncodedLen;
 
         // Sessions after which keys should be removed
         #[pallet::constant]
@@ -65,6 +68,7 @@ pub mod pallet {
     }
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub type AuthorityIdMapping<T: Config> = StorageMap<
         _,
         Twox64Concat,

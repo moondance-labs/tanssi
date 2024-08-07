@@ -129,10 +129,19 @@ pub trait GetCurrentContainerChains {
 }
 
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
-/// tanssi slot time, 12 seconds by default.
+/// tanssi slot time, 6 seconds.
 // TODO: this is currently ignored
 #[derive(
-    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+    Clone,
+    Debug,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
 )]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
@@ -174,7 +183,16 @@ impl Default for SlotFrequency {
 }
 
 #[derive(
-    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+    Clone,
+    Debug,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
 )]
 pub struct ParathreadParams {
     pub slot_frequency: SlotFrequency,

@@ -24,7 +24,7 @@ use {
 
 // Data preserver profile.
 #[apply(derive_scale_codec)]
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct Profile<T: Config> {
     pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
@@ -34,7 +34,7 @@ pub struct Profile<T: Config> {
 }
 
 #[apply(derive_scale_codec)]
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub enum ParaIdsFilter<T: Config> {
     AnyParaId,
@@ -61,6 +61,7 @@ impl<T: Config> ParaIdsFilter<T> {
 }
 
 #[apply(derive_storage_traits)]
+#[derive(MaxEncodedLen)]
 pub enum ProfileMode {
     Bootnode,
     Rpc { supports_ethereum_rpcs: bool },
@@ -70,7 +71,7 @@ pub enum ProfileMode {
 /// - the account id which created (and manage) the profile
 /// - the amount deposited to register the profile
 #[apply(derive_scale_codec)]
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct RegisteredProfile<T: Config> {
     pub account: T::AccountId,
@@ -83,11 +84,11 @@ pub struct RegisteredProfile<T: Config> {
 /// Allows to process various kinds of payment options for assignments.
 pub trait AssignmentPayment<AccountId> {
     /// Providers requests which kind of payment it accepts.
-    type ProviderRequest: tp_traits::StorageTraits + Serialize + DeserializeOwned;
+    type ProviderRequest: tp_traits::StorageTraits + Serialize + DeserializeOwned + MaxEncodedLen;
     /// Extra parameter the assigner provides.
     type AssignerParameter: tp_traits::StorageTraits + Serialize + DeserializeOwned;
     /// Represents the succesful outcome of the assignment.
-    type AssignmentWitness: tp_traits::StorageTraits + Serialize + DeserializeOwned;
+    type AssignmentWitness: tp_traits::StorageTraits + Serialize + DeserializeOwned + MaxEncodedLen;
 
     fn try_start_assignment(
         assigner: AccountId,

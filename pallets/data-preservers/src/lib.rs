@@ -124,7 +124,6 @@ pub mod pallet {
 
     /// Data preservers pallet.
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
@@ -147,7 +146,8 @@ pub mod pallet {
             + Eq
             + CheckedAdd
             + One
-            + Ord;
+            + Ord
+            + MaxEncodedLen;
 
         // Who can call start_assignment/stop_assignment?
         type AssignmentOrigin: EnsureOriginWithArg<

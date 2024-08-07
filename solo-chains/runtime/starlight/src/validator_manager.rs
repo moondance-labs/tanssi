@@ -31,7 +31,6 @@ pub mod pallet {
     };
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configuration for the parachain proposer.
@@ -55,11 +54,13 @@ pub mod pallet {
 
     /// Validators that should be retired, because their Parachain was deregistered.
     #[pallet::storage]
+    #[pallet::unbounded]
     pub(crate) type ValidatorsToRetire<T: Config> =
         StorageValue<_, Vec<T::ValidatorId>, ValueQuery>;
 
     /// Validators that should be added.
     #[pallet::storage]
+    #[pallet::unbounded]
     pub(crate) type ValidatorsToAdd<T: Config> = StorageValue<_, Vec<T::ValidatorId>, ValueQuery>;
 
     #[pallet::call]

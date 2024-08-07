@@ -77,7 +77,6 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -119,6 +118,7 @@ pub mod pallet {
     }
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub(crate) type CollatorContainerChain<T: Config> =
         StorageValue<_, AssignedCollators<T::AccountId>, ValueQuery>;
 
@@ -130,6 +130,7 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
+    #[pallet::unbounded]
     pub(crate) type PendingCollatorContainerChain<T: Config> =
         StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
 

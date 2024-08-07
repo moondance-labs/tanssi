@@ -117,7 +117,6 @@ pub mod pallet {
 
     /// Pooled Staking pallet.
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
@@ -175,7 +174,16 @@ pub mod pallet {
     /// Stores the last time the stream was updated, which allows to compute
     /// elapsed time and perform payment.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub struct Stream<AccountId, Unit, AssetId, Balance> {
         /// Payer, source of the stream.
@@ -210,7 +218,17 @@ pub mod pallet {
 
     /// Stream configuration.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub struct StreamConfig<Unit, AssetId, Balance> {
         /// Unit in which time is measured using a `TimeProvider`.
@@ -223,7 +241,17 @@ pub mod pallet {
 
     /// Origin of a change request.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub enum Party {
         Source,
@@ -241,7 +269,17 @@ pub mod pallet {
 
     /// Kind of change requested.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub enum ChangeKind<Time> {
         /// The requested change is a suggestion, and the other party doesn't
@@ -255,7 +293,17 @@ pub mod pallet {
 
     /// Describe how the deposit should change.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Copy,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub enum DepositChange<Balance> {
         /// Increase deposit by given amount.
@@ -268,7 +316,16 @@ pub mod pallet {
 
     /// A request to change a stream config.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
         pub requester: Party,

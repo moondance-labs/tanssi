@@ -293,7 +293,17 @@ where
 }
 
 #[derive(
-    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+    Serialize,
+    Deserialize,
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum ProviderRequest {
     Free,
@@ -315,7 +325,17 @@ pub enum AssignerParameter {
 }
 
 #[derive(
-    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+    Serialize,
+    Deserialize,
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum AssignmentWitness {
     Free,

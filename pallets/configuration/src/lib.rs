@@ -63,6 +63,7 @@ const LOG_TARGET: &str = "pallet_configuration";
     scale_info::TypeInfo,
     Serialize,
     Deserialize,
+    MaxEncodedLen,
 )]
 pub struct HostConfiguration {
     /// Maximum number of collators, in total, including orchestrator and containers
@@ -162,7 +163,6 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -202,6 +202,10 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
+    // TODO: instead of making this unbounded, we could refactor into a BoundedVec<X, Const<2>>
+    // since it can have at most 2 items anyway. But the upstream pallet doesn't do that so low
+    // priority.
+    #[pallet::unbounded]
     pub(crate) type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 

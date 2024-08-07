@@ -94,7 +94,16 @@ pub mod pallet {
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub enum PoolsKey<A: FullCodec> {
         /// Total amount of currency backing this candidate across all pools.
@@ -152,7 +161,16 @@ pub mod pallet {
     /// Value is the amount of shares in the joining/leaving pool.
 
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        MaxEncodedLen,
     )]
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
@@ -256,7 +274,6 @@ pub mod pallet {
 
     /// Pooled Staking pallet.
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]

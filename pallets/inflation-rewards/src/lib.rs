@@ -56,7 +56,6 @@ pub mod pallet {
 
     /// Inflation rewards pallet.
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::hooks]
@@ -178,7 +177,9 @@ pub mod pallet {
     pub(super) type ChainsToReward<T: Config> =
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
 
-    #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+    #[derive(
+        Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
+    )]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
         pub para_ids: BoundedVec<
