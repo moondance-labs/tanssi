@@ -859,7 +859,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
-            // Charlie and Dave should be assigned to para 1001
+            // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -1069,7 +1069,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
-            // Charlie and Dave should be assigned to para 1001
+            // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -1155,7 +1155,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
-            // Charlie and Dave should not be assigned to para 1001
+            // Alice and Bob should not be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
         });
@@ -1311,7 +1311,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             assert!(assignment.container_chains.is_empty());
 
             run_to_session(2u32);
-            // Charlie and Dave should be assigned to para 1001
+            // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -1453,7 +1453,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
-            // Charlie and Dave should be assigned to para 1001
+            // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -1537,7 +1537,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
-            // Charlie and Dave should not be assigned to para 1001
+            // Alice and Bob should not be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
         });
