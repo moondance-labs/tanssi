@@ -1546,9 +1546,6 @@ impl pallet_treasury::Config for Runtime {
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
-    #[cfg(feature = "runtime-benchmarks")]
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();

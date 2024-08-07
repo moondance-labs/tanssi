@@ -57,39 +57,42 @@ describeSuite({
             id: "E06",
             title: "Non root can not spend from treasury",
             test: async function () {
-                const balanceBefore = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
+                expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
 
                 // Creates a proposal
-                const proposal_value = 100n;
+                const proposal_value = 1000000000n;
                 const assetKind = null;
                 const tx = polkadotJs.tx.treasury.spend(assetKind, proposal_value, user_dave.address, null);
                 const signedTx = await tx.signAsync(user_bob);
                 await context.createBlock([signedTx]);
 
-                const balanceAfter = (
-                    await polkadotJs.query.system.account(user_dave.address)
-                ).data.free.toBigInt();
-                expect(balanceAfter).to.equal(balanceBefore);
+                expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
             },
         });
-
 
         it({
             id: "E07",
             title: "Root can spend from treasury",
             test: async function () {
+                expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
                 const balanceBefore = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
 
                 // Creates a proposal
-                const proposal_value = 100n;
+                // Value needs to be higher than the transaction fee paid by dave, but lower than the total treasury pot
+                const proposal_value = 1000000000n;
                 const assetKind = null;
                 const tx = polkadotJs.tx.treasury.spend(assetKind, proposal_value, user_dave.address, null);
-                const signedTx = await tx.signAsync(user_bob);
+                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
                 await context.createBlock([signedTx]);
 
-                const balanceAfter = (
-                    await polkadotJs.query.system.account(user_dave.address)
-                ).data.free.toBigInt();
+                expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(1);
+
+                // Dave needs to claim payout
+                const tx2 = polkadotJs.tx.treasury.payout(0);
+                const signedTx2 = await tx2.signAsync(user_dave);
+                await context.createBlock([signedTx2]);
+
+                const balanceAfter = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
                 expect(balanceAfter).toBeGreaterThan(balanceBefore);
             },
         });
