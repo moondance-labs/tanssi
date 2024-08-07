@@ -23,7 +23,7 @@ use {
     frame_benchmarking::{account, benchmarks},
     frame_support::assert_ok,
     frame_system::RawOrigin,
-    sp_std::vec,
+    sp_std::{boxed::Box, vec},
     tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
 };
 

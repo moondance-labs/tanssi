@@ -37,6 +37,7 @@ sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
+sp-keystore = { workspace = true }
 sp-mmr-primitives = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -120,6 +121,7 @@ cumulus-primitives-core = { workspace = true }
 
 # Tanssi
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -159,6 +161,7 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -238,6 +241,7 @@ std = [
 	"sp-core/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
+	"sp-keystore/std",
 	"sp-mmr-primitives/std",
 	"sp-runtime/std",
 	"sp-session/std",

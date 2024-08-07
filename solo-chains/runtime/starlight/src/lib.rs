@@ -34,11 +34,12 @@ use {
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{ConstBool, FromContains},
     },
-    frame_system::EnsureNever,
+    frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
     pallet_initializer as tanssi_initializer,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
+    parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
         slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
@@ -57,9 +58,8 @@ use {
         paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
-        assigner_coretime as parachains_assigner_coretime,
         assigner_on_demand as parachains_assigner_on_demand,
-        configuration as parachains_configuration, coretime,
+        configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
         inclusion::{self as parachains_inclusion, AggregateMessageOrigin, UmpQueueId},
@@ -72,16 +72,13 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    sp_core::Get,
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::AccountIdConversion,
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, vec_deque::VecDeque},
         prelude::*,
     },
-    starlight_runtime_constants::system_parachain::BROKER_ID,
     tp_traits::{GetSessionContainerChains, Slot, SlotFrequency},
 };
 
@@ -873,7 +870,7 @@ impl parachains_paras::Config for Runtime {
     type QueueFootprinter = ParaInclusion;
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
-    type AssignCoretime = CoretimeAssignmentProvider;
+    type AssignCoretime = ();
 }
 
 parameter_types! {
@@ -949,40 +946,102 @@ impl parachains_paras_inherent::Config for Runtime {
 impl parachains_scheduler::Config for Runtime {
     // If you change this, make sure the `Assignment` type of the new provider is binary compatible,
     // otherwise provide a migration.
-    type AssignmentProvider = CoretimeAssignmentProvider;
+    type AssignmentProvider = CollatorAssignmentProvider;
 }
 
-parameter_types! {
-    pub const BrokerId: u32 = BROKER_ID;
-    pub const BrokerPalletId: PalletId = PalletId(*b"py/broke");
-    pub MaxXcmTransactWeight: Weight = Weight::from_parts(200_000_000, 20_000);
-}
+pub struct CollatorAssignmentProvider;
+impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
+    for CollatorAssignmentProvider
+{
+    fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
+        let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
+        let assigned_paras: Vec<ParaId> = assigned_collators
+            .container_chains
+            .iter()
+            .filter_map(|(&para_id, _)| {
+                if Paras::is_parachain(para_id) {
+                    Some(para_id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        log::info!("pop assigned collators {:?}", assigned_paras);
+        log::info!("looking for core idx {:?}", core_idx);
 
-pub struct BrokerPot;
-impl Get<InteriorLocation> for BrokerPot {
-    fn get() -> InteriorLocation {
-        Junction::AccountId32 {
-            network: None,
-            id: BrokerPalletId::get().into_account_truncating(),
+        if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
+            log::info!("outputing assignment for  {:?}", para_id);
+
+            Some(Assignment::Bulk(*para_id))
+        } else {
+            // We dont want to assign affinity to a parathread that has not collators assigned
+            // Even if we did they would need their own collators to produce blocks, but for now
+            // I prefer to forbid.
+            // In this case the parathread would have bought the core for nothing
+            let assignment =
+                parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(
+                    core_idx,
+                )?;
+            if assigned_collators
+                .container_chains
+                .contains_key(&assignment.para_id())
+            {
+                Some(assignment)
+            } else {
+                None
+            }
         }
-        .into()
     }
-}
+    fn report_processed(assignment: Assignment) {
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::report_processed(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {}
+        }
+    }
+    /// Push an assignment back to the front of the queue.
+    ///
+    /// The assignment has not been processed yet. Typically used on session boundaries.
+    /// Parameters:
+    /// - `assignment`: The on demand assignment.
+    fn push_back_assignment(assignment: Assignment) {
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::push_back_assignment(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {
+                // Session changes are rough. We just drop assignments that did not make it on a
+                // session boundary. This seems sensible as bulk is region based. Meaning, even if
+                // we made the effort catching up on those dropped assignments, this would very
+                // likely lead to other assignments not getting served at the "end" (when our
+                // assignment set gets replaced).
+            }
+        }
+    }
 
-impl coretime::Config for Runtime {
-    type RuntimeOrigin = RuntimeOrigin;
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type BrokerId = BrokerId;
-    type BrokerPotLocation = BrokerPot;
-    type WeightInfo = coretime::TestWeightInfo;
-    type SendXcm = crate::xcm_config::XcmRouter;
-    type AssetTransactor = crate::xcm_config::LocalAssetTransactor;
-    type AccountToLocation = xcm_builder::AliasesIntoAccountId32<
-        xcm_config::ThisNetwork,
-        <Runtime as frame_system::Config>::AccountId,
-    >;
-    type MaxXcmTransactWeight = MaxXcmTransactWeight;
+    #[cfg(feature = "runtime-benchmarks")]
+    fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
+        // Given that we are not tracking anything in `Bulk` assignments, it is safe to always
+        // return a bulk assignment.
+        Assignment::Bulk(para_id)
+    }
+
+    fn session_core_count() -> u32 {
+        let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        log::info!(
+            "session core count is {:?}",
+            config.scheduler_params.num_cores
+        );
+
+        config.scheduler_params.num_cores
+    }
 }
 
 #[cfg(feature = "fast-runtime")]
@@ -1006,13 +1065,11 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type PalletId = OnDemandPalletId;
 }
 
-impl parachains_assigner_coretime::Config for Runtime {}
-
 impl parachains_initializer::Config for Runtime {
     type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
     type ForceOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
-    type CoretimeOnNewSession = Coretime;
+    type CoretimeOnNewSession = ();
 }
 
 impl parachains_disputes::Config for Runtime {
@@ -1292,11 +1349,9 @@ construct_runtime! {
         ParasSlashing: parachains_slashing = 63,
         MessageQueue: pallet_message_queue = 64,
         OnDemandAssignmentProvider: parachains_assigner_on_demand = 66,
-        CoretimeAssignmentProvider: parachains_assigner_coretime = 68,
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
-        Coretime: coretime = 74,
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 99,
@@ -1527,7 +1582,6 @@ mod benches {
         // Polkadot
         // NOTE: Make sure to prefix these with `runtime_common::` so
         // the that path resolves correctly in the generated file.
-        [runtime_common::coretime, Coretime]
         [runtime_common::paras_registrar, Registrar]
         [runtime_parachains::configuration, Configuration]
         [runtime_parachains::hrmp, Hrmp]
