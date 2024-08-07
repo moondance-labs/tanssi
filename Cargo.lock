@@ -16278,6 +16278,8 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
  "pallet-scheduler",
+ "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
  "pallet-sudo",
