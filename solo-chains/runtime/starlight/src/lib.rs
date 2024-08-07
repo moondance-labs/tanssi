@@ -1285,9 +1285,8 @@ impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> 
 parameter_types! {
     // 60 days worth of blocks
     pub const FreeBlockProductionCredits: BlockNumber = 60 * DAYS;
-    // 60 days worth of blocks
-    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get();
-    // pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/u32::from(EpochDurationInBlocks::get());
+    // 60 days worth of collator assignment
+    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/EpochDurationInBlocks::get();
 }
 
 impl pallet_services_payment::Config for Runtime {

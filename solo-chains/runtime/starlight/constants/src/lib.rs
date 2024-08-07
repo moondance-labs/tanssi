@@ -45,8 +45,7 @@ pub mod time {
     pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
     frame_support::parameter_types! {
-        pub EpochDurationInBlocks: BlockNumber =
-            prod_or_fast!(1 * HOURS, 1 * MINUTES, "STARLIGHT_EPOCH_DURATION");
+        pub const EpochDurationInBlocks: BlockNumber = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     }
 
     // These time units are defined in number of blocks.
