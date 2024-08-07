@@ -1948,7 +1948,6 @@ version = "0.1.0"
 dependencies = [
  "async-backing-primitives",
  "ccp-xcm",
- "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcm",
@@ -2050,7 +2049,6 @@ name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
  "async-backing-primitives",
- "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcm",
@@ -2657,23 +2655,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cumulus-pallet-dmp-queue"
-version = "0.16.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#4a003906b0987b16a473dd83bdb7ffc57395635a"
-dependencies = [
- "cumulus-primitives-core",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-io",
- "sp-runtime",
- "staging-xcm",
-]
-
-[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.16.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#4a003906b0987b16a473dd83bdb7ffc57395635a"
@@ -3097,7 +3078,6 @@ dependencies = [
  "async-backing-primitives",
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
- "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcm",

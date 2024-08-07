@@ -1884,7 +1884,6 @@ construct_runtime!(
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
-        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 54,
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
@@ -1926,7 +1925,6 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_assets, ForeignAssets]

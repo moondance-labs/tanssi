@@ -284,16 +284,6 @@ impl cumulus_pallet_xcm::Config for Runtime {
 }
 
 parameter_types! {
-    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
-    type RuntimeEvent = RuntimeEvent;
-    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-}
-
-parameter_types! {
     pub MessageQueueServiceWeight: Weight = Perbill::from_percent(25) * RuntimeBlockWeights::get().max_block;
 }
 
