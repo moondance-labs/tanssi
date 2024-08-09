@@ -445,24 +445,6 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        pallet_services_payment::GenesisConfig::<Runtime> {
-            para_id_credits: self
-                .para_ids
-                .clone()
-                .into_iter()
-                .map(|registered_para| {
-                    (
-                        registered_para.para_id.into(),
-                        registered_para.block_production_credits,
-                        registered_para.collator_assignment_credits,
-                    )
-                        .into()
-                })
-                .collect(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
         runtime_common::paras_registrar::GenesisConfig::<Runtime> {
             next_free_para_id: self.next_free_para_id,
             ..Default::default()
