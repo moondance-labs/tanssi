@@ -395,7 +395,7 @@ impl ExtBuilder {
                     )
                 })
                 .collect(),
-            phantom: Default::default(),
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();
