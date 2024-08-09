@@ -27,6 +27,7 @@ dancebox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-data-preservers = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-consensus = { workspace = true }

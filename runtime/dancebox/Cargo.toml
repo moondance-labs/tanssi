@@ -32,6 +32,7 @@ pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-pooled-staking = { workspace = true }

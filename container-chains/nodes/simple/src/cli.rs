@@ -187,7 +187,7 @@ pub struct RpcProviderSubcommand {
     #[arg(long)]
     pub orchestrator_endpoints: Vec<Url>,
 
-    /// Account associated with the node, whose assignements will be followed to provide RPC services.
+    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
     #[arg(long)]
-    pub assignement_account: dp_core::AccountId,
+    pub profile_id: u64,
 }
