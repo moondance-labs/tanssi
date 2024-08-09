@@ -130,6 +130,8 @@ pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-services-payment = { workspace = true }
+pallet-services-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
@@ -214,6 +216,8 @@ std = [
 	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
+	"pallet-services-payment-runtime-api/std",
+	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
 	"pallet-sudo/std",
@@ -303,6 +307,7 @@ runtime-benchmarks = [
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
+	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -369,6 +374,7 @@ try-runtime = [
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-scheduler/try-runtime",
+	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
 	"pallet-sudo/try-runtime",

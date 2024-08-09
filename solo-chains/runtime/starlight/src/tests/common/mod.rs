@@ -17,6 +17,7 @@
 #![allow(dead_code)]
 
 use {
+    crate::{BlockProductionCost, CollatorAssignmentCost, RuntimeCall},
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -39,6 +40,7 @@ use {
     frame_system::pallet_prelude::{BlockNumberFor, HeaderFor},
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     runtime_parachains::{
         paras::{ParaGenesisArgs, ParaKind},
@@ -56,7 +58,7 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Grandpa, Initializer, Runtime, RuntimeCall, Session, System, TanssiAuthorityAssignment,
+    Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
 
@@ -425,6 +427,24 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        pallet_services_payment::GenesisConfig::<Runtime> {
+            para_id_credits: self
+                .para_ids
+                .clone()
+                .into_iter()
+                .map(|registered_para| {
+                    (
+                        registered_para.para_id.into(),
+                        registered_para.block_production_credits,
+                        registered_para.collator_assignment_credits,
+                    )
+                        .into()
+                })
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         runtime_common::paras_registrar::GenesisConfig::<Runtime> {
             next_free_para_id: self.next_free_para_id,
             ..Default::default()
@@ -590,6 +610,19 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData {
 
 pub fn current_slot() -> u64 {
     Babe::current_slot().into()
+}
+
+pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
+    let block_cost = BlockProductionCost::block_cost(&para_id).0;
+    u128::from(number_of_blocks).saturating_mul(block_cost)
+}
+
+pub fn collator_assignment_credits_to_required_balance(
+    number_of_sessions: u32,
+    para_id: ParaId,
+) -> Balance {
+    let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
+    u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
 }
 
 pub const ALICE: [u8; 32] = [4u8; 32];

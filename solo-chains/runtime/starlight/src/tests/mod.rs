@@ -27,6 +27,7 @@ mod core_scheduling_tests;
 mod integration_test;
 mod relay_configuration;
 mod relay_registrar;
+mod services_payment;
 mod session_keys;
 mod sudo;
 

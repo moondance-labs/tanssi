@@ -3,10 +3,9 @@
 Starlight is a testnet runtime with no stability guarantees.
 
 ## How to build `starlight` runtime
-`EpochDurationInBlocks` parameter is configurable via `STARLIGHT_EPOCH_DURATION` environment variable. To build wasm
-runtime blob with customized epoch duration the following command shall be executed:
+To build wasm runtime blob with customized epoch duration the following command shall be executed:
 ```bash
-STARLIGHT_EPOCH_DURATION=10 ./polkadot/scripts/build-only-wasm.sh starlight-runtime /path/to/output/directory/
+./polkadot/scripts/build-only-wasm.sh starlight-runtime /path/to/output/directory/
 ```
 
 ## How to run `starlight-local`
