@@ -496,3 +496,18 @@ lto = true
 [profile.release]
 opt-level = 3
 panic = "unwind"
+
+[patch."https://github.com/moondance-labs/dancekit"]
+dc-orchestrator-chain-interface = { path = "/home/tomasz/projects/dancekit/client/orchestrator-chain-interface" }
+dp-container-chain-genesis-data = { path = "/home/tomasz/projects/dancekit/primitives/container-chain-genesis-data" }
+dp-core = { path = "/home/tomasz/projects/dancekit/primitives/core" }
+pallet-cc-authorities-noting = { path = "/home/tomasz/projects/dancekit/container-chain-pallets/authorities-noting" }
+ccp-authorities-noting-inherent = { path = "/home/tomasz/projects/dancekit/container-chain-primitives/authorities-noting-inherent" }
+dp-collator-assignment = { path = "/home/tomasz/projects/dancekit/primitives/collator-assignment" }
+test-relay-sproof-builder = { path = "/home/tomasz/projects/dancekit/test-sproof-builder" }
+dp-chain-state-snapshot = { path = "/home/tomasz/projects/dancekit/primitives/chain-state-snapshot" }
+ccp-xcm = { path = "/home/tomasz/projects/dancekit/container-chain-primitives/xcm" }
+pallet-xcm-executor-utils = { path = "/home/tomasz/projects/dancekit/pallets/xcm-executor-utils" }
+dp-consensus = { path = "/home/tomasz/projects/dancekit/primitives/consensus" }
+dp-impl-tanssi-pallets-config = { path = "/home/tomasz/projects/dancekit/primitives/impl-tanssi-pallets-config" }
+dp-slot-duration-runtime-api = { path = "/home/tomasz/projects/dancekit/primitives/slot-duration-runtime-api" }
