@@ -718,28 +718,56 @@ pub async fn start_solochain_node(
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
-    let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+    let (_block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
     let (relay_chain_interface, collator_key) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
     let validator = parachain_config.role.is_authority();
-    let force_authoring = parachain_config.force_authoring;
-    
+
+    log::info!("start_solochain_node: is validator? {}", validator);
+
+    let node_builder = node_builder
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            orchestrator_para_id,
+            import_queue,
+            relay_chain_interface.clone(),
+        )
+        .await?;
+
+    let rpc_builder = {
+        let client = node_builder.client.clone();
+        let transaction_pool = node_builder.transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+                command_sink: None,
+                xcm_senders: None,
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
+
     let relay_chain_slot_duration = Duration::from_secs(6);
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let sync_keystore = node_builder.keystore_container.keystore();
-    let mut collate_on_tanssi: Arc<
+    let collate_on_tanssi: Arc<
         dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
     > = Arc::new(move || {
-        if validator {
-            panic!("Called uninitialized collate_on_tanssi");
-        } else {
-            panic!("Called collate_on_tanssi when node is not running as a validator");
-        }
+        // collate_on_tanssi will not be called in solochains because solochains use a different consensus
+        // mechanism and need validators instead of collators.
+        // The runtime enforces this because the orchestrator_chain is never assigned any collators.
+        panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
     });
 
     let announce_block = {
@@ -747,10 +775,12 @@ pub async fn start_solochain_node(
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 
+    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
+
     start_relay_chain_tasks(StartRelayChainTasksParams {
         client: node_builder.client.clone(),
         announce_block: announce_block.clone(),
-        orchestrator_para_id,
+        para_id: orchestrator_para_id,
         relay_chain_interface: relay_chain_interface.clone(),
         task_manager: &mut node_builder.task_manager,
         da_recovery_profile: if validator {
@@ -765,29 +795,16 @@ pub async fn start_solochain_node(
     })?;
 
     if validator {
-        let collator_key = collator_key
-            .clone()
-            .expect("Command line arguments do not allow this. qed");
-
         // Start task which detects para id assignment, and starts/stops container chains.
-        // Note that if this node was started without a `container_chain_config`, we don't
-        // support collation on container chains, so there is no need to detect changes to assignment
         build_check_assigned_para_id(
             node_builder.client.clone(),
             sync_keystore.clone(),
             cc_spawn_tx.clone(),
             node_builder.task_manager.spawn_essential_handle(),
         );
-
-        let start_collation = {
-            move || {
-                panic!("Solochain collator cannot collate on tanssi and the runtime shouldn't allow this, this is a bug")
-            }
-        };
-        // Save callback for later, used when collator rotates from container chain back to orchestrator chain
-        collate_on_tanssi = Arc::new(start_collation);
     }
-    
+    node_builder.network.start_network.start_network();
+
     let sync_keystore = node_builder.keystore_container.keystore();
     let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
         client: node_builder.client.clone(),
