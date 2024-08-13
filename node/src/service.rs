@@ -472,7 +472,7 @@ async fn start_node_impl(
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx, validator),
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator, false),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
@@ -875,7 +875,7 @@ pub async fn start_solochain_node(
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx, validator),
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(

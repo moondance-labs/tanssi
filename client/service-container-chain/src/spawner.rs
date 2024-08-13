@@ -602,13 +602,14 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
+    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool, solochain: bool) {
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
         // collators stop at the same time, when they start again nobody will produce the new block.
         // So all nodes start as orchestrator chain collators, until the first block is imported,
         // then the real assignment is used.
-        if validator {
+        // Except in solochain mode, then the initial assignment is None.
+        if validator && !solochain {
             self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
                 .await;
         }
