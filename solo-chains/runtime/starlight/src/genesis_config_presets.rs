@@ -242,6 +242,13 @@ fn starlight_testnet_genesis(
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
         .collect();
 
+    // Assign 1000 block credits to all container chains registered in genesis
+    // Assign 100 collator assignment credits to all container chains registered in genesis
+    let para_id_credits: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
+        .collect();
+
     const ENDOWMENT: u128 = 1_000_000 * STAR;
 
     serde_json::json!({
@@ -289,6 +296,7 @@ fn starlight_testnet_genesis(
             invulnerables: invulnerables.iter().cloned().map(|x| x.stash.clone()).collect(),
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
+        "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
     })
 }
 
