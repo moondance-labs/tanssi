@@ -687,6 +687,7 @@ pub async fn start_solochain_node(
     collator_options: CollatorOptions,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+    let orchestrator_para_id = Default::default();
     let parachain_config = prepare_node_config(orchestrator_config);
     if let (container_chain_cli, _) = &mut container_chain_config {
         // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
@@ -725,23 +726,6 @@ pub async fn start_solochain_node(
 
     let validator = parachain_config.role.is_authority();
     let force_authoring = parachain_config.force_authoring;
-
-    let rpc_builder = {
-        let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
-
-        Box::new(move |deny_unsafe, _| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: transaction_pool.clone(),
-                deny_unsafe,
-                command_sink: None,
-                xcm_senders: None,
-            };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
     
     let relay_chain_slot_duration = Duration::from_secs(6);
     let overseer_handle = relay_chain_interface
@@ -763,12 +747,10 @@ pub async fn start_solochain_node(
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 
-    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
-
     start_relay_chain_tasks(StartRelayChainTasksParams {
         client: node_builder.client.clone(),
         announce_block: announce_block.clone(),
-        para_id,
+        orchestrator_para_id,
         relay_chain_interface: relay_chain_interface.clone(),
         task_manager: &mut node_builder.task_manager,
         da_recovery_profile: if validator {
@@ -844,12 +826,12 @@ pub async fn start_solochain_node(
                 relay_chain,
                 relay_chain_interface,
                 sync_keystore,
-                orchestrator_para_id: para_id,
+                orchestrator_para_id,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         orchestrator_client: orchestrator_client.clone(),
                         orchestrator_tx_pool,
-                        orchestrator_para_id: para_id,
+                        orchestrator_para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
                     })
