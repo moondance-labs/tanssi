@@ -12,9 +12,8 @@ workspace = true
 [dependencies]
 # Substrate Client
 babe = { workspace = true }
-beefy = { workspace = true }
 grandpa = { workspace = true }
-mmr-gadget = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
 sc-authority-discovery = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-block-builder = { workspace = true }
@@ -22,6 +21,7 @@ sc-chain-spec = { workspace = true }
 sc-client-api = { workspace = true }
 sc-client-db = { workspace = true }
 sc-consensus = { workspace = true }
+sc-consensus-manual-seal = { workspace = true }
 sc-consensus-slots = { workspace = true }
 sc-executor = { workspace = true }
 sc-keystore = { workspace = true }
@@ -29,18 +29,19 @@ sc-network = { workspace = true }
 sc-network-common = { workspace = true }
 sc-network-sync = { workspace = true }
 sc-offchain = { workspace = true }
+sc-rpc-spec-v2 = { workspace = true }
 sc-sync-state-rpc = { workspace = true }
 sc-sysinfo = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 service = { workspace = true }
 sp-mmr-primitives = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
 telemetry = { workspace = true }
 
 # Substrate Primitives
 beefy-primitives = { workspace = true }
 consensus_common = { workspace = true }
-grandpa_primitives = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-api = { workspace = true }
 sp-authority-discovery = { workspace = true }
@@ -76,6 +77,7 @@ frame-system-rpc-runtime-api = { workspace = true }
 prometheus-endpoint = { workspace = true }
 
 # External Crates
+async-io = { workspace = true }
 async-trait = { workspace = true }
 bitvec = { workspace = true, optional = true }
 codec = { workspace = true }
@@ -83,6 +85,7 @@ futures = { workspace = true }
 gum = { workspace = true }
 hex-literal = { workspace = true }
 is_executable = { workspace = true }
+jsonrpsee = { workspace = true }
 kvdb = { workspace = true }
 kvdb-rocksdb = { workspace = true, optional = true }
 log = { workspace = true }
@@ -142,6 +145,12 @@ polkadot-statement-distribution = { workspace = true, optional = true }
 xcm = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
+cumulus-primitives-core = { workspace = true }
+
+# Own
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+node-common = { workspace = true }
+
 [dev-dependencies]
 assert_matches = { workspace = true }
 env_logger = { workspace = true }
@@ -189,6 +198,7 @@ starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants
 
 fast-runtime = [ "starlight-runtime?/fast-runtime" ]
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",

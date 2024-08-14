@@ -18,12 +18,13 @@ use {
     crate::cli::{Cli, Subcommand, NODE_VERSION},
     frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE},
     futures::future::TryFutureExt,
+    node_common::service::Sealing,
     polkadot_service::{
         self,
         benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
-        HeaderBackend, IdentifyVariant,
+        HeaderBackend, IdentifyVariant, ParaId,
     },
-    sc_cli::SubstrateCli,
+    sc_cli::{CliConfiguration, SubstrateCli},
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
@@ -34,6 +35,7 @@ pub use crate::error::Error;
 pub use polkadot_performance_test::PerfCheckError;
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
+use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -75,56 +77,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        let id = if id.is_empty() {
-            let n = get_exec_name().unwrap_or_default();
-            ["starlight"]
-                .iter()
-                .cloned()
-                .find(|&chain| n.starts_with(chain))
-                .unwrap_or("starlight")
-        } else {
-            id
-        };
-        Ok(match id {
-            #[cfg(feature = "starlight-native")]
-            "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
-            #[cfg(feature = "starlight-native")]
-            "dev" | "starlight-dev" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_development_config()?)
-            }
-            #[cfg(feature = "starlight-native")]
-            "starlight-local" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_local_testnet_config()?)
-            }
-            #[cfg(feature = "starlight-native")]
-            "starlight-staging" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
-            }
-            #[cfg(not(feature = "starlight-native"))]
-            name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
-                Err(format!(
-                    "`{}` only supported with `starlight-native` feature enabled.",
-                    name
-                ))?
-            }
-            path => {
-                let path = std::path::PathBuf::from(path);
-
-                let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
-                    path.clone(),
-                )?) as Box<dyn polkadot_service::ChainSpec>;
-
-                // When `force_*` is given or the file name starts with the name of one of the known
-                // chains, we use the chain spec for the specific chain.
-                if self.run.force_starlight {
-                    Box::new(
-                        tanssi_relay_service::chain_spec::StarlightChainSpec::from_json_file(path)?,
-                    )
-                } else {
-                    chain_spec
-                }
-            }
-        })
+        load_spec(id, vec![], vec![2000, 2001], None)
     }
 }
 
@@ -202,33 +155,66 @@ where
             .flatten();
 
         let database_source = config.database.clone();
-        let task_manager = polkadot_service::build_full(
-            config,
-            polkadot_service::NewFullParams {
-                is_parachain_node: polkadot_service::IsParachainNode::No,
-                enable_beefy,
-                force_authoring_backoff: cli.run.force_authoring_backoff,
-                jaeger_agent,
-                telemetry_worker_handle: None,
-                node_version,
-                secure_validator_mode,
-                workers_path: cli.run.workers_path,
-                workers_names: Some((
-                    (&"tanssi-relay-prepare-worker").to_string(),
-                    (&"tanssi-relay-execute-worker").to_string(),
-                )),
-                overseer_gen,
-                overseer_message_channel_capacity_override: cli
-                    .run
-                    .overseer_channel_capacity_override,
-                malus_finality_delay: maybe_malus_finality_delay,
-                hwbench,
-                execute_workers_max_num: cli.run.execute_workers_max_num,
-                prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
-                prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
-            },
-        )
-        .map(|full| full.task_manager)?;
+
+        let task_manager = if config.chain_spec.is_dev() {
+            log::info!("Starting service in Development mode");
+            build_full_dev(
+                Sealing::Manual,
+                config,
+                polkadot_service::NewFullParams {
+                    is_parachain_node: polkadot_service::IsParachainNode::No,
+                    enable_beefy,
+                    force_authoring_backoff: cli.run.force_authoring_backoff,
+                    jaeger_agent,
+                    telemetry_worker_handle: None,
+                    node_version,
+                    secure_validator_mode,
+                    workers_path: cli.run.workers_path,
+                    workers_names: Some((
+                        (&"tanssi-relay-prepare-worker").to_string(),
+                        (&"tanssi-relay-execute-worker").to_string(),
+                    )),
+                    overseer_gen,
+                    overseer_message_channel_capacity_override: cli
+                        .run
+                        .overseer_channel_capacity_override,
+                    malus_finality_delay: maybe_malus_finality_delay,
+                    hwbench,
+                    execute_workers_max_num: cli.run.execute_workers_max_num,
+                    prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
+                    prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
+                },
+            )
+            .map(|full| full.task_manager)?
+        } else {
+            polkadot_service::build_full(
+                config,
+                polkadot_service::NewFullParams {
+                    is_parachain_node: polkadot_service::IsParachainNode::No,
+                    enable_beefy,
+                    force_authoring_backoff: cli.run.force_authoring_backoff,
+                    jaeger_agent,
+                    telemetry_worker_handle: None,
+                    node_version,
+                    secure_validator_mode,
+                    workers_path: cli.run.workers_path,
+                    workers_names: Some((
+                        (&"tanssi-relay-prepare-worker").to_string(),
+                        (&"tanssi-relay-execute-worker").to_string(),
+                    )),
+                    overseer_gen,
+                    overseer_message_channel_capacity_override: cli
+                        .run
+                        .overseer_channel_capacity_override,
+                    malus_finality_delay: maybe_malus_finality_delay,
+                    hwbench,
+                    execute_workers_max_num: cli.run.execute_workers_max_num,
+                    prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
+                    prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
+                },
+            )
+            .map(|full| full.task_manager)?
+        };
 
         if let Some(path) = database_source.path() {
             sc_storage_monitor::StorageMonitorService::try_spawn(
@@ -279,7 +265,13 @@ pub fn run() -> Result<()> {
         ),
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            Ok(runner.sync_run(|config| cmd.run(config.chain_spec, config.network))?)
+            let chain_spec = load_spec(
+                &cmd.base.chain_id(cmd.base.is_dev()?)?,
+                cmd.add_container_chain.clone().unwrap_or_default(),
+                cmd.mock_container_chain.clone().unwrap_or_default(),
+                cmd.invulnerable.clone(),
+            )?;
+            Ok(runner.sync_run(|config| cmd.base.run(chain_spec, config.network))?)
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd).map_err(Error::SubstrateCli)?;
@@ -485,4 +477,65 @@ pub fn run() -> Result<()> {
         agent.shutdown();
     }
     Ok(())
+}
+
+fn load_spec(
+    id: &str,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<u32>,
+    invulnerables: Option<Vec<String>>,
+) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+    let id = if id.is_empty() {
+        let n = get_exec_name().unwrap_or_default();
+        ["starlight"]
+            .iter()
+            .cloned()
+            .find(|&chain| n.starts_with(chain))
+            .unwrap_or("starlight")
+    } else {
+        id
+    };
+    let mock_container_chains: Vec<ParaId> =
+        mock_container_chains.iter().map(|&x| x.into()).collect();
+    let invulnerables = invulnerables.unwrap_or_default();
+    Ok(match id {
+        #[cfg(feature = "starlight-native")]
+        "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
+        #[cfg(feature = "starlight-native")]
+        "dev" | "starlight-dev" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_development_config(
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            )?,
+        ),
+        #[cfg(feature = "starlight-native")]
+        "starlight-local" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_local_testnet_config(
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            )?,
+        ),
+        #[cfg(feature = "starlight-native")]
+        "starlight-staging" => {
+            Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
+        }
+        #[cfg(not(feature = "starlight-native"))]
+        name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
+            Err(format!(
+                "`{}` only supported with `starlight-native` feature enabled.",
+                name
+            ))?
+        }
+        path => {
+            let path = std::path::PathBuf::from(path);
+
+            let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
+                path.clone(),
+            )?) as Box<dyn polkadot_service::ChainSpec>;
+
+            chain_spec
+        }
+    })
 }

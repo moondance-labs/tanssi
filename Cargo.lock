@@ -1748,7 +1748,7 @@ checksum = "cd7e35aee659887cbfb97aaf227ac12cad1a9d7c71e55ff3376839ed4e282d08"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -16278,6 +16278,8 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
  "pallet-scheduler",
+ "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
  "pallet-sudo",
@@ -16314,6 +16316,7 @@ dependencies = [
  "sp-inherents",
  "sp-io",
  "sp-keyring",
+ "sp-keystore",
  "sp-mmr-primitives",
  "sp-offchain",
  "sp-runtime",
@@ -16798,7 +16801,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -16920,6 +16923,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "futures 0.3.30",
  "log",
+ "node-common",
  "polkadot-node-metrics",
  "polkadot-node-primitives",
  "polkadot-service",
@@ -16949,7 +16953,7 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-runtime-parachains",
  "rococo-runtime",
- "rococo-runtime-constants",
+ "westend-runtime",
 ]
 
 [[package]]
@@ -16957,8 +16961,11 @@ name = "tanssi-relay-service"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "async-io 1.13.0",
  "async-trait",
  "bitvec",
+ "cumulus-primitives-core",
+ "dp-container-chain-genesis-data",
  "env_logger 0.11.3",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -16968,13 +16975,15 @@ dependencies = [
  "futures 0.3.30",
  "hex-literal 0.3.4",
  "is_executable",
+ "jsonrpsee",
  "kvdb",
  "kvdb-rocksdb",
  "log",
- "mmr-gadget",
+ "node-common",
  "pallet-babe",
  "pallet-staking",
  "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-db",
  "parity-scale-codec",
@@ -17026,8 +17035,8 @@ dependencies = [
  "sc-client-db",
  "sc-consensus",
  "sc-consensus-babe",
- "sc-consensus-beefy",
  "sc-consensus-grandpa",
+ "sc-consensus-manual-seal",
  "sc-consensus-slots",
  "sc-executor",
  "sc-keystore",
@@ -17035,6 +17044,7 @@ dependencies = [
  "sc-network-common",
  "sc-network-sync",
  "sc-offchain",
+ "sc-rpc-spec-v2",
  "sc-service",
  "sc-sync-state-rpc",
  "sc-sysinfo",
@@ -17052,7 +17062,6 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-beefy",
- "sp-consensus-grandpa",
  "sp-core",
  "sp-inherents",
  "sp-io",
@@ -17071,6 +17080,7 @@ dependencies = [
  "staging-xcm",
  "starlight-runtime",
  "starlight-runtime-constants",
+ "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tempfile",
  "thiserror",

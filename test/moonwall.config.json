@@ -175,7 +175,7 @@
             "runScripts": [
                 "build-spec-flashbox.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/flashbox-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
             ],
@@ -607,8 +607,8 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "build-spec-single-container.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json"
+                "build-spec-starlight-plus-dancebox-container.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-dancebox-container-1000.json"
             ],
             "foundation": {
                 "type": "zombie",

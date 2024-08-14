@@ -23,19 +23,40 @@ use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
+    nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
-    sp_core::{sr25519, Pair, Public},
+    scale_info::prelude::string::String,
+    sp_core::{
+        crypto::{key_types, KeyTypeId},
+        sr25519, ByteArray, Pair, Public,
+    },
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
+    sp_std::vec,
     sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
+    tp_traits::ParaId,
 };
 
 /// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
+fn get_from_seed<TPublic: Public>(
+    seed: &str,
+    add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>,
+) -> <TPublic::Pair as Pair>::Public {
+    let secret_uri = format!("//{}", seed);
+    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+
+    let public = pair.public();
+
+    if let Some((keystore, key_type)) = add_to_keystore {
+        keystore
+            .insert(key_type, &secret_uri, &public.to_raw_vec())
+            .unwrap();
+    }
+    public
 }
 
 /// Helper function to generate an account ID from seed
@@ -43,7 +64,7 @@ fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
     AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+    AccountPublic::from(get_from_seed::<TPublic>(seed, None)).into_account()
 }
 
 #[derive(Clone, Debug)]
@@ -56,12 +77,12 @@ pub struct AuthorityKeys {
     pub para_assignment: AssignmentId,
     pub authority_discovery: AuthorityDiscoveryId,
     pub beefy: BeefyId,
-    pub nimbus: nimbus_primitives::NimbusId,
+    pub nimbus: NimbusId,
 }
 
 /// Helper function to generate stash, controller and session key from seed
-pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
-    let keys = get_authority_keys_from_seed_no_beefy(seed);
+pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) -> AuthorityKeys {
+    let keys = get_authority_keys_from_seed_no_beefy(seed, keystore);
 
     AuthorityKeys {
         stash: keys.0,
@@ -71,13 +92,13 @@ pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
         para_validator: keys.4,
         para_assignment: keys.5,
         authority_discovery: keys.6,
-        beefy: get_from_seed::<BeefyId>(seed),
+        beefy: get_from_seed::<BeefyId>(seed, None),
         nimbus: get_aura_id_from_seed(seed),
     }
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
@@ -87,6 +108,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
 /// Helper function to generate stash, controller and session key from seed
 fn get_authority_keys_from_seed_no_beefy(
     seed: &str,
+    keystore: Option<&KeystorePtr>,
 ) -> (
     AccountId,
     AccountId,
@@ -99,11 +121,14 @@ fn get_authority_keys_from_seed_no_beefy(
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_from_seed::<BabeId>(seed, keystore.map(|k| (k, key_types::BABE))),
+        get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
+        get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
+        get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
+        get_from_seed::<AuthorityDiscoveryId>(
+            seed,
+            keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY)),
+        ),
     )
 }
 
@@ -131,7 +156,7 @@ fn starlight_session_keys(
     para_assignment: AssignmentId,
     authority_discovery: AuthorityDiscoveryId,
     beefy: BeefyId,
-    nimbus: nimbus_primitives::NimbusId,
+    nimbus: NimbusId,
 ) -> SessionKeys {
     SessionKeys {
         babe,
@@ -203,8 +228,26 @@ fn starlight_testnet_genesis(
     initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
+    let invulnerables: Vec<_> = invulnerables
+        .iter()
+        .map(|seed| get_authority_keys_from_seed(seed, None))
+        .collect();
+
+    let para_ids: Vec<_> = container_chains
+        .into_iter()
+        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
+        .collect();
+
+    // Assign 1000 block credits to all container chains registered in genesis
+    // Assign 100 collator assignment credits to all container chains registered in genesis
+    let para_id_credits: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
+        .collect();
 
     const ENDOWMENT: u128 = 1_000_000 * STAR;
 
@@ -233,13 +276,14 @@ fn starlight_testnet_genesis(
                 .collect::<Vec<_>>(),
         },
         "babe": {
-            "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
+            "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG)
         },
         "sudo": { "key": Some(root_key.clone()) },
         "configuration": {
             "config": runtime_parachains::configuration::HostConfiguration {
                 scheduler_params: SchedulerParams {
                     max_validators_per_core: Some(1),
+                    num_cores: para_ids.len() as u32,
                     ..default_parachains_host_configuration().scheduler_params
                 },
                 ..default_parachains_host_configuration()
@@ -247,7 +291,12 @@ fn starlight_testnet_genesis(
         },
         "registrar": {
             "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
-        }
+        },
+        "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
+            invulnerables: invulnerables.iter().cloned().map(|x| x.stash.clone()).collect(),
+        },
+        "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
+        "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
     })
 }
 
@@ -499,64 +548,42 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 }
 
 //development
-fn starlight_development_config_genesis() -> serde_json::Value {
+pub fn starlight_development_config_genesis(
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+) -> serde_json::Value {
     starlight_testnet_genesis(
-        Vec::from([get_authority_keys_from_seed("Alice")]),
+        Vec::from([get_authority_keys_from_seed("Alice", None)]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
+        container_chains,
+        invulnerables,
     )
 }
 
 //local_testnet
-fn starlight_local_testnet_genesis() -> serde_json::Value {
+pub fn starlight_local_testnet_genesis(
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+) -> serde_json::Value {
     starlight_testnet_genesis(
         Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
+            get_authority_keys_from_seed("Alice", None),
+            get_authority_keys_from_seed("Bob", None),
         ]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
-    )
-}
-
-/// `Versi` is a temporary testnet that uses the same runtime as starlight.
-// versi_local_testnet
-fn versi_local_testnet_genesis() -> serde_json::Value {
-    starlight_testnet_genesis(
-        Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
-            get_authority_keys_from_seed("Charlie"),
-            get_authority_keys_from_seed("Dave"),
-        ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
-    )
-}
-
-/// Wococo is a temporary testnet that uses almost the same runtime as starlight.
-//wococo_local_testnet
-fn wococo_local_testnet_genesis() -> serde_json::Value {
-    starlight_testnet_genesis(
-        Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
-            get_authority_keys_from_seed("Charlie"),
-            get_authority_keys_from_seed("Dave"),
-        ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
+        container_chains,
+        invulnerables,
     )
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
     let patch = match id.try_into() {
-        Ok("local_testnet") => starlight_local_testnet_genesis(),
-        Ok("development") => starlight_development_config_genesis(),
+        Ok("local_testnet") => starlight_local_testnet_genesis(vec![], vec![]),
+        Ok("development") => starlight_development_config_genesis(vec![], vec![]),
         Ok("staging_testnet") => starlight_staging_testnet_config_genesis(),
-        Ok("wococo_local_testnet") => wococo_local_testnet_genesis(),
-        Ok("versi_local_testnet") => versi_local_testnet_genesis(),
         _ => return None,
     };
     Some(

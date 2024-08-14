@@ -24,6 +24,7 @@ pyro = { workspace = true, optional = true }
 pyroscope_pprofrs = { workspace = true, optional = true }
 thiserror = { workspace = true }
 
+node-common = { workspace = true }
 polkadot-service = { workspace = true, optional = true }
 tanssi-relay-service = { workspace = true, optional = true }
 
