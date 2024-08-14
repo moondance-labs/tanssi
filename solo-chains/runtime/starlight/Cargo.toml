@@ -37,6 +37,7 @@ sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
+sp-keystore = { workspace = true }
 sp-mmr-primitives = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -120,6 +121,7 @@ cumulus-primitives-core = { workspace = true }
 
 # Tanssi
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -128,6 +130,8 @@ pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-services-payment = { workspace = true }
+pallet-services-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
@@ -159,6 +163,7 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -211,6 +216,8 @@ std = [
 	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
+	"pallet-services-payment-runtime-api/std",
+	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
 	"pallet-sudo/std",
@@ -238,6 +245,7 @@ std = [
 	"sp-core/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
+	"sp-keystore/std",
 	"sp-mmr-primitives/std",
 	"sp-runtime/std",
 	"sp-session/std",
@@ -299,6 +307,7 @@ runtime-benchmarks = [
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
+	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -365,6 +374,7 @@ try-runtime = [
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-scheduler/try-runtime",
+	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
 	"pallet-sudo/try-runtime",

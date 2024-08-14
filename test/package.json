@@ -59,7 +59,7 @@
         "yargs": "17.7.2"
     },
     "dependencies": {
-        "@zombienet/orchestrator": "0.0.86",
+        "@zombienet/orchestrator": "0.0.87",
         "inquirer": "9.2.16",
         "ps-node": "0.1.6"
     }
