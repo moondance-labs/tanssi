@@ -20,9 +20,13 @@ mod common;
 use {
     crate::common::*,
     frame_support::{assert_noop, assert_ok},
+    pallet_registrar_runtime_api::{
+        runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
+    },
     runtime_common::paras_registrar,
+    runtime_parachains::configuration as parachains_configuration,
     sp_std::vec,
-    starlight_runtime::{Paras, Registrar},
+    starlight_runtime::{Configuration, ContainerRegistrar, Paras, Registrar},
 };
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -94,6 +98,75 @@ fn registrar_needs_a_reserved_para_id() {
 
             // PVF accepted and the para should be a parathread
             assert!(Paras::lifecycle(next_para_id)
+                .expect("para should be parathread")
+                .is_parathread());
+        });
+}
+
+#[test]
+fn register_para_via_container_registrar() {
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            // In this test we're gonna register a para via ContainerRegistrar,
+            // which will internally use the InnerRegistrar type to also register the para
+            // in the relay Registrar pallet.
+
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
+            run_to_session(1u32);
+
+            // Change max_head_data_size config.
+            assert_ok!(
+                Configuration::set_max_head_data_size(root_origin(), 20500),
+                ()
+            );
+            run_to_session(4u32);
+            assert_eq!(
+                parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
+                20500
+            );
+
+            let validation_code =
+                vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
+            let genesis_data_1003 = ContainerChainGenesisData {
+                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: vec![],
+                properties: Default::default(),
+            };
+
+            assert_ok!(
+                ContainerRegistrar::register(
+                    origin_of(ALICE.into()),
+                    1003.into(),
+                    genesis_data_1003.clone()
+                ),
+                ()
+            );
+
+            // Now let's check if the para was preoperly registered in the relay.
+            // Run to next session.
+            run_to_session(5);
+            assert!(Paras::lifecycle(1003.into())
+                .expect("para should be onboarding")
+                .is_onboarding());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                validation_code.into()
+            ));
+            run_to_session(7);
+
+            // Now the para should be a parathread.
+            assert!(Paras::lifecycle(1003.into())
                 .expect("para should be parathread")
                 .is_parathread());
         });

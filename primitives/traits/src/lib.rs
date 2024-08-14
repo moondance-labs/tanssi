@@ -28,12 +28,15 @@ pub use {
         ParaId,
     },
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
 };
 use {
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
-        pallet_prelude::{Decode, DispatchResultWithPostInfo, DispatchResult, Encode, Get, MaxEncodedLen, Weight},
+        pallet_prelude::{
+            Decode, DispatchResult, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight,
+        },
         BoundedVec,
     },
     serde::{Deserialize, Serialize},
@@ -370,23 +373,17 @@ impl GenericStorageReader for NativeStorageReader {
 pub trait RegistrarHandler<AccountId> {
     fn register(
         who: AccountId,
-		//deposit_override: Option<BalanceOf>,
-		id: ParaId,
-		genesis_head: HeadData,
-		validation_code: ValidationCode,
-		ensure_reserved: bool,
+        id: ParaId,
+        genesis_storage: Vec<ContainerChainGenesisDataItem>,
     ) -> DispatchResult;
 }
 
-impl<AccountId> RegistrarHandler<AccountId> for (){
+impl<AccountId> RegistrarHandler<AccountId> for () {
     fn register(
-            _who: AccountId,
-            //deposit_override: Option<BalanceOf>,
-            _id: ParaId,
-            _genesis_head: HeadData,
-            _validation_code: ValidationCode,
-            _ensure_reserved: bool,
-        ) -> DispatchResult {
+        _who: AccountId,
+        _id: ParaId,
+        _genesis_storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> DispatchResult {
         Ok(())
     }
 }

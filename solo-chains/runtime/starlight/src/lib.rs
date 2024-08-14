@@ -26,6 +26,8 @@ use {
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
         dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
@@ -42,7 +44,7 @@ use {
         CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
         NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
-        SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
+        SessionInfo, Signature, ValidationCodeHash, ValidatorId, ValidatorIndex,
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
@@ -51,8 +53,9 @@ use {
             ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
             VersionedLocationConverter,
         },
-        paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        paras_registrar, paras_sudo_wrapper,
         traits::Registrar as RegistrarInterface,
+        BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_coretime as parachains_assigner_coretime,
@@ -71,14 +74,14 @@ use {
     },
     scale_info::TypeInfo,
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::BlockNumberProvider,
+    sp_runtime::{traits::BlockNumberProvider, DispatchError},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, vec_deque::VecDeque},
         prelude::*,
     },
     starlight_runtime_constants::system_parachain::BROKER_ID,
-    tp_traits::{GetSessionContainerChains, Slot, SlotFrequency, RegistrarHandler},
+    tp_traits::{GetSessionContainerChains, RegistrarHandler, Slot, SlotFrequency},
 };
 
 #[cfg(any(feature = "std", test))]
@@ -1356,20 +1359,34 @@ parameter_types! {
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
-pub struct InnerRegistrarManager<AccountId, RegistrarManager>(sp_std::marker::PhantomData<(AccountId, RegistrarManager)>);
-impl<AccountId, RegistrarManager> RegistrarHandler<AccountId> for InnerRegistrarManager<AccountId, RegistrarManager> 
+pub struct InnerStarlightRegistrar<AccountId, RegistrarManager>(
+    sp_std::marker::PhantomData<(AccountId, RegistrarManager)>,
+);
+impl<AccountId, RegistrarManager> RegistrarHandler<AccountId>
+    for InnerStarlightRegistrar<AccountId, RegistrarManager>
 where
-    RegistrarManager: RegistrarInterface,
+    RegistrarManager: RegistrarInterface<AccountId = AccountId>,
 {
     fn register(
-            who: AccountId,
-            //deposit_override: Option<BalanceOf>,
-            id: ParaId,
-            genesis_head: tp_traits::HeadData,
-            validation_code: ValidationCode,
-            ensure_reserved: bool,
-        ) -> DispatchResult {
-        Ok(())
+        who: AccountId,
+        id: ParaId,
+        genesis_storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> DispatchResult {
+        // Build HeadData
+        let key_values: Vec<(Vec<u8>, Vec<u8>)> =
+            genesis_storage.into_iter().map(|x| x.into()).collect();
+        let genesis_head = HeadData(key_values.clone().encode());
+
+        // TODO: use well_known_keys::CODE
+        let kv_code = key_values.into_iter().find(|kv| kv.0 == b":code".to_vec());
+
+        if let None = kv_code {
+            return Err(DispatchError::Other("Chain code not found"));
+        }
+
+        // Build ValidationCode
+        let validation_code = ValidationCode(kv_code.unwrap().1);
+        RegistrarManager::register(who, id, genesis_head, validation_code)
     }
 }
 
@@ -1388,7 +1405,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type InnerRegistrar = ();
+    type InnerRegistrar = InnerStarlightRegistrar<AccountId, Registrar>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

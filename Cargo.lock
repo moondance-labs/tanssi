@@ -16227,6 +16227,7 @@ dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "dp-consensus",
+ "dp-container-chain-genesis-data",
  "frame-benchmarking",
  "frame-executive",
  "frame-remote-externalities",
@@ -17779,6 +17780,7 @@ version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
+ "dp-container-chain-genesis-data",
  "frame-support",
  "impl-trait-for-tuples",
  "macro_rules_attribute",

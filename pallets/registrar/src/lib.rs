@@ -64,8 +64,8 @@ use {
     sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, RelayStorageRootProvider, SessionContainerChains,
-        SlotFrequency, RegistrarHandler
+        ParathreadParams as ParathreadParamsTy, RegistrarHandler, RelayStorageRootProvider,
+        SessionContainerChains, SlotFrequency,
     },
 };
 
@@ -790,6 +790,8 @@ pub mod pallet {
 
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
+
+            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage)?;
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
