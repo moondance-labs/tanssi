@@ -48,8 +48,8 @@ pub use {
     sp_api::{Core, ProvideRuntimeApi},
     sp_application_crypto::AppPublic,
     sp_consensus::Error as ConsensusError,
-    sp_core::H256,
     sp_core::crypto::{ByteArray, Public},
+    sp_core::H256,
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
@@ -295,8 +295,7 @@ where
             // but no, RuntimeApiRequest only allows calling a fixed list of runtime apis, not arbitrary ones
             let session_index = block_on(client.session_index_for_child(*parent_hash)).unwrap();
 
-            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index, nimbus_id.clone())
-            {
+            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index, nimbus_id.clone()) {
                 log::debug!("Para id found for assignment {:?}", para_id);
 
                 Some((nimbus_id.into(), para_id))
@@ -365,7 +364,10 @@ where
     })
 }
 
-fn mock_para_id_assignment(session_index: SessionIndex, nimbus_id: NimbusId) -> Result<Option<ParaId>, ()> {
+fn mock_para_id_assignment(
+    session_index: SessionIndex,
+    nimbus_id: NimbusId,
+) -> Result<Option<ParaId>, ()> {
     let assigned_para = Some(2000u32.into());
 
     Ok(assigned_para)

@@ -17,6 +17,11 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use sc_client_api::{FinalityNotification, FinalityNotifications};
+use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
+use parity_scale_codec::Decode;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -185,7 +190,7 @@ pub fn build_check_assigned_para_id_solochain(
                 client_set_aside_for_cidp,
                 block_hash,
             )
-                .unwrap();
+            .unwrap();
         }
     };
 
@@ -214,16 +219,19 @@ fn check_assigned_para_id_solochain(
             &block_hash,
             sync_keystore.clone(),
         )
-            .map(|(_nimbus_key, para_id)| para_id);
+        .map(|(_nimbus_key, para_id)| para_id);
 
     // Check assignment in the next session
-    let next_container_chain_para_id =
-        tc_consensus::first_eligible_key_next_session_solochain::<Block, dyn RelayChainInterface, NimbusPair>(
-            client_set_aside_for_cidp.as_ref(),
-            &block_hash,
-            sync_keystore,
-        )
-            .map(|(_nimbus_key, para_id)| para_id);
+    let next_container_chain_para_id = tc_consensus::first_eligible_key_next_session_solochain::<
+        Block,
+        dyn RelayChainInterface,
+        NimbusPair,
+    >(
+        client_set_aside_for_cidp.as_ref(),
+        &block_hash,
+        sync_keystore,
+    )
+    .map(|(_nimbus_key, para_id)| para_id);
 
     cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
         current: current_container_chain_para_id,
@@ -1202,7 +1210,6 @@ impl crate::service::OrchestratorChainSolochainInterfaceBuilder {
     }
 }
 
-
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     pub full_client: Arc<Client>,
@@ -1404,16 +1411,16 @@ impl<Client> OrchestratorChainSolochainInterface<Client> {
 impl<Client> OrchestratorChainInterface for OrchestratorChainSolochainInterface<Client>
 where
     Client: ProvideRuntimeApi<Block>
-    + BlockchainEvents<Block>
-    + AuxStore
-    + UsageProvider<Block>
-    + Sync
-    + Send,
+        + BlockchainEvents<Block>
+        + AuxStore
+        + UsageProvider<Block>
+        + Sync
+        + Send,
     Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
-    + OnDemandBlockProductionApi<Block, ParaId, Slot>
-    + RegistrarApi<Block, ParaId>
-    + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
-    + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
+        + OnDemandBlockProductionApi<Block, ParaId, Slot>
+        + RegistrarApi<Block, ParaId>
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+        + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1481,9 +1488,39 @@ where
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        let runtime_api = self.full_client.runtime_api();
+        // Use absolute path to avoid problems
+        let mock_genesis_dir = "/home/tomasz/projects/tanssi/mock-genesis-data/";
+        let files = BTreeMap::from_iter([
+            (
+                ParaId::from(2000u32),
+                "containerChainGenesisData-single-container-template-container-2000.bin",
+            ),
+            (
+                ParaId::from(2001u32),
+                "containerChainGenesisData-single-container-template-container-2001.bin",
+            ),
+        ]);
 
-        Ok(runtime_api.genesis_data(orchestrator_parent, para_id)?)
+        // Find the corresponding file
+        if let Some(file_name) = files.get(&para_id) {
+            let file_path = Path::new(mock_genesis_dir).join(file_name);
+
+            if file_path.exists() {
+                // Read the file
+                let mut file = File::open(file_path).map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+                let mut buffer = Vec::new();
+                file.read_to_end(&mut buffer).map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+                // Decode the file contents
+                let decoded_data = ContainerChainGenesisData::decode(&mut buffer.as_slice())?;
+
+                return Ok(Some(decoded_data));
+            } else {
+                panic!("File not found: {:?}", file_path);
+            }
+        } else {
+            Ok(None)
+        }
     }
 
     async fn boot_nodes(
@@ -1491,9 +1528,8 @@ where
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        let runtime_api = self.full_client.runtime_api();
-
-        Ok(runtime_api.boot_nodes(orchestrator_parent, para_id)?)
+        // Bootnodes not needed, zombienet uses local peer discovery
+        Ok(vec![])
     }
 
     async fn latest_block_number(

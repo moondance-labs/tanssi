@@ -6,6 +6,7 @@ import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 const JSONbig = jsonBg({ useNativeBigInt: true });
+import path from 'path';
 
 yargs(hideBin(process.argv))
     .usage("Usage: $0")
@@ -89,6 +90,44 @@ yargs(hideBin(process.argv))
                 const txHash = await txBatch.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
+                process.stdout.write(`Done ✅\n`);
+            } finally {
+                await api.disconnect();
+            }
+        }
+    )
+    .command(
+        `dumpGenesisData`,
+        "Registers a parachain, adds bootnodes, and sets it valid for collating",
+        (yargs) => {
+            return yargs
+                .options({
+                    ...NETWORK_YARGS_OPTIONS,
+                    chain: {
+                        describe: "Input path of raw chainSpec file",
+                        type: "string",
+                    },
+                    parathread: {
+                        describe: "Set the chain as a parathread instead of a parachain",
+                        type: "boolean",
+                        default: false,
+                    },
+                })
+                .demandOption(["chain"]);
+        },
+        async (argv) => {
+            const api = await getApiFor(argv);
+
+            try {
+                process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
+                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+                const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
+                const scaleBytes = containerChainGenesisData.toU8a();
+                process.stdout.write(`Encoded scale bytes: ${scaleBytes}`);
+                const fileNameWithoutExt = path.parse(argv.chain).name;
+                const outputPath = `containerChainGenesisData-${fileNameWithoutExt}.bin`; // Specify your desired output file path
+                await fs.writeFile(outputPath, Buffer.from(scaleBytes));
+                process.stdout.write(`Encoded scale bytes written to file: ${outputPath}\n`);
                 process.stdout.write(`Done ✅\n`);
             } finally {
                 await api.disconnect();
