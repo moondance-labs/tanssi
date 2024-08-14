@@ -238,6 +238,18 @@ pub struct ParaRegistrationParams {
     pub parathread_params: Option<tp_traits::ParathreadParams>,
 }
 
+impl From<(u32, ContainerChainGenesisData, u32, u32)> for ParaRegistrationParams {
+    fn from(value: (u32, ContainerChainGenesisData, u32, u32)) -> Self {
+        Self {
+            para_id: value.0,
+            genesis_data: value.1,
+            block_production_credits: value.2,
+            collator_assignment_credits: value.3,
+            parathread_params: None
+        }
+    }
+}
+
 pub fn default_config() -> pallet_configuration::HostConfiguration {
     pallet_configuration::HostConfiguration {
         max_collators: 100,
