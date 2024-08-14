@@ -27,6 +27,9 @@ mod manual_seal;
 #[cfg(test)]
 mod tests;
 
+use cumulus_relay_chain_interface::RelayChainInterface;
+use futures::executor::block_on;
+use polkadot_primitives::SessionIndex;
 pub use {
     crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,
@@ -45,6 +48,7 @@ pub use {
     sp_api::{Core, ProvideRuntimeApi},
     sp_application_crypto::AppPublic,
     sp_consensus::Error as ConsensusError,
+    sp_core::H256,
     sp_core::crypto::{ByteArray, Public},
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
@@ -149,7 +153,7 @@ pub fn first_eligible_key<B: BlockT, C, P>(
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
-    C: ProvideRuntimeApi<B>,
+    C: ProvideRuntimeApi<B> + ?Sized,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
@@ -205,7 +209,7 @@ pub fn first_eligible_key_next_session<B: BlockT, C, P>(
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
-    C: ProvideRuntimeApi<B>,
+    C: ProvideRuntimeApi<B> + ?Sized,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
@@ -248,4 +252,121 @@ where
             None
         }
     })
+}
+
+/// Grab the first eligible nimbus key from the keystore
+/// If multiple keys are eligible this function still only returns one
+/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
+/// This is the standard way of determining which key to author with.
+/// It also returns its ParaId assignment
+pub fn first_eligible_key_solochain<B: BlockT, C, P>(
+    client: &C,
+    parent_hash: &H256,
+    keystore: KeystorePtr,
+) -> Option<(AuthorityId<P>, ParaId)>
+where
+    C: RelayChainInterface + ?Sized,
+    //C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    P: Pair + Send + Sync,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+{
+    // Get all the available keys
+    let available_keys = Keystore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+
+    // Print a more helpful message than "not eligible" when there are no keys at all.
+    if available_keys.is_empty() {
+        log::warn!(
+            target: LOG_TARGET,
+            "🔏 No Nimbus keys available. We will not be able to author."
+        );
+        return None;
+    }
+
+    // Iterate keys until we find an eligible one, or run out of candidates.
+    // If we are skipping prediction, then we author with the first key we find.
+    // prediction skipping only really makes sense when there is a single key in the keystore.
+    available_keys.into_iter().find_map(|type_public_pair| {
+        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
+            // If we dont find any parachain that we are assigned to, return none
+
+            // TODO: yes this can work if we use overseer_handle and RuntimeApiMessage
+            // but no, RuntimeApiRequest only allows calling a fixed list of runtime apis, not arbitrary ones
+            let session_index = block_on(client.session_index_for_child(*parent_hash)).unwrap();
+
+            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index, nimbus_id.clone())
+            {
+                log::debug!("Para id found for assignment {:?}", para_id);
+
+                Some((nimbus_id.into(), para_id))
+            } else {
+                log::debug!("No Para id found for assignment {:?}", nimbus_id);
+
+                None
+            }
+        } else {
+            None
+        }
+    })
+}
+
+/// Grab the first eligible nimbus key from the keystore
+/// If multiple keys are eligible this function still only returns one
+/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
+/// This is the standard way of determining which key to author with.
+/// It also returns its ParaId assignment
+pub fn first_eligible_key_next_session_solochain<B: BlockT, C, P>(
+    client: &C,
+    parent_hash: &H256,
+    keystore: KeystorePtr,
+) -> Option<(AuthorityId<P>, ParaId)>
+where
+    C: RelayChainInterface + ?Sized,
+    //C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    P: Pair + Send + Sync,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+{
+    // Get all the available keys
+    let available_keys = Keystore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+
+    // Print a more helpful message than "not eligible" when there are no keys at all.
+    if available_keys.is_empty() {
+        log::warn!(
+            target: LOG_TARGET,
+            "🔏 No Nimbus keys available. We will not be able to author."
+        );
+        return None;
+    }
+
+    // Iterate keys until we find an eligible one, or run out of candidates.
+    // If we are skipping prediction, then we author with the first key we find.
+    // prediction skipping only really makes sense when there is a single key in the keystore.
+    available_keys.into_iter().find_map(|type_public_pair| {
+        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
+            // If we dont find any parachain that we are assigned to, return none
+            let session_index = block_on(client.session_index_for_child(*parent_hash)).unwrap();
+
+            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index + 1, nimbus_id.clone())
+            {
+                log::debug!("Para id found for assignment {:?}", para_id);
+
+                Some((nimbus_id.into(), para_id))
+            } else {
+                log::debug!("No Para id found for assignment {:?}", nimbus_id);
+
+                None
+            }
+        } else {
+            None
+        }
+    })
+}
+
+fn mock_para_id_assignment(session_index: SessionIndex, nimbus_id: NimbusId) -> Result<Option<ParaId>, ()> {
+    let assigned_para = Some(2000u32.into());
+
+    Ok(assigned_para)
 }

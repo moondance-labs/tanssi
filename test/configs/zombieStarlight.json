@@ -101,6 +101,20 @@
                     "p2p_port": 33050
                 }
             ]
+        },
+        {
+            "id": 2001,
+            "chain_spec_path": "specs/single-container-template-container-2001.json",
+            "collators": [
+                {
+                    "name": "FullNode-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9950,
+                    "p2p_port": 33051
+                }
+            ]
         }
     ],
     "types": {

@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use sc_client_api::{FinalityNotification, FinalityNotifications};
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -156,6 +157,80 @@ pub fn build_check_assigned_para_id(
         None,
         Box::pin(check_assigned_para_id_task),
     );
+}
+
+/// Background task used to detect changes to container chain assignment,
+/// and start/stop container chains on demand. The check runs on every new block.
+pub fn build_check_assigned_para_id_solochain(
+    client: Arc<dyn RelayChainInterface>,
+    sync_keystore: KeystorePtr,
+    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
+    spawner: impl SpawnEssentialNamed,
+) {
+    let check_assigned_para_id_task = async move {
+        // Subscribe to new blocks in order to react to para id assignment
+        // This must be the stream of finalized blocks, otherwise the collators may rotate to a
+        // different chain before the block is finalized, and that could lead to a stalled chain
+        let mut import_notifications = client.finality_notification_stream().await.unwrap();
+
+        while let Some(msg) = import_notifications.next().await {
+            let block_hash = msg.hash();
+            let client_set_aside_for_cidp = client.clone();
+            let sync_keystore = sync_keystore.clone();
+            let cc_spawn_tx = cc_spawn_tx.clone();
+
+            check_assigned_para_id_solochain(
+                cc_spawn_tx,
+                sync_keystore,
+                client_set_aside_for_cidp,
+                block_hash,
+            )
+                .unwrap();
+        }
+    };
+
+    spawner.spawn_essential(
+        "check-assigned-para-id",
+        None,
+        Box::pin(check_assigned_para_id_task),
+    );
+}
+
+/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` to
+/// start or stop the required container chains.
+///
+/// Checks the assignment for the next block, so if there is a session change on block 15, this will
+/// detect the assignment change after importing block 14.
+fn check_assigned_para_id_solochain(
+    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
+    sync_keystore: KeystorePtr,
+    client_set_aside_for_cidp: Arc<dyn RelayChainInterface>,
+    block_hash: H256,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Check current assignment
+    let current_container_chain_para_id =
+        tc_consensus::first_eligible_key_solochain::<Block, dyn RelayChainInterface, NimbusPair>(
+            client_set_aside_for_cidp.as_ref(),
+            &block_hash,
+            sync_keystore.clone(),
+        )
+            .map(|(_nimbus_key, para_id)| para_id);
+
+    // Check assignment in the next session
+    let next_container_chain_para_id =
+        tc_consensus::first_eligible_key_next_session_solochain::<Block, dyn RelayChainInterface, NimbusPair>(
+            client_set_aside_for_cidp.as_ref(),
+            &block_hash,
+            sync_keystore,
+        )
+            .map(|(_nimbus_key, para_id)| para_id);
+
+    cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
+        current: current_container_chain_para_id,
+        next: next_container_chain_para_id,
+    })?;
+
+    Ok(())
 }
 
 /// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` to
@@ -796,8 +871,8 @@ pub async fn start_solochain_node(
 
     if validator {
         // Start task which detects para id assignment, and starts/stops container chains.
-        build_check_assigned_para_id(
-            node_builder.client.clone(),
+        build_check_assigned_para_id_solochain(
+            relay_chain_interface.clone(),
             sync_keystore.clone(),
             cc_spawn_tx.clone(),
             node_builder.task_manager.spawn_essential_handle(),
@@ -806,7 +881,8 @@ pub async fn start_solochain_node(
     node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
-    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
+    // TODO: this should all be relay chain stuff, not orchestrator
+    let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
         client: node_builder.client.clone(),
         backend: node_builder.backend.clone(),
         sync_oracle: node_builder.network.sync_service.clone(),
@@ -1102,6 +1178,31 @@ impl OrchestratorChainInProcessInterfaceBuilder {
     }
 }
 
+/// Builder for a concrete relay chain interface, created from a full node. Builds
+/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
+///
+/// The builder takes a [`polkadot_client::Client`]
+/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
+/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
+struct OrchestratorChainSolochainInterfaceBuilder {
+    client: Arc<ParachainClient>,
+    backend: Arc<FullBackend>,
+    sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+    overseer_handle: Handle,
+}
+
+impl crate::service::OrchestratorChainSolochainInterfaceBuilder {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+        Arc::new(OrchestratorChainSolochainInterface::new(
+            self.client,
+            self.backend,
+            self.sync_oracle,
+            self.overseer_handle,
+        ))
+    }
+}
+
+
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     pub full_client: Arc<Client>,
@@ -1152,6 +1253,167 @@ where
         + RegistrarApi<Block, ParaId>
         + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
         + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
+{
+    async fn get_storage_by_key(
+        &self,
+        orchestrator_parent: PHash,
+        key: &[u8],
+    ) -> OrchestratorChainResult<Option<StorageValue>> {
+        let state = self.backend.state_at(orchestrator_parent)?;
+        state
+            .storage(key)
+            .map_err(OrchestratorChainError::GenericError)
+    }
+
+    async fn prove_read(
+        &self,
+        orchestrator_parent: PHash,
+        relevant_keys: &[Vec<u8>],
+    ) -> OrchestratorChainResult<StorageProof> {
+        let state_backend = self.backend.state_at(orchestrator_parent)?;
+
+        sp_state_machine::prove_read(state_backend, relevant_keys)
+            .map_err(OrchestratorChainError::StateMachineError)
+    }
+
+    fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
+        Ok(self.overseer_handle.clone())
+    }
+
+    /// Get a stream of import block notifications.
+    async fn import_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notification_stream = self
+            .full_client
+            .import_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
+    }
+
+    /// Get a stream of new best block notifications.
+    async fn new_best_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notifications_stream =
+            self.full_client
+                .import_notification_stream()
+                .filter_map(|notification| async move {
+                    notification.is_new_best.then_some(notification.header)
+                });
+        Ok(Box::pin(notifications_stream))
+    }
+
+    /// Get a stream of finality notifications.
+    async fn finality_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        let notification_stream = self
+            .full_client
+            .finality_notification_stream()
+            .map(|notification| notification.header);
+        Ok(Box::pin(notification_stream))
+    }
+
+    async fn genesis_data(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.genesis_data(orchestrator_parent, para_id)?)
+    }
+
+    async fn boot_nodes(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.boot_nodes(orchestrator_parent, para_id)?)
+    }
+
+    async fn latest_block_number(
+        &self,
+        orchestrator_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<BlockNumber>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.latest_block_number(orchestrator_parent, para_id)?)
+    }
+
+    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().best_hash)
+    }
+
+    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        Ok(self.backend.blockchain().info().finalized_hash)
+    }
+
+    async fn get_active_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        profile_id: DataPreserverProfileId,
+    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        use {
+            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
+            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
+        };
+
+        Ok(
+            match runtime_api.get_active_assignment(orchestrator_parent, profile_id)? {
+                RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
+                RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
+                RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
+            },
+        )
+    }
+}
+
+/// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
+pub struct OrchestratorChainSolochainInterface<Client> {
+    pub full_client: Arc<Client>,
+    pub backend: Arc<FullBackend>,
+    pub sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+    pub overseer_handle: Handle,
+}
+
+impl<Client> OrchestratorChainSolochainInterface<Client> {
+    /// Create a new instance of [`RelayChainInProcessInterface`]
+    pub fn new(
+        full_client: Arc<Client>,
+        backend: Arc<FullBackend>,
+        sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+        overseer_handle: Handle,
+    ) -> Self {
+        Self {
+            full_client,
+            backend,
+            sync_oracle,
+            overseer_handle,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl<Client> OrchestratorChainInterface for OrchestratorChainSolochainInterface<Client>
+where
+    Client: ProvideRuntimeApi<Block>
+    + BlockchainEvents<Block>
+    + AuxStore
+    + UsageProvider<Block>
+    + Sync
+    + Send,
+    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
+    + OnDemandBlockProductionApi<Block, ParaId, Slot>
+    + RegistrarApi<Block, ParaId>
+    + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+    + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
