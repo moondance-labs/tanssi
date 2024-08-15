@@ -82,7 +82,10 @@ use {
         marker::PhantomData,
         prelude::*,
     },
-    tp_traits::{GetSessionContainerChains, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency},
+    tp_traits::{
+        GetSessionContainerChains, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot,
+        SlotFrequency,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -1509,6 +1512,15 @@ where
         // Build ValidationCode
         let validation_code = ValidationCode(kv_code.unwrap().1);
         RegistrarManager::register(who, id, genesis_head, validation_code)
+    }
+
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
+        RegistrarManager::make_parachain(id)
+    }
+
+    fn schedule_para_cleanup(id: ParaId) -> DispatchResult {
+        RegistrarManager::make_parathread(id)?;
+        RegistrarManager::deregister(id)
     }
 }
 

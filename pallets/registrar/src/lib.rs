@@ -850,6 +850,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
+                T::InnerRegistrar::schedule_para_cleanup(para_id)?;
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -885,6 +886,8 @@ pub mod pallet {
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
+
+            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
 
             Ok(())
         }

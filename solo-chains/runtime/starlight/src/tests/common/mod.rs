@@ -245,7 +245,7 @@ impl From<(u32, ContainerChainGenesisData, u32, u32)> for ParaRegistrationParams
             genesis_data: value.1,
             block_production_credits: value.2,
             collator_assignment_credits: value.3,
-            parathread_params: None
+            parathread_params: None,
         }
     }
 }
