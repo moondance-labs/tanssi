@@ -74,6 +74,7 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
+    sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::BlockNumberProvider, DispatchError},
     sp_std::{
@@ -1485,7 +1486,7 @@ parameter_types! {
 }
 
 pub struct InnerStarlightRegistrar<AccountId, RegistrarManager>(
-    sp_std::marker::PhantomData<(AccountId, RegistrarManager)>,
+    PhantomData<(AccountId, RegistrarManager)>,
 );
 impl<AccountId, RegistrarManager> RegistrarHandler<AccountId>
     for InnerStarlightRegistrar<AccountId, RegistrarManager>
@@ -1502,11 +1503,13 @@ where
             genesis_storage.into_iter().map(|x| x.into()).collect();
         let genesis_head = HeadData(key_values.clone().encode());
 
-        // TODO: use well_known_keys::CODE
-        let kv_code = key_values.into_iter().find(|kv| kv.0 == b":code".to_vec());
+        // Check if the wasm code is present in storage
+        let kv_code = key_values
+            .into_iter()
+            .find(|kv| kv.0 == StorageWellKnownKeys::CODE.to_vec());
 
         if let None = kv_code {
-            return Err(DispatchError::Other("Chain code not found"));
+            return Err(DispatchError::Other("Code not found"));
         }
 
         // Build ValidationCode
@@ -1518,9 +1521,20 @@ where
         RegistrarManager::make_parachain(id)
     }
 
-    fn schedule_para_cleanup(id: ParaId) -> DispatchResult {
-        RegistrarManager::make_parathread(id)?;
-        RegistrarManager::deregister(id)
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
+        RegistrarManager::make_parathread(id)
+    }
+
+    fn deregister(id: ParaId) -> Weight {
+        if let Err(e) = RegistrarManager::deregister(id) {
+            log::warn!(
+                "Failed to deregister para id {} in relay chain: {:?}",
+                u32::from(id),
+                e,
+            );
+        }
+
+        Weight::default()
     }
 }
 

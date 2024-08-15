@@ -850,7 +850,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
-                T::InnerRegistrar::schedule_para_cleanup(para_id)?;
+                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -1210,6 +1210,7 @@ pub mod pallet {
             ParaManager::<T>::remove(para_id);
 
             T::RegistrarHooks::para_deregistered(para_id);
+            T::InnerRegistrar::deregister(para_id);
         }
 
         fn schedule_parachain_cleanup(para_id: ParaId) -> DispatchResult {

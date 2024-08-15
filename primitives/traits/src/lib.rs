@@ -376,9 +376,10 @@ pub trait RegistrarHandler<AccountId> {
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
     ) -> DispatchResult;
-
+    
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
-    fn schedule_para_cleanup(id: ParaId) -> DispatchResult;
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
+    fn deregister(id: ParaId) -> Weight;
 }
 
 impl<AccountId> RegistrarHandler<AccountId> for () {
@@ -394,7 +395,11 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         Ok(())
     }
 
-    fn schedule_para_cleanup(_id: ParaId) -> DispatchResult {
+    fn schedule_para_downgrade(_id: ParaId) -> DispatchResult {
         Ok(())
+    }
+
+    fn deregister(_id: ParaId) -> Weight {
+        Weight::default()
     }
 }
