@@ -496,3 +496,7 @@ lto = true
 [profile.release]
 opt-level = 3
 panic = "unwind"
+
+[patch.'https://github.com/moondance-labs/dancekit']
+dc-orchestrator-chain-interface = { path = '../dancekit/client/orchestrator-chain-interface' }
+dp-container-chain-genesis-data = { path = '../dancekit/primitives/container-chain-genesis-data' }

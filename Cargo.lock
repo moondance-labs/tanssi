@@ -1357,7 +1357,7 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "dc-orchestrator-chain-interface",
  "dp-collator-assignment",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",
@@ -1856,7 +1856,7 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "dc-orchestrator-chain-interface",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "flume 0.10.14",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -3109,7 +3109,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "dp-slot-duration-runtime-api",
  "emulated-integration-tests-common",
  "frame-benchmarking",
@@ -3262,17 +3262,17 @@ dependencies = [
 [[package]]
 name = "dc-orchestrator-chain-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0#dbbfdcdf2b78d4f15a9d593e8982dc85210647ba"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
  "dp-container-chain-genesis-data",
- "dp-core",
+ "dp-core 0.1.0",
  "futures 0.3.30",
  "jsonrpsee",
  "parity-scale-codec",
  "polkadot-overseer",
  "sc-client-api",
+ "serde",
  "sp-api",
  "sp-blockchain",
  "sp-state-machine",
@@ -3553,7 +3553,6 @@ dependencies = [
 [[package]]
 name = "dp-container-chain-genesis-data"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0#dbbfdcdf2b78d4f15a9d593e8982dc85210647ba"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -3570,6 +3569,20 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-trie",
+]
+
+[[package]]
+name = "dp-core"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex-literal 0.3.4",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4489,7 +4502,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "dp-slot-duration-runtime-api",
  "frame-benchmarking",
  "frame-executive",
@@ -8182,7 +8195,7 @@ dependencies = [
  "bounded-collections 0.1.9",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -8528,7 +8541,7 @@ dependencies = [
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
  "dp-collator-assignment",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -8675,7 +8688,7 @@ name = "pallet-data-preservers"
 version = "0.1.0"
 dependencies = [
  "bounded-collections 0.1.9",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -9140,7 +9153,7 @@ name = "pallet-inflation-rewards"
 version = "0.1.0"
 dependencies = [
  "bounded-collections 0.1.9",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -9447,7 +9460,7 @@ dependencies = [
 name = "pallet-pooled-staking"
 version = "0.1.0"
 dependencies = [
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -9805,7 +9818,7 @@ dependencies = [
 name = "pallet-stream-payment"
 version = "0.1.0"
 dependencies = [
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -10085,7 +10098,7 @@ name = "pallet-xcm-core-buyer"
 version = "0.1.0"
 dependencies = [
  "bounded-collections 0.1.9",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -17208,7 +17221,7 @@ dependencies = [
  "async-trait",
  "dc-orchestrator-chain-interface",
  "dp-container-chain-genesis-data",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "futures 0.3.30",
  "jsonrpsee",
  "parity-scale-codec",
@@ -17340,7 +17353,7 @@ source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-
 dependencies = [
  "cumulus-primitives-core",
  "dp-collator-assignment",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "frame-support",
  "parity-scale-codec",
  "sp-runtime",
@@ -17764,7 +17777,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
- "dp-core",
+ "dp-core 0.1.0 (git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.11.0)",
  "futures 0.3.30",
  "hex-literal 0.3.4",
  "parity-scale-codec",
