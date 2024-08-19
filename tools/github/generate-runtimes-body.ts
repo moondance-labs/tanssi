@@ -8,8 +8,8 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 
 const BREAKING_CHANGES_LABEL = "D2-breaksapi";
 const RUNTIME_CHANGES_LABEL = "B7-runtimenoteworthy";
-// `ParachainSystem` is pallet index 1. `authorize_upgrade` is extrinsic index 2.
-const DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE = "0x0102";
+// `System` is pallet index 1. `authorize_upgrade` is extrinsic index 9.
+const DANCEBOX_PREFIX_SYSTEM_AUTHORIZE_UPGRADE = "0x0009";
 
 function capitalize(s) {
   return s[0].toUpperCase() + s.slice(1);
@@ -46,12 +46,13 @@ function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
 function authorizeUpgradeHash(runtimeName: string, srtool: any): string {
   if (runtimeName == "dancebox") {
     return blake2AsHex(
-      DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
+      DANCEBOX_PREFIX_SYSTEM_AUTHORIZE_UPGRADE +
         srtool.runtimes.compressed.blake2_256.substr(2) // remove "0x" prefix
     );
   } else {
+    // it's same index in all of thenm for now
     return blake2AsHex(
-      DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
+      DANCEBOX_PREFIX_SYSTEM_AUTHORIZE_UPGRADE +
         srtool.runtimes.compressed.blake2_256.substr(2) // remove "0x" prefix
     );
   }
