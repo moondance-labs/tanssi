@@ -19,7 +19,7 @@
 use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar},
-    frame_support::{assert_ok, BoundedVec, assert_noop},
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
