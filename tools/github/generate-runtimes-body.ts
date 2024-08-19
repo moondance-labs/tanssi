@@ -8,7 +8,7 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 
 const BREAKING_CHANGES_LABEL = "D2-breaksapi";
 const RUNTIME_CHANGES_LABEL = "B7-runtimenoteworthy";
-// `System` is pallet index 1. `authorize_upgrade` is extrinsic index 9.
+// `System` is pallet index 0. `authorize_upgrade` is extrinsic index 9.
 const DANCEBOX_PREFIX_SYSTEM_AUTHORIZE_UPGRADE = "0x0009";
 
 function capitalize(s) {
