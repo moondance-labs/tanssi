@@ -19,7 +19,7 @@
 use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar},
-    frame_support::{assert_ok, BoundedVec},
+    frame_support::{assert_ok, BoundedVec, assert_noop},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -275,4 +275,35 @@ fn test_configuration_on_session_change() {
         );
         assert_eq!(CollatorConfiguration::config().collators_per_container, 10);
     });
+}
+
+#[test]
+fn test_cannot_mark_valid_para_with_no_bootnodes() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_noop!(
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                pallet_data_preservers::Error::<Runtime>::NoBootNodes,
+            );
+        });
 }
