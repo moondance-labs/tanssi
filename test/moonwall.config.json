@@ -531,7 +531,7 @@
             "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
             "runScripts": [
                 "download-latest-rt-binaries.sh",
-                "build-spec-single-container.sh tmp container-chain-simple-node",
+                "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "download-polkadot.sh",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
