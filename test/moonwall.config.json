@@ -642,7 +642,8 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDataPreservers.json"
+                    "configPath": "./configs/zombieDataPreservers.json",
+                    "skipBlockCheck": ["DataPreserver"]
                 }
             },
             "connections": [

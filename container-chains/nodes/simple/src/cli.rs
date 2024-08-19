@@ -61,10 +61,6 @@ pub enum Subcommand {
 
     /// Precompile the WASM runtime into native code
     PrecompileWasm(sc_cli::PrecompileWasmCmd),
-
-    /// Starts in RPC provider mode, watching orchestrator chain for assignements to provide
-    /// RPC services for container chains.
-    RpcProvider(RpcProviderSubcommand),
 }
 
 #[derive(Debug, Parser)]
@@ -115,13 +111,48 @@ pub struct Cli {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
-    /// Relay chain arguments
-    #[arg(raw = true)]
-    pub relay_chain_args: Vec<String>,
-
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
+
+    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
+    #[arg(long)]
+    pub rpc_provider_profile_id: Option<u64>,
+
+    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
+    /// If this list is empty, a local embeded orchestrator node is started.
+    #[arg(long)]
+    pub orchestrator_endpoints: Vec<Url>,
+
+    /// Relay chain arguments, optionally followed by "--" and container chain arguments
+    #[arg(raw = true)]
+    extra_args: Vec<String>,
+}
+
+impl Cli {
+    pub fn relaychain_args(&self) -> &[String] {
+        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
+
+        relay_chain_args
+    }
+
+    pub fn container_chain_args(&self) -> &[String] {
+        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
+
+        container_chain_args
+    }
+
+    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
+        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
+
+        if let Some(i) = index_of_dashdash {
+            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
+            (&extra_extra[1..], container_chain_args)
+        } else {
+            // Only relay chain args
+            (&self.extra_args, &[])
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -177,20 +208,4 @@ impl CliConfiguration for BuildSpecCmd {
     fn node_key_params(&self) -> Option<&NodeKeyParams> {
         Some(&self.base.node_key_params)
     }
-}
-
-#[derive(Debug, clap::Parser)]
-#[group(skip)]
-pub struct RpcProviderSubcommand {
-    #[clap(flatten)]
-    pub base: cumulus_client_cli::RunCmd,
-
-    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
-    /// If this list is empty, a local embeded orchestrator node is started.
-    #[arg(long)]
-    pub orchestrator_endpoints: Vec<Url>,
-
-    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
-    #[arg(long)]
-    pub profile_id: u64,
 }
