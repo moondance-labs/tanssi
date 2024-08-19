@@ -27,7 +27,7 @@ use {
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
     frame_support::{
-        dispatch::DispatchResult,
+        dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{fungible::Inspect, ConstBool, FromContains},
     },
@@ -70,6 +70,7 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
+    serde::{Deserialize, Serialize},
     sp_genesis_builder::PresetId,
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
@@ -78,7 +79,10 @@ use {
         marker::PhantomData,
         prelude::*,
     },
-    tp_traits::{GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot, SlotFrequency},
+    tp_traits::{
+        apply, derive_storage_traits, GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot,
+        SlotFrequency,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -1309,6 +1313,121 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = ();
 }
 
+parameter_types! {
+    pub const ProfileDepositBaseFee: Balance = STORAGE_ITEM_FEE;
+    pub const ProfileDepositByteFee: Balance = STORAGE_BYTE_FEE;
+    #[derive(Clone)]
+    pub const MaxAssignmentsPerParaId: u32 = 10;
+    #[derive(Clone)]
+    pub const MaxNodeUrlLen: u32 = 200;
+}
+
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
+pub enum PreserversAssignmentPaymentRequest {
+    Free,
+    // TODO: Add Stream Payment (with config)
+}
+
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
+pub enum PreserversAssignmentPaymentExtra {
+    Free,
+    // TODO: Add Stream Payment (with deposit)
+}
+
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize)]
+pub enum PreserversAssignmentPaymentWitness {
+    Free,
+    // TODO: Add Stream Payment (with stream id)
+}
+
+pub struct PreserversAssignmentPayment;
+
+impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignmentPayment {
+    /// Providers requests which kind of payment it accepts.
+    type ProviderRequest = PreserversAssignmentPaymentRequest;
+    /// Extra parameter the assigner provides.
+    type AssignerParameter = PreserversAssignmentPaymentExtra;
+    /// Represents the succesful outcome of the assignment.
+    type AssignmentWitness = PreserversAssignmentPaymentWitness;
+
+    fn try_start_assignment(
+        _assigner: AccountId,
+        _provider: AccountId,
+        request: &Self::ProviderRequest,
+        extra: Self::AssignerParameter,
+    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
+        let witness = match (request, extra) {
+            (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
+                Self::AssignmentWitness::Free
+            }
+        };
+
+        Ok(witness)
+    }
+
+    fn try_stop_assignment(
+        _provider: AccountId,
+        witness: Self::AssignmentWitness,
+    ) -> Result<(), DispatchErrorWithPostInfo> {
+        match witness {
+            Self::AssignmentWitness::Free => (),
+        }
+
+        Ok(())
+    }
+
+    /// Return the values for a free assignment if it is supported.
+    /// This is required to perform automatic migration from old Bootnodes storage.
+    fn free_variant_values() -> Option<(
+        Self::ProviderRequest,
+        Self::AssignerParameter,
+        Self::AssignmentWitness,
+    )> {
+        Some((
+            Self::ProviderRequest::Free,
+            Self::AssignerParameter::Free,
+            Self::AssignmentWitness::Free,
+        ))
+    }
+
+    // The values returned by the following functions should match with each other.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_provider_request() -> Self::ProviderRequest {
+        PreserversAssignmentPaymentRequest::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
+        PreserversAssignmentPaymentExtra::Free
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
+        PreserversAssignmentPaymentWitness::Free
+    }
+}
+
+impl pallet_data_preservers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type Currency = Balances;
+    type WeightInfo = ();
+
+    type ProfileId = u64;
+    type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
+    type AssignmentPayment = PreserversAssignmentPayment;
+
+    type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
+    type ForceSetProfileOrigin = EnsureRoot<AccountId>;
+
+    type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
+    type MaxNodeUrlLen = MaxNodeUrlLen;
+    type MaxParaIdsVecLen = MaxLengthParaIds;
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1422,6 +1541,7 @@ construct_runtime! {
         MultiBlockMigrations: pallet_multiblock_migrations = 108,
         AuthorNoting: pallet_author_noting = 109,
         ServicesPayment: pallet_services_payment = 110,
+        DataPreservers: pallet_data_preservers = 111,
     }
 }
 
@@ -1513,21 +1633,21 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
                 e,
             );
         }
+
+        XcmCoreBuyer::para_deregistered(para_id);
+        */
+
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
 
-        XcmCoreBuyer::para_deregistered(para_id);
-         */
         ServicesPayment::para_deregistered(para_id);
 
         Weight::default()
     }
 
-    fn check_valid_for_collating(_para_id: ParaId) -> DispatchResult {
-        // TODO: uncomment when DataPreservers pallet exists
+    fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
         // To be able to call mark_valid_for_collating, a container chain must have bootnodes
-        //DataPreservers::check_valid_for_collating(para_id)
-        Ok(())
+        DataPreservers::check_valid_for_collating(para_id)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -1547,7 +1667,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
                 .expect("to fit in BoundedVec"),
             para_ids: ParaIdsFilter::AnyParaId,
             mode: ProfileMode::Bootnode,
-            assignment_request: PreserversAssignementPaymentRequest::Free,
+            assignment_request: PreserversAssignmentPaymentRequest::Free,
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1565,9 +1685,9 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             para_manager,
             profile_id,
             para_id,
-            PreserversAssignementPaymentExtra::Free,
+            PreserversAssignmentPaymentExtra::Free,
         )
-            .expect("assignement to work");
+            .expect("assignment to work");
 
         assert!(
             pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
@@ -2189,13 +2309,11 @@ sp_api::impl_runtime_apis! {
         }
 
         /// Fetch boot_nodes for this para id
-        fn boot_nodes(_para_id: ParaId) -> Vec<Vec<u8>> {
-            // TODO: uncomment when DataPreservers pallet exists
-            /*DataPreservers::assignments_profiles(para_id)
+        fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
+            DataPreservers::assignments_profiles(para_id)
                 .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
                 .map(|profile| profile.url.into())
-                .collect()*/
-            vec![]
+                .collect()
         }
     }
 

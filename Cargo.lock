@@ -16254,6 +16254,7 @@ dependencies = [
  "pallet-collective",
  "pallet-configuration",
  "pallet-conviction-voting",
+ "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
  "pallet-grandpa",

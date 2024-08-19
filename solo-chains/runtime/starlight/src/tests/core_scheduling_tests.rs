@@ -524,6 +524,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
                 1000.into(),
                 empty_genesis_data()
             ));
+
+            set_dummy_boot_node(origin_of(ALICE.into()), 1000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
                 1000.into()
