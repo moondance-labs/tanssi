@@ -92,7 +92,7 @@
                     "name": "DataPreserver",
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
-                    "args": ["rpc-provider", "--orchestrator-endpoints=ws://127.0.0.1:9948", "--profile-id=1", "--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--rpc-provider-profile-id=1", "--orchestrator-endpoints=wss://fraa-dancebox-3001-rpc.a.dancebox.tanssi.network/", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9950
                 }
             ]

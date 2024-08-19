@@ -27,7 +27,7 @@ use {
     cumulus_primitives_core::ParaId,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
-    futures::stream::StreamExt,
+    futures::{stream::StreamExt, FutureExt},
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
@@ -281,116 +281,11 @@ pub fn run() -> Result<()> {
                 ))
             })
         }
-        Some(Subcommand::RpcProvider(cmd)) => {
-            let runner = cli.create_runner(&cli.run.normalize())?;
-
-            runner.run_node_until_exit(|config| async move {
-                let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
-                let mut task_manager;
-
-                if cmd.orchestrator_endpoints.is_empty() {
-                    todo!("Start in process node")
-                } else {
-                    task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
-                        .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
-
-                    orchestrator_chain_interface =
-                        tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
-                            cmd.orchestrator_endpoints.clone(),
-                            &mut task_manager,
-                            None,
-                        )
-                        .await
-                        .map(Arc::new)
-                        .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
-                };
-
-                // POC: Try to fetch some data through the interface.
-                {
-                    let orchestrator_chain_interface = orchestrator_chain_interface.clone();
-                    let profile_id = cmd.profile_id;
-
-                    task_manager
-                        .spawn_handle()
-                        .spawn("rpc_provider_exemple", None, async move {
-                            let mut stream = orchestrator_chain_interface
-                                .new_best_notification_stream()
-                                .await
-                                .unwrap();
-
-                            while let Some(header) = stream.next().await {
-                                let hash = header.hash();
-                                log::info!("New best block: {}", hash);
-                            }
-                        });
-                }
-
-                // POC: Spawn container chain embed node
-                {
-                    let collator_options = cli.run.collator_options();
-
-                    let polkadot_cli = RelayChainCli::new(
-                        &config,
-                        [RelayChainCli::executable_name()]
-                            .iter()
-                            .chain(cli.relay_chain_args.iter()),
-                    );
-
-                    let tokio_handle = config.tokio_handle.clone();
-                    let polkadot_config = SubstrateCli::create_configuration(
-                        &polkadot_cli,
-                        &polkadot_cli,
-                        tokio_handle,
-                    )
-                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
-
-                    let telemetry = config
-                        .telemetry_endpoints
-                        .clone()
-                        .filter(|x| !x.is_empty())
-                        .map(|endpoints| -> std::result::Result<_, sc_telemetry::Error> {
-                            let worker = TelemetryWorker::new(16)?;
-                            let telemetry = worker.handle().new_telemetry(endpoints);
-                            Ok((worker, telemetry))
-                        })
-                        .transpose()
-                        .map_err(sc_service::Error::Telemetry)?;
-
-                    let telemetry_worker_handle =
-                        telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-                    let (relay_chain_interface, _collation_pair) = build_relay_chain_interface(
-                        polkadot_config,
-                        &config,
-                        telemetry_worker_handle,
-                        &mut task_manager,
-                        collator_options,
-                        None,
-                    )
-                    .await
-                    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-
-                    let keystore_container = sc_service::KeystoreContainer::new(
-                        &sc_service::config::KeystoreConfig::InMemory,
-                    )?;
-                    let keystore = keystore_container.keystore();
-
-                    let (_cc_task_manager, _cc_client, _cc_backend) =
-                        tc_service_container_chain::service::start_node_impl_container(
-                            config,
-                            relay_chain_interface,
-                            orchestrator_chain_interface,
-                            keystore,
-                            ParaId::from(2001),
-                            None,
-                        )
-                        .await?;
-                }
-
-                Ok(task_manager)
-            })
-        }
         None => {
+            if let Some(profile_id) = cli.rpc_provider_profile_id {
+                return rpc_provider_mode(cli, profile_id);
+            }
+
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
@@ -597,4 +492,110 @@ impl CliConfiguration<Self> for RelayChainCli {
     fn node_name(&self) -> Result<String> {
         self.base.base.node_name()
     }
+}
+
+fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
+    let runner = cli.create_runner(&cli.run.normalize())?;
+
+    runner.run_node_until_exit(|config| async move {
+        let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
+        let mut task_manager;
+
+        if cli.orchestrator_endpoints.is_empty() {
+            todo!("Start in process node")
+        } else {
+            task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
+                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+
+            orchestrator_chain_interface =
+                tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                    cli.orchestrator_endpoints.clone(),
+                    &mut task_manager,
+                    None,
+                )
+                .await
+                .map(Arc::new)
+                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+        };
+
+        // POC: Try to fetch some data through the interface.
+        {
+            let orchestrator_chain_interface = orchestrator_chain_interface.clone();
+
+            task_manager
+                .spawn_handle()
+                .spawn("rpc_provider_exemple", None, async move {
+                    let mut stream = orchestrator_chain_interface
+                        .new_best_notification_stream()
+                        .await
+                        .unwrap();
+
+                    while let Some(header) = stream.next().await {
+                        let hash = header.hash();
+                        log::info!("New best block: {}", hash);
+                    }
+                });
+        }
+
+        // POC: Spawn container chain embed node
+        {
+            let collator_options = cli.run.collator_options();
+
+            let polkadot_cli = RelayChainCli::new(
+                &config,
+                [RelayChainCli::executable_name()]
+                    .iter()
+                    .chain(cli.relay_chain_args.iter()),
+            );
+
+            let tokio_handle = config.tokio_handle.clone();
+            let polkadot_config =
+                SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+            let telemetry = config
+                .telemetry_endpoints
+                .clone()
+                .filter(|x| !x.is_empty())
+                .map(|endpoints| -> std::result::Result<_, sc_telemetry::Error> {
+                    let worker = TelemetryWorker::new(16)?;
+                    let telemetry = worker.handle().new_telemetry(endpoints);
+                    Ok((worker, telemetry))
+                })
+                .transpose()
+                .map_err(sc_service::Error::Telemetry)?;
+
+            let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+            let (relay_chain_interface, _collation_pair) = build_relay_chain_interface(
+                polkadot_config,
+                &config,
+                telemetry_worker_handle,
+                &mut task_manager,
+                collator_options,
+                None,
+            )
+            .await
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+
+            let keystore_container =
+                sc_service::KeystoreContainer::new(&sc_service::config::KeystoreConfig::InMemory)?;
+            let keystore = keystore_container.keystore();
+
+            let (cc_task_manager, _cc_client, _cc_backend) =
+                tc_service_container_chain::service::start_node_impl_container(
+                    config,
+                    relay_chain_interface,
+                    orchestrator_chain_interface,
+                    keystore,
+                    ParaId::from(2001),
+                    None,
+                )
+                .await?;
+
+            task_manager.add_child(cc_task_manager);
+        }
+
+        Ok(task_manager)
+    })
 }

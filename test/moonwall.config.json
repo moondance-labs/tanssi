@@ -657,7 +657,7 @@
                     "endpoints": ["ws://127.0.0.1:9948"]
                 },
                 {
-                    "name": "Data Preserver",
+                    "name": "Container2000",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
                 }
