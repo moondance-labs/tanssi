@@ -36,7 +36,6 @@ jobs:
       - name: Build Node
         run: cargo build --profile=production --all
     
-
       - name: Save parachain binary
         if: ${{ matrix.cpu == '' }}
         run: |
@@ -75,7 +74,7 @@ jobs:
         id: prep
         run: |
           DOCKER_IMAGE=moondancelabs/${{matrix.image}}
-          TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}-fast-runtime"
+          TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
       - name: Set up QEMU
