@@ -1088,7 +1088,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         para_id,
         PreserversAssignmentPaymentExtra::Free,
     )
-    .expect("assignement to work");
+    .expect("assignment to work");
 
     assert!(
         pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
