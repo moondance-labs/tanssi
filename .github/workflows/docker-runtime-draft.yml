@@ -2,9 +2,9 @@ name: Push Runtime Draft Docker
 
 # The code compile in non-fast mode the runtime and pushes to docker
 on:
-    push:
-        branches:
-            - perm-runtime-*
+  push:
+    branches:
+      - perm-runtime-*
 
 jobs:
   ####### Building binaries #######
@@ -58,7 +58,7 @@ jobs:
           path: binaries
   docker-tanssi:
     runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
+    needs: ["build-binary"]
     strategy:
       fail-fast: false
       matrix:
