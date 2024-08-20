@@ -115,7 +115,7 @@ impl OrchestratorChainRpcClient {
         };
         let res = self
             .request_tracing::<sp_core::Bytes, _>("state_call", params, |err| {
-                tracing::trace!(
+                tracing::debug!(
                     target: LOG_TARGET,
                     %method_name,
                     %hash,
@@ -326,7 +326,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         profile_id: DataPreserverProfileId,
     ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
         self.call_remote_runtime_function(
-            "get_active_assignment",
+            "DataPreserversApi_get_active_assignment",
             orchestrator_parent,
             Some(profile_id),
         )

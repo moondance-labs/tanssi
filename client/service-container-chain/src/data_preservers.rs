@@ -49,15 +49,16 @@ pub async fn task_watch_assignment<S: TSelectSyncMode>(
 
         while let Some(header) = stream.next().await {
             let hash = header.hash();
-            log::info!("New best block: {}", hash);
 
             let new_assignment = orchestrator_chain_interface
                 .get_active_assignment(hash, profile_id)
                 .await?;
 
+            log::info!("Assignement for block {hash}: {new_assignment:?}");
+
             match (current_assignment, new_assignment) {
                 // no change
-                (x, y) if x == y => (),
+                (x, y) if x == y => continue,
                 (
                     Assignment::NotAssigned | Assignment::Inactive(_),
                     Assignment::Active(para_id),
