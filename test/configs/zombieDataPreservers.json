@@ -86,7 +86,8 @@
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
-                    "p2p_port": 33049
+                    "p2p_port": 33049,
+                    "prometheus_port": 33102
                 },
                 {
                     "name": "DataPreserver",
@@ -96,12 +97,10 @@
                         "--rpc-provider-profile-id=1",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "--no-prometheus",
-                        "--no-telemetry",
-                        "--no-hardware-benchmarks"
+                        "--wasmtime-precompiled=wasm"
                     ],
-                    "ws_port": 9950
+                    "ws_port": 9950,
+                    "prometheus_port": 33102
                 }
             ]
         }
