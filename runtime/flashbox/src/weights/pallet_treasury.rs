@@ -69,48 +69,6 @@ impl<T: frame_system::Config> pallet_treasury::WeightInfo for SubstrateWeight<T>
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	/// Storage: `Treasury::ProposalCount` (r:1 w:1)
-	/// Proof: `Treasury::ProposalCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `Treasury::Proposals` (r:0 w:1)
-	/// Proof: `Treasury::Proposals` (`max_values`: None, `max_size`: Some(108), added: 2583, mode: `MaxEncodedLen`)
-	fn propose_spend() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `181`
-		//  Estimated: `1489`
-		// Minimum execution time: 28_915_000 picoseconds.
-		Weight::from_parts(29_714_000, 1489)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
-	}
-	/// Storage: `Treasury::Proposals` (r:1 w:1)
-	/// Proof: `Treasury::Proposals` (`max_values`: None, `max_size`: Some(108), added: 2583, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:2 w:2)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	fn reject_proposal() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `479`
-		//  Estimated: `6196`
-		// Minimum execution time: 44_732_000 picoseconds.
-		Weight::from_parts(45_808_000, 6196)
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
-	}
-	/// Storage: `Treasury::Proposals` (r:1 w:0)
-	/// Proof: `Treasury::Proposals` (`max_values`: None, `max_size`: Some(108), added: 2583, mode: `MaxEncodedLen`)
-	/// Storage: `Treasury::Approvals` (r:1 w:1)
-	/// Proof: `Treasury::Approvals` (`max_values`: Some(1), `max_size`: Some(402), added: 897, mode: `MaxEncodedLen`)
-	/// The range of component `p` is `[0, 99]`.
-	fn approve_proposal(p: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `508 + p * (8 ±0)`
-		//  Estimated: `3573`
-		// Minimum execution time: 11_316_000 picoseconds.
-		Weight::from_parts(14_440_148, 3573)
-			// Standard Error: 1_640
-			.saturating_add(Weight::from_parts(85_656, 0).saturating_mul(p.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
 	/// Storage: `Treasury::Approvals` (r:1 w:1)
 	/// Proof: `Treasury::Approvals` (`max_values`: Some(1), `max_size`: Some(402), added: 897, mode: `MaxEncodedLen`)
 	fn remove_approval() -> Weight {
