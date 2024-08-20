@@ -40,7 +40,7 @@ use {
         AccountId, RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
+        BlockNumber, ContainerChainGenesisData,
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
         PHeader,
     },
@@ -723,8 +723,7 @@ fn start_consensus_orchestrator(
         force_authoring,
         proposer,
         collator_service,
-        // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: Duration::from_millis(2000),
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
@@ -1098,6 +1097,7 @@ pub fn start_dev_node(
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
+                        current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
                         // TODO: Recheck
@@ -1106,12 +1106,12 @@ pub fn start_dev_node(
                         xcm_config: MockXcmConfig::new(
                             &*client_for_xcm,
                             block,
-                            para_id,
                             Default::default(),
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
+                        para_id,
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
@@ -1259,7 +1259,6 @@ where
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
         + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
-        + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1359,27 +1358,6 @@ where
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         Ok(self.backend.blockchain().info().finalized_hash)
     }
-
-    async fn get_active_assignment(
-        &self,
-        orchestrator_parent: PHash,
-        profile_id: DataPreserverProfileId,
-    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        let runtime_api = self.full_client.runtime_api();
-
-        use {
-            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
-            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
-        };
-
-        Ok(
-            match runtime_api.get_active_assignment(orchestrator_parent, profile_id)? {
-                RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
-                RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
-                RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
-            },
-        )
-    }
 }
 
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
@@ -1420,7 +1398,6 @@ where
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
         + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
-        + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1548,26 +1525,5 @@ where
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         Ok(self.backend.blockchain().info().finalized_hash)
-    }
-
-    async fn get_active_assignment(
-        &self,
-        orchestrator_parent: PHash,
-        profile_id: DataPreserverProfileId,
-    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        let runtime_api = self.full_client.runtime_api();
-
-        use {
-            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
-            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
-        };
-
-        Ok(
-            match runtime_api.get_active_assignment(orchestrator_parent, profile_id)? {
-                RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
-                RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
-                RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
-            },
-        )
     }
 }

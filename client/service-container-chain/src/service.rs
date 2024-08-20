@@ -35,7 +35,7 @@ use {
     polkadot_primitives::CollatorPair,
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::WasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
@@ -57,6 +57,9 @@ use {
     },
     tokio_util::sync::CancellationToken,
 };
+
+#[allow(deprecated)]
+use sc_executor::NativeElseWasmExecutor;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -102,12 +105,12 @@ impl<BI> OrchestratorParachainBlockImport<BI> {
 #[async_trait::async_trait]
 impl<BI> BlockImport<Block> for OrchestratorParachainBlockImport<BI>
 where
-    BI: BlockImport<Block> + Send,
+    BI: BlockImport<Block> + Send + Sync,
 {
     type Error = BI::Error;
 
     async fn check_block(
-        &mut self,
+        &self,
         block: sc_consensus::BlockCheckParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         self.inner.check_block(block).await
@@ -127,6 +130,7 @@ where
 impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 // Orchestrator chain types
+#[allow(deprecated)]
 pub type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
@@ -474,8 +478,7 @@ fn start_consensus_container(
         relay_chain_slot_duration,
         proposer,
         collator_service,
-        // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: Duration::from_millis(2000),
         para_backend: backend,
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.

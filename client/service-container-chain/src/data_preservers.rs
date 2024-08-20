@@ -17,7 +17,7 @@
 use {
     crate::spawner::{ContainerChainSpawner, TSelectSyncMode},
     dc_orchestrator_chain_interface::{
-        DataPreserverAssignment, OrchestratorChainInterface, OrchestratorChainResult, PHash,
+        OrchestratorChainInterface, OrchestratorChainResult, PHash,
     },
     futures::stream::StreamExt,
     std::{future::Future, sync::Arc},
@@ -36,54 +36,5 @@ pub async fn task_watch_assignment<S: TSelectSyncMode>(
     spawner: ContainerChainSpawner<S>,
     profile_id: ProfileId,
 ) {
-    use dc_orchestrator_chain_interface::DataPreserverAssignment as Assignment;
-
-    if let OrchestratorChainResult::Err(e) = try_fut(async move {
-        let orchestrator_chain_interface = spawner.params.orchestrator_chain_interface.clone();
-
-        let mut current_assignment = DataPreserverAssignment::<ParaId>::NotAssigned;
-
-        let mut stream = orchestrator_chain_interface
-            .finality_notification_stream()
-            .await?;
-
-        while let Some(header) = stream.next().await {
-            let hash = header.hash();
-            log::info!("New best block: {}", hash);
-
-            let new_assignment = orchestrator_chain_interface
-                .get_active_assignment(hash, profile_id)
-                .await?;
-
-            match (current_assignment, new_assignment) {
-                // no change
-                (x, y) if x == y => (),
-                (
-                    Assignment::NotAssigned | Assignment::Inactive(_),
-                    Assignment::Active(para_id),
-                ) => {
-                    spawner.spawn(para_id, false).await;
-                }
-                (Assignment::Active(para_id), Assignment::Inactive(x)) if para_id == x => {
-                    spawner.stop(para_id, true); // keep db
-                }
-                (Assignment::Active(para_id), _) => {
-                    spawner.stop(para_id, false); // don't keep db
-                }
-                // don't do anything yet
-                (
-                    Assignment::NotAssigned | Assignment::Inactive(_),
-                    Assignment::NotAssigned | Assignment::Inactive(_),
-                ) => (),
-            }
-
-            current_assignment = new_assignment;
-        }
-
-        Ok(())
-    })
-    .await
-    {
-        log::error!("Error in data preservers assignement watching task: {e:?}");
-    }
+    todo!()
 }

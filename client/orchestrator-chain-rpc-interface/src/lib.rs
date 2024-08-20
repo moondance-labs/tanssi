@@ -20,7 +20,7 @@ use {
     async_trait::async_trait,
     core::pin::Pin,
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
+        BlockNumber, ContainerChainGenesisData,
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
         PHeader,
     },
@@ -318,18 +318,5 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         self.request("chain_getFinalizedHead", rpc_params![]).await
-    }
-
-    async fn get_active_assignment(
-        &self,
-        orchestrator_parent: PHash,
-        profile_id: DataPreserverProfileId,
-    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        self.call_remote_runtime_function(
-            "get_active_assignment",
-            orchestrator_parent,
-            Some(profile_id),
-        )
-        .await
     }
 }

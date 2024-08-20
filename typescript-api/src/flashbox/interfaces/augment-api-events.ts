@@ -640,14 +640,6 @@ declare module "@polkadot/api-base/types/events" {
             Paid: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
             /** A payment failed and can be retried. */
             PaymentFailed: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
-            /** New proposal. */
-            Proposed: AugmentedEvent<ApiType, [proposalIndex: u32], { proposalIndex: u32 }>;
-            /** A proposal was rejected; funds were slashed. */
-            Rejected: AugmentedEvent<
-                ApiType,
-                [proposalIndex: u32, slashed: u128],
-                { proposalIndex: u32; slashed: u128 }
-            >;
             /** Spending has finished; this is the amount that rolls over until next spend. */
             Rollover: AugmentedEvent<ApiType, [rolloverBalance: u128], { rolloverBalance: u128 }>;
             /** A new spend proposal has been approved. */

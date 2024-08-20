@@ -20,6 +20,9 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+// Fix compile error in impl_runtime_weights! macro
+use runtime_common as polkadot_runtime_common;
+
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -29,13 +32,15 @@ use {
     frame_support::{
         dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::{ConstBool, FromContains},
+        traits::{fungible::Inspect, ConstBool, FromContains},
     },
-    frame_system::EnsureNever,
+    frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
     pallet_initializer as tanssi_initializer,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::ShouldEndSession,
+    parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
         slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
@@ -54,9 +59,8 @@ use {
         paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
-        assigner_coretime as parachains_assigner_coretime,
         assigner_on_demand as parachains_assigner_on_demand,
-        configuration as parachains_configuration, coretime,
+        configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
         inclusion::{self as parachains_inclusion, AggregateMessageOrigin, UmpQueueId},
@@ -73,11 +77,11 @@ use {
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
         cmp::Ordering,
-        collections::{btree_map::BTreeMap, vec_deque::VecDeque},
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        marker::PhantomData,
         prelude::*,
     },
-    starlight_runtime_constants::system_parachain::BROKER_ID,
-    tp_traits::{GetSessionContainerChains, Slot, SlotFrequency},
+    tp_traits::{GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot, SlotFrequency},
 };
 
 #[cfg(any(feature = "std", test))]
@@ -497,13 +501,8 @@ parameter_types! {
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
-    type ApproveOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RuntimeEvent = RuntimeEvent;
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ProposalBondMinimum;
-    type ProposalBondMaximum = ProposalBondMaximum;
     type SpendPeriod = SpendPeriod;
     type Burn = Burn;
     type BurnDestination = ();
@@ -873,7 +872,7 @@ impl parachains_paras::Config for Runtime {
     type QueueFootprinter = ParaInclusion;
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
-    type AssignCoretime = CoretimeAssignmentProvider;
+    type AssignCoretime = ();
 }
 
 parameter_types! {
@@ -939,6 +938,7 @@ impl parachains_hrmp::Config for Runtime {
     type Currency = Balances;
     type DefaultChannelSizeAndCapacityWithSystem = DefaultChannelSizeAndCapacityWithSystem;
     type WeightInfo = parachains_hrmp::TestWeightInfo;
+    type VersionWrapper = XcmPallet;
 }
 
 impl parachains_paras_inherent::Config for Runtime {
@@ -948,26 +948,112 @@ impl parachains_paras_inherent::Config for Runtime {
 impl parachains_scheduler::Config for Runtime {
     // If you change this, make sure the `Assignment` type of the new provider is binary compatible,
     // otherwise provide a migration.
-    type AssignmentProvider = CoretimeAssignmentProvider;
+    type AssignmentProvider = CollatorAssignmentProvider;
 }
 
-parameter_types! {
-    pub const BrokerId: u32 = BROKER_ID;
-    pub MaxXcmTransactWeight: Weight = Weight::from_parts(200_000_000, 20_000);
-}
+pub struct CollatorAssignmentProvider;
+impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
+    for CollatorAssignmentProvider
+{
+    fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
+        let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
+        let assigned_paras: Vec<ParaId> = assigned_collators
+            .container_chains
+            .iter()
+            .filter_map(|(&para_id, _)| {
+                if Paras::is_parachain(para_id) {
+                    Some(para_id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        log::info!("pop assigned collators {:?}", assigned_paras);
+        log::info!("looking for core idx {:?}", core_idx);
 
-impl coretime::Config for Runtime {
-    type RuntimeOrigin = RuntimeOrigin;
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type BrokerId = BrokerId;
-    type WeightInfo = coretime::TestWeightInfo;
-    type SendXcm = crate::xcm_config::XcmRouter;
-    type MaxXcmTransactWeight = MaxXcmTransactWeight;
+        if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
+            log::info!("outputing assignment for  {:?}", para_id);
+
+            Some(Assignment::Bulk(*para_id))
+        } else {
+            // We dont want to assign affinity to a parathread that has not collators assigned
+            // Even if we did they would need their own collators to produce blocks, but for now
+            // I prefer to forbid.
+            // In this case the parathread would have bought the core for nothing
+            let assignment =
+                parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(
+                    core_idx,
+                )?;
+            if assigned_collators
+                .container_chains
+                .contains_key(&assignment.para_id())
+            {
+                Some(assignment)
+            } else {
+                None
+            }
+        }
+    }
+    fn report_processed(assignment: Assignment) {
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::report_processed(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {}
+        }
+    }
+    /// Push an assignment back to the front of the queue.
+    ///
+    /// The assignment has not been processed yet. Typically used on session boundaries.
+    /// Parameters:
+    /// - `assignment`: The on demand assignment.
+    fn push_back_assignment(assignment: Assignment) {
+        match assignment {
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::push_back_assignment(
+                para_id, core_index,
+            ),
+            Assignment::Bulk(_) => {
+                // Session changes are rough. We just drop assignments that did not make it on a
+                // session boundary. This seems sensible as bulk is region based. Meaning, even if
+                // we made the effort catching up on those dropped assignments, this would very
+                // likely lead to other assignments not getting served at the "end" (when our
+                // assignment set gets replaced).
+            }
+        }
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn get_mock_assignment(_: CoreIndex, para_id: primitives::Id) -> Assignment {
+        // Given that we are not tracking anything in `Bulk` assignments, it is safe to always
+        // return a bulk assignment.
+        Assignment::Bulk(para_id)
+    }
+
+    fn session_core_count() -> u32 {
+        let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        log::info!(
+            "session core count is {:?}",
+            config.scheduler_params.num_cores
+        );
+
+        config.scheduler_params.num_cores
+    }
 }
 
 parameter_types! {
     pub const OnDemandTrafficDefaultValue: FixedU128 = FixedU128::from_u32(1);
+    // Keep 2 blocks worth of revenue information.
+    // We don't need this because it is only used by coretime and we don't have coretime,
+    // but the pallet implicitly assumes that this bound is at least 1, so we use a low value
+    // that won't cause problems.
+    pub const MaxHistoricalRevenue: BlockNumber = 2;
+    pub const OnDemandPalletId: PalletId = PalletId(*b"py/ondmd");
 }
 
 impl parachains_assigner_on_demand::Config for Runtime {
@@ -975,15 +1061,15 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type Currency = Balances;
     type TrafficDefaultValue = OnDemandTrafficDefaultValue;
     type WeightInfo = parachains_assigner_on_demand::TestWeightInfo;
+    type MaxHistoricalRevenue = MaxHistoricalRevenue;
+    type PalletId = OnDemandPalletId;
 }
-
-impl parachains_assigner_coretime::Config for Runtime {}
 
 impl parachains_initializer::Config for Runtime {
     type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
     type ForceOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
-    type CoretimeOnNewSession = Coretime;
+    type CoretimeOnNewSession = ();
 }
 
 impl parachains_disputes::Config for Runtime {
@@ -1045,6 +1131,7 @@ impl pallet_beefy::Config for Runtime {
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
         pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    type AncestryHelper = MmrLeaf;
 }
 
 /// MMR helper types.
@@ -1186,6 +1273,50 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type WeightInfo = ();
 }
 
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
+
+pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
+impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
+    fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+    }
+}
+
+pub struct CollatorAssignmentCost<Runtime>(PhantomData<Runtime>);
+impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> {
+    fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
+    }
+}
+
+parameter_types! {
+    // 60 days worth of blocks
+    pub const FreeBlockProductionCredits: BlockNumber = 60 * DAYS;
+    // 60 days worth of collator assignment
+    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/EpochDurationInBlocks::get();
+}
+
+impl pallet_services_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    /// Handler for fees
+    type OnChargeForBlock = ();
+    type OnChargeForCollatorAssignment = ();
+    type OnChargeForCollatorAssignmentTip = ();
+    /// Currency type for fee payment
+    type Currency = Balances;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideCollatorAssignmentCost = CollatorAssignmentCost<Runtime>;
+    /// The maximum number of block credits that can be accumulated
+    type FreeBlockProductionCredits = FreeBlockProductionCredits;
+    /// The maximum number of session credits that can be accumulated
+    type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
+    type ManagerOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = ();
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1262,11 +1393,9 @@ construct_runtime! {
         ParasSlashing: parachains_slashing = 63,
         MessageQueue: pallet_message_queue = 64,
         OnDemandAssignmentProvider: parachains_assigner_on_demand = 66,
-        CoretimeAssignmentProvider: parachains_assigner_coretime = 68,
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
-        Coretime: coretime = 74,
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 99,
@@ -1300,6 +1429,7 @@ construct_runtime! {
         Migrations: pallet_migrations = 107,
         MultiBlockMigrations: pallet_multiblock_migrations = 108,
         AuthorNoting: pallet_author_noting = 109,
+        ServicesPayment: pallet_services_payment = 110,
     }
 }
 
@@ -1375,14 +1505,12 @@ impl pallet_registrar::Config for Runtime {
 pub struct StarlightRegistrarHooks;
 
 impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
-    fn para_marked_valid_for_collating(_para_id: ParaId) -> Weight {
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
         // Give free credits but only once per para id
-        // TODO: uncomment when ServicesPayment pallet exists
-        //ServicesPayment::give_free_credits(&para_id)
-        Weight::default()
+        ServicesPayment::give_free_credits(&para_id)
     }
 
-    fn para_deregistered(_para_id: ParaId) -> Weight {
+    fn para_deregistered(para_id: ParaId) -> Weight {
         // Clear pallet_author_noting storage
         // TODO: uncomment when pallets exists
         /*
@@ -1396,10 +1524,9 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
 
-        ServicesPayment::para_deregistered(para_id);
-
         XcmCoreBuyer::para_deregistered(para_id);
          */
+        ServicesPayment::para_deregistered(para_id);
 
         Weight::default()
     }
@@ -1480,7 +1607,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = ();
+    type AuthorNotingHook = ServicesPayment;
     // TODO: uncomment when pallets exist
     //type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
@@ -1497,7 +1624,6 @@ mod benches {
         // Polkadot
         // NOTE: Make sure to prefix these with `runtime_common::` so
         // the that path resolves correctly in the generated file.
-        [runtime_common::coretime, Coretime]
         [runtime_common::paras_registrar, Registrar]
         [runtime_parachains::configuration, Configuration]
         [runtime_parachains::hrmp, Hrmp]
@@ -1530,6 +1656,7 @@ mod benches {
         [pallet_utility, Utility]
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
+        [pallet_services_payment, ServicesPayment]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
@@ -1800,7 +1927,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(3)]
+    #[api_version(4)]
     impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
         fn beefy_genesis() -> Option<BlockNumber> {
             pallet_beefy::GenesisBlock::<Runtime>::get()
@@ -1810,8 +1937,8 @@ sp_api::impl_runtime_apis! {
             Beefy::validator_set()
         }
 
-        fn submit_report_equivocation_unsigned_extrinsic(
-            equivocation_proof: beefy_primitives::EquivocationProof<
+        fn submit_report_double_voting_unsigned_extrinsic(
+            equivocation_proof: beefy_primitives::DoubleVotingProof<
                 BlockNumber,
                 BeefyId,
                 BeefySignature,
@@ -1820,7 +1947,7 @@ sp_api::impl_runtime_apis! {
         ) -> Option<()> {
             let key_owner_proof = key_owner_proof.decode()?;
 
-            Beefy::submit_unsigned_equivocation_report(
+            Beefy::submit_unsigned_double_voting_report(
                 equivocation_proof,
                 key_owner_proof,
             )
@@ -1830,8 +1957,6 @@ sp_api::impl_runtime_apis! {
             _set_id: beefy_primitives::ValidatorSetId,
             authority_id: BeefyId,
         ) -> Option<beefy_primitives::OpaqueKeyOwnershipProof> {
-            use parity_scale_codec::Encode;
-
             Historical::prove((beefy_primitives::KEY_TYPE, authority_id))
                 .map(|p| p.encode())
                 .map(beefy_primitives::OpaqueKeyOwnershipProof::new)
@@ -1851,7 +1976,7 @@ sp_api::impl_runtime_apis! {
         fn generate_proof(
             block_numbers: Vec<BlockNumber>,
             best_known_block_number: Option<BlockNumber>,
-        ) -> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::Proof<mmr::Hash>), mmr::Error> {
+        ) -> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::LeafProof<mmr::Hash>), mmr::Error> {
             Mmr::generate_proof(block_numbers, best_known_block_number).map(
                 |(leaves, proof)| {
                     (
@@ -1865,7 +1990,7 @@ sp_api::impl_runtime_apis! {
             )
         }
 
-        fn verify_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::Proof<mmr::Hash>)
+        fn verify_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::LeafProof<mmr::Hash>)
             -> Result<(), mmr::Error>
         {
             let leaves = leaves.into_iter().map(|leaf|
@@ -1878,7 +2003,7 @@ sp_api::impl_runtime_apis! {
         fn verify_proof_stateless(
             root: mmr::Hash,
             leaves: Vec<mmr::EncodableOpaqueLeaf>,
-            proof: mmr::Proof<mmr::Hash>
+            proof: mmr::LeafProof<mmr::Hash>
         ) -> Result<(), mmr::Error> {
             let nodes = leaves.into_iter().map(|leaf|mmr::DataOrHash::Data(leaf.into_opaque_leaf())).collect();
             pallet_mmr::verify_leaves_proof::<mmr::Hashing, _>(root, nodes, proof)
@@ -2162,6 +2287,18 @@ sp_api::impl_runtime_apis! {
             let self_para_id = 0u32.into();
 
             assigned_authorities.para_id_of(&authority, self_para_id)
+        }
+    }
+
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+        fn block_cost(para_id: ParaId) -> Balance {
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
+            block_production_costs
+        }
+
+        fn collator_assignment_cost(para_id: ParaId) -> Balance {
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+            collator_assignment_costs
         }
     }
 
@@ -2496,6 +2633,83 @@ impl tanssi_initializer::Config for Runtime {
     type SessionHandler = OwnApplySession;
 }
 
+pub struct RemoveParaIdsWithNoCreditsImpl;
+
+impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
+    fn remove_para_ids_with_no_credits(
+        para_ids: &mut Vec<ParaId>,
+        currently_assigned: &BTreeSet<ParaId>,
+    ) {
+        let blocks_per_session = EpochDurationInBlocks::get();
+
+        para_ids.retain(|para_id| {
+            // If the para has been assigned collators for this session it must have enough block credits
+            // for the current and the next session.
+            let block_credits_needed = if currently_assigned.contains(para_id) {
+                blocks_per_session * 2
+            } else {
+                blocks_per_session
+            };
+
+            // Check if the container chain has enough credits for producing blocks
+            let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            // Check if the container chain has enough credits for a session assignments
+            let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            // If para's max tip is set it should have enough to pay for one assignment with tip
+            let max_tip = pallet_services_payment::MaxTip::<Runtime>::get(para_id).unwrap_or_default() ;
+
+            // Return if we can survive with free credits
+            if free_block_credits >= block_credits_needed && free_session_credits >= 1 {
+                // Max tip should always be checked, as it can be withdrawn even if free credits were used
+                return Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), max_tip).into_result(true).is_ok()
+            }
+
+            let remaining_block_credits = block_credits_needed.saturating_sub(free_block_credits);
+            let remaining_session_credits = 1u32.saturating_sub(free_session_credits);
+
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
+            // let's check if we can withdraw
+            let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
+
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay).saturating_add(max_tip);
+
+            // This should take into account whether we tank goes below ED
+            // The true refers to keepAlive
+            Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
+        });
+    }
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        use frame_support::assert_ok;
+
+        let blocks_per_session = EpochDurationInBlocks::get();
+        // Enough credits to run any benchmark
+        let block_credits = 20 * blocks_per_session;
+        let session_credits = 20;
+
+        for para_id in para_ids {
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                block_credits,
+            ));
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                session_credits,
+            ));
+        }
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
@@ -2505,9 +2719,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type ShouldRotateAllCollators = ();
     type GetRandomnessForNextBlock = ();
     type RemoveInvulnerables = ();
-    type RemoveParaIdsWithNoCredits = ();
-    type CollatorAssignmentHook = ();
-    type CollatorAssignmentTip = ();
+    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type CollatorAssignmentHook = ServicesPayment;
+    type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type WeightInfo = ();

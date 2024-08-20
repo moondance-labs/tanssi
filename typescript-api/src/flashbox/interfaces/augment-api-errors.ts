@@ -364,8 +364,6 @@ declare module "@polkadot/api-base/types/errors" {
             Inconclusive: AugmentedError<ApiType>;
             /** The spend origin is valid but the amount it is allowed to spend is lower than the amount to be spent. */
             InsufficientPermission: AugmentedError<ApiType>;
-            /** Proposer's balance is too low. */
-            InsufficientProposersBalance: AugmentedError<ApiType>;
             /** No proposal, bounty or spend at that index. */
             InvalidIndex: AugmentedError<ApiType>;
             /** The payout was not yet attempted/claimed. */

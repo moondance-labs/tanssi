@@ -4,7 +4,7 @@
         "provider": "native"
     },
     "relaychain": {
-        "chain": "starlight-local",
+        "chain_spec_path": "specs/tanssi-relay.json",
         "default_command": "../target/release/tanssi-relay",
         "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
         "genesis": {
@@ -17,7 +17,8 @@
                                 "max_candidate_depth": 3
                             },
                             "scheduler_params": {
-                                "scheduling_lookahead": 2
+                                "scheduling_lookahead": 2,
+                                "num_cores": 1
                             }
                         }
                     }
@@ -33,21 +34,13 @@
             {
                 "name": "bob",
                 "validator": true
-            },
-            {
-                "name": "charlie",
-                "validator": true
-            },
-            {
-                "name": "dave",
-                "validator": true
             }
         ]
     },
     "parachains": [
         {
             "id": 1000,
-            "chain_spec_path": "specs/single-container-tanssi-1000.json",
+            "chain_spec_path": "specs/single-dancebox-container-1000.json",
             "collators": [
                 {
                     "name": "FullNode-1000",
