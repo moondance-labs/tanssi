@@ -283,7 +283,7 @@ pub async fn start_dev_node(
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
-                        current_para_block_head: None, // TODO
+                        current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
                         // TODO: Recheck

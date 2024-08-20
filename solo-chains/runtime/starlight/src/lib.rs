@@ -1046,15 +1046,13 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
     }
 }
 
-#[cfg(feature = "fast-runtime")]
-pub const TIMESLICE_PERIOD: u32 = 20;
-#[cfg(not(feature = "fast-runtime"))]
-pub const TIMESLICE_PERIOD: u32 = 80;
-
 parameter_types! {
     pub const OnDemandTrafficDefaultValue: FixedU128 = FixedU128::from_u32(1);
-    // Keep 2 timeslices worth of revenue information.
-    pub const MaxHistoricalRevenue: BlockNumber = 2 * TIMESLICE_PERIOD;
+    // Keep 2 blocks worth of revenue information.
+    // We don't need this because it is only used by coretime and we don't have coretime,
+    // but the pallet implicitly assumes that this bound is at least 1, so we use a low value
+    // that won't cause problems.
+    pub const MaxHistoricalRevenue: BlockNumber = 2;
     pub const OnDemandPalletId: PalletId = PalletId(*b"py/ondmd");
 }
 

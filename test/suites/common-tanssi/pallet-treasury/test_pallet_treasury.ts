@@ -54,7 +54,7 @@ describeSuite({
         });
 
         it({
-            id: "E06",
+            id: "E02",
             title: "Non root can not spend from treasury",
             test: async function () {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
@@ -71,7 +71,7 @@ describeSuite({
         });
 
         it({
-            id: "E07",
+            id: "E03",
             title: "Root can spend from treasury",
             test: async function () {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
