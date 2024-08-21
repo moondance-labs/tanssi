@@ -1516,13 +1516,13 @@ where
             .into_iter()
             .find(|kv| kv.0 == StorageWellKnownKeys::CODE.to_vec());
 
-        if let None = kv_code {
+        if let Some((_, code)) = kv_code {
+            // Build ValidationCode
+            let validation_code = ValidationCode(code);
+            RegistrarManager::register(who, id, genesis_head, validation_code)
+        } else {
             return Err(DispatchError::Other("Code not found"));
         }
-
-        // Build ValidationCode
-        let validation_code = ValidationCode(kv_code.unwrap().1);
-        RegistrarManager::register(who, id, genesis_head, validation_code)
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
