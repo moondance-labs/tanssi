@@ -20,9 +20,8 @@ use {
     async_trait::async_trait,
     core::pin::Pin,
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData,
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
-        PHeader,
+        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
+        OrchestratorChainResult, PHash, PHeader,
     },
     dp_core::ParaId,
     futures::{Stream, StreamExt},

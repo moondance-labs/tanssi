@@ -16,12 +16,12 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use parity_scale_codec::Decode;
 use sc_client_api::{FinalityNotification, FinalityNotifications};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use parity_scale_codec::Decode;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -40,9 +40,8 @@ use {
         AccountId, RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData,
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
-        PHeader,
+        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
+        OrchestratorChainResult, PHash, PHeader,
     },
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
@@ -531,6 +530,7 @@ async fn start_node_impl(
                         orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
+                        solochain: false,
                     })
                 } else {
                     None
@@ -934,6 +934,7 @@ pub async fn start_solochain_node(
                         orchestrator_para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
+                        solochain: true,
                     })
                 } else {
                     None
@@ -1258,7 +1259,7 @@ where
     Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
-        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1397,7 +1398,7 @@ where
     Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
-        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1484,9 +1485,11 @@ where
 
             if file_path.exists() {
                 // Read the file
-                let mut file = File::open(file_path).map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+                let mut file = File::open(file_path)
+                    .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
                 let mut buffer = Vec::new();
-                file.read_to_end(&mut buffer).map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+                file.read_to_end(&mut buffer)
+                    .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
                 // Decode the file contents
                 let decoded_data = ContainerChainGenesisData::decode(&mut buffer.as_slice())?;

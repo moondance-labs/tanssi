@@ -128,6 +128,7 @@ pub struct CollationParams {
     pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub orchestrator_para_id: ParaId,
+    pub solochain: bool,
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.

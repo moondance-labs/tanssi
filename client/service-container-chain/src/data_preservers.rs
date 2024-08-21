@@ -16,9 +16,7 @@
 
 use {
     crate::spawner::{ContainerChainSpawner, TSelectSyncMode},
-    dc_orchestrator_chain_interface::{
-        OrchestratorChainInterface, OrchestratorChainResult, PHash,
-    },
+    dc_orchestrator_chain_interface::{OrchestratorChainInterface, OrchestratorChainResult, PHash},
     futures::stream::StreamExt,
     std::{future::Future, sync::Arc},
     tc_consensus::ParaId,

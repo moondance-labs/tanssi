@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use nimbus_primitives::NimbusId;
+use std::collections::BTreeMap;
 use {
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
@@ -60,6 +62,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sp_core::{Pair, Public};
 
 type FullBackend = TFullBackend<Block>;
 
@@ -238,6 +241,7 @@ pub async fn start_node_impl_container(
         orchestrator_tx_pool,
         orchestrator_client,
         orchestrator_para_id,
+        solochain,
     }) = collation_params
     {
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
@@ -262,6 +266,7 @@ pub async fn start_node_impl_container(
             relay_chain_slot_duration,
             para_id,
             orchestrator_para_id,
+            solochain,
             collator_key.clone(),
             overseer_handle.clone(),
             announce_block.clone(),
@@ -323,6 +328,7 @@ fn start_consensus_container(
     relay_chain_slot_duration: Duration,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
+    solochain: bool,
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
@@ -378,14 +384,22 @@ fn start_consensus_container(
             let client = client_for_cidp.clone();
 
             async move {
-                let authorities_noting_inherent =
+                log::info!("create_inherent_data_providers: solochain? {}", solochain);
+                let authorities_noting_inherent = if solochain {
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at_solochain(
+                        relay_parent,
+                        &relay_chain_interface,
+                    )
+                        .await
+                } else {
                     ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
                         orchestrator_para_id,
                     )
-                    .await;
+                        .await
+                };
 
                 let slot_duration = {
                     // Default to 12s if runtime API does not exist
@@ -419,50 +433,121 @@ fn start_consensus_container(
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
             async move {
-                let latest_header =
-                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
-                        relay_parent,
-                        &relay_chain_interace_for_orch,
-                        orchestrator_para_id,
-                    )
-                    .await;
+                if solochain {
+                    /*
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        relay_chain_interace_for_orch.as_ref(),
+                        &relay_parent,
+                        para_id,
+                    );
 
-                let latest_header = latest_header.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch latest header",
-                    )
-                })?;
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+                     */
 
-                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    /// Generate collator keys from seed.
+                    ///
+                    /// This function's return type must always match the session keys of the chain in tuple format.
+                    pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
+                        get_from_seed::<NimbusId>(seed)
+                    }
+                    /// Helper function to generate a crypto pair from seed
+                    pub fn get_from_seed<TPublic: Public>(
+                        seed: &str,
+                    ) -> <TPublic::Pair as Pair>::Public {
+                        TPublic::Pair::from_string(&format!("//{}", seed), None)
+                            .expect("static values are valid; qed")
+                            .public()
+                    }
 
-                let authorities = authorities.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch authorities with error",
-                    )
-                })?;
+                    let mut authorities_mock: BTreeMap<ParaId, Vec<_>> = BTreeMap::new();
+                    let collator_names_and_assign = vec![
+                        (2000u32, "Collator2000-01"),
+                        (2000u32, "Collator2000-02"),
+                        (2001u32, "Collator1000-03"),
+                        (2001u32, "Collator1000-04"),
+                    ];
+                    for (para_id, seed) in collator_names_and_assign {
+                        let nimbus = get_collator_keys_from_seed(seed);
+                        log::info!("nimbus seed/id: {:?} / {}", seed, nimbus);
+                        authorities_mock
+                            .entry(ParaId::from(para_id))
+                            .or_default()
+                            .push(nimbus);
+                    }
 
-                log::info!(
-                    "Authorities {:?} found for header {:?}",
-                    authorities,
-                    latest_header
-                );
+                    let authorities = authorities_mock.get(&para_id).cloned().unwrap_or_default();
 
-                let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        relay_parent
+                    );
 
-                let aux_data = OrchestratorAuraWorkerAuxData {
-                    authorities,
-                    slot_freq,
-                };
+                    /*
+                    let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                        relay_chain_interace_for_orch.as_ref(),
+                        &relay_parent,
+                        para_id,
+                    );
+                     */
+                    let slot_freq = None;
 
-                Ok(aux_data)
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
+
+                    Ok(aux_data)
+                } else {
+                    let latest_header =
+                        ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                            relay_parent,
+                            &relay_chain_interace_for_orch,
+                            orchestrator_para_id,
+                        )
+                            .await;
+
+                    let latest_header = latest_header.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch latest header",
+                        )
+                    })?;
+
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        &latest_header.hash(),
+                        para_id,
+                    );
+
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        latest_header
+                    );
+
+                    let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        &latest_header.hash(),
+                        para_id,
+                    );
+
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
+
+                    Ok(aux_data)
+                }
             }
         },
         block_import,
