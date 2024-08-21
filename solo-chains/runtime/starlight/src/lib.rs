@@ -20,6 +20,9 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+// Fix compile error in impl_runtime_weights! macro
+use runtime_common as polkadot_runtime_common;
+
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -502,13 +505,8 @@ parameter_types! {
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
-    type ApproveOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RuntimeEvent = RuntimeEvent;
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ProposalBondMinimum;
-    type ProposalBondMaximum = ProposalBondMaximum;
     type SpendPeriod = SpendPeriod;
     type Burn = Burn;
     type BurnDestination = ();
@@ -944,6 +942,7 @@ impl parachains_hrmp::Config for Runtime {
     type Currency = Balances;
     type DefaultChannelSizeAndCapacityWithSystem = DefaultChannelSizeAndCapacityWithSystem;
     type WeightInfo = parachains_hrmp::TestWeightInfo;
+    type VersionWrapper = XcmPallet;
 }
 
 impl parachains_paras_inherent::Config for Runtime {
@@ -1053,6 +1052,12 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
 parameter_types! {
     pub const OnDemandTrafficDefaultValue: FixedU128 = FixedU128::from_u32(1);
+    // Keep 2 blocks worth of revenue information.
+    // We don't need this because it is only used by coretime and we don't have coretime,
+    // but the pallet implicitly assumes that this bound is at least 1, so we use a low value
+    // that won't cause problems.
+    pub const MaxHistoricalRevenue: BlockNumber = 2;
+    pub const OnDemandPalletId: PalletId = PalletId(*b"py/ondmd");
 }
 
 impl parachains_assigner_on_demand::Config for Runtime {
@@ -1060,6 +1065,8 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type Currency = Balances;
     type TrafficDefaultValue = OnDemandTrafficDefaultValue;
     type WeightInfo = parachains_assigner_on_demand::TestWeightInfo;
+    type MaxHistoricalRevenue = MaxHistoricalRevenue;
+    type PalletId = OnDemandPalletId;
 }
 
 impl parachains_initializer::Config for Runtime {
@@ -1128,6 +1135,7 @@ impl pallet_beefy::Config for Runtime {
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
         pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    type AncestryHelper = MmrLeaf;
 }
 
 /// MMR helper types.
@@ -2039,7 +2047,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(3)]
+    #[api_version(4)]
     impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
         fn beefy_genesis() -> Option<BlockNumber> {
             pallet_beefy::GenesisBlock::<Runtime>::get()
@@ -2049,8 +2057,8 @@ sp_api::impl_runtime_apis! {
             Beefy::validator_set()
         }
 
-        fn submit_report_equivocation_unsigned_extrinsic(
-            equivocation_proof: beefy_primitives::EquivocationProof<
+        fn submit_report_double_voting_unsigned_extrinsic(
+            equivocation_proof: beefy_primitives::DoubleVotingProof<
                 BlockNumber,
                 BeefyId,
                 BeefySignature,
@@ -2059,7 +2067,7 @@ sp_api::impl_runtime_apis! {
         ) -> Option<()> {
             let key_owner_proof = key_owner_proof.decode()?;
 
-            Beefy::submit_unsigned_equivocation_report(
+            Beefy::submit_unsigned_double_voting_report(
                 equivocation_proof,
                 key_owner_proof,
             )
@@ -2069,8 +2077,6 @@ sp_api::impl_runtime_apis! {
             _set_id: beefy_primitives::ValidatorSetId,
             authority_id: BeefyId,
         ) -> Option<beefy_primitives::OpaqueKeyOwnershipProof> {
-            use parity_scale_codec::Encode;
-
             Historical::prove((beefy_primitives::KEY_TYPE, authority_id))
                 .map(|p| p.encode())
                 .map(beefy_primitives::OpaqueKeyOwnershipProof::new)
@@ -2090,7 +2096,7 @@ sp_api::impl_runtime_apis! {
         fn generate_proof(
             block_numbers: Vec<BlockNumber>,
             best_known_block_number: Option<BlockNumber>,
-        ) -> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::Proof<mmr::Hash>), mmr::Error> {
+        ) -> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::LeafProof<mmr::Hash>), mmr::Error> {
             Mmr::generate_proof(block_numbers, best_known_block_number).map(
                 |(leaves, proof)| {
                     (
@@ -2104,7 +2110,7 @@ sp_api::impl_runtime_apis! {
             )
         }
 
-        fn verify_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::Proof<mmr::Hash>)
+        fn verify_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::LeafProof<mmr::Hash>)
             -> Result<(), mmr::Error>
         {
             let leaves = leaves.into_iter().map(|leaf|
@@ -2117,7 +2123,7 @@ sp_api::impl_runtime_apis! {
         fn verify_proof_stateless(
             root: mmr::Hash,
             leaves: Vec<mmr::EncodableOpaqueLeaf>,
-            proof: mmr::Proof<mmr::Hash>
+            proof: mmr::LeafProof<mmr::Hash>
         ) -> Result<(), mmr::Error> {
             let nodes = leaves.into_iter().map(|leaf|mmr::DataOrHash::Data(leaf.into_opaque_leaf())).collect();
             pallet_mmr::verify_leaves_proof::<mmr::Hashing, _>(root, nodes, proof)
