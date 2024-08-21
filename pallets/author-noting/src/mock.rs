@@ -194,10 +194,6 @@ impl RelaychainStateProvider for MockRelayStateProvider {
         }
     }
 
-    fn current_relay_state_proof() -> Option<sp_trie::StorageProof> {
-        None
-    }
-
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_relay_chain_state(state: RelayChainState) {
         frame_support::storage::unhashed::put(b"MOCK_RELAY_ROOT_KEY", &state.state_root);

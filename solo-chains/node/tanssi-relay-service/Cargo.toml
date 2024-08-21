@@ -233,7 +233,3 @@ runtime-metrics = [
 	"polkadot-runtime-parachains/runtime-metrics",
 	"starlight-runtime?/runtime-metrics",
 ]
-
-elastic-scaling-experimental = [
-	"polkadot-collator-protocol?/elastic-scaling-experimental",
-]

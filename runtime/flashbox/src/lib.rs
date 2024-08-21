@@ -1451,7 +1451,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {
             TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+            TimeUnit::Timestamp => Some(Timestamp::get().into()),
         }
     }
 
@@ -1537,23 +1537,15 @@ impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryId;
     type Currency = Balances;
 
-    type ApproveOrigin = EnsureRoot<AccountId>;
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
     type SpendPeriod = ConstU32<{ 6 * DAYS }>;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
-    #[cfg(feature = "runtime-benchmarks")]
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
