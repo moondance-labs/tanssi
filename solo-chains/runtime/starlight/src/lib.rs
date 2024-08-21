@@ -1509,7 +1509,7 @@ where
         // Build HeadData
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
             genesis_storage.into_iter().map(|x| x.into()).collect();
-        let genesis_head = HeadData(key_values.clone().encode());
+        let genesis_head = HeadData(key_values.encode());
 
         // Check if the wasm code is present in storage
         let kv_code = key_values
