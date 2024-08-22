@@ -53,7 +53,7 @@ jobs:
           # Transpile to JS
           pnpm run build
       - name: Publish typescript API
-        uses: JS-DevTools/npm-publish@v1
+        uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: typescript-api/package.json

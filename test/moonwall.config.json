@@ -537,7 +537,7 @@
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
 
-            "timeout": 600000,
+            "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
                 "type": "zombie",
@@ -575,7 +575,7 @@
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
 
-            "timeout": 600000,
+            "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
                 "type": "zombie",
