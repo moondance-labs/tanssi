@@ -232,7 +232,7 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// This storage aims to act as a 'buffer' for paraIds that must be deregistered at the 
+    /// This storage aims to act as a 'buffer' for paraIds that must be deregistered at the
     /// end of the block execution by calling 'T::InnerRegistrar::deregister()' implementation.
     ///
     /// We need this buffer because when we are using this pallet on a relay-chain environment
