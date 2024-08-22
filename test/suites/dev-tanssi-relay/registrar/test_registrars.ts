@@ -114,7 +114,7 @@ describeSuite({
 
                 // Check we can't register via relay Registrar
                 const tx2 = polkadotJs.tx.registrar.register(2002, "0x", "0x0102030405060708091011").signAsync(alice);
-                let { result: result2 } = await context.createBlock([tx2]);
+                const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
                 expect(result2[0].error.section).to.eq("registrar");
                 expect(result2[0].error.name).to.eq("AlreadyRegistered");
