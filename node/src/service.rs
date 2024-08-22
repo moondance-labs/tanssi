@@ -888,12 +888,9 @@ pub async fn start_solochain_node(
     node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
-    // TODO: this should all be relay chain stuff, not orchestrator
     let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
-        client: node_builder.client.clone(),
-        backend: node_builder.backend.clone(),
-        sync_oracle: node_builder.network.sync_service.clone(),
         overseer_handle: overseer_handle.clone(),
+        relay_chain_interface: relay_chain_interface.clone(),
     };
 
     if let (container_chain_cli, tokio_handle) = container_chain_config {
@@ -1194,19 +1191,15 @@ impl OrchestratorChainInProcessInterfaceBuilder {
 /// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
 /// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
 struct OrchestratorChainSolochainInterfaceBuilder {
-    client: Arc<ParachainClient>,
-    backend: Arc<FullBackend>,
-    sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
     overseer_handle: Handle,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
 }
 
 impl crate::service::OrchestratorChainSolochainInterfaceBuilder {
     pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
         Arc::new(OrchestratorChainSolochainInterface::new(
-            self.client,
-            self.backend,
-            self.sync_oracle,
             self.overseer_handle,
+            self.relay_chain_interface,
         ))
     }
 }
@@ -1275,7 +1268,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 
@@ -1362,64 +1355,46 @@ where
 }
 
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
-pub struct OrchestratorChainSolochainInterface<Client> {
-    pub full_client: Arc<Client>,
-    pub backend: Arc<FullBackend>,
-    pub sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
+pub struct OrchestratorChainSolochainInterface {
     pub overseer_handle: Handle,
+    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
 }
 
-impl<Client> OrchestratorChainSolochainInterface<Client> {
+impl OrchestratorChainSolochainInterface {
     /// Create a new instance of [`RelayChainInProcessInterface`]
     pub fn new(
-        full_client: Arc<Client>,
-        backend: Arc<FullBackend>,
-        sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
         overseer_handle: Handle,
+        relay_chain_interface: Arc<dyn RelayChainInterface>,
     ) -> Self {
         Self {
-            full_client,
-            backend,
-            sync_oracle,
             overseer_handle,
+            relay_chain_interface,
         }
     }
 }
 
 #[async_trait::async_trait]
-impl<Client> OrchestratorChainInterface for OrchestratorChainSolochainInterface<Client>
-where
-    Client: ProvideRuntimeApi<Block>
-        + BlockchainEvents<Block>
-        + AuxStore
-        + UsageProvider<Block>
-        + Sync
-        + Send,
-    Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
-        + OnDemandBlockProductionApi<Block, ParaId, Slot>
-        + RegistrarApi<Block, ParaId>
-        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
-{
+impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
     async fn get_storage_by_key(
         &self,
-        orchestrator_parent: PHash,
+        relay_parent: PHash,
         key: &[u8],
     ) -> OrchestratorChainResult<Option<StorageValue>> {
-        let state = self.backend.state_at(orchestrator_parent)?;
-        state
-            .storage(key)
-            .map_err(OrchestratorChainError::GenericError)
+        self.relay_chain_interface
+            .get_storage_by_key(relay_parent, key)
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     async fn prove_read(
         &self,
-        orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relay_parent: PHash,
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(orchestrator_parent)?;
-
-        sp_state_machine::prove_read(state_backend, relevant_keys)
-            .map_err(OrchestratorChainError::StateMachineError)
+        self.relay_chain_interface
+            .prove_read(relay_parent, relevant_keys)
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
@@ -1430,103 +1405,99 @@ where
     async fn import_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        let notification_stream = self
-            .full_client
+        self.relay_chain_interface
             .import_notification_stream()
-            .map(|notification| notification.header);
-        Ok(Box::pin(notification_stream))
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     /// Get a stream of new best block notifications.
     async fn new_best_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        let notifications_stream =
-            self.full_client
-                .import_notification_stream()
-                .filter_map(|notification| async move {
-                    notification.is_new_best.then_some(notification.header)
-                });
-        Ok(Box::pin(notifications_stream))
+        self.relay_chain_interface
+            .new_best_notification_stream()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     /// Get a stream of finality notifications.
     async fn finality_notification_stream(
         &self,
     ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        let notification_stream = self
-            .full_client
+        self.relay_chain_interface
             .finality_notification_stream()
-            .map(|notification| notification.header);
-        Ok(Box::pin(notification_stream))
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     async fn genesis_data(
         &self,
-        orchestrator_parent: PHash,
+        relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        // Use absolute path to avoid problems
-        let mock_genesis_dir = "/home/tomasz/projects/tanssi/mock-genesis-data/";
-        let files = BTreeMap::from_iter([
-            (
-                ParaId::from(2000u32),
-                "containerChainGenesisData-single-container-template-container-2000.bin",
-            ),
-            (
-                ParaId::from(2001u32),
-                "containerChainGenesisData-single-container-template-container-2001.bin",
-            ),
-        ]);
+        let encoded_para_id = para_id.encode();
+        let res: Vec<u8> = self
+            .relay_chain_interface
+            .call_remote_runtime_function(
+                "RegistrarApi_genesis_data",
+                relay_parent,
+                &encoded_para_id,
+            )
+            .await
+            .unwrap();
+        let res: Option<ContainerChainGenesisData> = Decode::decode(&mut res.as_slice())?;
 
-        // Find the corresponding file
-        if let Some(file_name) = files.get(&para_id) {
-            let file_path = Path::new(mock_genesis_dir).join(file_name);
-
-            if file_path.exists() {
-                // Read the file
-                let mut file = File::open(file_path)
-                    .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-                let mut buffer = Vec::new();
-                file.read_to_end(&mut buffer)
-                    .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-                // Decode the file contents
-                let decoded_data = ContainerChainGenesisData::decode(&mut buffer.as_slice())?;
-
-                return Ok(Some(decoded_data));
-            } else {
-                panic!("File not found: {:?}", file_path);
-            }
-        } else {
-            Ok(None)
-        }
+        Ok(res)
     }
 
     async fn boot_nodes(
         &self,
-        orchestrator_parent: PHash,
+        relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        // Bootnodes not needed, zombienet uses local peer discovery
-        Ok(vec![])
+        let encoded_para_id = para_id.encode();
+        let res: Vec<u8> = self
+            .relay_chain_interface
+            .call_remote_runtime_function("RegistrarApi_boot_nodes", relay_parent, &encoded_para_id)
+            .await
+            .unwrap();
+        let res: Vec<Vec<u8>> = Decode::decode(&mut res.as_slice())?;
+
+        Ok(res)
     }
 
     async fn latest_block_number(
         &self,
-        orchestrator_parent: PHash,
+        relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        let runtime_api = self.full_client.runtime_api();
+        let encoded_para_id = para_id.encode();
+        let res: Vec<u8> = self
+            .relay_chain_interface
+            .call_remote_runtime_function(
+                "AuthorNotingApi_latest_block_number",
+                relay_parent,
+                &encoded_para_id,
+            )
+            .await
+            .unwrap();
+        let res: Option<BlockNumber> = Decode::decode(&mut res.as_slice())?;
 
-        Ok(runtime_api.latest_block_number(orchestrator_parent, para_id)?)
+        Ok(res)
     }
 
     async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
-        Ok(self.backend.blockchain().info().best_hash)
+        self.relay_chain_interface
+            .best_block_hash()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
-        Ok(self.backend.blockchain().info().finalized_hash)
+        self.relay_chain_interface
+            .finalized_block_hash()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
     }
 }

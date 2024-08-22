@@ -20,6 +20,7 @@ log = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+hex-literal = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
@@ -94,11 +95,13 @@ runtime-benchmarks = [
 	"polkadot-primitives/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-data-preservers/runtime-benchmarks"
 ]
 try-runtime = [
 	"dancebox-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-data-preservers/try-runtime"
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]

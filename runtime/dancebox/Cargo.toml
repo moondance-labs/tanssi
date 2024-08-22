@@ -275,6 +275,7 @@ std = [
 	"westend-runtime/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"pallet-data-preservers-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)

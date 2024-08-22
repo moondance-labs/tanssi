@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use nimbus_primitives::NimbusId;
+use nimbus_primitives::{NimbusId, NIMBUS_KEY_ID};
 use std::collections::BTreeMap;
 use {
     cumulus_client_consensus_common::{
@@ -62,7 +62,9 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
-use sp_core::{Pair, Public};
+use sp_core::crypto::Ss58Codec;
+use sp_core::{Decode, Encode, Pair, Public};
+use sp_keystore::Keystore;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -434,52 +436,23 @@ fn start_consensus_container(
 
             async move {
                 if solochain {
-                    /*
-                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                        relay_chain_interace_for_orch.as_ref(),
-                        &relay_parent,
-                        para_id,
-                    );
+                    let encoded_para_id = para_id.encode();
+                    let authorities: Vec<u8> = relay_chain_interace_for_orch
+                        .call_remote_runtime_function(
+                            "TanssiAuthorityAssignmentApi_para_id_authorities",
+                            relay_parent,
+                            &encoded_para_id,
+                        )
+                        .await?;
+
+                    let authorities: Option<Vec<NimbusId>> =
+                        Decode::decode(&mut authorities.as_slice()).unwrap();
 
                     let authorities = authorities.ok_or_else(|| {
                         Box::<dyn std::error::Error + Send + Sync>::from(
                             "Failed to fetch authorities with error",
                         )
                     })?;
-                     */
-
-                    /// Generate collator keys from seed.
-                    ///
-                    /// This function's return type must always match the session keys of the chain in tuple format.
-                    pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
-                        get_from_seed::<NimbusId>(seed)
-                    }
-                    /// Helper function to generate a crypto pair from seed
-                    pub fn get_from_seed<TPublic: Public>(
-                        seed: &str,
-                    ) -> <TPublic::Pair as Pair>::Public {
-                        TPublic::Pair::from_string(&format!("//{}", seed), None)
-                            .expect("static values are valid; qed")
-                            .public()
-                    }
-
-                    let mut authorities_mock: BTreeMap<ParaId, Vec<_>> = BTreeMap::new();
-                    let collator_names_and_assign = vec![
-                        (2000u32, "Collator2000-01"),
-                        (2000u32, "Collator2000-02"),
-                        (2001u32, "Collator1000-03"),
-                        (2001u32, "Collator1000-04"),
-                    ];
-                    for (para_id, seed) in collator_names_and_assign {
-                        let nimbus = get_collator_keys_from_seed(seed);
-                        log::info!("nimbus seed/id: {:?} / {}", seed, nimbus);
-                        authorities_mock
-                            .entry(ParaId::from(para_id))
-                            .or_default()
-                            .push(nimbus);
-                    }
-
-                    let authorities = authorities_mock.get(&para_id).cloned().unwrap_or_default();
 
                     log::info!(
                         "Authorities {:?} found for header {:?}",
@@ -487,14 +460,15 @@ fn start_consensus_container(
                         relay_parent
                     );
 
-                    /*
-                    let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                        relay_chain_interace_for_orch.as_ref(),
-                        &relay_parent,
-                        para_id,
-                    );
-                     */
-                    let slot_freq = None;
+                    let encoded_para_id = para_id.encode();
+                    let slot_freq: Vec<u8> = relay_chain_interace_for_orch
+                        .call_remote_runtime_function(
+                            "OnDemandBlockProductionApi_parathread_slot_frequency",
+                            relay_parent,
+                            &encoded_para_id,
+                        )
+                        .await?;
+                    let slot_freq: Option<_> = Decode::decode(&mut slot_freq.as_slice()).unwrap();
 
                     let aux_data = OrchestratorAuraWorkerAuxData {
                         authorities,

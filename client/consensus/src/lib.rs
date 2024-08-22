@@ -290,12 +290,9 @@ where
     available_keys.into_iter().find_map(|type_public_pair| {
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
-
-            // TODO: yes this can work if we use overseer_handle and RuntimeApiMessage
-            // but no, RuntimeApiRequest only allows calling a fixed list of runtime apis, not arbitrary ones
-            let session_index = block_on(client.session_index_for_child(*parent_hash)).unwrap();
-
-            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index, nimbus_id.clone()) {
+            if let Ok(Some(para_id)) =
+                solochain_check_para_id_assignment(client, parent_hash, nimbus_id.clone())
+            {
                 log::debug!("Para id found for assignment {:?}", para_id);
 
                 Some((nimbus_id.into(), para_id))
@@ -346,10 +343,11 @@ where
     available_keys.into_iter().find_map(|type_public_pair| {
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
-            let session_index = block_on(client.session_index_for_child(*parent_hash)).unwrap();
-
-            if let Ok(Some(para_id)) = mock_para_id_assignment(session_index + 1, nimbus_id.clone())
-            {
+            if let Ok(Some(para_id)) = solochain_check_para_id_assignment_next_session(
+                client,
+                parent_hash,
+                nimbus_id.clone(),
+            ) {
                 log::debug!("Para id found for assignment {:?}", para_id);
 
                 Some((nimbus_id.into(), para_id))
@@ -364,11 +362,36 @@ where
     })
 }
 
-fn mock_para_id_assignment(
-    session_index: SessionIndex,
+fn solochain_check_para_id_assignment<C: RelayChainInterface + ?Sized>(
+    client: &C,
+    relay_parent: &H256,
     nimbus_id: NimbusId,
 ) -> Result<Option<ParaId>, ()> {
-    let assigned_para = Some(2000u32.into());
+    let encoded_nimbus_id = nimbus_id.encode();
+    let res: Vec<u8> = block_on(client.call_remote_runtime_function(
+        "TanssiAuthorityAssignmentApi_check_para_id_assignment",
+        *relay_parent,
+        &encoded_nimbus_id,
+    ))
+    .map_err(|_| ())?;
+    let res: Option<ParaId> = Decode::decode(&mut res.as_slice()).unwrap();
 
-    Ok(assigned_para)
+    Ok(res)
+}
+
+fn solochain_check_para_id_assignment_next_session<C: RelayChainInterface + ?Sized>(
+    client: &C,
+    relay_parent: &H256,
+    nimbus_id: NimbusId,
+) -> Result<Option<ParaId>, ()> {
+    let encoded_nimbus_id = nimbus_id.encode();
+    let res: Vec<u8> = block_on(client.call_remote_runtime_function(
+        "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
+        *relay_parent,
+        &encoded_nimbus_id,
+    ))
+    .map_err(|_| ())?;
+    let res: Option<ParaId> = Decode::decode(&mut res.as_slice()).unwrap();
+
+    Ok(res)
 }
