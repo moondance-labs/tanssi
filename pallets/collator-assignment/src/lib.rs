@@ -41,6 +41,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use core::ops::Mul;
 use {
     crate::assignment::{Assignment, ChainNumCollators},
     frame_support::{pallet_prelude::*, traits::Currency},
@@ -71,6 +72,14 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_with_core_config;
+
+#[derive(Encode, Decode, Debug)]
+pub struct CoreAllocationConfiguration {
+    pub core_count: u32,
+    pub max_parachain_percentage: Perbill,
+}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -103,6 +112,7 @@ pub mod pallet {
         type Currency: Currency<Self::AccountId>;
         type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
         type ForceEmptyOrchestrator: Get<bool>;
+        type CoreAllocationConfiguration: Get<Option<CoreAllocationConfiguration>>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -159,6 +169,90 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub(crate) fn order_paras_with_core_config(
+            mut bulk_paras: Vec<ChainNumCollators>,
+            mut pool_paras: Vec<ChainNumCollators>,
+            core_allocation_configuration: &CoreAllocationConfiguration,
+            target_session_index: T::SessionIndex,
+            number_of_collators: u32,
+            collators_per_container: u32,
+            collators_per_parathread: u32,
+        ) -> (Vec<ChainNumCollators>, bool) {
+            let core_count = core_allocation_configuration.core_count;
+            let ideal_number_of_bulk_paras = core_allocation_configuration
+                .max_parachain_percentage
+                .mul(core_count);
+
+            let enough_cores_for_all_paras = bulk_paras.len() < ideal_number_of_bulk_paras as usize;
+
+            // Currently, we are sorting both bulk and pool paras by tip, even when for example
+            // only number of bulk paras are restricted due to core availability.
+            // We need to sort both separately as we have fixed space for parachains at the moment
+            // which means even when we have some parathread cores empty we cannot schedule parachain there.
+            // We need to change this once other part of algorithm start to differentiate between
+            // bulk and pool paras.
+            if !enough_cores_for_all_paras {
+                bulk_paras.sort_by(|a, b| {
+                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                });
+
+                pool_paras.sort_by(|a, b| {
+                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                });
+            }
+
+            bulk_paras.truncate(ideal_number_of_bulk_paras as usize);
+            // We are not truncating pool paras, since their workload is not continuous one core
+            // can be shared by many parachain during the session.
+
+            let (ordered_chains, sorted_chains_based_on_tip) = Self::order_paras(
+                bulk_paras,
+                pool_paras,
+                target_session_index,
+                number_of_collators,
+                collators_per_container,
+                collators_per_parathread,
+            );
+
+            // We should charge tip if either this method or the order_para method has sorted chains based on tip
+            (
+                ordered_chains,
+                sorted_chains_based_on_tip || !enough_cores_for_all_paras,
+            )
+        }
+
+        pub(crate) fn order_paras(
+            mut bulk_paras: Vec<ChainNumCollators>,
+            pool_paras: Vec<ChainNumCollators>,
+            target_session_index: T::SessionIndex,
+            number_of_collators: u32,
+            collators_per_container: u32,
+            collators_per_parathread: u32,
+        ) -> (Vec<ChainNumCollators>, bool) {
+            // Are there enough collators to satisfy the minimum demand?
+            let enough_collators_for_all_chain = number_of_collators
+                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                    .saturating_add(collators_per_container.saturating_mul(bulk_paras.len() as u32))
+                    .saturating_add(
+                        collators_per_parathread.saturating_mul(pool_paras.len() as u32),
+                    );
+
+            let mut chains: Vec<_> = bulk_paras.drain(..).chain(pool_paras).collect();
+
+            // Prioritize paras by tip on congestion
+            // As of now this doesn't distinguish between bulk paras and pool paras
+            if !enough_collators_for_all_chain {
+                chains.sort_by(|a, b| {
+                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                });
+            }
+
+            (chains, !enough_collators_for_all_chain)
+        }
+
         /// Assign new collators
         /// collators should be queued collators
         pub fn assign_collators(
@@ -166,9 +260,16 @@ pub mod pallet {
             random_seed: [u8; 32],
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            let maybe_core_allocation_configuration = T::CoreAllocationConfiguration::get();
             // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
+
+            let collators_per_container =
+                T::HostConfiguration::collators_per_container(target_session_index);
+            let collators_per_parathread =
+                T::HostConfiguration::collators_per_parathread(target_session_index);
+
             // We get the containerChains that we will have at the target session
             let container_chains =
                 T::ContainerChains::session_container_chains(target_session_index);
@@ -201,7 +302,7 @@ pub mod pallet {
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.
-            // This should only happen in tests, and in the genesis block.
+            // This should only happen in tests_without_core_config, and in the genesis block.
             if random_seed != [0; 32] {
                 let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
                 container_chain_ids.shuffle(&mut rng);
@@ -234,45 +335,45 @@ pub mod pallet {
             // Chains will not be assigned less than `min_collators`, except the orchestrator chain.
             // First all chains will be assigned `min_collators`, and then the first one will be assigned up to `max`,
             // then the second one, and so on.
-            let mut chains = vec![];
-            let collators_per_container =
-                T::HostConfiguration::collators_per_container(target_session_index);
+            let mut bulk_paras = vec![];
+            let mut pool_paras = vec![];
+
             for para_id in &container_chain_ids {
-                chains.push(ChainNumCollators {
+                bulk_paras.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_container,
                     max_collators: collators_per_container,
                 });
             }
-            let collators_per_parathread =
-                T::HostConfiguration::collators_per_parathread(target_session_index);
             for para_id in &parathreads {
-                chains.push(ChainNumCollators {
+                pool_paras.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_parathread,
                     max_collators: collators_per_parathread,
                 });
             }
 
-            // Are there enough collators to satisfy the minimum demand?
-            let enough_collators_for_all_chain = collators.len() as u32
-                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
-                    .saturating_add(
-                        collators_per_container.saturating_mul(container_chain_ids.len() as u32),
+            let (chains, need_to_charge_tip) =
+                if let Some(core_allocation_configuration) = maybe_core_allocation_configuration {
+                    Self::order_paras_with_core_config(
+                        bulk_paras,
+                        pool_paras,
+                        &core_allocation_configuration,
+                        target_session_index,
+                        collators.len() as u32,
+                        collators_per_container,
+                        collators_per_parathread,
                     )
-                    .saturating_add(
-                        collators_per_parathread.saturating_mul(parathreads.len() as u32),
-                    );
-
-            // Prioritize paras by tip on congestion
-            // As of now this doesn't distinguish between parachains and parathreads
-            // TODO apply different logic to parathreads
-            if !enough_collators_for_all_chain {
-                chains.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
-                });
-            }
+                } else {
+                    Self::order_paras(
+                        bulk_paras,
+                        pool_paras,
+                        target_session_index,
+                        collators.len() as u32,
+                        collators_per_container,
+                        collators_per_parathread,
+                    )
+                };
 
             // We assign new collators
             // we use the config scheduled at the target_session_index
@@ -334,7 +435,7 @@ pub mod pallet {
             assigned_containers.retain(|_, v| !v.is_empty());
 
             // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
-            let maybe_tip: Option<BalanceOf<T>> = if enough_collators_for_all_chain {
+            let maybe_tip: Option<BalanceOf<T>> = if !need_to_charge_tip {
                 None
             } else {
                 assigned_containers

@@ -36,6 +36,7 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
+use pallet_collator_assignment::CoreAllocationConfiguration;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -886,6 +887,14 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
+pub struct GetCoreAllocationConfigurationImpl;
+
+impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
+    fn get() -> Option<CoreAllocationConfiguration> {
+        None
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -901,6 +910,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;
+    type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 

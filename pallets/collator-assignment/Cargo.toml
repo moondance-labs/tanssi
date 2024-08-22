@@ -19,6 +19,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+polkadot-runtime-parachains = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 scale-info = { workspace = true }
@@ -42,6 +43,7 @@ std = [
 	"frame-system/std",
 	"log/std",
 	"parity-scale-codec/std",
+	"polkadot-runtime-parachains/std",
 	"rand/std",
 	"rand_chacha/std",
 	"scale-info/std",
