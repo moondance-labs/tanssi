@@ -17,10 +17,10 @@
 use {
     crate::spawner::{ContainerChainSpawner, TSelectSyncMode},
     dc_orchestrator_chain_interface::{
-        DataPreserverAssignment, OrchestratorChainInterface, OrchestratorChainResult, PHash,
+        DataPreserverAssignment, OrchestratorChainInterface, OrchestratorChainResult,
     },
     futures::stream::StreamExt,
-    std::{future::Future, sync::Arc},
+    std::{future::Future},
     tc_consensus::ParaId,
 };
 

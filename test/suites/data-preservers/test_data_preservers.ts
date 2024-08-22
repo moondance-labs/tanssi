@@ -51,237 +51,84 @@ describeSuite({
         });
 
         it({
+            id: "T02",
+            title: "Data preservers watcher properly starts",
+            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/DataPreserver.log";
+                await waitForLogs(logFilePath, 300, ["Assignement for block"]);
+            },
+        });
+
+        it({
             id: "T03",
-            title: "Test assignation did not change",
+            title: "Change assignment",
             test: async function () {
-                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                // TODO: fix once we have types
-                const allCollators = (
-                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON();
-                const expectedAllCollators = {
-                    orchestratorChain: [
-                        getKeyringNimbusIdHex("Collator1000-01"),
-                        getKeyringNimbusIdHex("Collator1000-02"),
-                        getKeyringNimbusIdHex("Collator1000-03"),
-                    ],
-                    containerChains: {
-                        "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator2000-02")],
-                    },
-                };
-
-                expect(allCollators).to.deep.equal(expectedAllCollators);
-            },
-        });
-
-        it({
-            id: "T04",
-            title: "Blocks are being produced on container 2000",
-            test: async function () {
-                const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                expect(blockNum).to.be.greaterThan(0);
-            },
-        });
-
-        it({
-            id: "T06",
-            title: "Test container chain 2000 assignation is correct",
-            test: async function () {
-                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
-                const containerChainCollators = (
-                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
-
-                // TODO: fix once we have types
-                const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
-
-                expect(containerChainCollators).to.deep.equal(writtenCollators);
-            },
-        });
-
-        it({
-            id: "T08",
-            title: "Test author noting is correct for both containers",
-            timeout: 60000,
-            test: async function () {
-                const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
-                const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
-
-                // TODO: fix once we have types
-                const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
-
-                await context.waitBlock(3, "Tanssi");
-                const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
-
-                expect(containerChainCollators2000.includes(author2000.toJSON().author)).to.be.true;
-            },
-        });
-
-        it({
-            id: "T09",
-            title: "Test author is correct in Orchestrator",
-            test: async function () {
-                const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
-                const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
-                const author = await getAuthorFromDigest(paraApi);
-                // TODO: fix once we have types
-                expect(authorities.toJSON().orchestratorChain.includes(author.toString())).to.be.true;
-            },
-        });
-
-        it({
-            id: "T10",
-            title: "Test frontier template isEthereum",
-            test: async function () {
-                // TODO: fix once we have types
-                const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-            },
-        });
-
-        it({
-            id: "T12",
-            title: "Test warp sync: collator rotation from tanssi to container with blocks",
-            timeout: 300000,
-            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/DataPreserver.log";
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
-                const collator100003DbPath =
-                    getTmpZombiePath() +
-                    "/Collator1000-03/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
-                const container200002DbPath =
-                    getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
-                expect(await directoryExists(container200002DbPath)).to.be.true;
-                expect(await directoryExists(collator100003DbPath)).to.be.false;
-
-                // Deregister Collator2000-02, it should delete the db
-                const invuln = (await paraApi.query.invulnerables.invulnerables()).toJSON();
-
-                const invulnerable_to_remove = invuln.filter((addr) => {
-                    return u8aToHex(decodeAddress(addr)) == getKeyringNimbusIdHex("Collator2000-02");
-                })[0];
-
-                const tx = paraApi.tx.invulnerables.removeInvulnerable(invulnerable_to_remove);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-
-                // New collators will be set after 2 sessions, but because `signAndSendAndInclude` waits
-                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
-                // 1 session. So use a callback to wait 1 or 2 sessions.
-                await waitSessions(context, paraApi, 2, async () => {
-                    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                    const allCollators = (
-                        await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                    ).toJSON();
-                    // Stop waiting if orchestrator chain has 2 collators instead of 3
-                    return allCollators.orchestratorChain.length == 2;
-                });
-
-                // Collator1000-03 should rotate to container chain 2000
-
-                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-                // TODO: fix once we have types
-                const allCollators = (
-                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON();
-                const expectedAllCollators = {
-                    orchestratorChain: [
-                        getKeyringNimbusIdHex("Collator1000-01"),
-                        getKeyringNimbusIdHex("Collator1000-02"),
-                    ],
-                    containerChains: {
-                        "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator1000-03")],
-                    },
+                const profile = {
+                    url: "exemple",
+                    paraIds: "AnyParaId",
+                    mode: { rpc: { supportsEthereumRpc: false }},
                 };
-
-                expect(allCollators).to.deep.equal(expectedAllCollators);
-
-                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
-                // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(6, "Tanssi");
-
-                // Collator2000-02 container chain db should have been deleted
-                expect(await directoryExists(container200002DbPath)).to.be.false;
-
-                // Collator1000-03 container chain db should be created
-                expect(await directoryExists(collator100003DbPath)).to.be.true;
-            },
-        });
-
-        it({
-            id: "T13",
-            title: "Collator1000-03 is producing blocks on Container 2000",
-            timeout: 300000,
-            test: async function () {
-                const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber() - 3;
-                // Wait up to 8 blocks, giving the new collator 4 chances to build a block
-                const blockEnd = blockStart + 8;
-                const authors = [];
-
-                for (let blockNumber = blockStart; blockNumber <= blockEnd; blockNumber += 1) {
-                    // Get the latest author from Digest
-                    const blockHash = await container2000Api.rpc.chain.getBlockHash(blockNumber);
-                    const apiAt = await container2000Api.at(blockHash);
-                    const digests = (await apiAt.query.system.digest()).logs;
-                    const filtered = digests.filter(
-                        (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("nmbs")
-                    );
-                    const author = filtered[0].asPreRuntime[1].toHex();
-                    authors.push(author);
-                    if (author == getKeyringNimbusIdHex("Collator1000-03")) {
-                        break;
-                    }
-                    const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                    if (currentBlock == blockNumber) {
-                        await context.waitBlock(1, "Container2000");
-                    }
+                
+                {
+                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, alice.address);
+                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Tanssi");
                 }
 
-                expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"));
-            },
-        });
+                {
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(0, 2000, "Free");
+                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
 
-        it({
-            id: "T14",
-            title: "Check Collator1000-03.log to ensure it used warp sync",
-            timeout: 300000,
-            test: async function () {
-                // Use collator logs to ensure that it used warp sync to first the first time.
-                // Not ideal because logs can change, but better than nothing.
-                const logFilePath = getTmpZombiePath() + "/Collator1000-03.log";
-                await checkLogs(logFilePath, [
-                    "[Orchestrator] Detected assignment for container chain 2000",
-                    "[Orchestrator] Loaded chain spec for container chain 2000",
-                    "[Orchestrator] This is a syncing container chain, using random ports",
-                    "[Orchestrator] Container chain sync mode: Warp",
-                    "[Container-2000] Warp sync is complete",
-                    "[Orchestrator] Detected assignment for container chain 2000",
-                    "[Orchestrator] Loaded chain spec for container chain 2000",
-                    "[Orchestrator] Container chain sync mode: Full",
-                ]);
-            },
-        });
-
-        it({
-            id: "T15",
-            title: "Check Collator2000-02.log to ensure shutdown error bug is fixed",
-            timeout: 300000,
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/Collator2000-02.log";
-                await checkLogsNotExist(logFilePath, [
-                    "Shutdown error",
-                    "Timeout when waiting for paritydb lock",
-                    "Error waiting for chain",
-                    "Failed to start container chain",
-                    "Shutting down container chain service",
-                ]);
+                await waitForLogs(logFilePath, 300, ["Active(Id(2000))"]);
             },
         });
     },
 });
+
+// Checks every second the log file to find the watcher best block notification until it is found or
+// timeout is reached.
+async function waitForLogs(logFilePath: string, timeout: number, logs: string[]): Promise<void> {
+    for (let i = 0; i < timeout; i++) {
+        if (checkLogsNoFail(logFilePath, logs)) {
+            return;
+        }
+
+        await delay(1000);
+    }
+
+    expect.fail(
+        `RPC Assignment Watch log was not found after ${timeout} seconds.`
+    );
+}
+
+// Read log file path and check that all the logs are found in order.
+// Only supports single-line logs.
+async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boolean> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    let logIndex = 0;
+    let lastFoundLogIndex = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
+            logIndex++;
+            lastFoundLogIndex = i;
+        }
+
+        if (logIndex === logs.length) {
+            break;
+        }
+    }
+
+    return (logIndex === logs.length);
+}
 
 // Read log file path and check that all the logs are found in order.
 // Only supports single-line logs.
@@ -354,3 +201,5 @@ async function directoryExists(directoryPath) {
 function getTmpZombiePath() {
     return process.env.MOON_ZOMBIE_DIR;
 }
+
+const delay = ms => new Promise(res => setTimeout(res, ms));

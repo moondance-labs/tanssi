@@ -290,7 +290,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        self.call_remote_runtime_function("genesis_data", orchestrator_parent, Some(para_id))
+        self.call_remote_runtime_function("RegistrarApi_genesis_data", orchestrator_parent, Some(para_id))
             .await
     }
 
@@ -299,7 +299,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        self.call_remote_runtime_function("boot_nodes", orchestrator_parent, Some(para_id))
+        self.call_remote_runtime_function("RegistrarApi_boot_nodes", orchestrator_parent, Some(para_id))
             .await
     }
 
@@ -308,7 +308,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        self.call_remote_runtime_function("latest_block_number", orchestrator_parent, Some(para_id))
+        self.call_remote_runtime_function("AuthorNotingApi_latest_block_number", orchestrator_parent, Some(para_id))
             .await
     }
 
