@@ -4,7 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0107",
+    id: "DT0102",
     title: "ContainerRegistrar <> relay Registrar",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -129,23 +129,18 @@ describeSuite({
                 const isParachain = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isParachain.toString()).to.eq("Parachain");
 
-                const onChainGenesisDataBefore = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
-                console.log("ON CHAIN GEN: ", onChainGenesisDataBefore.toHuman());
-
                 const tx = polkadotJs.tx.containerRegistrar.deregister(2002);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)], {
                     allowFailures: false,
                 });
 
                 await jumpSessions(context, 2);
-                await context.createBlock();
 
                 // Check that the on chain genesis data is now empty
-                const onChainGenesisData = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
-                expect(onChainGenesisData).to.be.null;
+                const onChainGenesisDataAfter = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
+                expect(onChainGenesisDataAfter.toHuman()).to.be.null;
 
                 // Para should be offboarding
-                // TODO: check why this is failing and not behaving the same as in rust tests
                 const isOffboarding = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isOffboarding.toString()).to.eq("OffboardingParathread");
             },
