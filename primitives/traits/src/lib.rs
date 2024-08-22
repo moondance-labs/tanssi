@@ -376,7 +376,7 @@ pub trait RegistrarHandler<AccountId> {
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
     ) -> DispatchResult;
-    
+
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
     fn deregister(id: ParaId) -> Weight;

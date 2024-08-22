@@ -1490,7 +1490,7 @@ parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
-    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
+    pub const MaxEncodedGenesisDataSize: u32 = 1_000_000u32; // 1MB
 }
 
 pub struct InnerStarlightRegistrar<AccountId, RegistrarManager>(
@@ -1526,11 +1526,17 @@ where
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
-        RegistrarManager::make_parachain(id)
+        if !RegistrarManager::is_parachain(id) {
+            return RegistrarManager::make_parachain(id);
+        }
+        Ok(())
     }
 
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
-        RegistrarManager::make_parathread(id)
+        if !RegistrarManager::is_parathread(id) {
+            return RegistrarManager::make_parathread(id);
+        }
+        Ok(())
     }
 
     fn deregister(id: ParaId) -> Weight {
