@@ -181,7 +181,7 @@ sp_api::mock_impl_runtime_apis! {
 
 }
 #[derive(Clone)]
-struct RelayChain;
+struct RelayChain(Arc<TestClient>);
 
 #[async_trait]
 impl RelayChainInterface for RelayChain {
@@ -237,17 +237,20 @@ impl RelayChainInterface for RelayChain {
             /// The relay-chain block number this is in the context of.
             relay_parent_number: 0,
             /// The relay-chain block storage root this is in the context of.
-            relay_parent_storage_root: Default::default(),
+            relay_parent_storage_root: [1u8; 32].into(),
             /// The maximum legal size of a POV block, in bytes.
             max_pov_size: 5_000_000u32,
         };
+        let best = self.0.chain_info().best_hash;
+        let header = self.0.header(best).ok().flatten().expect("No header for best");
 
         let non_included_persisted = PersistedValidationData {
             parent_head: PHeader {
                 parent_hash: Default::default(),
                 number: 1u32,
                 /// The state trie merkle root
-                state_root: Default::default(),
+                /// A chain-specific digest of data useful for light clients or referencing auxiliary data.
+                state_root: *header.state_root(),
                 /// The merkle root of the extrinsics.
                 extrinsics_root: Default::default(),
                 /// A chain-specific digest of data useful for light clients or referencing auxiliary data.
@@ -262,9 +265,13 @@ impl RelayChainInterface for RelayChain {
         };
 
         if assumption == OccupiedCoreAssumption::Included {
+            tracing::info!(target: crate::LOG_TARGET, "included");
+
             Ok(Some(included_persisted))
         }
         else {
+            tracing::info!(target: crate::LOG_TARGET, "non-included");
+
             Ok(Some(non_included_persisted))
         }
     }
@@ -315,6 +322,7 @@ impl RelayChainInterface for RelayChain {
         _: PHash,
         _: &[u8],
     ) -> RelayChainResult<Option<StorageValue>> {
+
         Ok(None)
     }
 
@@ -629,25 +637,26 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
+        tracing::info!(target: crate::LOG_TARGET, "proposing");
+
         let r = BlockBuilderBuilder::new(&*self.0)
             .on_parent_block(self.0.chain_info().best_hash)
             .fetch_parent_block_number(&*self.0)
             .unwrap()
-            .with_inherent_digests(digests)
+            .enable_proof_recording()
             .build()
             .unwrap()
-            .build();
-        if let Err(ref e) = r {
-            panic!("error is {:?}", e)
-        }
-        let (_relay_parent_storage_root, proof) =
-            RelayStateSproofBuilder::default().into_state_root_and_proof();
+            .build()
+            .unwrap();
+        tracing::info!(target: crate::LOG_TARGET, "after proposal");
 
-        futures::future::ready(r.map(|b| Proposal {
-            block: b.block,
-            proof,
-            storage_changes: b.storage_changes,
-        }))
+        futures::future::ready(Ok(r).map(|b|{
+            let proof = b.proof.expect("proof should exist");
+            Proposal {
+                block: b.block,
+                proof,
+                storage_changes: b.storage_changes,
+        }}))
     }
 }
 
@@ -825,8 +834,8 @@ async fn collate_returns_correct_block() {
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
     let spawner = DummySpawner;
-    let relay_client = RelayChain;
-    let orchestrator_client = RelayChain;
+    let relay_client = RelayChain(client.clone());
+    let orchestrator_client = RelayChain(client.clone());
 
     // Build the collator
     let mut collator = {
@@ -972,6 +981,7 @@ use substrate_test_runtime_client::runtime::BlockNumber;
 use pallet_xcm_core_buyer_runtime_api::BuyingError;
 use tp_xcm_core_buyer::BuyCoreCollatorProof;
 
+// *parent_header.state_root(),
 /// A mocked `runtime-api` subsystem.
 #[derive(Clone)]
 pub struct MockRuntimeApi(ParaId);
@@ -1028,6 +1038,7 @@ impl MockRuntimeApi {
 async fn collate_lookahead_returns_correct_block() {
     use tokio_util::sync::CancellationToken;
     use substrate_test_runtime_client::DefaultTestClientBuilderExt;
+    let _ = sp_tracing::try_init_simple();
     let net = AuraTestNet::new(4);
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
@@ -1050,8 +1061,8 @@ async fn collate_lookahead_returns_correct_block() {
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
     let spawner = DummySpawner;
-    let relay_client = RelayChain;
-    let orchestrator_client = RelayChain;
+    let relay_client = RelayChain(client.clone());
+    let orchestrator_client = RelayChain(client.clone());
 	let spawner = sp_core::testing::TaskExecutor::new();
     let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
         Default::default(),
@@ -1080,7 +1091,7 @@ async fn collate_lookahead_returns_correct_block() {
 
                 Ok((slot,))
             },
-            block_import: client.clone(),
+            block_import: environ.0.clone(),
             relay_client: relay_client.clone(),
             keystore: keystore.into(),
             para_id: 1000.into(),
@@ -1122,7 +1133,7 @@ async fn collate_lookahead_returns_correct_block() {
             params,
     );
 
-    spawner.spawn("tanssi-aura", None, Box::pin(fut));
+    fut.await;
     // The returned block should be imported and we should be able to get its header by now.
     //assert!(client.header(res.header().hash()).unwrap().is_some());
 }
