@@ -58,7 +58,7 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
+    ContainerRegistrar, Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
 
@@ -221,6 +221,7 @@ pub fn end_block() {
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
+    ContainerRegistrar::on_finalize(System::block_number());
 }
 
 pub fn run_block() {
