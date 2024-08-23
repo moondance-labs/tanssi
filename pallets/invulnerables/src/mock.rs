@@ -193,7 +193,10 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
             )
         })
         .collect::<Vec<_>>();
-    let session = pallet_session::GenesisConfig::<Test> { keys };
+    let session = pallet_session::GenesisConfig::<Test> {
+        keys,
+        ..Default::default()
+    };
     pallet_balances::GenesisConfig::<Test> { balances }
         .assimilate_storage(&mut t)
         .unwrap();

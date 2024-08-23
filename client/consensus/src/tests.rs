@@ -214,6 +214,15 @@ impl RelayChainInterface for RelayChain {
         unimplemented!("Not needed for test")
     }
 
+    async fn call_remote_runtime_function(
+        &self,
+        _: &'static str,
+        _: PHash,
+        _: &[u8],
+    ) -> RelayChainResult<Vec<u8>> {
+        unimplemented!("Not needed for test")
+    }
+
     async fn is_major_syncing(&self) -> RelayChainResult<bool> {
         Ok(false)
     }
