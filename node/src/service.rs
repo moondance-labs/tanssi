@@ -936,11 +936,13 @@ pub async fn start_solochain_node(
                 sync_mode: {
                     move |db_exists, para_id| {
                         // TODO: this must use relay chain interface instead
+                        /*
                         spawner::select_sync_mode_using_client(
                             db_exists,
                             &orchestrator_client.clone(),
                             para_id,
-                        )
+                        )*/
+                        Ok(sc_cli::SyncMode::Full)
                     }
                 },
             },

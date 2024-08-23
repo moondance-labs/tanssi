@@ -46,15 +46,16 @@
     },
     "parachains": [
         {
-            "id": 1000,
-            "chain_spec_path": "specs/single-dancebox-container-1000.json",
+            "id": 2000,
+            "chain_spec_path": "specs/single-container-template-container-2000.json",
             "collators": [
                 {
-                    "name": "FullNode-1000",
-                    "command": "../target/release/tanssi-node",
+                    "name": "FullNode-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9948,
-                    "p2p_port": 33049
+                    "ws_port": 9949,
+                    "p2p_port": 33050
                 },
                 {
                     "name": "Collator1000-01",
@@ -85,20 +86,6 @@
                     "name": "Collator2000-02",
                     "command": "../target/release/tanssi-node",
                     "args": ["--solo-chain", "--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
-                }
-            ]
-        },
-        {
-            "id": 2000,
-            "chain_spec_path": "specs/single-container-template-container-2000.json",
-            "collators": [
-                {
-                    "name": "FullNode-2000",
-                    "validator": false,
-                    "command": "../target/release/container-chain-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9949,
-                    "p2p_port": 33050
                 }
             ]
         },

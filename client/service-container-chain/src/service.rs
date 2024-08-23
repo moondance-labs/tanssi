@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use dp_container_chain_genesis_data::ContainerChainGenesisData;
 use nimbus_primitives::NimbusId;
 use {
     cumulus_client_consensus_common::{
@@ -333,8 +334,25 @@ fn start_consensus_container(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
-        .expect("start_consensus_container: slot duration should exist");
+    let slot_duration = if solochain {
+        // TODO: always use 6s for aura, not sure why I was getting an error when trying to use
+        // cumulus_client_consensus_aura::slot_duration(&*orchestrator_client):
+        // Thread 'tokio-runtime-worker' panicked at 'start_consensus_container: slot duration should exist: RuntimeApiError(Application(Execution(Other("Exported method AuraApi_slot_duration is not found"))))', client/service-container-chain/src/service.rs:337
+        SlotDuration::from_millis(6_000)
+        /*
+        let encoded_para_id = para_id.encode();
+        let res: Vec<u8> = futures::executor::block_on(relay_chain_interface
+            .call_remote_runtime_function(
+                "AuraApi_slot_duration",
+                &encoded_para_id,
+            ))
+            .unwrap();
+        let res: Option<ContainerChainGenesisData> = Decode::decode(&mut res.as_slice()).unwrap();
+         */
+    } else {
+        cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
+            .expect("start_consensus_container: slot duration should exist")
+    };
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
