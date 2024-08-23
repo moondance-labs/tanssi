@@ -1490,6 +1490,7 @@ parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
+    // This value should match the maximum allowed for max_head_data_size
     pub const MaxEncodedGenesisDataSize: u32 = 1_000_000u32; // 1MB
 }
 
