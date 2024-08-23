@@ -214,6 +214,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
+    type XcmRecorder = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -260,21 +261,13 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
+    type MaxActiveOutboundChannels = ConstU32<128>;
+    type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-}
-
-parameter_types! {
-    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
-    type RuntimeEvent = RuntimeEvent;
-    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
 
 parameter_types! {

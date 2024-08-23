@@ -49,7 +49,7 @@ yargs(hideBin(process.argv))
                 }
                 process.stdout.write(`Done ✅\n`);
                 const onChainGenesisData = await api.createType(
-                    "TpContainerChainGenesisDataContainerChainGenesisData",
+                    "DpContainerChainGenesisDataContainerChainGenesisData",
                     encoded.unwrap()
                 );
                 const rawSpec = containerChainGenesisDataToChainSpec(

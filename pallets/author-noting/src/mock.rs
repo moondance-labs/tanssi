@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as author_noting_pallet, Config},
+    crate::{self as author_noting_pallet, Config, ParaMode},
     bounded_collections::bounded_vec,
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
     cumulus_primitives_core::ParaId,
@@ -194,10 +194,6 @@ impl RelaychainStateProvider for MockRelayStateProvider {
         }
     }
 
-    fn current_relay_state_proof() -> Option<sp_trie::StorageProof> {
-        None
-    }
-
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_relay_chain_state(state: RelayChainState) {
         frame_support::storage::unhashed::put(b"MOCK_RELAY_ROOT_KEY", &state.state_root);
@@ -208,11 +204,11 @@ impl Config for Test {
     type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChainAuthor = MockAuthorFetcher;
-    type SelfParaId = ParachainId;
     type SlotBeacon = DummyBeacon;
     type ContainerChains = MockContainerChainGetter;
     type AuthorNotingHook = ();
-    type RelayChainStateProvider = MockRelayStateProvider;
+    // Unit tests only check ParaMode, for RelayMode see integration tests
+    type RelayOrPara = ParaMode<MockRelayStateProvider>;
 }
 
 struct BlockTest {

@@ -19,16 +19,15 @@
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
-use crate::collators::ClaimMode;
-use tp_traits::SlotFrequency;
 use {
     crate::{
         collators::{
             lookahead::Params as LookAheadParams, tanssi_claim_slot, Collator,
-            Params as CollatorParams,
+            Params as CollatorParams, ClaimMode
         },
         mocks::*,
         OrchestratorAuraWorkerAuxData,
+        SlotFrequency
     },
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,

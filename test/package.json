@@ -24,16 +24,16 @@
     "license": "ISC",
     "devDependencies": {
         "@acala-network/chopsticks": "0.11.0",
-        "@moonbeam-network/api-augment": "0.2801.0",
-        "@moonwall/cli": "5.1.1",
-        "@moonwall/util": "5.1.1",
-        "@polkadot/api": "11.2.1",
-        "@polkadot/api-augment": "11.2.1",
-        "@polkadot/keyring": "12.6.2",
-        "@polkadot/types": "11.2.1",
-        "@polkadot/types-codec": "11.2.1",
-        "@polkadot/util": "12.6.2",
-        "@polkadot/util-crypto": "12.6.2",
+        "@moonbeam-network/api-augment": "0.2902.0",
+        "@moonwall/cli": "5.3.3",
+        "@moonwall/util": "5.3.3",
+        "@polkadot/api": "12.2.1",
+        "@polkadot/api-augment": "12.2.1",
+        "@polkadot/keyring": "13.0.2",
+        "@polkadot/types": "12.2.1",
+        "@polkadot/types-codec": "12.2.1",
+        "@polkadot/util": "13.0.2",
+        "@polkadot/util-crypto": "13.0.2",
         "@tanssi/api-augment": "workspace:*",
         "@types/debug": "4.1.12",
         "@types/node": "20.11.30",
@@ -59,7 +59,7 @@
         "yargs": "17.7.2"
     },
     "dependencies": {
-        "@zombienet/orchestrator": "0.0.86",
+        "@zombienet/orchestrator": "0.0.87",
         "inquirer": "9.2.16",
         "ps-node": "0.1.6"
     }

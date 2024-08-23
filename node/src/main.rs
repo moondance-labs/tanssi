@@ -21,8 +21,6 @@
 mod chain_spec;
 mod cli;
 mod command;
-mod container_chain_monitor;
-mod container_chain_spawner;
 mod rpc;
 mod service;
 #[cfg(test)]

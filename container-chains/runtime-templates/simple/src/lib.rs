@@ -80,7 +80,10 @@ use {
     staging_xcm::{
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
-    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 
 pub mod xcm_config;
@@ -221,7 +224,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
-    spec_version: 800,
+    spec_version: 900,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -269,9 +272,9 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 /// `Operational` extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
+/// We allow for 2 seconds of compute with a 6 second average block time
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-    WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+    WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
@@ -688,7 +691,6 @@ construct_runtime!(
         // XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
-        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
@@ -717,7 +719,6 @@ mod benches {
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_message_queue, MessageQueue]
@@ -1144,7 +1145,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+    impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3 | 4) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
@@ -1197,6 +1198,28 @@ impl_runtime_apis! {
 
         fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
             PolkadotXcm::query_delivery_fees(destination, message)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+        }
+    }
+
+    impl xcm_runtime_apis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
+        fn convert_location(location: VersionedLocation) -> Result<
+            AccountId,
+            xcm_runtime_apis::conversions::Error
+        > {
+            xcm_runtime_apis::conversions::LocationToAccountHelper::<
+                AccountId,
+                xcm_config::LocationToAccountId,
+            >::convert_location(location)
         }
     }
 }

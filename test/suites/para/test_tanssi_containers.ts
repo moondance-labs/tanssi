@@ -36,10 +36,12 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
 
-            const paraNetwork = paraApi.consts.system.version.specName.toString();
             const paraId1000 = (await paraApi.query.parachainInfo.parachainId()).toString();
-            expect(paraNetwork, "Para API incorrect").to.contain("dancebox");
             expect(paraId1000, "Para API incorrect").to.be.equal("1000");
+            const paraNetwork = paraApi.consts.system.version.specName.toString();
+            expect(paraNetwork, "Para API incorrect").to.satisfy(
+                (network) => network.includes("dancebox") || network.includes("flashbox")
+            );
 
             const container2000Network = container2000Api.consts.system.version.specName.toString();
             const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();

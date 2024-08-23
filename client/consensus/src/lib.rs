@@ -135,8 +135,10 @@ where
     slot_frequency
 }
 
-use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
-use tp_traits::SlotFrequency;
+use {
+    nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID},
+    tp_traits::SlotFrequency,
+};
 
 /// Grab the first eligible nimbus key from the keystore
 /// If multiple keys are eligible this function still only returns one

@@ -31,18 +31,9 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
-use crate::collators::ClaimMode;
-use nimbus_primitives::NimbusId;
-use pallet_xcm_core_buyer_runtime_api::{BuyingError, XCMCoreBuyerApi};
-use sp_api::ApiError;
-use sp_blockchain::HeaderMetadata;
-use sp_runtime::traits::BlockIdTo;
-use sp_runtime::transaction_validity::TransactionSource;
-use sp_transaction_pool::runtime_api::TaggedTransactionQueue;
-use tp_xcm_core_buyer::{BuyCollatorProofCreationError, BuyCoreCollatorProof};
 use {
     crate::{
-        collators::{self as collator_util, tanssi_claim_slot, SlotClaim},
+        collators::{self as collator_util, tanssi_claim_slot, ClaimMode, SlotClaim},
         consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
         OrchestratorAuraWorkerAuxData,
     },
@@ -58,6 +49,8 @@ use {
     },
     cumulus_relay_chain_interface::RelayChainInterface,
     futures::{channel::oneshot, prelude::*},
+    nimbus_primitives::NimbusId,
+    pallet_xcm_core_buyer_runtime_api::{BuyingError, XCMCoreBuyerApi},
     parity_scale_codec::{Codec, Encode},
     polkadot_node_primitives::SubmitCollationParams,
     polkadot_node_subsystem::messages::{
@@ -69,17 +62,22 @@ use {
     sc_consensus::BlockImport,
     sc_consensus_slots::InherentDataProviderExt,
     sc_transaction_pool_api::TransactionPool,
-    sp_api::ProvideRuntimeApi,
-    sp_blockchain::HeaderBackend,
+    sp_api::{ApiError, ProvideRuntimeApi},
+    sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus::SyncOracle,
     sp_consensus_aura::{Slot, SlotDuration},
     sp_core::crypto::Pair,
     sp_inherents::CreateInherentDataProviders,
     sp_keystore::KeystorePtr,
-    sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
+    sp_runtime::{
+        traits::{Block as BlockT, BlockIdTo, Header as HeaderT, Member},
+        transaction_validity::TransactionSource,
+    },
+    sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::{convert::TryFrom, error::Error, sync::Arc, time::Duration},
     tokio::select,
     tokio_util::sync::CancellationToken,
+    tp_xcm_core_buyer::{BuyCollatorProofCreationError, BuyCoreCollatorProof},
 };
 
 #[derive(Debug)]

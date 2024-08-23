@@ -10,6 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+dp-chain-state-snapshot = { workspace = true }
 frame-support = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 macro_rules_attribute = { workspace = true }
@@ -27,6 +28,7 @@ cumulus-primitives-core = { workspace = true }
 default = [ "std" ]
 std = [
 	"cumulus-primitives-core/std",
+	"dp-chain-state-snapshot/std",
 	"frame-support/std",
 	"parity-scale-codec/std",
 	"scale-info/std",

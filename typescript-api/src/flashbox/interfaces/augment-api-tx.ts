@@ -17,6 +17,7 @@ import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
+    DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeOriginCaller,
     FlashboxRuntimePreserversAssignementPaymentExtra,
     FlashboxRuntimePreserversAssignementPaymentWitness,
@@ -35,7 +36,6 @@ import type {
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
-    TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
@@ -84,6 +84,22 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         balances: {
+            /**
+             * Burn the specified liquid free balance from the origin account.
+             *
+             * If the origin's account ends up below the existential deposit as a result of the burn and `keep_alive` is
+             * false, the account will be reaped.
+             *
+             * Unlike sending funds to a _burn_ address, which merely makes the funds inaccessible, this `burn` operation will
+             * reduce total issuance by the amount _burned_.
+             */
+            burn: AugmentedSubmittable<
+                (
+                    value: Compact<u128> | AnyNumber | Uint8Array,
+                    keepAlive: bool | boolean | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>, bool]
+            >;
             /**
              * Adjust the total issuance in a saturating way.
              *
@@ -1485,12 +1501,12 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, DpContainerChainGenesisDataContainerChainGenesisData]
             >;
             /** Register parathread */
             registerParathread: AugmentedSubmittable<
@@ -1498,12 +1514,12 @@ declare module "@polkadot/api-base/types/submittable" {
                     paraId: u32 | AnyNumber | Uint8Array,
                     slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData]
             >;
             /** Register parachain or parathread */
             registerWithRelayProof: AugmentedSubmittable<
@@ -1526,7 +1542,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array,
                     genesisData:
-                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
                         | Uint8Array
@@ -1537,7 +1553,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     u32,
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
-                    TpContainerChainGenesisDataContainerChainGenesisData
+                    DpContainerChainGenesisDataContainerChainGenesisData
                 ]
             >;
             setParaManager: AugmentedSubmittable<
@@ -1977,29 +1993,6 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         treasury: {
             /**
-             * Approve a proposal.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be [`Config::ApproveOrigin`].
-             *
-             * ## Details
-             *
-             * At a later time, the proposal will be allocated to the beneficiary and the original deposit will be returned.
-             *
-             * ### Complexity
-             *
-             * - O(1).
-             *
-             * ## Events
-             *
-             * No events are emitted from this dispatch.
-             */
-            approveProposal: AugmentedSubmittable<
-                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>]
-            >;
-            /**
              * Check the status of the spend and remove it from the storage if processed.
              *
              * ## Dispatch Origin
@@ -2029,7 +2022,7 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * ## Dispatch Origin
              *
-             * Must be signed.
+             * Must be signed
              *
              * ## Details
              *
@@ -2046,64 +2039,6 @@ declare module "@polkadot/api-base/types/submittable" {
              * Emits [`Event::Paid`] if successful.
              */
             payout: AugmentedSubmittable<(index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
-            /**
-             * Put forward a suggestion for spending.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be signed.
-             *
-             * ## Details
-             *
-             * A deposit proportional to the value is reserved and slashed if the proposal is rejected. It is returned once
-             * the proposal is awarded.
-             *
-             * ### Complexity
-             *
-             * - O(1)
-             *
-             * ## Events
-             *
-             * Emits [`Event::Proposed`] if successful.
-             */
-            proposeSpend: AugmentedSubmittable<
-                (
-                    value: Compact<u128> | AnyNumber | Uint8Array,
-                    beneficiary:
-                        | MultiAddress
-                        | { Id: any }
-                        | { Index: any }
-                        | { Raw: any }
-                        | { Address32: any }
-                        | { Address20: any }
-                        | string
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [Compact<u128>, MultiAddress]
-            >;
-            /**
-             * Reject a proposed spend.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be [`Config::RejectOrigin`].
-             *
-             * ## Details
-             *
-             * The original deposit will be slashed.
-             *
-             * ### Complexity
-             *
-             * - O(1)
-             *
-             * ## Events
-             *
-             * Emits [`Event::Rejected`] if successful.
-             */
-            rejectProposal: AugmentedSubmittable<
-                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>]
-            >;
             /**
              * Force a previously approved proposal to be removed from the approval queue.
              *

@@ -24,6 +24,7 @@ sp-inherents = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
 sp-state-machine = { workspace = true, optional = true }
 sp-trie = { workspace = true }
+sp-version = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true, optional = true }
@@ -60,5 +61,6 @@ std = [
 	"sp-runtime/std",
 	"sp-state-machine/std",
 	"sp-trie/std",
+	"sp-version/std",
 	"test-relay-sproof-builder/std",
 ]

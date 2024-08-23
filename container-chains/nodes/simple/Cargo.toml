@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Simple container-chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.8.0"
+version = "0.9.0"
 
 [lints]
 workspace = true
@@ -27,8 +27,8 @@ url = { workspace = true }
 
 # Dancekit
 dc-orchestrator-chain-interface = { workspace = true }
-dc-orchestrator-chain-rpc-interface = { workspace = true }
 dp-core = { workspace = true }
+tc-orchestrator-chain-rpc-interface = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
@@ -36,6 +36,7 @@ container-chain-template-simple-runtime = { workspace = true, features = [ "std"
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
+tc-service-container-chain = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
@@ -115,6 +116,7 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"tc-service-container-chain/runtime-benchmarks",
 ]
 try-runtime = [
 	"container-chain-template-simple-runtime/try-runtime",
@@ -122,4 +124,5 @@ try-runtime = [
 	"polkadot-cli/try-runtime",
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
+	"tc-service-container-chain/try-runtime",
 ]

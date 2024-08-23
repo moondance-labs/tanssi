@@ -15,13 +15,16 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, Error, Event, ParaInfo, REGISTRAR_PARAS_INDEX},
+    crate::{mock::*, Error, Event, HoldReason, ParaInfo, REGISTRAR_PARAS_INDEX},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-    frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec, Hashable},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
+    frame_support::{
+        assert_noop, assert_ok, dispatch::GetDispatchInfo, traits::fungible::InspectHold,
+        BoundedVec, Hashable,
+    },
     parity_scale_codec::Encode,
     sp_core::Pair,
     sp_runtime::DispatchError,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{ParaId, SlotFrequency},
 };
 
@@ -536,10 +539,10 @@ fn unpause_para_id_42_fails_not_registered() {
 #[test]
 fn genesis_loads_para_ids() {
     new_test_ext_with_genesis(vec![
-        (1.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (4.into(), empty_genesis_data()),
+        (1.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (4.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -553,10 +556,10 @@ fn genesis_loads_para_ids() {
 #[test]
 fn genesis_sorts_para_ids() {
     new_test_ext_with_genesis(vec![
-        (4.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (1.into(), empty_genesis_data()),
+        (4.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (1.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -571,10 +574,10 @@ fn genesis_sorts_para_ids() {
 #[should_panic = "Duplicate para_id: 2"]
 fn genesis_error_on_duplicate() {
     new_test_ext_with_genesis(vec![
-        (2.into(), empty_genesis_data()),
-        (3.into(), empty_genesis_data()),
-        (4.into(), empty_genesis_data()),
-        (2.into(), empty_genesis_data()),
+        (2.into(), empty_genesis_data(), None),
+        (3.into(), empty_genesis_data(), None),
+        (4.into(), empty_genesis_data(), None),
+        (2.into(), empty_genesis_data(), None),
     ])
     .execute_with(|| {
         run_to_block(1);
@@ -592,7 +595,7 @@ fn genesis_error_genesis_data_size_too_big() {
         extensions: Default::default(),
         properties: Default::default(),
     };
-    new_test_ext_with_genesis(vec![(2.into(), genesis_data)]).execute_with(|| {
+    new_test_ext_with_genesis(vec![(2.into(), genesis_data, None)]).execute_with(|| {
         run_to_block(1);
     });
 }
@@ -1651,6 +1654,10 @@ mod deregister_with_relay_proof {
                 RuntimeOrigin::root(),
                 42.into(),
             ));
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                DepositAmount::get()
+            );
 
             let alice_balance_before = System::account(ALICE).data;
             let bob_balance_before = System::account(BOB).data;
@@ -1676,6 +1683,11 @@ mod deregister_with_relay_proof {
             let bob_balance_after = System::account(BOB).data;
             // Alice free balance has not increased
             assert_eq!(alice_balance_after.free, alice_balance_before.free);
+            // Deposit is no longer on hold
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                0u128
+            );
             // Bob gained exactly Alice reserve
             assert_eq!(
                 bob_balance_after.free,
@@ -1697,6 +1709,10 @@ mod deregister_with_relay_proof {
                 empty_genesis_data()
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                DepositAmount::get()
+            );
             // Do not call mark_valid_for_collating
 
             let alice_balance_before = System::account(ALICE).data;
@@ -1723,6 +1739,11 @@ mod deregister_with_relay_proof {
             let bob_balance_after = System::account(BOB).data;
             // Alice free balance has not increased
             assert_eq!(alice_balance_after.free, alice_balance_before.free);
+            // Deposit is no longer on hold
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                0u128
+            );
             // Bob gained exactly Alice reserve
             assert_eq!(
                 bob_balance_after.free,

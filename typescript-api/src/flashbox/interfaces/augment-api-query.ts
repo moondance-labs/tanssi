@@ -28,8 +28,11 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
+    DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
+    FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
+    FrameSupportTokensMiscIdAmountRuntimeHoldReason,
     FrameSystemAccountInfo,
     FrameSystemCodeUpgradeAuthorization,
     FrameSystemEventRecord,
@@ -38,8 +41,6 @@ import type {
     NimbusPrimitivesNimbusCryptoPublic,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
-    PalletBalancesIdAmountRuntimeFreezeReason,
-    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletDataPreserversRegisteredProfile,
@@ -64,7 +65,6 @@ import type {
     SpRuntimeDigest,
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
-    TpContainerChainGenesisDataContainerChainGenesisData,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
 } from "@polkadot/types/lookup";
@@ -165,14 +165,18 @@ declare module "@polkadot/api-base/types/storage" {
             /** Freeze locks on account balances. */
             freezes: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeFreezeReason>>,
+                (
+                    arg: AccountId32 | string | Uint8Array
+                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeFreezeReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeHoldReason>>,
+                (
+                    arg: AccountId32 | string | Uint8Array
+                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeHoldReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -642,7 +646,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<TpContainerChainGenesisDataContainerChainGenesisData>>,
+                ) => Observable<Option<DpContainerChainGenesisDataContainerChainGenesisData>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

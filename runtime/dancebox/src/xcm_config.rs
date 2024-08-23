@@ -14,12 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::get_para_id_authorities;
 #[cfg(feature = "runtime-benchmarks")]
 use crate::{CollatorAssignment, Session, System};
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_session::ShouldEndSession;
-use sp_consensus_slots::Slot;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
@@ -32,7 +30,7 @@ use {
         PolkadotXcm, Registrar, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
         RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
-    crate::{weights, AuthorNoting},
+    crate::{get_para_id_authorities, weights, AuthorNoting},
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
@@ -50,6 +48,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
+    sp_consensus_slots::Slot,
     sp_core::ConstU32,
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
@@ -233,6 +232,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
+    type XcmRecorder = ();
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -279,21 +279,13 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
+    type MaxActiveOutboundChannels = ConstU32<128>;
+    type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-}
-
-parameter_types! {
-    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
-    type RuntimeEvent = RuntimeEvent;
-    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
 
 parameter_types! {

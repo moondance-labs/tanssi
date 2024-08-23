@@ -34,6 +34,9 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
+#[cfg(test)]
+mod tests;
+
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -220,7 +223,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 800,
+    spec_version: 900,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -260,9 +263,9 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 /// `Operational` extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
+/// We allow for 2 seconds of compute with a 6 second average block time
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-    WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+    WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
@@ -915,15 +918,16 @@ impl pallet_data_preservers::Config for Runtime {
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     // We benchmark each hook individually, so for runtime-benchmarks this should be empty
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type RelayOrPara = pallet_author_noting::ParaMode<
+        cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
+    >;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1083,7 +1087,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
-    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1091,7 +1094,6 @@ impl pallet_registrar::Config for Runtime {
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
-    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type RegisterWithRelayProofOrigin = EnsureNever<AccountId>;
     type RelayStorageRootProvider = PalletRelayStorageRootProvider;
     type SessionDelay = ConstU32<2>;
@@ -1100,6 +1102,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -1448,7 +1451,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {
             TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+            TimeUnit::Timestamp => Some(Timestamp::get().into()),
         }
     }
 
@@ -1534,23 +1537,15 @@ impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryId;
     type Currency = Balances;
 
-    type ApproveOrigin = EnsureRoot<AccountId>;
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
     type SpendPeriod = ConstU32<{ 6 * DAYS }>;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
-    #[cfg(feature = "runtime-benchmarks")]
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
@@ -1932,7 +1927,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
@@ -1955,7 +1950,7 @@ impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
         }
 

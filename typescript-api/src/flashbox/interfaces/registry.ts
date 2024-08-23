@@ -19,6 +19,10 @@ import type {
     CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
+    DpContainerChainGenesisDataContainerChainGenesisData,
+    DpContainerChainGenesisDataContainerChainGenesisDataItem,
+    DpContainerChainGenesisDataProperties,
+    DpContainerChainGenesisDataTokenMetadata,
     FlashboxRuntimeOriginCaller,
     FlashboxRuntimePreserversAssignementPaymentExtra,
     FlashboxRuntimePreserversAssignementPaymentRequest,
@@ -39,6 +43,8 @@ import type {
     FrameSupportDispatchRawOrigin,
     FrameSupportPalletId,
     FrameSupportTokensMiscBalanceStatus,
+    FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
+    FrameSupportTokensMiscIdAmountRuntimeHoldReason,
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemCodeUpgradeAuthorization,
@@ -69,8 +75,6 @@ import type {
     PalletBalancesCall,
     PalletBalancesError,
     PalletBalancesEvent,
-    PalletBalancesIdAmountRuntimeFreezeReason,
-    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
@@ -118,6 +122,7 @@ import type {
     PalletRegistrarDepositInfo,
     PalletRegistrarError,
     PalletRegistrarEvent,
+    PalletRegistrarHoldReason,
     PalletRootTestingCall,
     PalletRootTestingEvent,
     PalletServicesPaymentCall,
@@ -181,10 +186,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingParachainInfoCall,
     TpAuthorNotingInherentOwnParachainInherentData,
-    TpContainerChainGenesisDataContainerChainGenesisData,
-    TpContainerChainGenesisDataContainerChainGenesisDataItem,
-    TpContainerChainGenesisDataProperties,
-    TpContainerChainGenesisDataTokenMetadata,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -205,6 +206,10 @@ declare module "@polkadot/types/types/registry" {
         CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
+        DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
+        DpContainerChainGenesisDataContainerChainGenesisDataItem: DpContainerChainGenesisDataContainerChainGenesisDataItem;
+        DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
+        DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;
         FlashboxRuntimePreserversAssignementPaymentExtra: FlashboxRuntimePreserversAssignementPaymentExtra;
         FlashboxRuntimePreserversAssignementPaymentRequest: FlashboxRuntimePreserversAssignementPaymentRequest;
@@ -225,6 +230,8 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
         FrameSupportPalletId: FrameSupportPalletId;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
+        FrameSupportTokensMiscIdAmountRuntimeFreezeReason: FrameSupportTokensMiscIdAmountRuntimeFreezeReason;
+        FrameSupportTokensMiscIdAmountRuntimeHoldReason: FrameSupportTokensMiscIdAmountRuntimeHoldReason;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
@@ -255,8 +262,6 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
         PalletBalancesEvent: PalletBalancesEvent;
-        PalletBalancesIdAmountRuntimeFreezeReason: PalletBalancesIdAmountRuntimeFreezeReason;
-        PalletBalancesIdAmountRuntimeHoldReason: PalletBalancesIdAmountRuntimeHoldReason;
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
@@ -304,6 +309,7 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
+        PalletRegistrarHoldReason: PalletRegistrarHoldReason;
         PalletRootTestingCall: PalletRootTestingCall;
         PalletRootTestingEvent: PalletRootTestingEvent;
         PalletServicesPaymentCall: PalletServicesPaymentCall;
@@ -367,10 +373,6 @@ declare module "@polkadot/types/types/registry" {
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
         StagingParachainInfoCall: StagingParachainInfoCall;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
-        TpContainerChainGenesisDataContainerChainGenesisData: TpContainerChainGenesisDataContainerChainGenesisData;
-        TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
-        TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
-        TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;

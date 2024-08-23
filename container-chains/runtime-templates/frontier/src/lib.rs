@@ -39,7 +39,6 @@ use {
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,
-    fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
@@ -97,7 +96,10 @@ use {
     staging_xcm::{
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
-    xcm_fee_payment_runtime_api::Error as XcmPaymentApiError,
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -329,7 +331,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("frontier-template"),
     impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
-    spec_version: 800,
+    spec_version: 900,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -369,14 +371,14 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 /// `Operational` extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
+/// We allow for 2 seconds of compute with a 6 second average block time
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-    WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+    WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
-/// We allow for 500ms of compute with a 12 second average block time.
-pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 500;
+/// We allow for 2 seconds of compute with a 6 second average block time
+pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 2000;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -810,9 +812,6 @@ where
     }
 }
 
-// To match ethereum expectations
-const BLOCK_GAS_LIMIT: u64 = 15_000_000;
-
 impl pallet_evm_chain_id::Config for Runtime {}
 
 pub struct FindAuthorAdapter;
@@ -828,10 +827,21 @@ impl FindAuthor<H160> for FindAuthorAdapter {
     }
 }
 
+/// Current approximation of the gas/s consumption considering
+/// EVM execution over compiled WASM (on 4.4Ghz CPU).
+/// Given the 1000ms Weight, from which 75% only are used for transactions,
+/// the total EVM execution gas limit is: GAS_PER_SECOND * 1 * 0.75 ~= 30_000_000.
+pub const GAS_PER_SECOND: u64 = 40_000_000;
+
+/// Approximate ratio of the amount of Weight per Gas.
+/// u64 works for approximations because Weight is a very small unit compared to gas.
+pub const WEIGHT_PER_GAS: u64 = WEIGHT_REF_TIME_PER_SECOND / GAS_PER_SECOND;
+
 parameter_types! {
-    pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
+    pub BlockGasLimit: U256
+        = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
-    pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
+    pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
 }
 
@@ -985,7 +995,6 @@ construct_runtime!(
         // XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
-        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
@@ -1014,7 +1023,6 @@ mod benches {
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_message_queue, MessageQueue]
@@ -1609,7 +1617,11 @@ impl_runtime_apis! {
                 pallet_ethereum::CurrentBlock::<Runtime>::get(),
                 pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
             )
-         }
+        }
+
+        fn initialize_pending_block(header: &<Block as BlockT>::Header) {
+            Executive::initialize_block(header);
+        }
     }
 
     impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {
@@ -1653,7 +1665,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl xcm_fee_payment_runtime_api::XcmPaymentApi<Block> for Runtime {
+    impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3 | 4) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
@@ -1706,6 +1718,28 @@ impl_runtime_apis! {
 
         fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
             PolkadotXcm::query_delivery_fees(destination, message)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+        }
+    }
+
+    impl xcm_runtime_apis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
+        fn convert_location(location: VersionedLocation) -> Result<
+            AccountId,
+            xcm_runtime_apis::conversions::Error
+        > {
+            xcm_runtime_apis::conversions::LocationToAccountHelper::<
+                AccountId,
+                xcm_config::LocationToAccountId,
+            >::convert_location(location)
         }
     }
 }
