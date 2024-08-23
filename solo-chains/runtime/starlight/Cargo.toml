@@ -35,6 +35,7 @@ sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
 sp-keystore = { workspace = true }
@@ -266,6 +267,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"sp-debug-derive/std"
 ]
 no_std = []
 runtime-benchmarks = [
@@ -393,6 +395,9 @@ try-runtime = [
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
 fast-runtime = [ "starlight-runtime-constants/fast-runtime" ]
+
+# Allow to print logs details (no wasm:stripped)
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-metrics = [ "runtime-parachains/runtime-metrics", "sp-io/with-tracing" ]
 
