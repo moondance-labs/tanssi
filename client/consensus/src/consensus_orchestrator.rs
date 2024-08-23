@@ -31,7 +31,7 @@ pub trait RetrieveAuthoritiesFromOrchestrator<Block: BlockT, ExtraArgs, A>: Send
     /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
     async fn retrieve_authorities_from_orchestrator(
         &self,
-        parent:<Block as BlockT>::Hash,
+        parent: <Block as BlockT>::Hash,
         extra_args: ExtraArgs,
     ) -> Result<A, Box<dyn std::error::Error + Send + Sync>>;
 }
@@ -48,7 +48,7 @@ where
 {
     async fn retrieve_authorities_from_orchestrator(
         &self,
-        parent:<Block as BlockT>::Hash,
+        parent: <Block as BlockT>::Hash,
         extra_args: ExtraArgs,
     ) -> Result<A, Box<dyn std::error::Error + Send + Sync>> {
         (*self)(parent, extra_args).await

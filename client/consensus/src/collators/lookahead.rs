@@ -49,8 +49,7 @@ use {
     async_backing_primitives::UnincludedSegmentApi,
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
     cumulus_client_consensus_common::{
-        self as consensus_common, load_abridged_host_configuration, ParachainBlockImportMarker,
-        ParentSearchParams,
+        self as consensus_common, load_abridged_host_configuration, ParentSearchParams,
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
@@ -441,7 +440,7 @@ where
     // rules specified by the parachain's runtime and thus will never be too deep.
     const PARENT_SEARCH_DEPTH: usize = 10;
 
-;    let (exit_notification_sender, exit_notification_receiver) = oneshot::channel();
+    let (exit_notification_sender, exit_notification_receiver) = oneshot::channel();
 
     let aura_fut = async move {
         cumulus_client_collator::initialize_collator_subsystems(
@@ -483,7 +482,9 @@ where
         loop {
             select! {
                 maybe_relay_parent_header = import_notifications.next() => {
+                    log::info!("relay header {:?}", maybe_relay_parent_header);
                     if maybe_relay_parent_header.is_none() {
+                        log::info!("breaking");
                         break;
                     }
 
@@ -754,7 +755,7 @@ where
                                 tracing::info!(target: crate::LOG_TARGET, "Lookahead collator: No block proposal");
                             }
                             Err(err) => {
-                                tracing::info!(target: crate::LOG_TARGET, "asda");
+                                tracing::error!(target: crate::LOG_TARGET, ?err);
                                 break;
                             }
                         }
@@ -788,7 +789,7 @@ async fn can_build_upon<Block: BlockT, Client, P>(
     slot: Slot,
     aux_data: OrchestratorAuraWorkerAuxData<P>,
     parent_header: Block::Header,
-    included_block:<Block as BlockT>::Hash,
+    included_block: <Block as BlockT>::Hash,
     force_authoring: bool,
     client: &Client,
     keystore: &KeystorePtr,
