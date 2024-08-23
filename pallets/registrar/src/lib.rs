@@ -337,6 +337,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            // TODO: account proper weight here
             // Account for on_finalize weight
             Weight::zero().saturating_add(T::DbWeight::get().reads(1))
         }
@@ -444,7 +445,8 @@ pub mod pallet {
         }
 
         fn on_finalize(_: BlockNumberFor<T>) {
-            if let Some(para_id) = BufferedParasToDeregister::<T>::take().pop() {
+            let buffered_paras = BufferedParasToDeregister::<T>::take();
+            for para_id in buffered_paras {
                 T::InnerRegistrar::deregister(para_id);
             }
         }
@@ -857,14 +859,9 @@ pub mod pallet {
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
-                if let Err(id) = BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id))
-                {
-                    log::error!(
-                        target: LOG_TARGET,
-                        "Failed to add paraId {:?} to deregistration list",
-                        id
-                    );
-                }
+                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id)).map_err(
+                    |_e| DispatchError::Other("Failed to add paraId to deregistration list: buffer is full"),
+                )?;
             } else {
                 Self::schedule_paused_parachain_change(|para_ids, paused| {
                     // We have to find out where, in the sorted vec the para id is, if anywhere.
