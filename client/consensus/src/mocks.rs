@@ -57,6 +57,7 @@ use {
         Digest, DigestItem, Justifications,
     },
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
+    sp_version::RuntimeVersion,
     std::{
         collections::{BTreeMap, BTreeSet},
         pin::Pin,
@@ -241,18 +242,7 @@ impl RelayChainInterface for RelayChain {
             .expect("No header for best");
 
         let non_included_persisted = PersistedValidationData {
-            parent_head: PHeader {
-                parent_hash: Default::default(),
-                number: 1u32,
-                // The state trie merkle root
-                state_root: *header.state_root(),
-                // The merkle root of the extrinsics.
-                extrinsics_root: Default::default(),
-                // A chain-specific digest of data useful for light clients or referencing auxiliary data.
-                digest: Default::default(),
-            }
-            .encode()
-            .into(),
+            parent_head: header.encode().into(),
             // The relay-chain block number this is in the context of.
             relay_parent_number: 1,
             // The relay-chain block storage root this is in the context of.
@@ -364,6 +354,26 @@ impl RelayChainInterface for RelayChain {
     ) -> RelayChainResult<Option<polkadot_primitives::ValidationCodeHash>> {
         unimplemented!("Not needed for test")
     }
+
+    async fn candidates_pending_availability(
+        &self,
+        _: PHash,
+        _: ParaId,
+    ) -> RelayChainResult<Vec<CommittedCandidateReceipt>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn availability_cores(
+        &self,
+        _relay_parent: PHash,
+    ) -> RelayChainResult<Vec<CoreState<PHash, cumulus_primitives_core::relay_chain::BlockNumber>>>
+    {
+        unimplemented!("Not needed for test");
+    }
+
+    async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
+        unimplemented!("Not needed for test")
+    }
 }
 
 #[derive(Clone)]
@@ -408,7 +418,7 @@ impl SealExtractorVerfier {
 #[async_trait::async_trait]
 impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     async fn verify(
-        &mut self,
+        &self,
         mut block: sc_consensus::BlockImportParams<B>,
     ) -> Result<sc_consensus::BlockImportParams<B>, String> {
         if block.fork_choice.is_none() {

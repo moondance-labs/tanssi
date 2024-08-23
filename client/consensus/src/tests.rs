@@ -22,12 +22,11 @@
 use {
     crate::{
         collators::{
-            lookahead::Params as LookAheadParams, tanssi_claim_slot, Collator,
-            Params as CollatorParams, ClaimMode
+            lookahead::Params as LookAheadParams, tanssi_claim_slot, ClaimMode, Collator,
+            Params as CollatorParams,
         },
         mocks::*,
-        OrchestratorAuraWorkerAuxData,
-        SlotFrequency
+        OrchestratorAuraWorkerAuxData, SlotFrequency,
     },
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
@@ -292,7 +291,6 @@ async fn collate_lookahead_returns_correct_block() {
     use substrate_test_runtime_client::DefaultTestClientBuilderExt;
     use tokio_util::sync::CancellationToken;
     let _ = sp_tracing::try_init_simple();
-    let net = AuraTestNet::new(4);
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
     let alice_public = keystore
@@ -305,13 +303,9 @@ async fn collate_lookahead_returns_correct_block() {
         .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
         .expect("Key should be copied");
 
-    let net = Arc::new(Mutex::new(net));
-
-    let mut net = net.lock();
-    let peer = net.peer(3);
     let builder = TestClientBuilder::new();
     let backend = builder.backend();
-    let client = peer.client().as_client();
+    let client = Arc::new(builder.build());
     let environ = DummyFactory(client.clone());
     let relay_client = RelayChain(client.clone());
     let spawner = sp_core::testing::TaskExecutor::new();
