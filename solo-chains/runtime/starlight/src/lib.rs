@@ -21,7 +21,7 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common as polkadot_runtime_common;
+use runtime_common::{self as polkadot_runtime_common};
 
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
@@ -1494,13 +1494,14 @@ parameter_types! {
     pub const MaxEncodedGenesisDataSize: u32 = 1_000_000u32; // 1MB
 }
 
-pub struct InnerStarlightRegistrar<AccountId, RegistrarManager>(
-    PhantomData<(AccountId, RegistrarManager)>,
+pub struct InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>(
+    PhantomData<(AccountId, RegistrarManager, RegistrarWeightInfo)>,
 );
-impl<AccountId, RegistrarManager> RegistrarHandler<AccountId>
-    for InnerStarlightRegistrar<AccountId, RegistrarManager>
+impl<AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
+    for InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
+    RegistrarWeightInfo: paras_registrar::WeightInfo
 {
     fn register(
         who: AccountId,
@@ -1540,7 +1541,7 @@ where
         Ok(())
     }
 
-    fn deregister(id: ParaId) -> Weight {
+    fn deregister(id: ParaId) {
         if let Err(e) = RegistrarManager::deregister(id) {
             log::warn!(
                 "Failed to deregister para id {} in relay chain: {:?}",
@@ -1548,8 +1549,10 @@ where
                 e,
             );
         }
+    }
 
-        Weight::default()
+    fn deregister_weight() -> Weight {
+        RegistrarWeightInfo::deregister()
     }
 }
 
@@ -1568,7 +1571,8 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type InnerRegistrar = InnerStarlightRegistrar<AccountId, Registrar>;
+    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
+    type InnerRegistrar = InnerStarlightRegistrar<AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

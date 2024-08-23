@@ -379,7 +379,8 @@ pub trait RegistrarHandler<AccountId> {
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
-    fn deregister(id: ParaId) -> Weight;
+    fn deregister(id: ParaId);
+    fn deregister_weight() -> Weight;
 }
 
 impl<AccountId> RegistrarHandler<AccountId> for () {
@@ -399,7 +400,9 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         Ok(())
     }
 
-    fn deregister(_id: ParaId) -> Weight {
+    fn deregister(_id: ParaId){}
+
+    fn deregister_weight() -> Weight {
         Weight::default()
     }
 }
