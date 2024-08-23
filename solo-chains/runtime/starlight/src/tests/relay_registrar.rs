@@ -351,11 +351,10 @@ fn deregister_calls_schedule_para_cleanup() {
                 ()
             );
 
-            // Call end_block() to ensure that parachains_shared::CurrentSessionIndex
+            // Call run_block() to ensure that parachains_shared::CurrentSessionIndex
             // storage gets updated properly inside on_finalize() and
             // matches the one inside pallet_session::CurrentIndex.
-            end_block();
-            start_block();
+            run_block();
 
             run_to_session(4u32);
             assert_eq!(
@@ -382,8 +381,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 ),
                 ()
             );
-            end_block();
-            start_block();
+            run_block();
 
             // Now let's check if the para was preoperly registered in the relay.
             // Run to next session.
@@ -397,8 +395,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 root_origin(),
                 validation_code.into()
             ));
-            end_block();
-            start_block();
+            run_block();
 
             run_to_session(7);
 
@@ -412,8 +409,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 ContainerRegistrar::mark_valid_for_collating(root_origin(), 1003.into()),
                 ()
             );
-            end_block();
-            start_block();
+            run_block();
 
             // The change should be applied after 2 sessions.
             run_to_session(9);
@@ -435,8 +431,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 }
                 .into(),
             );
-            end_block();
-            start_block();
+            run_block();
 
             run_to_session(11);
             end_block();
