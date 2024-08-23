@@ -17,11 +17,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use parity_scale_codec::Decode;
-use sc_client_api::{FinalityNotification, FinalityNotifications};
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -885,7 +880,7 @@ pub async fn start_solochain_node(
             node_builder.task_manager.spawn_essential_handle(),
         );
     }
-    node_builder.network.start_network.start_network();
+    //node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
     let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
@@ -926,6 +921,7 @@ pub async fn start_solochain_node(
                 orchestrator_para_id,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
+                        // TODO: all these args must be solochain instead of orchestrator
                         orchestrator_client: orchestrator_client.clone(),
                         orchestrator_tx_pool,
                         orchestrator_para_id,
@@ -939,6 +935,7 @@ pub async fn start_solochain_node(
                 spawn_handle,
                 sync_mode: {
                     move |db_exists, para_id| {
+                        // TODO: this must use relay chain interface instead
                         spawner::select_sync_mode_using_client(
                             db_exists,
                             &orchestrator_client.clone(),

@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use nimbus_primitives::{NimbusId, NIMBUS_KEY_ID};
-use std::collections::BTreeMap;
+use nimbus_primitives::NimbusId;
 use {
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
@@ -62,9 +61,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
-use sp_core::crypto::Ss58Codec;
-use sp_core::{Decode, Encode, Pair, Public};
-use sp_keystore::Keystore;
+use sp_core::{Decode, Encode};
 
 type FullBackend = TFullBackend<Block>;
 
@@ -315,6 +312,7 @@ pub fn container_chain_import_queue(
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
+    // TODO: this should be generic, so we can use RelayChainInterface for solochain
     orchestrator_client: Arc<ParachainClient>,
     orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
     block_import: ContainerChainBlockImport,

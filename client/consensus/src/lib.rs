@@ -29,7 +29,6 @@ mod tests;
 
 use cumulus_relay_chain_interface::RelayChainInterface;
 use futures::executor::block_on;
-use polkadot_primitives::SessionIndex;
 pub use {
     crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,

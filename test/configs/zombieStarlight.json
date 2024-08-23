@@ -33,6 +33,14 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
             }
         ]
     },
