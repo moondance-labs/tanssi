@@ -88,6 +88,18 @@ describeSuite({
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000))"]);
             },
         });
+
+        it({
+            id: "T04",
+            title: "RPC endpoint is properly started",
+            test: async function () {
+                let preserverApi = context.polkadotJs("DataPreserver");
+                const container2000Network = preserverApi.consts.system.version.specName.toString();
+                const paraId2000 = (await preserverApi.query.parachainInfo.parachainId()).toString();
+                expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
+                expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
+            },
+        });
     },
 });
 

@@ -256,16 +256,19 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
     if !start_collation {
         collation_params = None;
 
-        log::info!("This is a syncing container chain, using random ports");
+        log::info!("This is a syncing container chain, using random ports unless they are explicitly provided as CLI args");
         // Use random ports to avoid conflicts with the other running container chain
+        // Don't override provided port.
+        // TODO: How does this prevent conflicts? All containers will have the same ports.
         let random_ports = [23456, 23457, 23458];
+
         container_chain_cli
             .base
             .base
             .prometheus_params
-            .prometheus_port = Some(random_ports[0]);
-        container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
-        container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
+            .prometheus_port.get_or_insert(random_ports[0]);
+        container_chain_cli.base.base.network_params.port.get_or_insert(random_ports[1]);
+        container_chain_cli.base.base.rpc_port.get_or_insert(random_ports[2]);
     }
 
     let validator = collation_params.is_some();

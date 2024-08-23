@@ -661,6 +661,11 @@
                     "name": "Container2000",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "DataPreserver",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
         },

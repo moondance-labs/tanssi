@@ -502,6 +502,8 @@ impl CliConfiguration<Self> for RelayChainCli {
 }
 
 fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
+    log::info!("Starting in RPC provider mode!");
+
     let runner = cli.create_runner(&cli.run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
@@ -549,6 +551,8 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     .wasmtime_precompiled
                     .clone_from(&config.wasmtime_precompiled);
             }
+
+            log::info!("Container chain CLI: {container_chain_cli:?}");
 
             let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
                 .map(|e| e.para_id)
