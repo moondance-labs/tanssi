@@ -1659,10 +1659,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {
-        // TODO: uncomment when pallets exist and we run benchmarks for this runtime
-        todo!("benchmarks_ensure_valid_for_collating not implemented yet")
-        /*
+    fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
         use {
             frame_support::traits::EnsureOriginWithArg,
             pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
@@ -1701,7 +1698,6 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
             "profile should be correctly assigned"
         );
-         */
     }
 }
 
