@@ -1684,7 +1684,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             <Runtime as pallet_data_preservers::Config>::AssignmentOrigin::try_successful_origin(
                 &para_id,
             )
-                .expect("should be able to get para manager");
+            .expect("should be able to get para manager");
 
         DataPreservers::start_assignment(
             para_manager,
@@ -1692,7 +1692,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             para_id,
             PreserversAssignmentPaymentExtra::Free,
         )
-            .expect("assignment to work");
+        .expect("assignment to work");
 
         assert!(
             pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),

@@ -549,7 +549,6 @@ describeSuite({
             },
         });
 
-        
         it({
             id: "E11",
             title: "Profile will be unassigned on container deregister",
