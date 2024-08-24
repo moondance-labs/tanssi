@@ -435,3 +435,156 @@ fn deregister_calls_schedule_para_cleanup() {
                 .is_offboarding());
         });
 }
+
+#[test]
+fn deregister_two_paras_in_the_same_block() {
+    ExtBuilder::default()
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), u32::MAX, u32::MAX).into(),
+        ])
+        .build()
+        .execute_with(|| {
+            // In this test we're gonna check that when calling ContainerRegistrar::deregister(),
+            // two paraIds are properly offboarded from the relay.
+
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
+            assert_eq!(Runtime::genesis_data(1004.into()).as_ref(), None);
+            run_to_session(1u32);
+
+            // Change max_head_data_size config.
+            assert_ok!(
+                Configuration::set_max_head_data_size(root_origin(), 20500),
+                ()
+            );
+
+            run_to_session(4u32);
+            assert_eq!(
+                parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
+                20500
+            );
+
+            let validation_code =
+                vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
+            let genesis_data_1003_and_1004 = ContainerChainGenesisData {
+                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: vec![],
+                properties: Default::default(),
+            };
+
+            // Register paraId 1003
+            assert_ok!(
+                ContainerRegistrar::register(
+                    origin_of(ALICE.into()),
+                    1003.into(),
+                    genesis_data_1003_and_1004.clone()
+                ),
+                ()
+            );
+
+            // Register paraId 1004
+            assert_ok!(
+                ContainerRegistrar::register(
+                    origin_of(ALICE.into()),
+                    1004.into(),
+                    genesis_data_1003_and_1004.clone()
+                ),
+                ()
+            );
+
+            // Now let's check if the paras were preoperly registered in the relay.
+            // Run to next session.
+            run_to_session(5);
+            assert!(Paras::lifecycle(1003.into())
+                .expect("para should be onboarding")
+                .is_onboarding());
+
+            assert!(Paras::lifecycle(1004.into())
+                .expect("para should be onboarding")
+                .is_onboarding());
+
+            // We need to accept the validation code, so that paras are onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                validation_code.into()
+            ));
+
+            run_to_session(7);
+
+            // Now paras should be parathreads.
+            assert!(Paras::lifecycle(1003.into())
+                .expect("para should be parathread")
+                .is_parathread());
+            assert!(Paras::lifecycle(1004.into())
+                .expect("para should be parathread")
+                .is_parathread());
+
+            // Call mark_valid_for_collating.
+            assert_ok!(
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1003.into()),
+                ()
+            );
+
+            assert_ok!(
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1004.into()),
+                ()
+            );
+
+            // The change should be applied after 2 sessions.
+            run_to_session(9);
+            assert!(Paras::lifecycle(1003.into())
+                .expect("para should be parachain")
+                .is_parachain());
+
+            assert!(Paras::lifecycle(1004.into())
+                .expect("para should be parachain")
+                .is_parachain());
+
+            assert_eq!(
+                Runtime::genesis_data(1003.into()).as_ref(),
+                Some(&genesis_data_1003_and_1004)
+            );
+
+            assert_eq!(
+                Runtime::genesis_data(1004.into()).as_ref(),
+                Some(&genesis_data_1003_and_1004)
+            );
+
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1003.into()));
+
+            // Assert that the ParaIdDeregistered event was properly deposited
+            System::assert_last_event(
+                ContainerRegistrarEvent::ParaIdDeregistered {
+                    para_id: 1003.into(),
+                }
+                .into(),
+            );
+
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1004.into()));
+            System::assert_last_event(
+                ContainerRegistrarEvent::ParaIdDeregistered {
+                    para_id: 1004.into(),
+                }
+                .into(),
+            );
+
+            run_to_session(11);
+            end_block();
+
+            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
+            assert_eq!(Runtime::genesis_data(1004.into()).as_ref(), None);
+
+            // Paras should be offboarding after 2 sessions.
+            assert!(Paras::lifecycle(1003.into())
+                .expect("para should be offboarding")
+                .is_offboarding());
+
+            assert!(Paras::lifecycle(1004.into())
+                .expect("para should be offboarding")
+                .is_offboarding());
+        });
+}
