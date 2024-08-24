@@ -400,7 +400,7 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         Ok(())
     }
 
-    fn deregister(_id: ParaId){}
+    fn deregister(_id: ParaId) {}
 
     fn deregister_weight() -> Weight {
         Weight::default()

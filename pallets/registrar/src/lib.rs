@@ -865,7 +865,11 @@ pub mod pallet {
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
                 BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id)).map_err(
-                    |_e| DispatchError::Other("Failed to add paraId to deregistration list: buffer is full"),
+                    |_e| {
+                        DispatchError::Other(
+                            "Failed to add paraId to deregistration list: buffer is full",
+                        )
+                    },
                 )?;
             } else {
                 Self::schedule_paused_parachain_change(|para_ids, paused| {

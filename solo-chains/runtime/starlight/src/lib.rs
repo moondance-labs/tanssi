@@ -1501,7 +1501,7 @@ impl<AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountI
     for InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
-    RegistrarWeightInfo: paras_registrar::WeightInfo
+    RegistrarWeightInfo: paras_registrar::WeightInfo,
 {
     fn register(
         who: AccountId,
@@ -1572,7 +1572,8 @@ impl pallet_registrar::Config for Runtime {
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
     // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
-    type InnerRegistrar = InnerStarlightRegistrar<AccountId, Registrar, paras_registrar::TestWeightInfo>;
+    type InnerRegistrar =
+        InnerStarlightRegistrar<AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
