@@ -44,18 +44,20 @@ export async function waitSessions(
     context,
     paraApi: ApiPromise,
     count: number,
-    earlyExit?: () => Promise<boolean> | boolean
+    earlyExit?: () => Promise<boolean> | boolean,
+    connectionName?: string
 ): Promise<string | null> {
     const session = (await paraApi.query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
-    return waitToSession(context, paraApi, session, earlyExit);
+    return waitToSession(context, paraApi, session, earlyExit, connectionName);
 }
 
 export async function waitToSession(
     context,
     paraApi: ApiPromise,
     session: number,
-    earlyExit?: () => Promise<boolean> | boolean
+    earlyExit?: () => Promise<boolean> | boolean,
+    connectionName?: string
 ): Promise<string | null> {
     for (;;) {
         if (earlyExit && (await earlyExit())) {
@@ -71,7 +73,7 @@ export async function waitToSession(
             return null;
         }
 
-        await context.waitBlock(1, "Tanssi");
+        await context.waitBlock(1, connectionName ? connectionName : "Tanssi");
     }
 }
 

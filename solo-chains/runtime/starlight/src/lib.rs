@@ -1491,7 +1491,7 @@ parameter_types! {
     #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
     // This value should match the maximum allowed for max_head_data_size
-    pub const MaxEncodedGenesisDataSize: u32 = 1_000_000u32; // 1MB
+    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
 pub struct InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>(

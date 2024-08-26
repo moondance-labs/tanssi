@@ -614,7 +614,8 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieStarlight.json"
+                    "configPath": "./configs/zombieStarlight.json",
+                    "skipBlockCheck": ["Container2000", "Container2001", "Container2002"]
                 }
             },
             "connections": [
@@ -624,9 +625,29 @@
                     "endpoints": ["ws://127.0.0.1:9947"]
                 },
                 {
-                    "name": "Container1000",
+                    "name": "Container2000",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9948"]
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
         },
