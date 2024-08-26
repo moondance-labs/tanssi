@@ -33,12 +33,11 @@ pub enum OnDemandAssignmentProviderCall {
     },
 }
 
-// TODO: uncomment tests after polkadot 1.8.0 upgrade
-/*
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand;
+    use {
+        super::*, polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
+    };
 
     #[test]
     fn encode_place_order_allow_death() {
@@ -61,4 +60,3 @@ mod tests {
         assert_eq!(call.encode(), call2.encode());
     }
 }
-*/

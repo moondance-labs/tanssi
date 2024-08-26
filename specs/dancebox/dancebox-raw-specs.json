@@ -3,8 +3,8 @@
   "id": "dancebox",
   "chainType": "Live",
   "bootNodes": [
-    "/dns4/fra-dancebox-boot-0.a.dancebox.tanssi.network/tcp/30333/p2p/12D3KooWLfKJTksB4ayLje6U5ENYwxomGcmY3hRoSYdhzVhf8BPr",
-    "/dns4/fra-dancebox-boot-1.a.dancebox.tanssi.network/tcp/30333/p2p/12D3KooWFyBHEWLY3eDHWWgCKEAhkbqhsWW62HftDCfM6uqxnJKZ"
+    "/dns4/ukl-dancebox-bootnode-1.rv.dancebox.tanssi.network/tcp/30333/p2p/12D3KooWMCiFXYUwJPHaKJU3RT2HDUxjhbasg4JU3pHoKKD8jPHS",
+    "/dns4/fro-dancebox-bootnode-1.rv.dancebox.tanssi.network/tcp/30333/p2p/12D3KooWBibAxU4bAKsFJzbBEownQRzDQj3AGTDkXnQ9LotYu6Jh"
   ],
   "telemetryEndpoints": null,
   "protocolId": null,

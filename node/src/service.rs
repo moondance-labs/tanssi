@@ -640,8 +640,7 @@ fn start_consensus_orchestrator(
         force_authoring,
         proposer,
         collator_service,
-        // Very limited proposal time.
-        authoring_duration: Duration::from_millis(500),
+        authoring_duration: Duration::from_millis(2000),
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
@@ -804,6 +803,7 @@ pub fn start_dev_node(
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
+                        current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
                         // TODO: Recheck
@@ -812,12 +812,12 @@ pub fn start_dev_node(
                         xcm_config: MockXcmConfig::new(
                             &*client_for_xcm,
                             block,
-                            para_id,
                             Default::default(),
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
+                        para_id,
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
@@ -957,7 +957,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 

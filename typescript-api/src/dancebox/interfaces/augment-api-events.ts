@@ -178,40 +178,6 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
-        dmpQueue: {
-            /** Some debris was cleaned up. */
-            CleanedSome: AugmentedEvent<ApiType, [keysRemoved: u32], { keysRemoved: u32 }>;
-            /** The cleanup of remaining pallet storage completed. */
-            Completed: AugmentedEvent<ApiType, [error: bool], { error: bool }>;
-            /** The export of pages completed. */
-            CompletedExport: AugmentedEvent<ApiType, []>;
-            /** The export of overweight messages completed. */
-            CompletedOverweightExport: AugmentedEvent<ApiType, []>;
-            /** The export of a page completed. */
-            Exported: AugmentedEvent<ApiType, [page: u32], { page: u32 }>;
-            /** The export of an overweight message completed. */
-            ExportedOverweight: AugmentedEvent<ApiType, [index: u64], { index: u64 }>;
-            /**
-             * The export of a page failed.
-             *
-             * This should never be emitted.
-             */
-            ExportFailed: AugmentedEvent<ApiType, [page: u32], { page: u32 }>;
-            /**
-             * The export of an overweight message failed.
-             *
-             * This should never be emitted.
-             */
-            ExportOverweightFailed: AugmentedEvent<ApiType, [index: u64], { index: u64 }>;
-            /** The cleanup of remaining pallet storage started. */
-            StartedCleanup: AugmentedEvent<ApiType, []>;
-            /** The export of pages started. */
-            StartedExport: AugmentedEvent<ApiType, []>;
-            /** The export of overweight messages started. */
-            StartedOverweightExport: AugmentedEvent<ApiType, []>;
-            /** Generic event */
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         foreignAssets: {
             /** Accounts were destroyed for given asset. */
             AccountsDestroyed: AugmentedEvent<
@@ -262,6 +228,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [assetId: u16, creator: AccountId32, owner: AccountId32],
                 { assetId: u16; creator: AccountId32; owner: AccountId32 }
+            >;
+            /** Some assets were deposited (e.g. for transaction fees). */
+            Deposited: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, amount: u128],
+                { assetId: u16; who: AccountId32; amount: u128 }
             >;
             /** An asset class was destroyed. */
             Destroyed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
@@ -320,6 +292,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [assetId: u16, owner: AccountId32, delegate: AccountId32, destination: AccountId32, amount: u128],
                 { assetId: u16; owner: AccountId32; delegate: AccountId32; destination: AccountId32; amount: u128 }
+            >;
+            /** Some assets were withdrawn from the account (e.g. for transaction fees). */
+            Withdrawn: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, amount: u128],
+                { assetId: u16; who: AccountId32; amount: u128 }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
@@ -1253,14 +1231,6 @@ declare module "@polkadot/api-base/types/events" {
             Paid: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
             /** A payment failed and can be retried. */
             PaymentFailed: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
-            /** New proposal. */
-            Proposed: AugmentedEvent<ApiType, [proposalIndex: u32], { proposalIndex: u32 }>;
-            /** A proposal was rejected; funds were slashed. */
-            Rejected: AugmentedEvent<
-                ApiType,
-                [proposalIndex: u32, slashed: u128],
-                { proposalIndex: u32; slashed: u128 }
-            >;
             /** Spending has finished; this is the amount that rolls over until next spend. */
             Rollover: AugmentedEvent<ApiType, [rolloverBalance: u128], { rolloverBalance: u128 }>;
             /** A new spend proposal has been approved. */
