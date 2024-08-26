@@ -24,16 +24,19 @@ pub mod alias;
 pub use {
     alias::*,
     cumulus_primitives_core::{
-        relay_chain::{BlockNumber, Slot},
+        relay_chain::{BlockNumber, HeadData, Slot, ValidationCode},
         ParaId,
     },
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
 };
 use {
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
-        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
+        pallet_prelude::{
+            Decode, DispatchResult, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight,
+        },
         BoundedVec,
     },
     serde::{Deserialize, Serialize},
@@ -364,5 +367,42 @@ impl GenericStorageReader for NativeStorageReader {
             Some(x) => Ok(x),
             None => Err(ReadEntryErr::Absent),
         }
+    }
+}
+
+pub trait RegistrarHandler<AccountId> {
+    fn register(
+        who: AccountId,
+        id: ParaId,
+        genesis_storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> DispatchResult;
+
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
+    fn deregister(id: ParaId);
+    fn deregister_weight() -> Weight;
+}
+
+impl<AccountId> RegistrarHandler<AccountId> for () {
+    fn register(
+        _who: AccountId,
+        _id: ParaId,
+        _genesis_storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn schedule_para_upgrade(_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    fn schedule_para_downgrade(_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    fn deregister(_id: ParaId) {}
+
+    fn deregister_weight() -> Weight {
+        Weight::default()
     }
 }

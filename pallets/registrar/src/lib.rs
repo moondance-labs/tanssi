@@ -64,8 +64,8 @@ use {
     sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, RelayStorageRootProvider, SessionContainerChains,
-        SlotFrequency,
+        ParathreadParams as ParathreadParamsTy, RegistrarHandler, RelayStorageRootProvider,
+        SessionContainerChains, SlotFrequency,
     },
 };
 
@@ -176,6 +176,8 @@ pub mod pallet {
 
         type RegistrarHooks: RegistrarHooks;
 
+        type InnerRegistrar: RegistrarHandler<Self::AccountId>;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -229,6 +231,27 @@ pub mod pallet {
         )>,
         ValueQuery,
     >;
+
+    /// This storage aims to act as a 'buffer' for paraIds that must be deregistered at the
+    /// end of the block execution by calling 'T::InnerRegistrar::deregister()' implementation.
+    ///
+    /// We need this buffer because when we are using this pallet on a relay-chain environment
+    /// like Starlight (where 'T::InnerRegistrar' implementation is usually the
+    /// 'paras_registrar' pallet) we need to deregister (via 'paras_registrar::deregister')
+    /// the same paraIds we have in 'PendingToRemove<T>', and we need to do this deregistration
+    /// process inside 'on_finalize' hook.
+    ///
+    /// It can be the case that some paraIds need to be downgraded to a parathread before
+    /// deregistering on 'paras_registrar'. This process usually takes 2 sessions,
+    /// and the actual downgrade happens when the block finalizes.
+    ///
+    /// Therefore, if we tried to perform this relay deregistration process at the beginning
+    /// of the session/block inside ('on_initialize') initializer_on_new_session() as we do
+    /// for this pallet, it would fail due to the downgrade process could have not taken
+    /// place yet.  
+    #[pallet::storage]
+    pub type BufferedParasToDeregister<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
@@ -313,6 +336,17 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            // Account for on_finalize weight
+            let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1));
+
+            let buffered_paras = BufferedParasToDeregister::<T>::get();
+            for _para_id in buffered_paras {
+                weight += T::InnerRegistrar::deregister_weight();
+            }
+            weight
+        }
+
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
             use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
@@ -413,6 +447,13 @@ pub mod pallet {
             assert_is_sorted_and_unique(&pending, "PendingToRemove");
 
             Ok(())
+        }
+
+        fn on_finalize(_: BlockNumberFor<T>) {
+            let buffered_paras = BufferedParasToDeregister::<T>::take();
+            for para_id in buffered_paras {
+                T::InnerRegistrar::deregister(para_id);
+            }
         }
     }
 
@@ -798,6 +839,8 @@ pub mod pallet {
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
+            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage)?;
+
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
                 para_id,
@@ -821,6 +864,13 @@ pub mod pallet {
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
+                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id)).map_err(
+                    |_e| {
+                        DispatchError::Other(
+                            "Failed to add paraId to deregistration list: buffer is full",
+                        )
+                    },
+                )?;
             } else {
                 Self::schedule_paused_parachain_change(|para_ids, paused| {
                     // We have to find out where, in the sorted vec the para id is, if anywhere.
@@ -846,6 +896,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
+                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -881,6 +932,8 @@ pub mod pallet {
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
+
+            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
 
             Ok(())
         }
@@ -1161,6 +1214,15 @@ pub mod pallet {
                         for para_id in new_paras {
                             Self::cleanup_deregistered_para_id(*para_id);
                             removed_para_ids.insert(*para_id);
+                            if let Err(id) =
+                                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(*para_id))
+                            {
+                                log::error!(
+                                    target: LOG_TARGET,
+                                    "Failed to add paraId {:?} to deregistration list",
+                                    id
+                                );
+                            }
                         }
                     }
 

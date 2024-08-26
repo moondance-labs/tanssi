@@ -21,7 +21,7 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common as polkadot_runtime_common;
+use runtime_common::{self as polkadot_runtime_common};
 
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
@@ -29,6 +29,8 @@ use {
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
         dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
@@ -47,7 +49,7 @@ use {
         CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
         NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
-        SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
+        SessionInfo, Signature, ValidationCodeHash, ValidatorId, ValidatorIndex,
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
@@ -56,7 +58,9 @@ use {
             ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
             VersionedLocationConverter,
         },
-        paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface,
+        BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand,
@@ -73,15 +77,19 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
+    sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::BlockNumberProvider,
+    sp_runtime::{traits::BlockNumberProvider, DispatchError},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
         marker::PhantomData,
         prelude::*,
     },
-    tp_traits::{GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot, SlotFrequency},
+    tp_traits::{
+        GetSessionContainerChains, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot,
+        SlotFrequency,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -1482,8 +1490,72 @@ parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
-    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
+    // This value should match the maximum allowed for max_head_data_size
+    pub const MaxEncodedGenesisDataSize: u32 = 1_000_000u32; // 1MB
 }
+
+pub struct InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>(
+    PhantomData<(AccountId, RegistrarManager, RegistrarWeightInfo)>,
+);
+impl<AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
+    for InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>
+where
+    RegistrarManager: RegistrarInterface<AccountId = AccountId>,
+    RegistrarWeightInfo: paras_registrar::WeightInfo,
+{
+    fn register(
+        who: AccountId,
+        id: ParaId,
+        genesis_storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> DispatchResult {
+        // Build HeadData
+        let key_values: Vec<(Vec<u8>, Vec<u8>)> =
+            genesis_storage.into_iter().map(|x| x.into()).collect();
+        let genesis_head = HeadData(key_values.encode());
+
+        // Check if the wasm code is present in storage
+        let kv_code = key_values
+            .into_iter()
+            .find(|kv| kv.0 == StorageWellKnownKeys::CODE.to_vec());
+
+        if let Some((_, code)) = kv_code {
+            // Build ValidationCode
+            let validation_code = ValidationCode(code);
+            RegistrarManager::register(who, id, genesis_head, validation_code)
+        } else {
+            return Err(DispatchError::Other("Code not found"));
+        }
+    }
+
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
+        if !RegistrarManager::is_parachain(id) {
+            return RegistrarManager::make_parachain(id);
+        }
+        Ok(())
+    }
+
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
+        if !RegistrarManager::is_parathread(id) {
+            return RegistrarManager::make_parathread(id);
+        }
+        Ok(())
+    }
+
+    fn deregister(id: ParaId) {
+        if let Err(e) = RegistrarManager::deregister(id) {
+            log::warn!(
+                "Failed to deregister para id {} in relay chain: {:?}",
+                u32::from(id),
+                e,
+            );
+        }
+    }
+
+    fn deregister_weight() -> Weight {
+        RegistrarWeightInfo::deregister()
+    }
+}
+
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -1499,6 +1571,9 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
+    type InnerRegistrar =
+        InnerStarlightRegistrar<AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
