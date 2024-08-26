@@ -480,7 +480,6 @@ where
         loop {
             select! {
                 maybe_relay_parent_header = import_notifications.next() => {
-                    log::info!("relay header {:?}", maybe_relay_parent_header);
                     if maybe_relay_parent_header.is_none() {
                         log::info!("breaking");
                         break;
@@ -653,7 +652,6 @@ where
                                 (false, core_index)
                             }
                         };
-                        tracing::info!(target: crate::LOG_TARGET, "can build upon");
 
                         let mut slot_claim = match can_build_upon(
                             inherent_providers.slot(),
@@ -670,7 +668,7 @@ where
                             Ok(Some(c)) => c,
                         };
 
-                        tracing::info!(
+                        tracing::debug!(
                             target: crate::LOG_TARGET,
                             ?relay_parent,
                             unincluded_segment_len = initial_parent.depth + n_built,
@@ -689,7 +687,6 @@ where
                             }
                             Ok(x) => x,
                         };
-                        tracing::info!(target: crate::LOG_TARGET, "here 2");
 
                         let validation_code_hash = match params.code_hash_provider.code_hash_at(parent_hash)
                         {
@@ -699,7 +696,6 @@ where
                             }
                             Some(v) => v,
                         };
-                        tracing::info!(target: crate::LOG_TARGET, "here");
 
                         match collator
                             .collate(
@@ -717,8 +713,6 @@ where
                             .await
                         {
                             Ok(Some((collation, block_data, new_block_hash))) => {
-                                tracing::info!(target: crate::LOG_TARGET, "Lookahead collator: block proposal");
-
                                 // Here we are assuming that the import logic protects against equivocations
                                 // and provides sybil-resistance, as it should.
                                 collator
@@ -750,14 +744,13 @@ where
                                 parent_header = block_data.into_header();
                             }
                             Ok(None) => {
-                                tracing::info!(target: crate::LOG_TARGET, "Lookahead collator: No block proposal");
+                                tracing::debug!(target: crate::LOG_TARGET, "Lookahead collator: No block proposal");
                             }
                             Err(err) => {
                                 tracing::error!(target: crate::LOG_TARGET, ?err);
                                 break;
                             }
                         }
-                        tracing::info!(target: crate::LOG_TARGET, "after match  ");
 
                         // If it is parathread, no point in async backing as we would have to do
                         // buy core first
