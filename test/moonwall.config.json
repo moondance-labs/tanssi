@@ -607,8 +607,9 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "build-spec-starlight-plus-dancebox-container.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-dancebox-container-1000.json"
+                "build-spec-starlight.sh",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
             ],
             "foundation": {
                 "type": "zombie",
