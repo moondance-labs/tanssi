@@ -954,7 +954,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 

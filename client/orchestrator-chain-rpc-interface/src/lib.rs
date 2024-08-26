@@ -244,7 +244,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
         let mut cloned = Vec::new();
         cloned.extend_from_slice(relevant_keys);
