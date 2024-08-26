@@ -54,7 +54,7 @@ use {
         generic::SignedBlock,
         traits::{Block as BlockT, BlockIdTo, Header as _, NumberFor},
         transaction_validity::{TransactionSource, TransactionValidity},
-        Digest, DigestItem, Justifications,
+        Digest, DigestItem, Justifications, Perbill,
     },
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     sp_version::RuntimeVersion,
@@ -155,19 +155,21 @@ sp_api::mock_impl_runtime_apis! {
 
     impl pallet_xcm_core_buyer_runtime_api::XCMCoreBuyerApi<Block, BlockNumber, ParaId, NimbusId> for MockApi {
         fn is_core_buying_allowed(_para_id: ParaId, _collator_public_key: NimbusId) -> Result<(), BuyingError<BlockNumber>> {
-            todo!();
+            Ok(())
         }
 
         fn create_buy_core_unsigned_extrinsic(_para_id: ParaId, _proof: BuyCoreCollatorProof<NimbusId>) -> Box<<Block as BlockT>::Extrinsic> {
-            todo!();
+            let extrinsic = substrate_test_runtime_client::runtime::ExtrinsicBuilder::new_fill_block(Perbill::from_parts(1000u32)).nonce(0u64).build();
+            Box::new(extrinsic)
         }
 
         fn get_buy_core_signature_nonce(_para_id: ParaId) -> u64 {
-            todo!();
+            0u64
         }
 
+        // A 0 slot drift for tests is ok
         fn get_buy_core_slot_drift() -> Slot {
-            todo!();
+         0u64.into()
         }
     }
 
@@ -739,7 +741,7 @@ impl TestNetFactory for AuraTestNet {
 // *parent_header.state_root(),
 /// A mocked `runtime-api` subsystem.
 #[derive(Clone)]
-pub struct MockRuntimeApi(ParaId);
+pub struct MockRuntimeApi(Option<ParaId>);
 
 #[overseer::subsystem(RuntimeApi, error=polkadot_node_subsystem::SubsystemError, prefix=self::overseer)]
 impl<Context> MockRuntimeApi {
@@ -755,7 +757,7 @@ impl<Context> MockRuntimeApi {
 
 #[overseer::contextbounds(RuntimeApi, prefix = self::overseer)]
 impl MockRuntimeApi {
-    pub fn new(para_id: ParaId) -> Self {
+    pub fn new(para_id: Option<ParaId>) -> Self {
         Self(para_id)
     }
     async fn run<Context>(self, mut ctx: Context) {
@@ -776,10 +778,15 @@ impl MockRuntimeApi {
                             _block_hash,
                             RuntimeApiRequest::AvailabilityCores(sender),
                         ) => {
-                            let _ = sender.send(Ok(vec![CoreState::Scheduled(ScheduledCore {
-                                para_id: self.0,
-                                collator: None,
-                            })]));
+                            if let Some(para_id) = self.0 {
+                                let _ =
+                                    sender.send(Ok(vec![CoreState::Scheduled(ScheduledCore {
+                                        para_id: para_id,
+                                        collator: None,
+                                    })]));
+                            } else {
+                                let _ = sender.send(Ok(vec![]));
+                            }
                         }
                         // Long term TODO: implement more as needed.
                         message => {
