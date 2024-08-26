@@ -244,6 +244,7 @@ std = [
 	"sp-arithmetic/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
+	"sp-debug-derive/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
 	"sp-keystore/std",
@@ -267,7 +268,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"sp-debug-derive/std"
 ]
 no_std = []
 runtime-benchmarks = [
