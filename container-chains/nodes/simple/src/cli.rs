@@ -182,9 +182,6 @@ impl CliConfiguration for BuildSpecCmd {
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
 pub struct RpcProviderSubcommand {
-    #[clap(flatten)]
-    pub base: cumulus_client_cli::RunCmd,
-
     /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
     /// If this list is empty, a local embeded orchestrator node is started.
     #[arg(long)]
