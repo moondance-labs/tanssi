@@ -396,3 +396,118 @@ async fn collate_lookahead_returns_correct_block() {
     // this is going to create 2 blocks on to of the latest
     assert_eq!(client.chain_info().best_number, 2);
 }
+
+#[tokio::test]
+async fn collate_lookahead_returns_correct_block_for_parathreads() {
+    use substrate_test_runtime_client::DefaultTestClientBuilderExt;
+    use tokio_util::sync::CancellationToken;
+    let _ = sp_tracing::try_init_simple();
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+
+    // Copy of the keystore needed for tanssi_claim_slot()
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let builder = TestClientBuilder::new();
+    let backend = builder.backend();
+    let client = Arc::new(builder.build());
+    let environ = DummyFactory(client.clone());
+    let relay_client = RelayChain(client.clone());
+    let spawner = sp_core::testing::TaskExecutor::new();
+    let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
+        true.into(),
+        None,
+        spawner.clone(),
+        client.clone(),
+    );
+    let mock_runtime_api = MockRuntimeApi::new(1000u32.into());
+
+    let (overseer, handle) = dummy_overseer_builder(spawner.clone(), MockSupportsParachains, None)
+        .unwrap()
+        .replace_runtime_api(|_| mock_runtime_api)
+        .build()
+        .unwrap();
+    spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+
+    let min_slot_freq = 4u32;
+
+    // Build the collator
+    let params = LookAheadParams {
+        create_inherent_data_providers: move |_block_hash, _| async move {
+            let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                Timestamp::current(),
+                SlotDuration::from_millis(SLOT_DURATION_MS),
+            );
+
+            Ok((slot,))
+        },
+        block_import: environ.0.clone(),
+        relay_client: relay_client.clone(),
+        keystore: keystore.into(),
+        para_id: 1000.into(),
+        proposer: ConsensusProposer::new(environ.clone()),
+        collator_service: CollatorService::new(
+            client.clone(),
+            Arc::new(spawner.clone()),
+            Arc::new(move |_, _| {}),
+            Arc::new(environ.clone()),
+        ),
+        authoring_duration: Duration::from_millis(500),
+        cancellation_token: CancellationToken::new(),
+        code_hash_provider: DummyCodeHashProvider,
+        collator_key: CollatorPair::generate().0,
+        force_authoring: false,
+        get_orchestrator_aux_data: move |_block_hash, _extra| async move {
+            let aux_data = OrchestratorAuraWorkerAuxData {
+                authorities: vec![alice_public.into()],
+                // This is the orchestrator consensus, it does not have a slot frequency
+                slot_freq: Some(SlotFrequency {
+                    min: min_slot_freq,
+                    max: 0u32,
+                }),
+            };
+
+            Ok(aux_data)
+        },
+        get_current_slot_duration: move |_block_hash| SlotDuration::from_millis(6_000),
+        overseer_handle: OverseerHandle::new(handle),
+        relay_chain_slot_duration: Duration::from_secs(6),
+        para_client: environ.clone().into(),
+        sync_oracle: DummyOracle,
+        para_backend: backend,
+        orchestrator_client: environ.into(),
+        orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+        orchestrator_tx_pool,
+    };
+
+    let (fut, _exit_notification_receiver) = crate::collators::lookahead::run::<
+        _,
+        Block,
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params);
+
+    fut.await;
+
+    // This time we have the slot frequency limit, so we should only create one
+    assert_eq!(client.chain_info().best_number, 1);
+}
