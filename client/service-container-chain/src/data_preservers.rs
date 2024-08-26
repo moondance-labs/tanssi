@@ -51,7 +51,7 @@ pub async fn task_watch_assignment<S: TSelectSyncMode>(
             let hash = header.hash();
 
             let new_assignment = orchestrator_chain_interface
-                .get_active_assignment(hash, profile_id)
+                .data_preserver_active_assignment(hash, profile_id)
                 .await?;
 
             log::info!("Assignement for block {hash}: {new_assignment:?}");

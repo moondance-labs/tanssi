@@ -320,7 +320,7 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         self.request("chain_getFinalizedHead", rpc_params![]).await
     }
 
-    async fn get_active_assignment(
+    async fn data_preserver_active_assignment(
         &self,
         orchestrator_parent: PHash,
         profile_id: DataPreserverProfileId,

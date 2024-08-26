@@ -1042,7 +1042,7 @@ where
         Ok(self.backend.blockchain().info().finalized_hash)
     }
 
-    async fn get_active_assignment(
+    async fn data_preserver_active_assignment(
         &self,
         orchestrator_parent: PHash,
         profile_id: DataPreserverProfileId,
