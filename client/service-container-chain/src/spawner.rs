@@ -536,7 +536,7 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
     /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
     /// `handle_update_assignment`.
-    pub async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
+    async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
         let try_spawn_params = self.params.clone();
         let state = self.state.clone();
         let state2 = state.clone();
@@ -567,7 +567,7 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// Returns the database path for the container chain, can be used with `wait_for_paritydb_lock`
     /// to ensure that the container chain has fully stopped. The database path can be `None` if the
     /// chain was not running.
-    pub fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf> {
+    fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf> {
         let mut state = self.state.lock().expect("poison error");
         let stop_handle = state
             .spawned_container_chains

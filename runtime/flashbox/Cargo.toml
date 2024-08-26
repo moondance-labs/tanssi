@@ -31,7 +31,6 @@ pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
-pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-proxy = { workspace = true }
@@ -214,7 +213,6 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
-	"pallet-data-preservers-runtime-api/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)

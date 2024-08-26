@@ -1052,15 +1052,13 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     }
 }
 
-pub type DataPreserversProfileId = u64;
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
-    type ProfileId = DataPreserversProfileId;
+    type ProfileId = u64;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentPayment = PreserversAssignementPayment;
 
@@ -2562,25 +2560,6 @@ impl_runtime_apis! {
                 Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
-            }
-        }
-    }
-
-    impl pallet_data_preservers_runtime_api::DataPreserversApi<Block, DataPreserversProfileId, ParaId> for Runtime {
-        fn get_active_assignment(
-            profile_id: DataPreserversProfileId,
-        ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
-            use pallet_data_preservers_runtime_api::Assignment;
-
-            let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
-                .and_then(|x| x.assignment) else
-            {
-                return Assignment::NotAssigned;
-            };
-
-            match witness {
-                PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
-                // TODO: Add Stream Payment. Stalled stream should return Inactive.
             }
         }
     }

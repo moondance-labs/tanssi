@@ -3115,7 +3115,6 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-data-preservers",
- "pallet-data-preservers-runtime-api",
  "pallet-foreign-asset-creator",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -4457,7 +4456,6 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-data-preservers",
- "pallet-data-preservers-runtime-api",
  "pallet-identity",
  "pallet-inflation-rewards",
  "pallet-initializer",
@@ -8861,17 +8859,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-traits",
-]
-
-[[package]]
-name = "pallet-data-preservers-runtime-api"
-version = "0.1.0"
-dependencies = [
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-api",
- "thiserror",
 ]
 
 [[package]]
@@ -17096,7 +17083,6 @@ dependencies = [
  "pallet-author-noting-runtime-api",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
- "pallet-data-preservers-runtime-api",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
@@ -17515,7 +17501,6 @@ dependencies = [
  "nimbus-primitives",
  "node-common",
  "pallet-author-noting-runtime-api",
- "pallet-data-preservers",
  "polkadot-primitives",
  "sc-basic-authorship",
  "sc-chain-spec",

@@ -285,7 +285,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
 
             runner.run_node_until_exit(|config| async move {
-                let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
+                let client: Arc<dyn OrchestratorChainInterface>;
                 let mut task_manager;
 
                 if cmd.orchestrator_endpoints.is_empty() {
@@ -294,33 +294,27 @@ pub fn run() -> Result<()> {
                     task_manager = TaskManager::new(tokio::runtime::Handle::current(), None)
                         .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
-                    orchestrator_chain_interface =
-                        tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
-                            cmd.orchestrator_endpoints.clone(),
-                            &mut task_manager,
-                            None,
-                        )
-                        .await
-                        .map(Arc::new)
-                        .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+                    client = tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                        cmd.orchestrator_endpoints.clone(),
+                        &mut task_manager,
+                        None,
+                    )
+                    .await
+                    .map(Arc::new)
+                    .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
                 };
 
                 // POC: Try to fetch some data through the interface.
                 {
-                    let orchestrator_chain_interface = orchestrator_chain_interface.clone();
-                    let profile_id = cmd.profile_id;
+                    let client = client.clone();
 
                     task_manager
                         .spawn_handle()
                         .spawn("rpc_provider_exemple", None, async move {
-                            let mut stream = orchestrator_chain_interface
-                                .new_best_notification_stream()
-                                .await
-                                .unwrap();
+                            let mut stream = client.new_best_notification_stream().await.unwrap();
 
                             while let Some(header) = stream.next().await {
-                                let hash = header.hash();
-                                log::info!("New best block: {}", hash);
+                                log::info!("New best block: {}", header.hash());
                             }
                         });
                 }
@@ -379,7 +373,7 @@ pub fn run() -> Result<()> {
                         tc_service_container_chain::service::start_node_impl_container(
                             config,
                             relay_chain_interface,
-                            orchestrator_chain_interface,
+                            client,
                             keystore,
                             ParaId::from(2001),
                             None,
