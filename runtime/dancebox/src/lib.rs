@@ -249,7 +249,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 800,
+    spec_version: 900,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -288,9 +288,9 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 /// `Operational` extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
+/// We allow for 2 seconds of compute with a 6 second average block time
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-    WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+    WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
@@ -559,7 +559,7 @@ impl pallet_async_backing::Config for Runtime {
 fn relay_chain_state_proof() -> RelayChainStateProof {
     let relay_storage_root =
         RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
-    let relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof()
+    let relay_chain_state = cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get()
         .expect("set in `set_validation_data`");
     RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
         .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
@@ -573,7 +573,8 @@ impl BabeCurrentBlockRandomnessGetter {
             let _relay_storage_root =
                 RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
 
-            let _relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof();
+            let _relay_chain_state =
+                cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get();
             let benchmarking_babe_output = Hash::default();
             return Some(benchmarking_babe_output);
         }
@@ -1704,7 +1705,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {
             TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+            TimeUnit::Timestamp => Some(Timestamp::get().into()),
         }
     }
 
@@ -1790,23 +1791,15 @@ impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryId;
     type Currency = Balances;
 
-    type ApproveOrigin = EnsureRoot<AccountId>;
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
     type SpendPeriod = ConstU32<{ 6 * DAYS }>;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
-    #[cfg(feature = "runtime-benchmarks")]
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
@@ -1888,7 +1881,6 @@ construct_runtime!(
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
-        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 54,
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
@@ -1930,7 +1922,6 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_assets, ForeignAssets]

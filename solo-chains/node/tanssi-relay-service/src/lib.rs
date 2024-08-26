@@ -14,6 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Polkadot service. Specialized wrapper over substrate service.
-
 pub mod chain_spec;
+
+pub mod dev_service;

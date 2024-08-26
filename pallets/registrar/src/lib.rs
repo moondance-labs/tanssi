@@ -85,6 +85,7 @@ pub mod pallet {
             ContainerChainGenesisData,
             Option<ParathreadParamsTy>,
         )>,
+        #[serde(skip)]
         pub phantom: PhantomData<T>,
     }
 

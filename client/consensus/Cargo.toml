@@ -33,6 +33,7 @@ sp-runtime = { workspace = true }
 sp-state-machine = { workspace = true }
 sp-timestamp = { workspace = true }
 sp-transaction-pool = { workspace = true }
+sp-version = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own

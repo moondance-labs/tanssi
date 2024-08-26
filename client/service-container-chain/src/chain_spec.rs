@@ -21,7 +21,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
-pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
+pub type RawChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Helper type that implements the traits needed to be used as a "GenesisConfig",
 /// but whose implementation panics because we only expect it to be used with raw ChainSpecs,

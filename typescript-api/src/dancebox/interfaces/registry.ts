@@ -6,9 +6,6 @@
 import "@polkadot/types/types/registry";
 
 import type {
-    CumulusPalletDmpQueueCall,
-    CumulusPalletDmpQueueEvent,
-    CumulusPalletDmpQueueMigrationState,
     CumulusPalletParachainSystemCall,
     CumulusPalletParachainSystemError,
     CumulusPalletParachainSystemEvent,
@@ -57,6 +54,8 @@ import type {
     FrameSupportMessagesProcessMessageError,
     FrameSupportPalletId,
     FrameSupportTokensMiscBalanceStatus,
+    FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
+    FrameSupportTokensMiscIdAmountRuntimeHoldReason,
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemCodeUpgradeAuthorization,
@@ -101,8 +100,6 @@ import type {
     PalletBalancesCall,
     PalletBalancesError,
     PalletBalancesEvent,
-    PalletBalancesIdAmountRuntimeFreezeReason,
-    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
@@ -306,6 +303,7 @@ import type {
     XcmV3MultiassetMultiAssets,
     XcmV3MultiassetWildFungibility,
     XcmV3MultiassetWildMultiAsset,
+    XcmV3OriginKind,
     XcmV3PalletInfo,
     XcmV3QueryResponseInfo,
     XcmV3Response,
@@ -321,9 +319,6 @@ import type {
 
 declare module "@polkadot/types/types/registry" {
     interface InterfaceTypes {
-        CumulusPalletDmpQueueCall: CumulusPalletDmpQueueCall;
-        CumulusPalletDmpQueueEvent: CumulusPalletDmpQueueEvent;
-        CumulusPalletDmpQueueMigrationState: CumulusPalletDmpQueueMigrationState;
         CumulusPalletParachainSystemCall: CumulusPalletParachainSystemCall;
         CumulusPalletParachainSystemError: CumulusPalletParachainSystemError;
         CumulusPalletParachainSystemEvent: CumulusPalletParachainSystemEvent;
@@ -372,6 +367,8 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportMessagesProcessMessageError: FrameSupportMessagesProcessMessageError;
         FrameSupportPalletId: FrameSupportPalletId;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
+        FrameSupportTokensMiscIdAmountRuntimeFreezeReason: FrameSupportTokensMiscIdAmountRuntimeFreezeReason;
+        FrameSupportTokensMiscIdAmountRuntimeHoldReason: FrameSupportTokensMiscIdAmountRuntimeHoldReason;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
@@ -416,8 +413,6 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
         PalletBalancesEvent: PalletBalancesEvent;
-        PalletBalancesIdAmountRuntimeFreezeReason: PalletBalancesIdAmountRuntimeFreezeReason;
-        PalletBalancesIdAmountRuntimeHoldReason: PalletBalancesIdAmountRuntimeHoldReason;
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
@@ -621,6 +616,7 @@ declare module "@polkadot/types/types/registry" {
         XcmV3MultiassetMultiAssets: XcmV3MultiassetMultiAssets;
         XcmV3MultiassetWildFungibility: XcmV3MultiassetWildFungibility;
         XcmV3MultiassetWildMultiAsset: XcmV3MultiassetWildMultiAsset;
+        XcmV3OriginKind: XcmV3OriginKind;
         XcmV3PalletInfo: XcmV3PalletInfo;
         XcmV3QueryResponseInfo: XcmV3QueryResponseInfo;
         XcmV3Response: XcmV3Response;
