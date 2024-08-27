@@ -78,7 +78,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
-            /** Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and `AssignerParameter`. */
+            /**
+             * Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and
+             * `AssignerParameter`.
+             */
             AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;
             CantDeleteAssignedProfile: AugmentedError<ApiType>;
             MaxAssignmentsPerParaIdReached: AugmentedError<ApiType>;
@@ -98,8 +101,6 @@ declare module "@polkadot/api-base/types/errors" {
             AlreadyExists: AugmentedError<ApiType>;
             /** The asset is not live, and likely being destroyed. */
             AssetNotLive: AugmentedError<ApiType>;
-            /** The asset ID must be equal to the [`NextAssetId`]. */
-            BadAssetId: AugmentedError<ApiType>;
             /** Invalid metadata given. */
             BadMetadata: AugmentedError<ApiType>;
             /** Invalid witness data given. */
@@ -536,6 +537,8 @@ declare module "@polkadot/api-base/types/errors" {
             Inconclusive: AugmentedError<ApiType>;
             /** The spend origin is valid but the amount it is allowed to spend is lower than the amount to be spent. */
             InsufficientPermission: AugmentedError<ApiType>;
+            /** Proposer's balance is too low. */
+            InsufficientProposersBalance: AugmentedError<ApiType>;
             /** No proposal, bounty or spend at that index. */
             InvalidIndex: AugmentedError<ApiType>;
             /** The payout was not yet attempted/claimed. */
@@ -613,10 +616,6 @@ declare module "@polkadot/api-base/types/errors" {
             AlreadySuspended: AugmentedError<ApiType>;
             /** Setting the queue config failed since one of its values was invalid. */
             BadQueueConfig: AugmentedError<ApiType>;
-            /** The message is too big. */
-            TooBig: AugmentedError<ApiType>;
-            /** There are too many active outbound channels. */
-            TooManyActiveOutboundChannels: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

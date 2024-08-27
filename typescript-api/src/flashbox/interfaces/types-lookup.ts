@@ -1023,6 +1023,10 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletTreasuryEvent (72) */
     interface PalletTreasuryEvent extends Enum {
+        readonly isProposed: boolean;
+        readonly asProposed: {
+            readonly proposalIndex: u32;
+        } & Struct;
         readonly isSpending: boolean;
         readonly asSpending: {
             readonly budgetRemaining: u128;
@@ -1032,6 +1036,11 @@ declare module "@polkadot/types/lookup" {
             readonly proposalIndex: u32;
             readonly award: u128;
             readonly account: AccountId32;
+        } & Struct;
+        readonly isRejected: boolean;
+        readonly asRejected: {
+            readonly proposalIndex: u32;
+            readonly slashed: u128;
         } & Struct;
         readonly isBurnt: boolean;
         readonly asBurnt: {
@@ -1084,8 +1093,10 @@ declare module "@polkadot/types/lookup" {
             readonly index: u32;
         } & Struct;
         readonly type:
+            | "Proposed"
             | "Spending"
             | "Awarded"
+            | "Rejected"
             | "Burnt"
             | "Rollover"
             | "Deposit"
@@ -1647,11 +1658,6 @@ declare module "@polkadot/types/lookup" {
             readonly direction: PalletBalancesAdjustmentDirection;
             readonly delta: Compact<u128>;
         } & Struct;
-        readonly isBurn: boolean;
-        readonly asBurn: {
-            readonly value: Compact<u128>;
-            readonly keepAlive: bool;
-        } & Struct;
         readonly type:
             | "TransferAllowDeath"
             | "ForceTransfer"
@@ -1660,8 +1666,7 @@ declare module "@polkadot/types/lookup" {
             | "ForceUnreserve"
             | "UpgradeAccounts"
             | "ForceSetBalance"
-            | "ForceAdjustTotalIssuance"
-            | "Burn";
+            | "ForceAdjustTotalIssuance";
     }
 
     /** @name PalletBalancesAdjustmentDirection (159) */
@@ -2301,6 +2306,19 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletTreasuryCall (241) */
     interface PalletTreasuryCall extends Enum {
+        readonly isProposeSpend: boolean;
+        readonly asProposeSpend: {
+            readonly value: Compact<u128>;
+            readonly beneficiary: MultiAddress;
+        } & Struct;
+        readonly isRejectProposal: boolean;
+        readonly asRejectProposal: {
+            readonly proposalId: Compact<u32>;
+        } & Struct;
+        readonly isApproveProposal: boolean;
+        readonly asApproveProposal: {
+            readonly proposalId: Compact<u32>;
+        } & Struct;
         readonly isSpendLocal: boolean;
         readonly asSpendLocal: {
             readonly amount: Compact<u128>;
@@ -2329,7 +2347,16 @@ declare module "@polkadot/types/lookup" {
         readonly asVoidSpend: {
             readonly index: u32;
         } & Struct;
-        readonly type: "SpendLocal" | "RemoveApproval" | "Spend" | "Payout" | "CheckStatus" | "VoidSpend";
+        readonly type:
+            | "ProposeSpend"
+            | "RejectProposal"
+            | "ApproveProposal"
+            | "SpendLocal"
+            | "RemoveApproval"
+            | "Spend"
+            | "Payout"
+            | "CheckStatus"
+            | "VoidSpend";
     }
 
     /** @name PalletRootTestingCall (242) */
@@ -2435,8 +2462,8 @@ declare module "@polkadot/types/lookup" {
         readonly amount: u128;
     }
 
-    /** @name FrameSupportTokensMiscIdAmountRuntimeHoldReason (265) */
-    interface FrameSupportTokensMiscIdAmountRuntimeHoldReason extends Struct {
+    /** @name PalletBalancesIdAmountRuntimeHoldReason (265) */
+    interface PalletBalancesIdAmountRuntimeHoldReason extends Struct {
         readonly id: FlashboxRuntimeRuntimeHoldReason;
         readonly amount: u128;
     }
@@ -2471,8 +2498,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "ProfileDeposit";
     }
 
-    /** @name FrameSupportTokensMiscIdAmountRuntimeFreezeReason (272) */
-    interface FrameSupportTokensMiscIdAmountRuntimeFreezeReason extends Struct {
+    /** @name PalletBalancesIdAmountRuntimeFreezeReason (272) */
+    interface PalletBalancesIdAmountRuntimeFreezeReason extends Struct {
         readonly id: FlashboxRuntimeRuntimeFreezeReason;
         readonly amount: u128;
     }
@@ -2917,6 +2944,7 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletTreasuryError (356) */
     interface PalletTreasuryError extends Enum {
+        readonly isInsufficientProposersBalance: boolean;
         readonly isInvalidIndex: boolean;
         readonly isTooManyApprovals: boolean;
         readonly isInsufficientPermission: boolean;
@@ -2929,6 +2957,7 @@ declare module "@polkadot/types/lookup" {
         readonly isNotAttempted: boolean;
         readonly isInconclusive: boolean;
         readonly type:
+            | "InsufficientProposersBalance"
             | "InvalidIndex"
             | "TooManyApprovals"
             | "InsufficientPermission"

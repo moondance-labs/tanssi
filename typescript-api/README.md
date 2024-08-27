@@ -14,8 +14,9 @@ npm i @tanssi/api-augment
 
 Add to your codebase entry point before any imports from the API itself.
 
--   `import '@tanssi/api-augment'` - applies Moonbeam types and endpoint augmentation
+-   `import '@tanssi/api-augment'` - applies Dancebox types and endpoint augmentation
 -   `import '@tanssi/api-augment/dancebox'` - applies Dancebox types and endpoint augmentation
+-   `import '@tanssi/api-augment/flashbox'` - applies Flashbox types and endpoint augmentation
 
 ## Docs
 

@@ -100,7 +100,7 @@ declare module "@polkadot/api-base/types/events" {
                     from: AccountId32,
                     to: AccountId32,
                     amount: u128,
-                    destinationStatus: FrameSupportTokensMiscBalanceStatus
+                    destinationStatus: FrameSupportTokensMiscBalanceStatus,
                 ],
                 {
                     from: AccountId32;
@@ -178,6 +178,40 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        dmpQueue: {
+            /** Some debris was cleaned up. */
+            CleanedSome: AugmentedEvent<ApiType, [keysRemoved: u32], { keysRemoved: u32 }>;
+            /** The cleanup of remaining pallet storage completed. */
+            Completed: AugmentedEvent<ApiType, [error: bool], { error: bool }>;
+            /** The export of pages completed. */
+            CompletedExport: AugmentedEvent<ApiType, []>;
+            /** The export of overweight messages completed. */
+            CompletedOverweightExport: AugmentedEvent<ApiType, []>;
+            /** The export of a page completed. */
+            Exported: AugmentedEvent<ApiType, [page: u32], { page: u32 }>;
+            /** The export of an overweight message completed. */
+            ExportedOverweight: AugmentedEvent<ApiType, [index: u64], { index: u64 }>;
+            /**
+             * The export of a page failed.
+             *
+             * This should never be emitted.
+             */
+            ExportFailed: AugmentedEvent<ApiType, [page: u32], { page: u32 }>;
+            /**
+             * The export of an overweight message failed.
+             *
+             * This should never be emitted.
+             */
+            ExportOverweightFailed: AugmentedEvent<ApiType, [index: u64], { index: u64 }>;
+            /** The cleanup of remaining pallet storage started. */
+            StartedCleanup: AugmentedEvent<ApiType, []>;
+            /** The export of pages started. */
+            StartedExport: AugmentedEvent<ApiType, []>;
+            /** The export of overweight messages started. */
+            StartedOverweightExport: AugmentedEvent<ApiType, []>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         foreignAssets: {
             /** Accounts were destroyed for given asset. */
             AccountsDestroyed: AugmentedEvent<
@@ -228,12 +262,6 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [assetId: u16, creator: AccountId32, owner: AccountId32],
                 { assetId: u16; creator: AccountId32; owner: AccountId32 }
-            >;
-            /** Some assets were deposited (e.g. for transaction fees). */
-            Deposited: AugmentedEvent<
-                ApiType,
-                [assetId: u16, who: AccountId32, amount: u128],
-                { assetId: u16; who: AccountId32; amount: u128 }
             >;
             /** An asset class was destroyed. */
             Destroyed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
@@ -293,12 +321,6 @@ declare module "@polkadot/api-base/types/events" {
                 [assetId: u16, owner: AccountId32, delegate: AccountId32, destination: AccountId32, amount: u128],
                 { assetId: u16; owner: AccountId32; delegate: AccountId32; destination: AccountId32; amount: u128 }
             >;
-            /** Some assets were withdrawn from the account (e.g. for transaction fees). */
-            Withdrawn: AugmentedEvent<
-                ApiType,
-                [assetId: u16, who: AccountId32, amount: u128],
-                { assetId: u16; who: AccountId32; amount: u128 }
-            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
@@ -335,7 +357,10 @@ declare module "@polkadot/api-base/types/events" {
             AuthorityAdded: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
             /** A username authority was removed. */
             AuthorityRemoved: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
-            /** A dangling username (as in, a username corresponding to an account that has removed its identity) has been removed. */
+            /**
+             * A dangling username (as in, a username corresponding to an account that has removed its identity) has been
+             * removed.
+             */
             DanglingUsernameRemoved: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes],
@@ -395,7 +420,10 @@ declare module "@polkadot/api-base/types/events" {
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
-            /** A sub-identity was cleared, and the given deposit repatriated from the main identity account to the sub-identity account. */
+            /**
+             * A sub-identity was cleared, and the given deposit repatriated from the main identity account to the
+             * sub-identity account.
+             */
             SubIdentityRevoked: AugmentedEvent<
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
@@ -491,7 +519,7 @@ declare module "@polkadot/api-base/types/events" {
                     id: H256,
                     origin: CumulusPrimitivesCoreAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
-                    success: bool
+                    success: bool,
                 ],
                 {
                     id: H256;
@@ -506,7 +534,7 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     id: H256,
                     origin: CumulusPrimitivesCoreAggregateMessageOrigin,
-                    error: FrameSupportMessagesProcessMessageError
+                    error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
@@ -568,7 +596,7 @@ declare module "@polkadot/api-base/types/events" {
                     cancelling: AccountId32,
                     timepoint: PalletMultisigTimepoint,
                     multisig: AccountId32,
-                    callHash: U8aFixed
+                    callHash: U8aFixed,
                 ],
                 {
                     cancelling: AccountId32;
@@ -585,7 +613,7 @@ declare module "@polkadot/api-base/types/events" {
                     timepoint: PalletMultisigTimepoint,
                     multisig: AccountId32,
                     callHash: U8aFixed,
-                    result: Result<Null, SpRuntimeDispatchError>
+                    result: Result<Null, SpRuntimeDispatchError>,
                 ],
                 {
                     approving: AccountId32;
@@ -663,7 +691,7 @@ declare module "@polkadot/api-base/types/events" {
                     origin: StagingXcmV4Location,
                     queryId: u64,
                     expectedQuerier: StagingXcmV4Location,
-                    maybeActualQuerier: Option<StagingXcmV4Location>
+                    maybeActualQuerier: Option<StagingXcmV4Location>,
                 ],
                 {
                     origin: StagingXcmV4Location;
@@ -725,7 +753,10 @@ declare module "@polkadot/api-base/types/events" {
                 [queryId: u64, palletIndex: u8, callIndex: u8],
                 { queryId: u64; palletIndex: u8; callIndex: u8 }
             >;
-            /** Query response has been received and query is removed. There was a general error with dispatching the notification call. */
+            /**
+             * Query response has been received and query is removed. There was a general error with dispatching the
+             * notification call.
+             */
             NotifyDispatchError: AugmentedEvent<
                 ApiType,
                 [queryId: u64, palletIndex: u8, callIndex: u8],
@@ -733,7 +764,8 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /**
              * Query response has been received and query is removed. The registered notification could not be dispatched
-             * because the dispatch weight is greater than the maximum weight originally budgeted by this runtime for the query result.
+             * because the dispatch weight is greater than the maximum weight originally budgeted by this runtime for the
+             * query result.
              */
             NotifyOverweight: AugmentedEvent<
                 ApiType,
@@ -742,7 +774,7 @@ declare module "@polkadot/api-base/types/events" {
                     palletIndex: u8,
                     callIndex: u8,
                     actualWeight: SpWeightsWeightV2Weight,
-                    maxBudgetedWeight: SpWeightsWeightV2Weight
+                    maxBudgetedWeight: SpWeightsWeightV2Weight,
                 ],
                 {
                     queryId: u64;
@@ -761,13 +793,19 @@ declare module "@polkadot/api-base/types/events" {
                 [location: XcmVersionedLocation, queryId: u64],
                 { location: XcmVersionedLocation; queryId: u64 }
             >;
-            /** A given location which had a version change subscription was dropped owing to an error sending the notification to it. */
+            /**
+             * A given location which had a version change subscription was dropped owing to an error sending the notification
+             * to it.
+             */
             NotifyTargetSendFail: AugmentedEvent<
                 ApiType,
                 [location: StagingXcmV4Location, queryId: u64, error: XcmV3TraitsError],
                 { location: StagingXcmV4Location; queryId: u64; error: XcmV3TraitsError }
             >;
-            /** Query response has been received and is ready for taking with `take_response`. There is no registered notification call. */
+            /**
+             * Query response has been received and is ready for taking with `take_response`. There is no registered
+             * notification call.
+             */
             ResponseReady: AugmentedEvent<
                 ApiType,
                 [queryId: u64, response: StagingXcmV4Response],
@@ -782,7 +820,7 @@ declare module "@polkadot/api-base/types/events" {
                     origin: StagingXcmV4Location,
                     destination: StagingXcmV4Location,
                     message: StagingXcmV4Xcm,
-                    messageId: U8aFixed
+                    messageId: U8aFixed,
                 ],
                 {
                     origin: StagingXcmV4Location;
@@ -869,7 +907,7 @@ declare module "@polkadot/api-base/types/events" {
                     delegator: AccountId32,
                     pool: PalletPooledStakingTargetPool,
                     staked: u128,
-                    released: u128
+                    released: u128,
                 ],
                 {
                     candidate: AccountId32;
@@ -908,7 +946,7 @@ declare module "@polkadot/api-base/types/events" {
                     delegator: AccountId32,
                     from: PalletPooledStakingTargetPool,
                     pending: u128,
-                    released: u128
+                    released: u128,
                 ],
                 {
                     candidate: AccountId32;
@@ -954,7 +992,7 @@ declare module "@polkadot/api-base/types/events" {
                     targetShares: u128,
                     targetStake: u128,
                     pendingLeaving: u128,
-                    released: u128
+                    released: u128,
                 ],
                 {
                     candidate: AccountId32;
@@ -1096,7 +1134,10 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
-            /** New session has happened. Note that the argument is the session index, not the block number as the type might suggest. */
+            /**
+             * New session has happened. Note that the argument is the session index, not the block number as the type might
+             * suggest.
+             */
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
@@ -1109,7 +1150,7 @@ declare module "@polkadot/api-base/types/events" {
                     streamId: u64,
                     oldConfig: PalletStreamPaymentStreamConfig,
                     newConfig: PalletStreamPaymentStreamConfig,
-                    depositChange: Option<PalletStreamPaymentDepositChange>
+                    depositChange: Option<PalletStreamPaymentDepositChange>,
                 ],
                 {
                     streamId: u64;
@@ -1125,7 +1166,7 @@ declare module "@polkadot/api-base/types/events" {
                     requestNonce: u32,
                     requester: PalletStreamPaymentParty,
                     oldConfig: PalletStreamPaymentStreamConfig,
-                    newConfig: PalletStreamPaymentStreamConfig
+                    newConfig: PalletStreamPaymentStreamConfig,
                 ],
                 {
                     streamId: u64;
@@ -1231,6 +1272,14 @@ declare module "@polkadot/api-base/types/events" {
             Paid: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
             /** A payment failed and can be retried. */
             PaymentFailed: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
+            /** New proposal. */
+            Proposed: AugmentedEvent<ApiType, [proposalIndex: u32], { proposalIndex: u32 }>;
+            /** A proposal was rejected; funds were slashed. */
+            Rejected: AugmentedEvent<
+                ApiType,
+                [proposalIndex: u32, slashed: u128],
+                { proposalIndex: u32; slashed: u128 }
+            >;
             /** Spending has finished; this is the amount that rolls over until next spend. */
             Rollover: AugmentedEvent<ApiType, [rolloverBalance: u128], { rolloverBalance: u128 }>;
             /** A new spend proposal has been approved. */
@@ -1241,7 +1290,10 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** We have ended a spend period and will now allocate funds. */
             Spending: AugmentedEvent<ApiType, [budgetRemaining: u128], { budgetRemaining: u128 }>;
-            /** A spend was processed and removed from the storage. It might have been successfully paid or it may have expired. */
+            /**
+             * A spend was processed and removed from the storage. It might have been successfully paid or it may have
+             * expired.
+             */
             SpendProcessed: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
             /** The inactive funds of the pallet have been updated. */
             UpdatedInactive: AugmentedEvent<

@@ -24,6 +24,7 @@ import type {
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
+    CumulusPalletDmpQueueMigrationState,
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     CumulusPalletParachainSystemUnincludedSegmentAncestor,
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
@@ -36,8 +37,6 @@ import type {
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportDispatchPerDispatchClassWeight,
-    FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
-    FrameSupportTokensMiscIdAmountRuntimeHoldReason,
     FrameSystemAccountInfo,
     FrameSystemCodeUpgradeAuthorization,
     FrameSystemEventRecord,
@@ -50,6 +49,8 @@ import type {
     PalletAssetsAssetMetadata,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
+    PalletBalancesIdAmountRuntimeFreezeReason,
+    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletDataPreserversRegisteredProfile,
@@ -117,7 +118,8 @@ declare module "@polkadot/api-base/types/storage" {
         asyncBacking: {
             /**
              * First tuple element is the highest slot that has been seen in the history of this chain. Second tuple element
-             * is the number of authored blocks so far. This is a strictly-increasing value if T::AllowMultipleBlocksPerSlot = false.
+             * is the number of authored blocks so far. This is a strictly-increasing value if T::AllowMultipleBlocksPerSlot =
+             * false.
              */
             slotInfo: AugmentedQuery<ApiType, () => Observable<Option<ITuple<[u64, u32]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
@@ -204,25 +206,22 @@ declare module "@polkadot/api-base/types/storage" {
             /** Freeze locks on account balances. */
             freezes: AugmentedQuery<
                 ApiType,
-                (
-                    arg: AccountId32 | string | Uint8Array
-                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeFreezeReason>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeFreezeReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (
-                    arg: AccountId32 | string | Uint8Array
-                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeHoldReason>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeHoldReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** The total units of outstanding deactivated balance in the system. */
             inactiveIssuance: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             /**
-             * Any liquidity locks on some account balances. NOTE: Should only be accessed when setting, changing and freeing a lock.
+             * Any liquidity locks on some account balances. NOTE: Should only be accessed when setting, changing and freeing
+             * a lock.
              *
              * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
              */
@@ -322,6 +321,13 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        dmpQueue: {
+            /** The migration state of this pallet. */
+            migrationStatus: AugmentedQuery<ApiType, () => Observable<CumulusPalletDmpQueueMigrationState>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         foreignAssets: {
             /** The holdings of a specific account for a specific asset. */
             account: AugmentedQuery<
@@ -362,18 +368,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [u16]
             > &
                 QueryableStorageEntry<ApiType, [u16]>;
-            /**
-             * The asset ID enforced for the next asset creation, if any present. Otherwise, this storage item has no effect.
-             *
-             * This can be useful for setting up constraints for IDs of the new assets. For example, by providing an initial
-             * [`NextAssetId`] and using the [`crate::AutoIncAssetId`] callback, an auto-increment model can be applied to all
-             * new asset IDs.
-             *
-             * The initial next asset ID can be set using the [`GenesisConfig`] or the
-             * [SetNextAssetId](`migration::next_asset_id::SetNextAssetId`) migration.
-             */
-            nextAssetId: AugmentedQuery<ApiType, () => Observable<Option<u16>>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -647,13 +641,15 @@ declare module "@polkadot/api-base/types/storage" {
             /**
              * The last downward message queue chain head we have observed.
              *
-             * This value is loaded before and saved after processing inbound downward messages carried by the system inherent.
+             * This value is loaded before and saved after processing inbound downward messages carried by the system
+             * inherent.
              */
             lastDmqMqcHead: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
             /**
              * The message queue chain heads we have observed per each channel incoming channel.
              *
-             * This value is loaded before and saved after processing inbound downward messages carried by the system inherent.
+             * This value is loaded before and saved after processing inbound downward messages carried by the system
+             * inherent.
              */
             lastHrmpMqcHeads: AugmentedQuery<ApiType, () => Observable<BTreeMap<u32, H256>>, []> &
                 QueryableStorageEntry<ApiType, []>;
@@ -665,7 +661,8 @@ declare module "@polkadot/api-base/types/storage" {
             lastRelayChainBlockNumber: AugmentedQuery<ApiType, () => Observable<u32>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
-             * Validation code that is set by the parachain and is to be communicated to collator and consequently the relay-chain.
+             * Validation code that is set by the parachain and is to be communicated to collator and consequently the
+             * relay-chain.
              *
              * This will be cleared in `on_initialize` of each new block if no other pallet already set the value.
              */
@@ -1042,7 +1039,10 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /** List of all the keys in `RelayStorageRoot`. Used to remove the oldest key without having to iterate over all of them. */
+            /**
+             * List of all the keys in `RelayStorageRoot`. Used to remove the oldest key without having to iterate over all of
+             * them.
+             */
             relayStorageRootKeys: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
@@ -1117,7 +1117,10 @@ declare module "@polkadot/api-base/types/storage" {
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
-            /** True if the underlying economic identities or weighting behind the validators has changed in the queued validator set. */
+            /**
+             * True if the underlying economic identities or weighting behind the validators has changed in the queued
+             * validator set.
+             */
             queuedChanged: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /**
              * The queued keys for the next session. When the next session begins, these keys will be used to determine the
@@ -1226,7 +1229,8 @@ declare module "@polkadot/api-base/types/storage" {
              * Mapping between a topic (represented by T::Hash) and a vector of indexes of events in the `<Events<T>>` list.
              *
              * All topic vectors have deterministic storage locations depending on the topic. This allows light-clients to
-             * leverage the changes trie storage tracking mechanism and in case of changes fetch the list of events of interest.
+             * leverage the changes trie storage tracking mechanism and in case of changes fetch the list of events of
+             * interest.
              *
              * The value has the type `(BlockNumberFor<T>, EventIndex)` because if we used only just the `EventIndex` then in
              * case if the topic has the same contents on the next block no notification will be triggered thus the event
@@ -1338,7 +1342,8 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Set of parathreads that have already sent an XCM message to buy a core recently. Used to avoid 2 collators
-             * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same parathread.
+             * buying a core at the same time, because it is only possible to buy 1 core in 1 relay block for the same
+             * parathread.
              */
             inFlightOrders: AugmentedQuery<
                 ApiType,

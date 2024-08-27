@@ -48,7 +48,8 @@ declare module "@polkadot/api-base/types/consts" {
             /** The maximum number of individual freeze locks that can exist on an account at any time. */
             maxFreezes: u32 & AugmentedConst<ApiType>;
             /**
-             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation.
+             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight
+             * estimation.
              *
              * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
              */
@@ -101,7 +102,10 @@ declare module "@polkadot/api-base/types/consts" {
             basicDeposit: u128 & AugmentedConst<ApiType>;
             /** The amount held on deposit per encoded byte for a registered identity. */
             byteDeposit: u128 & AugmentedConst<ApiType>;
-            /** Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
+            /**
+             * Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating
+             * judgements.
+             */
             maxRegistrars: u32 & AugmentedConst<ApiType>;
             /** The maximum number of sub-accounts allowed per identified account. */
             maxSubAccounts: u32 & AugmentedConst<ApiType>;
@@ -160,7 +164,8 @@ declare module "@polkadot/api-base/types/consts" {
              */
             maxStale: u32 & AugmentedConst<ApiType>;
             /**
-             * The amount of weight (if any) which should be provided to the message queue for servicing enqueued items `on_initialize`.
+             * The amount of weight (if any) which should be provided to the message queue for servicing enqueued items
+             * `on_initialize`.
              *
              * This may be legitimately `None` in the case that you will call `ServiceQueues::service_queues` manually or set
              * [`Self::IdleMaxServiceWeight`] to have it run in `on_idle`.
@@ -171,7 +176,8 @@ declare module "@polkadot/api-base/types/consts" {
         };
         multisig: {
             /**
-             * The base amount of currency needed to reserve for creating a multisig execution or to store a dispatch call for later.
+             * The base amount of currency needed to reserve for creating a multisig execution or to store a dispatch call for
+             * later.
              *
              * This is held for an additional storage item whose value size is `4 + sizeof((BlockNumber, Balance, AccountId))`
              * bytes and whose key size is `32 + sizeof(AccountId)` bytes.
@@ -199,12 +205,14 @@ declare module "@polkadot/api-base/types/consts" {
              * All eligible candidates are stored in a sorted list that is modified each time delegations changes. It is safer
              * to bound this list, in which case eligible candidate could fall out of this list if they have less stake than
              * the top `EligibleCandidatesBufferSize` eligible candidates. One of this top candidates leaving will then not
-             * bring the dropped candidate in the list. An extrinsic is available to manually bring back such dropped candidate.
+             * bring the dropped candidate in the list. An extrinsic is available to manually bring back such dropped
+             * candidate.
              */
             eligibleCandidatesBufferSize: u32 & AugmentedConst<ApiType>;
             /**
              * When creating the first Shares for a candidate the supply can arbitrary. Picking a value too high is a barrier
-             * of entry for staking, which will increase overtime as the value of each share will increase due to auto compounding.
+             * of entry for staking, which will increase overtime as the value of each share will increase due to auto
+             * compounding.
              */
             initialAutoCompoundingShareValue: u128 & AugmentedConst<ApiType>;
             /**
@@ -235,7 +243,8 @@ declare module "@polkadot/api-base/types/consts" {
             /**
              * The amount of currency needed per announcement made.
              *
-             * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes) into a pre-existing storage value.
+             * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes) into a pre-existing
+             * storage value.
              */
             announcementDepositFactor: u128 & AugmentedConst<ApiType>;
             /** The maximum amount of time-delayed announcements that are allowed to be pending. */
@@ -253,7 +262,8 @@ declare module "@polkadot/api-base/types/consts" {
              * The amount of currency needed per proxy added.
              *
              * This is held for adding 32 bytes plus an instance of `ProxyType` more into a pre-existing storage value. Thus,
-             * when configuring `ProxyDepositFactor` one should take into account `32 + proxy_type.encode().len()` bytes of data.
+             * when configuring `ProxyDepositFactor` one should take into account `32 + proxy_type.encode().len()` bytes of
+             * data.
              */
             proxyDepositFactor: u128 & AugmentedConst<ApiType>;
             /** Generic const */
@@ -363,6 +373,15 @@ declare module "@polkadot/api-base/types/consts" {
             palletId: FrameSupportPalletId & AugmentedConst<ApiType>;
             /** The period during which an approved treasury spend has to be claimed. */
             payoutPeriod: u32 & AugmentedConst<ApiType>;
+            /**
+             * Fraction of a proposal's value that should be bonded in order to place the proposal. An accepted proposal gets
+             * these back. A rejected proposal does not.
+             */
+            proposalBond: Permill & AugmentedConst<ApiType>;
+            /** Maximum amount of funds that should be placed in a deposit for making a proposal. */
+            proposalBondMaximum: Option<u128> & AugmentedConst<ApiType>;
+            /** Minimum amount of funds that should be placed in a deposit for making a proposal. */
+            proposalBondMinimum: u128 & AugmentedConst<ApiType>;
             /** Period between successive spends. */
             spendPeriod: u32 & AugmentedConst<ApiType>;
             /** Generic const */
@@ -400,7 +419,8 @@ declare module "@polkadot/api-base/types/consts" {
             /**
              * A configuration for base priority of unsigned transactions.
              *
-             * This is exposed so that it can be tuned for particular runtime, when multiple pallets send unsigned transactions.
+             * This is exposed so that it can be tuned for particular runtime, when multiple pallets send unsigned
+             * transactions.
              */
             unsignedPriority: u64 & AugmentedConst<ApiType>;
             /** Generic const */
@@ -408,29 +428,12 @@ declare module "@polkadot/api-base/types/consts" {
         };
         xcmpQueue: {
             /**
-             * Maximal number of outbound XCMP channels that can have messages queued at the same time.
-             *
-             * If this is reached, then no further messages can be sent to channels that do not yet have a message queued.
-             * This should be set to the expected maximum of outbound channels which is determined by [`Self::ChannelInfo`].
-             * It is important to set this large enough, since otherwise the congestion control protocol will not work as
-             * intended and messages may be dropped. This value increases the PoV and should therefore not be picked too high.
-             * Governance needs to pay attention to not open more channels than this value.
-             */
-            maxActiveOutboundChannels: u32 & AugmentedConst<ApiType>;
-            /**
              * The maximum number of inbound XCMP channels that can be suspended simultaneously.
              *
              * Any further channel suspensions will fail and messages may get dropped without further notice. Choosing a high
              * value (1000) is okay; the trade-off that is described in [`InboundXcmpSuspended`] still applies at that scale.
              */
             maxInboundSuspended: u32 & AugmentedConst<ApiType>;
-            /**
-             * The maximal page size for HRMP message pages.
-             *
-             * A lower limit can be set dynamically, but this is the hard-limit for the PoV worst case benchmarking. The limit
-             * for the size of a message is slightly below this, since some overhead is incurred for encoding the format.
-             */
-            maxPageSize: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
