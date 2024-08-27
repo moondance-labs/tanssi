@@ -176,7 +176,10 @@ sp_api::mock_impl_runtime_apis! {
 }
 
 #[derive(Clone)]
-pub struct RelayChain(pub Arc<TestClient>);
+pub struct RelayChain {
+    pub client: Arc<TestClient>,
+    pub block_import_iterations: u32,
+}
 
 #[async_trait]
 impl RelayChainInterface for RelayChain {
@@ -235,9 +238,9 @@ impl RelayChainInterface for RelayChain {
             // The maximum legal size of a POV block, in bytes.
             max_pov_size: 5_000_000u32,
         };
-        let best = self.0.chain_info().best_hash;
+        let best = self.client.chain_info().best_hash;
         let header = self
-            .0
+            .client
             .header(best)
             .ok()
             .flatten()
@@ -279,17 +282,21 @@ impl RelayChainInterface for RelayChain {
     async fn import_notification_stream(
         &self,
     ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        log::info!("notification stream");
-        Ok(Box::pin(futures::stream::iter([PHeader {
-            parent_hash: Default::default(),
-            number: 1u32,
-            // The state trie merkle root
-            state_root: Default::default(),
-            // The merkle root of the extrinsics.
-            extrinsics_root: Default::default(),
-            // A chain-specific digest of data useful for light clients or referencing auxiliary data.
-            digest: Default::default(),
-        }])))
+        let mut notifications = vec![];
+        for _n in 0..self.block_import_iterations {
+            // It does not matter if we push always the same header, blocks will be created anyway
+            notifications.push(PHeader {
+                parent_hash: Default::default(),
+                number: 1u32,
+                // The state trie merkle root
+                state_root: Default::default(),
+                // The merkle root of the extrinsics.
+                extrinsics_root: Default::default(),
+                // A chain-specific digest of data useful for light clients or referencing auxiliary data.
+                digest: Default::default(),
+            });
+        }
+        Ok(Box::pin(futures::stream::iter(notifications)))
     }
 
     async fn finality_notification_stream(

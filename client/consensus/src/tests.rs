@@ -184,7 +184,10 @@ async fn collate_returns_correct_block() {
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
     let spawner = DummySpawner;
-    let relay_client = RelayChain(client.clone());
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 1u32,
+    };
 
     // Build the collator
     let mut collator = {
@@ -309,7 +312,10 @@ async fn collate_lookahead_returns_correct_block() {
     let backend = builder.backend();
     let client = Arc::new(builder.build());
     let environ = DummyFactory(client.clone());
-    let relay_client = RelayChain(client.clone());
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 1u32,
+    };
     let spawner = sp_core::testing::TaskExecutor::new();
     let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
         Default::default(),
@@ -400,6 +406,121 @@ async fn collate_lookahead_returns_correct_block() {
 }
 
 #[tokio::test]
+async fn collate_lookahead_for_2_relay_imports_goes_till_num_4() {
+    use substrate_test_runtime_client::DefaultTestClientBuilderExt;
+    use tokio_util::sync::CancellationToken;
+    let _ = sp_tracing::try_init_simple();
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+
+    // Copy of the keystore needed for tanssi_claim_slot()
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let builder = TestClientBuilder::new();
+    let backend = builder.backend();
+    let client = Arc::new(builder.build());
+    let environ = DummyFactory(client.clone());
+    // Two relay imports
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 2u32,
+    };
+    let spawner = sp_core::testing::TaskExecutor::new();
+    let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
+        true.into(),
+        None,
+        spawner.clone(),
+        client.clone(),
+    );
+    let mock_runtime_api = MockRuntimeApi::new(Some(1000u32.into()));
+
+    let (overseer, handle) = dummy_overseer_builder(spawner.clone(), MockSupportsParachains, None)
+        .unwrap()
+        .replace_runtime_api(|_| mock_runtime_api)
+        .build()
+        .unwrap();
+    spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+
+    // Build the collator
+    let params = LookAheadParams {
+        create_inherent_data_providers: move |_block_hash, _| async move {
+            let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                Timestamp::current(),
+                SlotDuration::from_millis(SLOT_DURATION_MS),
+            );
+
+            Ok((slot,))
+        },
+        block_import: environ.0.clone(),
+        relay_client: relay_client.clone(),
+        keystore: keystore.into(),
+        para_id: 1000.into(),
+        proposer: ConsensusProposer::new(environ.clone()),
+        collator_service: CollatorService::new(
+            client.clone(),
+            Arc::new(spawner.clone()),
+            Arc::new(move |_, _| {}),
+            Arc::new(environ.clone()),
+        ),
+        authoring_duration: Duration::from_millis(500),
+        cancellation_token: CancellationToken::new(),
+        code_hash_provider: DummyCodeHashProvider,
+        collator_key: CollatorPair::generate().0,
+        force_authoring: false,
+        get_orchestrator_aux_data: move |_block_hash, _extra| async move {
+            let aux_data = OrchestratorAuraWorkerAuxData {
+                authorities: vec![alice_public.into()],
+                // This is the orchestrator consensus, it does not have a slot frequency
+                slot_freq: None,
+            };
+
+            Ok(aux_data)
+        },
+        get_current_slot_duration: move |_block_hash| SlotDuration::from_millis(6_000),
+        overseer_handle: OverseerHandle::new(handle),
+        relay_chain_slot_duration: Duration::from_secs(6),
+        para_client: environ.clone().into(),
+        sync_oracle: DummyOracle,
+        para_backend: backend,
+        orchestrator_client: environ.into(),
+        orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+        orchestrator_tx_pool,
+    };
+
+    let (fut, _exit_notification_receiver) = crate::collators::lookahead::run::<
+        _,
+        Block,
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params);
+
+    fut.await;
+
+    // We only had one notification import, but n_built goes from 0..2. Since we are not mocking the async backing params, then
+    // this is going to create 2 blocks on to of the latest
+    assert_eq!(client.chain_info().best_number, 4);
+}
+
+#[tokio::test]
 async fn collate_lookahead_returns_correct_block_for_parathreads() {
     use substrate_test_runtime_client::DefaultTestClientBuilderExt;
     use tokio_util::sync::CancellationToken;
@@ -420,7 +541,10 @@ async fn collate_lookahead_returns_correct_block_for_parathreads() {
     let backend = builder.backend();
     let client = Arc::new(builder.build());
     let environ = DummyFactory(client.clone());
-    let relay_client = RelayChain(client.clone());
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 1u32,
+    };
     let spawner = sp_core::testing::TaskExecutor::new();
     let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
         Default::default(),
@@ -535,7 +659,10 @@ async fn collate_lookahead_should_buy_core_for_parathread() {
     let backend = builder.backend();
     let client = Arc::new(builder.build());
     let environ = DummyFactory(client.clone());
-    let relay_client = RelayChain(client.clone());
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 1u32,
+    };
     let spawner = sp_core::testing::TaskExecutor::new();
     let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
         Default::default(),
@@ -627,4 +754,124 @@ async fn collate_lookahead_should_buy_core_for_parathread() {
     // the block should not have been created, but the tx should be in the pool
     assert_eq!(client.chain_info().best_number, 0);
     assert_eq!(orchestrator_tx_pool.status().ready, 1);
+}
+
+#[tokio::test]
+async fn collate_lookahead_for_2_relay_imports_but_with_cancellation_token_stops_in_2() {
+    use substrate_test_runtime_client::DefaultTestClientBuilderExt;
+    use tokio_util::sync::CancellationToken;
+    let _ = sp_tracing::try_init_simple();
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+
+    // Copy of the keystore needed for tanssi_claim_slot()
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let builder = TestClientBuilder::new();
+    let backend = builder.backend();
+    let client = Arc::new(builder.build());
+    let environ = DummyFactory(client.clone());
+    // Two relay imports
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 2u32,
+    };
+    let spawner = sp_core::testing::TaskExecutor::new();
+    let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
+        true.into(),
+        None,
+        spawner.clone(),
+        client.clone(),
+    );
+    let mock_runtime_api = MockRuntimeApi::new(Some(1000u32.into()));
+
+    let (overseer, handle) = dummy_overseer_builder(spawner.clone(), MockSupportsParachains, None)
+        .unwrap()
+        .replace_runtime_api(|_| mock_runtime_api)
+        .build()
+        .unwrap();
+    spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+
+    let cancellation_token = CancellationToken::new();
+
+    // Build the collator
+    let params = LookAheadParams {
+        create_inherent_data_providers: move |_block_hash, _| async move {
+            let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                Timestamp::current(),
+                SlotDuration::from_millis(SLOT_DURATION_MS),
+            );
+
+            Ok((slot,))
+        },
+        block_import: environ.0.clone(),
+        relay_client: relay_client.clone(),
+        keystore: keystore.into(),
+        para_id: 1000.into(),
+        proposer: ConsensusProposer::new(environ.clone()),
+        collator_service: CollatorService::new(
+            client.clone(),
+            Arc::new(spawner.clone()),
+            Arc::new(move |_, _| {}),
+            Arc::new(environ.clone()),
+        ),
+        authoring_duration: Duration::from_millis(500),
+        cancellation_token: cancellation_token.clone(),
+        code_hash_provider: DummyCodeHashProvider,
+        collator_key: CollatorPair::generate().0,
+        force_authoring: false,
+        get_orchestrator_aux_data: move |_block_hash, _extra| async move {
+            let aux_data = OrchestratorAuraWorkerAuxData {
+                authorities: vec![alice_public.into()],
+                // This is the orchestrator consensus, it does not have a slot frequency
+                slot_freq: None,
+            };
+
+            Ok(aux_data)
+        },
+        get_current_slot_duration: move |_block_hash| SlotDuration::from_millis(6_000),
+        overseer_handle: OverseerHandle::new(handle),
+        relay_chain_slot_duration: Duration::from_secs(6),
+        para_client: environ.clone().into(),
+        sync_oracle: DummyOracle,
+        para_backend: backend,
+        orchestrator_client: environ.into(),
+        orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+        orchestrator_tx_pool,
+    };
+
+    // we issue the cancellation token, which should exist the loop after creating the first blocks
+    tokio::spawn(async move { cancellation_token.cancel() });
+
+    let (fut, _exit_notification_receiver) = crate::collators::lookahead::run::<
+        _,
+        Block,
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params);
+
+    fut.await;
+
+    // We only had one notification import, but n_built goes from 0..2. Since we are not mocking the async backing params, then
+    // this is going to create 2 blocks on to of the latest
+    assert_eq!(client.chain_info().best_number, 2);
 }
