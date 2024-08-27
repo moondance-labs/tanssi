@@ -657,8 +657,7 @@ fn test_authors_paras_inserted_a_posteriori() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
@@ -676,8 +675,7 @@ fn test_authors_paras_inserted_a_posteriori() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
                 1002.into()
@@ -732,8 +730,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -780,8 +777,7 @@ fn test_paras_registered_but_zero_credits() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -826,8 +822,7 @@ fn test_paras_registered_but_not_enough_credits() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -893,8 +888,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1064,8 +1058,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1100,8 +1093,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1185,8 +1177,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1241,8 +1232,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1339,8 +1329,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1427,8 +1416,7 @@ fn test_credits_with_purchase_can_be_combined() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1485,8 +1473,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1568,8 +1555,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1623,8 +1609,7 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
@@ -1682,8 +1667,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
                 empty_genesis_data()
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
                 1001.into()
