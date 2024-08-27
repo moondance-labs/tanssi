@@ -77,7 +77,18 @@ impl<T: Config> XCMNotifier<T> for () {
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
 pub struct InFlightCoreBuyingOrder<BN> {
     para_id: ParaId,
     query_id: QueryId,
@@ -126,7 +137,6 @@ pub mod pallet {
     };
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
@@ -156,7 +166,8 @@ pub mod pallet {
             + EncodeLike
             + Clone
             + PartialEq
-            + sp_std::fmt::Debug;
+            + sp_std::fmt::Debug
+            + MaxEncodedLen;
 
         /// Get the parathread params. Used to verify that the para id is a parathread.
         // TODO: and in the future to restrict the ability to buy a core depending on slot frequency
@@ -311,7 +322,9 @@ pub mod pallet {
     #[pallet::storage]
     pub type CollatorSignatureNonce<T: Config> = StorageMap<_, Twox128, ParaId, u64, ValueQuery>;
 
-    #[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
+    #[derive(
+        Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo, MaxEncodedLen,
+    )]
     #[scale_info(skip_type_params(T))]
     pub struct RelayXcmWeightConfigInner<T> {
         pub buy_execution_cost: u128,
