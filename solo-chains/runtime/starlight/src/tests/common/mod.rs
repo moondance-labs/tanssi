@@ -70,7 +70,7 @@ pub fn session_to_block(n: u32) -> u32 {
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
-    block_number + 2
+    block_number + 1
 }
 
 pub fn babe_authorities() -> Vec<babe_primitives::AuthorityId> {
@@ -204,9 +204,9 @@ pub fn start_block() {
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
-    TanssiCollatorAssignment::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
+    TanssiCollatorAssignment::on_initialize(System::block_number());
     let maybe_mock_inherent = take_new_inherent_data();
     if let Some(mock_inherent_data) = maybe_mock_inherent {
         set_paras_inherent(mock_inherent_data);
@@ -218,11 +218,11 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
-    Grandpa::on_finalize(System::block_number());
-    TanssiCollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
-    Initializer::on_finalize(System::block_number());
+    Grandpa::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
+    Initializer::on_finalize(System::block_number());
+    TanssiCollatorAssignment::on_finalize(System::block_number());
 }
 
 pub fn run_block() {

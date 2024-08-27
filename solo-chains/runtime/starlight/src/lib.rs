@@ -2670,7 +2670,12 @@ pub struct BabeGetRandomnessForNextBlock;
 
 impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
     fn should_end_session(n: u32) -> bool {
-        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(n)
+        n != 1 && {
+            let diff = Babe::current_slot()
+                .saturating_add(1u64)
+                .saturating_sub(Babe::current_epoch_start());
+            *diff >= Babe::current_epoch().duration
+        }
     }
 
     fn get_randomness() -> [u8; 32] {
