@@ -32,6 +32,66 @@ use {
 };
 
 #[test]
+fn test_collator_assignment_rotation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 5,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            // Alice and Bob to 1001
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            let initial_assignment = assignment.clone();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+
+            let rotation_period = CollatorConfiguration::config().full_rotation_period;
+            run_to_session(rotation_period - 2);
+            set_new_randomness_data(Some([1; 32]));
+            // run_block();
+
+            assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_none());
+
+            run_to_session(rotation_period - 1);
+            run_block();
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain(),
+                initial_assignment,
+            );
+            assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_some());
+
+            run_to_session(rotation_period);
+            run_block();
+            // Assignment changed
+            assert_ne!(
+                TanssiCollatorAssignment::collator_container_chain(),
+                initial_assignment,
+            );
+        });
+}
+
+#[test]
 fn test_author_collation_aura_change_of_authorities_on_session() {
     ExtBuilder::default()
         .with_balances(vec![

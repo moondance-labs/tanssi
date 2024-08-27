@@ -70,7 +70,7 @@ pub fn session_to_block(n: u32) -> u32 {
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
-    block_number + 1
+    block_number + 2
 }
 
 pub fn babe_authorities() -> Vec<babe_primitives::AuthorityId> {
@@ -204,6 +204,7 @@ pub fn start_block() {
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
+    TanssiCollatorAssignment::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
     let maybe_mock_inherent = take_new_inherent_data();
@@ -218,6 +219,7 @@ pub fn end_block() {
     // Finalize the block
     Babe::on_finalize(System::block_number());
     Grandpa::on_finalize(System::block_number());
+    TanssiCollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
@@ -643,6 +645,13 @@ pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::Inheren
     frame_support::storage::unhashed::put(b"ParasInherent", &data);
 }
 
+pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
+    frame_support::storage::unhashed::put(
+        primitives::well_known_keys::CURRENT_BLOCK_RANDOMNESS,
+        &data,
+    );
+}
+
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
@@ -1059,3 +1068,9 @@ pub fn storage_map_final_key<H: frame_support::StorageHasher>(
 
     final_key
 }
+
+// pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
+//     set_new_inherent_data(MockInherentData {
+//         random_seed: Some(random_seed),
+//     });
+// }
