@@ -4,8 +4,8 @@ import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "CT1001",
-    title: "Data preservers pallet test suite",
+    id: "DTR0301",
+    title: "Data preservers pallet relay test suite",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -248,7 +248,6 @@ describeSuite({
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceDeleteProfile(profileId);
                 const signedTx2 = await polkadotJs.tx.sudo.sudo(tx2).signAsync(sudo_alice);
-                await context.createBlock(); // session boundary block cannot contain tx
                 await context.createBlock([signedTx2]);
 
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);
@@ -290,7 +289,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
                     paraId,
                     slotFrequency,
                     containerChainGenesisData
@@ -362,7 +361,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
                     paraId,
                     slotFrequency,
                     containerChainGenesisData
@@ -434,7 +433,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
                     paraId,
                     slotFrequency,
                     containerChainGenesisData
@@ -454,7 +453,6 @@ describeSuite({
 
                 const assignTx = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");
                 const unassignTx = polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId);
-                await context.createBlock();
                 await context.createBlock([await assignTx.signAsync(sudo_alice)]);
                 await context.createBlock([await unassignTx.signAsync(sudo_alice)]);
 
@@ -509,7 +507,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
                     paraId,
                     slotFrequency,
                     containerChainGenesisData
@@ -551,7 +549,7 @@ describeSuite({
 
         it({
             id: "E11",
-            title: "Container will be unassigned on deregister",
+            title: "Profile will be unassigned on container deregister",
             test: async function () {
                 const paraId = 2006;
                 const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
@@ -583,7 +581,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
                     paraId,
                     slotFrequency,
                     containerChainGenesisData
@@ -605,8 +603,7 @@ describeSuite({
                 await context.createBlock([await assignTx.signAsync(sudo_alice)]);
 
                 // Deregistering the container will remove the assignment
-                const deregisterTx = polkadotJs.tx.registrar.deregister(paraId);
-                await context.createBlock();
+                const deregisterTx = polkadotJs.tx.containerRegistrar.deregister(paraId);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(deregisterTx).signAsync(sudo_alice)]);
 
                 expect((await polkadotJs.query.dataPreservers.assignments(paraId)).toJSON()).to.deep.equal([]);
