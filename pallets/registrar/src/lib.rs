@@ -839,7 +839,7 @@ pub mod pallet {
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
-            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage)?;
+            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage);
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
@@ -896,7 +896,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
-                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
+                T::InnerRegistrar::schedule_para_downgrade(para_id);
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -933,7 +933,7 @@ pub mod pallet {
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
-            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
+            T::InnerRegistrar::schedule_para_upgrade(para_id);
 
             Ok(())
         }
