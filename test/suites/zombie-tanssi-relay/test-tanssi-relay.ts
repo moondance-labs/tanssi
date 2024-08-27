@@ -68,6 +68,9 @@ describeSuite({
                 expect(relayNetwork, "Relay API incorrect").to.contain("starlight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+
+                const para2000LifeCycle = await relayApi.query.paras.paraLifecycles(2002);
+                console.log("PARA LIFE CYCLE: ", para2000LifeCycle.toHuman());
             },
         });
 
@@ -211,6 +214,8 @@ describeSuite({
 
                 // Read raw chain spec file
                 const spec2002 = await fs.readFile("./specs/single-container-template-container-2002.json", "utf8");
+                const headData2002 = await fs.readFile("./specs/para-2002-genesis-state", "utf8");
+                console.log("HEAD DATA 2002: ", headData2002)
 
                 // Before registering container chain 2002, ensure that it has 0 blocks
                 // Since the RPC doesn't exist at this point, we need to get that from the relay
@@ -221,31 +226,34 @@ describeSuite({
                 expect(registered1.toJSON().includes(2002)).to.be.false;
 
                 const chainSpec2002 = JSON.parse(spec2002);
-                const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
-                const tx1 = relayApi.tx.registrar.register(2002, containerChainGenesisData);
+                const containerChainGenesisData = chainSpecToContainerChainGenesisData(relayApi, chainSpec2002);
+
+                const tx1 = relayApi.tx.containerRegistrar.register(2002, containerChainGenesisData, headData2002);
                 const purchasedCredits = 100000n;
                 const requiredBalance = purchasedCredits * 1_000_000n;
-                const tx2 = relayApi.tx.servicesPayment.purchaseCredits(2002, requiredBalance);
+                //const tx2 = relayApi.tx.servicesPayment.purchaseCredits(2002, requiredBalance);
 
-                const profileId = await relayApi.query.dataPreservers.nextProfileId();
+                // TODO: uncomment once we have data preservers
+/*              const profileId = await relayApi.query.dataPreservers.nextProfileId();
                 const profileTx = relayApi.tx.dataPreservers.createProfile({
                     url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
                     mode: "Bootnode",
                     assignmentRequest: "Free",
                 });
-
-                const tx3 = relayApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");
+ */
+                // const tx3 = relayApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");
                 const tx4 = relayApi.tx.containerRegistrar.markValidForCollating(2002);
                 // Send the batch transaction: [register, purchaseCredits, sudo(setBootNodes), sudo(markValidForCollating)]
                 const txBatch = relayApi.tx.utility.batchAll([
                     tx1,
-                    tx2,
+/*                     tx2,
                     profileTx,
-                    relayApi.tx.sudo.sudo(tx3),
+                    relayApi.tx.sudo.sudo(tx3), */
                     relayApi.tx.sudo.sudo(tx4),
                 ]);
                 await signAndSendAndInclude(txBatch, alice);
+                
                 // Check that pending para ids contains 2002
                 const registered2 = await relayApi.query.containerRegistrar.pendingParaIds();
                 const registered3 = await relayApi.query.containerRegistrar.registeredParaIds();

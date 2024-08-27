@@ -375,10 +375,11 @@ pub trait RegistrarHandler<AccountId> {
         who: AccountId,
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> DispatchResult;
+        head_data: Option<Vec<u8>>
+    ) -> Weight;
 
-    fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
-    fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
+    fn schedule_para_upgrade(id: ParaId) -> Weight;
+    fn schedule_para_downgrade(id: ParaId) -> Weight;
     fn deregister(id: ParaId);
     fn deregister_weight() -> Weight;
 }
@@ -388,16 +389,17 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         _who: AccountId,
         _id: ParaId,
         _genesis_storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> DispatchResult {
-        Ok(())
+        _head_data: Option<Vec<u8>>
+    ) -> Weight {
+        Weight::default()
     }
 
-    fn schedule_para_upgrade(_id: ParaId) -> DispatchResult {
-        Ok(())
+    fn schedule_para_upgrade(_id: ParaId) -> Weight {
+        Weight::default()
     }
 
-    fn schedule_para_downgrade(_id: ParaId) -> DispatchResult {
-        Ok(())
+    fn schedule_para_downgrade(_id: ParaId) -> Weight {
+        Weight::default()
     }
 
     fn deregister(_id: ParaId) {}

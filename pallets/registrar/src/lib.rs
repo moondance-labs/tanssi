@@ -466,9 +466,11 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<Vec<u8>>
         ) -> DispatchResult {
+            log::info!("ENTERING REGISTER ------");
             let account = ensure_signed(origin)?;
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, head_data)?;
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -574,7 +576,7 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, None)?;
             // Insert parathread params
             let params = ParathreadParamsTy { slot_frequency };
             ParathreadParams::<T>::insert(para_id, params);
@@ -667,7 +669,7 @@ pub mod pallet {
                 return Err(Error::<T>::InvalidRelayManagerSignature.into());
             }
 
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, None)?;
             // Insert parathread params
             if let Some(parathread_params) = parathread_params {
                 ParathreadParams::<T>::insert(para_id, parathread_params);
@@ -801,7 +803,9 @@ pub mod pallet {
             account: T::AccountId,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<Vec<u8>>
         ) -> DispatchResult {
+            log::info!("ENTERING DO REGISTER ------");
             let deposit = T::DepositAmount::get();
             // Verify we can hold
             if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
@@ -839,7 +843,7 @@ pub mod pallet {
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
-            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage)?;
+            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage, head_data);
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
@@ -852,6 +856,8 @@ pub mod pallet {
             ParaGenesisData::<T>::insert(para_id, genesis_data);
 
             ParaManager::<T>::insert(para_id, account);
+
+            log::info!("EXITING DO REGISTER ------");
 
             Ok(())
         }
@@ -896,7 +902,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
-                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
+                T::InnerRegistrar::schedule_para_downgrade(para_id);
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -933,7 +939,7 @@ pub mod pallet {
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
-            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
+            T::InnerRegistrar::schedule_para_upgrade(para_id);
 
             Ok(())
         }

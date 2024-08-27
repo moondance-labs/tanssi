@@ -1507,11 +1507,21 @@ where
         who: AccountId,
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
-    ) -> DispatchResult {
+        head_data: Option<Vec<u8>>
+    ) -> Weight {
         // Build HeadData
+        let mut genesis_head = HeadData(vec![]);
+        if let Some(data) = head_data {
+            genesis_head = HeadData(data);
+        } else {
+            log::warn!(
+                "Failed to register para id {} in relay chain: HeadData not specified!",
+                u32::from(id),
+            );
+        }
+
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
-            genesis_storage.into_iter().map(|x| x.into()).collect();
-        let genesis_head = HeadData(key_values.encode());
+        genesis_storage.into_iter().map(|x| x.into()).collect();
 
         // Check if the wasm code is present in storage
         let kv_code = key_values
@@ -1521,24 +1531,46 @@ where
         if let Some((_, code)) = kv_code {
             // Build ValidationCode
             let validation_code = ValidationCode(code);
-            RegistrarManager::register(who, id, genesis_head, validation_code)
+            if let Err(e) = RegistrarManager::register(who, id, genesis_head, validation_code) {
+                log::warn!(
+                    "Failed to register para id {} in relay chain: {:?}",
+                    u32::from(id),
+                    e
+                );
+            }
         } else {
-            return Err(DispatchError::Other("Code not found"));
+            log::warn!(
+                "Failed to register para id {} in relay chain: Code not found",
+                u32::from(id),
+            );
         }
+        Weight::default()
     }
 
-    fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
+    fn schedule_para_upgrade(id: ParaId) -> Weight {
         if !RegistrarManager::is_parachain(id) {
-            return RegistrarManager::make_parachain(id);
+            if let Err(e) = RegistrarManager::make_parachain(id){
+                log::warn!(
+                    "Failed to upgrade para id {} in relay chain: {:?}",
+                    u32::from(id),
+                    e
+                );
+            }
         }
-        Ok(())
+        Weight::default()
     }
 
-    fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
+    fn schedule_para_downgrade(id: ParaId) -> Weight {
         if !RegistrarManager::is_parathread(id) {
-            return RegistrarManager::make_parathread(id);
+            if let Err(e) = RegistrarManager::make_parathread(id){
+                log::warn!(
+                    "Failed to downgrade para id {} in relay chain: {:?}",
+                    u32::from(id),
+                    e
+                );
+            }
         }
-        Ok(())
+        Weight::default()
     }
 
     fn deregister(id: ParaId) {
