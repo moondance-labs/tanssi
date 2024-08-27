@@ -551,7 +551,7 @@ describeSuite({
 
         it({
             id: "E11",
-            title: "Profile will be unassigned on container deregister",
+            title: "Container will be unassigned on deregister",
             test: async function () {
                 const paraId = 2006;
                 const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {

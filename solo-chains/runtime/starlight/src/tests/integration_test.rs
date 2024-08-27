@@ -18,7 +18,8 @@
 
 use {
     crate::tests::common::*,
-    crate::{Balances, CollatorConfiguration, ContainerRegistrar},
+    crate::{Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers},
+    cumulus_primitives_core::ParaId,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -305,5 +306,56 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
                 ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 pallet_data_preservers::Error::<Runtime>::NoBootNodes,
             );
+        });
+}
+
+#[test]
+fn test_container_deregister_unassign_data_preserver() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_data_preservers::{
+                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+            };
+
+            let profile = Profile {
+                url: b"test".to_vec().try_into().unwrap(),
+                para_ids: ParaIdsFilter::AnyParaId,
+                mode: ProfileMode::Bootnode,
+                assignment_request: ProviderRequestOf::<Runtime>::Free,
+            };
+
+            let para_id = ParaId::from(1002);
+            let profile_id = 0u64;
+
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                para_id,
+                empty_genesis_data()
+            ));
+
+            assert_ok!(DataPreservers::create_profile(
+                origin_of(BOB.into()),
+                profile.clone(),
+            ));
+
+            // Start assignment
+            assert_ok!(DataPreservers::start_assignment(
+                origin_of(ALICE.into()),
+                profile_id,
+                para_id,
+                AssignerParameterOf::<Runtime>::Free
+            ));
+            assert!(pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&0u64));
+
+            // Deregister from Registrar
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), para_id), ());
+
+            // Check DataPreserver assignment has been cleared
+            assert!(pallet_data_preservers::Assignments::<Runtime>::get(para_id).is_empty());
         });
 }
