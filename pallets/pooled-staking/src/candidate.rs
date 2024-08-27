@@ -24,13 +24,24 @@ use {
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
-    sp_core::{Get, RuntimeDebug},
+    sp_core::{Get, MaxEncodedLen, RuntimeDebug},
     sp_runtime::traits::Zero,
     tp_maths::{ErrAdd, ErrSub},
 };
 
 /// Eligible candidate with its stake.
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
 pub struct EligibleCandidate<C, S> {
     pub candidate: C,
     pub stake: S,

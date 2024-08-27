@@ -74,7 +74,6 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     #[pallet::genesis_config]
@@ -184,6 +183,7 @@ pub mod pallet {
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub type PendingParaIds<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -191,6 +191,8 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
+    // TODO: this is not unbounded because we check the encoded size in register
+    #[pallet::unbounded]
     pub type ParaGenesisData<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
 
@@ -203,6 +205,7 @@ pub mod pallet {
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub type PendingPaused<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -210,6 +213,7 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub type PendingToRemove<T: Config> = StorageValue<
         _,
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
@@ -221,6 +225,7 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
 
     #[pallet::storage]
+    #[pallet::unbounded]
     pub type PendingParathreadParams<T: Config> = StorageValue<
         _,
         Vec<(
@@ -233,7 +238,9 @@ pub mod pallet {
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
-    #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, scale_info::TypeInfo)]
+    #[derive(
+        Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, scale_info::TypeInfo, MaxEncodedLen,
+    )]
     #[scale_info(skip_type_params(T))]
     pub struct DepositInfo<T: Config> {
         pub creator: T::AccountId,

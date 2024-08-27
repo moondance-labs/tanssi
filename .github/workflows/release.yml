@@ -758,7 +758,7 @@ jobs:
               id: prep
               run: |
                   DOCKER_IMAGE=moondancelabs/${{matrix.image}}
-                  TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
+                  TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}-fast-runtime"
                   echo "tags=${TAGS}" >> $GITHUB_OUTPUT
                   echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
             - name: Set up QEMU
