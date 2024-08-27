@@ -441,6 +441,7 @@ async fn start_node_impl(
                 relay_chain_interface,
                 sync_keystore,
                 orchestrator_para_id: para_id,
+                data_preserver: false,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         orchestrator_client: orchestrator_client.clone(),

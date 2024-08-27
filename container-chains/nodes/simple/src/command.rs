@@ -27,7 +27,6 @@ use {
     cumulus_primitives_core::ParaId,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
-    futures::{stream::StreamExt, FutureExt},
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
@@ -620,6 +619,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     spawn_handle: task_manager.spawn_handle().clone(),
                     // TODO: Which sync mode to use?
                     sync_mode: { move |_db_exists, _para_id| Ok(sc_cli::SyncMode::Warp) },
+                    data_preserver: true,
                 },
                 state: Default::default(),
                 collate_on_tanssi: Arc::new(|| {
