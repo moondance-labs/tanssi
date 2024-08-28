@@ -78,7 +78,7 @@ declare module "@polkadot/api-base/types/events" {
                     from: AccountId32,
                     to: AccountId32,
                     amount: u128,
-                    destinationStatus: FrameSupportTokensMiscBalanceStatus
+                    destinationStatus: FrameSupportTokensMiscBalanceStatus,
                 ],
                 {
                     from: AccountId32;
@@ -151,7 +151,10 @@ declare module "@polkadot/api-base/types/events" {
             AuthorityAdded: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
             /** A username authority was removed. */
             AuthorityRemoved: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
-            /** A dangling username (as in, a username corresponding to an account that has removed its identity) has been removed. */
+            /**
+             * A dangling username (as in, a username corresponding to an account that has removed its identity) has been
+             * removed.
+             */
             DanglingUsernameRemoved: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes],
@@ -211,7 +214,10 @@ declare module "@polkadot/api-base/types/events" {
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
-            /** A sub-identity was cleared, and the given deposit repatriated from the main identity account to the sub-identity account. */
+            /**
+             * A sub-identity was cleared, and the given deposit repatriated from the main identity account to the
+             * sub-identity account.
+             */
             SubIdentityRevoked: AugmentedEvent<
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
@@ -338,7 +344,7 @@ declare module "@polkadot/api-base/types/events" {
                     cancelling: AccountId32,
                     timepoint: PalletMultisigTimepoint,
                     multisig: AccountId32,
-                    callHash: U8aFixed
+                    callHash: U8aFixed,
                 ],
                 {
                     cancelling: AccountId32;
@@ -355,7 +361,7 @@ declare module "@polkadot/api-base/types/events" {
                     timepoint: PalletMultisigTimepoint,
                     multisig: AccountId32,
                     callHash: U8aFixed,
-                    result: Result<Null, SpRuntimeDispatchError>
+                    result: Result<Null, SpRuntimeDispatchError>,
                 ],
                 {
                     approving: AccountId32;
@@ -505,7 +511,10 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
-            /** New session has happened. Note that the argument is the session index, not the block number as the type might suggest. */
+            /**
+             * New session has happened. Note that the argument is the session index, not the block number as the type might
+             * suggest.
+             */
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
@@ -518,7 +527,7 @@ declare module "@polkadot/api-base/types/events" {
                     streamId: u64,
                     oldConfig: PalletStreamPaymentStreamConfig,
                     newConfig: PalletStreamPaymentStreamConfig,
-                    depositChange: Option<PalletStreamPaymentDepositChange>
+                    depositChange: Option<PalletStreamPaymentDepositChange>,
                 ],
                 {
                     streamId: u64;
@@ -534,7 +543,7 @@ declare module "@polkadot/api-base/types/events" {
                     requestNonce: u32,
                     requester: PalletStreamPaymentParty,
                     oldConfig: PalletStreamPaymentStreamConfig,
-                    newConfig: PalletStreamPaymentStreamConfig
+                    newConfig: PalletStreamPaymentStreamConfig,
                 ],
                 {
                     streamId: u64;
@@ -650,7 +659,10 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** We have ended a spend period and will now allocate funds. */
             Spending: AugmentedEvent<ApiType, [budgetRemaining: u128], { budgetRemaining: u128 }>;
-            /** A spend was processed and removed from the storage. It might have been successfully paid or it may have expired. */
+            /**
+             * A spend was processed and removed from the storage. It might have been successfully paid or it may have
+             * expired.
+             */
             SpendProcessed: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
             /** The inactive funds of the pallet have been updated. */
             UpdatedInactive: AugmentedEvent<

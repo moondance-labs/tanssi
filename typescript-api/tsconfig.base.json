@@ -11,6 +11,7 @@
         "baseUrl": ".",
         "composite": true,
         "declaration": true,
+        "types": ["node"],
         "paths": {
             "dancebox": ["dancebox/src"],
             "flashbox": ["flashbox/src"]
