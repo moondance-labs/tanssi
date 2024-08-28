@@ -259,7 +259,6 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         collation_params = None;
 
         // Use random ports to avoid conflicts with the other running container chain
-        // Don't override provided port.
         let random_ports = [23456, 23457, 23458];
 
         container_chain_cli
