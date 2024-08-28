@@ -68,12 +68,10 @@ fn test_collator_assignment_rotation() {
             let rotation_period = CollatorConfiguration::config().full_rotation_period;
             run_to_session(rotation_period - 2);
             set_new_randomness_data(Some([1; 32]));
-            // run_block();
 
             assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_none());
 
             run_to_session(rotation_period - 1);
-            run_block();
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain(),
                 initial_assignment,
@@ -81,7 +79,6 @@ fn test_collator_assignment_rotation() {
             assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_some());
 
             run_to_session(rotation_period);
-            run_block();
             // Assignment changed
             assert_ne!(
                 TanssiCollatorAssignment::collator_container_chain(),
