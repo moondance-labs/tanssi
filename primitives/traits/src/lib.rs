@@ -375,6 +375,7 @@ pub trait RegistrarHandler<AccountId> {
         who: AccountId,
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        head_data: Option<HeadData>,
     ) -> Weight;
 
     fn schedule_para_upgrade(id: ParaId) -> Weight;
@@ -388,6 +389,7 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         _who: AccountId,
         _id: ParaId,
         _genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        _head_data: Option<HeadData>,
     ) -> Weight {
         Weight::default()
     }

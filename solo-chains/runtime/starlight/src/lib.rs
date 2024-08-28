@@ -1506,43 +1506,47 @@ where
         who: AccountId,
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        head_data: Option<HeadData>,
     ) -> Weight {
-        /*         // Build HeadData
-        let mut genesis_head = HeadData(vec![]);
-        if let Some(data) = head_data {
-            genesis_head = HeadData(data);
-        } else {
-            log::warn!(
-                "Failed to register para id {} in relay chain: HeadData not specified!",
-                u32::from(id),
-            );
-        } */
+        // Return early if head_data is not specified
+        let genesis_head = match head_data {
+            Some(data) => data,
+            None => {
+                log::warn!(
+                    "Failed to register para id {} in relay chain: HeadData not specified!",
+                    u32::from(id),
+                );
+                return Weight::default();
+            }
+        };
 
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
-            genesis_storage.into_iter().map(|x| x.into()).collect();
-        let genesis_head = HeadData(key_values.encode());
+            genesis_storage.into_iter().map(Into::into).collect();
 
         // Check if the wasm code is present in storage
-        let kv_code = key_values
+        let validation_code = match key_values
             .into_iter()
-            .find(|kv| kv.0 == StorageWellKnownKeys::CODE.to_vec());
-
-        if let Some((_, code)) = kv_code {
-            // Build ValidationCode
-            let validation_code = ValidationCode(code);
-            if let Err(e) = RegistrarManager::register(who, id, genesis_head, validation_code) {
+            .find(|(key, _)| key == &StorageWellKnownKeys::CODE.to_vec())
+        {
+            Some((_, code)) => ValidationCode(code),
+            None => {
                 log::warn!(
-                    "Failed to register para id {} in relay chain: {:?}",
+                    "Failed to register para id {} in relay chain: Code not found",
                     u32::from(id),
-                    e
                 );
+                return Weight::default();
             }
-        } else {
+        };
+
+        // Try to register the parachain
+        if let Err(e) = RegistrarManager::register(who, id, genesis_head, validation_code) {
             log::warn!(
-                "Failed to register para id {} in relay chain: Code not found",
+                "Failed to register para id {} in relay chain: {:?}",
                 u32::from(id),
+                e
             );
         }
+
         Weight::default()
     }
 

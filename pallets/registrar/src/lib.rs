@@ -43,6 +43,7 @@ pub use weights::WeightInfo;
 pub use pallet::*;
 
 use {
+    cumulus_primitives_core::relay_chain::HeadData,
     dp_chain_state_snapshot::GenericStateProof,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
@@ -466,9 +467,10 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<HeadData>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, head_data)?;
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -572,9 +574,10 @@ pub mod pallet {
             para_id: ParaId,
             slot_frequency: SlotFrequency,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<HeadData>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, head_data)?;
             // Insert parathread params
             let params = ParathreadParamsTy { slot_frequency };
             ParathreadParams::<T>::insert(para_id, params);
@@ -639,6 +642,7 @@ pub mod pallet {
             relay_storage_proof: sp_trie::StorageProof,
             manager_signature: cumulus_primitives_core::relay_chain::Signature,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<HeadData>,
         ) -> DispatchResult {
             let account = T::RegisterWithRelayProofOrigin::ensure_origin(origin)?;
             let relay_storage_root =
@@ -667,7 +671,7 @@ pub mod pallet {
                 return Err(Error::<T>::InvalidRelayManagerSignature.into());
             }
 
-            Self::do_register(account, para_id, genesis_data)?;
+            Self::do_register(account, para_id, genesis_data, head_data)?;
             // Insert parathread params
             if let Some(parathread_params) = parathread_params {
                 ParathreadParams::<T>::insert(para_id, parathread_params);
@@ -801,6 +805,7 @@ pub mod pallet {
             account: T::AccountId,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
+            head_data: Option<HeadData>,
         ) -> DispatchResult {
             let deposit = T::DepositAmount::get();
             // Verify we can hold
@@ -839,7 +844,12 @@ pub mod pallet {
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
-            T::InnerRegistrar::register(account.clone(), para_id, genesis_data.clone().storage);
+            T::InnerRegistrar::register(
+                account.clone(),
+                para_id,
+                genesis_data.clone().storage,
+                head_data,
+            );
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
