@@ -646,7 +646,7 @@ pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::Inheren
 }
 
 pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
-    pallet_babe::AuthorVrfRandomness::<Runtime>::set(data.into());
+    pallet_babe::AuthorVrfRandomness::<Runtime>::set(data);
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
