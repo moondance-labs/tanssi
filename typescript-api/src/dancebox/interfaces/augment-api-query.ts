@@ -24,7 +24,6 @@ import type {
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
-    CumulusPalletDmpQueueMigrationState,
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     CumulusPalletParachainSystemUnincludedSegmentAncestor,
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
@@ -37,6 +36,8 @@ import type {
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportDispatchPerDispatchClassWeight,
+    FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
+    FrameSupportTokensMiscIdAmountRuntimeHoldReason,
     FrameSystemAccountInfo,
     FrameSystemCodeUpgradeAuthorization,
     FrameSystemEventRecord,
@@ -49,8 +50,6 @@ import type {
     PalletAssetsAssetMetadata,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
-    PalletBalancesIdAmountRuntimeFreezeReason,
-    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletDataPreserversRegisteredProfile,
@@ -206,14 +205,18 @@ declare module "@polkadot/api-base/types/storage" {
             /** Freeze locks on account balances. */
             freezes: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeFreezeReason>>,
+                (
+                    arg: AccountId32 | string | Uint8Array
+                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeFreezeReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeHoldReason>>,
+                (
+                    arg: AccountId32 | string | Uint8Array
+                ) => Observable<Vec<FrameSupportTokensMiscIdAmountRuntimeHoldReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -321,13 +324,6 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
-        dmpQueue: {
-            /** The migration state of this pallet. */
-            migrationStatus: AugmentedQuery<ApiType, () => Observable<CumulusPalletDmpQueueMigrationState>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
         foreignAssets: {
             /** The holdings of a specific account for a specific asset. */
             account: AugmentedQuery<
@@ -368,6 +364,18 @@ declare module "@polkadot/api-base/types/storage" {
                 [u16]
             > &
                 QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * The asset ID enforced for the next asset creation, if any present. Otherwise, this storage item has no effect.
+             *
+             * This can be useful for setting up constraints for IDs of the new assets. For example, by providing an initial
+             * [`NextAssetId`] and using the [`crate::AutoIncAssetId`] callback, an auto-increment model can be applied to all
+             * new asset IDs.
+             *
+             * The initial next asset ID can be set using the [`GenesisConfig`] or the
+             * [SetNextAssetId](`migration::next_asset_id::SetNextAssetId`) migration.
+             */
+            nextAssetId: AugmentedQuery<ApiType, () => Observable<Option<u16>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
