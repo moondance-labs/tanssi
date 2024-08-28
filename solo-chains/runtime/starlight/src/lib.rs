@@ -2751,8 +2751,8 @@ impl tanssi_initializer::Config for Runtime {
 
 pub struct BabeCurrentBlockRandomnessGetter;
 impl BabeCurrentBlockRandomnessGetter {
-    fn get_block_randomness() -> Option<Hash> {
-        frame_support::storage::unhashed::get(primitives::well_known_keys::CURRENT_BLOCK_RANDOMNESS)
+    fn get_block_randomness() -> Option<[u8; 32]> {
+        Babe::author_vrf_randomness()
     }
 
     fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
@@ -2761,9 +2761,9 @@ impl BabeCurrentBlockRandomnessGetter {
     }
 }
 
-/// Combines the vrf output of the previous relay block with the provided subject.
+/// Combines the vrf output of the previous block with the provided subject.
 /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-fn mix_randomness<T: frame_system::Config>(vrf_output: Hash, subject: &[u8]) -> T::Hash {
+fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
     let mut digest = Vec::new();
     digest.extend_from_slice(vrf_output.as_ref());
     digest.extend_from_slice(subject);

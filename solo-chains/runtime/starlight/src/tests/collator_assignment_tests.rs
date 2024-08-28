@@ -17,14 +17,17 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables},
+    crate::{
+        tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment,
+        TanssiAuthorityMapping, TanssiInvulnerables,
+    },
     cumulus_primitives_core::ParaId,
     frame_support::assert_ok,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
-    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem}, xcm_builder::AliasForeignAccountId32,
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
 #[test]
@@ -2022,7 +2025,10 @@ fn test_parachains_deregister_collators_re_assigned() {
                 vec![ALICE.into(), BOB.into()]
             );
 
-            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1001.into()), ());
+            assert_ok!(
+                ContainerRegistrar::deregister(root_origin(), 1001.into()),
+                ()
+            );
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
