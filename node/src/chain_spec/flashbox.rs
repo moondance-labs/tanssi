@@ -257,6 +257,7 @@ fn testnet_genesis(
                     )
                 })
                 .collect(),
+            ..Default::default()
         },
         parachain_system: Default::default(),
         configuration,
