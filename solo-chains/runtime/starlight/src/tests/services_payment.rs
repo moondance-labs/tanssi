@@ -127,8 +127,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 None
             ));
 
-            // TODO: uncomment when we add DataPreservers
-            // set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),

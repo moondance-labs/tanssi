@@ -58,8 +58,8 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    ContainerRegistrar, Grandpa, Initializer, Runtime, Session, System, TanssiAuthorityAssignment,
-    TanssiCollatorAssignment, TransactionPayment,
+    ContainerRegistrar, DataPreservers, Grandpa, Initializer, Runtime, RuntimeOrigin, Session, System,
+    TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -1071,4 +1071,40 @@ pub fn storage_map_final_key<H: frame_support::StorageHasher>(
     final_key.extend_from_slice(key_hashed.as_ref());
 
     final_key
+}
+
+pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
+    use {
+        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
+        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+    };
+
+    let profile = Profile {
+        url:
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .expect("to fit in BoundedVec"),
+        para_ids: ParaIdsFilter::AnyParaId,
+        mode: ProfileMode::Bootnode,
+        assignment_request: PreserversAssignmentPaymentRequest::Free,
+    };
+
+    let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
+    let profile_owner = AccountId::new([1u8; 32]);
+    DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
+        .expect("profile create to succeed");
+
+    DataPreservers::start_assignment(
+        para_manager,
+        profile_id,
+        para_id,
+        PreserversAssignmentPaymentExtra::Free,
+    )
+    .expect("assignment to work");
+
+    assert!(
+        pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
+        "profile should be correctly assigned"
+    );
 }
