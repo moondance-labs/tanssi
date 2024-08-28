@@ -51,7 +51,7 @@ describeSuite({
                 const containerChainGenesisData = emptyGenesisData();
 
                 const tx = await polkadotJs.tx.containerRegistrar
-                    .register(2002, containerChainGenesisData)
+                    .register(2002, containerChainGenesisData, "0x111")
                     .signAsync(alice);
 
                 await context.createBlock([tx], { allowFailures: false });
@@ -104,7 +104,7 @@ describeSuite({
 
                 // Check we can't register via ContainerRegistrar
                 const tx = await polkadotJs.tx.containerRegistrar
-                    .register(2002, containerChainGenesisData)
+                    .register(2002, containerChainGenesisData, "0x111")
                     .signAsync(alice);
 
                 const { result } = await context.createBlock([tx]);

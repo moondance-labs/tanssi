@@ -58,8 +58,8 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    ContainerRegistrar, DataPreservers, Grandpa, Initializer, Runtime, RuntimeOrigin, Session, System,
-    TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
+    ContainerRegistrar, DataPreservers, Grandpa, Initializer, Runtime, RuntimeOrigin, Session,
+    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;

@@ -77,8 +77,8 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    sp_core::storage::well_known_keys as StorageWellKnownKeys,
     serde::{Deserialize, Serialize},
+    sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::BlockNumberProvider, DispatchError},
     sp_std::{
@@ -88,8 +88,8 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, RegistrarHandler, GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot,
-        SlotFrequency,
+        apply, derive_storage_traits, GetSessionContainerChains, RegistrarHandler,
+        RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
 

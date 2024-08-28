@@ -19,7 +19,7 @@
 use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers},
-    cumulus_primitives_core::{ParaId, relay_chain::HeadData},
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -301,7 +301,8 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert_noop!(
                 ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
@@ -336,7 +337,8 @@ fn test_container_deregister_unassign_data_preserver() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 para_id,
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
 
             assert_ok!(DataPreservers::create_profile(

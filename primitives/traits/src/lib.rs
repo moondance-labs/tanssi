@@ -34,9 +34,7 @@ use {
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
-        pallet_prelude::{
-            Decode, DispatchResult, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight,
-        },
+        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
     serde::{Deserialize, Serialize},
