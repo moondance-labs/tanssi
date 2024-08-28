@@ -282,6 +282,15 @@ impl RelayChainInterface for RelayChain {
     async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
         unimplemented!("Not needed for test")
     }
+
+    async fn call_remote_runtime_function_encoded(
+        &self,
+        _: &'static str,
+        _: PHash,
+        _: &[u8],
+    ) -> RelayChainResult<Vec<u8>> {
+        unimplemented!("Not needed for test")
+    }
 }
 
 #[derive(Clone)]
