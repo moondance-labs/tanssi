@@ -87,15 +87,13 @@ use {
     pallet_transaction_payment::FungibleAdapter,
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
-    scale_info::{prelude::format, TypeInfo},
+    scale_info::prelude::format,
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_aura::SlotDuration,
     sp_consensus_slots::Slot,
-    sp_core::{
-        crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug, H256,
-    },
+    sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -968,21 +966,25 @@ parameter_types! {
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
-    // TODO: Add Stream Payment (with config)
+    StreamPayment {
+        config: pallet_stream_payment::StreamConfigOf<Runtime>,
+    },
 }
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
-    // TODO: Add Stream Payment (with deposit)
+    StreamPayment { initial_deposit: Balance },
 }
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
-    // TODO: Add Stream Payment (with stream id)
+    StreamPayment {
+        stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
+    },
 }
 
 pub struct PreserversAssignementPayment;
@@ -996,8 +998,8 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     type AssignmentWitness = PreserversAssignementPaymentWitness;
 
     fn try_start_assignment(
-        _assigner: AccountId,
-        _provider: AccountId,
+        assigner: AccountId,
+        provider: AccountId,
         request: &Self::ProviderRequest,
         extra: Self::AssignerParameter,
     ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
@@ -1005,17 +1007,36 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
             (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
                 Self::AssignmentWitness::Free
             }
+            (
+                Self::ProviderRequest::StreamPayment { config },
+                Self::AssignerParameter::StreamPayment { initial_deposit },
+            ) => {
+                let stream_id = StreamPayment::open_stream_returns_id(
+                    assigner,
+                    provider,
+                    *config,
+                    initial_deposit,
+                )?;
+
+                Self::AssignmentWitness::StreamPayment { stream_id }
+            }
+            _ => Err(
+                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch,
+            )?,
         };
 
         Ok(witness)
     }
 
     fn try_stop_assignment(
-        _provider: AccountId,
+        provider: AccountId,
         witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {
         match witness {
             Self::AssignmentWitness::Free => (),
+            Self::AssignmentWitness::StreamPayment { stream_id } => {
+                StreamPayment::close_stream(RuntimeOrigin::signed(provider), stream_id)?;
+            }
         }
 
         Ok(())
@@ -1605,7 +1626,8 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
 }
@@ -1693,7 +1715,8 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
