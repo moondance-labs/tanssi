@@ -237,6 +237,21 @@ fn starlight_testnet_genesis(
         .map(|seed| get_authority_keys_from_seed(seed, None))
         .collect();
 
+    let data_preservers_bootnodes: Vec<_> = container_chains
+        .iter()
+        .flat_map(|(para_id, _genesis_data, bootnodes)| {
+            bootnodes.clone().into_iter().map(|bootnode| {
+                (
+                    *para_id,
+                    AccountId::from([0u8; 32]),
+                    bootnode,
+                    crate::PreserversAssignmentPaymentRequest::Free,
+                    crate::PreserversAssignmentPaymentWitness::Free,
+                )
+            })
+        })
+        .collect();
+
     let para_ids: Vec<_> = container_chains
         .into_iter()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
@@ -297,6 +312,10 @@ fn starlight_testnet_genesis(
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
         "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
+        "dataPreservers": crate::DataPreserversConfig {
+            bootnodes: data_preservers_bootnodes,
+            ..Default::default()
+        },
     })
 }
 

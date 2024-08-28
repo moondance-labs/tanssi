@@ -25,14 +25,21 @@ pub mod currency {
     /// The existential deposit.
     pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
+    // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
+    pub const SUPPLY_FACTOR: Balance = 100;
+
     pub const UNITS: Balance = 1_000_000_000_000;
     pub const CENTS: Balance = UNITS / 30_000;
     pub const GRAND: Balance = CENTS * 100_000;
     pub const MILLICENTS: Balance = CENTS / 1_000;
     pub const MICROUNITS: Balance = 1_000_000;
+    pub const MILLIUNITS: Balance = 1_000_000_000;
+
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNITS * SUPPLY_FACTOR;
+    pub const STORAGE_ITEM_FEE: Balance = 100 * MILLIUNITS * SUPPLY_FACTOR;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 2_000 * CENTS + (bytes as Balance) * 100 * MILLICENTS
+        items as Balance * STORAGE_ITEM_FEE + (bytes as Balance) * STORAGE_BYTE_FEE
     }
 }
 
