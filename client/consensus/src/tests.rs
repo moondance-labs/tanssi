@@ -777,10 +777,11 @@ async fn collate_lookahead_for_2_relay_imports_but_with_cancellation_token_stops
     let backend = builder.backend();
     let client = Arc::new(builder.build());
     let environ = DummyFactory(client.clone());
-    // Two relay imports
+    // A very large number to make sure relay imports are always available
+    // the cancellation token should stop it before though
     let relay_client = RelayChain {
         client: client.clone(),
-        block_import_iterations: 2u32,
+        block_import_iterations: 1000u32,
     };
     let spawner = sp_core::testing::TaskExecutor::new();
     let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
@@ -871,7 +872,8 @@ async fn collate_lookahead_for_2_relay_imports_but_with_cancellation_token_stops
 
     fut.await;
 
-    // We only had one notification import, but n_built goes from 0..2. Since we are not mocking the async backing params, then
-    // this is going to create 2 blocks on to of the latest
-    assert_eq!(client.chain_info().best_number, 2);
+    // We have 1000 import noficiations but the cancellation token should kick in (hopefully) before creating block 50
+    // But this is not deterministic
+    // The probability of this assert failing  is 0.5^25
+    assert!(client.chain_info().best_number < 50);
 }
