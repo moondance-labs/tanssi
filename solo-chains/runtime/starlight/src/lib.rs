@@ -80,7 +80,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, DispatchError},
+    sp_runtime::{traits::BlockNumberProvider},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
