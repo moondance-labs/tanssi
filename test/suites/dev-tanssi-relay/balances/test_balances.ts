@@ -3,7 +3,7 @@ import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DT0101",
+    id: "DTR0101",
     title: "Genesis supply and balances",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
