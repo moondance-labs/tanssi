@@ -92,12 +92,13 @@
                 {
                     "name": "DataPreserver",
                     "validator": false,
-                    "command": "scripts/container-chain-args.sh --rpc-port 9950 -- ../target/release/container-chain-simple-node",
+                    "command": "../target/release/container-chain-simple-node",
                     "args": [
                         "--rpc-provider-profile-id=0",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
-                        "--wasmtime-precompiled=wasm"
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9950"
                     ],
                     "prometheus_port": 33102
                 }
