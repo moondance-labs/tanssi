@@ -47,7 +47,10 @@ export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = Submittab
 declare module "@polkadot/api-base/types/submittable" {
     interface AugmentedSubmittables<ApiType extends ApiTypes> {
         authorInherent: {
-            /** This inherent is a workaround to run code after the "real" inherents have executed, but before transactions are executed. */
+            /**
+             * This inherent is a workaround to run code after the "real" inherents have executed, but before transactions are
+             * executed.
+             */
             kickOffAuthorshipValidation: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -395,7 +398,10 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         identity: {
-            /** Accept a given username that an `authority` granted. The call must include the full username, as in `username.suffix`. */
+            /**
+             * Accept a given username that an `authority` granted. The call must include the full username, as in
+             * `username.suffix`.
+             */
             acceptUsername: AugmentedSubmittable<
                 (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Bytes]
@@ -803,7 +809,7 @@ declare module "@polkadot/api-base/types/submittable" {
                                   | { ShaThree256: any }
                                   | string
                                   | Uint8Array
-                              )
+                              ),
                           ][]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, Data]>>]
@@ -902,7 +908,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
              * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is not the first approval,
-             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval transaction.
+             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval
+             *   transaction.
              * - `call_hash`: The hash of the call to be executed.
              *
              * NOTE: If this is the final approval, you will want to use `as_multi` instead.
@@ -950,14 +957,16 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
              * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is not the first approval,
-             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval transaction.
+             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval
+             *   transaction.
              * - `call`: The call to be executed.
              *
              * NOTE: Unless this is the final approval, you will generally want to use `approve_as_multi` instead, since it
              * only requires a hash of the call.
              *
              * Result is equivalent to the dispatched result if `threshold` is exactly `1`. Otherwise on success, result is
-             * `Ok` and the result from the interior call, if it was executed, may be found in the deposited `MultisigExecuted` event.
+             * `Ok` and the result from the interior call, if it was executed, may be found in the deposited
+             * `MultisigExecuted` event.
              *
              * ## Complexity
              *
@@ -1020,7 +1029,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
-             * - `timepoint`: The timepoint (block number and transaction index) of the first approval transaction for this dispatch.
+             * - `timepoint`: The timepoint (block number and transaction index) of the first approval transaction for this
+             *   dispatch.
              * - `call_hash`: The hash of the call to be executed.
              *
              * ## Complexity
@@ -1072,7 +1082,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * If the authorization required a version check, this call will ensure the spec name remains unchanged and that
              * the spec version has increased.
              *
-             * Note that this function will not apply the new `code`, but only attempt to schedule the upgrade with the Relay Chain.
+             * Note that this function will not apply the new `code`, but only attempt to schedule the upgrade with the Relay
+             * Chain.
              *
              * All origins are allowed.
              */
@@ -1083,7 +1094,8 @@ declare module "@polkadot/api-base/types/submittable" {
             /**
              * Set the current validation data.
              *
-             * This should be invoked exactly once per block. It will panic at the finalization phase if the call was not invoked.
+             * This should be invoked exactly once per block. It will panic at the finalization phase if the call was not
+             * invoked.
              *
              * The dispatch origin for this call must be `Inherent`
              *
@@ -1553,7 +1565,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     u32,
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
-                    DpContainerChainGenesisDataContainerChainGenesisData
+                    DpContainerChainGenesisDataContainerChainGenesisData,
                 ]
             >;
             setParaManager: AugmentedSubmittable<
@@ -1597,7 +1609,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u128]
             >;
-            /** Set the number of block production credits for this para_id without paying for them. Can only be called by root. */
+            /**
+             * Set the number of block production credits for this para_id without paying for them. Can only be called by
+             * root.
+             */
             setBlockProductionCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
@@ -1605,7 +1620,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
             >;
-            /** Set the number of block production credits for this para_id without paying for them. Can only be called by root. */
+            /**
+             * Set the number of block production credits for this para_id without paying for them. Can only be called by
+             * root.
+             */
             setCollatorAssignmentCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
@@ -1663,7 +1681,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * ## Complexity
              *
-             * - `O(1)` in number of key types. Actual cost depends on the number of length of `T::Keys::key_ids()` which is fixed.
+             * - `O(1)` in number of key types. Actual cost depends on the number of length of `T::Keys::key_ids()` which is
+             *   fixed.
              */
             purgeKeys: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
@@ -1711,7 +1730,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
             >;
-            /** Close a given stream in which the origin is involved. It performs the pending payment before closing the stream. */
+            /**
+             * Close a given stream in which the origin is involved. It performs the pending payment before closing the
+             * stream.
+             */
             closeStream: AugmentedSubmittable<
                 (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
@@ -1796,7 +1818,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     u64,
                     PalletStreamPaymentChangeKind,
                     PalletStreamPaymentStreamConfig,
-                    Option<PalletStreamPaymentDepositChange>
+                    Option<PalletStreamPaymentDepositChange>,
                 ]
             >;
             /** Generic tx */

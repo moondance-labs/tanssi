@@ -78,7 +78,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
-            /** Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and `AssignerParameter`. */
+            /**
+             * Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and
+             * `AssignerParameter`.
+             */
             AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;
             CantDeleteAssignedProfile: AugmentedError<ApiType>;
             MaxAssignmentsPerParaIdReached: AugmentedError<ApiType>;

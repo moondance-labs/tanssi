@@ -12,8 +12,9 @@
         "directory": "typescript-api"
     },
     "engines": {
-        "node": ">=16.0.0"
+        "node": ">=20.0.0"
     },
+    "packageManager": "pnpm@9.8.0",
     "scripts": {
         "create-local-interfaces": "pnpm tsx ./scripts/runtime-upgrade.ts && pnpm fmt:fix",
         "generate": "pnpm run load:meta && pnpm run generate:defs && pnpm run generate:meta",
@@ -21,7 +22,10 @@
         "fmt": "prettier --check --ignore-path ../.prettierignore ./",
         "fmt:fix": "prettier --write --ignore-path ../.prettierignore 'src'",
         "postgenerate": "pnpm run pretty",
-        "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9933 > metadata-dancebox.json",
+        "load:meta": "npm run load:meta:flashbox && npm run load:meta:dancebox",
+        "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9948 > metadata-dancebox.json",
+        "load:meta:flashbox": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' https://fraa-flashbox-rpc.a.stagenet.tanssi.network > metadata-flashbox.json",
+        "load:meta:dancebox": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' https://dancebox.tanssi-api.network > metadata-dancebox.json",
         "generate:defs": "pnpm run generate:defs:dancebox && pnpm run generate:defs:flashbox",
         "generate:defs:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/dancebox/interfaces --endpoint ./metadata-dancebox.json",
         "generate:defs:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/flashbox/interfaces --endpoint ./metadata-flashbox.json",
@@ -30,28 +34,24 @@
         "generate:meta:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-flashbox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/flashbox/interfaces",
         "prebuild": "rimraf build",
         "build": "tsc -b --verbose",
-        "postbuild": "pnpm tsx ./scripts/postbuild.ts",
         "publish": "npm publish",
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
         "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*'"
     },
-    "main": "./build/index.cjs",
-    "module": "./build/index.js",
-    "types": "./build/index.d.ts",
+    "main": "./build/dancebox/index.js",
+    "module": "./build/dancebox/index.js",
+    "types": "./build/dancebox/index.d.ts",
     "exports": {
         ".": {
-            "types": "./build/index.d.ts",
-            "require": "./build/index.cjs",
-            "default": "./build/index.js"
+            "types": "./build/dancebox/index.d.ts",
+            "default": "./build/dancebox/index.js"
         },
         "./dancebox": {
             "types": "./build/dancebox/index.d.ts",
-            "require": "./build/dancebox/index.cjs",
             "default": "./build/dancebox/index.js"
         },
         "./flashbox": {
             "types": "./build/flashbox/index.d.ts",
-            "require": "./build/flashbox/index.cjs",
             "default": "./build/flashbox/index.js"
         }
     },
@@ -66,38 +66,46 @@
         }
     },
     "keywords": [
+        "api",
+        "api-augment",
         "dancebox",
-        "types",
         "polkadot",
-        "api"
+        "tanssi",
+        "types"
     ],
     "files": [
         "/build",
         "README.md",
-        "LICENSE"
+        "LICENSE",
+        "!**/*.tsbuildinfo"
     ],
-    "dependencies": {
-        "@polkadot/api": "^11.2.1",
-        "@polkadot/api-augment": "^11.2.1",
-        "@polkadot/api-base": "^11.2.1",
-        "@polkadot/api-derive": "^11.2.1",
-        "@polkadot/rpc-augment": "^11.2.1",
-        "@polkadot/rpc-core": "^11.2.1",
-        "@polkadot/rpc-provider": "^11.2.1",
-        "@polkadot/types": "^11.2.1",
-        "@polkadot/types-augment": "^11.2.1",
-        "@polkadot/types-codec": "^11.2.1",
-        "@polkadot/types-create": "^11.2.1",
-        "@polkadot/types-known": "^11.2.1",
-        "@polkadot/types-support": "^11.2.1",
-        "chalk": "^5.3.0"
+    "peerDependencies": {
+        "@polkadot/api-base": "12.x",
+        "@polkadot/rpc-core": "12.x",
+        "@polkadot/types": "12.x",
+        "@polkadot/types-codec": "12.x"
     },
     "devDependencies": {
-        "@polkadot/typegen": "^11.2.1",
-        "prettier": "^2.8.8",
-        "prettier-plugin-jsdoc": "^0.3.38",
-        "rimraf": "^5.0.5",
-        "tsx": "^4.7.0",
-        "typescript": "^5.3.3"
+        "@polkadot/api": "^12.4.2",
+        "@polkadot/api-augment": "^12.4.2",
+        "@polkadot/api-base": "^12.4.2",
+        "@polkadot/api-derive": "^12.4.2",
+        "@polkadot/rpc-augment": "^12.4.2",
+        "@polkadot/rpc-core": "^12.4.2",
+        "@polkadot/rpc-provider": "^12.4.2",
+        "@polkadot/typegen": "^12.4.2",
+        "@polkadot/types": "^12.4.2",
+        "@polkadot/types-augment": "^12.4.2",
+        "@polkadot/types-codec": "^12.4.2",
+        "@polkadot/types-create": "^12.4.2",
+        "@polkadot/types-known": "^12.4.2",
+        "@polkadot/types-support": "^12.4.2",
+        "@types/node": "22.5.0",
+        "chalk": "^5.3.0",
+        "prettier": "^3.3.3",
+        "prettier-plugin-jsdoc": "^1.3.0",
+        "rimraf": "^6.0.1",
+        "tsx": "^4.18.0",
+        "typescript": "^5.5.4"
     }
 }
