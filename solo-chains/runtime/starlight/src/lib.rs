@@ -80,7 +80,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::BlockNumberProvider,
+    sp_runtime::{traits::BlockNumberProvider, DispatchError},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -1624,17 +1624,11 @@ where
         id: ParaId,
         genesis_storage: Vec<ContainerChainGenesisDataItem>,
         head_data: Option<HeadData>,
-    ) -> Weight {
+    ) -> DispatchResult {
         // Return early if head_data is not specified
         let genesis_head = match head_data {
             Some(data) => data,
-            None => {
-                log::warn!(
-                    "Failed to register para id {} in relay chain: HeadData not specified!",
-                    u32::from(id),
-                );
-                return Weight::default();
-            }
+            None => return Err(DispatchError::Other("HeadData not specified!"))
         };
 
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
@@ -1646,51 +1640,25 @@ where
             .find(|(key, _)| key == &StorageWellKnownKeys::CODE.to_vec())
         {
             Some((_, code)) => ValidationCode(code),
-            None => {
-                log::warn!(
-                    "Failed to register para id {} in relay chain: Code not found",
-                    u32::from(id),
-                );
-                return Weight::default();
-            }
+            None => return Err(DispatchError::Other("Code not found"))
         };
 
         // Try to register the parachain
-        if let Err(e) = RegistrarManager::register(who, id, genesis_head, validation_code) {
-            log::warn!(
-                "Failed to register para id {} in relay chain: {:?}",
-                u32::from(id),
-                e
-            );
-        }
-
-        Weight::default()
+        RegistrarManager::register(who, id, genesis_head, validation_code)
     }
 
-    fn schedule_para_upgrade(id: ParaId) -> Weight {
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
         if !RegistrarManager::is_parachain(id) {
-            if let Err(e) = RegistrarManager::make_parachain(id) {
-                log::warn!(
-                    "Failed to upgrade para id {} in relay chain: {:?}",
-                    u32::from(id),
-                    e
-                );
-            }
+            return RegistrarManager::make_parachain(id);
         }
-        Weight::default()
+        Ok(())
     }
 
-    fn schedule_para_downgrade(id: ParaId) -> Weight {
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
         if !RegistrarManager::is_parathread(id) {
-            if let Err(e) = RegistrarManager::make_parathread(id) {
-                log::warn!(
-                    "Failed to downgrade para id {} in relay chain: {:?}",
-                    u32::from(id),
-                    e
-                );
-            }
+           return RegistrarManager::make_parathread(id);
         }
-        Weight::default()
+        Ok(())
     }
 
     fn deregister(id: ParaId) {

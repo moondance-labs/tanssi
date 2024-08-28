@@ -856,7 +856,7 @@ pub mod pallet {
                 para_id,
                 genesis_data.clone().storage,
                 head_data,
-            );
+            )?;
 
             // Update DepositInfo
             RegistrarDeposit::<T>::insert(
@@ -913,7 +913,7 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
-                T::InnerRegistrar::schedule_para_downgrade(para_id);
+                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -950,7 +950,7 @@ pub mod pallet {
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
-            T::InnerRegistrar::schedule_para_upgrade(para_id);
+            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
 
             Ok(())
         }

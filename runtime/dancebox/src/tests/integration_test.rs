@@ -6175,7 +6175,8 @@ fn test_container_deregister_unassign_data_preserver() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 para_id,
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
 
             assert_ok!(DataPreservers::create_profile(
