@@ -1101,9 +1101,3 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         "profile should be correctly assigned"
     );
 }
-
-// pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
-//     set_new_inherent_data(MockInherentData {
-//         random_seed: Some(random_seed),
-//     });
-// }
