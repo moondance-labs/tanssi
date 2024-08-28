@@ -17,18 +17,14 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::{
-        Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment,
-        TanssiAuthorityMapping, TanssiInvulnerables,
-    },
+    crate::{tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables},
     cumulus_primitives_core::ParaId,
     frame_support::assert_ok,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
-    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem}, xcm_builder::AliasForeignAccountId32,
 };
 
 #[test]
@@ -1996,6 +1992,106 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1002.into())),
                 tank_funds - max_tip_1002 * 2,
+            );
+        });
+}
+
+#[test]
+fn test_parachains_deregister_collators_re_assigned() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            // (AccountId::from(CHARLIE), 100 * UNIT),
+            // (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            // Alice and Bob to 1001
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1001.into()), ());
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+
+            run_to_session(2u32);
+
+            // Alice and Bob should be assigned to para 1002 this time
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1002u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+        });
+}
+
+#[test]
+fn test_parachains_deregister_collators_config_change_reassigned() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            // Set container chain collators to 3
+            assert_ok!(
+                CollatorConfiguration::set_collators_per_container(root_origin(), 3),
+                ()
+            );
+
+            // Alice and Bob to 1001
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+
+            run_to_session(2u32);
+
+            // Alice, Bob and Charlie should be assigned to para 1001 this time
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into(), CHARLIE.into()]
             );
         });
 }
