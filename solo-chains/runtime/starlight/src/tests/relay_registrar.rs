@@ -18,6 +18,7 @@
 
 use {
     crate::{tests::common::*, Configuration, ContainerRegistrar, Paras, Registrar, System},
+    cumulus_primitives_core::relay_chain::HeadData,
     frame_support::{assert_noop, assert_ok},
     pallet_registrar::Event as ContainerRegistrarEvent,
     pallet_registrar_runtime_api::{
@@ -143,7 +144,8 @@ fn register_para_via_container_registrar() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -211,7 +213,8 @@ fn cannot_register_para_twice_in_relay() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -291,7 +294,8 @@ fn mark_valid_for_collating_converts_to_parachain() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -372,7 +376,8 @@ fn deregister_calls_schedule_para_cleanup() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -481,7 +486,8 @@ fn deregister_two_paras_in_the_same_block() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003_and_1004.clone()
+                    genesis_data_1003_and_1004.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -491,7 +497,8 @@ fn deregister_two_paras_in_the_same_block() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1004.into(),
-                    genesis_data_1003_and_1004.clone()
+                    genesis_data_1003_and_1004.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );

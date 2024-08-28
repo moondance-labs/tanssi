@@ -522,7 +522,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1000.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),

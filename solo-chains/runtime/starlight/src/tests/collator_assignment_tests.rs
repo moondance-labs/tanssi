@@ -22,7 +22,7 @@ use {
         Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment,
         TanssiAuthorityMapping, TanssiInvulnerables,
     },
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::assert_ok,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -594,7 +594,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -613,7 +614,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1002.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -669,7 +671,8 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -717,7 +720,8 @@ fn test_paras_registered_but_zero_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -763,7 +767,8 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -830,7 +835,8 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1001,7 +1007,8 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1037,7 +1044,8 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1122,7 +1130,8 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1178,7 +1187,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1276,7 +1286,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1364,7 +1375,8 @@ fn test_credits_with_purchase_can_be_combined() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1422,7 +1434,8 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1505,7 +1518,8 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1560,7 +1574,8 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers
@@ -1619,7 +1634,8 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             // TODO: uncomment when we add DataPreservers

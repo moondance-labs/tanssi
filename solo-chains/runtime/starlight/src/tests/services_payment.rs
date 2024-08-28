@@ -123,7 +123,8 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
 
             // TODO: uncomment when we add DataPreservers

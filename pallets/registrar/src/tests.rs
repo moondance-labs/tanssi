@@ -35,7 +35,8 @@ fn register_para_id_42() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         // Assert that the correct event was deposited
         System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
@@ -64,13 +65,15 @@ fn register_para_id_42_twice() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_noop!(
             ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ),
             Error::<Test>::ParaIdAlreadyRegistered
         );
@@ -90,7 +93,7 @@ fn register_para_id_42_genesis_data_size_too_big() {
             properties: Default::default(),
         };
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::signed(ALICE), 42.into(), genesis_data,),
+            ParaRegistrar::register(RuntimeOrigin::signed(ALICE), 42.into(), genesis_data, None),
             Error::<Test>::GenesisDataTooBig,
         );
     });
@@ -114,7 +117,8 @@ fn deregister_para_id_42_after_0_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -150,7 +154,8 @@ fn deregister_para_id_42_after_1_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -199,7 +204,8 @@ fn deregister_para_id_42_after_2_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -242,7 +248,8 @@ fn deregister_para_id_42_twice() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -280,6 +287,7 @@ fn deregister_para_id_removes_genesis_data() {
             RuntimeOrigin::signed(ALICE),
             42.into(),
             genesis_data.clone(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -321,7 +329,7 @@ fn register_para_id_bad_origin() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::root(), 42.into(), empty_genesis_data()),
+            ParaRegistrar::register(RuntimeOrigin::root(), 42.into(), empty_genesis_data(), None),
             DispatchError::BadOrigin
         );
     });
@@ -356,7 +364,8 @@ fn pause_para_id_42_works() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         // Enable the container-chain for the first time
@@ -397,7 +406,8 @@ fn pause_para_id_42_twice_fails() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         // Enable the container-chain for collating
@@ -457,7 +467,8 @@ fn unpause_para_id_that_is_not_paused_fails() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         // Enable the container-chain for collating
@@ -488,7 +499,8 @@ fn unpause_para_id_42_twice_fails() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         // Enable the container-chain for collating
@@ -607,7 +619,8 @@ fn register_without_mark_valid_for_collating() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         // Assert that the correct event was deposited
         System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
@@ -627,7 +640,8 @@ fn mark_valid_for_collating_twice() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -658,7 +672,8 @@ fn mark_valid_for_collating_already_valid_para_id() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         // Assert that the correct event was deposited
         System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
@@ -684,7 +699,8 @@ fn mark_valid_for_collating_calls_registered_hook() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_eq!(Mock::mock().called_hooks, vec![]);
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -707,7 +723,8 @@ fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_eq!(Balances::free_balance(ALICE), balance_before - bond);
 
@@ -727,7 +744,8 @@ fn deregister_returns_bond_after_2_sessions_if_marked_as_valid() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -751,7 +769,8 @@ fn can_deregister_before_valid_for_collating() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
@@ -766,7 +785,8 @@ fn can_deregister_paused_para_id_after_0_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -800,7 +820,8 @@ fn can_deregister_paused_para_id_after_1_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -840,7 +861,8 @@ fn can_deregister_paused_para_id_after_2_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -882,7 +904,8 @@ fn cannot_register_same_para_id_while_deregister_is_pending() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -894,6 +917,7 @@ fn cannot_register_same_para_id_while_deregister_is_pending() {
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
                 empty_genesis_data(),
+                None
             ),
             Error::<Test>::ParaIdAlreadyRegistered,
         );
@@ -903,6 +927,7 @@ fn cannot_register_same_para_id_while_deregister_is_pending() {
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
                 empty_genesis_data(),
+                None
             ),
             Error::<Test>::ParaIdAlreadyRegistered,
         );
@@ -910,7 +935,8 @@ fn cannot_register_same_para_id_while_deregister_is_pending() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
     });
 }
@@ -922,7 +948,8 @@ fn register_deregister_register_in_same_block() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -945,6 +972,7 @@ fn register_deregister_register_in_same_block() {
             RuntimeOrigin::signed(ALICE),
             42.into(),
             new_genesis_data.clone(),
+            None
         ));
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -965,12 +993,14 @@ fn deregister_2_container_chains_in_same_block() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             43.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -1033,12 +1063,14 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             43.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
@@ -1134,7 +1166,8 @@ fn deposit_removed_on_deregister_if_not_marked_as_valid() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
@@ -1154,7 +1187,8 @@ fn deposit_removed_after_2_sessions_if_marked_as_valid() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1183,7 +1217,8 @@ fn parathread_change_params_after_two_sessions() {
             RuntimeOrigin::signed(ALICE),
             42.into(),
             SlotFrequency { min: 1, max: 1 },
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1217,7 +1252,8 @@ fn parathread_params_cannot_be_set_for_parachains() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1243,7 +1279,8 @@ fn parathread_register_change_params_deregister() {
             RuntimeOrigin::signed(ALICE),
             42.into(),
             SlotFrequency { min: 1, max: 1 },
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1279,7 +1316,8 @@ fn parathread_register_deregister_change_params() {
             RuntimeOrigin::signed(ALICE),
             42.into(),
             SlotFrequency { min: 1, max: 1 },
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1353,6 +1391,7 @@ mod register_with_relay_proof {
                 proof,
                 signature,
                 empty_genesis_data(),
+                None
             ));
 
             System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
@@ -1397,6 +1436,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::RelayStorageRootNotFound
             );
@@ -1447,6 +1487,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::InvalidRelayStorageProof
             );
@@ -1483,6 +1524,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::InvalidRelayStorageProof
             );
@@ -1531,6 +1573,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::InvalidRelayManagerSignature
             );
@@ -1579,6 +1622,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::InvalidRelayStorageProof
             );
@@ -1629,6 +1673,7 @@ mod register_with_relay_proof {
                     proof,
                     signature,
                     empty_genesis_data(),
+                    None
                 ),
                 Error::<Test>::InvalidRelayManagerSignature
             );
@@ -1647,7 +1692,8 @@ mod deregister_with_relay_proof {
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1706,7 +1752,8 @@ mod deregister_with_relay_proof {
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_eq!(
@@ -1762,7 +1809,8 @@ mod deregister_with_relay_proof {
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1795,7 +1843,8 @@ mod deregister_with_relay_proof {
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1843,7 +1892,8 @@ mod deregister_with_relay_proof {
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1881,7 +1931,8 @@ fn weights_assigned_to_extrinsics_are_correct() {
         assert_eq!(
             crate::Call::<Test>::register {
                 para_id: 42.into(),
-                genesis_data: empty_genesis_data()
+                genesis_data: empty_genesis_data(),
+                head_data: None
             }
             .get_dispatch_info()
             .weight,

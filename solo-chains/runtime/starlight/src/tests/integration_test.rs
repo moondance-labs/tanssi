@@ -19,6 +19,7 @@
 use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar},
+    cumulus_primitives_core::relay_chain::HeadData,
     frame_support::{assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -201,7 +202,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
