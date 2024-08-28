@@ -1,10 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex, stringToHex } from "@polkadot/util";
-import { decodeAddress } from "@polkadot/util-crypto";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
+import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 
@@ -70,9 +66,9 @@ describeSuite({
                 const profile = {
                     url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: false }},
+                    mode: { rpc: { supportsEthereumRpc: false } },
                 };
-                
+
                 {
                     const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, alice.address);
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
@@ -93,7 +89,7 @@ describeSuite({
             id: "T04",
             title: "RPC endpoint is properly started",
             test: async function () {
-                let preserverApi = context.polkadotJs("DataPreserver");
+                const preserverApi = context.polkadotJs("DataPreserver");
                 const container2000Network = preserverApi.consts.system.version.specName.toString();
                 const paraId2000 = (await preserverApi.query.parachainInfo.parachainId()).toString();
                 expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
@@ -114,9 +110,7 @@ async function waitForLogs(logFilePath: string, timeout: number, logs: string[])
         await delay(1000);
     }
 
-    expect.fail(
-        `RPC Assignment Watch log was not found after ${timeout} seconds.`
-    );
+    expect.fail(`RPC Assignment Watch log was not found after ${timeout} seconds.`);
 }
 
 // Read log file path and check that all the logs are found in order.
@@ -126,12 +120,10 @@ async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boo
     const lines = fileContent.split("\n");
 
     let logIndex = 0;
-    let lastFoundLogIndex = 0;
 
     for (let i = 0; i < lines.length; i++) {
         if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
             logIndex++;
-            lastFoundLogIndex = i;
         }
 
         if (logIndex === logs.length) {
@@ -139,74 +131,7 @@ async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boo
         }
     }
 
-    return (logIndex === logs.length);
-}
-
-// Read log file path and check that all the logs are found in order.
-// Only supports single-line logs.
-async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    let logIndex = 0;
-    let lastFoundLogIndex = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
-            logIndex++;
-            lastFoundLogIndex = i;
-        }
-
-        if (logIndex === logs.length) {
-            break;
-        }
-    }
-
-    if (logIndex !== logs.length) {
-        // In case of missing logs, show some context around the last found log
-        const contextSize = 3;
-        const contextStart = Math.max(0, lastFoundLogIndex - contextSize);
-        const contextEnd = Math.min(lines.length - 1, lastFoundLogIndex + contextSize);
-        const contextLines = lines.slice(contextStart, contextEnd + 1);
-        const contextStr = contextLines.join("\n");
-
-        expect.fail(
-            `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
-        );
-    }
-}
-
-// Read log file path and check that none of the specified logs are found.
-// Only supports single-line logs.
-async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-        for (const log of logs) {
-            if (lines[i].includes(log)) {
-                // In case any log is found, show some context around the found log
-                const contextSize = 3;
-                const contextStart = Math.max(0, i - contextSize);
-                const contextEnd = Math.min(lines.length - 1, i + contextSize);
-                const contextLines = lines.slice(contextStart, contextEnd + 1);
-                const contextStr = contextLines.join("\n");
-
-                expect.fail(
-                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
-                );
-            }
-        }
-    }
-}
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
+    return logIndex === logs.length;
 }
 
 /// Returns the /tmp/zombie-52234... path
@@ -214,4 +139,4 @@ function getTmpZombiePath() {
     return process.env.MOON_ZOMBIE_DIR;
 }
 
-const delay = ms => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
