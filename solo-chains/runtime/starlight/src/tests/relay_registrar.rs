@@ -319,6 +319,8 @@ fn mark_valid_for_collating_converts_to_parachain() {
                 .expect("para should be parathread")
                 .is_parathread());
 
+            set_dummy_boot_node(origin_of(ALICE.into()), 1003.into());
+
             // Call mark_valid_for_collating.
             assert_ok!(
                 ContainerRegistrar::mark_valid_for_collating(root_origin(), 1003.into()),
@@ -401,6 +403,8 @@ fn deregister_calls_schedule_para_cleanup() {
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be parathread")
                 .is_parathread());
+
+            set_dummy_boot_node(origin_of(ALICE.into()), 1003.into());
 
             // Call mark_valid_for_collating.
             assert_ok!(
@@ -529,6 +533,9 @@ fn deregister_two_paras_in_the_same_block() {
             assert!(Paras::lifecycle(1004.into())
                 .expect("para should be parathread")
                 .is_parathread());
+
+            set_dummy_boot_node(origin_of(ALICE.into()), 1003.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 1004.into());
 
             // Call mark_valid_for_collating.
             assert_ok!(

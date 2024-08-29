@@ -42,7 +42,7 @@ use {
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
-        ArithmeticError, DispatchResult
+        ArithmeticError, DispatchResult,
     },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };

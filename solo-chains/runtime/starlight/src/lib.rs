@@ -1628,7 +1628,7 @@ where
         // Return early if head_data is not specified
         let genesis_head = match head_data {
             Some(data) => data,
-            None => return Err(DispatchError::Other("HeadData not specified!"))
+            None => return Err(DispatchError::Other("HeadData not specified!")),
         };
 
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
@@ -1640,7 +1640,7 @@ where
             .find(|(key, _)| key == &StorageWellKnownKeys::CODE.to_vec())
         {
             Some((_, code)) => ValidationCode(code),
-            None => return Err(DispatchError::Other("Code not found"))
+            None => return Err(DispatchError::Other("Code not found")),
         };
 
         // Try to register the parachain
@@ -1656,7 +1656,7 @@ where
 
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
         if !RegistrarManager::is_parathread(id) {
-           return RegistrarManager::make_parathread(id);
+            return RegistrarManager::make_parathread(id);
         }
         Ok(())
     }

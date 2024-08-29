@@ -18,8 +18,8 @@
 
 use {
     crate::tests::common::*,
-    crate::{ContainerRegistrar, ServicesPayment},
-    cumulus_primitives_core::ParaId,
+    crate::{ContainerRegistrar, Paras, ServicesPayment},
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::assert_ok,
     sp_std::vec,
 };
@@ -123,9 +123,18 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data(),
-                None
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 2u8, 3u8]))
             ));
+
+            run_to_session(2);
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 

@@ -129,6 +129,19 @@ pub fn run_to_block(n: u32) {
     }
 }
 
+pub fn get_genesis_data_with_validation_code() -> (ContainerChainGenesisData, Vec<u8>) {
+    let validation_code = mock_validation_code().0;
+    let genesis_data = ContainerChainGenesisData {
+        storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: vec![],
+        properties: Default::default(),
+    };
+    (genesis_data, validation_code)
+}
+
 pub fn insert_authorities_and_slot_digests(slot: u64) {
     let pre_digest = Digest {
         logs: vec![DigestItem::PreRuntime(
@@ -298,7 +311,12 @@ impl Default for ExtBuilder {
             sudo: Default::default(),
             para_ids: Default::default(),
             config: default_config(),
-            relay_config: Default::default(),
+            relay_config: runtime_parachains::configuration::HostConfiguration::<
+                BlockNumberFor<Runtime>,
+            > {
+                max_head_data_size: 20500,
+                ..Default::default()
+            },
             own_para_id: Default::default(),
             next_free_para_id: Default::default(),
             keystore: None,
@@ -692,7 +710,7 @@ pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent
 }
 
 pub fn mock_validation_code() -> ValidationCode {
-    ValidationCode(vec![1, 2, 3])
+    ValidationCode(vec![1; 10])
 }
 
 #[allow(dead_code)]
