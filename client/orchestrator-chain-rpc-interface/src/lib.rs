@@ -290,8 +290,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        self.call_remote_runtime_function("RegistrarApi_genesis_data", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "RegistrarApi_genesis_data",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn boot_nodes(
@@ -299,8 +303,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        self.call_remote_runtime_function("RegistrarApi_boot_nodes", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "RegistrarApi_boot_nodes",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn latest_block_number(
@@ -308,8 +316,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        self.call_remote_runtime_function("AuthorNotingApi_latest_block_number", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "AuthorNotingApi_latest_block_number",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {

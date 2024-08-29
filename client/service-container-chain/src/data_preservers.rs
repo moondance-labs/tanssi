@@ -20,7 +20,7 @@ use {
         DataPreserverAssignment, OrchestratorChainInterface, OrchestratorChainResult,
     },
     futures::stream::StreamExt,
-    std::{future::Future},
+    std::future::Future,
     tc_consensus::ParaId,
 };
 
@@ -59,17 +59,29 @@ pub async fn task_watch_assignment<S: TSelectSyncMode>(
             match (current_assignment, new_assignment) {
                 // no change
                 (x, y) if x == y => continue,
+                // switch from not assigned/inactive to active, start embeded node
                 (
                     Assignment::NotAssigned | Assignment::Inactive(_),
                     Assignment::Active(para_id),
                 ) => {
                     spawner.spawn(para_id, false).await;
                 }
+                // Assignement switches from active to inactive for same para_id, we stop the
+                // embeded node but keep db
                 (Assignment::Active(para_id), Assignment::Inactive(x)) if para_id == x => {
                     spawner.stop(para_id, true); // keep db
                 }
-                (Assignment::Active(para_id), _) => {
+                // No longer assigned or assigned inactive to other para id, remove previous node
+                (
+                    Assignment::Active(para_id),
+                    Assignment::Inactive(_) | Assignment::NotAssigned,
+                ) => {
                     spawner.stop(para_id, false); // don't keep db
+                }
+                // Changed para id, remove previous node and start new one
+                (Assignment::Active(previous_para_id), Assignment::Active(para_id)) => {
+                    spawner.stop(previous_para_id, false); // don't keep db
+                    spawner.spawn(para_id, false).await;
                 }
                 // don't do anything yet
                 (
