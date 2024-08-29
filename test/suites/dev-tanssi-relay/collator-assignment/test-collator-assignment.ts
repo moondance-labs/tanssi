@@ -40,7 +40,6 @@ describeSuite({
 
                 expect(initialAssignment.containerChains[2000].length).to.eq(2);
                 expect((await polkadotJs.query.tanssiCollatorAssignment.pendingCollatorContainerChain()).isNone);
-                const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
 
                 // remainingSessionsForRotation - 1
                 await jumpSessions(context, 1);
