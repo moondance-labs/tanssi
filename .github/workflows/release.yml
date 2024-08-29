@@ -555,7 +555,7 @@ jobs:
         strategy:
           fail-fast: false
           matrix:
-            test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay]
+            test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay, zombie_data_preservers]
         steps:
           - name: Checkout
             uses: actions/checkout@v4
