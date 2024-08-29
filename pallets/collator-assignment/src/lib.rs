@@ -393,7 +393,6 @@ pub mod pallet {
             Self::store_collator_fullness(
                 &new_assigned,
                 T::HostConfiguration::max_collators(target_session_index),
-                T::HostConfiguration::target_container_chain_fullness(target_session_index),
             );
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
@@ -431,11 +430,11 @@ pub mod pallet {
             }
         }
 
-        // TODO: target_fullness not used here because we store the ratio
+        /// Count number of collators assigned to any chain, divide that by `max_collators` and store
+        /// in pallet storage.
         fn store_collator_fullness(
             new_assigned: &AssignedCollators<T::AccountId>,
             max_collators: u32,
-            _target_fullness: Perbill,
         ) {
             // Count number of assigned collators
             let mut num_collators = 0;
