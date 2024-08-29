@@ -91,7 +91,12 @@ describeSuite({
 
                 // Let's disable all other parachains and set parathread collator to 4
                 // this will make every collator including the one we are registering being assigned to our parathread
-                const tx = polkadotJs.tx.registrar.registerParathread(2002, slotFrequency, containerChainGenesisData);
+                const tx = polkadotJs.tx.registrar.registerParathread(
+                    2002,
+                    slotFrequency,
+                    containerChainGenesisData,
+                    null
+                );
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({

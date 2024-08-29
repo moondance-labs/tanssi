@@ -102,7 +102,8 @@ describeSuite({
                     relayProofBlockNumber,
                     relayStorageProof,
                     managerSignature,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
