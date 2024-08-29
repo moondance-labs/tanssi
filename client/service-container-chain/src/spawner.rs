@@ -256,6 +256,8 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
     );
 
     if !data_preserver && !start_collation {
+        log::info!("This is a syncing container chain, using random ports");
+
         collation_params = None;
 
         // Use random ports to avoid conflicts with the other running container chain
