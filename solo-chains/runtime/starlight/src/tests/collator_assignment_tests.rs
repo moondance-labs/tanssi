@@ -18,8 +18,8 @@
 
 use {
     crate::{
-        tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, ServicesPayment,
-        TanssiAuthorityMapping, TanssiInvulnerables,
+        tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
+        ContainerRegistrar, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::ParaId,
     frame_support::assert_ok,
@@ -49,8 +49,8 @@ fn test_collator_assignment_rotation() {
         .with_empty_parachains(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 5,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
             collators_per_container: 2,
             full_rotation_period: 24,
             ..Default::default()
@@ -78,7 +78,17 @@ fn test_collator_assignment_rotation() {
             );
             assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_some());
 
-            run_to_session(rotation_period);
+            // Check that the randomness in CollatorAssignment is set
+            // in the block before the session change
+            run_to_block(session_to_block(rotation_period) - 1);
+            end_block();
+            let expected_randomness: [u8; 32] =
+                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
+                    .unwrap()
+                    .into();
+            assert_eq!(TanssiCollatorAssignment::randomness(), expected_randomness);
+            start_block();
+
             // Assignment changed
             assert_ne!(
                 TanssiCollatorAssignment::collator_container_chain(),
@@ -2009,8 +2019,6 @@ fn test_parachains_deregister_collators_re_assigned() {
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
-            // (AccountId::from(CHARLIE), 100 * UNIT),
-            // (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -2048,7 +2056,7 @@ fn test_parachains_deregister_collators_re_assigned() {
 }
 
 #[test]
-fn test_parachains_deregister_collators_config_change_reassigned() {
+fn test_parachains_collators_config_change_reassigned() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit

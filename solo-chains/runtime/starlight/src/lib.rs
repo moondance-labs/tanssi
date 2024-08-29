@@ -2752,6 +2752,7 @@ impl tanssi_initializer::Config for Runtime {
 pub struct BabeCurrentBlockRandomnessGetter;
 impl BabeCurrentBlockRandomnessGetter {
     fn get_block_randomness() -> Option<[u8; 32]> {
+        // In a relay context we get block randomness from Babe's AuthorVrfRandomness
         Babe::author_vrf_randomness()
     }
 
@@ -2763,7 +2764,7 @@ impl BabeCurrentBlockRandomnessGetter {
 
 /// Combines the vrf output of the previous block with the provided subject.
 /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
+pub fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
     let mut digest = Vec::new();
     digest.extend_from_slice(vrf_output.as_ref());
     digest.extend_from_slice(subject);
@@ -2780,10 +2781,13 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
+// CollatorAssignment expects to set up the rotation's randomness seed on the
+// on_finalize hook of the block prior to the actual session change.
+// So should_end_session should be true on the last block of the current session
 pub struct BabeGetRandomnessForNextBlock;
-
 impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
     fn should_end_session(n: u32) -> bool {
+        // Check if next slot there is a session change
         n != 1 && {
             let diff = Babe::current_slot()
                 .saturating_add(1u64)
@@ -2805,12 +2809,11 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
 
                 buf
             } else {
-                // If there is no randomness (e.g when running in dev mode), return [0; 32]
-                // TODO: smoke test to ensure this never happens in a live network
+                // If there is no randomness return [0; 32]
                 [0; 32]
             }
         } else {
-            // In block 0 (genesis) there is randomness
+            // In block 0 (genesis) there is no randomness
             [0; 32]
         };
 
