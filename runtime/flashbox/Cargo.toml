@@ -158,6 +158,7 @@ std = [
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
+	"pallet-data-preservers-runtime-api/std",
 	"pallet-data-preservers/std",
 	"pallet-identity/std",
 	"pallet-inflation-rewards/std",

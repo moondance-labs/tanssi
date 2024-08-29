@@ -91,6 +91,7 @@ runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
+	"pallet-data-preservers/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -98,6 +99,7 @@ runtime-benchmarks = [
 try-runtime = [
 	"dancebox-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-data-preservers/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 
