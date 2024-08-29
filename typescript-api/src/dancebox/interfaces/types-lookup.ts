@@ -2122,7 +2122,7 @@ declare module "@polkadot/types/lookup" {
                 XcmV2Junction,
                 XcmV2Junction,
                 XcmV2Junction,
-                XcmV2Junction
+                XcmV2Junction,
             ]
         >;
         readonly type: "Here" | "X1" | "X2" | "X3" | "X4" | "X5" | "X6" | "X7" | "X8";
@@ -2315,7 +2315,7 @@ declare module "@polkadot/types/lookup" {
                 XcmV3Junction,
                 XcmV3Junction,
                 XcmV3Junction,
-                XcmV3Junction
+                XcmV3Junction,
             ]
         >;
         readonly type: "Here" | "X1" | "X2" | "X3" | "X4" | "X5" | "X6" | "X7" | "X8";

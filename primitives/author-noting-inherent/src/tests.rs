@@ -208,6 +208,15 @@ mod mock_relay_chain_impl {
             unimplemented!("Not needed for test")
         }
 
+        async fn call_remote_runtime_function_encoded(
+            &self,
+            _: &'static str,
+            _: PHash,
+            _: &[u8],
+        ) -> RelayChainResult<Vec<u8>> {
+            unimplemented!("Not needed for test")
+        }
+
         async fn is_major_syncing(&self) -> RelayChainResult<bool> {
             unimplemented!("Not needed for test")
         }
