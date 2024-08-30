@@ -341,6 +341,10 @@ pub mod pallet {
         InvalidRelayManagerSignature,
         /// Tried to deregister a parachain that was not deregistered from the relay chain
         ParaStillExistsInRelay,
+        /// Tried to register a paraId in a relay context without specifying a proper HeadData.
+        HeadDataNecessary,
+        /// Tried to register a paraId in a relay context without specifying a wasm chain code.
+        WasmCodeNecessary,
     }
 
     #[pallet::composite_enum]

@@ -39,6 +39,7 @@ use {
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
     pallet_initializer as tanssi_initializer,
+    pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::ShouldEndSession,
@@ -80,7 +81,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::storage::well_known_keys as StorageWellKnownKeys,
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, DispatchError},
+    sp_runtime::traits::BlockNumberProvider,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -1610,14 +1611,15 @@ parameter_types! {
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
-pub struct InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>(
-    PhantomData<(AccountId, RegistrarManager, RegistrarWeightInfo)>,
+pub struct InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>(
+    PhantomData<(Runtime, AccountId, RegistrarManager, RegistrarWeightInfo)>,
 );
-impl<AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
-    for InnerStarlightRegistrar<AccountId, RegistrarManager, RegistrarWeightInfo>
+impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
+    for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
+    Runtime: pallet_registrar::Config,
 {
     fn register(
         who: AccountId,
@@ -1628,7 +1630,7 @@ where
         // Return early if head_data is not specified
         let genesis_head = match head_data {
             Some(data) => data,
-            None => return Err(DispatchError::Other("HeadData not specified!")),
+            None => return Err(ContainerRegistrarError::<Runtime>::HeadDataNecessary.into()),
         };
 
         let key_values: Vec<(Vec<u8>, Vec<u8>)> =
@@ -1640,7 +1642,7 @@ where
             .find(|(key, _)| key == &StorageWellKnownKeys::CODE.to_vec())
         {
             Some((_, code)) => ValidationCode(code),
-            None => return Err(DispatchError::Other("Code not found")),
+            None => return Err(ContainerRegistrarError::<Runtime>::WasmCodeNecessary.into()),
         };
 
         // Try to register the parachain
@@ -1695,7 +1697,7 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
     type InnerRegistrar =
-        InnerStarlightRegistrar<AccountId, Registrar, paras_registrar::TestWeightInfo>;
+        InnerStarlightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
