@@ -995,7 +995,8 @@ declare module "@polkadot/api-base/types/storage" {
              * deregistration process inside 'on_finalize' hook.
              *
              * It can be the case that some paraIds need to be downgraded to a parathread before deregistering on
-             * 'paras_registrar'. This process usually takes 2 sessions, and the actual downgrade happens when the block finalizes.
+             * 'paras_registrar'. This process usually takes 2 sessions, and the actual downgrade happens when the block
+             * finalizes.
              *
              * Therefore, if we tried to perform this relay deregistration process at the beginning of the session/block
              * inside ('on_initialize') initializer_on_new_session() as we do for this pallet, it would fail due to the

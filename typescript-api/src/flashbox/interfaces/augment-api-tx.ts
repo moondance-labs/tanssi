@@ -1569,7 +1569,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
                     DpContainerChainGenesisDataContainerChainGenesisData,
-                    Option<Bytes>
+                    Option<Bytes>,
                 ]
             >;
             setParaManager: AugmentedSubmittable<

@@ -4022,7 +4022,7 @@ export default {
         ],
     },
     /**
-     * Lookup428: pallet_identity::types::Registration<Balance, MaxJudgements,
+     * Lookup429: pallet_identity::types::Registration<Balance, MaxJudgements,
      * pallet_identity::legacy::IdentityInfo<FieldLimit>>
      */
     PalletIdentityRegistration: {
@@ -4291,7 +4291,7 @@ export default {
         bond: "u128",
     },
     /**
-     * Lookup503: pallet_treasury::SpendStatus<AssetKind, AssetBalance, sp_core::crypto::AccountId32, BlockNumber,
+     * Lookup504: pallet_treasury::SpendStatus<AssetKind, AssetBalance, sp_core::crypto::AccountId32, BlockNumber,
      * PaymentId>
      */
     PalletTreasurySpendStatus: {
