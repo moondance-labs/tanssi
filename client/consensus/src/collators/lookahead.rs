@@ -481,7 +481,6 @@ where
             select! {
                 maybe_relay_parent_header = import_notifications.next() => {
                     if maybe_relay_parent_header.is_none() {
-                        log::info!("breaking");
                         break;
                     }
 

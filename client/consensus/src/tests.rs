@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(clippy::await_holding_lock)]
-
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
@@ -362,7 +360,6 @@ async fn collate_lookahead_returns_correct_block() {
         get_orchestrator_aux_data: move |_block_hash, _extra| async move {
             let aux_data = OrchestratorAuraWorkerAuxData {
                 authorities: vec![alice_public.into()],
-                // This is the orchestrator consensus, it does not have a slot frequency
                 slot_freq: None,
             };
 
@@ -849,7 +846,7 @@ async fn collate_lookahead_for_2_relay_imports_but_with_cancellation_token_stops
     };
 
     // we issue the cancellation token, which should exist the loop after creating the first blocks
-    tokio::spawn(async move { cancellation_token.cancel() });
+    cancellation_token.cancel();
 
     let (fut, _exit_notification_receiver) = crate::collators::lookahead::run::<
         _,
