@@ -1648,6 +1648,7 @@ where
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
+        // Return Ok() if the paraId is already a parachain in the relay context
         if !RegistrarManager::is_parachain(id) {
             return RegistrarManager::make_parachain(id);
         }
@@ -1655,6 +1656,7 @@ where
     }
 
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
+        // Return Ok() if the paraId is already a parathread in the relay context
         if !RegistrarManager::is_parathread(id) {
             return RegistrarManager::make_parathread(id);
         }

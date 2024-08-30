@@ -386,6 +386,9 @@ impl GenericStorageReader for NativeStorageReader {
     }
 }
 
+/// Trait to handle registrar-related operations in a relay-chain context.
+/// Mostly used to wire Tanssi's and Polkadot's registrars, for them to
+/// work together in a solo-chain environment.
 pub trait RegistrarHandler<AccountId> {
     fn register(
         who: AccountId,

@@ -176,6 +176,12 @@ pub mod pallet {
 
         type RegistrarHooks: RegistrarHooks;
 
+        /// External manager that takes care of executing specific operations
+        /// when register-like functions of this pallet are called.
+        ///
+        /// Mostly used when we are in a relay-chain cofiguration context (Starlight)
+        /// to also register, deregister and upgrading paraIds in polkadot's
+        /// paras_registrar pallet.
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
@@ -349,7 +355,7 @@ pub mod pallet {
             let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1));
 
             let buffered_paras = BufferedParasToDeregister::<T>::get();
-            for _para_id in buffered_paras {
+            for _ in 0..buffered_paras.len() {
                 weight += T::InnerRegistrar::deregister_weight();
             }
             weight
@@ -460,6 +466,7 @@ pub mod pallet {
         fn on_finalize(_: BlockNumberFor<T>) {
             let buffered_paras = BufferedParasToDeregister::<T>::take();
             for para_id in buffered_paras {
+                // Deregister (in the relay context) each paraId present inside the buffer.
                 T::InnerRegistrar::deregister(para_id);
             }
         }
@@ -856,6 +863,7 @@ pub mod pallet {
             // Hold the deposit, we verified we can do this
             T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
+            // Register the paraId also in the relay context (if any).
             T::InnerRegistrar::register(
                 account.clone(),
                 para_id,
@@ -918,7 +926,18 @@ pub mod pallet {
                 })?;
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
-                T::InnerRegistrar::schedule_para_downgrade(para_id)?;
+
+                // If we have InnerRegistrar set to a relay context (like Starlight),
+                // we first need to downgrade the paraId (if it was a parachain before)
+                // and convert it to a parathread before deregistering it. Otherwise
+                // the deregistration process will fail in the scheduled session.
+                //
+                // We only downgrade if the paraId is a parachain in the context of
+                // this pallet.
+                if let None = ParathreadParams::<T>::get(para_id) {
+                    T::InnerRegistrar::schedule_para_downgrade(para_id)?;
+                }
+
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
 
@@ -955,7 +974,14 @@ pub mod pallet {
 
             T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
-            T::InnerRegistrar::schedule_para_upgrade(para_id)?;
+            // If we execute mark_valid_for_collating, we automatically upgrade
+            // the paraId to a parachain (in the relay context) at the end of the execution.
+            //
+            // We only upgrade if the paraId is a parachain in the context of
+            // this pallet.
+            if let None = ParathreadParams::<T>::get(para_id) {
+                T::InnerRegistrar::schedule_para_upgrade(para_id)?;
+            }
 
             Ok(())
         }
