@@ -510,12 +510,6 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // the only way to achieve this is by assigning the parathread a higher para-id
             run_to_block(2);
 
-            // Coordinate both ParasShared and Session CurrentIndex storages.
-            // If we don't do this, the one inside ParasShared is configured to
-            // one session before, and we want the to be the same for later checking in
-            // session 6.
-            ParasShared::set_session_index(Session::current_index());
-
             // Now the parathread should be there
             assert!(Paras::is_parathread(1001u32.into()));
             let alice_keys =
@@ -535,7 +529,15 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             ));
 
             run_to_session(2);
-            ParasShared::set_session_index(Session::current_index());
+
+            // We call run_block() after each run_to_session() for on_finalize() to
+            // be properly executed, and thus to coordinate all the necessary storages,
+            // specially ParasShared and Session CurrentIndex storages.
+            //
+            // If we don't do this, ParasShared's CurrentIndex is configured to
+            // one session before, and we want the to be the same for later checking in
+            // session 6.
+            run_block();
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -544,7 +546,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             ));
 
             run_to_session(4);
-            ParasShared::set_session_index(Session::current_index());
+            run_block();
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
