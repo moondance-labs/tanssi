@@ -299,21 +299,26 @@ impl RelayChainInterface for RelayChain {
     async fn import_notification_stream(
         &self,
     ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        let mut notifications = vec![];
-        for _n in 0..self.block_import_iterations {
-            // It does not matter if we push always the same header, blocks will be created anyway
-            notifications.push(PHeader {
-                parent_hash: Default::default(),
-                number: 1u32,
-                // The state trie merkle root
-                state_root: Default::default(),
-                // The merkle root of the extrinsics.
-                extrinsics_root: Default::default(),
-                // A chain-specific digest of data useful for light clients or referencing auxiliary data.
-                digest: Default::default(),
-            });
-        }
-        Ok(Box::pin(futures::stream::iter(notifications)))
+        let block_import_iterations = self.block_import_iterations;
+        // Create the stream using unfold with the counter as the state
+        let stream = stream::unfold(0, move |counter| async move {
+            if counter < block_import_iterations {
+                // Create the next PHeader
+                let header = PHeader {
+                    parent_hash: Default::default(),
+                    number: 1u32,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: Default::default(),
+                };
+                let next_state = counter + 1;
+                Some((header, next_state))
+            } else {
+                None
+            }
+        });
+
+        Ok(Box::pin(stream))
     }
 
     async fn finality_notification_stream(
