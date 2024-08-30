@@ -16,22 +16,32 @@
 
 use polkadot_node_subsystem::messages::{RuntimeApiMessage, RuntimeApiRequest};
 use {
+    crate::{
+        collators::lookahead::Params as LookAheadParams, OrchestratorAuraWorkerAuxData,
+        SlotFrequency,
+    },
     async_trait::async_trait,
+    cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{ParachainBlockImportMarker, ValidationCodeHashProvider},
+    cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
     cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
     },
+    futures::channel::oneshot,
     futures::prelude::*,
-    nimbus_primitives::{CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID},
+    nimbus_primitives::{
+        CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
+    },
     pallet_xcm_core_buyer_runtime_api::BuyingError,
     parity_scale_codec::Encode,
     polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
+    polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
-        CoreState, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData, ScheduledCore,
-        ValidatorId,
+        CollatorPair, CoreState, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
+        ScheduledCore, ValidatorId,
     },
     sc_block_builder::BlockBuilderBuilder,
     sc_client_api::{
@@ -39,10 +49,12 @@ use {
         ImportNotifications, StorageEventStream, StorageKey,
     },
     sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
+    sc_keystore::LocalKeystore,
     sc_network_test::{Block as TestBlock, *},
     sp_api::{ApiRef, ProvideRuntimeApi},
     sp_blockchain::{BlockStatus, CachedHeaderMetadata, HeaderMetadata, Info},
-    sp_consensus::{Environment, Proposal, Proposer},
+    sp_consensus::{Environment, NoNetwork as DummyOracle, Proposal, Proposer},
+    sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
     sp_consensus_slots::Slot,
     sp_core::{
         crypto::{ByteArray, Pair},
@@ -50,12 +62,14 @@ use {
     },
     sp_inherents::InherentData,
     sp_keyring::sr25519::Keyring,
+    sp_keystore::Keystore,
     sp_runtime::{
         generic::SignedBlock,
         traits::{Block as BlockT, BlockIdTo, Header as _, NumberFor},
         transaction_validity::{TransactionSource, TransactionValidity},
         Digest, DigestItem, Justifications, Perbill,
     },
+    sp_timestamp::Timestamp,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     sp_version::RuntimeVersion,
     std::{
@@ -64,7 +78,10 @@ use {
         sync::Arc,
         time::Duration,
     },
-    substrate_test_runtime_client::{runtime::BlockNumber, Backend, Client, TestClient},
+    substrate_test_runtime_client::{
+        runtime::BlockNumber, Backend, Client, DefaultTestClientBuilderExt, TestClient,
+    },
+    tokio_util::sync::CancellationToken,
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
@@ -812,5 +829,166 @@ impl MockRuntimeApi {
                 }
             }
         }
+    }
+}
+
+pub struct CollatorLookaheadTestBuilder {
+    para_id: ParaId,
+    min_slot_freq: Option<u32>,
+    block_import_iterations: u32,
+    core_scheduled_for_para: Option<ParaId>,
+}
+
+impl Default for CollatorLookaheadTestBuilder {
+    fn default() -> Self {
+        Self {
+            para_id: 1000u32.into(),
+            min_slot_freq: None,
+            block_import_iterations: 1,
+            core_scheduled_for_para: None,
+        }
+    }
+}
+
+impl CollatorLookaheadTestBuilder {
+    pub fn with_para_id(mut self, para_id: ParaId) -> Self {
+        self.para_id = para_id;
+        self
+    }
+    pub fn with_min_slot_freq(mut self, min_slot_freq: u32) -> Self {
+        self.min_slot_freq = Some(min_slot_freq);
+        self
+    }
+    pub fn with_block_import_iterations(mut self, block_import_iterations: u32) -> Self {
+        self.block_import_iterations = block_import_iterations;
+        self
+    }
+
+    pub fn with_core_scheduled_for_para(mut self, para_id: ParaId) -> Self {
+        self.core_scheduled_for_para = Some(para_id);
+        self
+    }
+
+    pub fn build_and_spawn(
+        self,
+    ) -> (
+        impl Future<Output = ()> + Send + 'static,
+        oneshot::Receiver<()>,
+        Arc<TestClient>,
+        Arc<sc_transaction_pool::FullPool<Block, TestClient>>,
+        CancellationToken,
+    ) {
+        let _ = sp_tracing::try_init_simple();
+        let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+        let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+        let alice_public = keystore
+            .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+            .expect("Key should be created");
+
+        // Copy of the keystore needed for tanssi_claim_slot()
+        let keystore_copy =
+            LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+        keystore_copy
+            .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+            .expect("Key should be copied");
+
+        let builder = TestClientBuilder::new();
+        let backend = builder.backend();
+        let client = Arc::new(builder.build());
+        let environ = DummyFactory(client.clone());
+        let relay_client = RelayChain {
+            client: client.clone(),
+            block_import_iterations: self.block_import_iterations,
+        };
+        let spawner = sp_core::testing::TaskExecutor::new();
+        let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
+            Default::default(),
+            true.into(),
+            None,
+            spawner.clone(),
+            client.clone(),
+        );
+        let mock_runtime_api = MockRuntimeApi::new(self.core_scheduled_for_para);
+        let cancellation_token = CancellationToken::new();
+
+        let (overseer, handle) =
+            dummy_overseer_builder(spawner.clone(), MockSupportsParachains, None)
+                .unwrap()
+                .replace_runtime_api(|_| mock_runtime_api)
+                .build()
+                .unwrap();
+        spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+        // Build the collator
+        let params = LookAheadParams {
+            create_inherent_data_providers: move |_block_hash, _| async move {
+                let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                    Timestamp::current(),
+                    SlotDuration::from_millis(SLOT_DURATION_MS),
+                );
+
+                Ok((slot,))
+            },
+            block_import: environ.0.clone(),
+            relay_client: relay_client.clone(),
+            keystore: keystore.into(),
+            para_id: self.para_id,
+            proposer: ConsensusProposer::new(environ.clone()),
+            collator_service: CollatorService::new(
+                client.clone(),
+                Arc::new(spawner.clone()),
+                Arc::new(move |_, _| {}),
+                Arc::new(environ.clone()),
+            ),
+            authoring_duration: Duration::from_millis(500),
+            cancellation_token: cancellation_token.clone(),
+            code_hash_provider: DummyCodeHashProvider,
+            collator_key: CollatorPair::generate().0,
+            force_authoring: false,
+            get_orchestrator_aux_data: move |_block_hash, _extra| async move {
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities: vec![alice_public.into()],
+                    slot_freq: self.min_slot_freq.map(|min_slot_freq| SlotFrequency {
+                        min: min_slot_freq,
+                        max: 0u32,
+                    }),
+                };
+
+                Ok(aux_data)
+            },
+            get_current_slot_duration: move |_block_hash| SlotDuration::from_millis(6_000),
+            overseer_handle: OverseerHandle::new(handle),
+            relay_chain_slot_duration: Duration::from_secs(6),
+            para_client: environ.clone().into(),
+            sync_oracle: DummyOracle,
+            para_backend: backend,
+            orchestrator_client: environ.into(),
+            orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+            orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+        };
+        let (fut, exit_notification_receiver) = crate::collators::lookahead::run::<
+            _,
+            Block,
+            NimbusPair,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(params);
+        (
+            fut,
+            exit_notification_receiver,
+            client,
+            orchestrator_tx_pool,
+            cancellation_token,
+        )
     }
 }
