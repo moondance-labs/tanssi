@@ -795,7 +795,12 @@ pub mod pallet {
                     (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 let origin = RawOrigin::Signed(account);
-                assert_ok!(Self::register(origin.into(), *para_id, Default::default(), None));
+                assert_ok!(Self::register(
+                    origin.into(),
+                    *para_id,
+                    Default::default(),
+                    None
+                ));
             }
 
             let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");

@@ -165,7 +165,7 @@ mod benchmarks {
             proof,
             signature,
             storage,
-            None
+            None,
         );
 
         // verification code
@@ -189,7 +189,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
@@ -226,7 +226,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             // Call mark_valid_for_collating to ensure that the deregister call
@@ -276,7 +276,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
@@ -330,7 +330,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             // Call mark_valid_for_collating to ensure that the deregister call
@@ -398,7 +398,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
         }
@@ -412,7 +412,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
@@ -452,7 +452,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
@@ -469,7 +469,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
@@ -518,7 +518,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
@@ -535,7 +535,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
@@ -579,7 +579,7 @@ mod benchmarks {
             Default::default(),
             slot_frequency,
             storage,
-            None
+            None,
         );
 
         // verification code
@@ -608,7 +608,7 @@ mod benchmarks {
                 i.into(),
                 slot_frequency.clone(),
                 storage.clone(),
-                None
+                None,
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
