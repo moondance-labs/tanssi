@@ -162,6 +162,7 @@ pub mod westend {
                         )
                     })
                     .collect::<Vec<_>>(),
+                ..Default::default()
             },
             staking: westend_runtime::StakingConfig {
                 validator_count: validators::initial_authorities().len() as u32,
@@ -269,6 +270,7 @@ pub mod rococo {
                         )
                     })
                     .collect::<Vec<_>>(),
+                ..Default::default()
             },
             babe: rococo_runtime::BabeConfig {
                 authorities: Default::default(),

@@ -289,6 +289,25 @@ fn starlight_testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
+            "nonAuthorityKeys": invulnerables
+                .iter()
+                .cloned()
+                .map(|x| {
+                    (
+                        x.stash.clone(),
+                        x.stash.clone(),
+                        starlight_session_keys(
+                            x.babe.clone(),
+                            x.grandpa.clone(),
+                            x.para_validator.clone(),
+                            x.para_assignment.clone(),
+                            x.authority_discovery.clone(),
+                            x.beefy.clone(),
+                            x.nimbus.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
         },
         "babe": {
             "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG)

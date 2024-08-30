@@ -2001,7 +2001,10 @@ export default {
             "CantFetchStatusBeforeLastTimeUpdated",
         ],
     },
-    /** Lookup285: pallet_identity::types::Registration<Balance, MaxJudgements, pallet_identity::legacy::IdentityInfo<FieldLimit>> */
+    /**
+     * Lookup284: pallet_identity::types::Registration<Balance, MaxJudgements,
+     * pallet_identity::legacy::IdentityInfo<FieldLimit>>
+     */
     PalletIdentityRegistration: {
         judgements: "Vec<(u32,PalletIdentityJudgement)>",
         deposit: "u128",
@@ -2201,7 +2204,10 @@ export default {
         beneficiary: "AccountId32",
         bond: "u128",
     },
-    /** Lookup353: pallet_treasury::SpendStatus<AssetKind, AssetBalance, sp_core::crypto::AccountId32, BlockNumber, PaymentId> */
+    /**
+     * Lookup352: pallet_treasury::SpendStatus<AssetKind, AssetBalance, sp_core::crypto::AccountId32, BlockNumber,
+     * PaymentId>
+     */
     PalletTreasurySpendStatus: {
         assetKind: "Null",
         amount: "u128",

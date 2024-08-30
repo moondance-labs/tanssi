@@ -36,7 +36,7 @@ async function main() {
             "--dev-service",
             "--wasm-execution=interpreted-i-know-what-i-do",
             "--rpc-port=9933",
-            "--unsafe-force-node-key-generation"
+            "--unsafe-force-node-key-generation",
         ]);
 
         const onProcessExit = () => {
@@ -97,7 +97,6 @@ async function main() {
     console.log("Building package...");
     execSync("pnpm run build", { stdio: "inherit" });
     console.log("Post build...");
-    execSync("pnpm run postbuild", { stdio: "inherit" });
     execSync("pnpm run postgenerate", { stdio: "inherit" });
 
     console.log(`Script complete ${chalk.bgBlackBright.greenBright("api-augment")} package built successfully ✅`);
