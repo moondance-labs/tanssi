@@ -5565,6 +5565,8 @@ declare module "@polkadot/types/lookup" {
         readonly isInvalidRelayStorageProof: boolean;
         readonly isInvalidRelayManagerSignature: boolean;
         readonly isParaStillExistsInRelay: boolean;
+        readonly isHeadDataNecessary: boolean;
+        readonly isWasmCodeNecessary: boolean;
         readonly type:
             | "ParaIdAlreadyRegistered"
             | "ParaIdNotRegistered"
@@ -5580,7 +5582,9 @@ declare module "@polkadot/types/lookup" {
             | "RelayStorageRootNotFound"
             | "InvalidRelayStorageProof"
             | "InvalidRelayManagerSignature"
-            | "ParaStillExistsInRelay";
+            | "ParaStillExistsInRelay"
+            | "HeadDataNecessary"
+            | "WasmCodeNecessary";
     }
 
     /** @name PalletConfigurationHostConfiguration (458) */

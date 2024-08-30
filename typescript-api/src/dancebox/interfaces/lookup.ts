@@ -4121,6 +4121,8 @@ export default {
             "InvalidRelayStorageProof",
             "InvalidRelayManagerSignature",
             "ParaStillExistsInRelay",
+            "HeadDataNecessary",
+            "WasmCodeNecessary",
         ],
     },
     /** Lookup458: pallet_configuration::HostConfiguration */
