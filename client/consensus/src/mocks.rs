@@ -833,9 +833,13 @@ impl MockRuntimeApi {
 }
 
 pub struct CollatorLookaheadTestBuilder {
+    // the para id for which we propose block
     para_id: ParaId,
+    // in case of a parathread, the min slot freq
     min_slot_freq: Option<u32>,
+    // number of relay block iterations to run
     block_import_iterations: u32,
+    // whether we want to have a core schedule for a para
     core_scheduled_for_para: Option<ParaId>,
 }
 
@@ -878,6 +882,7 @@ impl CollatorLookaheadTestBuilder {
         Arc<sc_transaction_pool::FullPool<Block, TestClient>>,
         CancellationToken,
     ) {
+        // Creation of keystore
         let _ = sp_tracing::try_init_simple();
         let keystore_path = tempfile::tempdir().expect("Creates keystore path");
         let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
@@ -892,14 +897,19 @@ impl CollatorLookaheadTestBuilder {
             .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
             .expect("Key should be copied");
 
+        // Build client with the test substrate runtime
         let builder = TestClientBuilder::new();
         let backend = builder.backend();
         let client = Arc::new(builder.build());
         let environ = DummyFactory(client.clone());
+
+        // Create the relay chain mock
         let relay_client = RelayChain {
             client: client.clone(),
             block_import_iterations: self.block_import_iterations,
         };
+
+        // Create the txpool for orchestrator, which should serve to test parathread buy core injection
         let spawner = sp_core::testing::TaskExecutor::new();
         let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
             Default::default(),
@@ -908,16 +918,24 @@ impl CollatorLookaheadTestBuilder {
             spawner.clone(),
             client.clone(),
         );
+
+        // Create the mocked runtime api, which will return whether we have a core scheduled
         let mock_runtime_api = MockRuntimeApi::new(self.core_scheduled_for_para);
+
+        // Create the cancelation token
         let cancellation_token = CancellationToken::new();
 
+        // Create a dummy overseer, but where we replace the mock runtime api
         let (overseer, handle) =
             dummy_overseer_builder(spawner.clone(), MockSupportsParachains, None)
                 .unwrap()
                 .replace_runtime_api(|_| mock_runtime_api)
                 .build()
                 .unwrap();
+
+        // spawn overseer
         spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
+
         // Build the collator
         let params = LookAheadParams {
             create_inherent_data_providers: move |_block_hash, _| async move {
