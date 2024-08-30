@@ -80,7 +80,7 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
-    sp_core::{Get, storage::well_known_keys as StorageWellKnownKeys},
+    sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
