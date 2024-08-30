@@ -17,10 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras,
-        Session,
-    },
+    crate::{tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Session},
     cumulus_primitives_core::relay_chain::{
         vstaging::SchedulerParams, AsyncBackingParams, CoreIndex, HeadData,
     },
