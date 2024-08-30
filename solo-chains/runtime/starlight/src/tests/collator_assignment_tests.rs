@@ -17,14 +17,14 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
     crate::{
-        Balances, CollatorConfiguration, ContainerRegistrar, Paras, ServicesPayment,
-        TanssiAuthorityMapping, TanssiInvulnerables,
+        tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, Paras,
+        ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
-    frame_support::assert_ok,
+    frame_support::{assert_noop, assert_ok},
     parity_scale_codec::Encode,
+    runtime_common::paras_registrar,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
@@ -715,6 +715,62 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 assignment.container_chains[&1001u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
+        });
+}
+
+#[test]
+fn test_collators_not_assigned_if_wasm_code_is_invalid() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 5,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
+            ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // In session 2, we should mark the validation code as trusted in the relay
+            // for the paraId to be onboarded as a parathread after 2 sessions.
+            // We won't do it now to see what happens.
+            run_to_session(4);
+
+            // paraId should not have been onboarded after 2 sessions.
+            assert!(Paras::lifecycle(1001u32.into()).is_none());
+
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+
+            // mark_valid_for_collating() should fail, as the paraId has not been onboarded yet,
+            // due to its validation code is not trusted.
+            assert_noop!(
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                paras_registrar::Error::<Runtime>::NotParathread
+            );
+
+            // paraId should not have any collators assigned.
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
         });
 }
 

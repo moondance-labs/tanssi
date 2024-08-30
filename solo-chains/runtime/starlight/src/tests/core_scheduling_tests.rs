@@ -18,7 +18,7 @@
 
 use {
     crate::{
-        tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasShared,
+        tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras,
         Session,
     },
     cumulus_primitives_core::relay_chain::{
