@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DTR0301",
+    id: "DTR0401",
     title: "Data preservers pallet relay test suite",
     foundationMethods: "dev",
 

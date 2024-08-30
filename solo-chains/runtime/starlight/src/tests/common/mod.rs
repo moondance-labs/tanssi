@@ -219,6 +219,7 @@ pub fn start_block() {
     Babe::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
+    TanssiCollatorAssignment::on_initialize(System::block_number());
     let maybe_mock_inherent = take_new_inherent_data();
     if let Some(mock_inherent_data) = maybe_mock_inherent {
         set_paras_inherent(mock_inherent_data);
@@ -230,11 +231,12 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
-    Grandpa::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
-    Initializer::on_finalize(System::block_number());
+    Grandpa::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
+    Initializer::on_finalize(System::block_number());
     ContainerRegistrar::on_finalize(System::block_number());
+    TanssiCollatorAssignment::on_finalize(System::block_number());
 }
 
 pub fn run_block() {
@@ -675,6 +677,10 @@ fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::Inhe
 
 pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
     frame_support::storage::unhashed::put(b"ParasInherent", &data);
+}
+
+pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
+    pallet_babe::AuthorVrfRandomness::<Runtime>::set(data);
 }
 
 /// Mock the inherent that sets validation data in ParachainSystem, which

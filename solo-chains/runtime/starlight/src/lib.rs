@@ -38,6 +38,7 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
+    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_initializer as tanssi_initializer,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -79,7 +80,7 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
-    sp_core::storage::well_known_keys as StorageWellKnownKeys,
+    sp_core::{Get, storage::well_known_keys as StorageWellKnownKeys},
     sp_genesis_builder::PresetId,
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
@@ -119,8 +120,8 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, IdentityLookup,
-            Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
+            BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, Hash as HashT,
+            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -2826,6 +2827,88 @@ impl tanssi_initializer::Config for Runtime {
     type SessionHandler = OwnApplySession;
 }
 
+pub struct BabeCurrentBlockRandomnessGetter;
+impl BabeCurrentBlockRandomnessGetter {
+    fn get_block_randomness() -> Option<[u8; 32]> {
+        // In a relay context we get block randomness from Babe's AuthorVrfRandomness
+        Babe::author_vrf_randomness()
+    }
+
+    fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
+        Self::get_block_randomness()
+            .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
+    }
+}
+
+/// Combines the vrf output of the previous block with the provided subject.
+/// This ensures that the randomness will be different on different pallets, as long as the subject is different.
+pub fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
+    let mut digest = Vec::new();
+    digest.extend_from_slice(vrf_output.as_ref());
+    digest.extend_from_slice(subject);
+
+    T::Hashing::hash(digest.as_slice())
+}
+
+/// Read full_rotation_period from pallet_configuration
+pub struct ConfigurationCollatorRotationSessionPeriod;
+
+impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
+    fn get() -> u32 {
+        CollatorConfiguration::config().full_rotation_period
+    }
+}
+
+// CollatorAssignment expects to set up the rotation's randomness seed on the
+// on_finalize hook of the block prior to the actual session change.
+// So should_end_session should be true on the last block of the current session
+pub struct BabeGetRandomnessForNextBlock;
+impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
+    fn should_end_session(n: u32) -> bool {
+        // Check if next slot there is a session change
+        n != 1 && {
+            let diff = Babe::current_slot()
+                .saturating_add(1u64)
+                .saturating_sub(Babe::current_epoch_start());
+            *diff >= Babe::current_epoch().duration
+        }
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        let block_number = System::block_number();
+        let random_seed = if block_number != 0 {
+            if let Some(random_hash) = {
+                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
+            } {
+                // Return random_hash as a [u8; 32] instead of a Hash
+                let mut buf = [0u8; 32];
+                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+
+                buf
+            } else {
+                // If there is no randomness return [0; 32]
+                [0; 32]
+            }
+        } else {
+            // In block 0 (genesis) there is no randomness
+            [0; 32]
+        };
+
+        random_seed
+    }
+}
+
+// Randomness trait
+impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
+    fn random(subject: &[u8]) -> (Hash, BlockNumber) {
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let randomness = Self::get_block_randomness_mixed(subject).unwrap_or_default();
+
+        (randomness, block_number)
+    }
+}
+
 pub struct RemoveParaIdsWithNoCreditsImpl;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
@@ -2909,8 +2992,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type ContainerChains = ContainerRegistrar;
     type SessionIndex = u32;
     type SelfParaId = MockParaId;
-    type ShouldRotateAllCollators = ();
-    type GetRandomnessForNextBlock = ();
+    type ShouldRotateAllCollators =
+        RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = ();
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type CollatorAssignmentHook = ServicesPayment;
