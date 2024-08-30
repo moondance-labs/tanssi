@@ -6,6 +6,15 @@ settings:
 
 importers:
 
+  .:
+    dependencies:
+      api-augment:0.400.0:
+        specifier: link:@tanssi/api-augment:0.400.0
+        version: link:@tanssi/api-augment:0.400.0
+      api-augment:latest:
+        specifier: link:@tanssi/api-augment:latest
+        version: link:@tanssi/api-augment:latest
+
   test:
     dependencies:
       '@zombienet/orchestrator':
@@ -91,8 +100,8 @@ importers:
         specifier: 1.0.0
         version: 1.0.0
       pnpm:
-        specifier: 8.12.1
-        version: 8.12.1
+        specifier: 9.9.0
+        version: 9.9.0
       prettier:
         specifier: 2.8.8
         version: 2.8.8
@@ -3473,9 +3482,9 @@ packages:
   pkg-types@1.1.3:
     resolution: {integrity: sha512-+JrgthZG6m3ckicaOB74TwQ+tBWsFl3qVQg7mN8ulwSOElJ7gBhKzj2VkCPnZ4NlF6kEquYU+RIYNVAvzd54UA==}
 
-  pnpm@8.12.1:
-    resolution: {integrity: sha512-ZwXqGWattlhwU+bP5v3cN3+BBmIo2vc2xEkAEvRPL/G/DHE7uPMUX84OPvZpx8FfGaWawVeDiVHyNMF7gcplXQ==}
-    engines: {node: '>=16.14'}
+  pnpm@9.9.0:
+    resolution: {integrity: sha512-YMGKzROL/2ldM5vmrRP36TbupnRWYNTMSndtUkfFQNDt7hpWNpXBg6ZuuRfviPK0/rH8JfMqetytx6rzQ46ZwQ==}
+    engines: {node: '>=18.12'}
     hasBin: true
 
   possible-typed-array-names@1.0.0:
@@ -8922,7 +8931,7 @@ snapshots:
       mlly: 1.7.1
       pathe: 1.1.2
 
-  pnpm@8.12.1: {}
+  pnpm@9.9.0: {}
 
   possible-typed-array-names@1.0.0: {}
 
