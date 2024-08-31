@@ -2950,15 +2950,48 @@ pub struct GetCoreAllocationConfigurationImpl;
 
 impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
     fn get() -> Option<CoreAllocationConfiguration> {
-        let system_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        let current_block = System::block_number();
 
-        let session_index = CurrentSessionIndexGetter::session_index();
+        let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+        let mut pending_configs =
+            runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+
+        // We cannot use `<Runtime as pallet_session::Config>::ShouldEndSession` as it is not a pure query and writes
+        // to storage in certain conditions (for example, when this is invoked on genesis.) which makes current_slot =
+        // block - 1 instead of being equal.
+        let should_end_session = Babe::should_epoch_change(current_block);
+        let session_index_to_consider = if should_end_session {
+            Session::current_index() + 2
+        } else {
+            Session::current_index() + 1
+        };
+
+        // We are not making any assumptions about number of configurations existing in pending config
+        // storage item.
+        // First remove any pending configs greater than session index in consideration
+        pending_configs = pending_configs
+            .drain(..)
+            .filter(|element| element.0 <= session_index_to_consider)
+            .collect::<Vec<_>>();
+        // Reverse sorting by the session index
+        pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
+
+        let config_to_consider = if pending_configs.is_empty() {
+            &active_config
+        } else {
+            // We will take first pending config which should be as close to the session index as possible
+            &pending_configs
+                .first()
+                .expect("already checked for emptiness above")
+                .1
+        };
+
         let max_parachain_percentage =
-            CollatorConfiguration::max_parachain_cores_percentage(session_index)
+            CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
                 .unwrap_or(Perbill::from_percent(50));
 
         Some(CoreAllocationConfiguration {
-            core_count: system_config.scheduler_params.num_cores,
+            core_count: config_to_consider.scheduler_params.num_cores,
             max_parachain_percentage,
         })
     }
