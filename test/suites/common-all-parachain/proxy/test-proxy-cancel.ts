@@ -204,6 +204,7 @@ describeSuite({
                     polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
+
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
                     return a.event.method == "ProxyExecuted";
