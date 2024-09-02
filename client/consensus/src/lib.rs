@@ -25,6 +25,8 @@ mod consensus_orchestrator;
 mod manual_seal;
 
 #[cfg(test)]
+mod mocks;
+#[cfg(test)]
 mod tests;
 
 pub use {
