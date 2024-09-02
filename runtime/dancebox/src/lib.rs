@@ -768,11 +768,10 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
                 buf
             } else {
                 // If there is no randomness (e.g when running in dev mode), return [0; 32]
-                // TODO: smoke test to ensure this never happens in a live network
                 [0; 32]
             }
         } else {
-            // In block 0 (genesis) there is randomness
+            // In block 0 (genesis) there is no randomness
             [0; 32]
         };
 

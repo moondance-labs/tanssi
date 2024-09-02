@@ -15,468 +15,33 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(clippy::await_holding_lock)]
+
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
 use {
     crate::{
         collators::{tanssi_claim_slot, ClaimMode, Collator, Params as CollatorParams},
-        OrchestratorAuraWorkerAuxData,
+        mocks::*,
+        OrchestratorAuraWorkerAuxData, SlotFrequency,
     },
-    async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
-    cumulus_primitives_core::{
-        relay_chain::{BlockId, BlockNumber, CoreState},
-        CollationInfo, CollectCollationInfo, ParaId,
-    },
-    cumulus_relay_chain_interface::{
-        CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
-        StorageValue,
-    },
-    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-    futures::prelude::*,
-    nimbus_primitives::{
-        CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
-    },
+    nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID},
     parity_scale_codec::Encode,
     parking_lot::Mutex,
-    polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
-    polkadot_parachain_primitives::primitives::HeadData,
-    polkadot_primitives::{
-        Hash as PHash, OccupiedCoreAssumption, PersistedValidationData, ValidatorId,
-    },
-    sc_block_builder::BlockBuilderBuilder,
     sc_client_api::HeaderBackend,
-    sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
     sc_keystore::LocalKeystore,
     sc_network_test::{Block as TestBlock, Header as TestHeader, *},
-    sp_api::{ApiRef, ProvideRuntimeApi},
-    sp_consensus::{EnableProofRecording, Environment, Proposal, Proposer},
+    sc_transaction_pool_api::TransactionPool,
     sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration, AURA_ENGINE_ID},
     sp_consensus_slots::Slot,
-    sp_core::{
-        crypto::{ByteArray, Pair},
-        traits::SpawnNamed,
-    },
-    sp_inherents::InherentData,
     sp_keyring::sr25519::Keyring,
     sp_keystore::{Keystore, KeystorePtr},
-    sp_runtime::{
-        traits::{Block as BlockT, Header as _},
-        Digest, DigestItem,
-    },
+    sp_runtime::{Digest, DigestItem},
     sp_timestamp::Timestamp,
-    sp_version::RuntimeVersion,
-    std::{
-        collections::{BTreeMap, BTreeSet},
-        pin::Pin,
-        sync::Arc,
-        time::Duration,
-    },
-    substrate_test_runtime_client::TestClient,
-    tp_traits::SlotFrequency,
+    std::{sync::Arc, time::Duration},
 };
-
-// Duration of slot time
-const SLOT_DURATION_MS: u64 = 1000;
-
-type Error = sp_blockchain::Error;
-
-#[derive(Clone)]
-struct DummyFactory(Arc<TestClient>);
-// We are going to create API because we need this to test runtime apis
-// We use the client normally, but for testing certain runtime-api calls,
-// we basically mock the runtime-api calls
-impl ProvideRuntimeApi<Block> for DummyFactory {
-    type Api = MockApi;
-
-    fn runtime_api(&self) -> ApiRef<'_, Self::Api> {
-        MockApi.into()
-    }
-}
-
-struct MockApi;
-
-// This is our MockAPi impl. We need these to test first_eligible_key
-sp_api::mock_impl_runtime_apis! {
-    impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for MockApi {
-        /// Return the current authorities assigned to a given paraId
-        fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            // We always return Alice if paraId is 1000
-            if para_id == 1000u32.into() {
-                Some(vec![Keyring::Alice.public().into()])
-            }
-            else {
-                None
-            }
-        }
-        /// Return the paraId assigned to a given authority
-        fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
-            if authority == Keyring::Alice.public().into() {
-                Some(1000u32.into())
-            }
-            else {
-                None
-            }
-        }
-    }
-
-    impl CollectCollationInfo<Block> for MockApi {
-        fn collect_collation_info(_header: &<Block as BlockT>::Header) -> CollationInfo {
-            CollationInfo {
-                upward_messages: Vec::new(),
-                horizontal_messages: Vec::new(),
-                new_validation_code: None,
-                processed_downward_messages: 0u32,
-                hrmp_watermark: 0u32,
-                head_data: HeadData(vec![1, 2, 3])
-            }
-        }
-
-    }
-}
-
-#[derive(Clone)]
-struct RelayChain;
-
-#[async_trait]
-impl RelayChainInterface for RelayChain {
-    async fn validators(&self, _: PHash) -> RelayChainResult<Vec<ValidatorId>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn best_block_hash(&self) -> RelayChainResult<PHash> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn finalized_block_hash(&self) -> RelayChainResult<PHash> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn retrieve_dmq_contents(
-        &self,
-        _: ParaId,
-        _: PHash,
-    ) -> RelayChainResult<Vec<InboundDownwardMessage>> {
-        let downward_msg = InboundDownwardMessage {
-            sent_at: 10u32,
-            msg: vec![1u8, 2u8, 3u8],
-        };
-        Ok(vec![downward_msg])
-    }
-
-    async fn retrieve_all_inbound_hrmp_channel_contents(
-        &self,
-        _: ParaId,
-        _: PHash,
-    ) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
-        let mut tree = BTreeMap::new();
-        let hrmp_msg = InboundHrmpMessage {
-            sent_at: 10u32,
-            data: vec![1u8, 2u8, 3u8],
-        };
-        let para_id = ParaId::from(2000u32);
-        tree.insert(para_id, vec![hrmp_msg]);
-        Ok(tree)
-    }
-
-    async fn persisted_validation_data(
-        &self,
-        _hash: PHash,
-        _: ParaId,
-        _assumption: OccupiedCoreAssumption,
-    ) -> RelayChainResult<Option<PersistedValidationData>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn candidate_pending_availability(
-        &self,
-        _: PHash,
-        _: ParaId,
-    ) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn session_index_for_child(&self, _: PHash) -> RelayChainResult<u32> {
-        Ok(0)
-    }
-
-    async fn import_notification_stream(
-        &self,
-    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn finality_notification_stream(
-        &self,
-    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn is_major_syncing(&self) -> RelayChainResult<bool> {
-        Ok(false)
-    }
-
-    fn overseer_handle(&self) -> RelayChainResult<OverseerHandle> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn get_storage_by_key(
-        &self,
-        _: PHash,
-        _: &[u8],
-    ) -> RelayChainResult<Option<StorageValue>> {
-        Ok(None)
-    }
-
-    async fn prove_read(
-        &self,
-        _: PHash,
-        _: &Vec<Vec<u8>>,
-    ) -> RelayChainResult<sc_client_api::StorageProof> {
-        let mut tree = BTreeSet::new();
-        tree.insert(vec![1u8, 2u8, 3u8]);
-        let proof = sc_client_api::StorageProof::new(tree);
-        Ok(proof)
-    }
-
-    async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
-        Ok(())
-    }
-
-    async fn new_best_notification_stream(
-        &self,
-    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn header(&self, _block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn validation_code_hash(
-        &self,
-        _relay_parent: PHash,
-        _para_id: ParaId,
-        _occupied_core_assumption: OccupiedCoreAssumption,
-    ) -> RelayChainResult<Option<polkadot_primitives::ValidationCodeHash>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn candidates_pending_availability(
-        &self,
-        _: PHash,
-        _: ParaId,
-    ) -> RelayChainResult<Vec<CommittedCandidateReceipt>> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn availability_cores(
-        &self,
-        _relay_parent: PHash,
-    ) -> RelayChainResult<Vec<CoreState<PHash, BlockNumber>>> {
-        unimplemented!("Not needed for test");
-    }
-
-    async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
-        unimplemented!("Not needed for test")
-    }
-
-    async fn call_remote_runtime_function_encoded(
-        &self,
-        _: &'static str,
-        _: PHash,
-        _: &[u8],
-    ) -> RelayChainResult<Vec<u8>> {
-        unimplemented!("Not needed for test")
-    }
-}
-
-#[derive(Clone)]
-struct DummySpawner;
-impl SpawnNamed for DummySpawner {
-    fn spawn_blocking(
-        &self,
-        _name: &'static str,
-        _group: Option<&'static str>,
-        _future: futures::future::BoxFuture<'static, ()>,
-    ) {
-    }
-
-    fn spawn(
-        &self,
-        _name: &'static str,
-        _group: Option<&'static str>,
-        _future: futures::future::BoxFuture<'static, ()>,
-    ) {
-    }
-}
-
-struct DummyProposer(Arc<TestClient>);
-
-// This is going to be our block verifier
-// It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
-// It should substract the seal from logs and put it in post_logs
-#[derive(Clone)]
-pub struct SealExtractorVerfier {
-    finalized: bool,
-}
-
-impl SealExtractorVerfier {
-    /// Create a new instance.
-    ///
-    /// Every verified block will use `finalized` for the `BlockImportParams`.
-    pub fn new(finalized: bool) -> Self {
-        Self { finalized }
-    }
-}
-
-#[async_trait::async_trait]
-impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
-    async fn verify(
-        &self,
-        mut block: sc_consensus::BlockImportParams<B>,
-    ) -> Result<sc_consensus::BlockImportParams<B>, String> {
-        if block.fork_choice.is_none() {
-            block.fork_choice = Some(ForkChoiceStrategy::LongestChain);
-        };
-        //TODO: this could be done by making the nimbus verifier public (it is not)
-
-        // Grab the seal digest. Assume it is last (since it is a seal after-all).
-        let seal = block
-            .header
-            .digest_mut()
-            .pop()
-            .ok_or("Block should have at least one digest on it")?;
-
-        let signature = seal
-            .as_nimbus_seal()
-            .ok_or_else(|| String::from("HeaderUnsealed"))?;
-
-        // Grab the author information from either the preruntime digest or the consensus digest
-        //TODO use the trait
-        let claimed_author = block
-            .header
-            .digest()
-            .logs
-            .iter()
-            .find_map(|digest| match *digest {
-                DigestItem::Consensus(id, ref author_id) if id == NIMBUS_ENGINE_ID => {
-                    Some(author_id.clone())
-                }
-                DigestItem::PreRuntime(id, ref author_id) if id == NIMBUS_ENGINE_ID => {
-                    Some(author_id.clone())
-                }
-                _ => None,
-            })
-            .ok_or("Expected one consensus or pre-runtime digest that contains author id bytes")?;
-
-        // Verify the signature
-        let valid_signature = NimbusPair::verify(
-            &signature,
-            block.header.hash(),
-            &NimbusId::from_slice(&claimed_author)
-                .map_err(|_| "Invalid Nimbus ID (wrong length)")?,
-        );
-
-        if !valid_signature {
-            return Err("Block signature invalid".into());
-        }
-        block.post_digests.push(seal);
-
-        block.finalized = self.finalized;
-        Ok(block)
-    }
-}
-
-// The test Environment
-impl Environment<TestBlock> for DummyFactory {
-    type Proposer = DummyProposer;
-    type CreateProposer = future::Ready<Result<DummyProposer, Error>>;
-    type Error = Error;
-
-    fn init(&mut self, _parent_header: &<TestBlock as BlockT>::Header) -> Self::CreateProposer {
-        future::ready(Ok(DummyProposer(self.0.clone())))
-    }
-}
-
-// how to propose the block by Dummy Proposer
-impl Proposer<TestBlock> for DummyProposer {
-    type Error = Error;
-    type Proposal = future::Ready<Result<Proposal<TestBlock, Self::Proof>, Error>>;
-    type ProofRecording = EnableProofRecording;
-    type Proof = sc_client_api::StorageProof;
-
-    fn propose(
-        self,
-        _: InherentData,
-        digests: Digest,
-        _: Duration,
-        _: Option<usize>,
-    ) -> Self::Proposal {
-        let r = BlockBuilderBuilder::new(&*self.0)
-            .on_parent_block(self.0.chain_info().best_hash)
-            .fetch_parent_block_number(&*self.0)
-            .unwrap()
-            .with_inherent_digests(digests)
-            .build()
-            .unwrap()
-            .build();
-        let (_relay_parent_storage_root, proof) =
-            RelayStateSproofBuilder::default().into_state_root_and_proof();
-
-        futures::future::ready(r.map(|b| Proposal {
-            block: b.block,
-            proof,
-            storage_changes: b.storage_changes,
-        }))
-    }
-}
-
-type AuraPeer = Peer<(), PeersClient>;
-
-#[derive(Default)]
-pub struct AuraTestNet {
-    peers: Vec<AuraPeer>,
-}
-
-impl TestNetFactory for AuraTestNet {
-    type Verifier = SealExtractorVerfier;
-    type PeerData = ();
-    type BlockImport = PeersClient;
-
-    fn make_block_import(
-        &self,
-        client: PeersClient,
-    ) -> (
-        BlockImportAdapter<Self::BlockImport>,
-        Option<BoxJustificationImport<Block>>,
-        Self::PeerData,
-    ) {
-        ((client.as_block_import()), None, ())
-    }
-
-    fn make_verifier(&self, _client: PeersClient, _peer_data: &()) -> Self::Verifier {
-        SealExtractorVerfier::new(true)
-    }
-
-    fn peer(&mut self, i: usize) -> &mut AuraPeer {
-        &mut self.peers[i]
-    }
-
-    fn peers(&self) -> &Vec<AuraPeer> {
-        &self.peers
-    }
-
-    fn peers_mut(&mut self) -> &mut Vec<AuraPeer> {
-        &mut self.peers
-    }
-
-    fn mut_peers<F: FnOnce(&mut Vec<AuraPeer>)>(&mut self, closure: F) {
-        closure(&mut self.peers);
-    }
-}
 
 // Checks node slot claim. Again for different slots, different authorities
 // should be able to claim
@@ -588,6 +153,7 @@ async fn claim_slot_respects_min_slot_freq() {
 #[tokio::test]
 async fn collate_returns_correct_block() {
     let net = AuraTestNet::new(4);
+    let _ = sp_tracing::try_init_simple();
 
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
@@ -608,12 +174,16 @@ async fn collate_returns_correct_block() {
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
     let spawner = DummySpawner;
-    let relay_client = RelayChain;
+    let relay_client = RelayChain {
+        client: client.clone(),
+        block_import_iterations: 1u32,
+    };
 
     // Build the collator
     let mut collator = {
         let params = CollatorParams {
             create_inherent_data_providers: |_, _| async {
+                // We will always trigger an is_allowed_to_buy_Core
                 let slot = InherentDataProvider::from_timestamp_and_slot_duration(
                     Timestamp::current(),
                     SlotDuration::from_millis(SLOT_DURATION_MS),
@@ -637,13 +207,7 @@ async fn collate_returns_correct_block() {
         Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
     };
 
-    let mut head = client.expect_header(client.info().genesis_hash).unwrap();
-
-    // Modify the state root of the genesis header for it to match
-    // the one inside propose() function
-    let (relay_parent_storage_root, _proof) =
-        RelayStateSproofBuilder::default().into_state_root_and_proof();
-    head.state_root = relay_parent_storage_root;
+    let head = client.expect_header(client.info().genesis_hash).unwrap();
 
     // First we create inherent data
     let (parachain_inherent_data, other_inherent_data) = collator
@@ -715,4 +279,80 @@ async fn authorities_runtime_api_tests() {
     );
 
     assert_eq!(authorities, Some(vec![Keyring::Alice.public().into()]));
+}
+
+#[tokio::test]
+async fn collate_lookahead_returns_correct_block() {
+    let (fut, _exit_notification_receiver, client, _orchestrator_tx_pool, _cancellation_token) =
+        CollatorLookaheadTestBuilder::default()
+            .with_block_import_iterations(1)
+            .with_para_id(1000u32.into())
+            .with_core_scheduled_for_para(1000u32.into())
+            .build_and_spawn();
+
+    fut.await;
+
+    // We only had one notification import, but n_built goes from 0..2. Since we are not mocking the async backing params, then
+    // this is going to create 2 blocks on to of the latest
+    assert_eq!(client.chain_info().best_number, 2);
+}
+
+#[tokio::test]
+async fn collate_lookahead_for_2_relay_imports_goes_till_num_4() {
+    let (fut, _exit_notification_receiver, client, _orchestrator_tx_pool, _cancellation_token) =
+        CollatorLookaheadTestBuilder::default()
+            .with_block_import_iterations(2)
+            .with_para_id(1000u32.into())
+            .with_core_scheduled_for_para(1000u32.into())
+            .build_and_spawn();
+
+    fut.await;
+
+    // We only had one notification import, but n_built goes from 0..2. Since we are not mocking the async backing params, then
+    // this is going to create 2 blocks on to of the latest
+    assert_eq!(client.chain_info().best_number, 4);
+}
+
+#[tokio::test]
+async fn collate_lookahead_returns_correct_block_for_parathreads() {
+    let (fut, _exit_notification_receiver, client, _orchestrator_tx_pool, _cancellation_token) =
+        CollatorLookaheadTestBuilder::default()
+            .with_block_import_iterations(1)
+            .with_para_id(1000u32.into())
+            .with_min_slot_freq(4)
+            .with_core_scheduled_for_para(1000u32.into())
+            .build_and_spawn();
+    fut.await;
+    // This time we have the slot frequency limit, so we should only create one
+    assert_eq!(client.chain_info().best_number, 1);
+}
+
+#[tokio::test]
+async fn collate_lookahead_should_buy_core_for_parathread() {
+    let (fut, _exit_notification_receiver, client, orchestrator_tx_pool, _cancellation_token) =
+        CollatorLookaheadTestBuilder::default()
+            .with_block_import_iterations(1)
+            .with_para_id(1000u32.into())
+            .with_min_slot_freq(4)
+            .build_and_spawn();
+    fut.await;
+    // the block should not have been created, but the tx should be in the pool
+    assert_eq!(client.chain_info().best_number, 0);
+    assert_eq!(orchestrator_tx_pool.status().ready, 1);
+}
+
+#[tokio::test]
+async fn collate_lookahead_for_1000_relay_imports_but_with_cancellation_token_stops_before() {
+    let (fut, _exit_notification_receiver, client, _orchestrator_tx_pool, cancellation_token) =
+        CollatorLookaheadTestBuilder::default()
+            .with_block_import_iterations(1000)
+            .with_para_id(1000u32.into())
+            .build_and_spawn();
+
+    cancellation_token.cancel();
+    fut.await;
+    // We have 1000 import noficiations but the cancellation token should kick in (hopefully) before creating block 50
+    // But this is not deterministic
+    // The probability of this assert failing  is 0.5^25
+    assert!(client.chain_info().best_number < 50);
 }

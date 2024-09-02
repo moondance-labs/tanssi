@@ -40,8 +40,7 @@ use {
     async_backing_primitives::UnincludedSegmentApi,
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
     cumulus_client_consensus_common::{
-        self as consensus_common, load_abridged_host_configuration, ParachainBlockImportMarker,
-        ParentSearchParams,
+        self as consensus_common, load_abridged_host_configuration, ParentSearchParams,
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
@@ -404,7 +403,7 @@ where
         + 'static
         + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
@@ -780,7 +779,7 @@ async fn can_build_upon<Block: BlockT, Client, P>(
     slot: Slot,
     aux_data: OrchestratorAuraWorkerAuxData<P>,
     parent_header: Block::Header,
-    included_block: Block::Hash,
+    included_block: <Block as BlockT>::Hash,
     force_authoring: bool,
     client: &Client,
     keystore: &KeystorePtr,
