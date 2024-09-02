@@ -77,7 +77,17 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, vec![], vec![2000, 2001], None)
+        load_spec(
+            id,
+            vec![],
+            vec![2000, 2001],
+            Some(vec![
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+                "Eve".to_string(),
+            ]),
+        )
     }
 }
 
