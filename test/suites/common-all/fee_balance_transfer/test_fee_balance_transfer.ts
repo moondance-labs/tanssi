@@ -72,8 +72,6 @@ describeSuite({
                     ? expectedBaseFee + 5800000n
                     : expectedBaseFee + 1600000n;
 
-                console.log(expectedbasePlusWeightFee)
-                console.log(basePlusWeightFee)
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
                         basePlusWeightFee <= (expectedbasePlusWeightFee * 110n) / 100n

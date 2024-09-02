@@ -2684,7 +2684,9 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         ContainerRegistrar::initializer_on_new_session(&session_index);
 
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
-
+        
+        log::info!("invulnerables are {:?}", invulnerables);
+        log::info!("session is {:?}", session_index);
         let next_collators = invulnerables;
 
         // Queue next session keys.
