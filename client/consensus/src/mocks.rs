@@ -776,7 +776,6 @@ impl TestNetFactory for AuraTestNet {
     }
 }
 
-// *parent_header.state_root(),
 /// A mocked `runtime-api` subsystem.
 #[derive(Clone)]
 pub struct MockRuntimeApi(Option<ParaId>);
