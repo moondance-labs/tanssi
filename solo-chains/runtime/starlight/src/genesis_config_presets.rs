@@ -323,6 +323,16 @@ fn starlight_testnet_genesis(
                 ..default_parachains_host_configuration()
             },
         },
+        "collatorConfiguration": crate::CollatorConfigurationConfig {
+                config: pallet_configuration::HostConfiguration {
+                    max_collators: 100u32,
+                    min_orchestrator_collators: 0u32,
+                    max_orchestrator_collators: 0u32,
+                    collators_per_container: 2u32,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
         "registrar": {
             "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
         },

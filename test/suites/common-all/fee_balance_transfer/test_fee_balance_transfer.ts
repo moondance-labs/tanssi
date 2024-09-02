@@ -13,6 +13,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let isRelay: boolean;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
@@ -23,6 +24,8 @@ describeSuite({
             bob = context.keyring.bob;
             polkadotJs = context.polkadotJs();
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isRelay = runtimeName.includes("light");
         });
 
         it({
@@ -61,12 +64,16 @@ describeSuite({
 
                 // These values are: 1000000 for base fee plus fee coming from the weight of the extrinsic
                 // We allow variance of 10%
-                const expectedBaseFee = context.isEthereumChain ? 1000000000000n : 1000000n;
+                const expectedBaseFee = context.isEthereumChain ? 1000000000000n :  isRelay ? 3333333n : 1000000n;
 
                 const expectedbasePlusWeightFee = context.isEthereumChain
                     ? expectedBaseFee + 1600000000000n
+                    : isRelay
+                    ? expectedBaseFee + 5800000n
                     : expectedBaseFee + 1600000n;
 
+                console.log(expectedbasePlusWeightFee)
+                console.log(basePlusWeightFee)
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
                         basePlusWeightFee <= (expectedbasePlusWeightFee * 110n) / 100n
@@ -262,7 +269,7 @@ describeSuite({
                     })
                 ).toBigInt();
 
-                const expectedFee = context.isEthereumChain ? 1000000000000n : 1000000n;
+                const expectedFee = context.isEthereumChain ? 1000000000000n :  isRelay ? 3333333n : 1000000n;
                 expect(fee).to.equal(expectedFee);
             },
         });
