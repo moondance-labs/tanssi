@@ -140,6 +140,7 @@ pub mod pallet {
     #[pallet::storage]
     pub(crate) type Randomness<T: Config> = StorageValue<_, [u8; 32], ValueQuery>;
 
+    /// Ratio of assigned collators to max collators.
     #[pallet::storage]
     pub type CollatorFullnessRatio<T: Config> = StorageValue<_, Perbill, OptionQuery>;
 

@@ -46,11 +46,10 @@ describeSuite({
                     return totalLength;
                 };
                 const assignedCollators = countAssignedCollators(initialAssignment);
-                // Perbill
-                // TODO: how to convert Perbill to number without the ugly `/ 10**9`?
+                // Convert Perbill to number, divinding by 10**9
                 const collatorFullness =
                     (await polkadotJs.query.collatorAssignment.collatorFullnessRatio()).toJSON() / 10 ** 9;
-                // TODO: any better way to test float equality?
+                // Test float equality allowing for a small error
                 const expectedRatio = assignedCollators / maxCollators;
                 const epsilon = 0.000001;
                 expect(collatorFullness).to.be.within(expectedRatio - epsilon, expectedRatio + epsilon);
