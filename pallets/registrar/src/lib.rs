@@ -179,7 +179,7 @@ pub mod pallet {
         /// External manager that takes care of executing specific operations
         /// when register-like functions of this pallet are called.
         ///
-        /// Mostly used when we are in a relay-chain cofiguration context (Starlight)
+        /// Mostly used when we are in a relay-chain configuration context (Starlight)
         /// to also register, deregister and upgrading paraIds in polkadot's
         /// paras_registrar pallet.
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;

@@ -55,6 +55,14 @@ fn register_para_id_42() {
         run_to_session(2);
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
         assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
+
+        // Check that InnerRegistrar methods were called properly.
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerRegister(42u32.into())));
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerScheduleParaUpgrade(42u32.into())));
     });
 }
 
@@ -194,6 +202,28 @@ fn deregister_para_id_42_after_1_sessions() {
         assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_none());
+
+        // Run two more sessions for the paraId to get deregistered
+        // in the relay context (if any) via InnerRegistrar.
+        run_to_session(5);
+        end_block();
+
+        // Check that InnerRegistrar methods were called properly.
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerRegister(42u32.into())));
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerScheduleParaUpgrade(42u32.into())));
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerScheduleParaDowngrade(42u32.into())));
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerDeregister(42u32.into())));
+        assert!(mock_data::Pallet::<Test>::mock()
+            .called_hooks
+            .contains(&HookCall::InnerDeregisterWeight));
     });
 }
 
