@@ -232,11 +232,16 @@ fn starlight_testnet_genesis(
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
-    let invulnerables: Vec<_> = invulnerables
+    let invulnerable_keys: Vec<_> = invulnerables
         .iter()
         .map(|seed| get_authority_keys_from_seed(seed, None))
         .collect();
 
+    let invulnerable_accounts: Vec<_> = invulnerables
+        .iter()
+        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .collect();
+    
     let data_preservers_bootnodes: Vec<_> = container_chains
         .iter()
         .flat_map(|(para_id, _genesis_data, bootnodes)| {
@@ -289,13 +294,13 @@ fn starlight_testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-            "nonAuthorityKeys": invulnerables
-                .iter()
-                .cloned()
-                .map(|x| {
+            "nonAuthorityKeys": invulnerable_keys
+                .into_iter()
+                .enumerate()
+                .map(|(i, x)| {
                     (
-                        x.stash.clone(),
-                        x.stash.clone(),
+                        invulnerable_accounts[i].clone(),
+                        invulnerable_accounts[i].clone(),
                         starlight_session_keys(
                             x.babe.clone(),
                             x.grandpa.clone(),
@@ -337,7 +342,7 @@ fn starlight_testnet_genesis(
             "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
         },
         "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
-            invulnerables: invulnerables.iter().cloned().map(|x| x.stash.clone()).collect(),
+            invulnerables: invulnerable_accounts    ,
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
         "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
