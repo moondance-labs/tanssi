@@ -57,10 +57,10 @@ fn register_para_id_42() {
         assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
 
         // Check that InnerRegistrar methods were called properly.
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerRegister(42u32.into())));
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerScheduleParaUpgrade(42u32.into())));
     });
@@ -209,19 +209,19 @@ fn deregister_para_id_42_after_1_sessions() {
         end_block();
 
         // Check that InnerRegistrar methods were called properly.
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerRegister(42u32.into())));
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerScheduleParaUpgrade(42u32.into())));
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerScheduleParaDowngrade(42u32.into())));
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerDeregister(42u32.into())));
-        assert!(mock_data::Pallet::<Test>::mock()
+        assert!(Mock::mock()
             .called_hooks
             .contains(&HookCall::InnerDeregisterWeight));
     });
@@ -732,14 +732,21 @@ fn mark_valid_for_collating_calls_registered_hook() {
             empty_genesis_data(),
             None
         ));
-        assert_eq!(Mock::mock().called_hooks, vec![]);
+        assert_eq!(
+            Mock::mock().called_hooks,
+            vec![HookCall::InnerRegister(42.into())]
+        );
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
             RuntimeOrigin::root(),
             42.into(),
         ));
         assert_eq!(
             Mock::mock().called_hooks,
-            vec![HookCall::MarkedValid(42.into())]
+            vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into())
+            ]
         );
     });
 }
@@ -1042,6 +1049,10 @@ fn deregister_2_container_chains_in_same_block() {
         ));
 
         run_to_session(2);
+        // Run end_block after each run_to_session to mock the reality and
+        // kill BufferedParasToDeregister storage after a session change.
+        end_block();
+
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
             vec![42.into(), 43.into()]
@@ -1059,12 +1070,20 @@ fn deregister_2_container_chains_in_same_block() {
         assert_eq!(
             Mock::mock().called_hooks,
             vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::InnerRegister(43.into()),
                 HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into()),
                 HookCall::MarkedValid(43.into()),
+                HookCall::InnerScheduleParaUpgrade(43.into()),
+                HookCall::InnerScheduleParaDowngrade(42.into()),
+                HookCall::InnerScheduleParaDowngrade(43.into()),
             ]
         );
 
         run_to_session(4);
+        end_block();
+
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -1077,10 +1096,20 @@ fn deregister_2_container_chains_in_same_block() {
         assert_eq!(
             Mock::mock().called_hooks,
             vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::InnerRegister(43.into()),
                 HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into()),
                 HookCall::MarkedValid(43.into()),
+                HookCall::InnerScheduleParaUpgrade(43.into()),
+                HookCall::InnerScheduleParaDowngrade(42.into()),
+                HookCall::InnerScheduleParaDowngrade(43.into()),
                 HookCall::Deregistered(42.into()),
                 HookCall::Deregistered(43.into()),
+                HookCall::InnerDeregisterWeight,
+                HookCall::InnerDeregisterWeight,
+                HookCall::InnerDeregister(42.into()),
+                HookCall::InnerDeregister(43.into()),
             ]
         );
     });
@@ -1112,6 +1141,10 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         ));
 
         run_to_session(2);
+        // Run end_block after each run_to_session to mock the reality and
+        // kill BufferedParasToDeregister storage after a session change.
+        end_block();
+
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
             vec![42.into(), 43.into()]
@@ -1127,6 +1160,7 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
 
         run_to_session(3);
+        end_block();
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
             vec![42.into(), 43.into()]
@@ -1143,12 +1177,19 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_eq!(
             Mock::mock().called_hooks,
             vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::InnerRegister(43.into()),
                 HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into()),
                 HookCall::MarkedValid(43.into()),
+                HookCall::InnerScheduleParaUpgrade(43.into()),
+                HookCall::InnerScheduleParaDowngrade(42.into()),
+                HookCall::InnerScheduleParaDowngrade(43.into()),
             ]
         );
 
         run_to_session(4);
+        end_block();
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![43.into()]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -1161,13 +1202,22 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_eq!(
             Mock::mock().called_hooks,
             vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::InnerRegister(43.into()),
                 HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into()),
                 HookCall::MarkedValid(43.into()),
+                HookCall::InnerScheduleParaUpgrade(43.into()),
+                HookCall::InnerScheduleParaDowngrade(42.into()),
+                HookCall::InnerScheduleParaDowngrade(43.into()),
                 HookCall::Deregistered(42.into()),
+                HookCall::InnerDeregisterWeight,
+                HookCall::InnerDeregister(42.into()),
             ]
         );
 
         run_to_session(5);
+        end_block();
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -1180,10 +1230,20 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_eq!(
             Mock::mock().called_hooks,
             vec![
+                HookCall::InnerRegister(42.into()),
+                HookCall::InnerRegister(43.into()),
                 HookCall::MarkedValid(42.into()),
+                HookCall::InnerScheduleParaUpgrade(42.into()),
                 HookCall::MarkedValid(43.into()),
+                HookCall::InnerScheduleParaUpgrade(43.into()),
+                HookCall::InnerScheduleParaDowngrade(42.into()),
+                HookCall::InnerScheduleParaDowngrade(43.into()),
                 HookCall::Deregistered(42.into()),
+                HookCall::InnerDeregisterWeight,
+                HookCall::InnerDeregister(42.into()),
                 HookCall::Deregistered(43.into()),
+                HookCall::InnerDeregisterWeight,
+                HookCall::InnerDeregister(43.into()),
             ]
         );
     });
