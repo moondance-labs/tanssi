@@ -200,17 +200,6 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
-/// A type to identify calls to the Identity pallet. These will be filtered to prevent invocation,
-/// locking the state of the pallet and preventing further updates to identities and sub-identities.
-/// The locked state will be the genesis state of a new system chain and then removed from the Relay
-/// Chain.
-pub struct IsIdentityCall;
-impl Contains<RuntimeCall> for IsIdentityCall {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Identity(_))
-    }
-}
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -218,7 +207,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<IsIdentityCall>;
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -485,7 +474,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub const ProposalBondMinimum: Balance = 2000 * CENTS;
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
-    pub const SpendPeriod: BlockNumber = 6 * DAYS;
+    pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
