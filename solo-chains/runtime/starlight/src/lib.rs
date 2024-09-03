@@ -44,7 +44,7 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
+        slashing, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
         CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
         NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
@@ -355,18 +355,6 @@ impl pallet_babe::Config for Runtime {
 }
 
 parameter_types! {
-    pub const IndexDeposit: Balance = 100 * CENTS;
-}
-
-impl pallet_indices::Config for Runtime {
-    type AccountIndex = AccountIndex;
-    type Currency = Balances;
-    type Deposit = IndexDeposit;
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
-}
-
-parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
     pub const MaxLocks: u32 = 50;
     pub const MaxReserves: u32 = 50;
@@ -662,24 +650,6 @@ impl pallet_multisig::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ConfigDepositBase: Balance = 500 * CENTS;
-    pub const FriendDepositFactor: Balance = 50 * CENTS;
-    pub const MaxFriends: u16 = 9;
-    pub const RecoveryDeposit: Balance = 500 * CENTS;
-}
-
-impl pallet_recovery::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
-    type RuntimeCall = RuntimeCall;
-    type Currency = Balances;
-    type ConfigDepositBase = ConfigDepositBase;
-    type FriendDepositFactor = FriendDepositFactor;
-    type MaxFriends = MaxFriends;
-    type RecoveryDeposit = RecoveryDeposit;
-}
-
-parameter_types! {
     // One storage item; key size 32, value size 8; .
     pub const ProxyDepositBase: Balance = deposit(1, 8);
     // Additional storage item size of 33 bytes.
@@ -727,9 +697,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 RuntimeCall::System(..) |
 				RuntimeCall::Babe(..) |
 				RuntimeCall::Timestamp(..) |
-				RuntimeCall::Indices(pallet_indices::Call::claim {..}) |
-				RuntimeCall::Indices(pallet_indices::Call::free {..}) |
-				RuntimeCall::Indices(pallet_indices::Call::freeze {..}) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
 				// Specifically omitting the entire Balances pallet
 				RuntimeCall::Session(..) |
@@ -742,12 +709,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
-				RuntimeCall::Recovery(pallet_recovery::Call::as_recovered {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::vouch_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::claim_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::close_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::remove_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::cancel_recovered {..}) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
 				RuntimeCall::Multisig(..) |
@@ -1419,7 +1380,6 @@ construct_runtime! {
         Babe: pallet_babe = 1,
 
         Timestamp: pallet_timestamp = 2,
-        Indices: pallet_indices = 3,
         Balances: pallet_balances = 4,
         Parameters: pallet_parameters = 6,
         TransactionPayment: pallet_transaction_payment = 33,
@@ -1450,9 +1410,6 @@ construct_runtime! {
 
         // Less simple identity module.
         Identity: pallet_identity = 25,
-
-        // Social recovery module.
-        Recovery: pallet_recovery = 27,
 
         // System scheduler.
         Scheduler: pallet_scheduler = 29,
@@ -1727,14 +1684,12 @@ mod benches {
         [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
-        [pallet_indices, Indices]
         [pallet_message_queue, MessageQueue]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
         [pallet_ranked_collective, FellowshipCollective]
-        [pallet_recovery, Recovery]
         [pallet_referenda, Referenda]
         [pallet_referenda, FellowshipReferenda]
         [pallet_scheduler, Scheduler]
