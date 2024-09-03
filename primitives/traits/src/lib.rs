@@ -41,7 +41,7 @@ use {
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
-        ArithmeticError,
+        ArithmeticError, Perbill,
     },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
@@ -227,6 +227,7 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
     fn collators_per_parathread(session_index: SessionIndex) -> u32;
+    fn target_container_chain_fullness(session_index: SessionIndex) -> Perbill;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_host_configuration(_session_index: SessionIndex) {}
 }
