@@ -32,7 +32,7 @@ use {
     frame_support::{
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::{fungible::Inspect, ConstBool, FromContains},
+        traits::{fungible::Inspect, ConstBool, tokens::{PayFromAccount, UnityAssetBalanceConversion}},
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
@@ -54,8 +54,7 @@ use {
     runtime_common::{
         impl_runtime_weights,
         impls::{
-            ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
-            VersionedLocationConverter,
+            ToAuthor
         },
         paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
     },
@@ -98,8 +97,8 @@ use {
         genesis_builder_helper::{build_state, get_preset},
         parameter_types,
         traits::{
-            fungible::HoldConsideration, tokens::UnityOrOuterConversion, Contains, EitherOf,
-            EitherOfDiverse, EnsureOriginWithArg, EverythingBut, InstanceFilter,
+            fungible::HoldConsideration, EitherOf,
+            EitherOfDiverse, EnsureOriginWithArg, InstanceFilter,
             KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
             ProcessMessageError,
         },
@@ -111,7 +110,7 @@ use {
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{ConstU8, OpaqueMetadata, H256},
+    sp_core::{OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -126,8 +125,7 @@ use {
     xcm::{
         latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
         VersionedXcm,
-    },
-    xcm_builder::PayOverXcm,
+    }
 };
 
 pub use {
@@ -491,6 +489,7 @@ parameter_types! {
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxBalance: Balance = Balance::max_value();
+    pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -505,28 +504,11 @@ impl pallet_treasury::Config for Runtime {
     type WeightInfo = ();
     type SpendFunds = ();
     type SpendOrigin = TreasurySpender;
-    type AssetKind = VersionedLocatableAsset;
-    type Beneficiary = VersionedLocation;
+    type AssetKind = ();
+    type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
-    type Paymaster = PayOverXcm<
-        TreasuryInteriorLocation,
-        crate::xcm_config::XcmRouter,
-        crate::XcmPallet,
-        ConstU32<{ 6 * HOURS }>,
-        Self::Beneficiary,
-        Self::AssetKind,
-        LocatableAssetConverter,
-        VersionedLocationConverter,
-    >;
-    type BalanceConverter = UnityOrOuterConversion<
-        ContainsParts<
-            FromContains<
-                xcm_builder::IsChildSystemParachain<ParaId>,
-                xcm_builder::IsParentsOnly<ConstU8<1>>,
-            >,
-        >,
-        AssetRate,
-    >;
+    type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+    type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = PayoutSpendPeriod;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = runtime_common::impls::benchmarks::TreasuryArguments;

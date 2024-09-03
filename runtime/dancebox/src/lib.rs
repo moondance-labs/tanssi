@@ -1784,6 +1784,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub const MaxBalance: Balance = Balance::max_value();
+    pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1793,7 +1794,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type SpendPeriod = SpendPeriod;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
