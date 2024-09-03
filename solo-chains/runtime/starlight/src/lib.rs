@@ -1634,13 +1634,11 @@ where
             None => return Err(ContainerRegistrarError::<Runtime>::HeadDataNecessary.into()),
         };
 
-        let key_values: Vec<(Vec<u8>, Vec<u8>)> =
-            genesis_storage.into_iter().map(Into::into).collect();
-
         // Check if the wasm code is present in storage
-        let validation_code = match key_values
+        let validation_code = match genesis_storage
             .into_iter()
-            .find(|(key, _)| key == &StorageWellKnownKeys::CODE.to_vec())
+            .map(Into::into)
+            .find(|(key, _): &(Vec<u8>, Vec<u8>)| key == &StorageWellKnownKeys::CODE)
         {
             Some((_, code)) => ValidationCode(code),
             None => return Err(ContainerRegistrarError::<Runtime>::WasmCodeNecessary.into()),
