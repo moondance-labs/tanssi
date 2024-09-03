@@ -206,6 +206,8 @@ fn deregister_para_id_42_after_1_sessions() {
         // Run two more sessions for the paraId to get deregistered
         // in the relay context (if any) via InnerRegistrar.
         run_to_session(5);
+        // Run end_block after run_to_session to mock the reality and
+        // kill BufferedParasToDeregister storage after a session change.
         end_block();
 
         // Check that InnerRegistrar methods were called properly.
