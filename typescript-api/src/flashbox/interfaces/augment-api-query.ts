@@ -218,6 +218,7 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /** Ratio of assigned collators to max collators. */
             collatorFullnessRatio: AugmentedQuery<ApiType, () => Observable<Option<Perbill>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
