@@ -16,9 +16,13 @@ describeSuite({
         const paraId2001 = 2001n;
         const costPerBlock = 1_000_000n;
         let balanceTankBefore;
+        let registerAlias;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            registerAlias = runtimeName.includes("light") ? polkadotJs.tx.containerRegistrar : polkadotJs.tx.registrar;
+
             const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
             await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
@@ -34,7 +38,7 @@ describeSuite({
             title: "We deregister 2000, check the issuance drops",
             test: async function () {
                 // We deregister the chain
-                const deregister2001 = polkadotJs.tx.sudo.sudo(polkadotJs.tx.registrar.deregister(paraId2001));
+                const deregister2001 = polkadotJs.tx.sudo.sudo(registerAlias.deregister(paraId2001));
                 await context.createBlock([await deregister2001.signAsync(alice)]);
                 // Check that after 2 sessions, tank is empty and chain is deregistered
                 await jumpSessions(context, 2);
@@ -48,6 +52,7 @@ describeSuite({
                 const supplyBefore = (await apiAtBlockBefore.query.balances.totalIssuance()).toBigInt();
                 const supplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const blockIssuance = await fetchIssuance(await polkadotJs.query.system.events());
+                
                 const issuanceDiff = supplyAfter - supplyBefore;
                 expect(issuanceDiff, `Tank should have been removed`).toBe(
                     blockIssuance.amount.toBigInt() - balanceTankBefore
