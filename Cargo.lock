@@ -17521,6 +17521,7 @@ dependencies = [
  "node-common",
  "pallet-author-noting-runtime-api",
  "pallet-data-preservers",
+ "polkadot-overseer",
  "polkadot-primitives",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -17554,6 +17555,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tokio",
+ "tokio-stream",
  "tokio-util",
 ]
 

@@ -531,7 +531,11 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
     Ok(())
 }
 
-impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
+/// Interface for spawning and stopping container chain embeded nodes.
+pub trait Spawner {
+    /// Access to the Orchestrator Chain Interface
+    fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface>;
+
     /// Try to start a new container chain. In case of an error, this does not stop the node, and
     /// the container chain will be attempted to spawn again when the collator is reassigned to it.
     ///
@@ -539,7 +543,33 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
     /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
     /// `handle_update_assignment`.
-    pub async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
+    fn spawn(
+        &self,
+        container_chain_para_id: ParaId,
+        start_collation: bool,
+    ) -> impl std::future::Future<Output = ()> + Send;
+
+    /// Stop a container chain. Prints a warning if the container chain was not running.
+    /// Returns the database path for the container chain, can be used with `wait_for_paritydb_lock`
+    /// to ensure that the container chain has fully stopped. The database path can be `None` if the
+    /// chain was not running.
+    fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
+}
+
+impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSyncMode> {
+    /// Access to the Orchestrator Chain Interface
+    fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
+        self.params.orchestrator_chain_interface.clone()
+    }
+
+    /// Try to start a new container chain. In case of an error, this does not stop the node, and
+    /// the container chain will be attempted to spawn again when the collator is reassigned to it.
+    ///
+    /// It is possible that we try to spawn-stop-spawn the same chain, and the second spawn fails
+    /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
+    /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
+    /// `handle_update_assignment`.
+    async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
         let try_spawn_params = self.params.clone();
         let state = self.state.clone();
         let state2 = state.clone();
@@ -570,7 +600,7 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// Returns the database path for the container chain, can be used with `wait_for_paritydb_lock`
     /// to ensure that the container chain has fully stopped. The database path can be `None` if the
     /// chain was not running.
-    pub fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf> {
+    fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf> {
         let mut state = self.state.lock().expect("poison error");
         let stop_handle = state
             .spawned_container_chains
@@ -604,7 +634,9 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
             }
         }
     }
+}
 
+impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
         // The node always starts as an orchestrator chain collator.

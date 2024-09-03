@@ -82,6 +82,10 @@ cumulus-relay-chain-interface = { workspace = true }
 nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true }
 
+[dev-dependencies]
+polkadot-overseer = { workspace = true }
+tokio-stream = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
