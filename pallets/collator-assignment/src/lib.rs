@@ -49,7 +49,7 @@ use {
     rand_chacha::ChaCha20Rng,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
-        Saturating,
+        Perbill, Saturating,
     },
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
@@ -139,6 +139,10 @@ pub mod pallet {
     /// The default value of [0; 32] disables randomness in the pallet.
     #[pallet::storage]
     pub(crate) type Randomness<T: Config> = StorageValue<_, [u8; 32], ValueQuery>;
+
+    /// Ratio of assigned collators to max collators.
+    #[pallet::storage]
+    pub type CollatorFullnessRatio<T: Config> = StorageValue<_, Perbill, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
@@ -387,6 +391,11 @@ pub mod pallet {
                 }
             }
 
+            Self::store_collator_fullness(
+                &new_assigned,
+                T::HostConfiguration::max_collators(target_session_index),
+            );
+
             let mut pending = PendingCollatorContainerChain::<T>::get();
 
             let old_assigned_changed = old_assigned != new_assigned;
@@ -420,6 +429,30 @@ pub mod pallet {
                 next_assignment: new_assigned,
                 num_total_registered_paras,
             }
+        }
+
+        /// Count number of collators assigned to any chain, divide that by `max_collators` and store
+        /// in pallet storage.
+        fn store_collator_fullness(
+            new_assigned: &AssignedCollators<T::AccountId>,
+            max_collators: u32,
+        ) {
+            // Count number of assigned collators
+            let mut num_collators = 0;
+            num_collators += new_assigned.orchestrator_chain.len();
+            for (_para_id, collators) in &new_assigned.container_chains {
+                num_collators += collators.len();
+            }
+
+            let mut num_collators = num_collators as u32;
+            if num_collators > max_collators {
+                // Shouldn't happen but just in case
+                num_collators = max_collators;
+            }
+
+            let ratio = Perbill::from_rational(num_collators, max_collators);
+
+            CollatorFullnessRatio::<T>::put(ratio);
         }
 
         // Returns the assigned collators as read from storage.

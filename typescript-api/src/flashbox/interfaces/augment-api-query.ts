@@ -21,7 +21,7 @@ import type {
     u64,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     CumulusPalletParachainSystemUnincludedSegmentAncestor,
@@ -217,6 +217,9 @@ declare module "@polkadot/api-base/types/storage" {
                 () => Observable<DpCollatorAssignmentAssignedCollatorsAccountId32>,
                 []
             > &
+                QueryableStorageEntry<ApiType, []>;
+            /** Ratio of assigned collators to max collators. */
+            collatorFullnessRatio: AugmentedQuery<ApiType, () => Observable<Option<Perbill>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Pending configuration changes.
