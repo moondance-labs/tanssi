@@ -322,7 +322,7 @@ impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
 pub struct GetCoreAllocationConfigurationImpl;
 
 impl GetCoreAllocationConfigurationImpl {
-    pub(crate) fn set(config: Option<CoreAllocationConfiguration>) {
+    pub fn set(config: Option<CoreAllocationConfiguration>) {
         let encoded_data = config.encode();
         sp_io::storage::set(b"___TEST_CONFIG", &encoded_data);
     }

@@ -88,7 +88,7 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
-        GetSessionIndex, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
+        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
 
