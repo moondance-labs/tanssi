@@ -1055,7 +1055,7 @@ fn parse_boot_nodes_ignore_invalid(
         .collect()
 }
 
-async fn wait_for_paritydb_lock(db_path: &Path, max_timeout: Duration) -> Result<(), String> {
+pub async fn wait_for_paritydb_lock(db_path: &Path, max_timeout: Duration) -> Result<(), String> {
     let now = Instant::now();
 
     while now.elapsed() < max_timeout {

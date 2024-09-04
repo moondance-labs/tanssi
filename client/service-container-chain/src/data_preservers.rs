@@ -15,12 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::spawner::{ContainerChainSpawner, Spawner, TSelectSyncMode},
+    crate::spawner::{wait_for_paritydb_lock, ContainerChainSpawner, Spawner, TSelectSyncMode},
     dc_orchestrator_chain_interface::{
-        DataPreserverAssignment, OrchestratorChainInterface, OrchestratorChainResult,
+        DataPreserverAssignment, OrchestratorChainError, OrchestratorChainInterface,
+        OrchestratorChainResult,
     },
     futures::stream::StreamExt,
-    std::future::Future,
+    std::{future::Future, time::Duration},
     tc_consensus::ParaId,
 };
 
@@ -66,7 +67,12 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
                 // Assignement switches from active to inactive for same para_id, we stop the
                 // embeded node but keep db
                 (Assignment::Active(para_id), Assignment::Inactive(x)) if para_id == x => {
-                    spawner.stop(para_id, true); // keep db
+                    let db_path = spawner.stop(para_id, true); // keep db
+                    if let Some(db_path) = db_path {
+                        wait_for_paritydb_lock(&db_path, Duration::from_secs(10))
+                            .await
+                            .map_err(OrchestratorChainError::GenericError)?;
+                    }
                 }
                 // No longer assigned or assigned inactive to other para id, remove previous node
                 (
@@ -77,7 +83,13 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
                 }
                 // Changed para id, remove previous node and start new one
                 (Assignment::Active(previous_para_id), Assignment::Active(para_id)) => {
-                    spawner.stop(previous_para_id, false); // don't keep db
+                    let db_path = spawner.stop(previous_para_id, false); // don't keep db
+                    if let Some(db_path) = db_path {
+                        wait_for_paritydb_lock(&db_path, Duration::from_secs(10))
+                            .await
+                            .map_err(OrchestratorChainError::GenericError)?;
+                    }
+
                     spawner.spawn(para_id, false).await;
                 }
                 // don't do anything yet
@@ -116,6 +128,7 @@ mod tests {
             path::PathBuf,
             pin::Pin,
             sync::{Arc, Mutex},
+            time::Duration,
         },
         tokio::sync::{broadcast, oneshot},
     };
@@ -348,6 +361,8 @@ mod tests {
         let para_id2 = ParaId::from(2);
 
         tokio::spawn(task_watch_assignment(spawner.clone(), profile_id));
+        // Wait for task to start and subscribe to block stream.
+        tokio::time::sleep(Duration::from_millis(100)).await;
 
         spawner.set_expectations(vec![SpawnerEvent::Started(para_id1, false)]);
         spawner.chain_interface.mock_block({
@@ -355,6 +370,52 @@ mod tests {
             map.insert(profile_id, DataPreserverAssignment::Active(para_id1));
             map
         });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        spawner.ensure_all_events_were_emitted();
+
+        spawner.set_expectations(vec![SpawnerEvent::Stopped(para_id1, false)]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::NotAssigned);
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        spawner.ensure_all_events_were_emitted();
+
+        spawner.set_expectations(vec![SpawnerEvent::Started(para_id2, false)]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::Active(para_id2));
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        spawner.ensure_all_events_were_emitted();
+
+        spawner.set_expectations(vec![SpawnerEvent::Stopped(para_id2, true)]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::Inactive(para_id2));
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        spawner.ensure_all_events_were_emitted();
+
+        spawner.set_expectations(vec![]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::Inactive(para_id1));
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        spawner.ensure_all_events_were_emitted();
+
+        spawner.set_expectations(vec![]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::NotAssigned);
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
         spawner.ensure_all_events_were_emitted();
     }
 }

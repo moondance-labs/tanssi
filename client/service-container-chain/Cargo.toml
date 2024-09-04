@@ -22,7 +22,7 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 
 # Local
-ccp-authorities-noting-inherent = { workspace = true }
+ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
