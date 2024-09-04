@@ -488,9 +488,9 @@ parameter_types! {
 pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
-use pallet_treasury::ArgumentsFactory;
-#[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_treasury::ArgumentsFactory;
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
