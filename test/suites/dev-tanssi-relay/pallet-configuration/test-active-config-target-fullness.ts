@@ -13,7 +13,9 @@ describeSuite({
             const { result } = await context.createBlock(
                 context
                     .polkadotJs()
-                    .tx.sudo.sudo(context.polkadotJs().tx.collatorConfiguration.setTargetContainerChainFullness(500000000n))
+                    .tx.sudo.sudo(
+                        context.polkadotJs().tx.collatorConfiguration.setTargetContainerChainFullness(500000000n)
+                    )
                     .signAsync(context.keyring.alice)
             );
             expect(result!.successful, result!.error?.name).to.be.true;

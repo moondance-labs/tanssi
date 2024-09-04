@@ -11,19 +11,15 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let sudo_alice: KeyringPair;
         let user_charlie: KeyringPair;
         let user_dave: KeyringPair;
-        let user_bob: KeyringPair;
         // From Pallet Id "tns/tsry" -> Account
         const treasury_address = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
-            sudo_alice = context.keyring.alice;
             user_charlie = context.keyring.charlie;
             user_dave = context.keyring.dave;
-            user_bob = context.keyring.bob;
         });
 
         it({

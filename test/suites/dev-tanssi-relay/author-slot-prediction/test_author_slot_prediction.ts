@@ -4,8 +4,8 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions, jumpToSession } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
-import { Keyring } from '@polkadot/keyring';
-const includesAll = (arr, values) => values.every(v => arr.includes(v));
+import { Keyring } from "@polkadot/keyring";
+const includesAll = (arr, values) => values.every((v) => arr.includes(v));
 
 describeSuite({
     id: "CT0101",
@@ -13,22 +13,18 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice: KeyringPair;
         let bob: KeyringPair;
         let charlie: KeyringPair;
         let dave: KeyringPair;
         let eve: KeyringPair;
-        let ferdie: KeyringPair;
         let aliceStash: KeyringPair;
         beforeAll(() => {
-            let keyring = new Keyring({ type: 'sr25519' });
-            alice = context.keyring.alice;
+            const keyring = new Keyring({ type: "sr25519" });
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
-            eve = keyring.addFromUri('//Eve');
-            ferdie = keyring.addFromUri('//Ferdie');
-            aliceStash = keyring.addFromUri('//Alice//stash')
+            eve = keyring.addFromUri("//Eve");
+            aliceStash = keyring.addFromUri("//Alice//stash");
             polkadotJs = context.polkadotJs();
         });
 
@@ -40,7 +36,6 @@ describeSuite({
                 // The reason is that the session pallet goes before the tanssiInvulnerables in the starlight runtime
                 // Otherwise we would not need this (as in dancebox)
                 await jumpToSession(context, 2);
-     
 
                 // for session 2
                 const assignment2 = (await polkadotJs.query.tanssiAuthorityAssignment.collatorContainerChain(2))
@@ -50,7 +45,12 @@ describeSuite({
                     .unwrap()
                     .toHuman();
                 expect(assignment2.orchestratorChain).to.deep.equal([]);
-                const allKeys = [u8aToHex(bob.publicKey), u8aToHex(charlie.publicKey), u8aToHex(dave.publicKey), u8aToHex(eve.publicKey)];
+                const allKeys = [
+                    u8aToHex(bob.publicKey),
+                    u8aToHex(charlie.publicKey),
+                    u8aToHex(dave.publicKey),
+                    u8aToHex(eve.publicKey),
+                ];
 
                 // the keys are assigned randomly but we check all of them exist in allKeys
                 expect(includesAll(allKeys, assignment3.containerChains["2000"])).to.be.true;
@@ -65,9 +65,9 @@ describeSuite({
 
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
 
-                const authorities = (await context
-                    .polkadotJs()
-                    .query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex))
+                const authorities = (
+                    await context.polkadotJs().query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)
+                )
                     .unwrap()
                     .toHuman();
 
@@ -86,7 +86,6 @@ describeSuite({
                 await polkadotJs.tx.session.setKeys(newKey, []).signAndSend(aliceStash);
                 await polkadotJs.tx.session.setKeys(newKeyCharlie, []).signAndSend(charlie);
 
-                
                 await context.createBlock();
                 // Check key is reflected in next key
                 // But its not yet in queued
@@ -104,10 +103,10 @@ describeSuite({
 
                 // The very first block produced by the second session should contain the new key
 
-                let babeAuthorities = (await polkadotJs.query.babe.authorities());
-                let nextBabeKey = nextKey.unwrap().babe;
+                const babeAuthorities = await polkadotJs.query.babe.authorities();
+                const nextBabeKey = nextKey.unwrap().babe;
 
-                expect(babeAuthorities[0].includes(nextBabeKey))
+                expect(babeAuthorities[0].includes(nextBabeKey));
                 // The change should have been applied, and now both nimbus and authorityMapping should reflect
                 const digests = (await polkadotJs.query.system.digest()).logs;
                 const filtered = digests.filter(
@@ -116,16 +115,18 @@ describeSuite({
 
                 expect(filtered[0].asConsensus[1].toHex().includes(nextBabeKey.toHex().slice(2))).to.be.true;
 
-
                 // Charlie should have his changed reflected in either 2000 or 2001
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
 
-                const authorities = (await context
-                    .polkadotJs()
-                    .query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex))
+                const authorities = (
+                    await context.polkadotJs().query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)
+                )
                     .unwrap()
                     .toHuman();
-                expect(authorities.containerChains["2000"].includes(u8aToHex(newKeyCharlie.slice(-32))) || authorities.containerChains["2001"].includes(u8aToHex(newKeyCharlie.slice(-32)))).to.be.true;
+                expect(
+                    authorities.containerChains["2000"].includes(u8aToHex(newKeyCharlie.slice(-32))) ||
+                        authorities.containerChains["2001"].includes(u8aToHex(newKeyCharlie.slice(-32)))
+                ).to.be.true;
             },
         });
     },

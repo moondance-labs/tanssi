@@ -33,7 +33,11 @@ describeSuite({
                 // In genesis we have 4 collators, hence if we make 4 collators per para, we make sure the one
                 // with priority gets them
                 const changeCollatorsPerChain = polkadotJs.tx.collatorConfiguration.setCollatorsPerContainer(4);
-                await context.createBlock([await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll([txMaxTip, changeCollatorsPerChain])).signAsync(alice)]);
+                await context.createBlock([
+                    await polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.utility.batchAll([txMaxTip, changeCollatorsPerChain]))
+                        .signAsync(alice),
+                ]);
                 await jumpSessions(context, 2);
 
                 const collators = await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain();

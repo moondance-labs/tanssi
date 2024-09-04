@@ -4,7 +4,7 @@ import { filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
 import { Vec, u8, u32, bool } from "@polkadot/types-codec";
-import { TypeRegistry } from '@polkadot/types';
+import { TypeRegistry } from "@polkadot/types";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -189,7 +189,7 @@ export function fetchIssuance(events: EventRecord[] = []) {
     );
 
     if (filtered.length == 0) {
-        return  { amount: (new TypeRegistry()).createType('u128', 0) }
+        return { amount: new TypeRegistry().createType("u128", 0) };
     }
     return filtered[0];
 }

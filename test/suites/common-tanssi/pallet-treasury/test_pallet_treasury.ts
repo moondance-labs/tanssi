@@ -12,22 +12,23 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let sudo_alice: KeyringPair;
-        let user_charlie: KeyringPair;
         let user_dave: KeyringPair;
-        let user_bob: KeyringPair;        
+        let user_bob: KeyringPair;
         // From Pallet Id "py/trsry" -> Account if relay chain
         // From Pallet Id "tns/tsry" -> Account if parachain
-        
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
-            user_charlie = context.keyring.charlie;
             user_dave = context.keyring.dave;
             user_bob = context.keyring.bob;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            const treasuryAddress = runtimeName.includes("light") ? "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z" : "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
-            const signedTx = await polkadotJs.tx.balances.transferAllowDeath(treasuryAddress, 1_000_000_000_000).signAsync(sudo_alice);
+            const treasuryAddress = runtimeName.includes("light")
+                ? "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z"
+                : "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
+            const signedTx = await polkadotJs.tx.balances
+                .transferAllowDeath(treasuryAddress, 1_000_000_000_000)
+                .signAsync(sudo_alice);
             // Fund treasury account
             await context.createBlock([signedTx]);
         });
@@ -69,7 +70,7 @@ describeSuite({
                 const spendPeriod = polkadotJs.consts.treasury.spendPeriod;
 
                 // Now we just wait the spendPeriod, no need for payout calls in local spends
-                await jumpBlocks(context, spendPeriod.toNumber())
+                await jumpBlocks(context, spendPeriod.toNumber());
 
                 const balanceAfter = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
                 expect(balanceAfter).toBeGreaterThan(balanceBefore);

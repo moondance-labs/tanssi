@@ -64,7 +64,7 @@ describeSuite({
 
                 // These values are: 1000000 for base fee plus fee coming from the weight of the extrinsic
                 // We allow variance of 10%
-                const expectedBaseFee = context.isEthereumChain ? 1000000000000n :  isRelay ? 3333333n : 1000000n;
+                const expectedBaseFee = context.isEthereumChain ? 1000000000000n : isRelay ? 3333333n : 1000000n;
 
                 const expectedbasePlusWeightFee = context.isEthereumChain
                     ? expectedBaseFee + 1600000000000n
@@ -267,7 +267,7 @@ describeSuite({
                     })
                 ).toBigInt();
 
-                const expectedFee = context.isEthereumChain ? 1000000000000n :  isRelay ? 3333333n : 1000000n;
+                const expectedFee = context.isEthereumChain ? 1000000000000n : isRelay ? 3333333n : 1000000n;
                 expect(fee).to.equal(expectedFee);
             },
         });

@@ -14,12 +14,14 @@ describeSuite({
         const paraId2000 = 2000n;
         const paraId2001 = 2001n;
         const costPerSession = 100_000_000n;
-        let collatorAssignmentAlias
+        let collatorAssignmentAlias;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            collatorAssignmentAlias = runtimeName.includes("light") ? polkadotJs.query.tanssiCollatorAssignment : polkadotJs.query.collatorAssignment;
+            collatorAssignmentAlias = runtimeName.includes("light")
+                ? polkadotJs.query.tanssiCollatorAssignment
+                : polkadotJs.query.collatorAssignment;
         });
 
         it({

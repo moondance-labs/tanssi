@@ -52,7 +52,7 @@ describeSuite({
                 const supplyBefore = (await apiAtBlockBefore.query.balances.totalIssuance()).toBigInt();
                 const supplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const blockIssuance = await fetchIssuance(await polkadotJs.query.system.events());
-                
+
                 const issuanceDiff = supplyAfter - supplyBefore;
                 expect(issuanceDiff, `Tank should have been removed`).toBe(
                     blockIssuance.amount.toBigInt() - balanceTankBefore

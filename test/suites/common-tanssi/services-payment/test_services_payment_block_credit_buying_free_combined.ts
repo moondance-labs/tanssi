@@ -20,7 +20,9 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            collatorAssignmentAlias = runtimeName.includes("light") ? polkadotJs.query.tanssiCollatorAssignment : polkadotJs.query.collatorAssignment;
+            collatorAssignmentAlias = runtimeName.includes("light")
+                ? polkadotJs.query.tanssiCollatorAssignment
+                : polkadotJs.query.collatorAssignment;
         });
 
         it({

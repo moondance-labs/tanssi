@@ -23,7 +23,10 @@ describeSuite({
             title: "should fail on setMinOrchestratorCollators if not sudo",
             test: async function () {
                 const { result } = await context.createBlock(
-                    context.polkadotJs().tx.collatorConfiguration.setMinOrchestratorCollators(2).signAsync(context.keyring.bob),
+                    context
+                        .polkadotJs()
+                        .tx.collatorConfiguration.setMinOrchestratorCollators(2)
+                        .signAsync(context.keyring.bob),
                     { allowFailures: true }
                 );
 
@@ -36,7 +39,10 @@ describeSuite({
             title: "should fail on setMaxOrchestratorCollators if not sudo",
             test: async function () {
                 const { result } = await context.createBlock(
-                    context.polkadotJs().tx.collatorConfiguration.setMaxOrchestratorCollators(2).signAsync(context.keyring.bob),
+                    context
+                        .polkadotJs()
+                        .tx.collatorConfiguration.setMaxOrchestratorCollators(2)
+                        .signAsync(context.keyring.bob),
                     { allowFailures: true }
                 );
 
@@ -49,7 +55,10 @@ describeSuite({
             title: "should fail on setCollatorsPerContainer if not sudo",
             test: async function () {
                 const { result } = await context.createBlock(
-                    context.polkadotJs().tx.collatorConfiguration.setCollatorsPerContainer(5).signAsync(context.keyring.bob),
+                    context
+                        .polkadotJs()
+                        .tx.collatorConfiguration.setCollatorsPerContainer(5)
+                        .signAsync(context.keyring.bob),
                     { allowFailures: true }
                 );
 

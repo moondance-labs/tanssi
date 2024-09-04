@@ -196,10 +196,10 @@ describeSuite({
             id: "E06",
             title: "Delegate account cannot call balance.transfer",
             test: async function () {
-                if(!chain.includes("light")) {
+                if (!chain.includes("light")) {
                     await context.createBlock();
                 }
-                
+
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,

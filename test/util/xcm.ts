@@ -955,7 +955,6 @@ export const extractPaidDeliveryFeesStarlight = async (context: DevModeContext) 
     return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
 };
 
-
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
     const upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
     expect(upwardMessages.length > 0, "There is no upward message").to.be.true;
@@ -970,7 +969,12 @@ export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDeli
     return fee;
 };
 
-export const getLastSentDmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint, paraId: number,) => {
+export const getLastSentDmpMessageFee = async (
+    context: DevModeContext,
+    baseDelivery: bigint,
+    txByteFee: bigint,
+    paraId: number
+) => {
     const downwardMessages = await context.polkadotJs().query.dmp.downwardMessageQueues(paraId);
     expect(downwardMessages.length > 0, "There is no downward message").to.be.true;
     const sentXcm = downwardMessages[0].msg;
