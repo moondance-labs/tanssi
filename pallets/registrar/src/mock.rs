@@ -241,7 +241,7 @@ impl<T, AccountId> RegistrarHandler<AccountId> for mock_data::Pallet<T> {
     fn register(
         _who: AccountId,
         id: ParaId,
-        _genesis_storage: Vec<tp_traits::ContainerChainGenesisDataItem>,
+        _genesis_storage: &[tp_traits::ContainerChainGenesisDataItem],
         _head_data: Option<tp_traits::HeadData>,
     ) -> sp_runtime::DispatchResult {
         Mock::mutate(|m| {
