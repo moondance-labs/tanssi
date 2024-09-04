@@ -224,7 +224,8 @@ pub fn do_test(
             alice_origin.clone(),
             PARATHREAD_ID.into(),
             SlotFrequency { min: 1, max: 1 },
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         set_dummy_boot_node(alice_origin, PARATHREAD_ID.into());
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();

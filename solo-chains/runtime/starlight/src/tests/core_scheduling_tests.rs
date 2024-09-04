@@ -17,15 +17,13 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::{ContainerRegistrar, OnDemandAssignmentProvider, Paras, ParasSudoWrapper, Session},
+    crate::{tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Session},
     cumulus_primitives_core::relay_chain::{
-        vstaging::SchedulerParams, AsyncBackingParams, CoreIndex,
+        vstaging::SchedulerParams, AsyncBackingParams, CoreIndex, HeadData,
     },
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
     primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
-    runtime_parachains::paras::{ParaGenesisArgs, ParaKind},
     sp_core::{Decode, Encode},
     sp_keystore::testing::MemoryKeystore,
     sp_std::{collections::btree_map::BTreeMap, vec},
@@ -508,6 +506,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // this is, 1000 will go first, then 1001. Since we want 1000 to use core 0,
             // the only way to achieve this is by assigning the parathread a higher para-id
             run_to_block(2);
+
             // Now the parathread should be there
             assert!(Paras::is_parathread(1001u32.into()));
             let alice_keys =
@@ -522,35 +521,42 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1000.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+
+            // We call run_block() after each run_to_session() for on_finalize() to
+            // be properly executed, and thus to coordinate all the necessary storages,
+            // specially ParasShared and Session CurrentIndex storages.
+            //
+            // If we don't do this, ParasShared's CurrentIndex is configured to
+            // one session before, and we want the to be the same for later checking in
+            // session 6.
+            run_block();
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
+            run_block();
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
                 1000.into()
             ));
-            assert_ok!(ParasSudoWrapper::sudo_schedule_para_initialize(
-                root_origin(),
-                1000.into(),
-                ParaGenesisArgs {
-                    genesis_head: ParasInherentTestBuilder::<Runtime>::mock_head_data(),
-                    validation_code: mock_validation_code(),
-                    para_kind: ParaKind::Parachain,
-                },
-            ));
-
-            assert_ok!(Paras::add_trusted_validation_code(
-                root_origin(),
-                mock_validation_code()
-            ));
 
             // The parathread now uses core 0 but once the parachain is onboarded (and gets collators)
             // it should use core 1.
-            // let's just go to the block right before edge of session 2.
+            // let's just go to the block right before edge of session 6.
             let epoch_duration = EpochDurationInBlocks::get();
 
-            run_to_block(2 * epoch_duration - 1);
+            run_to_block(6 * epoch_duration - 1);
             // we are not a parachain yet
             assert!(!Paras::is_parachain(1000u32.into()));
             // we dont have authorities
@@ -594,7 +600,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
             // let's run to right after the edge
             // We need one more run block to trigger the on_finalize
-            run_to_session(2);
+            run_to_session(6);
             run_block();
             // Now the parachain should be there
             assert!(Paras::is_parachain(1000u32.into()));

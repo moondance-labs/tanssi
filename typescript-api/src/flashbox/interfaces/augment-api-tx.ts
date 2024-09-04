@@ -1516,9 +1516,10 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, DpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, DpContainerChainGenesisDataContainerChainGenesisData, Option<Bytes>]
             >;
             /** Register parathread */
             registerParathread: AugmentedSubmittable<
@@ -1529,9 +1530,10 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData, Option<Bytes>]
             >;
             /** Register parachain or parathread */
             registerWithRelayProof: AugmentedSubmittable<
@@ -1557,7 +1559,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
                 [
                     u32,
@@ -1566,6 +1569,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
                     DpContainerChainGenesisDataContainerChainGenesisData,
+                    Option<Bytes>,
                 ]
             >;
             setParaManager: AugmentedSubmittable<

@@ -29,7 +29,7 @@ use {
     sp_core::{Get, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage,
+        BuildStorage, Perbill,
     },
     sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     tp_traits::{
@@ -115,7 +115,6 @@ pub mod mock_data {
 }
 
 #[derive(
-    Default,
     Clone,
     Encode,
     Decode,
@@ -126,10 +125,12 @@ pub mod mock_data {
     serde::Deserialize,
 )]
 pub struct Mocks {
+    pub max_collators: u32,
     pub min_orchestrator_chain_collators: u32,
     pub max_orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
     pub collators_per_parathread: u32,
+    pub target_container_chain_fullness: Perbill,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
     pub parathreads: Vec<u32>,
@@ -138,6 +139,27 @@ pub struct Mocks {
     pub full_rotation_period: Option<u32>,
     pub apply_tip: bool,
     pub assignment_hook_errors: bool,
+}
+
+impl Default for Mocks {
+    fn default() -> Self {
+        Self {
+            max_collators: Default::default(),
+            min_orchestrator_chain_collators: 1,
+            max_orchestrator_chain_collators: Default::default(),
+            collators_per_container: Default::default(),
+            collators_per_parathread: Default::default(),
+            target_container_chain_fullness: Perbill::from_percent(80),
+            // Initialize collators with 1 collator to avoid error `ZeroCollators` in session 0
+            collators: vec![100],
+            container_chains: Default::default(),
+            parathreads: Default::default(),
+            random_seed: Default::default(),
+            full_rotation_period: Default::default(),
+            apply_tip: Default::default(),
+            assignment_hook_errors: Default::default(),
+        }
+    }
 }
 
 impl mock_data::Config for Test {}
@@ -152,7 +174,7 @@ parameter_types! {
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
     fn max_collators(_session_index: u32) -> u32 {
-        unimplemented!()
+        MockData::mock().max_collators
     }
 
     fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
@@ -170,6 +192,11 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
     fn collators_per_parathread(_session_index: u32) -> u32 {
         MockData::mock().collators_per_parathread
     }
+
+    fn target_container_chain_fullness(_session_index: u32) -> Perbill {
+        MockData::mock().target_container_chain_fullness
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
     fn set_host_configuration(_session_index: u32) {
         MockData::mutate(|mocks| {
@@ -302,20 +329,10 @@ impl pallet_collator_assignment::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut ext: sp_io::TestExternalities = system::GenesisConfig::<Test>::default()
+    system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()
-        .into();
-
-    ext.execute_with(|| {
-        MockData::mutate(|mocks| {
-            // Initialize collators with 1 collator to avoid error `ZeroCollators` in session 0
-            mocks.collators = vec![100];
-            mocks.min_orchestrator_chain_collators = 1;
-        })
-    });
-
-    ext
+        .into()
 }
 
 pub trait GetCollators<AccountId, SessionIndex> {
