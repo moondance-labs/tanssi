@@ -945,6 +945,17 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
     return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
 };
 
+export const extractPaidDeliveryFeesStarlight = async (context: DevModeContext) => {
+    const records = await context.polkadotJs().query.system.events();
+
+    const filteredEvents = records
+        .map(({ event }) => (context.polkadotJs().events.xcmPallet.FeesPaid.is(event) ? event : undefined))
+        .filter((event) => event);
+
+    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+};
+
+
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
     const upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
     expect(upwardMessages.length > 0, "There is no upward message").to.be.true;
@@ -955,6 +966,20 @@ export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDeli
 
     const txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
     const deliveryFeeFactor = await context.polkadotJs().query.parachainSystem.upwardDeliveryFeeFactor();
+    const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
+    return fee;
+};
+
+export const getLastSentDmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint, paraId: number,) => {
+    const downwardMessages = await context.polkadotJs().query.dmp.downwardMessageQueues(paraId);
+    expect(downwardMessages.length > 0, "There is no downward message").to.be.true;
+    const sentXcm = downwardMessages[0].msg;
+
+    // We need to slice once to get to the actual message (version)
+    const messageBytes = sentXcm.slice(1);
+
+    const txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
+    const deliveryFeeFactor = await context.polkadotJs().query.dmp.deliveryFeeFactor(paraId);
     const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
     return fee;
 };
