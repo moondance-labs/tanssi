@@ -1625,7 +1625,7 @@ where
     fn register(
         who: AccountId,
         id: ParaId,
-        genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        genesis_storage: &[ContainerChainGenesisDataItem],
         head_data: Option<HeadData>,
     ) -> DispatchResult {
         // Return early if head_data is not specified
@@ -1637,10 +1637,9 @@ where
         // Check if the wasm code is present in storage
         let validation_code = match genesis_storage
             .into_iter()
-            .map(Into::into)
-            .find(|(key, _): &(Vec<u8>, Vec<u8>)| key == &StorageWellKnownKeys::CODE)
+            .find(|item| item.key == StorageWellKnownKeys::CODE)
         {
-            Some((_, code)) => ValidationCode(code),
+            Some(item) => ValidationCode(item.value.clone()),
             None => return Err(ContainerRegistrarError::<Runtime>::WasmCodeNecessary.into()),
         };
 

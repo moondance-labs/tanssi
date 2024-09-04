@@ -871,7 +871,7 @@ pub mod pallet {
             T::InnerRegistrar::register(
                 account.clone(),
                 para_id,
-                genesis_data.clone().storage,
+                &genesis_data.storage,
                 head_data,
             )?;
 

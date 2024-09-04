@@ -394,7 +394,7 @@ pub trait RegistrarHandler<AccountId> {
     fn register(
         who: AccountId,
         id: ParaId,
-        genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        genesis_storage: &[ContainerChainGenesisDataItem],
         head_data: Option<HeadData>,
     ) -> DispatchResult;
 
@@ -408,7 +408,7 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
     fn register(
         _who: AccountId,
         _id: ParaId,
-        _genesis_storage: Vec<ContainerChainGenesisDataItem>,
+        _genesis_storage: &[ContainerChainGenesisDataItem],
         _head_data: Option<HeadData>,
     ) -> DispatchResult {
         Ok(())
