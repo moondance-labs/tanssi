@@ -241,7 +241,7 @@ fn starlight_testnet_genesis(
         .iter()
         .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
         .collect();
-    
+
     let data_preservers_bootnodes: Vec<_> = container_chains
         .iter()
         .flat_map(|(para_id, _genesis_data, bootnodes)| {

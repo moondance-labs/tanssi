@@ -32,7 +32,11 @@ use {
     frame_support::{
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::{fungible::Inspect, ConstBool, tokens::{PayFromAccount, UnityAssetBalanceConversion}},
+        traits::{
+            fungible::Inspect,
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
+            ConstBool,
+        },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
@@ -52,11 +56,8 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        impl_runtime_weights,
-        impls::{
-            ToAuthor
-        },
-        paras_registrar, paras_sudo_wrapper, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper, BlockHashCount,
+        BlockLength, SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand,
@@ -97,9 +98,8 @@ use {
         genesis_builder_helper::{build_state, get_preset},
         parameter_types,
         traits::{
-            fungible::HoldConsideration, EitherOf,
-            EitherOfDiverse, EnsureOriginWithArg, InstanceFilter,
-            KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
+            fungible::HoldConsideration, EitherOf, EitherOfDiverse, EnsureOriginWithArg,
+            InstanceFilter, KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
             ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
@@ -125,7 +125,7 @@ use {
     xcm::{
         latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
         VersionedXcm,
-    }
+    },
 };
 
 pub use {
@@ -2610,7 +2610,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         ContainerRegistrar::initializer_on_new_session(&session_index);
 
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
-        
+
         log::info!("invulnerables are {:?}", invulnerables);
         log::info!("session is {:?}", session_index);
         let next_collators = invulnerables;
