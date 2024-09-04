@@ -37,7 +37,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool,
+            ConstBool, Currency,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -48,6 +48,7 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::ShouldEndSession,
+    pallet_treasury::ArgumentsFactory,
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -484,6 +485,23 @@ parameter_types! {
     pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
+pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
+
+impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
+where
+    T: pallet_treasury::Config,
+    T::AccountId: From<[u8; 32]>,
+{
+    fn create_asset_kind(_seed: u32) {}
+
+    fn create_beneficiary(seed: [u8; 32]) -> T::AccountId {
+        let account: T::AccountId = seed.into();
+        let balance = T::Currency::minimum_balance();
+        let _ = T::Currency::make_free_balance_be(&account, balance);
+        account
+    }
+}
+
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
@@ -503,7 +521,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = PayoutSpendPeriod;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = runtime_common::impls::benchmarks::TreasuryArguments;
+    type BenchmarkHelper = TreasuryBenchmarkHelper<Runtime>;
 }
 
 impl pallet_offences::Config for Runtime {
@@ -1154,7 +1172,7 @@ impl pallet_asset_rate::Config for Runtime {
     type Currency = Balances;
     type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
+    type BenchmarkHelper = ();
 }
 
 parameter_types! {

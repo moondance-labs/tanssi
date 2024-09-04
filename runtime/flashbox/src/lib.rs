@@ -1557,7 +1557,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
+    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
