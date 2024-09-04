@@ -183,7 +183,8 @@ pub mod pallet {
                 .max_parachain_percentage
                 .mul(core_count);
 
-            let enough_cores_for_all_paras = bulk_paras.len() < ideal_number_of_bulk_paras as usize;
+            let enough_cores_for_all_bulk_paras =
+                bulk_paras.len() <= ideal_number_of_bulk_paras as usize;
 
             // Currently, we are sorting both bulk and pool paras by tip, even when for example
             // only number of bulk paras are restricted due to core availability.
@@ -191,7 +192,7 @@ pub mod pallet {
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
             // We need to change this once other part of algorithm start to differentiate between
             // bulk and pool paras.
-            if !enough_cores_for_all_paras {
+            if !enough_cores_for_all_bulk_paras {
                 bulk_paras.sort_by(|a, b| {
                     T::CollatorAssignmentTip::get_para_tip(b.para_id)
                         .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
@@ -219,7 +220,7 @@ pub mod pallet {
             // We should charge tip if either this method or the order_para method has sorted chains based on tip
             (
                 ordered_chains,
-                sorted_chains_based_on_tip || !enough_cores_for_all_paras,
+                sorted_chains_based_on_tip || !enough_cores_for_all_bulk_paras,
             )
         }
 
