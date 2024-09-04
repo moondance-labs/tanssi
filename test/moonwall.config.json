@@ -8,7 +8,13 @@
             "name": "dev_tanssi",
             "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all", "suites/common-xcm-parachain", "suites/common-tanssi-parachain", "suites/common-tanssi", "suites/dev-tanssi"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-xcm-parachain",
+                "suites/common-tanssi-parachain",
+                "suites/common-tanssi",
+                "suites/dev-tanssi"
+            ],
             "runScripts": [
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c dancebox_dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
             ],
@@ -137,7 +143,12 @@
         },
         {
             "name": "dev_simple_template",
-            "testFileDir": ["suites/common-all", "suites/common-all-parachain", "suites/common-xcm-parachain", "suites/common-container-chains"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-all-parachain",
+                "suites/common-xcm-parachain",
+                "suites/common-container-chains"
+            ],
             "runScripts": ["compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c dev"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -743,7 +754,12 @@
         {
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all",  "suites/common-all-parachain", "suites/common-tanssi-parachain", "suites/common-tanssi"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-all-parachain",
+                "suites/common-tanssi-parachain",
+                "suites/common-tanssi"
+            ],
             "runScripts": [
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c flashbox_dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
             ],
