@@ -69,7 +69,12 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const tx = polkadotJs.tx.registrar.registerParathread(2002, slotFrequency, containerChainGenesisData);
+                const tx = polkadotJs.tx.registrar.registerParathread(
+                    2002,
+                    slotFrequency,
+                    containerChainGenesisData,
+                    null
+                );
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const tx2 = polkadotJs.tx.dataPreservers.createProfile({

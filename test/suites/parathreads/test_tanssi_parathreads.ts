@@ -466,7 +466,7 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId) {
+async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId, headData?: null) {
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",
@@ -479,7 +479,7 @@ async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq
 
     const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
     const txs = [];
-    const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
+    const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData, headData);
     txs.push(
         api.tx.utility.dispatchAs(
             {

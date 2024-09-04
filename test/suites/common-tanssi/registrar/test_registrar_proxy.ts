@@ -79,7 +79,7 @@ describeSuite({
                 const tx2 = polkadotJs.tx.proxy.proxy(
                     bob.address,
                     null,
-                    polkadotJs.tx.registrar.register(2002, containerChainGenesisData)
+                    polkadotJs.tx.registrar.register(2002, containerChainGenesisData, null)
                 );
                 await context.createBlock([await tx2.signAsync(charlie)]);
                 // Check that the on chain genesis data is set correctly
@@ -168,7 +168,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const tx2 = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
+                const tx2 = polkadotJs.tx.registrar.register(2002, containerChainGenesisData, null);
                 const tx3 = polkadotJs.tx.registrar.markValidForCollating(2002);
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
