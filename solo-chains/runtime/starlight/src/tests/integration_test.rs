@@ -19,7 +19,7 @@
 use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers},
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -190,19 +190,12 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 
             assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
 
-            let genesis_data_1003 = ContainerChainGenesisData {
-                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
-                name: Default::default(),
-                id: Default::default(),
-                fork_id: Default::default(),
-                extensions: vec![],
-                properties: Default::default(),
-            };
             assert_ok!(
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    get_genesis_data_with_validation_code().0,
+                    Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
                 ()
             );
@@ -210,7 +203,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             // Registered container chains are inserted immediately
             assert_eq!(
                 Runtime::genesis_data(1003.into()).as_ref(),
-                Some(&genesis_data_1003)
+                Some(&get_genesis_data_with_validation_code().0)
             );
 
             // Deregistered container chain genesis data is removed after 2 sessions
@@ -300,7 +293,8 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
             assert_noop!(
                 ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
@@ -335,7 +329,8 @@ fn test_container_deregister_unassign_data_preserver() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 para_id,
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
 
             assert_ok!(DataPreservers::create_profile(

@@ -18025,6 +18025,7 @@ version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
+ "dp-container-chain-genesis-data",
  "frame-support",
  "impl-trait-for-tuples",
  "macro_rules_attribute",

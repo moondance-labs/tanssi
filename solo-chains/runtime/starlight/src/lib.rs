@@ -21,7 +21,7 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common as polkadot_runtime_common;
+use runtime_common::{self as polkadot_runtime_common};
 
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
@@ -29,6 +29,8 @@ use {
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
@@ -42,6 +44,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_initializer as tanssi_initializer,
+    pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::ShouldEndSession,
@@ -52,12 +55,13 @@ use {
         CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
         NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
-        SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
+        SessionInfo, Signature, ValidationCodeHash, ValidatorId, ValidatorIndex,
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper, BlockHashCount,
-        BlockLength, SlowAdjustingFeeUpdate,
+        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand,
@@ -75,7 +79,7 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
-    sp_core::Get,
+    sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::traits::BlockNumberProvider,
     sp_std::{
@@ -85,8 +89,8 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, GetSessionContainerChains, RemoveParaIdsWithNoCredits, Slot,
-        SlotFrequency,
+        apply, derive_storage_traits, GetSessionContainerChains, RegistrarHandler,
+        RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
 
@@ -1534,6 +1538,73 @@ parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
+
+pub struct InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>(
+    PhantomData<(Runtime, AccountId, RegistrarManager, RegistrarWeightInfo)>,
+);
+impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
+    for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
+where
+    RegistrarManager: RegistrarInterface<AccountId = AccountId>,
+    RegistrarWeightInfo: paras_registrar::WeightInfo,
+    Runtime: pallet_registrar::Config,
+{
+    fn register(
+        who: AccountId,
+        id: ParaId,
+        genesis_storage: &[ContainerChainGenesisDataItem],
+        head_data: Option<HeadData>,
+    ) -> DispatchResult {
+        // Return early if head_data is not specified
+        let genesis_head = match head_data {
+            Some(data) => data,
+            None => return Err(ContainerRegistrarError::<Runtime>::HeadDataNecessary.into()),
+        };
+
+        // Check if the wasm code is present in storage
+        let validation_code = match genesis_storage
+            .into_iter()
+            .find(|item| item.key == StorageWellKnownKeys::CODE)
+        {
+            Some(item) => ValidationCode(item.value.clone()),
+            None => return Err(ContainerRegistrarError::<Runtime>::WasmCodeNecessary.into()),
+        };
+
+        // Try to register the parachain
+        RegistrarManager::register(who, id, genesis_head, validation_code)
+    }
+
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
+        // Return Ok() if the paraId is already a parachain in the relay context
+        if !RegistrarManager::is_parachain(id) {
+            return RegistrarManager::make_parachain(id);
+        }
+        Ok(())
+    }
+
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult {
+        // Return Ok() if the paraId is already a parathread in the relay context
+        if !RegistrarManager::is_parathread(id) {
+            return RegistrarManager::make_parathread(id);
+        }
+        Ok(())
+    }
+
+    fn deregister(id: ParaId) {
+        if let Err(e) = RegistrarManager::deregister(id) {
+            log::warn!(
+                "Failed to deregister para id {} in relay chain: {:?}",
+                u32::from(id),
+                e,
+            );
+        }
+    }
+
+    fn deregister_weight() -> Weight {
+        RegistrarWeightInfo::deregister()
+    }
+}
+
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -1549,6 +1620,9 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
+    type InnerRegistrar =
+        InnerStarlightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

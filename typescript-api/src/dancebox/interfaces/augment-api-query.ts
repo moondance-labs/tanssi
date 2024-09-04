@@ -22,7 +22,7 @@ import type {
     u64,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     CumulusPalletParachainSystemUnincludedSegmentAncestor,
@@ -256,6 +256,9 @@ declare module "@polkadot/api-base/types/storage" {
                 () => Observable<DpCollatorAssignmentAssignedCollatorsAccountId32>,
                 []
             > &
+                QueryableStorageEntry<ApiType, []>;
+            /** Ratio of assigned collators to max collators. */
+            collatorFullnessRatio: AugmentedQuery<ApiType, () => Observable<Option<Perbill>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Pending configuration changes.
@@ -985,6 +988,25 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         registrar: {
+            /**
+             * This storage aims to act as a 'buffer' for paraIds that must be deregistered at the end of the block execution
+             * by calling 'T::InnerRegistrar::deregister()' implementation.
+             *
+             * We need this buffer because when we are using this pallet on a relay-chain environment like Starlight (where
+             * 'T::InnerRegistrar' implementation is usually the 'paras_registrar' pallet) we need to deregister (via
+             * 'paras_registrar::deregister') the same paraIds we have in 'PendingToRemove<T>', and we need to do this
+             * deregistration process inside 'on_finalize' hook.
+             *
+             * It can be the case that some paraIds need to be downgraded to a parathread before deregistering on
+             * 'paras_registrar'. This process usually takes 2 sessions, and the actual downgrade happens when the block
+             * finalizes.
+             *
+             * Therefore, if we tried to perform this relay deregistration process at the beginning of the session/block
+             * inside ('on_initialize') initializer_on_new_session() as we do for this pallet, it would fail due to the
+             * downgrade process could have not taken place yet.
+             */
+            bufferedParasToDeregister: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             paraGenesisData: AugmentedQuery<
                 ApiType,
                 (
