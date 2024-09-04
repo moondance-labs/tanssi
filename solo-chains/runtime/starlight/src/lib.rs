@@ -37,7 +37,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Currency,
+            ConstBool,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -48,7 +48,6 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::ShouldEndSession,
-    pallet_treasury::ArgumentsFactory,
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -485,8 +484,15 @@ parameter_types! {
     pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_treasury::ArgumentsFactory;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::Currency;
+
+#[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
 where
     T: pallet_treasury::Config,

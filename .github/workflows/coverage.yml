@@ -101,6 +101,11 @@ jobs:
         with:
           moonwall-environment: dev_simple_template
           force-pass: true
+      - name: Typescript Tests Tanssi (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
+        with:
+          moonwall-environment: dev_tanssi_relay
+          force-pass: true
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview
