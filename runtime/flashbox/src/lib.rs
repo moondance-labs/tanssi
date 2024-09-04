@@ -38,7 +38,7 @@ pub mod weights;
 mod tests;
 
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
@@ -504,7 +504,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ();
     type XcmpMessageHandler = ();
     type ReservedXcmpWeight = ();
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 
