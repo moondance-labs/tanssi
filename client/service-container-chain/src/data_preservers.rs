@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::spawner::{wait_for_paritydb_lock, ContainerChainSpawner, Spawner, TSelectSyncMode},
+    crate::spawner::{wait_for_paritydb_lock, Spawner},
     dc_orchestrator_chain_interface::{
         DataPreserverAssignment, OrchestratorChainError, OrchestratorChainInterface,
         OrchestratorChainResult,
@@ -118,11 +118,10 @@ mod tests {
             BlockNumber, DataPreserverProfileId, OrchestratorChainError, PHash, PHeader,
         },
         dp_container_chain_genesis_data::ContainerChainGenesisData,
-        futures::{FutureExt, Stream},
+        futures::Stream,
         polkadot_overseer::Handle,
         sc_client_api::StorageProof,
         sp_core::H256,
-        sp_runtime::offchain::storage::StorageValue,
         std::{
             collections::{BTreeMap, HashSet},
             path::PathBuf,
@@ -130,7 +129,7 @@ mod tests {
             sync::{Arc, Mutex},
             time::Duration,
         },
-        tokio::sync::{broadcast, oneshot},
+        tokio::sync::broadcast,
     };
 
     struct MockChainInterface {
