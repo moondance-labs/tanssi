@@ -101,7 +101,7 @@ jobs:
         with:
           moonwall-environment: dev_simple_template
           force-pass: true
-      - name: Typescript Tests Tanssi (Dev Service)
+      - name: Typescript Tests Tanssi Relay (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
           moonwall-environment: dev_tanssi_relay

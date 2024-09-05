@@ -40,7 +40,7 @@ use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, Pair, Public},
+    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys, Pair, Public},
     sp_runtime::traits::IdentifyAccount,
 };
 
@@ -247,11 +247,21 @@ pub fn starlight_local_testnet_config(
 
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
-        storage: vec![],
+        storage: vec![
+            dp_container_chain_genesis_data::ContainerChainGenesisDataItem {
+                key: StorageWellKnownKeys::CODE.to_vec(),
+                value: dummy_validation_code().0,
+            },
+        ],
         name: format!("Container Chain {}", para_id).into(),
         id: format!("container-chain-{}", para_id).into(),
         fork_id: None,
         extensions: vec![],
         properties: Default::default(),
     }
+}
+
+/// Create meaningless validation code.
+pub fn dummy_validation_code() -> cumulus_primitives_core::relay_chain::ValidationCode {
+    cumulus_primitives_core::relay_chain::ValidationCode(vec![1, 2, 3, 4, 5, 6, 7, 8, 9])
 }
