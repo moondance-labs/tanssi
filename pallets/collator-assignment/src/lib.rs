@@ -179,12 +179,11 @@ pub mod pallet {
             collators_per_parathread: u32,
         ) -> (Vec<ChainNumCollators>, bool) {
             let core_count = core_allocation_configuration.core_count;
-            let ideal_number_of_bulk_paras = core_allocation_configuration
+            let max_number_of_bulk_paras = core_allocation_configuration
                 .max_parachain_percentage
                 .mul(core_count);
 
-            let enough_cores_for_bulk_paras =
-                bulk_paras.len() <= ideal_number_of_bulk_paras as usize;
+            let enough_cores_for_bulk_paras = bulk_paras.len() <= max_number_of_bulk_paras as usize;
 
             // Currently, we are sorting both bulk and pool paras by tip, even when for example
             // only number of bulk paras are restricted due to core availability since we deduct tip from
@@ -205,9 +204,9 @@ pub mod pallet {
                 });
             }
 
-            bulk_paras.truncate(ideal_number_of_bulk_paras as usize);
+            bulk_paras.truncate(max_number_of_bulk_paras as usize);
             // We are not truncating pool paras, since their workload is not continuous one core
-            // can be shared by many parachain during the session.
+            // can be shared by many paras during the session.
 
             let (ordered_chains, sorted_chains_based_on_tip) = Self::order_paras(
                 bulk_paras,
@@ -219,6 +218,8 @@ pub mod pallet {
             );
 
             // We should charge tip if either this method or the order_para method has sorted chains based on tip
+            // So in other words: if parachain demand exceeds the `max_number_of_bulk_paras` OR
+            // if `num_collators` is not enough to satisfy  collation need of all paras.
             (
                 ordered_chains,
                 sorted_chains_based_on_tip || !enough_cores_for_bulk_paras,
