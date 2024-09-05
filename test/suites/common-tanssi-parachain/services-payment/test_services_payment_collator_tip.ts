@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 import { fetchCollatorAssignmentTip, jumpSessions } from "util/block";
-import { paraIdTank } from "util/payment";
+
 describeSuite({
     id: "CT0608",
     title: "Services payment collator assignment tip test suite",
