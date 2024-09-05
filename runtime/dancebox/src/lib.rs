@@ -1785,6 +1785,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub const MaxBalance: Balance = Balance::max_value();
+    // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
 }
 

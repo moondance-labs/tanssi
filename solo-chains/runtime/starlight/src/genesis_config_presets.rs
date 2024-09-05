@@ -272,6 +272,7 @@ fn starlight_testnet_genesis(
         .into_iter()
         .filter_map(|(para_id, genesis_data, _boot_nodes)| {
             // Check if the wasm code is present in storage
+            // If not present, we ignore it
             let validation_code = match genesis_data
                 .storage
                 .into_iter()

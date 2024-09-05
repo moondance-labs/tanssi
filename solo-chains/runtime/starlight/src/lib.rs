@@ -464,6 +464,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub const ProposalBondMinimum: Balance = 2000 * CENTS;
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
+    // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
@@ -2709,8 +2710,6 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
 
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
 
-        log::info!("invulnerables are {:?}", invulnerables);
-        log::info!("session is {:?}", session_index);
         let next_collators = invulnerables;
 
         // Queue next session keys.

@@ -39,11 +39,6 @@ describeSuite({
 
                 const collators = await collatorAssignmentAlias.collatorContainerChain();
 
-                const balanceTank = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
-
-                console.log(balanceTank);
-                console.log(paraIdTank(paraId));
-
                 expect(
                     collators.toJSON().containerChains[paraId].length,
                     `Container chain ${paraId} should have 2 collators`
