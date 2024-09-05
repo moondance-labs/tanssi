@@ -123,7 +123,8 @@ mod tests {
         sc_client_api::StorageProof,
         sp_core::H256,
         std::{
-            collections::{BTreeMap, HashSet},
+            collections::BTreeMap,
+            ops::DerefMut,
             path::PathBuf,
             pin::Pin,
             sync::{Arc, Mutex},
@@ -281,32 +282,23 @@ mod tests {
 
     #[derive(Clone)]
     struct MockSpawner {
-        state: Arc<Mutex<HashSet<SpawnerEvent>>>,
+        state: Arc<Mutex<Vec<SpawnerEvent>>>,
         chain_interface: Arc<MockChainInterface>,
     }
 
     impl MockSpawner {
         fn new() -> Self {
             Self {
-                state: Arc::new(Mutex::new(HashSet::new())),
+                state: Arc::new(Mutex::new(Vec::new())),
                 chain_interface: Arc::new(MockChainInterface::new()),
             }
         }
 
-        fn set_expectations(&self, events: Vec<SpawnerEvent>) {
-            let mut set = self.state.lock().unwrap();
-
-            set.clear();
-
-            for e in events {
-                set.insert(e);
-            }
-        }
-
-        fn ensure_all_events_were_emitted(&self) {
-            let set = self.state.lock().unwrap();
-
-            assert!(set.is_empty(), "Not all events were emitted: {set:?}");
+        fn collect_events(&self) -> Vec<SpawnerEvent> {
+            let mut events = vec![];
+            let mut state = self.state.lock().unwrap();
+            std::mem::swap(state.deref_mut(), &mut events);
+            events
         }
     }
 
@@ -328,10 +320,10 @@ mod tests {
             start_collation: bool,
         ) -> impl std::future::Future<Output = ()> + Send {
             let mut set = self.state.lock().unwrap();
-
-            let event = SpawnerEvent::Started(container_chain_para_id, start_collation);
-
-            assert!(set.remove(&event), "Unexpected event {event:?}");
+            set.push(SpawnerEvent::Started(
+                container_chain_para_id,
+                start_collation,
+            ));
 
             async {}
         }
@@ -342,10 +334,7 @@ mod tests {
         /// chain was not running.
         fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf> {
             let mut set = self.state.lock().unwrap();
-
-            let event = SpawnerEvent::Stopped(container_chain_para_id, keep_db);
-
-            assert!(set.remove(&event), "Unexpected event {event:?}");
+            set.push(SpawnerEvent::Stopped(container_chain_para_id, keep_db));
 
             None
         }
@@ -363,58 +352,78 @@ mod tests {
         // Wait for task to start and subscribe to block stream.
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        spawner.set_expectations(vec![SpawnerEvent::Started(para_id1, false)]);
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
             map.insert(profile_id, DataPreserverAssignment::Active(para_id1));
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(
+            spawner.collect_events(),
+            vec![SpawnerEvent::Started(para_id1, false)]
+        );
 
-        spawner.set_expectations(vec![SpawnerEvent::Stopped(para_id1, false)]);
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
             map.insert(profile_id, DataPreserverAssignment::NotAssigned);
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(
+            spawner.collect_events(),
+            vec![SpawnerEvent::Stopped(para_id1, false)]
+        );
 
-        spawner.set_expectations(vec![SpawnerEvent::Started(para_id2, false)]);
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
             map.insert(profile_id, DataPreserverAssignment::Active(para_id2));
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(
+            spawner.collect_events(),
+            vec![SpawnerEvent::Started(para_id2, false)]
+        );
 
-        spawner.set_expectations(vec![SpawnerEvent::Stopped(para_id2, true)]);
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
-            map.insert(profile_id, DataPreserverAssignment::Inactive(para_id2));
+            map.insert(profile_id, DataPreserverAssignment::Active(para_id1));
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(
+            spawner.collect_events(),
+            vec![
+                SpawnerEvent::Stopped(para_id2, false),
+                SpawnerEvent::Started(para_id1, false)
+            ]
+        );
 
-        spawner.set_expectations(vec![]);
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
             map.insert(profile_id, DataPreserverAssignment::Inactive(para_id1));
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(
+            spawner.collect_events(),
+            vec![SpawnerEvent::Stopped(para_id1, true)]
+        );
 
-        spawner.set_expectations(vec![]);
+        spawner.chain_interface.mock_block({
+            let mut map = BTreeMap::new();
+            map.insert(profile_id, DataPreserverAssignment::Inactive(para_id2));
+            map
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        assert_eq!(spawner.collect_events(), vec![]);
+
         spawner.chain_interface.mock_block({
             let mut map = BTreeMap::new();
             map.insert(profile_id, DataPreserverAssignment::NotAssigned);
             map
         });
         tokio::time::sleep(Duration::from_millis(100)).await;
-        spawner.ensure_all_events_were_emitted();
+        assert_eq!(spawner.collect_events(), vec![]);
     }
 }
