@@ -6,7 +6,7 @@ import { extractWeight } from "@moonwall/util";
 import { extractFeeAuthor, filterRewardFromOrchestrator } from "util/block";
 
 describeSuite({
-    id: "C0002",
+    id: "CA0101",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

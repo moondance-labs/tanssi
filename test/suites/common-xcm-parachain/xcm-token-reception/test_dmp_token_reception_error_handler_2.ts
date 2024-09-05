@@ -7,7 +7,7 @@ import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../ut
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0105",
+    id: "CPX0105",
     title: "Mock XCM - downward transfer with triggered error handler",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

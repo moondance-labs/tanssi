@@ -7,7 +7,7 @@ import { RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../u
 import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0106",
+    id: "CPX0106",
     title: "Mock XCM - Succeeds receiving tokens through HRMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

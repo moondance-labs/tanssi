@@ -8,7 +8,7 @@ import { Keyring } from "@polkadot/keyring";
 const includesAll = (arr, values) => values.every((v) => arr.includes(v));
 
 describeSuite({
-    id: "CT0101",
+    id: "DTR0501",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

@@ -4,7 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "CT0502",
+    id: "CPT0502",
     title: "Registrar para manager",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

@@ -8,7 +8,7 @@ import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/co
 
 // This assumes that the XcmExecutorUtils ReserveDefaultTrustPolicy set in the runtime is AllNative
 describeSuite({
-    id: "DC0201",
+    id: "DC0102",
     title: "XcmExecutorUtils - Default policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

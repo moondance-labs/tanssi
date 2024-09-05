@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { fetchIssuance } from "util/block";
 
 describeSuite({
-    id: "CT0302",
+    id: "CPT0302",
     title: "Issuance reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

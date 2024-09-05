@@ -5,7 +5,7 @@ import { KeyringPair } from "@moonwall/util";
 import { fetchCollatorAssignmentTip, jumpSessions } from "util/block";
 
 describeSuite({
-    id: "CT0608",
+    id: "DTR0901",
     title: "Services payment collator assignment tip test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

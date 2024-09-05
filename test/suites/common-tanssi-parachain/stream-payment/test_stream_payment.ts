@@ -4,7 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DT0501",
+    id: "CPT0701",
     title: "Stream payment works",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

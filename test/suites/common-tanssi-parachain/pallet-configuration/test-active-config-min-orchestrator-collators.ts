@@ -2,7 +2,7 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "CT0404",
+    id: "CPT0404",
     title: "Configuration - ActiveConfig - MinOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

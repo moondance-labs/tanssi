@@ -7,7 +7,7 @@ import { Result } from "@polkadot/types-codec";
 import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "C0302",
+    id: "CAP0302",
     title: "Txs can be paused and unpaused",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

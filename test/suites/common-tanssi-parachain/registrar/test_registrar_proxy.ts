@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "util/block";
 
 describeSuite({
-    id: "DT0604",
+    id: "CPT0604",
     title: "Registrar test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

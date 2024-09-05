@@ -7,7 +7,7 @@ import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../ut
 import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0101",
+    id: "CPX0101",
     title: "Mock XCM - Succeeds receiving tokens DMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

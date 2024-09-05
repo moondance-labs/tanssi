@@ -11,7 +11,7 @@ import {
 } from "../../../util/xcm.ts";
 
 describeSuite({
-    id: "CX0201",
+    id: "CPX0201",
     title: "Mock XCM - Succeeds using sovereign accounts",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

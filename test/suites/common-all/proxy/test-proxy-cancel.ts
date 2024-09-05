@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "C0102",
+    id: "CA0301",
     title: "Proxy test suite - ProxyType::CancelProxy",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

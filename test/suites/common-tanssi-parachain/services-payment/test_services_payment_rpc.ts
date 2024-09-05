@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 
 describeSuite({
-    id: "CT0609",
+    id: "CPT0609",
     title: "Services payment RPC",
     foundationMethods: "dev",
     testCases: ({ it }) => {
