@@ -67,7 +67,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
+                const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData, null);
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({

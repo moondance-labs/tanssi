@@ -423,6 +423,8 @@ declare module "@polkadot/api-base/types/errors" {
         registrar: {
             /** Attempted to register a ParaId with a genesis data size greater than the limit */
             GenesisDataTooBig: AugmentedError<ApiType>;
+            /** Tried to register a paraId in a relay context without specifying a proper HeadData. */
+            HeadDataNecessary: AugmentedError<ApiType>;
             /** The provided signature from the parachain manager in the relay is not valid */
             InvalidRelayManagerSignature: AugmentedError<ApiType>;
             /** The provided relay storage proof is not valid */
@@ -451,6 +453,8 @@ declare module "@polkadot/api-base/types/errors" {
             ParaStillExistsInRelay: AugmentedError<ApiType>;
             /** The relay storage root for the corresponding block number could not be retrieved */
             RelayStorageRootNotFound: AugmentedError<ApiType>;
+            /** Tried to register a paraId in a relay context without specifying a wasm chain code. */
+            WasmCodeNecessary: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

@@ -51,7 +51,7 @@ describeSuite({
                 const containerChainGenesisData = emptyGenesisData();
 
                 await context.createBlock([
-                    await polkadotJs.tx.registrar.register(paraId, containerChainGenesisData).signAsync(alice),
+                    await polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null).signAsync(alice),
                 ]);
 
                 // Bob still not a manager, extrinsic requiring ManagerOrigin should fail

@@ -293,7 +293,8 @@ describeSuite({
                 const registerTx = polkadotJs.tx.registrar.registerParathread(
                     paraId,
                     slotFrequency,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -365,7 +366,8 @@ describeSuite({
                 const registerTx = polkadotJs.tx.registrar.registerParathread(
                     paraId,
                     slotFrequency,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -437,7 +439,8 @@ describeSuite({
                 const registerTx = polkadotJs.tx.registrar.registerParathread(
                     paraId,
                     slotFrequency,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -512,7 +515,8 @@ describeSuite({
                 const registerTx = polkadotJs.tx.registrar.registerParathread(
                     paraId,
                     slotFrequency,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -586,7 +590,8 @@ describeSuite({
                 const registerTx = polkadotJs.tx.registrar.registerParathread(
                     paraId,
                     slotFrequency,
-                    containerChainGenesisData
+                    containerChainGenesisData,
+                    null
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
