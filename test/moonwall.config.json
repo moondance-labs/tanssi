@@ -51,8 +51,7 @@
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
             "multiThreads": true,
-            "hookTimeout": 240000,
-            "testTimeout": 240000,
+            "timeout": 240000,
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
