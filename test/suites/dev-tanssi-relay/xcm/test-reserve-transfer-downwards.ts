@@ -61,7 +61,7 @@ describeSuite({
                         id: {
                             Concrete: {
                                 parents: 0,
-                                interior: 'Here',
+                                interior: "Here",
                             },
                         },
                         fun: {
