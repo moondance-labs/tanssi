@@ -10,6 +10,7 @@
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": [
                 "suites/common-all",
+                "suited/common-all-parachain",
                 "suites/common-xcm-parachain",
                 "suites/common-tanssi-parachain",
                 "suites/common-tanssi",
