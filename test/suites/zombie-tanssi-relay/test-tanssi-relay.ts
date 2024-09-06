@@ -72,7 +72,7 @@ describeSuite({
             test: async function () {
                 // TODO: starlight collator assignment is not set properly on genesis, so we need to wait 2 sessions
                 // for the collators to be assigned, and a bit more for container chains to start producing blocks
-                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+                await waitSessions(context, relayApi, 3, null, "Tanssi-relay");
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
