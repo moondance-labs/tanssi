@@ -345,6 +345,7 @@ pub struct Params<
     pub cancellation_token: CancellationToken,
     pub orchestrator_tx_pool: Arc<TxPool>,
     pub orchestrator_client: Arc<OClient>,
+    pub solochain: bool,
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -636,7 +637,13 @@ where
                                 let slot = inherent_providers.slot();
                                 let container_chain_slot_duration = (params.get_current_slot_duration)(parent_header.hash());
 
-                                match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await {
+                                let buy_core_result = if params.solochain {
+                                    // TODO: implement parathread support for solochain
+                                    unimplemented!("Cannot buy core for parathread in solochain")
+                                } else {
+                                    try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
+                                };
+                                match buy_core_result {
                                     Ok(block_hash) => {
                                         tracing::trace!(target: crate::LOG_TARGET, ?block_hash, "Sent unsigned extrinsic to buy the core");
                                     },

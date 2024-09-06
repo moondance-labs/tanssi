@@ -37,6 +37,7 @@ sp-version = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own
+dc-orchestrator-chain-interface = { workspace = true }
 dp-consensus = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-xcm-core-buyer-runtime-api = { workspace = true, features = [ "std" ] }

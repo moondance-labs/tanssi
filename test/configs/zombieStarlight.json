@@ -17,8 +17,7 @@
                                 "max_candidate_depth": 3
                             },
                             "scheduler_params": {
-                                "scheduling_lookahead": 2,
-                                "num_cores": 1
+                                "scheduling_lookahead": 2
                             }
                         }
                     }
@@ -34,30 +33,127 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
             }
         ]
     },
     "parachains": [
         {
-            "id": 1000,
-            "chain_spec_path": "specs/single-dancebox-container-1000.json",
+            "id": 2000,
+            "chain_spec_path": "specs/single-container-template-container-2000.json",
             "collators": [
                 {
-                    "name": "FullNode-1000",
-                    "command": "../target/release/tanssi-node",
+                    "name": "FullNode-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9948,
-                    "p2p_port": 33049
+                    "ws_port": 9949,
+                    "p2p_port": 33049,
+                    "prometheus_port": 33102
                 },
                 {
                     "name": "Collator1000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
                 },
                 {
                     "name": "Collator1000-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator1000-03",
+                    "command": "../target/release/tanssi-node",
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator1000-04",
+                    "command": "../target/release/tanssi-node",
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator2000-01",
+                    "command": "../target/release/tanssi-node",
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator2000-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": [
+                        "--solo-chain",
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm"
+                    ],
+                    "prometheus_port": 33102
+                }
+            ]
+        },
+        {
+            "id": 2001,
+            "chain_spec_path": "specs/single-container-template-container-2001.json",
+            "collators": [
+                {
+                    "name": "FullNode-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9950,
+                    "p2p_port": 33050
+                }
+            ]
+        },
+        {
+            "id": 2002,
+            "chain_spec_path": "specs/single-container-template-container-2002.json",
+            "add_to_genesis": false,
+            "register_para": false,
+            "onboard_as_parachain": false,
+            "collators": [
+                {
+                    "name": "FullNode-2002",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9951,
+                    "p2p_port": 33051
                 }
             ]
         }
