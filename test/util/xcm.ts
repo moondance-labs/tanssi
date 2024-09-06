@@ -1,4 +1,3 @@
-import "@tanssi/api-augment";
 import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
