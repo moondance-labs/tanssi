@@ -22,11 +22,12 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 
 # Local
-ccp-authorities-noting-inherent = { workspace = true }
+ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-data-preservers = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-consensus = { workspace = true }
@@ -81,6 +82,10 @@ cumulus-relay-chain-interface = { workspace = true }
 nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true }
 
+[dev-dependencies]
+polkadot-overseer = { workspace = true }
+tokio-stream = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
@@ -90,6 +95,7 @@ runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
+	"pallet-data-preservers/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -97,6 +103,7 @@ runtime-benchmarks = [
 try-runtime = [
 	"dancebox-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-data-preservers/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 

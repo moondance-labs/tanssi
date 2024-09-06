@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use polkadot_node_subsystem::messages::{RuntimeApiMessage, RuntimeApiRequest};
 use {
     crate::{
         collators::lookahead::Params as LookAheadParams, OrchestratorAuraWorkerAuxData,
@@ -29,14 +28,14 @@ use {
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
     },
-    futures::channel::oneshot,
-    futures::prelude::*,
+    futures::{channel::oneshot, prelude::*},
     nimbus_primitives::{
         CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
     },
     pallet_xcm_core_buyer_runtime_api::BuyingError,
     parity_scale_codec::Encode,
     polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
+    polkadot_node_subsystem::messages::{RuntimeApiMessage, RuntimeApiRequest},
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
@@ -513,8 +512,10 @@ impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     }
 }
 
-use cumulus_primitives_core::relay_chain::ValidationCodeHash;
-use polkadot_node_subsystem::{overseer, OverseerSignal};
+use {
+    cumulus_primitives_core::relay_chain::ValidationCodeHash,
+    polkadot_node_subsystem::{overseer, OverseerSignal},
+};
 
 pub struct DummyCodeHashProvider;
 impl ValidationCodeHashProvider<PHash> for DummyCodeHashProvider {

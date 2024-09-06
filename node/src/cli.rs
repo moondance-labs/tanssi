@@ -184,7 +184,7 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and orchestrator chain arguments
+    /// Extra arguments, `container-args -- relay-args` or `relay-args` if no `--`
     #[arg(raw = true)]
     extra_args: Vec<String>,
 }
