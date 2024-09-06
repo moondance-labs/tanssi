@@ -8,6 +8,7 @@ import {
 } from "@polkadot/types/lookup";
 import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
+import { ApiPromise } from "@polkadot/api";
 
 // Creates and returns the tx that overrides the paraHRMP existence
 // This needs to be inserted at every block in which you are willing to test
@@ -974,4 +975,36 @@ export const getLastSentHrmpMessageFee = async (
     const deliveryFeeFactor = await context.polkadotJs().query.xcmpQueue.deliveryFeeFactor(paraId);
     const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
     return fee;
+};
+
+export const getParathreadRelayTankAddress = async (
+    relayApi: ApiPromise,
+    tanssiParaId: number,
+    containerParaId: number
+) => {
+    const targetParaId = relayApi.createType("ParaId", containerParaId);
+    const containerAddress = u8aToHex(
+        new Uint8Array([...new TextEncoder().encode("para"), ...targetParaId.toU8a()])
+    ).padEnd(66, "0");
+
+    // We are going to generate the address from the relay runtime apis
+    const address = await relayApi.call.locationToAccountApi.convertLocation({
+        V3: {
+            parents: 0,
+            interior: {
+                X2: [
+                    {
+                        Parachain: tanssiParaId,
+                    },
+                    {
+                        AccountId32: {
+                            network: null,
+                            id: containerAddress,
+                        },
+                    },
+                ],
+            },
+        },
+    });
+    return address.asOk.toHuman();
 };
