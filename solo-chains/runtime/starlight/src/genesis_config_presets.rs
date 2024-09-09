@@ -307,87 +307,87 @@ fn starlight_testnet_genesis(
     const ENDOWMENT: u128 = 1_000_000 * STAR;
 
     serde_json::json!({
-    "balances": {
-        "balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
-    },
-    "session": {
-        "keys": initial_authorities
-            .iter()
-            .map(|x| {
-                (
-                    x.stash.clone(),
-                    x.stash.clone(),
-                    starlight_session_keys(
-                        x.babe.clone(),
-                        x.grandpa.clone(),
-                        x.para_validator.clone(),
-                        x.para_assignment.clone(),
-                        x.authority_discovery.clone(),
-                        x.beefy.clone(),
-                        x.nimbus.clone(),
-                    ),
-                )
-            })
-            .collect::<Vec<_>>(),
-        "nonAuthorityKeys": invulnerable_keys
-            .into_iter()
-            .enumerate()
-            .map(|(i, x)| {
-                (
-                    invulnerable_accounts[i].clone(),
-                    invulnerable_accounts[i].clone(),
-                    starlight_session_keys(
-                        x.babe.clone(),
-                        x.grandpa.clone(),
-                        x.para_validator.clone(),
-                        x.para_assignment.clone(),
-                        x.authority_discovery.clone(),
-                        x.beefy.clone(),
-                        x.nimbus.clone(),
-                    ),
-                )
-            })
-            .collect::<Vec<_>>(),
-    },
-    "babe": {
-        "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG)
-    },
-    "sudo": { "key": Some(root_key.clone()) },
-    "configuration": {
-        "config": runtime_parachains::configuration::HostConfiguration {
-            scheduler_params: SchedulerParams {
-                max_validators_per_core: Some(1),
-                num_cores: para_ids.len() as u32,
-                ..default_parachains_host_configuration().scheduler_params
-            },
-            ..default_parachains_host_configuration()
+        "balances": {
+            "balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
         },
-    },
-    "collatorConfiguration": crate::CollatorConfigurationConfig {
-            config: pallet_configuration::HostConfiguration {
-                max_collators: 100u32,
-                min_orchestrator_collators: 0u32,
-                max_orchestrator_collators: 0u32,
-                collators_per_container: 2u32,
+        "session": {
+            "keys": initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.stash.clone(),
+                        x.stash.clone(),
+                        starlight_session_keys(
+                            x.babe.clone(),
+                            x.grandpa.clone(),
+                            x.para_validator.clone(),
+                            x.para_assignment.clone(),
+                            x.authority_discovery.clone(),
+                            x.beefy.clone(),
+                            x.nimbus.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            "nonAuthorityKeys": invulnerable_keys
+                .into_iter()
+                .enumerate()
+                .map(|(i, x)| {
+                    (
+                        invulnerable_accounts[i].clone(),
+                        invulnerable_accounts[i].clone(),
+                        starlight_session_keys(
+                            x.babe.clone(),
+                            x.grandpa.clone(),
+                            x.para_validator.clone(),
+                            x.para_assignment.clone(),
+                            x.authority_discovery.clone(),
+                            x.beefy.clone(),
+                            x.nimbus.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        },
+        "babe": {
+            "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG)
+        },
+        "sudo": { "key": Some(root_key.clone()) },
+        "configuration": {
+            "config": runtime_parachains::configuration::HostConfiguration {
+                scheduler_params: SchedulerParams {
+                    max_validators_per_core: Some(1),
+                    num_cores: para_ids.len() as u32,
+                    ..default_parachains_host_configuration().scheduler_params
+                },
+                ..default_parachains_host_configuration()
+            },
+        },
+        "collatorConfiguration": crate::CollatorConfigurationConfig {
+                config: pallet_configuration::HostConfiguration {
+                    max_collators: 100u32,
+                    min_orchestrator_collators: 0u32,
+                    max_orchestrator_collators: 0u32,
+                    collators_per_container: 2u32,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            ..Default::default()
+        "registrar": {
+            "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
         },
-    "registrar": {
-        "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
-    },
-    "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
-        invulnerables: invulnerable_accounts,
-    },
-    "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
-    "paras": {
-        "paras": registrar_para_ids,
-    },
-    "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
-        "dataPreservers": crate::DataPreserversConfig {
-            bootnodes: data_preservers_bootnodes,
-            ..Default::default()
+        "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
+            invulnerables: invulnerable_accounts,
         },
+        "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
+        "paras": {
+            "paras": registrar_para_ids,
+        },
+        "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
+            "dataPreservers": crate::DataPreserversConfig {
+                bootnodes: data_preservers_bootnodes,
+                ..Default::default()
+            },
     })
 }
 
