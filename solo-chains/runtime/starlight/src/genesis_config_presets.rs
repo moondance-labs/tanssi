@@ -16,6 +16,8 @@
 
 //! Genesis configs presets for the Starlight runtime
 
+use pallet_configuration::HostConfiguration;
+use sp_arithmetic::Perbill;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
 use {
@@ -230,6 +232,7 @@ fn starlight_testnet_genesis(
     endowed_accounts: Option<Vec<AccountId>>,
     container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
+    host_configuration: HostConfiguration,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
     let invulnerable_keys: Vec<_> = invulnerables
@@ -388,7 +391,11 @@ fn starlight_testnet_genesis(
             "dataPreservers": crate::DataPreserversConfig {
                 bootnodes: data_preservers_bootnodes,
                 ..Default::default()
-            },
+        },
+        "collatorConfiguration": crate::CollatorConfigurationConfig {
+            config: host_configuration,
+            ..Default::default()
+        }
     })
 }
 
@@ -650,6 +657,10 @@ pub fn starlight_development_config_genesis(
         None,
         container_chains,
         invulnerables,
+        HostConfiguration {
+            max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
+            ..Default::default()
+        },
     )
 }
 
@@ -667,6 +678,10 @@ pub fn starlight_local_testnet_genesis(
         None,
         container_chains,
         invulnerables,
+        HostConfiguration {
+            max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
+            ..Default::default()
+        },
     )
 }
 
