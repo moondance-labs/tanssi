@@ -16,6 +16,7 @@
 
 pub mod chain_spec;
 pub mod cli;
+pub mod data_preservers;
 pub mod monitor;
 pub mod rpc;
 pub mod service;
