@@ -95,6 +95,19 @@ being tested. A short explanation of these folders is below:
 
 If unsure of where to add a new test, please read the above list carefully and inject it wherever it applies
 
+| **Folder**                  | **Dancebox** | **Flashbox** | **Starlight Variants** | **Simple Template** | **Frontier Template** |
+|-----------------------------|:------------:|:------------:|:----------------------:|:-------------------:|:---------------------:|
+| `common-all`                |      x       |      x       |           x            |          x          |          x            |
+| `common-all-parachain`      |      x       |      x       |                        |          x          |          x            |
+| `common-tanssi`             |      x       |      x       |           x            |                     |                       |
+| `common-tanssi-parachain`   |      x       |      x       |                        |                     |                       |
+| `common-xcm-parachain`      |      x       |              |                        |          x          |          x            |
+| `common-container-chains`   |              |              |                        |          x          |          x            |
+| `dev-tanssi`                |      x       |              |                        |                     |                       |
+| `dev-tanssi-relay`          |              |              |           x            |                     |                       |
+| `dev-frontier-template`     |              |              |                        |                     |          x            |
+
+
 ## Where to find node logs
 
 To see the logs of a failing zombienet node:
