@@ -18,7 +18,6 @@
 
 use crate::{Configuration, GetCoreAllocationConfigurationImpl};
 use frame_support::dispatch::RawOrigin;
-use frame_system::Origin;
 use primitives::vstaging::SchedulerParams;
 use sp_core::Get;
 use {

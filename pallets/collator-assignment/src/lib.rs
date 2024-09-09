@@ -41,9 +41,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::ops::Mul;
 use {
     crate::assignment::{Assignment, ChainNumCollators},
+    core::ops::Mul,
     frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},

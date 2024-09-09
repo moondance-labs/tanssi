@@ -37,7 +37,6 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
-use pallet_collator_assignment::CoreAllocationConfiguration;
 use {
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -734,14 +733,6 @@ impl ShouldRotateAllCollators<u32> for NeverRotateCollators {
     }
 }
 
-pub struct GetCoreAllocationConfigurationImpl;
-
-impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
-    fn get() -> Option<CoreAllocationConfiguration> {
-        None
-    }
-}
-
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -756,7 +747,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;
-    type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
+    type CoreAllocationConfiguration = ();
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 

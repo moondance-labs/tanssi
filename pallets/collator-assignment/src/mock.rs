@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::CoreAllocationConfiguration;
 use {
     crate::{
         self as pallet_collator_assignment, pallet::CollatorContainerChain,
-        GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
+        CoreAllocationConfiguration, GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
     },
     frame_support::{
         parameter_types,
