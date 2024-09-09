@@ -243,7 +243,6 @@ fn starlight_testnet_genesis(
         .collect();
 
     let data_preservers_bootnodes: Vec<_> = container_chains
-        .clone()
         .iter()
         .flat_map(|(para_id, _genesis_data, bootnodes)| {
             bootnodes.clone().into_iter().map(|bootnode| {
@@ -259,8 +258,8 @@ fn starlight_testnet_genesis(
         .collect();
 
     let para_ids: Vec<_> = container_chains
-        .clone()
-        .into_iter()
+        .iter()
+        .cloned()
         .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
         .collect();
 
