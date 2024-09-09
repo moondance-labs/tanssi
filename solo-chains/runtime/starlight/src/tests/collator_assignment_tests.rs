@@ -16,7 +16,11 @@
 
 #![cfg(test)]
 
+use crate::{Configuration, GetCoreAllocationConfigurationImpl};
+use frame_support::dispatch::RawOrigin;
+use frame_system::Origin;
 use primitives::vstaging::SchedulerParams;
+use sp_core::Get;
 use {
     crate::{
         tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
@@ -2821,5 +2825,49 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                     1006u32.into()
                 ]
             );
+        });
+}
+
+#[test]
+fn test_core_count_changes_are_correctly_detected() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002, 1003, 1004, 1005])
+        .with_additional_empty_parathreads(vec![1006])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration {
+            scheduler_params: SchedulerParams {
+                num_cores: 6,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            Configuration::set_coretime_cores(RawOrigin::Root.into(), 50).unwrap();
+
+            let core_allocation_configuration = GetCoreAllocationConfigurationImpl::get().unwrap();
+            assert_eq!(core_allocation_configuration.core_count, 6);
+
+            run_to_session(1);
+
+            let core_allocation_configuration = GetCoreAllocationConfigurationImpl::get().unwrap();
+            assert_eq!(core_allocation_configuration.core_count, 50);
+
+            Configuration::set_coretime_cores(RawOrigin::Root.into(), 500).unwrap();
+
+            run_to_session(2);
+            let core_allocation_configuration = GetCoreAllocationConfigurationImpl::get().unwrap();
+            assert_eq!(core_allocation_configuration.core_count, 500);
         });
 }

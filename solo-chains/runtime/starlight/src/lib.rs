@@ -2950,21 +2950,14 @@ pub struct GetCoreAllocationConfigurationImpl;
 
 impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
     fn get() -> Option<CoreAllocationConfiguration> {
-        let current_block = System::block_number();
-
         let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
         let mut pending_configs =
             runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
 
-        // We cannot use `<Runtime as pallet_session::Config>::ShouldEndSession` as it is not a pure query and writes
-        // to storage in certain conditions (for example, when this is invoked on genesis.) which makes current_slot =
-        // block - 1 instead of being equal.
-        let should_end_session = Babe::should_epoch_change(current_block);
-        let session_index_to_consider = if should_end_session {
-            Session::current_index() + 2
-        } else {
-            Session::current_index() + 1
-        };
+        // We do not have to check for session ending as new session always starts at block initialization which means
+        // whenever this is called, we are either in old session or in start of a one
+        // as on block initialization epoch index have been incremented and by extension session has been changed.
+        let session_index_to_consider = Session::current_index() + 1;
 
         // We are not making any assumptions about number of configurations existing in pending config
         // storage item.
