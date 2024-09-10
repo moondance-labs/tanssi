@@ -2313,6 +2313,10 @@ sp_api::impl_runtime_apis! {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
+            // We could potentially predict whether the next block will yield a session change as in dancebox but this
+            // is innecesary: the starlight blocks are being produced by validators, and therefore it should never
+            // stall because of any collator-rotation. Therefore it suffices for collators to predict the chain in
+            // which they have to collate after the session-change block.
             let session_index = Session::current_index();
             let container_chains = ContainerRegistrar::session_container_chains(session_index);
             let mut para_ids = vec![];
