@@ -261,10 +261,6 @@ describeSuite({
             title: "Profile can be assigned",
             test: async function () {
                 const paraId = 2002;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -329,10 +325,6 @@ describeSuite({
             title: "Profile can be force assigned",
             test: async function () {
                 const paraId = 2003;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -397,10 +389,6 @@ describeSuite({
             title: "Profile can be unassigned",
             test: async function () {
                 const paraId = 2004;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -468,10 +456,6 @@ describeSuite({
             title: "Profile can be force unassigned",
             test: async function () {
                 const paraId = 2005;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -538,10 +522,6 @@ describeSuite({
             title: "Container will be unassigned on deregister",
             test: async function () {
                 const paraId = 2006;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
