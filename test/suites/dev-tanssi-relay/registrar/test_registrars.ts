@@ -120,8 +120,6 @@ describeSuite({
             id: "E02",
             title: "should not be able to register paraId twice",
             test: async function () {
-                const containerChainGenesisData = emptyGenesisData();
-
                 // Check we can't register via relay Registrar
                 const tx2 = polkadotJs.tx.containerRegistrar
                     .register(2002, emptyGenesisData(), "0x0102030405060708091011")
@@ -164,7 +162,9 @@ describeSuite({
             test: async function () {
                 const containerChainGenesisData = emptyGenesisData();
 
-                const tx  = polkadotJs.tx.registrar.register(4000, containerChainGenesisData, "0x0102030405060708091011").signAsync(alice);
+                const tx = polkadotJs.tx.registrar
+                    .register(4000, containerChainGenesisData, "0x0102030405060708091011")
+                    .signAsync(alice);
 
                 const { result } = await context.createBlock([tx]);
                 expect(result[0].successful).to.be.false;
@@ -177,7 +177,7 @@ describeSuite({
             id: "E05",
             title: "should not be able to deregister through relay",
             test: async function () {
-                const tx  = polkadotJs.tx.registrar.deregister(4000).signAsync(alice);
+                const tx = polkadotJs.tx.registrar.deregister(4000).signAsync(alice);
 
                 const { result } = await context.createBlock([tx]);
                 expect(result[0].successful).to.be.false;
