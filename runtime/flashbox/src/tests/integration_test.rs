@@ -2528,7 +2528,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
 }
 
 #[test]
-fn test_register_parathread() {
+fn test_register_parathread_not_allowed() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
