@@ -34,7 +34,11 @@ use {
     frame_support::{
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
-        traits::{fungible::Inspect, ConstBool, FromContains},
+        traits::{
+            fungible::Inspect,
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
+            ConstBool,
+        },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
@@ -47,7 +51,7 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, AccountIndex, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
+        slashing, ApprovalVotingParams, BlockNumber, CandidateEvent, CandidateHash,
         CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
         NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
@@ -55,14 +59,9 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        impl_runtime_weights,
-        impls::{
-            ContainsParts, LocatableAssetConverter, ToAuthor, VersionedLocatableAsset,
-            VersionedLocationConverter,
-        },
-        paras_registrar, paras_sudo_wrapper,
-        traits::Registrar as RegistrarInterface,
-        BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
         assigner_on_demand as parachains_assigner_on_demand,
@@ -103,9 +102,8 @@ use {
         genesis_builder_helper::{build_state, get_preset},
         parameter_types,
         traits::{
-            fungible::HoldConsideration, tokens::UnityOrOuterConversion, Contains, EitherOf,
-            EitherOfDiverse, EnsureOriginWithArg, EverythingBut, InstanceFilter,
-            KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
+            fungible::HoldConsideration, EitherOf, EitherOfDiverse, EnsureOriginWithArg,
+            InstanceFilter, KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
             ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
@@ -116,7 +114,7 @@ use {
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{ConstU8, OpaqueMetadata, H256},
+    sp_core::{OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -132,7 +130,6 @@ use {
         latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
         VersionedXcm,
     },
-    xcm_builder::PayOverXcm,
 };
 
 pub use {
@@ -205,17 +202,6 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
-/// A type to identify calls to the Identity pallet. These will be filtered to prevent invocation,
-/// locking the state of the pallet and preventing further updates to identities and sub-identities.
-/// The locked state will be the genesis state of a new system chain and then removed from the Relay
-/// Chain.
-pub struct IsIdentityCall;
-impl Contains<RuntimeCall> for IsIdentityCall {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Identity(_))
-    }
-}
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -223,7 +209,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<IsIdentityCall>;
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -373,18 +359,6 @@ impl pallet_babe::Config for Runtime {
 }
 
 parameter_types! {
-    pub const IndexDeposit: Balance = 100 * CENTS;
-}
-
-impl pallet_indices::Config for Runtime {
-    type AccountIndex = AccountIndex;
-    type Currency = Balances;
-    type Deposit = IndexDeposit;
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
-}
-
-parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
     pub const MaxLocks: u32 = 50;
     pub const MaxReserves: u32 = 50;
@@ -490,7 +464,8 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub const ProposalBondMinimum: Balance = 2000 * CENTS;
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
-    pub const SpendPeriod: BlockNumber = 6 * DAYS;
+    // We allow it to be 1 minute in fast mode to be able to test it
+    pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
@@ -507,6 +482,31 @@ parameter_types! {
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxBalance: Balance = Balance::max_value();
+    pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
+
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::Currency;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_treasury::ArgumentsFactory;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
+where
+    T: pallet_treasury::Config,
+    T::AccountId: From<[u8; 32]>,
+{
+    fn create_asset_kind(_seed: u32) {}
+
+    fn create_beneficiary(seed: [u8; 32]) -> T::AccountId {
+        let account: T::AccountId = seed.into();
+        let balance = T::Currency::minimum_balance();
+        let _ = T::Currency::make_free_balance_be(&account, balance);
+        account
+    }
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -521,31 +521,14 @@ impl pallet_treasury::Config for Runtime {
     type WeightInfo = ();
     type SpendFunds = ();
     type SpendOrigin = TreasurySpender;
-    type AssetKind = VersionedLocatableAsset;
-    type Beneficiary = VersionedLocation;
+    type AssetKind = ();
+    type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
-    type Paymaster = PayOverXcm<
-        TreasuryInteriorLocation,
-        crate::xcm_config::XcmRouter,
-        crate::XcmPallet,
-        ConstU32<{ 6 * HOURS }>,
-        Self::Beneficiary,
-        Self::AssetKind,
-        LocatableAssetConverter,
-        VersionedLocationConverter,
-    >;
-    type BalanceConverter = UnityOrOuterConversion<
-        ContainsParts<
-            FromContains<
-                xcm_builder::IsChildSystemParachain<ParaId>,
-                xcm_builder::IsParentsOnly<ConstU8<1>>,
-            >,
-        >,
-        AssetRate,
-    >;
+    type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+    type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = PayoutSpendPeriod;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = runtime_common::impls::benchmarks::TreasuryArguments;
+    type BenchmarkHelper = TreasuryBenchmarkHelper<Runtime>;
 }
 
 impl pallet_offences::Config for Runtime {
@@ -696,24 +679,6 @@ impl pallet_multisig::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ConfigDepositBase: Balance = 500 * CENTS;
-    pub const FriendDepositFactor: Balance = 50 * CENTS;
-    pub const MaxFriends: u16 = 9;
-    pub const RecoveryDeposit: Balance = 500 * CENTS;
-}
-
-impl pallet_recovery::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
-    type RuntimeCall = RuntimeCall;
-    type Currency = Balances;
-    type ConfigDepositBase = ConfigDepositBase;
-    type FriendDepositFactor = FriendDepositFactor;
-    type MaxFriends = MaxFriends;
-    type RecoveryDeposit = RecoveryDeposit;
-}
-
-parameter_types! {
     // One storage item; key size 32, value size 8; .
     pub const ProxyDepositBase: Balance = deposit(1, 8);
     // Additional storage item size of 33 bytes.
@@ -761,9 +726,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 RuntimeCall::System(..) |
 				RuntimeCall::Babe(..) |
 				RuntimeCall::Timestamp(..) |
-				RuntimeCall::Indices(pallet_indices::Call::claim {..}) |
-				RuntimeCall::Indices(pallet_indices::Call::free {..}) |
-				RuntimeCall::Indices(pallet_indices::Call::freeze {..}) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
 				// Specifically omitting the entire Balances pallet
 				RuntimeCall::Session(..) |
@@ -776,12 +738,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
-				RuntimeCall::Recovery(pallet_recovery::Call::as_recovered {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::vouch_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::claim_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::close_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::remove_recovery {..}) |
-				RuntimeCall::Recovery(pallet_recovery::Call::cancel_recovered {..}) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
 				RuntimeCall::Multisig(..) |
@@ -1223,7 +1179,7 @@ impl pallet_asset_rate::Config for Runtime {
     type Currency = Balances;
     type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
+    type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -1453,7 +1409,6 @@ construct_runtime! {
         Babe: pallet_babe = 1,
 
         Timestamp: pallet_timestamp = 2,
-        Indices: pallet_indices = 3,
         Balances: pallet_balances = 4,
         Parameters: pallet_parameters = 6,
         TransactionPayment: pallet_transaction_payment = 33,
@@ -1484,9 +1439,6 @@ construct_runtime! {
 
         // Less simple identity module.
         Identity: pallet_identity = 25,
-
-        // Social recovery module.
-        Recovery: pallet_recovery = 27,
 
         // System scheduler.
         Scheduler: pallet_scheduler = 29,
@@ -1831,14 +1783,12 @@ mod benches {
         [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
-        [pallet_indices, Indices]
         [pallet_message_queue, MessageQueue]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
         [pallet_ranked_collective, FellowshipCollective]
-        [pallet_recovery, Recovery]
         [pallet_referenda, Referenda]
         [pallet_referenda, FellowshipReferenda]
         [pallet_scheduler, Scheduler]

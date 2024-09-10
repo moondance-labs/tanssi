@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "C0102",
+    id: "CA0301",
     title: "Proxy test suite - ProxyType::CancelProxy",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -196,7 +196,9 @@ describeSuite({
             id: "E06",
             title: "Delegate account cannot call balance.transfer",
             test: async function () {
-                await context.createBlock();
+                if (!chain.includes("light")) {
+                    await context.createBlock();
+                }
 
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
@@ -204,6 +206,7 @@ describeSuite({
                     polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
+
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
                     return a.event.method == "ProxyExecuted";

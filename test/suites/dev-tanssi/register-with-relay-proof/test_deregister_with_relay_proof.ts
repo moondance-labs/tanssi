@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
 
 describeSuite({
-    id: "CT1101",
+    id: "DT0501",
     title: "Registrar test suite: de-register with relay proof",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
