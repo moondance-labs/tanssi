@@ -205,14 +205,30 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
-/// A type to identify calls to the Identity pallet. These will be filtered to prevent invocation,
-/// locking the state of the pallet and preventing further updates to identities and sub-identities.
-/// The locked state will be the genesis state of a new system chain and then removed from the Relay
-/// Chain.
-pub struct IsIdentityCall;
-impl Contains<RuntimeCall> for IsIdentityCall {
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the containerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Identity(_))
+        matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
+        )
+    }
+}
+
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
@@ -223,7 +239,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<IsIdentityCall>;
+    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;

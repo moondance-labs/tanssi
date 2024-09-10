@@ -1257,17 +1257,24 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
     }
 }
 
-/// Normal Call Filter
-pub struct NormalFilter;
-impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(_c: &RuntimeCall) -> bool {
-        true
+/// We allow everything but registering parathreads
+pub struct EverythingButRegisterParathreads;
+impl Contains<RuntimeCall> for EverythingButRegisterParathreads {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // Parathreads are not allowed as flashbox does not yet have XCM
+            RuntimeCall::Registrar(method) => match method {
+                pallet_registrar::Call::register_parathread { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
     }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = NormalFilter;
+    type NormalCallFilter = EverythingButRegisterParathreads;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();

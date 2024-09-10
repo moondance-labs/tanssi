@@ -35,7 +35,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
-        traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
+        traits::{BadOrigin, BlakeTwo256, Dispatchable, OpaqueKeys},
         DigestItem,
     },
     sp_std::vec,
@@ -2547,25 +2547,19 @@ fn test_register_parathread() {
         .execute_with(|| {
             run_to_block(2);
 
-            // Register
-            assert_ok!(Registrar::register_parathread(
-                origin_of(ALICE.into()),
-                3001.into(),
-                SlotFrequency { min: 1, max: 1 },
-                empty_genesis_data(),
-                None
-            ));
-            set_dummy_boot_node(origin_of(ALICE.into()), 3001.into());
-            assert_ok!(Registrar::mark_valid_for_collating(
-                root_origin(),
-                3001.into()
-            ));
-
-            run_to_session(2);
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&ParaId::from(3001)],
-                vec![CHARLIE.into()]
+            assert_noop!(
+                RuntimeCall::Registrar(pallet_registrar::Call::<Runtime>::register_parathread {
+                    para_id: 3001.into(),
+                    slot_frequency: SlotFrequency { min: 1, max: 1 },
+                    genesis_data: empty_genesis_data(),
+                    head_data: None
+                })
+                .dispatch(
+                    <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
+                        ALICE
+                    ))
+                ),
+                frame_system::Error::<Runtime>::CallFiltered
             );
         });
 }
