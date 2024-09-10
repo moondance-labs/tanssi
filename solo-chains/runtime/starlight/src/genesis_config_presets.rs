@@ -381,7 +381,7 @@ fn starlight_testnet_genesis(
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
         "paras": {
-            "paras": registrar_para_ids,
+            "paras": registrar_para_ids_info,
         },
         "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
             "dataPreservers": crate::DataPreserversConfig {
