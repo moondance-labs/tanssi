@@ -290,12 +290,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -363,12 +358,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -436,12 +426,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -512,12 +497,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -587,12 +567,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {

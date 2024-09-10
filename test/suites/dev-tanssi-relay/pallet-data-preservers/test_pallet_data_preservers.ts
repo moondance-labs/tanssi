@@ -291,9 +291,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
-                    slotFrequency,
                     containerChainGenesisData,
                     "0x010203"
                 );
@@ -366,9 +365,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
-                    slotFrequency,
                     containerChainGenesisData,
                     "0x010203"
                 );
@@ -441,9 +439,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
-                    slotFrequency,
                     containerChainGenesisData,
                     "0x010203"
                 );
@@ -518,9 +515,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
-                    slotFrequency,
                     containerChainGenesisData,
                     "0x010203"
                 );
@@ -595,9 +591,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.containerRegistrar.registerParathread(
+                const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
-                    slotFrequency,
                     containerChainGenesisData,
                     "0x010203"
                 );

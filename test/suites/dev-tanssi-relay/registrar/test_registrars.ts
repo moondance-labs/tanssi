@@ -133,11 +133,13 @@ describeSuite({
                 expect(result[0].error.name).to.eq("ParaIdAlreadyRegistered");
 
                 // Check we can't register via relay Registrar
-                const tx2 = polkadotJs.tx.registrar.register(2002, "0x", "0x0102030405060708091011").signAsync(alice);
+                const tx2 = polkadotJs.tx.containerRegistrar
+                    .register(2002, emptyGenesisData(), "0x0102030405060708091011")
+                    .signAsync(alice);
                 const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
-                expect(result2[0].error.section).to.eq("registrar");
-                expect(result2[0].error.name).to.eq("AlreadyRegistered");
+                expect(result2[0].error.section).to.eq("containerRegistrar");
+                expect(result2[0].error.name).to.eq("ParaIdAlreadyRegistered");
             },
         });
 
