@@ -267,7 +267,7 @@ fn starlight_testnet_genesis(
     // head on the relay registrar. However there is no easy way to do that unless we touch all the code
     // so we generate a dummy head state for it. This can be then overriden (as zombienet does) and everything would work
     // TODO: make this cleaner
-    let registrar_para_ids: Vec<_> = container_chains
+    let registrar_para_ids_info: Vec<_> = container_chains
         .into_iter()
         .filter_map(|(para_id, genesis_data, _boot_nodes)| {
             // Check if the wasm code is present in storage
@@ -403,7 +403,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 
     let initial_authorities = Vec::from([
         AuthorityKeys {
-                stash: //5EHZkbp22djdbuMFH9qt1DVzSCvqi3zWpj6DAYfANa828oei
+            stash: //5EHZkbp22djdbuMFH9qt1DVzSCvqi3zWpj6DAYfANa828oei
                 hex!["62475fe5406a7cb6a64c51d0af9d3ab5c2151bcae982fb812f7a76b706914d6a"].into(),
                 controller: //5FeSEpi9UYYaWwXXb3tV88qtZkmSdB3mvgj3pXkxKyYLGhcd
                 hex!["9e6e781a76810fe93187af44c79272c290c2b9e2b8b92ee11466cd79d8023f50"].into(),
