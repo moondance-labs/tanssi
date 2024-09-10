@@ -19,11 +19,12 @@
 use {
     crate::{
         tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        ContainerRegistrar, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        ContainerRegistrar, Paras, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
-    cumulus_primitives_core::ParaId,
-    frame_support::assert_ok,
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
+    frame_support::{assert_noop, assert_ok},
     parity_scale_codec::Encode,
+    runtime_common::paras_registrar,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
@@ -660,8 +661,20 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
@@ -678,8 +691,12 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1002.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(6);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
@@ -692,12 +709,6 @@ fn test_authors_paras_inserted_a_posteriori() {
                 1002.into(),
                 block_credits_to_required_balance(1000, 1002.into())
             ));
-
-            // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
 
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
@@ -733,8 +744,22 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -749,10 +774,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
 
             // Alice and Bob are now assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
@@ -760,6 +782,62 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 assignment.container_chains[&1001u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
+        });
+}
+
+#[test]
+fn test_collators_not_assigned_if_wasm_code_is_invalid() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 5,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+            ..Default::default()
+        })
+        .build()
+        .execute_with(|| {
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
+            ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // In session 2, we should mark the validation code as trusted in the relay
+            // for the paraId to be onboarded as a parathread after 2 sessions.
+            // We won't do it now to see what happens.
+            run_to_session(4);
+
+            // paraId should not have been onboarded after 2 sessions.
+            assert!(Paras::lifecycle(1001u32.into()).is_none());
+
+            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+
+            // mark_valid_for_collating() should fail, as the paraId has not been onboarded yet,
+            // due to its validation code is not trusted.
+            assert_noop!(
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                paras_registrar::Error::<Runtime>::NotParathread
+            );
+
+            // paraId should not have any collators assigned.
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
         });
 }
 
@@ -780,8 +858,22 @@ fn test_paras_registered_but_zero_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -797,10 +889,7 @@ fn test_paras_registered_but_zero_credits() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
 
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
@@ -825,8 +914,22 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -849,10 +952,7 @@ fn test_paras_registered_but_not_enough_credits() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
@@ -864,7 +964,7 @@ fn test_paras_registered_but_not_enough_credits() {
                 credits_1001 + 1
             ));
 
-            run_to_session(4u32);
+            run_to_session(8u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -891,8 +991,22 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -915,10 +1029,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -957,7 +1068,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                     .unwrap_or_default();
             assert_eq!(credits, credits_1001 - 1);
 
-            run_to_session(4u32);
+            run_to_session(8u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1061,8 +1172,19 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1096,8 +1218,21 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1122,11 +1257,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
                 credits_1001
             ));
 
-            // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1156,7 +1287,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             run_block();
 
             // After this it should not be assigned anymore, since credits are not payable
-            run_to_session(3u32);
+            run_to_session(7u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1180,8 +1311,23 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1207,11 +1353,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
                 credits_1001
             ));
 
-            // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should not be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1235,8 +1377,23 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1264,11 +1421,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1298,7 +1451,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             run_block();
 
             // Session 3 should still be assigned
-            run_to_session(3u32);
+            run_to_session(7u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1307,7 +1460,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             );
 
             // After this it should not be assigned anymore, since credits are not payable
-            run_to_session(4u32);
+            run_to_session(8u32);
 
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
@@ -1332,8 +1485,23 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1361,11 +1529,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1395,7 +1559,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             run_block();
 
             // After this it should not be assigned anymore, since credits are not payable
-            run_to_session(3u32);
+            run_to_session(7u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1419,8 +1583,22 @@ fn test_credits_with_purchase_can_be_combined() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1446,10 +1624,7 @@ fn test_credits_with_purchase_can_be_combined() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1476,8 +1651,22 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1502,10 +1691,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1534,7 +1720,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             run_block();
 
             // After this it should not be assigned anymore, since credits are not payable
-            run_to_session(4u32);
+            run_to_session(8u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1558,8 +1744,22 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1585,10 +1785,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
-            let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should not be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
@@ -1612,8 +1809,18 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
 
@@ -1640,10 +1847,10 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             ));
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32);
+            run_to_session(5u32);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1670,8 +1877,20 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
+
+            run_to_session(2);
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+
+            // We need to accept the validation code, so that the para is onboarded after 2 sessions.
+            assert_ok!(Paras::add_trusted_validation_code(
+                root_origin(),
+                get_genesis_data_with_validation_code().1.into()
+            ));
+            run_to_session(4);
 
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
@@ -1707,12 +1926,11 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
                     + block_production_credits
                     + crate::EXISTENTIAL_DEPOSIT
             ));
-
-            // Assignment should happen after 2 sessions
-            run_to_session(1u32);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32);
+
+            // Assignment should happen after 2 sessions
+            run_to_session(6u32);
             // Alice and Bob should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -1721,7 +1939,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             );
 
             // After this it should not be assigned anymore, since credits are not payable
-            run_to_session(4u32);
+            run_to_session(8u32);
             // Nobody should be assigned to para 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);

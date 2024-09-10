@@ -34,13 +34,15 @@ use {
         AccountId, RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
-        OrchestratorChainResult, PHash, PHeader,
+        BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
+        PHeader,
     },
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     pallet_author_noting_runtime_api::AuthorNotingApi,
+    pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
     parity_scale_codec::Encode,
     polkadot_cli::ProvideRuntimeApi,
@@ -439,6 +441,7 @@ async fn start_node_impl(
                 relay_chain_interface,
                 sync_keystore,
                 orchestrator_para_id: para_id,
+                data_preserver: false,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         orchestrator_client: orchestrator_client.clone(),
@@ -938,7 +941,8 @@ where
     Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
-        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+        + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -1037,5 +1041,26 @@ where
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         Ok(self.backend.blockchain().info().finalized_hash)
+    }
+
+    async fn data_preserver_active_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        profile_id: DataPreserverProfileId,
+    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        use {
+            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
+            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
+        };
+
+        Ok(
+            match runtime_api.get_active_assignment(orchestrator_parent, profile_id)? {
+                RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
+                RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
+                RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
+            },
+        )
     }
 }

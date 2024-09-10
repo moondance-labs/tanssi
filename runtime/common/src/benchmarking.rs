@@ -17,9 +17,9 @@
 use {
     frame_support::traits::Currency, pallet_treasury::ArgumentsFactory, sp_std::marker::PhantomData,
 };
-pub struct TreasurtBenchmarkHelper<T>(PhantomData<T>);
+pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
-impl<T> ArgumentsFactory<(), T::AccountId> for TreasurtBenchmarkHelper<T>
+impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
 where
     T: pallet_treasury::Config,
     T::AccountId: From<[u8; 32]>,

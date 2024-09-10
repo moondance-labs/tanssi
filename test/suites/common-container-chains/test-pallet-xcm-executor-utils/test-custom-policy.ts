@@ -7,7 +7,7 @@ import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../ut
 import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "DC0101",
+    id: "CC0101",
     title: "XcmExecutorUtils - Custom policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
