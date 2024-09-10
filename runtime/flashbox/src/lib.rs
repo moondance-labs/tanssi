@@ -53,7 +53,7 @@ use {
                 UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -1258,23 +1258,19 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// We allow everything but registering parathreads
-pub struct EverythingButRegisterParathreads;
-impl Contains<RuntimeCall> for EverythingButRegisterParathreads {
+pub struct IsRegisterParathreads;
+impl Contains<RuntimeCall> for IsRegisterParathreads {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            // Parathreads are not allowed as flashbox does not yet have XCM
-            RuntimeCall::Registrar(method) => match method {
-                pallet_registrar::Call::register_parathread { .. } => false,
-                _ => true,
-            },
-            _ => true,
-        }
+        matches!(
+            c,
+            RuntimeCall::Registrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = EverythingButRegisterParathreads;
+    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
