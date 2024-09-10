@@ -37,7 +37,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool,
+            ConstBool, Contains, EverythingBut,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -201,6 +201,33 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the containerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
+        )
+    }
+}
+
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
+        )
+    }
+}
+
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -208,7 +235,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;

@@ -261,10 +261,6 @@ describeSuite({
             title: "Profile can be assigned",
             test: async function () {
                 const paraId = 2002;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -290,12 +286,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -334,10 +325,6 @@ describeSuite({
             title: "Profile can be force assigned",
             test: async function () {
                 const paraId = 2003;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -363,12 +350,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -407,10 +389,6 @@ describeSuite({
             title: "Profile can be unassigned",
             test: async function () {
                 const paraId = 2004;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -436,12 +414,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -483,10 +456,6 @@ describeSuite({
             title: "Profile can be force unassigned",
             test: async function () {
                 const paraId = 2005;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -512,12 +481,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -558,10 +522,6 @@ describeSuite({
             title: "Container will be unassigned on deregister",
             test: async function () {
                 const paraId = 2006;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
-                    min: 1,
-                    max: 1,
-                });
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
@@ -587,12 +547,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const registerTx = polkadotJs.tx.registrar.registerParathread(
-                    paraId,
-                    slotFrequency,
-                    containerChainGenesisData,
-                    null
-                );
+                const registerTx = polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {

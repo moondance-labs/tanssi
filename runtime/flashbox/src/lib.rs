@@ -53,7 +53,7 @@ use {
                 UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -1257,17 +1257,20 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
     }
 }
 
-/// Normal Call Filter
-pub struct NormalFilter;
-impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(_c: &RuntimeCall) -> bool {
-        true
+/// We allow everything but registering parathreads
+pub struct IsRegisterParathreads;
+impl Contains<RuntimeCall> for IsRegisterParathreads {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Registrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = NormalFilter;
+    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
