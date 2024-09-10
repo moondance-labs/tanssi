@@ -47,7 +47,6 @@ use {
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
-    pallet_session::ShouldEndSession,
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
