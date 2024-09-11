@@ -326,7 +326,10 @@ fn start_consensus_container(
     } = collation_params;
     let slot_duration = if solochain {
         // Solochains use Babe instead of Aura, which has 6s slot duration
-        SlotDuration::from_millis(6_000)
+        let relay_slot_ms = relay_chain_slot_duration.as_millis();
+        SlotDuration::from_millis(
+            u64::try_from(relay_slot_ms).expect("relay chain slot duration overflows u64"),
+        )
     } else {
         cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
             .expect("start_consensus_container: slot duration should exist")
