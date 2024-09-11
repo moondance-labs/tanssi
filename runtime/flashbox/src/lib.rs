@@ -53,7 +53,7 @@ use {
                 UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -1257,17 +1257,20 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
     }
 }
 
-/// Normal Call Filter
-pub struct NormalFilter;
-impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(_c: &RuntimeCall) -> bool {
-        true
+/// We allow everything but registering parathreads
+pub struct IsRegisterParathreads;
+impl Contains<RuntimeCall> for IsRegisterParathreads {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Registrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = NormalFilter;
+    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
@@ -1534,6 +1537,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub const MaxBalance: Balance = Balance::max_value();
+    pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1543,7 +1547,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type SpendPeriod = SpendPeriod;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
@@ -1558,7 +1562,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
+    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {

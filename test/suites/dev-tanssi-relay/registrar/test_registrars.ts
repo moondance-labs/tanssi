@@ -4,7 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0102",
+    id: "DTR0801",
     title: "ContainerRegistrar <> relay Registrar",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -120,24 +120,14 @@ describeSuite({
             id: "E02",
             title: "should not be able to register paraId twice",
             test: async function () {
-                const containerChainGenesisData = emptyGenesisData();
-
-                // Check we can't register via ContainerRegistrar
-                const tx = await polkadotJs.tx.containerRegistrar
-                    .register(2002, containerChainGenesisData, "0x111")
-                    .signAsync(alice);
-
-                const { result } = await context.createBlock([tx]);
-                expect(result[0].successful).to.be.false;
-                expect(result[0].error.section).to.eq("containerRegistrar");
-                expect(result[0].error.name).to.eq("ParaIdAlreadyRegistered");
-
                 // Check we can't register via relay Registrar
-                const tx2 = polkadotJs.tx.registrar.register(2002, "0x", "0x0102030405060708091011").signAsync(alice);
+                const tx2 = polkadotJs.tx.containerRegistrar
+                    .register(2002, emptyGenesisData(), "0x0102030405060708091011")
+                    .signAsync(alice);
                 const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
-                expect(result2[0].error.section).to.eq("registrar");
-                expect(result2[0].error.name).to.eq("AlreadyRegistered");
+                expect(result2[0].error.section).to.eq("containerRegistrar");
+                expect(result2[0].error.name).to.eq("ParaIdAlreadyRegistered");
             },
         });
 
@@ -163,6 +153,36 @@ describeSuite({
                 // Para should be offboarding
                 const isOffboarding = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isOffboarding.toString()).to.eq("OffboardingParathread");
+            },
+        });
+
+        it({
+            id: "E04",
+            title: "should not be able to register through relay",
+            test: async function () {
+                const containerChainGenesisData = emptyGenesisData();
+
+                const tx = polkadotJs.tx.registrar
+                    .register(4000, containerChainGenesisData, "0x0102030405060708091011")
+                    .signAsync(alice);
+
+                const { result } = await context.createBlock([tx]);
+                expect(result[0].successful).to.be.false;
+                expect(result[0].error.section).to.eq("system");
+                expect(result[0].error.name).to.eq("CallFiltered");
+            },
+        });
+
+        it({
+            id: "E05",
+            title: "should not be able to deregister through relay",
+            test: async function () {
+                const tx = polkadotJs.tx.registrar.deregister(4000).signAsync(alice);
+
+                const { result } = await context.createBlock([tx]);
+                expect(result[0].successful).to.be.false;
+                expect(result[0].error.section).to.eq("system");
+                expect(result[0].error.name).to.eq("CallFiltered");
             },
         });
     },

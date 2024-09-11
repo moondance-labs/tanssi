@@ -5,7 +5,7 @@ import { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
 
 describeSuite({
-    id: "CT0609",
+    id: "CT0105",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -16,13 +16,18 @@ describeSuite({
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
         const blocksPerSession = 10n;
+        let collatorAssignmentAlias;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            collatorAssignmentAlias = runtimeName.includes("light")
+                ? polkadotJs.query.tanssiCollatorAssignment
+                : polkadotJs.query.collatorAssignment;
         });
         it({
             id: "E01",
-            title: "Genesis container chains have credits and collators and should have one less credit",
+            title: "Removing credits should make chains not get collators",
             test: async function () {
                 const removeFreeCredits = polkadotJs.tx.utility.batch([
                     polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(paraId2000, 0n),
@@ -36,7 +41,7 @@ describeSuite({
 
                 await context.createBlock();
                 // Should not have assigned collators
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
 
                 expect(
                     collators.toJSON().containerChains[paraId2000],
@@ -63,7 +68,7 @@ describeSuite({
                 // Check that after 2 sessions, container chain 2000 has 0 collators and is not producing blocks
                 await jumpSessions(context, 2);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000],
                     `Container chain ${paraId2000} should have 0 collators`
@@ -80,10 +85,10 @@ describeSuite({
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
                 await context.createBlock([await tx.signAsync(alice)]);
 
-                // Check that after 2 sessions, container chain 2000 has 0 collators and is not producing blocks
+                // Check that after 2 sessions, container chain 2000 has collators
                 await jumpSessions(context, 2);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000].length,
                     `Container chain ${paraId2000} has 0 collators`
@@ -97,7 +102,7 @@ describeSuite({
                 // Check that after 1 sessions
                 await jumpSessions(context, 1);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000],
                     `Container chain ${paraId2000} should have 0 collators`

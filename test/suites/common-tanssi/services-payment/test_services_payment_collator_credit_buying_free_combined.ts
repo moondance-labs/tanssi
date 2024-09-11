@@ -5,7 +5,7 @@ import { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
 
 describeSuite({
-    id: "CT0604",
+    id: "CT0104",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -14,9 +14,14 @@ describeSuite({
         const paraId2000 = 2000n;
         const paraId2001 = 2001n;
         const costPerSession = 100_000_000n;
+        let collatorAssignmentAlias;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            collatorAssignmentAlias = runtimeName.includes("light")
+                ? polkadotJs.query.tanssiCollatorAssignment
+                : polkadotJs.query.collatorAssignment;
         });
 
         it({
@@ -35,7 +40,7 @@ describeSuite({
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks
                 await jumpSessions(context, 2);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000],
                     `Container chain ${paraId2000} should have 0 collators`
@@ -56,7 +61,7 @@ describeSuite({
                 // Check that after 2 sessions, container chain 2000 has 0 collators and is not producing blocks
                 await jumpSessions(context, 2);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000],
                     `Container chain ${paraId2000} should have 0 collators`
@@ -76,7 +81,7 @@ describeSuite({
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks
                 await jumpSessions(context, 2);
 
-                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
                 expect(
                     collators.toJSON().containerChains[paraId2000].length,
                     `Container chain ${paraId2000} has 0 collators`
