@@ -118,6 +118,11 @@ describeSuite({
 
                 // Check the number of keys in storage
                 const palletKeys = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
+
+                 // 5 keys: Version, RegisteredParas, PendingParas, PendingToRemove, PendingParathreadParams, BufferedParasToRegister
+                expect(palletKeys.length).to.be.eq(6);
+                // After one block BufferedParasToRegister should be cleaned
+                await context.createBlock();
                 // 5 keys: Version, RegisteredParas, PendingParas, PendingToRemove, PendingParathreadParams
                 expect(palletKeys.length).to.be.eq(5);
 
