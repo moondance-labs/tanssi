@@ -93,12 +93,7 @@ impl SubstrateCli for Cli {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(
-            id,
-            vec![],
-            vec![],
-            None,
-        )
+        load_spec(id, vec![], vec![], None)
     }
 }
 
