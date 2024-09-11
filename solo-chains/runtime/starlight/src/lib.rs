@@ -37,7 +37,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool,
+            ConstBool, Contains, EverythingBut,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -47,7 +47,6 @@ use {
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
-    pallet_session::ShouldEndSession,
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -202,6 +201,33 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the containerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
+        )
+    }
+}
+
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
+        )
+    }
+}
+
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -209,7 +235,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -2313,16 +2339,11 @@ sp_api::impl_runtime_apis! {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
-            let parent_number = System::block_number();
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-
+            // We could potentially predict whether the next block will yield a session change as in dancebox but this
+            // is innecesary: the starlight blocks are being produced by validators, and therefore it should never
+            // stall because of any collator-rotation. Therefore it suffices for collators to predict the chain in
+            // which they have to collate after the session-change block.
+            let session_index = Session::current_index();
             let container_chains = ContainerRegistrar::session_container_chains(session_index);
             let mut para_ids = vec![];
             para_ids.extend(container_chains.parachains);
@@ -2382,17 +2403,7 @@ sp_api::impl_runtime_apis! {
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let parent_number = System::block_number();
-
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-
+            let session_index = Session::current_index();
             let assigned_authorities = TanssiAuthorityAssignment::collator_container_chain(session_index)?;
 
             assigned_authorities.container_chains.get(&para_id).cloned()
@@ -2400,15 +2411,7 @@ sp_api::impl_runtime_apis! {
 
         /// Return the paraId assigned to a given authority
         fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
-            let parent_number = System::block_number();
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
+            let session_index = Session::current_index();
             let assigned_authorities = TanssiAuthorityAssignment::collator_container_chain(session_index)?;
             // This self_para_id is used to detect assignments to orchestrator, in this runtime the
             // orchestrator will always be empty so we can set it to any value

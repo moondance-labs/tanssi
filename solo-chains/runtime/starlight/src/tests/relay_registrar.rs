@@ -17,7 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, ContainerRegistrar, Paras, Registrar, System},
+    crate::{
+        tests::common::*, ContainerRegistrar, Paras, Registrar, RuntimeCall, SlotFrequency, System,
+    },
     cumulus_primitives_core::relay_chain::HeadData,
     frame_support::{assert_noop, assert_ok},
     pallet_registrar::Event as ContainerRegistrarEvent,
@@ -26,6 +28,7 @@ use {
     },
     runtime_common::paras_registrar,
     runtime_parachains::configuration as parachains_configuration,
+    sp_runtime::traits::Dispatchable,
     sp_std::vec,
 };
 
@@ -563,5 +566,119 @@ fn deregister_two_paras_in_the_same_block() {
             assert!(Paras::lifecycle(1004.into())
                 .expect("para should be offboarding")
                 .is_offboarding());
+        });
+}
+
+#[test]
+fn test_register_parathread_not_allowed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            assert_noop!(
+                RuntimeCall::ContainerRegistrar(
+                    pallet_registrar::Call::<Runtime>::register_parathread {
+                        para_id: 3001.into(),
+                        slot_frequency: SlotFrequency { min: 1, max: 1 },
+                        genesis_data: empty_genesis_data(),
+                        head_data: None
+                    }
+                )
+                .dispatch(
+                    <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
+                        ALICE
+                    ))
+                ),
+                frame_system::Error::<Runtime>::CallFiltered
+            );
+        });
+}
+
+#[test]
+fn test_relay_registrar_through_extrinsic_not_allowed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let validation_code =
+                vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
+
+            assert_noop!(
+                RuntimeCall::Registrar(paras_registrar::Call::<Runtime>::register {
+                    id: 3001.into(),
+                    validation_code: cumulus_primitives_core::relay_chain::ValidationCode(
+                        validation_code
+                    ),
+                    genesis_head: HeadData(vec![1u8, 1u8, 1u8]),
+                })
+                .dispatch(
+                    <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
+                        ALICE
+                    ))
+                ),
+                frame_system::Error::<Runtime>::CallFiltered
+            );
+        });
+}
+
+#[test]
+fn test_relay_registrar_deregister_through_extrinsic_not_allowed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            assert_noop!(
+                RuntimeCall::Registrar(paras_registrar::Call::<Runtime>::deregister {
+                    id: 3001.into()
+                })
+                .dispatch(
+                    <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
+                        ALICE
+                    ))
+                ),
+                frame_system::Error::<Runtime>::CallFiltered
+            );
         });
 }
