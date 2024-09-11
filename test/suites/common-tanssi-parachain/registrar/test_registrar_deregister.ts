@@ -117,14 +117,20 @@ describeSuite({
                 expect(parasRegistered.toJSON()).to.deep.equal([]);
 
                 // Check the number of keys in storage
-                const palletKeys = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
+                const palletKeysOnSessionChange = await polkadotJs.rpc.state.getKeys(
+                    "0x3fba98689ebed1138735e0e7a5a790ab"
+                );
 
                 // 5 keys: Version, RegisteredParas, PendingParas, PendingToRemove, PendingParathreadParams, BufferedParasToRegister
-                expect(palletKeys.length).to.be.eq(6);
+                expect(palletKeysOnSessionChange.length).to.be.eq(6);
                 // After one block BufferedParasToRegister should be cleaned
                 await context.createBlock();
+                // Check the number of keys in storage
+                const palletKeysAfterSessionChange = await polkadotJs.rpc.state.getKeys(
+                    "0x3fba98689ebed1138735e0e7a5a790ab"
+                );
                 // 5 keys: Version, RegisteredParas, PendingParas, PendingToRemove, PendingParathreadParams
-                expect(palletKeys.length).to.be.eq(5);
+                expect(palletKeysAfterSessionChange.length).to.be.eq(5);
 
                 // Check that deregistered hook cleared storage of pallet_author_noting and pallet_services_payment
                 const authorData2000 = (await polkadotJs.query.authorNoting.latestAuthor(2000)).toJSON();
