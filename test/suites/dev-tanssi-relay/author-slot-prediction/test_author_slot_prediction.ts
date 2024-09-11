@@ -52,6 +52,9 @@ describeSuite({
                     u8aToHex(eve.publicKey),
                 ];
 
+                console.log((await polkadotJs.query.configuration.activeConfig()).toJSON());
+                console.log(assignment3);
+
                 // the keys are assigned randomly but we check all of them exist in allKeys
                 expect(includesAll(allKeys, assignment3.containerChains["2000"])).to.be.true;
                 expect(includesAll(allKeys, assignment3.containerChains["2001"])).to.be.true;

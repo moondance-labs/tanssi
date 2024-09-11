@@ -341,6 +341,21 @@ pub mod pallet {
             })
         }
 
+        #[pallet::call_index(8)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_max_parachain_cores_percentage(
+            origin: OriginFor<T>,
+            new: Option<Perbill>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.max_parachain_cores_percentage = new;
+            })
+        }
+
         /// Setting this to true will disable consistency checks for the configuration setters.
         /// Use with caution.
         #[pallet::call_index(44)]

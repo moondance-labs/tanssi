@@ -363,6 +363,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            setMaxParachainCoresPercentage: AugmentedSubmittable<
+                (updated: Option<Perbill> | null | Uint8Array | Perbill | AnyNumber) => SubmittableExtrinsic<ApiType>,
+                [Option<Perbill>]
+            >;
             setMinOrchestratorCollators: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]

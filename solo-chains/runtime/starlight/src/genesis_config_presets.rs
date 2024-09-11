@@ -17,6 +17,7 @@
 //! Genesis configs presets for the Starlight runtime
 
 use pallet_configuration::HostConfiguration;
+use sp_arithmetic::traits::Saturating;
 use sp_arithmetic::Perbill;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
@@ -309,6 +310,14 @@ fn starlight_testnet_genesis(
 
     const ENDOWMENT: u128 = 1_000_000 * STAR;
 
+    let core_percentage_for_pool_paras = Perbill::from_percent(100).saturating_sub(
+        host_configuration
+            .max_parachain_cores_percentage
+            .unwrap_or(Perbill::from_percent(50)),
+    );
+    let num_cores =
+        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32);
+
     serde_json::json!({
         "balances": {
             "balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
@@ -360,23 +369,12 @@ fn starlight_testnet_genesis(
             "config": runtime_parachains::configuration::HostConfiguration {
                 scheduler_params: SchedulerParams {
                     max_validators_per_core: Some(1),
-                    num_cores: 4,
+                    num_cores,
                     ..default_parachains_host_configuration().scheduler_params
                 },
                 ..default_parachains_host_configuration()
             },
         },
-        "collatorConfiguration": crate::CollatorConfigurationConfig {
-                config: pallet_configuration::HostConfiguration {
-                    max_collators: 100u32,
-                    min_orchestrator_collators: 0u32,
-                    max_orchestrator_collators: 0u32,
-                    collators_per_container: 2u32,
-                    full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
         "registrar": {
             "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
         },
@@ -658,6 +656,11 @@ pub fn starlight_development_config_genesis(
         container_chains,
         invulnerables,
         HostConfiguration {
+            max_collators: 100u32,
+            min_orchestrator_collators: 0u32,
+            max_orchestrator_collators: 0u32,
+            collators_per_container: 2u32,
+            full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
             max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
             ..Default::default()
         },
@@ -679,6 +682,11 @@ pub fn starlight_local_testnet_genesis(
         container_chains,
         invulnerables,
         HostConfiguration {
+            max_collators: 100u32,
+            min_orchestrator_collators: 0u32,
+            max_orchestrator_collators: 0u32,
+            collators_per_container: 2u32,
+            full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
             max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
             ..Default::default()
         },
