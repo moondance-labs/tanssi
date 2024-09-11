@@ -409,6 +409,9 @@ fn deregister_calls_schedule_para_cleanup() {
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
 
             // Para should be offboarding after 2 sessions.
+            // we need one more block to trigger the on_initialize of containerRegistrar
+            // which should fully clean everything
+            start_block();
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be offboarding")
                 .is_offboarding());
@@ -553,6 +556,7 @@ fn deregister_two_paras_in_the_same_block() {
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
             assert_eq!(Runtime::genesis_data(1004.into()).as_ref(), None);
 
+            start_block();
             // Paras should be offboarding after 2 sessions.
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be offboarding")

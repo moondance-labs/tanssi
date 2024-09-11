@@ -358,9 +358,12 @@ pub mod pallet {
             // Account for on_finalize weight
             let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1));
 
-            let buffered_paras = BufferedParasToDeregister::<T>::get();
-            for _ in 0..buffered_paras.len() {
+            let buffered_paras = BufferedParasToDeregister::<T>::take();
+
+            for para_id in buffered_paras {
                 weight += T::InnerRegistrar::deregister_weight();
+                // Deregister (in the relay context) each paraId present inside the buffer
+                T::InnerRegistrar::deregister(para_id);
             }
             weight
         }
@@ -465,14 +468,6 @@ pub mod pallet {
             assert_is_sorted_and_unique(&pending, "PendingToRemove");
 
             Ok(())
-        }
-
-        fn on_finalize(_: BlockNumberFor<T>) {
-            let buffered_paras = BufferedParasToDeregister::<T>::take();
-            for para_id in buffered_paras {
-                // Deregister (in the relay context) each paraId present inside the buffer.
-                T::InnerRegistrar::deregister(para_id);
-            }
         }
     }
 
