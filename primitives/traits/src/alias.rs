@@ -73,23 +73,57 @@ macro_rules! derive_scale_codec {
     }
 }
 
+/// Macro to define a trait alias for one or othe traits.
+/// Thanks to Associated Type Bounds syntax stabilized in Rust 1.79, it can be used to
+/// reduce the need to repeat a lot of `<Foo as Bar>::Baz : Traits`.
+///
+/// Extra parenthesis around bounds allows to easily parse them as-is and not restrict their
+/// expressivity.
+#[macro_export]
 macro_rules! trait_alias {
-    ($vis:vis $alias:ident : $bound0:path $(, $boundN:path)* $(,)?) => {
-        $vis trait $alias: $bound0 $(+ $boundN)* { }
-        impl<T: $bound0 $(+ $boundN)*> $alias for T { }
+    (
+        $vis:vis
+        $alias:ident
+        $(< $(
+            $tparam:ident
+            $( : ( $( $tparam_bound:tt )+ ) )?
+        ),+ $(,)? >)?
+        for ( $( $bounds:tt )+ )
+    ) => {
+        $vis trait $alias $( < $(
+            $tparam
+            $( : $($tparam_bound)+)?
+        ),+ > )?
+        : $( $bounds )+
+        { }
+
+        impl<__Any, $( $(
+            $tparam
+            $( : $($tparam_bound)+)?
+        ),+ )?>
+        $alias $( < $( $tparam ),+ > )?
+        for __Any
+        where Self : $( $bounds )+
+        { }
     }
 }
 
-trait_alias!(pub ScaleCodec:
-    __reexports::Encode,
-    __reexports::Decode,
-    __reexports::TypeInfo,
+trait_alias!(
+    pub ScaleCodec
+    for (
+        __reexports::Encode +
+        __reexports::Decode +
+        __reexports::TypeInfo
+    )
 );
 
-trait_alias!(pub StorageTraits:
-    ::core::fmt::Debug,
-    ::core::clone::Clone,
-    ::core::cmp::Eq,
-    ::core::cmp::PartialEq,
-    ScaleCodec,
+trait_alias!(
+    pub StorageTraits
+    for (
+        ::core::fmt::Debug +
+        ::core::clone::Clone +
+        ::core::cmp::Eq +
+        ::core::cmp::PartialEq +
+        ScaleCodec
+    )
 );
