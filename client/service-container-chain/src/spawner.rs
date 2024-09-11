@@ -22,10 +22,14 @@
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
 use {
+    frame_support::DefaultNoBound,
     crate::{
         cli::ContainerChainCli,
         monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, ContainerChainClient, ParachainClient},
+        service::{
+            start_node_impl_container, ContainerChainClient, MinimalContainerRuntimeApi,
+            ParachainClient,
+        },
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -81,12 +85,12 @@ impl<
 
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner<SelectSyncMode> {
+pub struct ContainerChainSpawner<RuntimeApi, SelectSyncMode> {
     /// Start container chain params
     pub params: ContainerChainSpawnParams<SelectSyncMode>,
 
     /// State
-    pub state: Arc<Mutex<ContainerChainSpawnerState>>,
+    pub state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
 
     /// Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi:
@@ -132,14 +136,14 @@ pub struct CollationParams {
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
-#[derive(Default)]
-pub struct ContainerChainSpawnerState {
+#[derive(DefaultNoBound)]
+pub struct ContainerChainSpawnerState<RuntimeApi> {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
     next_assigned_para_id: Option<ParaId>,
     failed_para_ids: HashSet<ParaId>,
     // For debugging and detecting errors
-    pub spawned_containers_monitor: SpawnedContainersMonitor,
+    pub spawned_containers_monitor: SpawnedContainersMonitor<RuntimeApi>,
 }
 
 pub struct ContainerChainState {
@@ -171,9 +175,9 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
+async fn try_spawn<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode>(
     try_spawn_params: ContainerChainSpawnParams<SelectSyncMode>,
-    state: Arc<Mutex<ContainerChainSpawnerState>>,
+    state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
 ) -> sc_service::error::Result<()> {
@@ -556,7 +560,9 @@ pub trait Spawner {
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
 }
 
-impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSyncMode> {
+impl<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode> Spawner
+    for ContainerChainSpawner<RuntimeApi, SelectSyncMode>
+{
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
         self.params.orchestrator_chain_interface.clone()
@@ -636,7 +642,9 @@ impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSy
     }
 }
 
-impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
+impl<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode>
+    ContainerChainSpawner<RuntimeApi, SelectSyncMode>
+{
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
         // The node always starts as an orchestrator chain collator.
@@ -752,8 +760,8 @@ struct HandleUpdateAssignmentResult {
 }
 
 // This is a separate function to allow testing
-fn handle_update_assignment_state_change(
-    state: &mut ContainerChainSpawnerState,
+fn handle_update_assignment_state_change<RuntimeApi: MinimalContainerRuntimeApi>(
+    state: &mut ContainerChainSpawnerState<RuntimeApi>,
     orchestrator_para_id: ParaId,
     current: Option<ParaId>,
     next: Option<ParaId>,
@@ -915,8 +923,8 @@ enum DbRemovalReason {
 /// Reasons may be:
 /// * High block diff: when the local db is outdated and it would take a long time to sync using full sync, we remove it to be able to use warp sync.
 /// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
-async fn db_needs_removal(
-    container_chain_client: &Arc<ContainerChainClient>,
+async fn db_needs_removal<RuntimeApi: MinimalContainerRuntimeApi>(
+    container_chain_client: &Arc<ContainerChainClient<RuntimeApi>>,
     orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
@@ -1102,7 +1110,7 @@ mod tests {
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
-        state: Arc<Mutex<ContainerChainSpawnerState>>,
+        state: Arc<Mutex<ContainerChainSpawnerState<dancebox_runtime::RuntimeApi>>>,
         orchestrator_para_id: ParaId,
         collate_on_tanssi: Arc<
             dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,

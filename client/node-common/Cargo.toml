@@ -23,6 +23,7 @@ serde = { workspace = true, features = [ "derive" ] }
 
 # Local
 tc-consensus = { workspace = true }
+tp-traits = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }

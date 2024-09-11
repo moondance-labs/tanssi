@@ -431,7 +431,11 @@ async fn start_node_impl(
         let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
 
-        let container_chain_spawner = ContainerChainSpawner {
+        // This considers that the container chains have the same APIs as dancebox, which
+        // is not the case. However the spawner don't call APIs that are not part of the expected
+        // common APIs for a container chain.
+        // TODO: Depend on the simple container chain runtime which should be the minimal api?
+        let container_chain_spawner = ContainerChainSpawner::<dancebox_runtime::RuntimeApi, _> {
             params: ContainerChainSpawnParams {
                 orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
                 container_chain_cli,

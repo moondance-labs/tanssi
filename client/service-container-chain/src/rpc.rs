@@ -39,7 +39,7 @@ use {
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
-    std::sync::Arc,
+    std::{marker::PhantomData, sync::Arc},
     stream_payment_rpc::{StreamPayment, StreamPaymentApiServer as _, StreamPaymentRuntimeApi},
 };
 
@@ -60,6 +60,19 @@ pub struct FullDeps<C, P> {
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
+tp_traits::trait_alias!(
+    pub RpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>
+    for (
+        sp_api::ConstructRuntimeApi<
+            Block,
+            Client,
+            RuntimeApi:
+                substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
+                + BlockBuilder<Block>
+        > + Send + Sync + 'static
+    )
+);
+
 /// Instantiate all RPC extensions.
 pub fn create_full<C, P>(
     deps: FullDeps<C, P>,
@@ -75,8 +88,6 @@ where
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
-    C::Api: StreamPaymentRuntimeApi<Block, u64, u128, u128>,
-    C::Api: ServicesPaymentRuntimeApi<Block, u128, ParaId>,
     P: TransactionPool + Sync + Send + 'static,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -91,8 +102,6 @@ where
     } = deps;
 
     module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-    module.merge(StreamPayment::<_, Block>::new(client.clone()).into_rpc())?;
-    module.merge(ServicesPayment::<_, Block>::new(client).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(

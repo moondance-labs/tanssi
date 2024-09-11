@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    frame_support::DefaultNoBound,
     crate::{
         service::{ContainerChainBackend, ContainerChainClient},
         spawner::{CcSpawnMsg, ContainerChainSpawnerState},
@@ -32,16 +33,16 @@ use {
     },
 };
 
-#[derive(Default)]
-pub struct SpawnedContainersMonitor {
+#[derive(DefaultNoBound)]
+pub struct SpawnedContainersMonitor<RuntimeApi> {
     /// List of the N most recently started container chains, with some statistics related to
     /// stopping time and reference count.
-    list: VecDeque<SpawnedContainer>,
+    list: VecDeque<SpawnedContainer<RuntimeApi>>,
     /// Count the number of times a container chain has been started
     count: usize,
 }
 
-pub struct SpawnedContainer {
+pub struct SpawnedContainer<RuntimeApi> {
     /// Unique identifier for a spawned container (not ParaId)
     pub id: usize,
     /// Container chain para id
@@ -59,10 +60,10 @@ pub struct SpawnedContainer {
     /// Used to check the reference count, if it's 0 it means the database has been closed
     pub backend: std::sync::Weak<ContainerChainBackend>,
     /// Used to check the reference count, if it's 0 it means that the client has been closed.
-    pub client: std::sync::Weak<ContainerChainClient>,
+    pub client: std::sync::Weak<ContainerChainClient<RuntimeApi>>,
 }
 
-impl SpawnedContainer {
+impl<RuntimeApi> SpawnedContainer<RuntimeApi> {
     pub fn is_stopped(&self) -> bool {
         self.stop_refcount_time.get().is_some() || {
             // Check reference count, and set stop_refcount_time if zero
@@ -118,9 +119,9 @@ impl SpawnedContainer {
     }
 }
 
-impl SpawnedContainersMonitor {
+impl<RuntimeApi> SpawnedContainersMonitor<RuntimeApi> {
     /// Returns a unique id which is not the ParaId
-    pub fn push(&mut self, mut x: SpawnedContainer) -> usize {
+    pub fn push(&mut self, mut x: SpawnedContainer<RuntimeApi>) -> usize {
         assert_eq!(x.id, 0, "SpawnedContainer.id must be set to 0, the actual id will be returned from push function");
         let id = self.count;
         x.id = id;
@@ -155,7 +156,7 @@ impl SpawnedContainersMonitor {
         }
     }
 
-    pub fn running_chains(&self) -> Vec<&SpawnedContainer> {
+    pub fn running_chains(&self) -> Vec<&SpawnedContainer<RuntimeApi>> {
         self.list
             .iter()
             .filter(|container| !container.is_stopped())
@@ -200,7 +201,7 @@ impl SpawnedContainersMonitor {
 }
 
 /// Background task that monitors the number of running container chains.
-pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
+pub async fn monitor_task<RuntimeApi>(state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>) {
     // Main loop frequency, doesn't need to be fast
     let monitor_period = Duration::from_secs(300 * 0 + 10);
     // Max number of allowed container chains before printing warnings.
@@ -286,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_truncate() {
-        let mut monitor = SpawnedContainersMonitor::default();
+        let mut monitor = SpawnedContainersMonitor::<dancebox_runtime::RuntimeApi>::default();
         let default_container = || SpawnedContainer {
             id: Default::default(),
             para_id: Default::default(),

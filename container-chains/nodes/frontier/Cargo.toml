@@ -30,6 +30,7 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
+tc-service-container-chain = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
