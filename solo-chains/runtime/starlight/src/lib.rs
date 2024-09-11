@@ -1445,6 +1445,20 @@ construct_runtime! {
         Offences: pallet_offences = 7,
         Historical: session_historical = 34,
 
+        // Container stuff should go before session
+        // Container stuff strats at index 100
+        ContainerRegistrar: pallet_registrar = 100,
+        CollatorConfiguration: pallet_configuration = 101,
+        TanssiInitializer: tanssi_initializer = 102,
+        TanssiInvulnerables: pallet_invulnerables = 103,
+        TanssiCollatorAssignment: pallet_collator_assignment = 104,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 105,
+        TanssiAuthorityMapping: pallet_authority_mapping = 106,
+        AuthorNoting: pallet_author_noting = 109,
+        ServicesPayment: pallet_services_payment = 110,
+        DataPreservers: pallet_data_preservers = 111,
+
+        // Session management
         Session: pallet_session = 8,
         Grandpa: pallet_grandpa = 10,
         AuthorityDiscovery: pallet_authority_discovery = 12,
@@ -1522,19 +1536,10 @@ construct_runtime! {
         // Sudo.
         Sudo: pallet_sudo = 255,
 
-        // FIXME: correct ordering
-        ContainerRegistrar: pallet_registrar = 100,
-        CollatorConfiguration: pallet_configuration = 101,
-        TanssiInitializer: tanssi_initializer = 102,
-        TanssiInvulnerables: pallet_invulnerables = 103,
-        TanssiCollatorAssignment: pallet_collator_assignment = 104,
-        TanssiAuthorityAssignment: pallet_authority_assignment = 105,
-        TanssiAuthorityMapping: pallet_authority_mapping = 106,
-        Migrations: pallet_migrations = 107,
-        MultiBlockMigrations: pallet_multiblock_migrations = 108,
-        AuthorNoting: pallet_author_noting = 109,
-        ServicesPayment: pallet_services_payment = 110,
-        DataPreservers: pallet_data_preservers = 111,
+        // Migration stuff
+        Migrations: pallet_migrations = 120,
+        MultiBlockMigrations: pallet_multiblock_migrations = 121,
+
     }
 }
 

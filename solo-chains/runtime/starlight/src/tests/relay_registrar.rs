@@ -119,7 +119,6 @@ fn register_para_via_container_registrar() {
 
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
-            run_to_session(2u32);
             assert_eq!(
                 parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
                 20500
@@ -148,7 +147,7 @@ fn register_para_via_container_registrar() {
 
             // Now let's check if the para was preoperly registered in the relay.
             // Run to next session.
-            run_to_session(3);
+            run_to_session(1);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be onboarding")
                 .is_onboarding());
@@ -158,7 +157,7 @@ fn register_para_via_container_registrar() {
                 root_origin(),
                 validation_code.into()
             ));
-            run_to_session(5);
+            run_to_session(3);
 
             // Now the para should be a parathread.
             assert!(Paras::lifecycle(1003.into())
@@ -181,7 +180,6 @@ fn cannot_register_para_twice_in_relay() {
 
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
-            run_to_session(2u32);
             assert_eq!(
                 parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
                 20500
@@ -210,7 +208,7 @@ fn cannot_register_para_twice_in_relay() {
 
             // Now let's check if the para was preoperly registered in the relay.
             // Run to next session.
-            run_to_session(3);
+            run_to_session(1);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be onboarding")
                 .is_onboarding());
@@ -220,7 +218,7 @@ fn cannot_register_para_twice_in_relay() {
                 root_origin(),
                 validation_code.clone().into()
             ));
-            run_to_session(5);
+            run_to_session(3);
 
             // Now the para should be a parathread.
             assert!(Paras::lifecycle(1003.into())
@@ -255,7 +253,6 @@ fn mark_valid_for_collating_converts_to_parachain() {
 
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
-            run_to_session(2u32);
             assert_eq!(
                 parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
                 20500
@@ -284,7 +281,7 @@ fn mark_valid_for_collating_converts_to_parachain() {
 
             // Now let's check if the para was preoperly registered in the relay.
             // Run to next session.
-            run_to_session(3);
+            run_to_session(1);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be onboarding")
                 .is_onboarding());
@@ -294,7 +291,7 @@ fn mark_valid_for_collating_converts_to_parachain() {
                 root_origin(),
                 validation_code.into()
             ));
-            run_to_session(5);
+            run_to_session(3);
 
             // Now the para should be a parathread.
             assert!(Paras::lifecycle(1003.into())
@@ -310,7 +307,7 @@ fn mark_valid_for_collating_converts_to_parachain() {
             );
 
             // The change should be applied after 2 sessions.
-            run_to_session(7);
+            run_to_session(5);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be parachain")
                 .is_parachain());
@@ -331,7 +328,6 @@ fn deregister_calls_schedule_para_cleanup() {
 
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
-            run_to_session(2u32);
             assert_eq!(
                 parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
                 20500
@@ -360,7 +356,7 @@ fn deregister_calls_schedule_para_cleanup() {
 
             // Now let's check if the para was preoperly registered in the relay.
             // Run to next session.
-            run_to_session(3);
+            run_to_session(1);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be onboarding")
                 .is_onboarding());
@@ -371,7 +367,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 validation_code.into()
             ));
 
-            run_to_session(5);
+            run_to_session(3);
 
             // Now the para should be a parathread.
             assert!(Paras::lifecycle(1003.into())
@@ -387,7 +383,7 @@ fn deregister_calls_schedule_para_cleanup() {
             );
 
             // The change should be applied after 2 sessions.
-            run_to_session(7);
+            run_to_session(5);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be parachain")
                 .is_parachain());
@@ -407,7 +403,7 @@ fn deregister_calls_schedule_para_cleanup() {
                 .into(),
             );
 
-            run_to_session(9);
+            run_to_session(7);
             end_block();
 
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
@@ -434,7 +430,6 @@ fn deregister_two_paras_in_the_same_block() {
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
             assert_eq!(Runtime::genesis_data(1004.into()).as_ref(), None);
-            run_to_session(2u32);
             assert_eq!(
                 parachains_configuration::ActiveConfig::<Runtime>::get().max_head_data_size,
                 20500
@@ -475,7 +470,7 @@ fn deregister_two_paras_in_the_same_block() {
 
             // Now let's check if the paras were preoperly registered in the relay.
             // Run to next session.
-            run_to_session(3);
+            run_to_session(1);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be onboarding")
                 .is_onboarding());
@@ -490,7 +485,7 @@ fn deregister_two_paras_in_the_same_block() {
                 validation_code.into()
             ));
 
-            run_to_session(5);
+            run_to_session(3);
 
             // Now paras should be parathreads.
             assert!(Paras::lifecycle(1003.into())
@@ -515,7 +510,7 @@ fn deregister_two_paras_in_the_same_block() {
             );
 
             // The change should be applied after 2 sessions.
-            run_to_session(7);
+            run_to_session(5);
             assert!(Paras::lifecycle(1003.into())
                 .expect("para should be parachain")
                 .is_parachain());
@@ -552,7 +547,7 @@ fn deregister_two_paras_in_the_same_block() {
                 .into(),
             );
 
-            run_to_session(9);
+            run_to_session(7);
             end_block();
 
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
