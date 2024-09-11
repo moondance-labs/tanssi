@@ -369,6 +369,7 @@ fn starlight_testnet_genesis(
                     min_orchestrator_collators: 0u32,
                     max_orchestrator_collators: 0u32,
                     collators_per_container: 2u32,
+                    full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
                     ..Default::default()
                 },
                 ..Default::default()
