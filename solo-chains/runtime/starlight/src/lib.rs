@@ -1446,7 +1446,7 @@ construct_runtime! {
         Historical: session_historical = 8,
 
         // Container stuff should go before session
-        // Container stuff strats at index 100
+        // Container stuff starts at index 10
         ContainerRegistrar: pallet_registrar = 10,
         CollatorConfiguration: pallet_configuration = 11,
         TanssiInitializer: tanssi_initializer = 12,
