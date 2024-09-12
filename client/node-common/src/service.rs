@@ -65,11 +65,11 @@ use {
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
 
-tp_traits::trait_alias!(
-    pub MinimalRuntimeApi<
+tp_traits::alias!(
+    pub trait MinimalRuntimeApi<
         Block: (cumulus_primitives_core::BlockT),
         Client: (sp_api::CallApiAt<Block>),
-    > for (
+    > :
         ConstructRuntimeApi<
             Block,
             Client,
@@ -79,14 +79,13 @@ tp_traits::trait_alias!(
                 + sp_api::Metadata<Block>
                 + sp_session::SessionKeys<Block>,
         > + Send + Sync + 'static
-    )
 );
 
-tp_traits::trait_alias!(
-    pub MinimalCumulusRuntimeApi<
+tp_traits::alias!(
+    pub trait MinimalCumulusRuntimeApi<
         Block: (cumulus_primitives_core::BlockT),
         Client: (sp_api::CallApiAt<Block>),
-    > for (
+    > :
         MinimalRuntimeApi<Block, Client> +
         ConstructRuntimeApi<
             Block,
@@ -94,7 +93,6 @@ tp_traits::trait_alias!(
             RuntimeApi:
                 cumulus_primitives_core::CollectCollationInfo<Block>,
         >
-    )
 );
 
 /// Trait to configure the main types the builder rely on, bundled in a single

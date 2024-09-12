@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::rpc::generate_rpc_builder::{GenerateRpcBuilder, GenerateRpcBuilderParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
@@ -154,9 +155,8 @@ pub type ContainerChainBackend = TFullBackend<Block>;
 type ContainerChainBlockImport<RuntimeApi> =
     TParachainBlockImport<Block, Arc<ContainerChainClient<RuntimeApi>>, ContainerChainBackend>;
 
-tp_traits::trait_alias!(
-    pub MinimalContainerRuntimeApi
-    for (
+tp_traits::alias!(
+    pub trait MinimalContainerRuntimeApi:
         MinimalCumulusRuntimeApi<Block, ContainerChainClient<Self>>
         + crate::rpc::RpcCompatibleRuntimeApi<ContainerChainClient<Self>>
         + sp_api::ConstructRuntimeApi<
@@ -167,20 +167,23 @@ tp_traits::trait_alias!(
                 + async_backing_primitives::UnincludedSegmentApi<Block>,
         >
         + Sized
-    )
 );
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-pub async fn start_node_impl_container<RuntimeApi: MinimalContainerRuntimeApi>(
+pub async fn start_node_impl_container<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+>(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     keystore: KeystorePtr,
     para_id: ParaId,
     collation_params: Option<crate::spawner::CollationParams>,
+    generate_rpc_builder: TGenerateRpcBuilder,
 ) -> sc_service::error::Result<(
     TaskManager,
     Arc<ContainerChainClient<RuntimeApi>>,
@@ -208,22 +211,18 @@ pub async fn start_node_impl_container<RuntimeApi: MinimalContainerRuntimeApi>(
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
-    let rpc_builder = {
-        let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
-
-        Box::new(move |deny_unsafe, _| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: transaction_pool.clone(),
-                deny_unsafe,
-                command_sink: None,
-                xcm_senders: None,
-            };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
+    let rpc_builder = generate_rpc_builder.generate(GenerateRpcBuilderParams {
+        task_manager: &node_builder.task_manager,
+        container_chain_config: &parachain_config,
+        client: node_builder.client.clone(),
+        backend: node_builder.backend.clone(),
+        sync_service: node_builder.network.sync_service.clone(),
+        transaction_pool: node_builder.transaction_pool.clone(),
+        prometheus_registry: node_builder.prometheus_registry.clone(),
+        command_sink: None,
+        xcm_senders: None,
+        network: node_builder.network.network.clone(),
+    })?;
 
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 

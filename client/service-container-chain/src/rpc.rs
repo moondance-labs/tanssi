@@ -24,6 +24,7 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
+    frame_support::{CloneNoBound, DefaultNoBound},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
     sc_client_api::{AuxStore, UsageProvider},
@@ -60,9 +61,8 @@ pub struct FullDeps<C, P> {
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
-tp_traits::trait_alias!(
-    pub RpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>
-    for (
+tp_traits::alias!(
+    pub trait RpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
         sp_api::ConstructRuntimeApi<
             Block,
             Client,
@@ -70,7 +70,6 @@ tp_traits::trait_alias!(
                 substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
                 + BlockBuilder<Block>
         > + Send + Sync + 'static
-    )
 );
 
 /// Instantiate all RPC extensions.
@@ -123,3 +122,96 @@ where
 
     Ok(module)
 }
+
+/// Contains the `GenerateRpcBuilder` trait and defines or re-exports all types it uses.
+pub mod generate_rpc_builder {
+    pub use {
+        crate::service::{ContainerChainBackend, ContainerChainClient, MinimalContainerRuntimeApi},
+        sc_service::{Error as ServiceError, TaskManager},
+        std::sync::Arc,
+        substrate_prometheus_endpoint::Registry as PrometheusRegistry,
+        tc_consensus::ParaId,
+    };
+
+    // TODO: It would be better to use a container chain types.
+    pub use dancebox_runtime::{opaque::Block, Hash};
+
+    pub type SyncingService = sc_network_sync::SyncingService<Block>;
+    pub type TransactionPool<RuntimeApi> =
+        sc_transaction_pool::FullPool<Block, ContainerChainClient<RuntimeApi>>;
+    pub type CommandSink =
+        futures::channel::mpsc::Sender<sc_consensus_manual_seal::EngineCommand<Hash>>;
+    pub type XcmSenders = (flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>);
+    pub type Network = dyn sc_network::service::traits::NetworkService;
+    pub type CompleteRpcBuilder = Box<
+        dyn Fn(
+            sc_rpc::DenyUnsafe,
+            sc_rpc::SubscriptionTaskExecutor,
+        ) -> Result<jsonrpsee::RpcModule<()>, ServiceError>,
+    >;
+
+    pub struct GenerateRpcBuilderParams<'a, RuntimeApi: MinimalContainerRuntimeApi> {
+        pub task_manager: &'a TaskManager,
+        pub container_chain_config: &'a sc_service::Configuration,
+
+        pub client: Arc<ContainerChainClient<RuntimeApi>>,
+        pub backend: Arc<ContainerChainBackend>,
+        pub sync_service: Arc<SyncingService>,
+        pub transaction_pool: Arc<TransactionPool<RuntimeApi>>,
+        pub prometheus_registry: Option<PrometheusRegistry>,
+        pub command_sink: Option<CommandSink>,
+        pub xcm_senders: Option<XcmSenders>,
+        pub network: Arc<Network>,
+    }
+
+    pub trait GenerateRpcBuilder<RuntimeApi: MinimalContainerRuntimeApi>:
+        Clone + Sync + Send
+    {
+        fn generate(
+            &self,
+            params: GenerateRpcBuilderParams<RuntimeApi>,
+        ) -> Result<CompleteRpcBuilder, ServiceError>;
+    }
+}
+
+#[derive(CloneNoBound, DefaultNoBound)]
+pub struct GenerateSubstrateRpcBuilder<RuntimeApi>(pub PhantomData<RuntimeApi>);
+impl<RuntimeApi> GenerateSubstrateRpcBuilder<RuntimeApi> {
+    pub fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+const _: () = {
+    use generate_rpc_builder::*;
+
+    impl<RuntimeApi: MinimalContainerRuntimeApi> GenerateRpcBuilder<RuntimeApi>
+        for GenerateSubstrateRpcBuilder<RuntimeApi>
+    {
+        fn generate(
+            &self,
+            GenerateRpcBuilderParams {
+                client,
+                transaction_pool,
+                command_sink,
+                xcm_senders,
+                ..
+            }: GenerateRpcBuilderParams<RuntimeApi>,
+        ) -> Result<CompleteRpcBuilder, ServiceError> {
+            let client = client.clone();
+            let transaction_pool = transaction_pool.clone();
+
+            Ok(Box::new(move |deny_unsafe, _| {
+                let deps = FullDeps {
+                    client: client.clone(),
+                    pool: transaction_pool.clone(),
+                    deny_unsafe,
+                    command_sink: command_sink.clone(),
+                    xcm_senders: xcm_senders.clone(),
+                };
+
+                create_full(deps).map_err(Into::into)
+            }))
+        }
+    }
+};

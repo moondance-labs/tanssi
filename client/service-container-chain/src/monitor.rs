@@ -15,12 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    frame_support::DefaultNoBound,
     crate::{
         service::{ContainerChainBackend, ContainerChainClient},
         spawner::{CcSpawnMsg, ContainerChainSpawnerState},
     },
     cumulus_primitives_core::ParaId,
+    frame_support::DefaultNoBound,
     std::{
         cell::Cell,
         collections::VecDeque,

@@ -80,15 +80,16 @@ macro_rules! derive_scale_codec {
 /// Extra parenthesis around bounds allows to easily parse them as-is and not restrict their
 /// expressivity.
 #[macro_export]
-macro_rules! trait_alias {
+macro_rules! alias {
     (
         $vis:vis
+        trait
         $alias:ident
         $(< $(
             $tparam:ident
             $( : ( $( $tparam_bound:tt )+ ) )?
         ),+ $(,)? >)?
-        for ( $( $bounds:tt )+ )
+        : $( $bounds:tt )+
     ) => {
         $vis trait $alias $( < $(
             $tparam
@@ -97,33 +98,31 @@ macro_rules! trait_alias {
         : $( $bounds )+
         { }
 
-        impl<__Any, $( $(
+        impl<__Self, $( $(
             $tparam
             $( : $($tparam_bound)+)?
         ),+ )?>
         $alias $( < $( $tparam ),+ > )?
-        for __Any
-        where Self : $( $bounds )+
+        for __Self
+        where __Self : $( $bounds )+
         { }
     }
 }
 
-trait_alias!(
-    pub ScaleCodec
-    for (
+alias!(
+    pub trait ScaleCodec : 
         __reexports::Encode +
         __reexports::Decode +
         __reexports::TypeInfo
-    )
+
 );
 
-trait_alias!(
-    pub StorageTraits
-    for (
+alias!(
+    pub trait StorageTraits :
         ::core::fmt::Debug +
         ::core::clone::Clone +
         ::core::cmp::Eq +
         ::core::cmp::PartialEq +
         ScaleCodec
-    )
+
 );

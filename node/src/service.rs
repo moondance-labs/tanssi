@@ -17,6 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
+    core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer,
@@ -435,7 +436,7 @@ async fn start_node_impl(
         // is not the case. However the spawner don't call APIs that are not part of the expected
         // common APIs for a container chain.
         // TODO: Depend on the simple container chain runtime which should be the minimal api?
-        let container_chain_spawner = ContainerChainSpawner::<dancebox_runtime::RuntimeApi, _> {
+        let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
                 orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
                 container_chain_cli,
@@ -467,6 +468,11 @@ async fn start_node_impl(
                         )
                     }
                 },
+                generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+                    dancebox_runtime::RuntimeApi,
+                >::new(),
+
+                phantom: PhantomData,
             },
             state: Default::default(),
             collate_on_tanssi,

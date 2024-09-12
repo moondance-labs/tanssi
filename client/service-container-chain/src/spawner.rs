@@ -22,10 +22,10 @@
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
 use {
-    frame_support::DefaultNoBound,
     crate::{
         cli::ContainerChainCli,
         monitor::{SpawnedContainer, SpawnedContainersMonitor},
+        rpc::generate_rpc_builder::GenerateRpcBuilder,
         service::{
             start_node_impl_container, ContainerChainClient, MinimalContainerRuntimeApi,
             ParachainClient,
@@ -35,6 +35,7 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block as OpaqueBlock, Block},
     dc_orchestrator_chain_interface::{OrchestratorChainInterface, PHash},
+    frame_support::{CloneNoBound, DefaultNoBound},
     fs2::FileExt,
     futures::FutureExt,
     node_common::command::generate_genesis_block,
@@ -50,6 +51,7 @@ use {
     sp_runtime::traits::Block as BlockT,
     std::{
         collections::{HashMap, HashSet},
+        marker::PhantomData,
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
         time::Instant,
@@ -85,9 +87,13 @@ impl<
 
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner<RuntimeApi, SelectSyncMode> {
+pub struct ContainerChainSpawner<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    SelectSyncMode: Clone,
+> {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams<SelectSyncMode>,
+    pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
@@ -109,8 +115,12 @@ pub struct ContainerChainSpawner<RuntimeApi, SelectSyncMode> {
 /// This struct MUST NOT contain types (outside of `Option<CollationParams>`) obtained through
 /// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
 /// connected to an orchestrator node through WebSocket.
-#[derive(Clone)]
-pub struct ContainerChainSpawnParams<SelectSyncMode> {
+#[derive(CloneNoBound)]
+pub struct ContainerChainSpawnParams<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    SelectSyncMode: Clone,
+> {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -123,6 +133,9 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub collation_params: Option<CollationParams>,
     pub sync_mode: SelectSyncMode,
     pub data_preserver: bool,
+    pub generate_rpc_builder: TGenerateRpcBuilder,
+
+    pub phantom: PhantomData<RuntimeApi>,
 }
 
 /// Params specific to collation. This struct can contain types obtained through running an
@@ -175,8 +188,12 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode>(
-    try_spawn_params: ContainerChainSpawnParams<SelectSyncMode>,
+async fn try_spawn<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    SelectSyncMode: TSelectSyncMode,
+>(
+    try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
     state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
@@ -193,6 +210,7 @@ async fn try_spawn<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSele
         mut collation_params,
         sync_mode,
         data_preserver,
+        generate_rpc_builder,
         ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
@@ -353,6 +371,7 @@ async fn try_spawn<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSele
                     sync_keystore.clone(),
                     container_chain_para_id,
                     collation_params.clone(),
+                    generate_rpc_builder.clone(),
                 )
                 .await?;
 
@@ -560,8 +579,11 @@ pub trait Spawner {
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
 }
 
-impl<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode> Spawner
-    for ContainerChainSpawner<RuntimeApi, SelectSyncMode>
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+        SelectSyncMode: TSelectSyncMode,
+    > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>
 {
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
@@ -642,8 +664,11 @@ impl<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode> Sp
     }
 }
 
-impl<RuntimeApi: MinimalContainerRuntimeApi, SelectSyncMode: TSelectSyncMode>
-    ContainerChainSpawner<RuntimeApi, SelectSyncMode>
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+        SelectSyncMode: TSelectSyncMode,
+    > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>
 {
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
