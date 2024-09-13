@@ -22,6 +22,7 @@ use sc_network_common::role::Role;
 use sc_service::config::KeystoreConfig;
 use sc_service::KeystoreContainer;
 use std::path::{Path, PathBuf};
+use tc_consensus::collators::lookahead::BuyCoreParams;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -564,6 +565,10 @@ fn start_consensus_orchestrator(
     };
 
     let cancellation_token = CancellationToken::new();
+    let buy_core_params = BuyCoreParams::Orchestrator {
+        orchestrator_tx_pool,
+        orchestrator_client: client.clone(),
+    };
 
     let params = LookaheadTanssiAuraParams {
         get_current_slot_duration: move |block_hash| {
@@ -645,7 +650,7 @@ fn start_consensus_orchestrator(
             }
         },
         block_import,
-        para_client: client.clone(),
+        para_client: client,
         relay_client: relay_chain_interface,
         sync_oracle,
         keystore,
@@ -661,9 +666,7 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
-        orchestrator_tx_pool: Some(orchestrator_tx_pool),
-        orchestrator_client: Some(client),
-        solochain: false,
+        buy_core_params,
     };
 
     let (fut, exit_notification_receiver) =

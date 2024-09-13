@@ -61,6 +61,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use tc_consensus::collators::lookahead::BuyCoreParams;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -366,6 +367,14 @@ fn start_consensus_container(
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
     };
+    let buy_core_params = if solochain {
+        BuyCoreParams::Solochain {}
+    } else {
+        BuyCoreParams::Orchestrator {
+            orchestrator_tx_pool: orchestrator_tx_pool.unwrap(),
+            orchestrator_client: orchestrator_client.unwrap(),
+        }
+    };
 
     let params = LookaheadTanssiAuraParams {
         get_current_slot_duration: move |block_hash| {
@@ -532,9 +541,7 @@ fn start_consensus_container(
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
         cancellation_token: CancellationToken::new(),
-        orchestrator_tx_pool,
-        orchestrator_client,
-        solochain,
+        buy_core_params,
     };
 
     let (fut, _exit_notification_receiver) =
