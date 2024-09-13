@@ -639,7 +639,8 @@ where
 
                                 let buy_core_result = if params.solochain {
                                     // TODO: implement parathread support for solochain
-                                    unimplemented!("Cannot buy core for parathread in solochain")
+                                    log::warn!("Unimplemented: cannot buy core for parathread in solochain");
+                                    break;
                                 } else {
                                     try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
                                 };
