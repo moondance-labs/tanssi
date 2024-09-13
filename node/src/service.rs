@@ -748,7 +748,7 @@ pub async fn start_solochain_node(
         // But zombienet will put the keys in the old path, we need to manually copy it if we
         // are running under zombienet
         let config_dir = build_solochain_config_dir(&container_chain_config.0.base_path);
-        let net_config_dir = build_solochain_net_config_dir(&config_dir);
+        let _net_config_dir = build_solochain_net_config_dir(&config_dir);
         let keystore =
             keystore_config(container_chain_config.0.keystore_params(), &config_dir).unwrap();
 
