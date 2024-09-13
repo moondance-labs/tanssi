@@ -938,7 +938,7 @@ pub mod pallet {
                 //
                 // We only downgrade if the paraId is a parachain in the context of
                 // this pallet.
-                if let None = ParathreadParams::<T>::get(para_id) {
+                if ParathreadParams::<T>::get(para_id).is_none() {
                     T::InnerRegistrar::schedule_para_downgrade(para_id)?;
                 }
 
@@ -983,7 +983,7 @@ pub mod pallet {
             //
             // We only upgrade if the paraId is a parachain in the context of
             // this pallet.
-            if let None = ParathreadParams::<T>::get(para_id) {
+            if ParathreadParams::<T>::get(para_id).is_none() {
                 T::InnerRegistrar::schedule_para_upgrade(para_id)?;
             }
 

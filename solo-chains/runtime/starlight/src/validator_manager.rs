@@ -79,7 +79,7 @@ pub mod pallet {
             validators
                 .clone()
                 .into_iter()
-                .for_each(|v| ValidatorsToAdd::<T>::append(v));
+                .for_each(ValidatorsToAdd::<T>::append);
 
             Self::deposit_event(Event::ValidatorsRegistered(validators));
             Ok(())
@@ -99,7 +99,7 @@ pub mod pallet {
             validators
                 .clone()
                 .into_iter()
-                .for_each(|v| ValidatorsToRetire::<T>::append(v));
+                .for_each(ValidatorsToRetire::<T>::append);
 
             Self::deposit_event(Event::ValidatorsDeregistered(validators));
             Ok(())

@@ -587,7 +587,7 @@ fn new_partial_basics(
     let heap_pages = config
         .default_heap_pages
         .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
-            extra_pages: h as _,
+            extra_pages: h as u32,
         });
 
     let executor = WasmExecutor::builder()
@@ -600,7 +600,7 @@ fn new_partial_basics(
 
     let (client, backend, keystore_container, task_manager) =
         service::new_full_parts::<Block, RuntimeApi, _>(
-            &config,
+            config,
             telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
             executor,
         )?;

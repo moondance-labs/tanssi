@@ -34,14 +34,10 @@ use {
     },
     sc_rpc::DenyUnsafe,
     sc_transaction_pool_api::TransactionPool,
-    services_payment_rpc::{
-        ServicesPayment, ServicesPaymentApiServer as _, ServicesPaymentRuntimeApi,
-    },
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::{marker::PhantomData, sync::Arc},
-    stream_payment_rpc::{StreamPayment, StreamPaymentApiServer as _, StreamPaymentRuntimeApi},
 };
 
 /// A type representing all RPC extensions.
@@ -62,7 +58,8 @@ pub struct FullDeps<C, P> {
 }
 
 tp_traits::alias!(
-    pub trait RpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
+    /// Test
+    pub trait MinimalSubstrateRpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
         sp_api::ConstructRuntimeApi<
             Block,
             Client,
@@ -125,6 +122,9 @@ where
 
 /// Contains the `GenerateRpcBuilder` trait and defines or re-exports all types it uses.
 pub mod generate_rpc_builder {
+    // We re-export types with specific type parameters, no need to be verbose documenting that.
+    #![allow(missing_docs)]
+
     pub use {
         crate::service::{ContainerChainBackend, ContainerChainClient, MinimalContainerRuntimeApi},
         sc_service::{Error as ServiceError, TaskManager},
@@ -174,9 +174,11 @@ pub mod generate_rpc_builder {
     }
 }
 
+/// Generate an rpc builder for simple substrate container chains.
 #[derive(CloneNoBound, DefaultNoBound)]
 pub struct GenerateSubstrateRpcBuilder<RuntimeApi>(pub PhantomData<RuntimeApi>);
 impl<RuntimeApi> GenerateSubstrateRpcBuilder<RuntimeApi> {
+    /// Creates a new instance.
     pub fn new() -> Self {
         Self(PhantomData)
     }
@@ -187,7 +189,7 @@ const _: () = {
 
     impl<
             RuntimeApi: MinimalContainerRuntimeApi
-                + crate::rpc::RpcCompatibleRuntimeApi<ContainerChainClient<RuntimeApi>>,
+                + crate::rpc::MinimalSubstrateRpcCompatibleRuntimeApi<ContainerChainClient<RuntimeApi>>,
         > GenerateRpcBuilder<RuntimeApi> for GenerateSubstrateRpcBuilder<RuntimeApi>
     {
         fn generate(

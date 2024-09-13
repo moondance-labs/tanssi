@@ -61,7 +61,6 @@ use {
         time::Duration,
     },
     tc_service_container_chain::{
-        rpc::RpcCompatibleRuntimeApi,
         service::{ContainerChainClient, MinimalContainerRuntimeApi},
     },
 };
@@ -473,7 +472,7 @@ impl<Api> RuntimeApiCollection for Api where
 }
 
 tp_traits::alias!(
-    pub trait MinimalFrontierCompatibleRuntimeApi:
+    pub trait MinimalFrontierRpcCompatibleRuntimeApi:
         MinimalContainerRuntimeApi +
         sp_api::ConstructRuntimeApi<
             Block,
@@ -491,11 +490,10 @@ pub struct GenerateFrontierRpcBuilder<RuntimeApi> {
 
 const _: () = {
     use {
-        container_chain_template_frontier_runtime::RuntimeApi,
         tc_service_container_chain::rpc::generate_rpc_builder::*,
     };
 
-    impl<RuntimeApi: MinimalFrontierCompatibleRuntimeApi> GenerateRpcBuilder<RuntimeApi>
+    impl<RuntimeApi: MinimalFrontierRpcCompatibleRuntimeApi> GenerateRpcBuilder<RuntimeApi>
         for GenerateFrontierRpcBuilder<RuntimeApi>
     {
         fn generate(
@@ -518,7 +516,7 @@ const _: () = {
             let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
             let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
             let frontier_backend = Arc::new(fc_db::Backend::KeyValue(
-                crate::service::open_frontier_backend(client.clone(), &container_chain_config)?
+                crate::service::open_frontier_backend(client.clone(), container_chain_config)?
                     .into(),
             ));
             let overrides = Arc::new(fc_rpc::StorageOverrideHandler::new(client.clone()));
@@ -530,7 +528,7 @@ const _: () = {
             let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
 
             spawn_essential_tasks(SpawnTasksParams {
-                task_manager: &task_manager,
+                task_manager,
                 client: client.clone(),
                 substrate_backend: backend.clone(),
                 frontier_backend: frontier_backend.clone(),

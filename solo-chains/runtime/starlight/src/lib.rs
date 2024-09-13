@@ -590,10 +590,10 @@ where
     )> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
+        let period = u64::from(BlockHashCount::get()
             .checked_next_power_of_two()
             .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+            .unwrap_or(2));
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -1174,7 +1174,7 @@ impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
         let mut para_heads: Vec<(u32, Vec<u8>)> = parachains_paras::Parachains::<Runtime>::get()
             .into_iter()
             .filter_map(|id| {
-                parachains_paras::Heads::<Runtime>::get(&id).map(|head| (id.into(), head.0))
+                parachains_paras::Heads::<Runtime>::get(id).map(|head| (id.into(), head.0))
             })
             .collect();
         para_heads.sort();
@@ -1636,7 +1636,7 @@ where
 
         // Check if the wasm code is present in storage
         let validation_code = match genesis_storage
-            .into_iter()
+            .iter()
             .find(|item| item.key == StorageWellKnownKeys::CODE)
         {
             Some(item) => ValidationCode(item.value.clone()),

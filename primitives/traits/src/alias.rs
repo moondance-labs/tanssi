@@ -82,6 +82,7 @@ macro_rules! derive_scale_codec {
 #[macro_export]
 macro_rules! alias {
     (
+        $(#[$attr:meta])*
         $vis:vis
         trait
         $alias:ident
@@ -91,6 +92,7 @@ macro_rules! alias {
         ),+ $(,)? >)?
         : $( $bounds:tt )+
     ) => {
+        $(#[$attr])*
         $vis trait $alias $( < $(
             $tparam
             $( : $($tparam_bound)+)?

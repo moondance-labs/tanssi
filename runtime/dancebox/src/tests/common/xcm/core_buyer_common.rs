@@ -342,7 +342,7 @@ fn core_buyer_sign_collator_nonce(para_id: ParaId, id: nimbus_primitives::Nimbus
         signature,
     };
     XcmCoreBuyer::pre_dispatch(&pallet_xcm_core_buyer::Call::buy_core {
-        para_id: para_id,
+        para_id,
         proof: proof.clone(),
     })
     .expect("collator signature predispatch should go through");

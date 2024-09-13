@@ -819,7 +819,7 @@ impl MockRuntimeApi {
                             if let Some(para_id) = self.0 {
                                 let _ =
                                     sender.send(Ok(vec![CoreState::Scheduled(ScheduledCore {
-                                        para_id: para_id,
+                                        para_id,
                                         collator: None,
                                     })]));
                             } else {
@@ -888,7 +888,7 @@ impl CollatorLookaheadTestBuilder {
         CancellationToken,
     ) {
         // Creation of keystore
-        let _ = sp_tracing::try_init_simple();
+        sp_tracing::try_init_simple();
         let keystore_path = tempfile::tempdir().expect("Creates keystore path");
         let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
         let alice_public = keystore
