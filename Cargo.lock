@@ -1788,6 +1788,8 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
+ "dc-orchestrator-chain-interface",
+ "dp-core",
  "fc-api",
  "fc-cli",
  "fc-consensus",
@@ -1801,6 +1803,7 @@ dependencies = [
  "fp-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "frame-support",
  "frame-system-rpc-runtime-api",
  "futures 0.3.30",
  "hex-literal 0.3.4",
@@ -1858,7 +1861,9 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
+ "tc-orchestrator-chain-rpc-interface",
  "tc-service-container-chain",
+ "tp-traits",
  "url",
 ]
 

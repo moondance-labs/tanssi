@@ -158,7 +158,6 @@ type ContainerChainBlockImport<RuntimeApi> =
 tp_traits::alias!(
     pub trait MinimalContainerRuntimeApi:
         MinimalCumulusRuntimeApi<Block, ContainerChainClient<Self>>
-        + crate::rpc::RpcCompatibleRuntimeApi<ContainerChainClient<Self>>
         + sp_api::ConstructRuntimeApi<
             Block,
             ContainerChainClient<Self>,

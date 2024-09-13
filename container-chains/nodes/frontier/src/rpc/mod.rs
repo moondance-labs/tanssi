@@ -33,6 +33,7 @@ use {
     fc_rpc_core::TxPoolApiServer,
     fc_storage::StorageOverride,
     fp_rpc::EthereumRuntimeRPCApi,
+    frame_support::CloneNoBound,
     futures::StreamExt,
     jsonrpsee::RpcModule,
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
@@ -58,6 +59,10 @@ use {
         collections::BTreeMap,
         sync::{Arc, Mutex},
         time::Duration,
+    },
+    tc_service_container_chain::{
+        rpc::RpcCompatibleRuntimeApi,
+        service::{ContainerChainClient, MinimalContainerRuntimeApi},
     },
 };
 
@@ -466,3 +471,115 @@ impl<Api> RuntimeApiCollection for Api where
         + cumulus_primitives_core::CollectCollationInfo<Block>
 {
 }
+
+tp_traits::alias!(
+    pub trait MinimalFrontierCompatibleRuntimeApi:
+        MinimalContainerRuntimeApi +
+        sp_api::ConstructRuntimeApi<
+            Block,
+            ContainerChainClient<Self>,
+            RuntimeApi:
+                RuntimeApiCollection
+        >
+);
+
+#[derive(CloneNoBound)]
+pub struct GenerateFrontierRpcBuilder<RuntimeApi> {
+    pub rpc_config: crate::cli::RpcConfig,
+    pub phantom: PhantomData<RuntimeApi>,
+}
+
+const _: () = {
+    use {
+        container_chain_template_frontier_runtime::RuntimeApi,
+        tc_service_container_chain::rpc::generate_rpc_builder::*,
+    };
+
+    impl<RuntimeApi: MinimalFrontierCompatibleRuntimeApi> GenerateRpcBuilder<RuntimeApi>
+        for GenerateFrontierRpcBuilder<RuntimeApi>
+    {
+        fn generate(
+            &self,
+            GenerateRpcBuilderParams {
+                backend,
+                client,
+                network,
+                container_chain_config,
+                prometheus_registry,
+                sync_service,
+                task_manager,
+                transaction_pool,
+                ..
+            }: GenerateRpcBuilderParams<RuntimeApi>,
+        ) -> Result<CompleteRpcBuilder, ServiceError> {
+            let max_past_logs = self.rpc_config.max_past_logs;
+
+            // Frontier specific stuff
+            let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
+            let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
+            let frontier_backend = Arc::new(fc_db::Backend::KeyValue(
+                crate::service::open_frontier_backend(client.clone(), &container_chain_config)?
+                    .into(),
+            ));
+            let overrides = Arc::new(fc_rpc::StorageOverrideHandler::new(client.clone()));
+            let fee_history_limit = self.rpc_config.fee_history_limit;
+
+            let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
+                fc_mapping_sync::EthereumBlockNotification<Block>,
+            > = Default::default();
+            let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
+
+            spawn_essential_tasks(SpawnTasksParams {
+                task_manager: &task_manager,
+                client: client.clone(),
+                substrate_backend: backend.clone(),
+                frontier_backend: frontier_backend.clone(),
+                filter_pool: filter_pool.clone(),
+                overrides: overrides.clone(),
+                fee_history_limit,
+                fee_history_cache: fee_history_cache.clone(),
+                sync_service: sync_service.clone(),
+                pubsub_notification_sinks: pubsub_notification_sinks.clone(),
+            });
+
+            let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
+                task_manager.spawn_handle(),
+                overrides.clone(),
+                self.rpc_config.eth_log_block_cache,
+                self.rpc_config.eth_statuses_cache,
+                prometheus_registry.clone(),
+            ));
+
+            Ok(Box::new(move |deny_unsafe, subscription_task_executor| {
+                let deps = crate::rpc::FullDeps {
+                    backend: backend.clone(),
+                    client: client.clone(),
+                    deny_unsafe,
+                    filter_pool: filter_pool.clone(),
+                    frontier_backend: match &*frontier_backend {
+                        fc_db::Backend::KeyValue(b) => b.clone(),
+                        fc_db::Backend::Sql(b) => b.clone(),
+                    },
+                    graph: transaction_pool.pool().clone(),
+                    pool: transaction_pool.clone(),
+                    max_past_logs,
+                    fee_history_limit,
+                    fee_history_cache: fee_history_cache.clone(),
+                    network: Arc::new(network.clone()),
+                    sync: sync_service.clone(),
+                    block_data_cache: block_data_cache.clone(),
+                    overrides: overrides.clone(),
+                    is_authority: false,
+                    command_sink: None,
+                    xcm_senders: None,
+                };
+                crate::rpc::create_full(
+                    deps,
+                    subscription_task_executor,
+                    pubsub_notification_sinks.clone(),
+                )
+                .map_err(Into::into)
+            }))
+        }
+    }
+};

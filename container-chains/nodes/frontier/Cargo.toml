@@ -24,6 +24,11 @@ serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true, features = [ "arbitrary_precision" ] }
 url = { workspace = true }
 
+# Dancekit
+dc-orchestrator-chain-interface = { workspace = true }
+dp-core = { workspace = true }
+tc-orchestrator-chain-rpc-interface = { workspace = true }
+
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
 container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
@@ -31,6 +36,7 @@ manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
 tc-service-container-chain = { workspace = true }
+tp-traits = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
@@ -39,6 +45,7 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
+frame-support = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, features = [ "std" ] }

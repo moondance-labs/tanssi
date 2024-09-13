@@ -110,7 +110,7 @@ macro_rules! alias {
 }
 
 alias!(
-    pub trait ScaleCodec : 
+    pub trait ScaleCodec :
         __reexports::Encode +
         __reexports::Decode +
         __reexports::TypeInfo

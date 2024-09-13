@@ -185,8 +185,10 @@ impl<RuntimeApi> GenerateSubstrateRpcBuilder<RuntimeApi> {
 const _: () = {
     use generate_rpc_builder::*;
 
-    impl<RuntimeApi: MinimalContainerRuntimeApi> GenerateRpcBuilder<RuntimeApi>
-        for GenerateSubstrateRpcBuilder<RuntimeApi>
+    impl<
+            RuntimeApi: MinimalContainerRuntimeApi
+                + crate::rpc::RpcCompatibleRuntimeApi<ContainerChainClient<RuntimeApi>>,
+        > GenerateRpcBuilder<RuntimeApi> for GenerateSubstrateRpcBuilder<RuntimeApi>
     {
         fn generate(
             &self,
