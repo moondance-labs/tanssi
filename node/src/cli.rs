@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use tc_service_container_chain::cli::ContainerChainRunCmd;
 use {
     node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
@@ -63,10 +64,47 @@ pub enum Subcommand {
 
     /// Precompile the WASM runtime into native code
     PrecompileWasm(sc_cli::PrecompileWasmCmd),
+
+    /// Solochain collator mode
+    SoloChain(SoloChainCmd),
+}
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct SoloChainCmd {
+    #[command(flatten)]
+    pub run: ContainerChainRunCmd,
+
+    /// Disable automatic hardware benchmarks.
+    ///
+    /// By default these benchmarks are automatically ran at startup and measure
+    /// the CPU speed, the memory bandwidth and the disk speed.
+    ///
+    /// The results are then printed out in the logs, and also sent as part of
+    /// telemetry, if telemetry is enabled.
+    #[arg(long)]
+    pub no_hardware_benchmarks: bool,
+
+    /*
+    /// Enable the development service to run without a backing relay chain
+    #[arg(long)]
+    pub dev_service: bool,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[arg(long, default_value = "instant")]
+    pub sealing: Sealing,
+     */
+    /// Relay chain arguments
+    #[arg(raw = true)]
+    pub relay_chain_args: Vec<String>,
 }
 
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
+#[group(skip)]
 pub struct BuildSpecCmd {
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
@@ -123,10 +161,6 @@ pub struct RunCmd {
     #[arg(long)]
     pub dev_service: bool,
 
-    /// Enable collators to run against a solo-chain such as Starlight
-    #[arg(long)]
-    pub solo_chain: bool,
-
     /// When blocks should be sealed in the dev service.
     ///
     /// Options are "instant", "manual", or timer interval in milliseconds
@@ -163,7 +197,7 @@ impl KeyCmd {
 
 #[derive(Debug, clap::Parser)]
 #[command(
-    propagate_version = true,
+    propagate_version = false, // setting this to true makes the verify_cli test fail
     args_conflicts_with_subcommands = true,
     subcommand_negates_reqs = true
 )]
@@ -247,4 +281,10 @@ impl RelayChainCli {
             base: clap::Parser::parse_from(relay_chain_args),
         }
     }
+}
+
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Cli::command().debug_assert();
 }

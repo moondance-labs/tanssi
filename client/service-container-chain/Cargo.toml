@@ -70,6 +70,7 @@ sp-timestamp = { workspace = true, features = [ "std" ] }
 polkadot-primitives = { workspace = true }
 
 # Cumulus
+cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }

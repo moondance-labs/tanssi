@@ -331,7 +331,7 @@ fn start_consensus_container(
             u64::try_from(relay_slot_ms).expect("relay chain slot duration overflows u64"),
         )
     } else {
-        cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
+        cumulus_client_consensus_aura::slot_duration(orchestrator_client.as_deref().unwrap())
             .expect("start_consensus_container: slot duration should exist")
     };
 
@@ -482,7 +482,7 @@ fn start_consensus_container(
                     })?;
 
                     let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
+                        orchestrator_client_for_cidp.as_ref().unwrap(),
                         &latest_header.hash(),
                         para_id,
                     );
@@ -500,7 +500,7 @@ fn start_consensus_container(
                     );
 
                     let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
+                        orchestrator_client_for_cidp.as_ref().unwrap(),
                         &latest_header.hash(),
                         para_id,
                     );

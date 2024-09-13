@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::command::solochain::NotParachainConfiguration;
 use {
     crate::{
         chain_spec,
@@ -39,6 +40,8 @@ use {
     std::{io::Write, net::SocketAddr},
     tc_service_container_chain::{chain_spec::RawChainSpec, cli::ContainerChainCli},
 };
+
+pub mod solochain;
 
 fn load_spec(
     id: &str,
@@ -338,6 +341,92 @@ pub fn run() -> Result<()> {
                 ))
             })
         }
+        Some(Subcommand::SoloChain(cmd)) => {
+            // Cannot use create_configuration function because that needs a chain spec.
+            // So write our own `create_runner` function that doesn't need chain spec.
+            let runner = solochain::create_runner(&cli, &cmd.run.normalize())?;
+
+            // TODO: Assert that there are no flags between `tanssi-node` and `solo-chain`.
+            // These will be ignored anyway.
+            // We need to do this after create_runner because before that logging is not setup yet
+            // Zombienet appends a --chain flag after "solo-chain" subcommand, which is ignored,
+            if cmd.run.base.shared_params.chain.is_some() {
+                log::warn!(
+                    "Ignoring --chain argument: solochain mode does only need the relay chain-spec"
+                );
+            }
+
+            let collator_options = cmd.run.collator_options();
+
+            runner.run_node_until_exit(|config| async move {
+                /*
+                let polkadot_cli = RelayChainCli::new(
+                    &config,
+                    [RelayChainCli::executable_name()]
+                        .iter()
+                        .chain(cmd.relay_chain_args.iter()),
+                );
+                 */
+                // TODO: refactor this into function that returns `RelayChainCli`
+                let binding = [RelayChainCli::executable_name()];
+                let relay_chain_args = binding.iter().chain(cmd.relay_chain_args.iter());
+                let polkadot_cli = {
+                    let base_path = config.base_path.path().join("polkadot");
+                    // TODO: where to get chain_id from?
+                    let chain_id = Some("starlight_local_testnet".to_string());
+
+                    RelayChainCli {
+                        base_path,
+                        chain_id,
+                        base: clap::Parser::parse_from(relay_chain_args),
+                    }
+                };
+
+                // TODO: dev mode does not make sense for starlight collator?
+                // But better to detect --dev flag and panic than ignore it
+                /*
+                let dev_service = config.chain_spec.is_dev()
+                    || relay_chain_id == Some("dev-service".to_string())
+                    || cli_run_dev_service;
+
+                if dev_service {
+                    return crate::service::start_dev_node(config, cli_run_sealing, hwbench, id)
+                        .map_err(Into::into);
+                }
+                 */
+
+                let tokio_handle = config.tokio_handle.clone();
+                let polkadot_config =
+                    SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                        .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+                // We need to bake in some container-chain args
+                let container_chain_cli = cmd.run.normalize();
+                let tokio_handle = config.tokio_handle.clone();
+                let container_chain_config = (container_chain_cli, tokio_handle);
+                let not_config = NotParachainConfiguration {
+                    chain_type: polkadot_config.chain_spec.chain_type(),
+                    // relay_chain will be set to "starlight_local_testnet"
+                    // But everywhere else it is hardcoded to "rococo-local" so not sure if it's used
+                    relay_chain: polkadot_config.chain_spec.id().to_string(),
+                    collator: container_chain_config.0.base.collator,
+                };
+
+                // TODO: we can't enable hwbench because we don't have a db. Find a workaround
+                let hwbench = None;
+
+                crate::service::start_solochain_node(
+                    not_config,
+                    polkadot_config,
+                    container_chain_config,
+                    collator_options,
+                    hwbench,
+                )
+                .await
+                .map(|r| r.0)
+                .map_err(Into::into)
+            })
+        }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
@@ -375,22 +464,6 @@ pub fn run() -> Result<()> {
                 let polkadot_config =
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
-
-                let solo_chain = cli.run.solo_chain;
-                if solo_chain {
-                    // We need to bake in some container-chain args
-                    let container_chain_cli = ContainerChainCli::new(
-                        &config,
-                        [ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
-                    );
-                    let tokio_handle = config.tokio_handle.clone();
-                    let container_chain_config = (container_chain_cli, tokio_handle);
-
-                    return crate::service::start_solochain_node(config, polkadot_config, container_chain_config, collator_options, hwbench)
-                        .await
-                        .map(|r| r.0)
-                        .map_err(Into::into);
-                }
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);

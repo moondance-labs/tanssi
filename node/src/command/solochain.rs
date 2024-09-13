@@ -1,0 +1,316 @@
+//! Helper functions used to implement solochain collator
+
+use crate::cli::Cli;
+use futures::FutureExt;
+use jsonrpsee::server::BatchRequestConfig;
+use log::{info, warn};
+use sc_chain_spec::{ChainType, GenericChainSpec, NoExtension};
+use sc_cli::{CliConfiguration, DefaultConfigurationValues, Signals, SubstrateCli};
+use sc_network::config::{NetworkBackendType, NetworkConfiguration, TransportConfig};
+use sc_network_common::role::Role;
+use sc_service::config::KeystoreConfig;
+use sc_service::{BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager};
+use sc_tracing::logging::LoggerBuilder;
+use std::future::Future;
+use std::num::NonZeroUsize;
+use std::time::Duration;
+use tc_service_container_chain::cli::ContainerChainCli;
+
+pub struct SlimConfig {
+    pub tokio_handle: tokio::runtime::Handle,
+    pub base_path: BasePath,
+    pub network_node_name: String,
+    pub display_role: String,
+}
+
+/// A Substrate CLI runtime that can be used to run a node or a command
+pub struct NotRunner {
+    config: SlimConfig,
+    tokio_runtime: tokio::runtime::Runtime,
+    signals: Signals,
+}
+
+impl NotRunner {
+    /// Log information about the node itself.
+    ///
+    /// # Example:
+    ///
+    /// ```text
+    /// 2020-06-03 16:14:21 Substrate Node
+    /// 2020-06-03 16:14:21 ✌️  version 2.0.0-rc3-f4940588c-x86_64-linux-gnu
+    /// 2020-06-03 16:14:21 ❤️  by Parity Technologies <admin@parity.io>, 2017-2020
+    /// 2020-06-03 16:14:21 📋 Chain specification: Flaming Fir
+    /// 2020-06-03 16:14:21 🏷  Node name: jolly-rod-7462
+    /// 2020-06-03 16:14:21 👤 Role: FULL
+    /// 2020-06-03 16:14:21 💾 Database: RocksDb at /tmp/c/chains/flamingfir7/db
+    /// 2020-06-03 16:14:21 ⛓  Native runtime: node-251 (substrate-node-1.tx1.au10)
+    /// ```
+    fn print_node_infos(&self) {
+        use chrono::offset::Local;
+        use chrono::Datelike;
+        type C = ContainerChainCli;
+        info!("{}", C::impl_name());
+        info!("✌️  version {}", C::impl_version());
+        info!(
+            "❤️  by {}, {}-{}",
+            C::author(),
+            C::copyright_start_year(),
+            Local::now().year()
+        );
+        //info!("📋 Chain specification: {}", config.chain_spec.name());
+        info!("🏷  Node name: {}", self.config.network_node_name);
+        info!("👤 Role: {}", self.config.display_role);
+        /*
+        info!(
+            "💾 Database: {} at {}",
+            config.database,
+            config
+                .database
+                .path()
+                .map_or_else(|| "<unknown>".to_owned(), |p| p.display().to_string())
+        );
+         */
+        info!(
+            "💾 Database: {} at {}",
+            "ParityDb",
+            // Print base path instead of db path because each container will have its own db in a
+            // different subdirectory.
+            self.config.base_path.path().display(),
+        );
+    }
+
+    /// A helper function that runs a node with tokio and stops if the process receives the signal
+    /// `SIGTERM` or `SIGINT`.
+    pub fn run_node_until_exit<F, E>(
+        self,
+        initialize: impl FnOnce(SlimConfig) -> F,
+    ) -> std::result::Result<(), E>
+    where
+        F: Future<Output = std::result::Result<TaskManager, E>>,
+        E: std::error::Error + Send + Sync + 'static + From<sc_service::Error>,
+    {
+        self.print_node_infos();
+
+        let mut task_manager = self.tokio_runtime.block_on(initialize(self.config))?;
+
+        let res = self
+            .tokio_runtime
+            .block_on(self.signals.run_until_signal(task_manager.future().fuse()));
+        // We need to drop the task manager here to inform all tasks that they should shut down.
+        //
+        // This is important to be done before we instruct the tokio runtime to shutdown. Otherwise
+        // the tokio runtime will wait the full 60 seconds for all tasks to stop.
+        let task_registry = task_manager.into_task_registry();
+
+        // Give all futures 60 seconds to shutdown, before tokio "leaks" them.
+        let shutdown_timeout = Duration::from_secs(60);
+        self.tokio_runtime.shutdown_timeout(shutdown_timeout);
+
+        let running_tasks = task_registry.running_tasks();
+
+        if !running_tasks.is_empty() {
+            log::error!("Detected running(potentially stalled) tasks on shutdown:");
+            running_tasks.iter().for_each(|(task, count)| {
+                let instances_desc = if *count > 1 {
+                    format!("with {} instances ", count)
+                } else {
+                    "".to_string()
+                };
+
+                if task.is_default_group() {
+                    log::error!(
+                        "Task \"{}\" was still running {}after waiting {} seconds to finish.",
+                        task.name,
+                        instances_desc,
+                        shutdown_timeout.as_secs(),
+                    );
+                } else {
+                    log::error!(
+						"Task \"{}\" (Group: {}) was still running {}after waiting {} seconds to finish.",
+						task.name,
+						task.group,
+						instances_desc,
+						shutdown_timeout.as_secs(),
+					);
+                }
+            });
+        }
+
+        res.map_err(Into::into)
+    }
+}
+
+/// Equivalent to [Cli::create_runner]
+pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
+    cli: &Cli,
+    command: &T,
+) -> sc_cli::Result<NotRunner> {
+    let tokio_runtime = sc_cli::build_runtime()?;
+
+    // `capture` needs to be called in a tokio context.
+    // Also capture them as early as possible.
+    let signals = tokio_runtime.block_on(async { Signals::capture() })?;
+
+    init_cmd(command, &Cli::support_url(), &Cli::impl_version())?;
+
+    let base_path = command.base_path()?.unwrap();
+    let network_node_name = command.node_name()?;
+    let role = if cli.run.collator {
+        Role::Authority
+    } else {
+        Role::Full
+    };
+    let config = SlimConfig {
+        tokio_handle: tokio_runtime.handle().clone(),
+        base_path,
+        network_node_name,
+        display_role: role.to_string(),
+    };
+
+    Ok(NotRunner {
+        config,
+        tokio_runtime,
+        signals,
+    })
+}
+
+/// The recommended open file descriptor limit to be configured for the process.
+const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
+
+/// Equivalent to [CliConfiguration::init]
+fn init_cmd<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
+    this: &T,
+    support_url: &String,
+    impl_version: &String,
+) -> sc_cli::Result<()> {
+    sp_panic_handler::set(support_url, impl_version);
+
+    let mut logger = LoggerBuilder::new(this.log_filters()?);
+    logger
+        .with_log_reloading(this.enable_log_reloading()?)
+        .with_detailed_output(this.detailed_log_output()?);
+
+    if let Some(tracing_targets) = this.tracing_targets()? {
+        let tracing_receiver = this.tracing_receiver()?;
+        logger.with_profiling(tracing_receiver, tracing_targets);
+    }
+
+    if this.disable_log_color()? {
+        logger.with_colors(false);
+    }
+
+    logger.init()?;
+
+    match fdlimit::raise_fd_limit() {
+        Ok(fdlimit::Outcome::LimitRaised { to, .. }) => {
+            if to < RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT {
+                warn!(
+                    "Low open file descriptor limit configured for the process. \
+                        Current value: {:?}, recommended value: {:?}.",
+                    to, RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT,
+                );
+            }
+        }
+        Ok(fdlimit::Outcome::Unsupported) => {
+            // Unsupported platform (non-Linux)
+        }
+        Err(error) => {
+            warn!(
+                "Failed to configure file descriptor limit for the process: \
+                    {}, recommended value: {:?}.",
+                error, RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT,
+            );
+        }
+    }
+
+    Ok(())
+}
+
+// TODO: merge this with SlimConfig
+pub struct NotParachainConfiguration {
+    pub chain_type: sc_chain_spec::ChainType,
+    pub relay_chain: String,
+    pub collator: bool,
+}
+
+/// Create a dummy [Configuration] that should only be used as input to polkadot-sdk functions that
+/// take this struct as input but only use one field of it.
+/// This is needed because [Configuration] does not implement [Default].
+pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -> Configuration {
+    Configuration {
+        impl_name: "".to_string(),
+        impl_version: "".to_string(),
+        role: Role::Full,
+        tokio_handle,
+        transaction_pool: Default::default(),
+        network: NetworkConfiguration {
+            net_config_path: None,
+            listen_addresses: vec![],
+            public_addresses: vec![],
+            boot_nodes: vec![],
+            node_key: Default::default(),
+            default_peers_set: Default::default(),
+            default_peers_set_num_full: 0,
+            client_version: "".to_string(),
+            node_name: "".to_string(),
+            transport: TransportConfig::MemoryOnly,
+            max_parallel_downloads: 0,
+            max_blocks_per_request: 0,
+            sync_mode: Default::default(),
+            enable_dht_random_walk: false,
+            allow_non_globals_in_dht: false,
+            kademlia_disjoint_query_paths: false,
+            kademlia_replication_factor: NonZeroUsize::new(20).unwrap(),
+            ipfs_server: false,
+            yamux_window_size: None,
+            network_backend: NetworkBackendType::Libp2p,
+        },
+        keystore: KeystoreConfig::InMemory,
+        database: DatabaseSource::ParityDb {
+            path: Default::default(),
+        },
+        trie_cache_maximum_size: None,
+        state_pruning: None,
+        blocks_pruning: BlocksPruning::KeepAll,
+        chain_spec: Box::new(
+            GenericChainSpec::<NoExtension, ()>::builder(Default::default(), NoExtension::None)
+                .with_name("test")
+                .with_id("test_id")
+                .with_chain_type(ChainType::Development)
+                .with_genesis_config_patch(Default::default())
+                .build(),
+        ),
+        wasm_method: Default::default(),
+        wasmtime_precompiled: None,
+        wasm_runtime_overrides: None,
+        rpc_addr: None,
+        rpc_max_connections: 0,
+        rpc_cors: None,
+        rpc_methods: Default::default(),
+        rpc_max_request_size: 0,
+        rpc_max_response_size: 0,
+        rpc_id_provider: None,
+        rpc_max_subs_per_conn: 0,
+        rpc_port: 0,
+        rpc_message_buffer_capacity: 0,
+        rpc_batch_config: BatchRequestConfig::Disabled,
+        rpc_rate_limit: None,
+        rpc_rate_limit_whitelisted_ips: vec![],
+        rpc_rate_limit_trust_proxy_headers: false,
+        prometheus_config: None,
+        telemetry_endpoints: None,
+        default_heap_pages: None,
+        offchain_worker: Default::default(),
+        force_authoring: false,
+        disable_grandpa: false,
+        dev_key_seed: None,
+        tracing_targets: None,
+        tracing_receiver: Default::default(),
+        max_runtime_instances: 0,
+        announce_block: false,
+        data_path: Default::default(),
+        base_path,
+        informant_output_format: Default::default(),
+        runtime_cache_size: 0,
+    }
+}

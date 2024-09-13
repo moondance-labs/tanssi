@@ -343,8 +343,8 @@ pub struct Params<
     pub authoring_duration: Duration,
     pub force_authoring: bool,
     pub cancellation_token: CancellationToken,
-    pub orchestrator_tx_pool: Arc<TxPool>,
-    pub orchestrator_client: Arc<OClient>,
+    pub orchestrator_tx_pool: Option<Arc<TxPool>>,
+    pub orchestrator_client: Option<Arc<OClient>>,
     pub solochain: bool,
 }
 
@@ -642,7 +642,7 @@ where
                                     log::warn!("Unimplemented: cannot buy core for parathread in solochain");
                                     break;
                                 } else {
-                                    try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
+                                    try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone().unwrap(), params.orchestrator_tx_pool.clone().unwrap(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
                                 };
                                 match buy_core_result {
                                     Ok(block_hash) => {

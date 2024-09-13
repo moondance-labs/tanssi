@@ -61,9 +61,8 @@
                 },
                 {
                     "name": "Collator1000-01",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"
@@ -72,9 +71,8 @@
                 },
                 {
                     "name": "Collator1000-02",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"
@@ -83,9 +81,8 @@
                 },
                 {
                     "name": "Collator1000-03",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"
@@ -94,9 +91,8 @@
                 },
                 {
                     "name": "Collator1000-04",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"
@@ -105,9 +101,8 @@
                 },
                 {
                     "name": "Collator2000-01",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"
@@ -116,9 +111,8 @@
                 },
                 {
                     "name": "Collator2000-02",
-                    "command": "../target/release/tanssi-node",
+                    "command": "../target/release/tanssi-node solo-chain",
                     "args": [
-                        "--solo-chain",
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm"

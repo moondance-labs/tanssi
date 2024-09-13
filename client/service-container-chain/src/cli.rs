@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sc_cli::CliConfiguration;
 use {
     crate::chain_spec::RawGenesisConfig,
+    cumulus_client_cli::{CollatorOptions, RelayChainMode},
     dc_orchestrator_chain_interface::ContainerChainGenesisData,
     dp_container_chain_genesis_data::json::properties_to_map,
     sc_chain_spec::ChainSpec,
@@ -45,6 +47,41 @@ pub struct ContainerChainRunCmd {
     /// Keep container-chain db after changing collator assignments
     #[arg(long)]
     pub keep_db: bool,
+}
+
+impl ContainerChainRunCmd {
+    /// Create a [`NormalizedRunCmd`] which merges the `collator` cli argument into `validator` to
+    /// have only one.
+    pub fn normalize(&self) -> ContainerChainCli {
+        let base_path = self
+            .base
+            .base_path()
+            .expect("no base path error")
+            .expect("no base path none")
+            .path()
+            .join("containers");
+
+        ContainerChainCli {
+            base: self.clone(),
+            base_path,
+            preloaded_chain_spec: None,
+        }
+    }
+
+    /// Create [`CollatorOptions`] representing options only relevant to parachain collator nodes
+    pub fn collator_options(&self) -> CollatorOptions {
+        /*
+        let relay_chain_mode =
+            match (self.relay_chain_light_client, !self.relay_chain_rpc_urls.is_empty()) {
+                (true, _) => RelayChainMode::LightClient,
+                (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
+                _ => RelayChainMode::Embedded,
+            };
+         */
+        let relay_chain_mode = RelayChainMode::Embedded;
+
+        CollatorOptions { relay_chain_mode }
+    }
 }
 
 #[derive(Debug)]
