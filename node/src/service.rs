@@ -749,27 +749,6 @@ pub async fn start_solochain_node(
         )
         .await?;
 
-    /*
-    let rpc_builder = {
-        let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
-
-        Box::new(move |deny_unsafe, _| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: transaction_pool.clone(),
-                deny_unsafe,
-                command_sink: None,
-                xcm_senders: None,
-            };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
-
-    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
-     */
-
     let relay_chain_slot_duration = Duration::from_secs(6);
     let overseer_handle = relay_chain_interface
         .overseer_handle()
@@ -823,7 +802,6 @@ pub async fn start_solochain_node(
             node_builder.task_manager.spawn_essential_handle(),
         );
     }
-    //node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
 
@@ -1426,7 +1404,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1443,7 +1421,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1460,7 +1438,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1499,7 +1477,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &authority,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1516,7 +1494,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &authority,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
