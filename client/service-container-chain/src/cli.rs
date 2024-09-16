@@ -75,6 +75,7 @@ impl ContainerChainRunCmd {
     /// Create a [`NormalizedRunCmd`] which merges the `collator` cli argument into `validator` to
     /// have only one.
     // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
+    // TODO: deduplicate this function and [ContainerChainCli::new]
     pub fn normalize(&self) -> ContainerChainCli {
         let mut new_base = self.clone();
 
@@ -99,7 +100,6 @@ impl ContainerChainRunCmd {
 
         ContainerChainCli {
             base: new_base,
-            base_path,
             preloaded_chain_spec: None,
         }
     }
@@ -125,9 +125,6 @@ pub struct ContainerChainCli {
     /// The actual container chain cli object.
     pub base: ContainerChainRunCmd,
 
-    /// The base path that should be used by the container chain.
-    pub base_path: PathBuf,
-
     /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
     /// by calling preload_chain_spec_file.
     pub preloaded_chain_spec: Option<Box<dyn sc_chain_spec::ChainSpec>>,
@@ -137,7 +134,6 @@ impl Clone for ContainerChainCli {
     fn clone(&self) -> Self {
         Self {
             base: self.base.clone(),
-            base_path: self.base_path.clone(),
             preloaded_chain_spec: self.preloaded_chain_spec.as_ref().map(|x| x.cloned_box()),
         }
     }
@@ -149,11 +145,17 @@ impl ContainerChainCli {
         para_config: &sc_service::Configuration,
         container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
+        let mut base: ContainerChainRunCmd = clap::Parser::parse_from(container_chain_args);
+
+        // Copy some parachain args into container chain args
+        // TODO: warn the user if they try to set one of these args using container chain args,
+        // because that args will be ignored
         let base_path = para_config.base_path.path().join("containers");
+        base.base.shared_params.base_path = Some(base_path);
+        // TODO: move wasmtime_precompiled here
 
         Self {
-            base_path,
-            base: clap::Parser::parse_from(container_chain_args),
+            base,
             preloaded_chain_spec: None,
         }
     }

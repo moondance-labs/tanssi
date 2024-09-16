@@ -344,7 +344,8 @@ pub fn run() -> Result<()> {
         Some(Subcommand::SoloChain(cmd)) => {
             // Cannot use create_configuration function because that needs a chain spec.
             // So write our own `create_runner` function that doesn't need chain spec.
-            let runner = solochain::create_runner(&cli, &cmd.run.normalize())?;
+            let normalized_run = cmd.run.normalize();
+            let runner = solochain::create_runner(&cli, &normalized_run)?;
 
             // TODO: Assert that there are no flags between `tanssi-node` and `solo-chain`.
             // These will be ignored anyway.
@@ -401,7 +402,7 @@ pub fn run() -> Result<()> {
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
                 // We need to bake in some container-chain args
-                let container_chain_cli = cmd.run.normalize();
+                let container_chain_cli = normalized_run;
                 let tokio_handle = config.tokio_handle.clone();
                 let container_chain_config = (container_chain_cli, tokio_handle);
                 let not_config = NotParachainConfiguration {
