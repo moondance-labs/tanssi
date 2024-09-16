@@ -987,6 +987,7 @@ impl CollatorLookaheadTestBuilder {
             orchestrator_client: environ.into(),
             orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
             orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+            solochain: false,
         };
         let (fut, exit_notification_receiver) = crate::collators::lookahead::run::<
             _,

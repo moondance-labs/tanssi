@@ -357,7 +357,7 @@ fn starlight_testnet_genesis(
             "config": runtime_parachains::configuration::HostConfiguration {
                 scheduler_params: SchedulerParams {
                     max_validators_per_core: Some(1),
-                    num_cores: para_ids.len() as u32,
+                    num_cores: 4,
                     ..default_parachains_host_configuration().scheduler_params
                 },
                 ..default_parachains_host_configuration()

@@ -21,8 +21,8 @@ use {
     core::pin::Pin,
     dc_orchestrator_chain_interface::{
         BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
-        PHeader,
+        NimbusId, OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+        PHash, PHeader,
     },
     dp_core::ParaId,
     futures::{Stream, StreamExt},
@@ -341,6 +341,32 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
             "DataPreserversApi_get_active_assignment",
             orchestrator_parent,
             Some(profile_id),
+        )
+        .await
+    }
+
+    async fn check_para_id_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        self.call_remote_runtime_function(
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment",
+            orchestrator_parent,
+            Some(authority),
+        )
+        .await
+    }
+
+    async fn check_para_id_assignment_next_session(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        self.call_remote_runtime_function(
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
+            orchestrator_parent,
+            Some(authority),
         )
         .await
     }
