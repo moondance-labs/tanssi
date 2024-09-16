@@ -128,6 +128,7 @@ pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-inflation-rewards = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
@@ -198,6 +199,7 @@ std = [
 	"pallet-grandpa/std",
 	"pallet-identity/std",
 	"pallet-initializer/std",
+	"pallet-inflation-rewards/std",
 	"pallet-invulnerables/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
@@ -291,6 +293,7 @@ runtime-benchmarks = [
 	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
+	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
@@ -356,6 +359,7 @@ try-runtime = [
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-initializer/try-runtime",
+	"pallet-inflation-rewards/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",

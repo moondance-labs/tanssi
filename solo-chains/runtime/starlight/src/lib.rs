@@ -44,6 +44,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_initializer as tanssi_initializer,
+    pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
@@ -80,7 +81,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::BlockNumberProvider,
+    sp_runtime::{traits::BlockNumberProvider, AccountId32},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -101,9 +102,9 @@ use {
         genesis_builder_helper::{build_state, get_preset},
         parameter_types,
         traits::{
-            fungible::HoldConsideration, EitherOf, EitherOfDiverse, EnsureOriginWithArg,
-            InstanceFilter, KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
-            ProcessMessageError,
+            fungible::{Balanced, Credit, HoldConsideration},
+            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
+            LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
         PalletId,
@@ -117,8 +118,9 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, Hash as HashT,
-            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
+            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT,
+            Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify,
+            Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -1429,6 +1431,49 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
+parameter_types! {
+    pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
+    pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
+    // The equation to solve is:
+    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
+    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
+    // 1% in the case of dev mode
+    // TODO: check if we can put the prod inflation for tests too
+    // TODO: better calculus for going from annual to block inflation (if it can be done)
+    pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
+
+    // 30% for parachain bond, so 70% for staking
+    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+}
+
+// This will be skipped in the case of Starlight, but we need to provide an impl for it to compile.
+pub struct GetSelfChainBlockAuthor;
+impl Get<AccountId32> for GetSelfChainBlockAuthor {
+    fn get() -> AccountId32 {
+        // TODO: check if we are good by retrieving [0u8;32]
+        AccountId32::new([0u8; 32])
+    }
+}
+
+pub struct OnUnbalancedInflation;
+impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
+    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
+        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+    }
+}
+
+impl pallet_inflation_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type ContainerChains = ContainerRegistrar;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type InflationRate = InflationRate;
+    type OnUnbalanced = OnUnbalancedInflation;
+    type PendingRewardsAccount = PendingRewardsAccount;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
+    type RewardsPortion = RewardsPortion;
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1539,6 +1584,7 @@ construct_runtime! {
         AuthorNoting: pallet_author_noting = 109,
         ServicesPayment: pallet_services_payment = 110,
         DataPreservers: pallet_data_preservers = 111,
+        InflationRewards: pallet_inflation_rewards = 112,
     }
 }
 
