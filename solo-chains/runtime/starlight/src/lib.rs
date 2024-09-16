@@ -921,7 +921,6 @@ impl pallet_message_queue::Config for Runtime {
 impl parachains_dmp::Config for Runtime {}
 
 parameter_types! {
-   // pub const DefaultChannelSizeAndCapacityWithSystem: (u32, u32) = (51200, 500);
     pub const HrmpChannelSizeAndCapacityWithSystemRatio: Percent = Percent::from_percent(100);
 }
 
@@ -935,7 +934,6 @@ impl parachains_hrmp::Config for Runtime {
             Runtime,
             HrmpChannelSizeAndCapacityWithSystemRatio,
         >;
-    //DefaultChannelSizeAndCapacityWithSystem;
     type WeightInfo = parachains_hrmp::TestWeightInfo;
     type VersionWrapper = XcmPallet;
 }
