@@ -8,7 +8,6 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-            console.log(config.toJSON());
             expect(config["maxOrchestratorCollators"].toString()).toBe("0");
 
             const { result } = await context.createBlock(

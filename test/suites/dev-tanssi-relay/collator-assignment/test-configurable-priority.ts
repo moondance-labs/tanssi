@@ -28,15 +28,19 @@ const emptyGenesisData = (api) => {
 };
 
 const sortCollatorAssignmentByNumberOfCollators = (collatorAssignment) => {
-    return Object.keys(collatorAssignment["containerChains"]).sort((a, b) => {
-        return collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length;
-    });
+    return Object.keys(collatorAssignment["containerChains"])
+        .sort((a, b) => {
+            return collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length;
+        })
+        .map((x) => Number(x));
 };
 
 const sortCollatorAssignmentByParaId = (collatorAssignment) => {
-    return Object.keys(collatorAssignment["containerChains"]).sort((a, b) => {
-        return Number(a) - Number(b);
-    });
+    return Object.keys(collatorAssignment["containerChains"])
+        .sort((a, b) => {
+            return Number(a) - Number(b);
+        })
+        .map((x) => Number(x));
 };
 
 describeSuite({
@@ -128,9 +132,9 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore).toString()).to.be.eq(
-                    "2001,2004,2000,2002,2003"
-                );
+                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore)).to.be.deep.equal([
+                    2001, 2004, 2000, 2002, 2003,
+                ]);
 
                 // Record previous config value to restore later
                 const previousConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
@@ -148,9 +152,9 @@ describeSuite({
                 const collatorAssignmentAfter = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter).toString()).to.be.eq(
-                    "2001,2004,2002,2003"
-                );
+                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter)).to.be.deep.equal([
+                    2001, 2004, 2002, 2003,
+                ]);
 
                 // Let's change percentage of parachain to 0
                 const zeroParachaintx = await polkadotJs.tx.sudo
@@ -165,9 +169,9 @@ describeSuite({
                 const collatorAssignmentAtZeroPercent = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByParaId(collatorAssignmentAtZeroPercent).toString()).to.be.eq(
-                    "2002,2003,2004"
-                );
+                expect(sortCollatorAssignmentByParaId(collatorAssignmentAtZeroPercent)).to.be.deep.equal([
+                    2002, 2003, 2004,
+                ]);
 
                 // Restore previous config
                 const restoringTx = await polkadotJs.tx.sudo
@@ -194,9 +198,9 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore).toString()).to.be.eq(
-                    "2001,2004,2000,2002,2003"
-                );
+                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore)).to.be.deep.equal([
+                    2001, 2004, 2000, 2002, 2003,
+                ]);
 
                 // Let's change the parachain percentage to 90
                 const tx = await polkadotJs.tx.sudo
@@ -212,9 +216,9 @@ describeSuite({
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
                 // Pool paras are not truncated but they are sorted by tip
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter).toString()).to.be.eq(
-                    "2001,2004,2000,2002,2003"
-                );
+                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter)).to.be.deep.equal([
+                    2001, 2004, 2000, 2002, 2003,
+                ]);
             },
         });
     },

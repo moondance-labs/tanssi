@@ -75,11 +75,5 @@ describeSuite({
                 expect(assignmentRandomness.isEmpty).toBe(false);
             },
         });
-
-        it({
-            id: "E02",
-            title: "Collator should rotate",
-            test: async function () {},
-        });
     },
 });
