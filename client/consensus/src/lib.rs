@@ -49,8 +49,10 @@ pub use {
     sp_api::{Core, ProvideRuntimeApi},
     sp_application_crypto::AppPublic,
     sp_consensus::Error as ConsensusError,
-    sp_core::crypto::{ByteArray, Public},
-    sp_core::H256,
+    sp_core::{
+        crypto::{ByteArray, Public},
+        H256,
+    },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
