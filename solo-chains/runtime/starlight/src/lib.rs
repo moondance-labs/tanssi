@@ -649,10 +649,12 @@ where
 }
 
 parameter_types! {
-    // Minimum 100 bytes/STAR deposited (1 CENT/byte)
-    pub const BasicDeposit: Balance = 1000 * CENTS;       // 258 bytes on-chain
-    pub const ByteDeposit: Balance = deposit(0, 1);
-    pub const SubAccountDeposit: Balance = 200 * CENTS;   // 53 bytes on-chain
+    // 1 entry, storing 258 bytes on-chain
+    pub const BasicDeposit: Balance = deposit(1, 258);
+    // 1 entry, storing 53 bytes on-chain
+    pub const ByteDeposit: Balance = deposit(1, 53);
+    // Additional bytes adds 0 entries, storing 1 byte on-chain
+    pub const SubAccountDeposit: Balance = deposit(0, 1);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
