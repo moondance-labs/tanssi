@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use sc_cli::CliConfiguration;
+use url::Url;
 use {
     crate::chain_spec::RawGenesisConfig,
     cumulus_client_cli::{CollatorOptions, RelayChainMode},
@@ -47,38 +48,73 @@ pub struct ContainerChainRunCmd {
     /// Keep container-chain db after changing collator assignments
     #[arg(long)]
     pub keep_db: bool,
+
+    /// Creates a less resource-hungry node that retrieves relay chain data from an RPC endpoint.
+    ///
+    /// The provided URLs should point to RPC endpoints of the relay chain.
+    /// This node connects to the remote nodes following the order they were specified in. If the
+    /// connection fails, it attempts to connect to the next endpoint in the list.
+    ///
+    /// Note: This option doesn't stop the node from connecting to the relay chain network but
+    /// reduces bandwidth use.
+    #[arg(
+		long,
+		value_parser = validate_relay_chain_url,
+		num_args = 0..,
+		alias = "relay-chain-rpc-url"
+    )]
+    pub relay_chain_rpc_urls: Vec<Url>,
+
+    /// EXPERIMENTAL: Embed a light client for the relay chain. Only supported for full-nodes.
+    /// Will use the specified relay chain chainspec.
+    #[arg(long, conflicts_with_all = ["relay_chain_rpc_urls", "collator"])]
+    pub relay_chain_light_client: bool,
 }
 
 impl ContainerChainRunCmd {
     /// Create a [`NormalizedRunCmd`] which merges the `collator` cli argument into `validator` to
     /// have only one.
+    // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
     pub fn normalize(&self) -> ContainerChainCli {
-        let base_path = self
-            .base
-            .base_path()
-            .expect("no base path error")
-            .expect("no base path none")
-            .path()
-            .join("containers");
+        let mut new_base = self.clone();
+
+        new_base.base.validator = self.base.validator || self.collator;
+
+        // Append `containers/` to base_path for this object. This is to ensure that when spawning
+        // a new container chain, its database is always inside the `containers` folder.
+        // So if the user passes `--base-path /tmp/node`, we want the ephemeral container data in
+        // `/tmp/node/containers`, and the persistent storage in `/tmp/node/config`.
+        // TODO: there should be a way to avoid this if we refactor the code that creates the db,
+        // but maybe that breaks dancebox
+        let base_path = match self.base.base_path() {
+            Ok(Some(x)) => x,
+            _ => {
+                // This is maybe unreachable. There is always a default base path, and if run in
+                // `--dev` or `--tmp` mode, a temporary base path is created.
+                panic!("No base path")
+            }
+        };
+        
+        let base_path = base_path.path().join("containers");
 
         ContainerChainCli {
-            base: self.clone(),
+            base: new_base,
             base_path,
             preloaded_chain_spec: None,
         }
     }
 
     /// Create [`CollatorOptions`] representing options only relevant to parachain collator nodes
+    // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
     pub fn collator_options(&self) -> CollatorOptions {
-        /*
-        let relay_chain_mode =
-            match (self.relay_chain_light_client, !self.relay_chain_rpc_urls.is_empty()) {
-                (true, _) => RelayChainMode::LightClient,
-                (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
-                _ => RelayChainMode::Embedded,
-            };
-         */
-        let relay_chain_mode = RelayChainMode::Embedded;
+        let relay_chain_mode = match (
+            self.relay_chain_light_client,
+            !self.relay_chain_rpc_urls.is_empty(),
+        ) {
+            (true, _) => RelayChainMode::LightClient,
+            (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
+            _ => RelayChainMode::Embedded,
+        };
 
         CollatorOptions { relay_chain_mode }
     }
@@ -402,4 +438,19 @@ fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
             }
         })
         .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
+}
+
+// Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
+fn validate_relay_chain_url(arg: &str) -> Result<Url, String> {
+    let url = Url::parse(arg).map_err(|e| e.to_string())?;
+
+    let scheme = url.scheme();
+    if scheme == "ws" || scheme == "wss" {
+        Ok(url)
+    } else {
+        Err(format!(
+            "'{}' URL scheme not supported. Only websocket RPC is currently supported",
+            url.scheme()
+        ))
+    }
 }

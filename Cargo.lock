@@ -17560,6 +17560,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
+ "url",
 ]
 
 [[package]]
