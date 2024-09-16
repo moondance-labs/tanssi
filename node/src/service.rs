@@ -1493,7 +1493,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1510,7 +1510,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1527,7 +1527,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &para_id,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1566,7 +1566,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &authority,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
@@ -1583,7 +1583,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
             &authority,
         )
         .await
-        .unwrap();
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
 
         Ok(res)
     }
