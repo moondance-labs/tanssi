@@ -518,6 +518,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 use frame_support::traits::Currency;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
+use runtime_parachains::configuration::HostConfiguration;
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -2946,42 +2947,49 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
+fn host_config_at_session(
+    session_index_to_consider: SessionIndex,
+) -> HostConfiguration<BlockNumber> {
+    let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+
+    let mut pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+
+    // We are not making any assumptions about number of configurations existing in pending config
+    // storage item.
+    // First remove any pending configs greater than session index in consideration
+    pending_configs = pending_configs
+        .into_iter()
+        .filter(|element| element.0 <= session_index_to_consider)
+        .collect::<Vec<_>>();
+    // Reverse sorting by the session index
+    pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
+
+    if pending_configs.is_empty() {
+        active_config
+    } else {
+        // We will take first pending config which should be as close to the session index as possible
+        pending_configs
+            .first()
+            .expect("already checked for emptiness above")
+            .1
+            .clone()
+    }
+}
+
 pub struct GetCoreAllocationConfigurationImpl;
 
 impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
     fn get() -> Option<CoreAllocationConfiguration> {
-        let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-        let mut pending_configs =
-            runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
-
         // We do not have to check for session ending as new session always starts at block initialization which means
         // whenever this is called, we are either in old session or in start of a one
         // as on block initialization epoch index have been incremented and by extension session has been changed.
         let session_index_to_consider = Session::current_index() + 1;
 
-        // We are not making any assumptions about number of configurations existing in pending config
-        // storage item.
-        // First remove any pending configs greater than session index in consideration
-        pending_configs = pending_configs
-            .drain(..)
-            .filter(|element| element.0 <= session_index_to_consider)
-            .collect::<Vec<_>>();
-        // Reverse sorting by the session index
-        pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
-
-        let config_to_consider = if pending_configs.is_empty() {
-            &active_config
-        } else {
-            // We will take first pending config which should be as close to the session index as possible
-            &pending_configs
-                .first()
-                .expect("already checked for emptiness above")
-                .1
-        };
-
         let max_parachain_percentage =
             CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
                 .unwrap_or(Perbill::from_percent(50));
+
+        let config_to_consider = host_config_at_session(session_index_to_consider);
 
         Some(CoreAllocationConfiguration {
             core_count: config_to_consider.scheduler_params.num_cores,

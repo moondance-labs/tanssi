@@ -597,16 +597,7 @@ pub mod pallet {
         }
 
         fn max_parachain_cores_percentage(session_index: T::SessionIndex) -> Option<Perbill> {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.max_parachain_cores_percentage
+            Self::config_at_session(session_index).max_parachain_cores_percentage
         }
     }
 }

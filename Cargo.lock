@@ -8750,7 +8750,6 @@ dependencies = [
  "frame-system",
  "log",
  "parity-scale-codec",
- "polkadot-runtime-parachains",
  "rand",
  "rand_chacha",
  "scale-info",

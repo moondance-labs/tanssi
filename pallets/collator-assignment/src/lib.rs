@@ -172,8 +172,10 @@ pub mod pallet {
         /// number of cores available.
         /// If not, then both are sorted by the tip.
         /// After that it wires through `order_paras` which is
-        /// the default behaviour when we are running in parachain
-        /// mode.
+        /// the default behaviour when we are running in parachain mode.
+        /// Returns a list of `ChainNumCollators` with the chains that were selected,
+        /// and a boolean indicating if `need_to_charge_tip`.
+        /// Will be true if chains were sorted by tip.
         pub(crate) fn order_paras_with_core_config(
             mut bulk_paras: Vec<ChainNumCollators>,
             mut pool_paras: Vec<ChainNumCollators>,
@@ -225,10 +227,9 @@ pub mod pallet {
             // We should charge tip if either this method or the order_para method has sorted chains based on tip
             // So in other words: if parachain demand exceeds the `max_number_of_bulk_paras` OR
             // if `num_collators` is not enough to satisfy  collation need of all paras.
-            (
-                ordered_chains,
-                sorted_chains_based_on_tip || !enough_cores_for_bulk_paras,
-            )
+            let should_charge_tip = sorted_chains_based_on_tip || !enough_cores_for_bulk_paras;
+
+            (ordered_chains, should_charge_tip)
         }
 
         pub(crate) fn order_paras(
