@@ -101,6 +101,10 @@ pub mod mock_data {
     #[pallet::storage]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
+    #[pallet::storage]
+    pub(super) type MockCoreAllocationConfiguration<T: Config> =
+        StorageValue<_, CoreAllocationConfiguration, OptionQuery>;
+
     impl<T: Config> Pallet<T> {
         pub fn mock() -> Mocks {
             Mock::<T>::get()
@@ -110,6 +114,14 @@ pub mod mock_data {
             F: FnOnce(&mut Mocks) -> R,
         {
             Mock::<T>::mutate(f)
+        }
+
+        pub fn core_allocation_config() -> Option<CoreAllocationConfiguration> {
+            MockCoreAllocationConfiguration::<T>::get()
+        }
+
+        pub fn set_core_allocation_config(config: Option<CoreAllocationConfiguration>) {
+            MockCoreAllocationConfiguration::<T>::set(config);
         }
     }
 }
@@ -156,7 +168,7 @@ impl Default for Mocks {
             container_chains: Default::default(),
             parathreads: Default::default(),
             random_seed: Default::default(),
-            chains_that_are_tipping: vec![],
+            chains_that_are_tipping: vec![1003.into(), 1004.into()],
             full_rotation_period: Default::default(),
             apply_tip: Default::default(),
             assignment_hook_errors: Default::default(),
@@ -290,9 +302,7 @@ pub struct MockCollatorAssignmentTip;
 
 impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
     fn get_para_tip(para_id: ParaId) -> Option<u32> {
-        if MockData::mock().apply_tip
-            && ((para_id == 1003u32.into() || para_id == 1004u32.into())
-                || MockData::mock().chains_that_are_tipping.contains(&para_id))
+        if MockData::mock().apply_tip && MockData::mock().chains_that_are_tipping.contains(&para_id)
         {
             Some(1_000u32)
         } else {
@@ -322,19 +332,13 @@ pub struct GetCoreAllocationConfigurationImpl;
 
 impl GetCoreAllocationConfigurationImpl {
     pub fn set(config: Option<CoreAllocationConfiguration>) {
-        let encoded_data = config.encode();
-        sp_io::storage::set(b"___TEST_CONFIG", &encoded_data);
+        MockData::set_core_allocation_config(config);
     }
 }
 
 impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
     fn get() -> Option<CoreAllocationConfiguration> {
-        let maybe_data = sp_io::storage::get(b"___TEST_CONFIG");
-        if let Some(data) = maybe_data {
-            Decode::decode(&mut &data[..]).expect("Data must be able to decode")
-        } else {
-            None
-        }
+        MockData::core_allocation_config()
     }
 }
 

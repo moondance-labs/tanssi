@@ -72,10 +72,8 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod tests_with_core_config;
 
-#[derive(Encode, Decode, Debug)]
+#[derive(Encode, Decode, Debug, TypeInfo)]
 pub struct CoreAllocationConfiguration {
     pub core_count: u32,
     pub max_parachain_percentage: Perbill,
@@ -169,6 +167,13 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Takes the bulk paras (parachains) and pool paras (parathreads)
+        /// and checks if the quantity of each is according to the
+        /// number of cores available.
+        /// If not, then both are sorted by the tip.
+        /// After that it wires through `order_paras` which is
+        /// the default behaviour when we are running in parachain
+        /// mode.
         pub(crate) fn order_paras_with_core_config(
             mut bulk_paras: Vec<ChainNumCollators>,
             mut pool_paras: Vec<ChainNumCollators>,
@@ -227,7 +232,7 @@ pub mod pallet {
         }
 
         pub(crate) fn order_paras(
-            mut bulk_paras: Vec<ChainNumCollators>,
+            bulk_paras: Vec<ChainNumCollators>,
             pool_paras: Vec<ChainNumCollators>,
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
@@ -242,7 +247,7 @@ pub mod pallet {
                         collators_per_parathread.saturating_mul(pool_paras.len() as u32),
                     );
 
-            let mut chains: Vec<_> = bulk_paras.drain(..).chain(pool_paras).collect();
+            let mut chains: Vec<_> = bulk_paras.into_iter().chain(pool_paras).collect();
 
             // Prioritize paras by tip on congestion
             // As of now this doesn't distinguish between bulk paras and pool paras
