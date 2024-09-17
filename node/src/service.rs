@@ -1212,6 +1212,26 @@ impl OrchestratorChainSolochainInterfaceBuilder {
     }
 }
 
+/// Builder for a concrete relay chain interface, created from a full node. Builds
+/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
+///
+/// The builder takes a [`polkadot_client::Client`]
+/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
+/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
+struct OrchestratorChainSolochainInterfaceBuilder {
+    overseer_handle: Handle,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+}
+
+impl OrchestratorChainSolochainInterfaceBuilder {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+        Arc::new(OrchestratorChainSolochainInterface::new(
+            self.overseer_handle,
+            self.relay_chain_interface,
+        ))
+    }
+}
+
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     pub full_client: Arc<Client>,
