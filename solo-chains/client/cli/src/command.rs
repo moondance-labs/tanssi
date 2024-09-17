@@ -76,6 +76,7 @@ impl SubstrateCli for Cli {
         "tanssi".into()
     }
 
+    #[cfg(not(feature = "runtime-benchmarks"))]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(
             id,
@@ -88,6 +89,11 @@ impl SubstrateCli for Cli {
                 "Eve".to_string(),
             ]),
         )
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        load_spec(id, vec![], vec![], None)
     }
 }
 

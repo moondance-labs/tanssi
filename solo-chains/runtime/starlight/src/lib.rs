@@ -921,7 +921,7 @@ impl pallet_message_queue::Config for Runtime {
 impl parachains_dmp::Config for Runtime {}
 
 parameter_types! {
-    pub const DefaultChannelSizeAndCapacityWithSystem: (u32, u32) = (51200, 500);
+    pub const HrmpChannelSizeAndCapacityWithSystemRatio: Percent = Percent::from_percent(100);
 }
 
 impl parachains_hrmp::Config for Runtime {
@@ -929,7 +929,11 @@ impl parachains_hrmp::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ChannelManager = EnsureRoot<AccountId>;
     type Currency = Balances;
-    type DefaultChannelSizeAndCapacityWithSystem = DefaultChannelSizeAndCapacityWithSystem;
+    type DefaultChannelSizeAndCapacityWithSystem =
+        parachains_configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio<
+            Runtime,
+            HrmpChannelSizeAndCapacityWithSystemRatio,
+        >;
     type WeightInfo = parachains_hrmp::TestWeightInfo;
     type VersionWrapper = XcmPallet;
 }
@@ -1823,7 +1827,6 @@ mod benches {
         [pallet_proxy, Proxy]
         [pallet_ranked_collective, FellowshipCollective]
         [pallet_referenda, Referenda]
-        [pallet_referenda, FellowshipReferenda]
         [pallet_scheduler, Scheduler]
         [pallet_sudo, Sudo]
         [frame_system, SystemBench::<Runtime>]
