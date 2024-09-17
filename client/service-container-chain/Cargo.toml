@@ -20,6 +20,7 @@ log = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+url = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
@@ -70,6 +71,7 @@ sp-timestamp = { workspace = true, features = [ "std" ] }
 polkadot-primitives = { workspace = true }
 
 # Cumulus
+cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }

@@ -61,6 +61,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use tc_consensus::collators::lookahead::BuyCoreParams;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -330,7 +331,7 @@ fn start_consensus_container(
             u64::try_from(relay_slot_ms).expect("relay chain slot duration overflows u64"),
         )
     } else {
-        cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
+        cumulus_client_consensus_aura::slot_duration(orchestrator_client.as_deref().unwrap())
             .expect("start_consensus_container: slot duration should exist")
     };
 
@@ -364,6 +365,14 @@ fn start_consensus_container(
             .ok()
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
+    };
+    let buy_core_params = if solochain {
+        BuyCoreParams::Solochain {}
+    } else {
+        BuyCoreParams::Orchestrator {
+            orchestrator_tx_pool: orchestrator_tx_pool.unwrap(),
+            orchestrator_client: orchestrator_client.unwrap(),
+        }
     };
 
     let params = LookaheadTanssiAuraParams {
@@ -481,7 +490,7 @@ fn start_consensus_container(
                     })?;
 
                     let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
+                        orchestrator_client_for_cidp.as_ref().unwrap(),
                         &latest_header.hash(),
                         para_id,
                     );
@@ -499,7 +508,7 @@ fn start_consensus_container(
                     );
 
                     let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
+                        orchestrator_client_for_cidp.as_ref().unwrap(),
                         &latest_header.hash(),
                         para_id,
                     );
@@ -531,9 +540,7 @@ fn start_consensus_container(
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
         cancellation_token: CancellationToken::new(),
-        orchestrator_tx_pool,
-        orchestrator_client,
-        solochain,
+        buy_core_params,
     };
 
     let (fut, _exit_notification_receiver) =

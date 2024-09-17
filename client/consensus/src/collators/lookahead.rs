@@ -343,9 +343,41 @@ pub struct Params<
     pub authoring_duration: Duration,
     pub force_authoring: bool,
     pub cancellation_token: CancellationToken,
-    pub orchestrator_tx_pool: Arc<TxPool>,
-    pub orchestrator_client: Arc<OClient>,
-    pub solochain: bool,
+    pub buy_core_params: BuyCoreParams<TxPool, OClient>,
+}
+
+pub enum BuyCoreParams<TxPool, OClient> {
+    Orchestrator {
+        orchestrator_tx_pool: Arc<TxPool>,
+        orchestrator_client: Arc<OClient>,
+    },
+    Solochain {
+        // TODO: relay_tx_pool
+    },
+}
+
+impl<TxPool, OClient> Clone for BuyCoreParams<TxPool, OClient> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Orchestrator {
+                orchestrator_tx_pool,
+                orchestrator_client,
+            } => Self::Orchestrator {
+                orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+                orchestrator_client: orchestrator_client.clone(),
+            },
+            Self::Solochain {} => Self::Solochain {},
+        }
+    }
+}
+
+impl<TxPool, OClient> BuyCoreParams<TxPool, OClient> {
+    pub fn is_solochain(&self) -> bool {
+        match self {
+            BuyCoreParams::Solochain { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -637,12 +669,20 @@ where
                                 let slot = inherent_providers.slot();
                                 let container_chain_slot_duration = (params.get_current_slot_duration)(parent_header.hash());
 
-                                let buy_core_result = if params.solochain {
-                                    // TODO: implement parathread support for solochain
-                                    log::warn!("Unimplemented: cannot buy core for parathread in solochain");
-                                    break;
-                                } else {
-                                    try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
+                                let buy_core_result = match &params.buy_core_params {
+                                    BuyCoreParams::Orchestrator {
+                                        orchestrator_client,
+                                        orchestrator_tx_pool,
+                                    } => {
+                                        try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, orchestrator_client.clone(), orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
+                                    }
+                                    BuyCoreParams::Solochain {
+
+                                    } => {
+                                        // TODO: implement parathread support for solochain
+                                        log::warn!("Unimplemented: cannot buy core for parathread in solochain");
+                                        break;
+                                    }
                                 };
                                 match buy_core_result {
                                     Ok(block_hash) => {

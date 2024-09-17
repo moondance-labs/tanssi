@@ -126,8 +126,8 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
 #[derive(Clone)]
 pub struct CollationParams {
     pub collator_key: CollatorPair,
-    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
-    pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_tx_pool: Option<Arc<FullPool<OpaqueBlock, ParachainClient>>>,
+    pub orchestrator_client: Option<Arc<ParachainClient>>,
     pub orchestrator_para_id: ParaId,
     pub solochain: bool,
 }

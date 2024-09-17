@@ -16,6 +16,13 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use crate::command::solochain::{dummy_config, NotParachainConfiguration};
+use sc_cli::CliConfiguration;
+use sc_network_common::role::Role;
+use sc_service::config::KeystoreConfig;
+use sc_service::KeystoreContainer;
+use std::path::{Path, PathBuf};
+use tc_consensus::collators::lookahead::BuyCoreParams;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -453,8 +460,8 @@ async fn start_node_impl(
                 data_preserver: false,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
-                        orchestrator_client: orchestrator_client.clone(),
-                        orchestrator_tx_pool,
+                        orchestrator_client: Some(orchestrator_client.clone()),
+                        orchestrator_tx_pool: Some(orchestrator_tx_pool),
                         orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
@@ -558,6 +565,10 @@ fn start_consensus_orchestrator(
     };
 
     let cancellation_token = CancellationToken::new();
+    let buy_core_params = BuyCoreParams::Orchestrator {
+        orchestrator_tx_pool,
+        orchestrator_client: client.clone(),
+    };
 
     let params = LookaheadTanssiAuraParams {
         get_current_slot_duration: move |block_hash| {
@@ -639,7 +650,7 @@ fn start_consensus_orchestrator(
             }
         },
         block_import,
-        para_client: client.clone(),
+        para_client: client,
         relay_client: relay_chain_interface,
         sync_oracle,
         keystore,
@@ -655,9 +666,7 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
-        orchestrator_tx_pool,
-        orchestrator_client: client,
-        solochain: false,
+        buy_core_params,
     };
 
     let (fut, exit_notification_receiver) =
@@ -689,71 +698,179 @@ pub async fn start_parachain_node(
     .await
 }
 
+/// Returns the default path for configuration  directory based on the chain_spec
+pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
+    // Original:  Collator1000-01/chains/dancebox/
+    //base_path.path().join("chains").join(chain_id)
+    // Starlight: Collator1000-01/config/
+    let mut base_path = base_path.clone();
+    // Remove "/containers"
+    base_path.pop();
+    base_path.join("config")
+}
+
+/// Returns the default path for the network configuration inside the configuration dir
+pub(crate) fn build_solochain_net_config_dir(config_dir: &PathBuf) -> PathBuf {
+    config_dir.join("network")
+}
+
+fn keystore_config(
+    keystore_params: Option<&sc_cli::KeystoreParams>,
+    config_dir: &PathBuf,
+) -> sc_cli::Result<KeystoreConfig> {
+    keystore_params
+        .map(|x| x.keystore_config(config_dir))
+        .unwrap_or_else(|| Ok(KeystoreConfig::InMemory))
+}
+
 /// Start a solochain node.
 pub async fn start_solochain_node(
     // Parachain config not used directly, but we need it to derive the default values for some container_config args
-    orchestrator_config: Configuration,
+    orchestrator_config: NotParachainConfiguration,
     polkadot_config: Configuration,
-    mut container_chain_config: (ContainerChainCli, tokio::runtime::Handle),
+    container_chain_config: (ContainerChainCli, tokio::runtime::Handle),
     collator_options: CollatorOptions,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, ())> {
     let orchestrator_para_id = Default::default();
-    let parachain_config = prepare_node_config(orchestrator_config);
-    {
-        let (container_chain_cli, _) = &mut container_chain_config;
-        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-        if container_chain_cli
-            .base
-            .base
-            .import_params
-            .wasmtime_precompiled
-            .is_none()
-        {
-            container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .clone_from(&parachain_config.wasmtime_precompiled);
-        }
-    }
+    //orchestrator_config.announce_block = false; // prepare_node_config()
+    let parachain_config = orchestrator_config;
 
-    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
-    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
-        .map(|e| e.relay_chain.clone())
-        .ok_or("Could not find relay_chain extension in chain-spec.")?;
+    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_type.clone();
+    let relay_chain = parachain_config.relay_chain.clone();
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
 
-    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let (telemetry_worker_handle, mut task_manager, keystore_container) = {
+        // TODO: instead of putting keystore in
+        // Collator1000-01/data/chains/simple_container_2000/keystore
+        // We want it in
+        // Collator1000-01/data/config/keystore
+        // And same for "network" folder
+        // But zombienet will put the keys in the old path, we need to manually copy it if we
+        // are running under zombienet
+        let config_dir = build_solochain_config_dir(&container_chain_config.0.base_path);
+        let _net_config_dir = build_solochain_net_config_dir(&config_dir);
+        let keystore =
+            keystore_config(container_chain_config.0.keystore_params(), &config_dir).unwrap();
 
-    let (_block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+        {
+            let keystore_path = keystore.path().unwrap();
+            let mut zombienet_path = keystore_path.to_owned();
+            // Collator1000-01/data/config/keystore/
+            zombienet_path.pop();
+            // Collator1000-01/data/config/
+            zombienet_path.pop();
+            // Collator1000-01/data/
+            zombienet_path.push("chains/simple_container_2000/keystore/");
+            // Collator1000-01/data/chains/simple_container_2000/keystore/
 
-    let (relay_chain_interface, collator_key) = node_builder
-        .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
-        .await?;
+            if zombienet_path.exists() {
+                // Copy to keystore folder
 
-    let validator = parachain_config.role.is_authority();
+                // https://stackoverflow.com/a/65192210
+                // TODO: maybe use a crate instead
+                // TODO: never overwrite files, only copy those that don't exist
+                fn copy_dir_all(
+                    src: impl AsRef<Path>,
+                    dst: impl AsRef<Path>,
+                    files_copied: &mut u32,
+                ) -> std::io::Result<()> {
+                    use std::fs;
+                    fs::create_dir_all(&dst)?;
+                    for entry in fs::read_dir(src)? {
+                        let entry = entry?;
+                        let ty = entry.file_type()?;
+                        if ty.is_dir() {
+                            copy_dir_all(
+                                entry.path(),
+                                dst.as_ref().join(entry.file_name()),
+                                files_copied,
+                            )?;
+                        } else {
+                            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+                            *files_copied += 1;
+                        }
+                    }
+                    Ok(())
+                }
+
+                let mut files_copied = 0;
+                copy_dir_all(zombienet_path, keystore_path, &mut files_copied).unwrap();
+                log::info!("Copied {} keys from zombienet keystore", files_copied);
+            } else {
+                log::warn!("Copy nimbus keys to {:?}", keystore_path);
+            }
+        }
+
+        let keystore_container = KeystoreContainer::new(&keystore)?;
+
+        let task_manager = {
+            //let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
+            let registry = None;
+            TaskManager::new(container_chain_config.1.clone(), registry)?
+        };
+
+        /*
+        let telemetry = parachain_config
+            .telemetry_endpoints
+            .clone()
+            .filter(|x| !x.is_empty())
+            .map(|endpoints| -> Result<_, sc_telemetry::Error> {
+                let worker = TelemetryWorker::new(16)?;
+                let telemetry = worker.handle().new_telemetry(endpoints);
+                Ok((worker, telemetry))
+            })
+            .transpose()?;
+
+
+        let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+        let telemetry = telemetry.map(|(worker, telemetry)| {
+            task_manager
+                .spawn_handle()
+                .spawn("telemetry", None, worker.run());
+            telemetry
+        });
+
+         */
+        let telemetry_worker_handle = None;
+
+        (telemetry_worker_handle, task_manager, keystore_container)
+    };
+
+    // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
+    // are collators or not
+    let validator = parachain_config.collator;
+    let mut dummy_parachain_config = dummy_config(
+        polkadot_config.tokio_handle.clone(),
+        polkadot_config.base_path.clone(),
+    );
+    dummy_parachain_config.role = if validator {
+        Role::Authority
+    } else {
+        Role::Full
+    };
+    let (relay_chain_interface, collator_key) =
+        cumulus_client_service::build_relay_chain_interface(
+            polkadot_config,
+            &dummy_parachain_config,
+            telemetry_worker_handle.clone(),
+            &mut task_manager,
+            collator_options.clone(),
+            hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+    drop(dummy_parachain_config);
 
     log::info!("start_solochain_node: is validator? {}", validator);
 
-    let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
-            &parachain_config,
-            orchestrator_para_id,
-            import_queue,
-            relay_chain_interface.clone(),
-        )
-        .await?;
-
-    let relay_chain_slot_duration = Duration::from_secs(6);
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let sync_keystore = node_builder.keystore_container.keystore();
+    let sync_keystore = keystore_container.keystore();
     let collate_on_tanssi: Arc<
         dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
     > = Arc::new(move || {
@@ -762,30 +879,6 @@ pub async fn start_solochain_node(
         // The runtime enforces this because the orchestrator_chain is never assigned any collators.
         panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
     });
-
-    let announce_block = {
-        let sync_service = node_builder.network.sync_service.clone();
-        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-    };
-
-    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
-
-    start_relay_chain_tasks(StartRelayChainTasksParams {
-        client: node_builder.client.clone(),
-        announce_block: announce_block.clone(),
-        para_id: orchestrator_para_id,
-        relay_chain_interface: relay_chain_interface.clone(),
-        task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if validator {
-            DARecoveryProfile::Collator
-        } else {
-            DARecoveryProfile::FullNode
-        },
-        import_queue: import_queue_service,
-        relay_chain_slot_duration,
-        recovery_handle: Box::new(overseer_handle.clone()),
-        sync_service: node_builder.network.sync_service.clone(),
-    })?;
 
     let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
         overseer_handle: overseer_handle.clone(),
@@ -799,11 +892,9 @@ pub async fn start_solochain_node(
             orchestrator_chain_interface.clone(),
             sync_keystore.clone(),
             cc_spawn_tx.clone(),
-            node_builder.task_manager.spawn_essential_handle(),
+            task_manager.spawn_essential_handle(),
         );
     }
-
-    let sync_keystore = node_builder.keystore_container.keystore();
 
     {
         let (container_chain_cli, tokio_handle) = container_chain_config;
@@ -823,9 +914,7 @@ pub async fn start_solochain_node(
         }
 
         // Start container chain spawner task. This will start and stop container chains on demand.
-        let orchestrator_client = node_builder.client.clone();
-        let orchestrator_tx_pool = node_builder.transaction_pool.clone();
-        let spawn_handle = node_builder.task_manager.spawn_handle();
+        let spawn_handle = task_manager.spawn_handle();
 
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
@@ -840,8 +929,8 @@ pub async fn start_solochain_node(
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         // TODO: all these args must be solochain instead of orchestrator
-                        orchestrator_client: orchestrator_client.clone(),
-                        orchestrator_tx_pool,
+                        orchestrator_client: None,
+                        orchestrator_tx_pool: None,
                         orchestrator_para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
@@ -872,20 +961,20 @@ pub async fn start_solochain_node(
         };
         let state = container_chain_spawner.state.clone();
 
-        node_builder.task_manager.spawn_essential_handle().spawn(
+        task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
             container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
         );
 
-        node_builder.task_manager.spawn_essential_handle().spawn(
+        task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-debug-state",
             None,
             monitor::monitor_task(state),
         )
     }
 
-    Ok((node_builder.task_manager, node_builder.client))
+    Ok((task_manager, ()))
 }
 
 pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);
@@ -1099,6 +1188,26 @@ impl OrchestratorChainInProcessInterfaceBuilder {
             self.backend,
             self.sync_oracle,
             self.overseer_handle,
+        ))
+    }
+}
+
+/// Builder for a concrete relay chain interface, created from a full node. Builds
+/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
+///
+/// The builder takes a [`polkadot_client::Client`]
+/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
+/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
+struct OrchestratorChainSolochainInterfaceBuilder {
+    overseer_handle: Handle,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+}
+
+impl OrchestratorChainSolochainInterfaceBuilder {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+        Arc::new(OrchestratorChainSolochainInterface::new(
+            self.overseer_handle,
+            self.relay_chain_interface,
         ))
     }
 }

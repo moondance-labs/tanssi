@@ -512,6 +512,7 @@ impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     }
 }
 
+use crate::collators::lookahead::BuyCoreParams;
 use {
     cumulus_primitives_core::relay_chain::ValidationCodeHash,
     polkadot_node_subsystem::{overseer, OverseerSignal},
@@ -984,10 +985,11 @@ impl CollatorLookaheadTestBuilder {
             para_client: environ.clone().into(),
             sync_oracle: DummyOracle,
             para_backend: backend,
-            orchestrator_client: environ.into(),
+            buy_core_params: BuyCoreParams::Orchestrator {
+                orchestrator_client: environ.into(),
+                orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+            },
             orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
-            orchestrator_tx_pool: orchestrator_tx_pool.clone(),
-            solochain: false,
         };
         let (fut, exit_notification_receiver) = crate::collators::lookahead::run::<
             _,
