@@ -24,7 +24,7 @@ fn create_blank_chain_num_collator(id: u32) -> ChainNumCollators {
     ChainNumCollators {
         para_id: ParaId::new(id),
         min_collators: 0,
-        max_collators: 0
+        max_collators: 0,
     }
 }
 
