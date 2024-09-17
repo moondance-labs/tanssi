@@ -24,7 +24,7 @@ use {
     sc_chain_spec::ChainSpec,
     sc_network::config::MultiaddrWithPeerId,
     sp_runtime::Storage,
-    std::{collections::BTreeMap, net::SocketAddr, path::PathBuf},
+    std::{collections::BTreeMap, net::SocketAddr},
 };
 
 /// The `run` command used to run a container chain node.
@@ -97,6 +97,7 @@ impl ContainerChainRunCmd {
         };
 
         let base_path = base_path.path().join("containers");
+        new_base.base.shared_params.base_path = Some(base_path);
 
         ContainerChainCli {
             base: new_base,
@@ -324,10 +325,7 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
     }
 
     fn base_path(&self) -> sc_cli::Result<Option<sc_service::BasePath>> {
-        Ok(self
-            .shared_params()
-            .base_path()?
-            .or_else(|| Some(self.base_path.clone().into())))
+        self.shared_params().base_path()
     }
 
     fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<SocketAddr>> {

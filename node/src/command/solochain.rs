@@ -29,6 +29,7 @@ use sc_service::{BasePath, BlocksPruning, Configuration, DatabaseSource, TaskMan
 use sc_tracing::logging::LoggerBuilder;
 use std::future::Future;
 use std::num::NonZeroUsize;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tc_service_container_chain::cli::ContainerChainCli;
 
@@ -328,5 +329,83 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
         base_path,
         informant_output_format: Default::default(),
         runtime_cache_size: 0,
+    }
+}
+
+/// Returns the default path for configuration  directory based on the chain_spec
+pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
+    // Original:  Collator1000-01/chains/dancebox/
+    //base_path.path().join("chains").join(chain_id)
+    // Starlight: Collator1000-01/config/
+    let mut base_path = base_path.clone();
+    // Remove "/containers"
+    base_path.pop();
+    base_path.join("config")
+}
+
+/// Returns the default path for the network configuration inside the configuration dir
+pub(crate) fn build_solochain_net_config_dir(config_dir: &PathBuf) -> PathBuf {
+    config_dir.join("network")
+}
+
+/// Get the zombienet keystore path from the solochain collator keystore.
+fn zombienet_keystore_path(keystore: &KeystoreConfig) -> PathBuf {
+    let keystore_path = keystore.path().unwrap();
+    let mut zombienet_path = keystore_path.to_owned();
+    // Collator1000-01/data/config/keystore/
+    zombienet_path.pop();
+    // Collator1000-01/data/config/
+    zombienet_path.pop();
+    // Collator1000-01/data/
+    zombienet_path.push("chains/simple_container_2000/keystore/");
+    // Collator1000-01/data/chains/simple_container_2000/keystore/
+
+    zombienet_path
+}
+
+/// When running under zombienet, collator keys are injected in a different folder from what we
+/// expect. This function will check if the zombienet folder exists, and if so, copy all the keys
+/// from there into the expected folder.
+pub fn copy_zombienet_keystore(keystore: &KeystoreConfig) {
+    // TODO: error handling? Or assume keystore_path always exists?
+    let keystore_path = keystore.path().unwrap();
+    let zombienet_path = zombienet_keystore_path(keystore);
+
+    if zombienet_path.exists() {
+        // Copy to keystore folder
+
+        // https://stackoverflow.com/a/65192210
+        // TODO: use a crate instead
+        // TODO: never overwrite files, only copy those that don't exist
+        fn copy_dir_all(
+            src: impl AsRef<Path>,
+            dst: impl AsRef<Path>,
+            files_copied: &mut u32,
+        ) -> std::io::Result<()> {
+            use std::fs;
+            fs::create_dir_all(&dst)?;
+            for entry in fs::read_dir(src)? {
+                let entry = entry?;
+                let ty = entry.file_type()?;
+                if ty.is_dir() {
+                    copy_dir_all(
+                        entry.path(),
+                        dst.as_ref().join(entry.file_name()),
+                        files_copied,
+                    )?;
+                } else {
+                    fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+                    *files_copied += 1;
+                }
+            }
+            Ok(())
+        }
+
+        let mut files_copied = 0;
+        copy_dir_all(zombienet_path, keystore_path, &mut files_copied).unwrap();
+        log::info!("Copied {} keys from zombienet keystore", files_copied);
+    } else {
+        // TODO: remove this log before merging
+        log::warn!("Copy nimbus keys to {:?}", keystore_path);
     }
 }

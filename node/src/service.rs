@@ -16,12 +16,15 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use crate::command::solochain::{dummy_config, NotParachainConfiguration};
+use crate::command::solochain::{
+    build_solochain_config_dir, build_solochain_net_config_dir, copy_zombienet_keystore,
+    dummy_config, NotParachainConfiguration,
+};
 use sc_cli::CliConfiguration;
 use sc_network_common::role::Role;
 use sc_service::config::KeystoreConfig;
 use sc_service::KeystoreContainer;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tc_consensus::collators::lookahead::BuyCoreParams;
 use {
     cumulus_client_cli::CollatorOptions,
@@ -698,22 +701,6 @@ pub async fn start_parachain_node(
     .await
 }
 
-/// Returns the default path for configuration  directory based on the chain_spec
-pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
-    // Original:  Collator1000-01/chains/dancebox/
-    //base_path.path().join("chains").join(chain_id)
-    // Starlight: Collator1000-01/config/
-    let mut base_path = base_path.clone();
-    // Remove "/containers"
-    base_path.pop();
-    base_path.join("config")
-}
-
-/// Returns the default path for the network configuration inside the configuration dir
-pub(crate) fn build_solochain_net_config_dir(config_dir: &PathBuf) -> PathBuf {
-    config_dir.join("network")
-}
-
 fn keystore_config(
     keystore_params: Option<&sc_cli::KeystoreParams>,
     config_dir: &PathBuf,
@@ -743,66 +730,27 @@ pub async fn start_solochain_node(
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
 
     let (telemetry_worker_handle, mut task_manager, keystore_container) = {
-        // TODO: instead of putting keystore in
-        // Collator1000-01/data/chains/simple_container_2000/keystore
-        // We want it in
-        // Collator1000-01/data/config/keystore
-        // And same for "network" folder
-        // But zombienet will put the keys in the old path, we need to manually copy it if we
-        // are running under zombienet
-        let config_dir = build_solochain_config_dir(&container_chain_config.0.base_path);
+        let base_path = container_chain_config
+            .0
+            .base
+            .base
+            .shared_params
+            .base_path
+            .as_ref()
+            .expect("base_path is always set");
+        let config_dir = build_solochain_config_dir(&base_path);
         let _net_config_dir = build_solochain_net_config_dir(&config_dir);
         let keystore =
             keystore_config(container_chain_config.0.keystore_params(), &config_dir).unwrap();
 
-        {
-            let keystore_path = keystore.path().unwrap();
-            let mut zombienet_path = keystore_path.to_owned();
-            // Collator1000-01/data/config/keystore/
-            zombienet_path.pop();
-            // Collator1000-01/data/config/
-            zombienet_path.pop();
-            // Collator1000-01/data/
-            zombienet_path.push("chains/simple_container_2000/keystore/");
-            // Collator1000-01/data/chains/simple_container_2000/keystore/
-
-            if zombienet_path.exists() {
-                // Copy to keystore folder
-
-                // https://stackoverflow.com/a/65192210
-                // TODO: maybe use a crate instead
-                // TODO: never overwrite files, only copy those that don't exist
-                fn copy_dir_all(
-                    src: impl AsRef<Path>,
-                    dst: impl AsRef<Path>,
-                    files_copied: &mut u32,
-                ) -> std::io::Result<()> {
-                    use std::fs;
-                    fs::create_dir_all(&dst)?;
-                    for entry in fs::read_dir(src)? {
-                        let entry = entry?;
-                        let ty = entry.file_type()?;
-                        if ty.is_dir() {
-                            copy_dir_all(
-                                entry.path(),
-                                dst.as_ref().join(entry.file_name()),
-                                files_copied,
-                            )?;
-                        } else {
-                            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-                            *files_copied += 1;
-                        }
-                    }
-                    Ok(())
-                }
-
-                let mut files_copied = 0;
-                copy_dir_all(zombienet_path, keystore_path, &mut files_copied).unwrap();
-                log::info!("Copied {} keys from zombienet keystore", files_copied);
-            } else {
-                log::warn!("Copy nimbus keys to {:?}", keystore_path);
-            }
-        }
+        // Instead of putting keystore in
+        // Collator1000-01/data/chains/simple_container_2000/keystore
+        // We put it in
+        // Collator1000-01/data/config/keystore
+        // And same for "network" folder
+        // But zombienet will put the keys in the old path, so we need to manually copy it if we
+        // are running under zombienet
+        copy_zombienet_keystore(&keystore);
 
         let keystore_container = KeystoreContainer::new(&keystore)?;
 
@@ -863,7 +811,6 @@ pub async fn start_solochain_node(
         )
         .await
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-    drop(dummy_parachain_config);
 
     log::info!("start_solochain_node: is validator? {}", validator);
 
@@ -1188,26 +1135,6 @@ impl OrchestratorChainInProcessInterfaceBuilder {
             self.backend,
             self.sync_oracle,
             self.overseer_handle,
-        ))
-    }
-}
-
-/// Builder for a concrete relay chain interface, created from a full node. Builds
-/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
-///
-/// The builder takes a [`polkadot_client::Client`]
-/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
-/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
-struct OrchestratorChainSolochainInterfaceBuilder {
-    overseer_handle: Handle,
-    relay_chain_interface: Arc<dyn RelayChainInterface>,
-}
-
-impl OrchestratorChainSolochainInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
-        Arc::new(OrchestratorChainSolochainInterface::new(
-            self.overseer_handle,
-            self.relay_chain_interface,
         ))
     }
 }
