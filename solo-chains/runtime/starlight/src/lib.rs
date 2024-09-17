@@ -1447,8 +1447,8 @@ parameter_types! {
 }
 
 // This will be skipped in the case of Starlight, but we need to provide an impl for it to compile.
-pub struct GetSelfChainBlockAuthor;
-impl Get<AccountId32> for GetSelfChainBlockAuthor {
+pub struct GetDummyBlockAuthor;
+impl Get<AccountId32> for GetDummyBlockAuthor {
     fn get() -> AccountId32 {
         // TODO: check if we are good by retrieving [0u8;32]
         AccountId32::new([0u8; 32])
@@ -1466,12 +1466,13 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
-    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type GetSelfChainBlockAuthor = GetDummyBlockAuthor;
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
     type RewardsPortion = RewardsPortion;
+    type RewardOrchestratorAuthor = ConstBool<false>;
 }
 
 construct_runtime! {
@@ -1828,9 +1829,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = ServicesPayment;
-    // TODO: uncomment when pallets exist
-    //type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }

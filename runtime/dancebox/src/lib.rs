@@ -1595,6 +1595,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
     type RewardsPortion = RewardsPortion;
+    type RewardOrchestratorAuthor = ConstBool<true>;
 }
 
 impl pallet_tx_pause::Config for Runtime {

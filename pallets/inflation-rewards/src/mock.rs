@@ -26,7 +26,7 @@ use {
             ConstU64, Everything,
         },
     },
-    sp_core::H256,
+    sp_core::{ConstBool, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
@@ -222,6 +222,7 @@ impl pallet_inflation_rewards::Config for Test {
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = MockRewardsDistributor;
     type RewardsPortion = RewardsPortion;
+    type RewardOrchestratorAuthor = ConstBool<true>;
 }
 
 // Build genesis storage according to the mock runtime.

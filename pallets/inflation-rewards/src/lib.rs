@@ -86,8 +86,13 @@ pub mod pallet {
             // Get the number of chains at this block (tanssi + container chain blocks)
             weight += T::DbWeight::get().reads_writes(1, 1);
             let registered_para_ids = T::ContainerChains::current_container_chains();
-            let number_of_chains: BalanceOf<T> =
-                ((registered_para_ids.len() as u32).saturating_add(1)).into();
+
+            let mut number_of_chains: BalanceOf<T> =
+            (registered_para_ids.len() as u32).into();
+
+            if T::RewardOrchestratorAuthor::get() {
+                number_of_chains = number_of_chains.saturating_add(1u32.into());
+            }
 
             // Issue new supply
             let new_supply =
@@ -119,7 +124,9 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
-            weight += Self::reward_orchestrator_author();
+            if T::RewardOrchestratorAuthor::get() {
+                weight += Self::reward_orchestrator_author();
+            }
 
             weight
         }
@@ -154,6 +161,8 @@ pub mod pallet {
         /// Proportion of the new supply dedicated to staking
         #[pallet::constant]
         type RewardsPortion: Get<Perbill>;
+
+        type RewardOrchestratorAuthor: Get<bool>;
     }
 
     #[pallet::event]
