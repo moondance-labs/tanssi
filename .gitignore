@@ -10,3 +10,7 @@
 
 # Spec/Wasm build directory
 /build/
+
+
+# RustRover - related
+**/.idea

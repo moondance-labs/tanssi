@@ -301,7 +301,6 @@ pub fn container_chain_import_queue(
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
-    // TODO: this should be generic, so we can use RelayChainInterface for solochain
     collation_params: crate::spawner::CollationParams,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
