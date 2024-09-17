@@ -167,15 +167,26 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub(crate) fn enough_collators_for_all_chains(
+            bulk_paras: &Vec<ChainNumCollators>,
+            pool_paras: &Vec<ChainNumCollators>,
+            target_session_index: T::SessionIndex,
+            number_of_collators: u32,
+            collators_per_container: u32,
+            collators_per_parathread: u32,
+        ) -> bool {
+            number_of_collators
+                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                    .saturating_add(collators_per_container.saturating_mul(bulk_paras.len() as u32))
+                    .saturating_add(
+                        collators_per_parathread.saturating_mul(pool_paras.len() as u32),
+                    )
+        }
+
         /// Takes the bulk paras (parachains) and pool paras (parathreads)
-        /// and checks if the quantity of each is according to the
-        /// number of cores available.
-        /// If not, then both are sorted by the tip.
-        /// After that it wires through `order_paras` which is
-        /// the default behaviour when we are running in parachain mode.
-        /// Returns a list of `ChainNumCollators` with the chains that were selected,
-        /// and a boolean indicating if `need_to_charge_tip`.
-        /// Will be true if chains were sorted by tip.
+        /// and checks if we if a) Do we have enough collators? b) Do we have enough cores?
+        /// If either of the answer is yes. We  separately sort bulk_paras and pool_paras and
+        /// then append the two vectors.
         pub(crate) fn order_paras_with_core_config(
             mut bulk_paras: Vec<ChainNumCollators>,
             mut pool_paras: Vec<ChainNumCollators>,
@@ -192,14 +203,25 @@ pub mod pallet {
 
             let enough_cores_for_bulk_paras = bulk_paras.len() <= max_number_of_bulk_paras as usize;
 
+            let enough_collators = Self::enough_collators_for_all_chains(
+                &bulk_paras,
+                &pool_paras,
+                target_session_index,
+                number_of_collators,
+                collators_per_container,
+                collators_per_parathread,
+            );
+
+            // We should charge tip if parachain demand exceeds the `max_number_of_bulk_paras` OR
+            // if `num_collators` is not enough to satisfy  collation need of all paras.
+            let should_charge_tip = !enough_cores_for_bulk_paras || !enough_collators;
+
             // Currently, we are sorting both bulk and pool paras by tip, even when for example
             // only number of bulk paras are restricted due to core availability since we deduct tip from
             // all paras.
             // We need to sort both separately as we have fixed space for parachains at the moment
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
-            // We need to change this once other part of algorithm start to differentiate between
-            // bulk and pool paras while deducting the tip amount.
-            if !enough_cores_for_bulk_paras {
+            if should_charge_tip {
                 bulk_paras.sort_by(|a, b| {
                     T::CollatorAssignmentTip::get_para_tip(b.para_id)
                         .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
@@ -215,21 +237,9 @@ pub mod pallet {
             // We are not truncating pool paras, since their workload is not continuous one core
             // can be shared by many paras during the session.
 
-            let (ordered_chains, sorted_chains_based_on_tip) = Self::order_paras(
-                bulk_paras,
-                pool_paras,
-                target_session_index,
-                number_of_collators,
-                collators_per_container,
-                collators_per_parathread,
-            );
+            let chains: Vec<_> = bulk_paras.into_iter().chain(pool_paras).collect();
 
-            // We should charge tip if either this method or the order_para method has sorted chains based on tip
-            // So in other words: if parachain demand exceeds the `max_number_of_bulk_paras` OR
-            // if `num_collators` is not enough to satisfy  collation need of all paras.
-            let should_charge_tip = sorted_chains_based_on_tip || !enough_cores_for_bulk_paras;
-
-            (ordered_chains, should_charge_tip)
+            (chains, should_charge_tip)
         }
 
         pub(crate) fn order_paras(
@@ -241,12 +251,14 @@ pub mod pallet {
             collators_per_parathread: u32,
         ) -> (Vec<ChainNumCollators>, bool) {
             // Are there enough collators to satisfy the minimum demand?
-            let enough_collators_for_all_chain = number_of_collators
-                >= T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
-                    .saturating_add(collators_per_container.saturating_mul(bulk_paras.len() as u32))
-                    .saturating_add(
-                        collators_per_parathread.saturating_mul(pool_paras.len() as u32),
-                    );
+            let enough_collators_for_all_chain = Self::enough_collators_for_all_chains(
+                &bulk_paras,
+                &pool_paras,
+                target_session_index,
+                number_of_collators,
+                collators_per_container,
+                collators_per_parathread,
+            );
 
             let mut chains: Vec<_> = bulk_paras.into_iter().chain(pool_paras).collect();
 
