@@ -70,9 +70,6 @@ describeSuite({
             timeout: 600000,
             title: "Test assignation did not change",
             test: async function () {
-                // TODO: starlight collator assignment is not set properly on genesis, so we need to wait 2 sessions
-                // for the collators to be assigned, and a bit more for container chains to start producing blocks
-                await waitSessions(context, relayApi, 3, null, "Tanssi-relay");
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -149,11 +146,10 @@ describeSuite({
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
 
-                // TODO: fix once we have types
                 const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
                 const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
-                await context.waitBlock(3, "Tanssi-relay");
+                await context.waitBlock(6, "Tanssi-relay");
                 const author2000 = await relayApi.query.authorNoting.latestAuthor(paraId2000);
                 const author2001 = await relayApi.query.authorNoting.latestAuthor(paraId2001);
 

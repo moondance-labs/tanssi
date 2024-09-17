@@ -1085,6 +1085,7 @@ fn deregister_2_container_chains_in_same_block() {
 
         run_to_session(4);
         end_block();
+        start_block();
 
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_eq!(
@@ -1109,8 +1110,8 @@ fn deregister_2_container_chains_in_same_block() {
                 HookCall::Deregistered(42.into()),
                 HookCall::Deregistered(43.into()),
                 HookCall::InnerDeregisterWeight,
-                HookCall::InnerDeregisterWeight,
                 HookCall::InnerDeregister(42.into()),
+                HookCall::InnerDeregisterWeight,
                 HookCall::InnerDeregister(43.into()),
             ]
         );

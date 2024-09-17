@@ -706,7 +706,7 @@
                 "type": "zombie",
                 "zombieSpec": {
                     "configPath": "./configs/zombieStarlight.json",
-                    "skipBlockCheck": ["Container2000", "Container2001", "Container2002"]
+                    "skipBlockCheck": ["Container2002"]
                 }
             },
             "connections": [
