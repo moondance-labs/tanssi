@@ -217,6 +217,7 @@ pub fn start_block() {
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
+    ContainerRegistrar::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());

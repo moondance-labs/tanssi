@@ -18,7 +18,7 @@
                             },
                             "scheduler_params": {
                                 "scheduling_lookahead": 2,
-				"num_cores": 4
+                                "num_cores": 4
                             }
                         }
                     }

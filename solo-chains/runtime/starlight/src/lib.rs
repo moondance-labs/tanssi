@@ -1485,51 +1485,45 @@ construct_runtime! {
         Babe: pallet_babe = 1,
 
         Timestamp: pallet_timestamp = 2,
-        Balances: pallet_balances = 4,
-        Parameters: pallet_parameters = 6,
-        TransactionPayment: pallet_transaction_payment = 33,
+        Balances: pallet_balances = 3,
+        Parameters: pallet_parameters = 4,
+        TransactionPayment: pallet_transaction_payment = 5,
 
         // Consensus support.
         // Authorship must be before session in order to note author in the correct session and era.
-        Authorship: pallet_authorship = 5,
+        Authorship: pallet_authorship = 6,
         Offences: pallet_offences = 7,
-        Historical: session_historical = 34,
+        Historical: session_historical = 8,
 
-        Session: pallet_session = 8,
-        Grandpa: pallet_grandpa = 10,
-        AuthorityDiscovery: pallet_authority_discovery = 12,
+        // Container stuff should go before session
+        // Container stuff starts at index 10
+        ContainerRegistrar: pallet_registrar = 10,
+        CollatorConfiguration: pallet_configuration = 11,
+        TanssiInitializer: tanssi_initializer = 12,
+        TanssiInvulnerables: pallet_invulnerables = 13,
+        TanssiCollatorAssignment: pallet_collator_assignment = 14,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 15,
+        TanssiAuthorityMapping: pallet_authority_mapping = 16,
+        AuthorNoting: pallet_author_noting = 17,
+        ServicesPayment: pallet_services_payment = 18,
+        DataPreservers: pallet_data_preservers = 19,
+        InflationRewards: pallet_inflation_rewards = 20,
+
+        // Session management
+        Session: pallet_session = 30,
+        Grandpa: pallet_grandpa = 31,
+        AuthorityDiscovery: pallet_authority_discovery = 32,
 
         // Governance stuff; uncallable initially.
-        Treasury: pallet_treasury = 18,
-        ConvictionVoting: pallet_conviction_voting = 20,
-        Referenda: pallet_referenda = 21,
+        Treasury: pallet_treasury = 40,
+        ConvictionVoting: pallet_conviction_voting = 41,
+        Referenda: pallet_referenda = 42,
         //	pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;
-        FellowshipCollective: pallet_ranked_collective::<Instance1> = 22,
+        FellowshipCollective: pallet_ranked_collective::<Instance1> = 43,
         // pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
-        FellowshipReferenda: pallet_referenda::<Instance2> = 23,
-        Origins: pallet_custom_origins = 43,
-        Whitelist: pallet_whitelist = 44,
-
-        // Utility module.
-        Utility: pallet_utility = 24,
-
-        // Less simple identity module.
-        Identity: pallet_identity = 25,
-
-        // System scheduler.
-        Scheduler: pallet_scheduler = 29,
-
-        // Proxy module. Late addition.
-        Proxy: pallet_proxy = 30,
-
-        // Multisig module. Late addition.
-        Multisig: pallet_multisig = 31,
-
-        // Preimage registrar.
-        Preimage: pallet_preimage = 32,
-
-        // Asset rate.
-        AssetRate: pallet_asset_rate = 39,
+        FellowshipReferenda: pallet_referenda::<Instance2> = 44,
+        Origins: pallet_custom_origins = 45,
+        Whitelist: pallet_whitelist = 46,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -1546,13 +1540,38 @@ construct_runtime! {
         ParasDisputes: parachains_disputes = 62,
         ParasSlashing: parachains_slashing = 63,
         MessageQueue: pallet_message_queue = 64,
-        OnDemandAssignmentProvider: parachains_assigner_on_demand = 66,
+        OnDemandAssignmentProvider: parachains_assigner_on_demand = 65,
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
 
+        // Utility module.
+        Utility: pallet_utility = 80,
+
+        // Less simple identity module.
+        Identity: pallet_identity = 81,
+
+        // System scheduler.
+        Scheduler: pallet_scheduler = 82,
+
+        // Proxy module. Late addition.
+        Proxy: pallet_proxy = 83,
+
+        // Multisig module. Late addition.
+        Multisig: pallet_multisig = 84,
+
+        // Preimage registrar.
+        Preimage: pallet_preimage = 85,
+
+        // Asset rate.
+        AssetRate: pallet_asset_rate = 86,
+
         // Pallet for sending XCM.
-        XcmPallet: pallet_xcm = 99,
+        XcmPallet: pallet_xcm = 90,
+
+        // Migration stuff
+        Migrations: pallet_migrations = 120,
+        MultiBlockMigrations: pallet_multiblock_migrations = 121,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -1571,21 +1590,6 @@ construct_runtime! {
 
         // Sudo.
         Sudo: pallet_sudo = 255,
-
-        // FIXME: correct ordering
-        ContainerRegistrar: pallet_registrar = 100,
-        CollatorConfiguration: pallet_configuration = 101,
-        TanssiInitializer: tanssi_initializer = 102,
-        TanssiInvulnerables: pallet_invulnerables = 103,
-        TanssiCollatorAssignment: pallet_collator_assignment = 104,
-        TanssiAuthorityAssignment: pallet_authority_assignment = 105,
-        TanssiAuthorityMapping: pallet_authority_mapping = 106,
-        Migrations: pallet_migrations = 107,
-        MultiBlockMigrations: pallet_multiblock_migrations = 108,
-        AuthorNoting: pallet_author_noting = 109,
-        ServicesPayment: pallet_services_payment = 110,
-        DataPreservers: pallet_data_preservers = 111,
-        InflationRewards: pallet_inflation_rewards = 112,
     }
 }
 
