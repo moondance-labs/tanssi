@@ -355,8 +355,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            // Account for on_finalize weight
-            let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1));
+            let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1).writes(1));
 
             let buffered_paras = BufferedParasToDeregister::<T>::take();
 
