@@ -27,18 +27,18 @@ const emptyGenesisData = (api) => {
     return g;
 };
 
-const sortCollatorAssignmentByNumberOfCollators = (collatorAssignment) => {
+const sortCollatorAssignment = (collatorAssignment) => {
     return Object.keys(collatorAssignment["containerChains"])
         .sort((a, b) => {
-            return collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length;
-        })
-        .map((x) => Number(x));
-};
-
-const sortCollatorAssignmentByParaId = (collatorAssignment) => {
-    return Object.keys(collatorAssignment["containerChains"])
-        .sort((a, b) => {
-            return Number(a) - Number(b);
+            const b_collators = collatorAssignment["containerChains"][b].length;
+            const a_collators = collatorAssignment["containerChains"][a].length;
+            if (a_collators !== b_collators) {
+                return (
+                    collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length
+                );
+            } else {
+                return Number(a) - Number(b);
+            }
         })
         .map((x) => Number(x));
 };
@@ -89,18 +89,22 @@ describeSuite({
             );
 
             const purchaseCreditTxs = [
+                polkadotJs.tx.servicesPayment.purchaseCredits(2000, 1_000_000_000_000_000),
                 polkadotJs.tx.servicesPayment.purchaseCredits(2001, 1_000_000_000_000_000),
+                polkadotJs.tx.servicesPayment.purchaseCredits(2002, 1_000_000_000_000_000),
+                polkadotJs.tx.servicesPayment.purchaseCredits(2003, 1_000_000_000_000_000),
                 polkadotJs.tx.servicesPayment.purchaseCredits(2004, 1_000_000_000_000_000),
             ];
 
-            // We are setting tip for 2004 and 2001
+            // We are setting tip for everybody except 2000 and 2002
             const tipTxs = [
-                polkadotJs.tx.servicesPayment.setMaxTip(2004, 123456),
                 polkadotJs.tx.servicesPayment.setMaxTip(2001, 123456),
+                polkadotJs.tx.servicesPayment.setMaxTip(2003, 800000),
+                polkadotJs.tx.servicesPayment.setMaxTip(2004, 900000),
             ];
 
-            // Have 2 collators per parathread
-            const configChangeTx = polkadotJs.tx.collatorConfiguration.setCollatorsPerParathread(2);
+            // Have 1 collators per parathread
+            const configChangeTx = polkadotJs.tx.collatorConfiguration.setCollatorsPerParathread(1);
             await context.createBlock([await polkadotJs.tx.sudo.sudo(configChangeTx).signAsync(alice)]);
 
             const paraTxs = responseFor2002.txs.concat(...responseFor2003.txs).concat(...responseFor2004.txs);
@@ -120,6 +124,65 @@ describeSuite({
             ]);
 
             await jumpSessions(context, 2);
+
+            const activeConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
+
+            // Existing collators
+            const numberOfInvulnerables = (await polkadotJs.query.tanssiInvulnerables.invulnerables()).length;
+
+            // We will have two collators less than we need so that we can detect changes in order
+            // in below tests easily.
+            const numberOfInvulnerablesNeeded =
+                activeConfig.collatorsPerContainer * 2 +
+                activeConfig.collatorsPerParathread * 3 -
+                numberOfInvulnerables -
+                2;
+
+            const sr25519keyring = new Keyring({ type: "sr25519" });
+            const ed25519keyring = new Keyring({ type: "ed25519" });
+            const ecdsakeyring = new Keyring({ type: "ecdsa" });
+
+            const setBalanceTxs = [];
+            const setKeysTxs = [];
+            const collatorAccountIds = [];
+
+            let sudoNonce = (await context.polkadotJs().rpc.system.accountNextIndex(alice.address)).toNumber();
+
+            // Call register collator keys
+            for (let i = 0; i < numberOfInvulnerablesNeeded; i++) {
+                const { setBalanceTx, setKeysTx, collatorAccountId } = await getRegisterCollatorKeyTx(
+                    ed25519keyring,
+                    sr25519keyring,
+                    ecdsakeyring,
+                    polkadotJs,
+                    String(i),
+                    alice,
+                    sudoNonce + i
+                );
+                setBalanceTxs.push(setBalanceTx);
+                setKeysTxs.push(setKeysTx);
+                collatorAccountIds.push(collatorAccountId);
+            }
+
+            // Create set of tx to put in the block
+            await context.createBlock(setBalanceTxs);
+            await context.createBlock(setKeysTxs);
+
+            await jumpSessions(context, 2);
+
+            // Call invulnerables tx building
+            sudoNonce = (await context.polkadotJs().rpc.system.accountNextIndex(alice.address)).toNumber();
+            const setInvlunerablesTxs = [];
+            for (let i = 0; i < numberOfInvulnerablesNeeded; i++) {
+                setInvlunerablesTxs.push(
+                    await getRegisterInvulnerableTx(polkadotJs, alice, collatorAccountIds[i], sudoNonce + i)
+                );
+            }
+
+            // Create set of tx to put in the block
+            await context.createBlock(setInvlunerablesTxs);
+
+            await jumpSessions(context, 2);
         });
 
         it({
@@ -132,8 +195,8 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore)).to.be.deep.equal([
-                    2001, 2004, 2000, 2002, 2003,
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
+                    2000, 2001, 2004, 2002, 2003,
                 ]);
 
                 // Record previous config value to restore later
@@ -152,9 +215,7 @@ describeSuite({
                 const collatorAssignmentAfter = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter)).to.be.deep.equal([
-                    2001, 2004, 2002, 2003,
-                ]);
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2001, 2002, 2003, 2004]);
 
                 // Let's change percentage of parachain to 0
                 const zeroParachaintx = await polkadotJs.tx.sudo
@@ -169,9 +230,7 @@ describeSuite({
                 const collatorAssignmentAtZeroPercent = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByParaId(collatorAssignmentAtZeroPercent)).to.be.deep.equal([
-                    2002, 2003, 2004,
-                ]);
+                expect(sortCollatorAssignment(collatorAssignmentAtZeroPercent)).to.be.deep.equal([2002, 2003, 2004]);
 
                 // Restore previous config
                 const restoringTx = await polkadotJs.tx.sudo
@@ -198,8 +257,8 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentBefore)).to.be.deep.equal([
-                    2001, 2004, 2000, 2002, 2003,
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
+                    2000, 2001, 2004, 2002, 2003,
                 ]);
 
                 // Let's change the parachain percentage to 90
@@ -216,13 +275,55 @@ describeSuite({
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
                 // Pool paras are not truncated but they are sorted by tip
-                expect(sortCollatorAssignmentByNumberOfCollators(collatorAssignmentAfter)).to.be.deep.equal([
-                    2001, 2004, 2000, 2002, 2003,
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([
+                    2000, 2001, 2004, 2002, 2003,
                 ]);
             },
         });
     },
 });
+
+async function getRegisterCollatorKeyTx(ed25519Keyring, sr25519Keyring, ecdsaKeyring, api, name, sudoKey, nonce) {
+    const collatorKey = sr25519Keyring.addFromUri("//" + name + "COLLATOR_ACC", { name: "COLLATOR" + name + " ACC" });
+    const existentialDeposit = api.consts.balances.existentialDeposit.toBigInt();
+
+    return {
+        setBalanceTx: await api.tx.sudo
+            .sudo(api.tx.balances.forceSetBalance(collatorKey.address, existentialDeposit + 1_000_000_000_000_000n))
+            .signAsync(sudoKey, { nonce: nonce }),
+        setKeysTx: await api.tx.session
+            .setKeys(
+                {
+                    grandpa: ed25519Keyring.addFromUri("//" + name + "COLLATOR_GRANDPA", {
+                        name: "COLLATOR" + " GRANDPA",
+                    }).publicKey,
+                    babe: sr25519Keyring.addFromUri("//" + name + "COLLATOR_BABE", { name: "COLLATOR" + " BABE" })
+                        .publicKey,
+                    para_validator: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PV", { name: "COLLATOR" + " PV" })
+                        .publicKey,
+                    para_assignment: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PA", {
+                        name: "COLLATOR" + " PA",
+                    }).publicKey,
+                    authority_discovery: sr25519Keyring.addFromUri("//" + name + "COLLATOR_AD", {
+                        name: "COLLATOR" + " AD",
+                    }).publicKey,
+                    beefy: ecdsaKeyring.addFromUri("//" + name + "COLLATOR_BEEFY", { name: "COLLATOR" + " BEEFY" })
+                        .publicKey,
+                    nimbus: sr25519Keyring.addFromUri("//" + name + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" })
+                        .publicKey,
+                },
+                []
+            )
+            .signAsync(collatorKey),
+        collatorAccountId: collatorKey.address,
+    };
+}
+
+async function getRegisterInvulnerableTx(api, sudoKey, collatorAccountId, nonce) {
+    return api.tx.sudo
+        .sudo(api.tx.tanssiInvulnerables.addInvulnerable(collatorAccountId))
+        .signAsync(sudoKey, { nonce: nonce });
+}
 
 async function createTxBatchForCreatingPara(
     api,
