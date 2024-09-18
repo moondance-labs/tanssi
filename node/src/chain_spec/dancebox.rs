@@ -97,6 +97,7 @@ pub fn development_config(
                 collators_per_parathread: 1,
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
+                max_parachain_cores_percentage: None,
             },
             ..Default::default()
         },
@@ -159,6 +160,7 @@ pub fn local_dancebox_config(
                 collators_per_parathread: 1,
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
+                max_parachain_cores_percentage: None,
             },
             ..Default::default()
         },
