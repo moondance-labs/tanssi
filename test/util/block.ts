@@ -4,6 +4,8 @@ import { filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
 import { Vec, u8, u32, bool } from "@polkadot/types-codec";
+import { TypeRegistry } from "@polkadot/types";
+
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
@@ -44,18 +46,20 @@ export async function waitSessions(
     context,
     paraApi: ApiPromise,
     count: number,
-    earlyExit?: () => Promise<boolean> | boolean
+    earlyExit?: () => Promise<boolean> | boolean,
+    connectionName?: string
 ): Promise<string | null> {
     const session = (await paraApi.query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
-    return waitToSession(context, paraApi, session, earlyExit);
+    return waitToSession(context, paraApi, session, earlyExit, connectionName);
 }
 
 export async function waitToSession(
     context,
     paraApi: ApiPromise,
     session: number,
-    earlyExit?: () => Promise<boolean> | boolean
+    earlyExit?: () => Promise<boolean> | boolean,
+    connectionName?: string
 ): Promise<string | null> {
     for (;;) {
         if (earlyExit && (await earlyExit())) {
@@ -71,7 +75,7 @@ export async function waitToSession(
             return null;
         }
 
-        await context.waitBlock(1, "Tanssi");
+        await context.waitBlock(1, connectionName ? connectionName : "Tanssi");
     }
 }
 
@@ -186,6 +190,9 @@ export function fetchIssuance(events: EventRecord[] = []) {
         ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
     );
 
+    if (filtered.length == 0) {
+        return { amount: new TypeRegistry().createType("u128", 0) };
+    }
     return filtered[0];
 }
 

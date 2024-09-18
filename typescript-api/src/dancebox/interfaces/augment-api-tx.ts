@@ -106,7 +106,10 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         authorInherent: {
-            /** This inherent is a workaround to run code after the "real" inherents have executed, but before transactions are executed. */
+            /**
+             * This inherent is a workaround to run code after the "real" inherents have executed, but before transactions are
+             * executed.
+             */
             kickOffAuthorshipValidation: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -143,6 +146,22 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         balances: {
+            /**
+             * Burn the specified liquid free balance from the origin account.
+             *
+             * If the origin's account ends up below the existential deposit as a result of the burn and `keep_alive` is
+             * false, the account will be reaped.
+             *
+             * Unlike sending funds to a _burn_ address, which merely makes the funds inaccessible, this `burn` operation will
+             * reduce total issuance by the amount _burned_.
+             */
+            burn: AugmentedSubmittable<
+                (
+                    value: Compact<u128> | AnyNumber | Uint8Array,
+                    keepAlive: bool | boolean | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>, bool]
+            >;
             /**
              * Adjust the total issuance in a saturating way.
              *
@@ -344,6 +363,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            setMaxParachainCoresPercentage: AugmentedSubmittable<
+                (updated: Option<Perbill> | null | Uint8Array | Perbill | AnyNumber) => SubmittableExtrinsic<ApiType>,
+                [Option<Perbill>]
+            >;
             setMinOrchestratorCollators: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
@@ -434,10 +457,6 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, PalletDataPreserversProfile]
             >;
-            /** Generic tx */
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
-        dmpQueue: {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
@@ -594,7 +613,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * Parameters:
              *
-             * - `id`: The identifier of the new asset. This must not be currently in use to identify an existing asset.
+             * - `id`: The identifier of the new asset. This must not be currently in use to identify an existing asset. If
+             *   [`NextAssetId`] is set, then this must be equal to it.
              * - `admin`: The admin of this class of assets. The admin is the initial address of each member of the asset
              *   class's admin team.
              * - `min_balance`: The minimum balance of this new asset that any single account must have. If an account's balance
@@ -623,7 +643,8 @@ declare module "@polkadot/api-base/types/submittable" {
             /**
              * Destroy all accounts associated with a given asset.
              *
-             * `destroy_accounts` should only be called after `start_destroy` has been called, and the asset is in a `Destroying` state.
+             * `destroy_accounts` should only be called after `start_destroy` has been called, and the asset is in a
+             * `Destroying` state.
              *
              * Due to weight restrictions, this function may need to be called multiple times to fully destroy all accounts.
              * It will destroy `RemoveItemsLimit` accounts at a time.
@@ -798,7 +819,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * Unlike `create`, no funds are reserved.
              *
-             * - `id`: The identifier of the new asset. This must not be currently in use to identify an existing asset.
+             * - `id`: The identifier of the new asset. This must not be currently in use to identify an existing asset. If
+             *   [`NextAssetId`] is set, then this must be equal to it.
              * - `owner`: The owner of this class of assets. The owner has full superuser permissions over this asset, but may
              *   later change and configure the permissions using `transfer_ownership` and `set_team`.
              * - `min_balance`: The minimum balance of this new asset that any single account must have. If an account's balance
@@ -895,7 +917,8 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /**
              * Disallow further unprivileged transfers of an asset `id` from an account `who`. `who` must already exist as an
-             * entry in `Account`s of the asset. If you want to freeze an account that does not have an entry, use `touch_other` first.
+             * entry in `Account`s of the asset. If you want to freeze an account that does not have an entry, use
+             * `touch_other` first.
              *
              * Origin must be Signed and the sender should be the Freezer of the asset `id`.
              *
@@ -1104,7 +1127,8 @@ declare module "@polkadot/api-base/types/submittable" {
             /**
              * Start the process of destroying a fungible asset class.
              *
-             * `start_destroy` is the first in a series of extrinsics that should be called, to allow destruction of an asset class.
+             * `start_destroy` is the first in a series of extrinsics that should be called, to allow destruction of an asset
+             * class.
              *
              * The origin must conform to `ForceOrigin` or must be `Signed` by the asset's `owner`.
              *
@@ -1370,7 +1394,10 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         identity: {
-            /** Accept a given username that an `authority` granted. The call must include the full username, as in `username.suffix`. */
+            /**
+             * Accept a given username that an `authority` granted. The call must include the full username, as in
+             * `username.suffix`.
+             */
             acceptUsername: AugmentedSubmittable<
                 (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Bytes]
@@ -1778,7 +1805,7 @@ declare module "@polkadot/api-base/types/submittable" {
                                   | { ShaThree256: any }
                                   | string
                                   | Uint8Array
-                              )
+                              ),
                           ][]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, Data]>>]
@@ -1923,7 +1950,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
              * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is not the first approval,
-             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval transaction.
+             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval
+             *   transaction.
              * - `call_hash`: The hash of the call to be executed.
              *
              * NOTE: If this is the final approval, you will want to use `as_multi` instead.
@@ -1971,14 +1999,16 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
              * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is not the first approval,
-             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval transaction.
+             *   then it must be `Some`, with the timepoint (block number and transaction index) of the first approval
+             *   transaction.
              * - `call`: The call to be executed.
              *
              * NOTE: Unless this is the final approval, you will generally want to use `approve_as_multi` instead, since it
              * only requires a hash of the call.
              *
              * Result is equivalent to the dispatched result if `threshold` is exactly `1`. Otherwise on success, result is
-             * `Ok` and the result from the interior call, if it was executed, may be found in the deposited `MultisigExecuted` event.
+             * `Ok` and the result from the interior call, if it was executed, may be found in the deposited
+             * `MultisigExecuted` event.
              *
              * ## Complexity
              *
@@ -2041,7 +2071,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * - `threshold`: The total number of approvals for this dispatch before it is executed.
              * - `other_signatories`: The accounts (other than the sender) who can approve this dispatch. May not be empty.
-             * - `timepoint`: The timepoint (block number and transaction index) of the first approval transaction for this dispatch.
+             * - `timepoint`: The timepoint (block number and transaction index) of the first approval transaction for this
+             *   dispatch.
              * - `call_hash`: The hash of the call to be executed.
              *
              * ## Complexity
@@ -2093,7 +2124,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * If the authorization required a version check, this call will ensure the spec name remains unchanged and that
              * the spec version has increased.
              *
-             * Note that this function will not apply the new `code`, but only attempt to schedule the upgrade with the Relay Chain.
+             * Note that this function will not apply the new `code`, but only attempt to schedule the upgrade with the Relay
+             * Chain.
              *
              * All origins are allowed.
              */
@@ -2104,7 +2136,8 @@ declare module "@polkadot/api-base/types/submittable" {
             /**
              * Set the current validation data.
              *
-             * This should be invoked exactly once per block. It will panic at the finalization phase if the call was not invoked.
+             * This should be invoked exactly once per block. It will panic at the finalization phase if the call was not
+             * invoked.
              *
              * The dispatch origin for this call must be `Inherent`
              *
@@ -2200,7 +2233,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * Require that a particular destination should no longer notify us regarding any XCM version changes.
              *
              * - `origin`: Must be an origin specified by AdminOrigin.
-             * - `location`: The location to which we are currently subscribed for XCM version notifications which we no longer desire.
+             * - `location`: The location to which we are currently subscribed for XCM version notifications which we no longer
+             *   desire.
              */
             forceUnsubscribeVersionNotify: AugmentedSubmittable<
                 (
@@ -2223,7 +2257,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 [StagingXcmV4Location, u32]
             >;
             /**
-             * Transfer some assets from the local chain to the destination chain through their local, destination or remote reserve.
+             * Transfer some assets from the local chain to the destination chain through their local, destination or remote
+             * reserve.
              *
              * `assets` must have same reserve location and may not be teleportable to `dest`.
              *
@@ -2242,7 +2277,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
              * - `dest`: Destination context for the assets. Will typically be `[Parent, Parachain(..)]` to send from parachain
              *   to parachain, or `[Parachain(..)]` to send from relay to parachain.
-             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an `AccountId32` value.
+             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an
+             *   `AccountId32` value.
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` (and
              *   possibly reserve) chains.
              * - `fee_asset_item`: The index into `assets` of the item which should be used to pay fees.
@@ -2268,7 +2304,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
              * - `dest`: Destination context for the assets. Will typically be `[Parent, Parachain(..)]` to send from parachain
              *   to parachain, or `[Parachain(..)]` to send from relay to parachain.
-             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an `AccountId32` value.
+             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an
+             *   `AccountId32` value.
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` chain.
              * - `fee_asset_item`: The index into `assets` of the item which should be used to pay fees.
              * - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
@@ -2284,7 +2321,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 [XcmVersionedLocation, XcmVersionedLocation, XcmVersionedAssets, u32, XcmV3WeightLimit]
             >;
             /**
-             * Transfer some assets from the local chain to the destination chain through their local, destination or remote reserve.
+             * Transfer some assets from the local chain to the destination chain through their local, destination or remote
+             * reserve.
              *
              * `assets` must have same reserve location and may not be teleportable to `dest`.
              *
@@ -2304,7 +2342,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
              * - `dest`: Destination context for the assets. Will typically be `[Parent, Parachain(..)]` to send from parachain
              *   to parachain, or `[Parachain(..)]` to send from relay to parachain.
-             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an `AccountId32` value.
+             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an
+             *   `AccountId32` value.
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` (and
              *   possibly reserve) chains.
              * - `fee_asset_item`: The index into `assets` of the item which should be used to pay fees.
@@ -2336,7 +2375,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
              * - `dest`: Destination context for the assets. Will typically be `[Parent, Parachain(..)]` to send from parachain
              *   to parachain, or `[Parachain(..)]` to send from relay to parachain.
-             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an `AccountId32` value.
+             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an
+             *   `AccountId32` value.
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` chain.
              * - `fee_asset_item`: The index into `assets` of the item which should be used to pay fees.
              */
@@ -2365,13 +2405,15 @@ declare module "@polkadot/api-base/types/submittable" {
              * - For destination reserve: burn local assets and forward a notification to `dest` chain to withdraw the reserve
              *   assets from this chain's sovereign account and deposit them to `beneficiary`.
              * - For remote reserve: burn local assets, forward XCM to reserve chain to move reserves from this chain's SA to
-             *   `dest` chain's SA, and forward another XCM to `dest` to mint and deposit reserve-based assets to `beneficiary`.
+             *   `dest` chain's SA, and forward another XCM to `dest` to mint and deposit reserve-based assets to
+             *   `beneficiary`.
              * - For teleports: burn local assets and forward XCM to `dest` chain to mint/teleport assets and deposit them to
              *   `beneficiary`.
              * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
              * - `dest`: Destination context for the assets. Will typically be `X2(Parent, Parachain(..))` to send from
              *   parachain to parachain, or `X1(Parachain(..))` to send from relay to parachain.
-             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an `AccountId32` value.
+             * - `beneficiary`: A beneficiary location for the assets in the context of `dest`. Will generally be an
+             *   `AccountId32` value.
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` (and
              *   possibly reserve) chains.
              * - `fee_asset_item`: The index into `assets` of the item which should be used to pay fees.
@@ -2388,7 +2430,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 [XcmVersionedLocation, XcmVersionedLocation, XcmVersionedAssets, u32, XcmV3WeightLimit]
             >;
             /**
-             * Transfer assets from the local chain to the destination chain using explicit transfer types for assets and fees.
+             * Transfer assets from the local chain to the destination chain using explicit transfer types for assets and
+             * fees.
              *
              * `assets` must have same reserve location or may be teleportable to `dest`. Caller must provide the
              * `assets_transfer_type` to be used for `assets`:
@@ -2408,7 +2451,8 @@ declare module "@polkadot/api-base/types/submittable" {
              * is included in the given list of `assets`. `remote_fees_id` should be enough to pay for `weight_limit`. If more
              * weight is needed than `weight_limit`, then the operation will fail and the sent assets may be at risk.
              *
-             * `remote_fees_id` may use different transfer type than rest of `assets` and can be specified through `fees_transfer_type`.
+             * `remote_fees_id` may use different transfer type than rest of `assets` and can be specified through
+             * `fees_transfer_type`.
              *
              * The caller needs to specify what should happen to the transferred assets once they reach the `dest` chain. This
              * is done through the `custom_xcm_on_dest` parameter, which contains the instructions to execute on `dest` as a
@@ -2422,7 +2466,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `assets`: The assets to be withdrawn. This should include the assets used to pay the fee on the `dest` (and
              *   possibly reserve) chains.
              * - `assets_transfer_type`: The XCM `TransferType` used to transfer the `assets`.
-             * - `remote_fees_id`: One of the included `assets` to be be used to pay fees.
+             * - `remote_fees_id`: One of the included `assets` to be used to pay fees.
              * - `fees_transfer_type`: The XCM `TransferType` used to transfer the `fees` assets.
              * - `custom_xcm_on_dest`: The XCM to be executed on `dest` chain as the last step of the transfer, which also
              *   determines what happens to the assets on the destination chain.
@@ -2459,7 +2503,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     XcmVersionedAssetId,
                     StagingXcmExecutorAssetTransferTransferType,
                     XcmVersionedXcm,
-                    XcmV3WeightLimit
+                    XcmV3WeightLimit,
                 ]
             >;
             /** Generic tx */
@@ -2939,9 +2983,10 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, DpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, DpContainerChainGenesisDataContainerChainGenesisData, Option<Bytes>]
             >;
             /** Register parathread */
             registerParathread: AugmentedSubmittable<
@@ -2952,9 +2997,10 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData]
+                [u32, TpTraitsSlotFrequency, DpContainerChainGenesisDataContainerChainGenesisData, Option<Bytes>]
             >;
             /** Register parachain or parathread */
             registerWithRelayProof: AugmentedSubmittable<
@@ -2980,7 +3026,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DpContainerChainGenesisDataContainerChainGenesisData
                         | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
                         | string
-                        | Uint8Array
+                        | Uint8Array,
+                    headData: Option<Bytes> | null | Uint8Array | Bytes | string
                 ) => SubmittableExtrinsic<ApiType>,
                 [
                     u32,
@@ -2988,7 +3035,8 @@ declare module "@polkadot/api-base/types/submittable" {
                     u32,
                     SpTrieStorageProof,
                     SpRuntimeMultiSignature,
-                    DpContainerChainGenesisDataContainerChainGenesisData
+                    DpContainerChainGenesisDataContainerChainGenesisData,
+                    Option<Bytes>,
                 ]
             >;
             setParaManager: AugmentedSubmittable<
@@ -3032,7 +3080,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u128]
             >;
-            /** Set the number of block production credits for this para_id without paying for them. Can only be called by root. */
+            /**
+             * Set the number of block production credits for this para_id without paying for them. Can only be called by
+             * root.
+             */
             setBlockProductionCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
@@ -3040,7 +3091,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
             >;
-            /** Set the number of block production credits for this para_id without paying for them. Can only be called by root. */
+            /**
+             * Set the number of block production credits for this para_id without paying for them. Can only be called by
+             * root.
+             */
             setCollatorAssignmentCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
@@ -3098,7 +3152,8 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * ## Complexity
              *
-             * - `O(1)` in number of key types. Actual cost depends on the number of length of `T::Keys::key_ids()` which is fixed.
+             * - `O(1)` in number of key types. Actual cost depends on the number of length of `T::Keys::key_ids()` which is
+             *   fixed.
              */
             purgeKeys: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
@@ -3146,7 +3201,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
             >;
-            /** Close a given stream in which the origin is involved. It performs the pending payment before closing the stream. */
+            /**
+             * Close a given stream in which the origin is involved. It performs the pending payment before closing the
+             * stream.
+             */
             closeStream: AugmentedSubmittable<
                 (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
@@ -3231,7 +3289,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     u64,
                     PalletStreamPaymentChangeKind,
                     PalletStreamPaymentStreamConfig,
-                    Option<PalletStreamPaymentDepositChange>
+                    Option<PalletStreamPaymentDepositChange>,
                 ]
             >;
             /** Generic tx */
@@ -3428,29 +3486,6 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         treasury: {
             /**
-             * Approve a proposal.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be [`Config::ApproveOrigin`].
-             *
-             * ## Details
-             *
-             * At a later time, the proposal will be allocated to the beneficiary and the original deposit will be returned.
-             *
-             * ### Complexity
-             *
-             * - O(1).
-             *
-             * ## Events
-             *
-             * No events are emitted from this dispatch.
-             */
-            approveProposal: AugmentedSubmittable<
-                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>]
-            >;
-            /**
              * Check the status of the spend and remove it from the storage if processed.
              *
              * ## Dispatch Origin
@@ -3480,7 +3515,7 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * ## Dispatch Origin
              *
-             * Must be signed.
+             * Must be signed
              *
              * ## Details
              *
@@ -3497,64 +3532,6 @@ declare module "@polkadot/api-base/types/submittable" {
              * Emits [`Event::Paid`] if successful.
              */
             payout: AugmentedSubmittable<(index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
-            /**
-             * Put forward a suggestion for spending.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be signed.
-             *
-             * ## Details
-             *
-             * A deposit proportional to the value is reserved and slashed if the proposal is rejected. It is returned once
-             * the proposal is awarded.
-             *
-             * ### Complexity
-             *
-             * - O(1)
-             *
-             * ## Events
-             *
-             * Emits [`Event::Proposed`] if successful.
-             */
-            proposeSpend: AugmentedSubmittable<
-                (
-                    value: Compact<u128> | AnyNumber | Uint8Array,
-                    beneficiary:
-                        | MultiAddress
-                        | { Id: any }
-                        | { Index: any }
-                        | { Raw: any }
-                        | { Address32: any }
-                        | { Address20: any }
-                        | string
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [Compact<u128>, MultiAddress]
-            >;
-            /**
-             * Reject a proposed spend.
-             *
-             * ## Dispatch Origin
-             *
-             * Must be [`Config::RejectOrigin`].
-             *
-             * ## Details
-             *
-             * The original deposit will be slashed.
-             *
-             * ### Complexity
-             *
-             * - O(1)
-             *
-             * ## Events
-             *
-             * Emits [`Event::Rejected`] if successful.
-             */
-            rejectProposal: AugmentedSubmittable<
-                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>]
-            >;
             /**
              * Force a previously approved proposal to be removed from the approval queue.
              *
@@ -3924,7 +3901,8 @@ declare module "@polkadot/api-base/types/submittable" {
              */
             suspendXcmExecution: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
-             * Overwrites the number of pages which must be in the queue after which we drop any further messages from the channel.
+             * Overwrites the number of pages which must be in the queue after which we drop any further messages from the
+             * channel.
              *
              * - `origin`: Must pass `Root`.
              * - `new`: Desired value for `QueueConfigData.drop_threshold`
@@ -3945,7 +3923,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u32]
             >;
             /**
-             * Overwrites the number of pages which must be in the queue for the other side to be told to suspend their sending.
+             * Overwrites the number of pages which must be in the queue for the other side to be told to suspend their
+             * sending.
              *
              * - `origin`: Must pass `Root`.
              * - `new`: Desired value for `QueueConfigData.suspend_value`

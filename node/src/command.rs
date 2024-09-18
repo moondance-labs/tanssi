@@ -371,17 +371,33 @@ pub fn run() -> Result<()> {
 					return crate::service::start_dev_node(config, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
 
+                let tokio_handle = config.tokio_handle.clone();
+                let polkadot_config =
+                    SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                        .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+                let solo_chain = cli.run.solo_chain;
+                if solo_chain {
+                    // We need to bake in some container-chain args
+                    let container_chain_cli = ContainerChainCli::new(
+                        &config,
+                        [ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
+                    );
+                    let tokio_handle = config.tokio_handle.clone();
+                    let container_chain_config = (container_chain_cli, tokio_handle);
+
+                    return crate::service::start_solochain_node(config, polkadot_config, container_chain_config, collator_options, hwbench)
+                        .await
+                        .map(|r| r.0)
+                        .map_err(Into::into);
+                }
+
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
 				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
 					.map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
-
-				let tokio_handle = config.tokio_handle.clone();
-				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
-						.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);

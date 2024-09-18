@@ -28,19 +28,23 @@ use {
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
         ParaId,
     },
-    cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
+    cumulus_relay_chain_interface::{
+        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
+    },
     dancebox_runtime::{
         opaque::{Block, Hash},
         AccountId, RuntimeApi,
     },
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
-        OrchestratorChainResult, PHash, PHeader,
+        BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
+        PHeader,
     },
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     pallet_author_noting_runtime_api::AuthorNotingApi,
+    pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
     parity_scale_codec::Encode,
     polkadot_cli::ProvideRuntimeApi,
@@ -121,19 +125,19 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
 /// Background task used to detect changes to container chain assignment,
 /// and start/stop container chains on demand. The check runs on every new block.
 pub fn build_check_assigned_para_id(
-    client: Arc<ParachainClient>,
+    client: Arc<dyn OrchestratorChainInterface>,
     sync_keystore: KeystorePtr,
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     spawner: impl SpawnEssentialNamed,
 ) {
-    // Subscribe to new blocks in order to react to para id assignment
-    // This must be the stream of finalized blocks, otherwise the collators may rotate to a
-    // different chain before the block is finalized, and that could lead to a stalled chain
-    let mut import_notifications = client.finality_notification_stream();
-
     let check_assigned_para_id_task = async move {
+        // Subscribe to new blocks in order to react to para id assignment
+        // This must be the stream of finalized blocks, otherwise the collators may rotate to a
+        // different chain before the block is finalized, and that could lead to a stalled chain
+        let mut import_notifications = client.finality_notification_stream().await.unwrap();
+
         while let Some(msg) = import_notifications.next().await {
-            let block_hash = msg.hash;
+            let block_hash = msg.hash();
             let client_set_aside_for_cidp = client.clone();
             let sync_keystore = sync_keystore.clone();
             let cc_spawn_tx = cc_spawn_tx.clone();
@@ -144,6 +148,7 @@ pub fn build_check_assigned_para_id(
                 client_set_aside_for_cidp,
                 block_hash,
             )
+            .await
             .unwrap();
         }
     };
@@ -160,29 +165,33 @@ pub fn build_check_assigned_para_id(
 ///
 /// Checks the assignment for the next block, so if there is a session change on block 15, this will
 /// detect the assignment change after importing block 14.
-fn check_assigned_para_id(
+async fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     sync_keystore: KeystorePtr,
-    client_set_aside_for_cidp: Arc<ParachainClient>,
+    client_set_aside_for_cidp: Arc<dyn OrchestratorChainInterface>,
     block_hash: H256,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Check current assignment
     let current_container_chain_para_id =
-        tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
+        tc_consensus::first_eligible_key::<dyn OrchestratorChainInterface, NimbusPair>(
             client_set_aside_for_cidp.as_ref(),
             &block_hash,
             sync_keystore.clone(),
         )
+        .await
         .map(|(_nimbus_key, para_id)| para_id);
 
     // Check assignment in the next session
-    let next_container_chain_para_id =
-        tc_consensus::first_eligible_key_next_session::<Block, ParachainClient, NimbusPair>(
-            client_set_aside_for_cidp.as_ref(),
-            &block_hash,
-            sync_keystore,
-        )
-        .map(|(_nimbus_key, para_id)| para_id);
+    let next_container_chain_para_id = tc_consensus::first_eligible_key_next_session::<
+        dyn OrchestratorChainInterface,
+        NimbusPair,
+    >(
+        client_set_aside_for_cidp.as_ref(),
+        &block_hash,
+        sync_keystore,
+    )
+    .await
+    .map(|(_nimbus_key, para_id)| para_id);
 
     cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
         current: current_container_chain_para_id,
@@ -338,6 +347,14 @@ async fn start_node_impl(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
+    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
+        client: node_builder.client.clone(),
+        backend: node_builder.backend.clone(),
+        sync_oracle: node_builder.network.sync_service.clone(),
+        overseer_handle: overseer_handle.clone(),
+    };
+    let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
+
     if validator {
         let collator_key = collator_key
             .clone()
@@ -348,7 +365,7 @@ async fn start_node_impl(
         // support collation on container chains, so there is no need to detect changes to assignment
         if container_chain_config.is_some() {
             build_check_assigned_para_id(
-                node_builder.client.clone(),
+                orchestrator_chain_interface.clone(),
                 sync_keystore.clone(),
                 cc_spawn_tx.clone(),
                 node_builder.task_manager.spawn_essential_handle(),
@@ -401,12 +418,6 @@ async fn start_node_impl(
     node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
-    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
-        client: node_builder.client.clone(),
-        backend: node_builder.backend.clone(),
-        sync_oracle: node_builder.network.sync_service.clone(),
-        overseer_handle: overseer_handle.clone(),
-    };
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
         // If the orchestrator chain is running as a full-node, we start a full node for the
@@ -431,7 +442,7 @@ async fn start_node_impl(
 
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
-                orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
+                orchestrator_chain_interface,
                 container_chain_cli,
                 tokio_handle,
                 chain_type,
@@ -439,6 +450,7 @@ async fn start_node_impl(
                 relay_chain_interface,
                 sync_keystore,
                 orchestrator_para_id: para_id,
+                data_preserver: false,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         orchestrator_client: orchestrator_client.clone(),
@@ -446,6 +458,7 @@ async fn start_node_impl(
                         orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
+                        solochain: false,
                     })
                 } else {
                     None
@@ -470,7 +483,7 @@ async fn start_node_impl(
         node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(cc_spawn_rx, validator),
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator, false),
         );
 
         node_builder.task_manager.spawn_essential_handle().spawn(
@@ -644,6 +657,7 @@ fn start_consensus_orchestrator(
         cancellation_token: cancellation_token.clone(),
         orchestrator_tx_pool,
         orchestrator_client: client,
+        solochain: false,
     };
 
     let (fut, exit_notification_receiver) =
@@ -673,6 +687,205 @@ pub async fn start_parachain_node(
         hwbench,
     )
     .await
+}
+
+/// Start a solochain node.
+pub async fn start_solochain_node(
+    // Parachain config not used directly, but we need it to derive the default values for some container_config args
+    orchestrator_config: Configuration,
+    polkadot_config: Configuration,
+    mut container_chain_config: (ContainerChainCli, tokio::runtime::Handle),
+    collator_options: CollatorOptions,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+    let orchestrator_para_id = Default::default();
+    let parachain_config = prepare_node_config(orchestrator_config);
+    {
+        let (container_chain_cli, _) = &mut container_chain_config;
+        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
+        if container_chain_cli
+            .base
+            .base
+            .import_params
+            .wasmtime_precompiled
+            .is_none()
+        {
+            container_chain_cli
+                .base
+                .base
+                .import_params
+                .wasmtime_precompiled
+                .clone_from(&parachain_config.wasmtime_precompiled);
+        }
+    }
+
+    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
+    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
+        .map(|e| e.relay_chain.clone())
+        .ok_or("Could not find relay_chain extension in chain-spec.")?;
+
+    // Channel to send messages to start/stop container chains
+    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
+
+    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
+    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+
+    let (_block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+
+    let (relay_chain_interface, collator_key) = node_builder
+        .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
+        .await?;
+
+    let validator = parachain_config.role.is_authority();
+
+    log::info!("start_solochain_node: is validator? {}", validator);
+
+    let node_builder = node_builder
+        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+            &parachain_config,
+            orchestrator_para_id,
+            import_queue,
+            relay_chain_interface.clone(),
+        )
+        .await?;
+
+    let relay_chain_slot_duration = Duration::from_secs(6);
+    let overseer_handle = relay_chain_interface
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+    let sync_keystore = node_builder.keystore_container.keystore();
+    let collate_on_tanssi: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    > = Arc::new(move || {
+        // collate_on_tanssi will not be called in solochains because solochains use a different consensus
+        // mechanism and need validators instead of collators.
+        // The runtime enforces this because the orchestrator_chain is never assigned any collators.
+        panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
+    });
+
+    let announce_block = {
+        let sync_service = node_builder.network.sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    };
+
+    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
+
+    start_relay_chain_tasks(StartRelayChainTasksParams {
+        client: node_builder.client.clone(),
+        announce_block: announce_block.clone(),
+        para_id: orchestrator_para_id,
+        relay_chain_interface: relay_chain_interface.clone(),
+        task_manager: &mut node_builder.task_manager,
+        da_recovery_profile: if validator {
+            DARecoveryProfile::Collator
+        } else {
+            DARecoveryProfile::FullNode
+        },
+        import_queue: import_queue_service,
+        relay_chain_slot_duration,
+        recovery_handle: Box::new(overseer_handle.clone()),
+        sync_service: node_builder.network.sync_service.clone(),
+    })?;
+
+    let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
+        overseer_handle: overseer_handle.clone(),
+        relay_chain_interface: relay_chain_interface.clone(),
+    };
+    let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
+
+    if validator {
+        // Start task which detects para id assignment, and starts/stops container chains.
+        build_check_assigned_para_id(
+            orchestrator_chain_interface.clone(),
+            sync_keystore.clone(),
+            cc_spawn_tx.clone(),
+            node_builder.task_manager.spawn_essential_handle(),
+        );
+    }
+
+    let sync_keystore = node_builder.keystore_container.keystore();
+
+    {
+        let (container_chain_cli, tokio_handle) = container_chain_config;
+        // If the orchestrator chain is running as a full-node, we start a full node for the
+        // container chain immediately, because only collator nodes detect their container chain
+        // assignment so otherwise it will never start.
+        if !validator {
+            if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
+                // Spawn new container chain node
+                cc_spawn_tx
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: Some(container_chain_para_id.into()),
+                        next: Some(container_chain_para_id.into()),
+                    })
+                    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+            }
+        }
+
+        // Start container chain spawner task. This will start and stop container chains on demand.
+        let orchestrator_client = node_builder.client.clone();
+        let orchestrator_tx_pool = node_builder.transaction_pool.clone();
+        let spawn_handle = node_builder.task_manager.spawn_handle();
+
+        let container_chain_spawner = ContainerChainSpawner {
+            params: ContainerChainSpawnParams {
+                orchestrator_chain_interface,
+                container_chain_cli,
+                tokio_handle,
+                chain_type,
+                relay_chain,
+                relay_chain_interface,
+                sync_keystore,
+                orchestrator_para_id,
+                collation_params: if validator {
+                    Some(spawner::CollationParams {
+                        // TODO: all these args must be solochain instead of orchestrator
+                        orchestrator_client: orchestrator_client.clone(),
+                        orchestrator_tx_pool,
+                        orchestrator_para_id,
+                        collator_key: collator_key
+                            .expect("there should be a collator key if we're a validator"),
+                        solochain: true,
+                    })
+                } else {
+                    None
+                },
+                spawn_handle,
+                sync_mode: {
+                    move |_db_exists, _para_id| {
+                        // Default to full sync because it always works
+                        // TODO: allow select_sync_mode_using_client to use orchestrator_chain_interface
+                        /*
+                        spawner::select_sync_mode_using_client(
+                            db_exists,
+                            &orchestrator_chain_interface,
+                            para_id,
+                        ).await*/
+                        Ok(sc_cli::SyncMode::Full)
+                    }
+                },
+                data_preserver: false,
+            },
+            state: Default::default(),
+            collate_on_tanssi,
+            collation_cancellation_constructs: None,
+        };
+        let state = container_chain_spawner.state.clone();
+
+        node_builder.task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-rx-loop",
+            None,
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
+        );
+
+        node_builder.task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-debug-state",
+            None,
+            monitor::monitor_task(state),
+        )
+    }
+
+    Ok((node_builder.task_manager, node_builder.client))
 }
 
 pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);
@@ -801,6 +1014,7 @@ pub fn start_dev_node(
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
+                        current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
                         // TODO: Recheck
@@ -809,12 +1023,12 @@ pub fn start_dev_node(
                         xcm_config: MockXcmConfig::new(
                             &*client_for_xcm,
                             block,
-                            para_id,
                             Default::default(),
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
+                        para_id,
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
@@ -896,6 +1110,26 @@ impl OrchestratorChainInProcessInterfaceBuilder {
     }
 }
 
+/// Builder for a concrete relay chain interface, created from a full node. Builds
+/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
+///
+/// The builder takes a [`polkadot_client::Client`]
+/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
+/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
+struct OrchestratorChainSolochainInterfaceBuilder {
+    overseer_handle: Handle,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+}
+
+impl OrchestratorChainSolochainInterfaceBuilder {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+        Arc::new(OrchestratorChainSolochainInterface::new(
+            self.overseer_handle,
+            self.relay_chain_interface,
+        ))
+    }
+}
+
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     pub full_client: Arc<Client>,
@@ -944,7 +1178,8 @@ where
     Client::Api: TanssiAuthorityAssignmentApi<Block, NimbusId>
         + OnDemandBlockProductionApi<Block, ParaId, Slot>
         + RegistrarApi<Block, ParaId>
-        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>,
+        + AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>
+        + DataPreserversApi<Block, DataPreserverProfileId, ParaId>,
 {
     async fn get_storage_by_key(
         &self,
@@ -960,7 +1195,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &[Vec<u8>],
+        relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 
@@ -1043,5 +1278,231 @@ where
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         Ok(self.backend.blockchain().info().finalized_hash)
+    }
+
+    async fn data_preserver_active_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        profile_id: DataPreserverProfileId,
+    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        use {
+            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
+            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
+        };
+
+        Ok(
+            match runtime_api.get_active_assignment(orchestrator_parent, profile_id)? {
+                RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
+                RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
+                RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
+            },
+        )
+    }
+
+    async fn check_para_id_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.check_para_id_assignment(orchestrator_parent, authority)?)
+    }
+
+    async fn check_para_id_assignment_next_session(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        let runtime_api = self.full_client.runtime_api();
+
+        Ok(runtime_api.check_para_id_assignment_next_session(orchestrator_parent, authority)?)
+    }
+}
+
+/// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
+pub struct OrchestratorChainSolochainInterface {
+    pub overseer_handle: Handle,
+    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+}
+
+impl OrchestratorChainSolochainInterface {
+    /// Create a new instance of [`RelayChainInProcessInterface`]
+    pub fn new(
+        overseer_handle: Handle,
+        relay_chain_interface: Arc<dyn RelayChainInterface>,
+    ) -> Self {
+        Self {
+            overseer_handle,
+            relay_chain_interface,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
+    async fn get_storage_by_key(
+        &self,
+        relay_parent: PHash,
+        key: &[u8],
+    ) -> OrchestratorChainResult<Option<StorageValue>> {
+        self.relay_chain_interface
+            .get_storage_by_key(relay_parent, key)
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    async fn prove_read(
+        &self,
+        relay_parent: PHash,
+        relevant_keys: &Vec<Vec<u8>>,
+    ) -> OrchestratorChainResult<StorageProof> {
+        self.relay_chain_interface
+            .prove_read(relay_parent, relevant_keys)
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
+        Ok(self.overseer_handle.clone())
+    }
+
+    /// Get a stream of import block notifications.
+    async fn import_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        self.relay_chain_interface
+            .import_notification_stream()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    /// Get a stream of new best block notifications.
+    async fn new_best_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        self.relay_chain_interface
+            .new_best_notification_stream()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    /// Get a stream of finality notifications.
+    async fn finality_notification_stream(
+        &self,
+    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        self.relay_chain_interface
+            .finality_notification_stream()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    async fn genesis_data(
+        &self,
+        relay_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
+        let res: Option<ContainerChainGenesisData> = call_remote_runtime_function(
+            &self.relay_chain_interface,
+            "RegistrarApi_genesis_data",
+            relay_parent,
+            &para_id,
+        )
+        .await
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        Ok(res)
+    }
+
+    async fn boot_nodes(
+        &self,
+        relay_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
+        let res: Vec<Vec<u8>> = call_remote_runtime_function(
+            &self.relay_chain_interface,
+            "RegistrarApi_boot_nodes",
+            relay_parent,
+            &para_id,
+        )
+        .await
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        Ok(res)
+    }
+
+    async fn latest_block_number(
+        &self,
+        relay_parent: PHash,
+        para_id: ParaId,
+    ) -> OrchestratorChainResult<Option<BlockNumber>> {
+        let res: Option<BlockNumber> = call_remote_runtime_function(
+            &self.relay_chain_interface,
+            "AuthorNotingApi_latest_block_number",
+            relay_parent,
+            &para_id,
+        )
+        .await
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        Ok(res)
+    }
+
+    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        self.relay_chain_interface
+            .best_block_hash()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
+        self.relay_chain_interface
+            .finalized_block_hash()
+            .await
+            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+    }
+
+    async fn data_preserver_active_assignment(
+        &self,
+        _orchestrator_parent: PHash,
+        _profile_id: DataPreserverProfileId,
+    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
+        unimplemented!("Data preserver node does not support Starlight yet")
+    }
+
+    async fn check_para_id_assignment(
+        &self,
+        relay_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        let res: Option<ParaId> = call_remote_runtime_function(
+            &self.relay_chain_interface,
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment",
+            relay_parent,
+            &authority,
+        )
+        .await
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        Ok(res)
+    }
+
+    async fn check_para_id_assignment_next_session(
+        &self,
+        relay_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        let res: Option<ParaId> = call_remote_runtime_function(
+            &self.relay_chain_interface,
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
+            relay_parent,
+            &authority,
+        )
+        .await
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        Ok(res)
     }
 }

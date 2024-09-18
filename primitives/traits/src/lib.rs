@@ -24,10 +24,11 @@ pub mod alias;
 pub use {
     alias::*,
     cumulus_primitives_core::{
-        relay_chain::{BlockNumber, Slot},
+        relay_chain::{BlockNumber, HeadData, Slot, ValidationCode},
         ParaId,
     },
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
+    dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
 };
 use {
     core::marker::PhantomData,
@@ -41,7 +42,7 @@ use {
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
-        ArithmeticError,
+        ArithmeticError, DispatchResult, Perbill,
     },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
@@ -129,10 +130,19 @@ pub trait GetCurrentContainerChains {
 }
 
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
-/// tanssi slot time, 12 seconds by default.
+/// tanssi slot time, 6 seconds.
 // TODO: this is currently ignored
 #[derive(
-    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+    Clone,
+    Debug,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
 )]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
@@ -174,7 +184,16 @@ impl Default for SlotFrequency {
 }
 
 #[derive(
-    Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq, Serialize, Deserialize,
+    Clone,
+    Debug,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
 )]
 pub struct ParathreadParams {
     pub slot_frequency: SlotFrequency,
@@ -209,6 +228,8 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
     fn collators_per_parathread(session_index: SessionIndex) -> u32;
+    fn target_container_chain_fullness(session_index: SessionIndex) -> Perbill;
+    fn max_parachain_cores_percentage(session_index: SessionIndex) -> Option<Perbill>;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_host_configuration(_session_index: SessionIndex) {}
 }
@@ -364,5 +385,47 @@ impl GenericStorageReader for NativeStorageReader {
             Some(x) => Ok(x),
             None => Err(ReadEntryErr::Absent),
         }
+    }
+}
+
+/// Trait to handle registrar-related operations in a relay-chain context.
+/// Mostly used to wire Tanssi's and Polkadot's registrars, for them to
+/// work together in a solo-chain environment.
+pub trait RegistrarHandler<AccountId> {
+    fn register(
+        who: AccountId,
+        id: ParaId,
+        genesis_storage: &[ContainerChainGenesisDataItem],
+        head_data: Option<HeadData>,
+    ) -> DispatchResult;
+
+    fn schedule_para_upgrade(id: ParaId) -> DispatchResult;
+    fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
+    fn deregister(id: ParaId);
+    fn deregister_weight() -> Weight;
+}
+
+impl<AccountId> RegistrarHandler<AccountId> for () {
+    fn register(
+        _who: AccountId,
+        _id: ParaId,
+        _genesis_storage: &[ContainerChainGenesisDataItem],
+        _head_data: Option<HeadData>,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn schedule_para_upgrade(_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    fn schedule_para_downgrade(_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    fn deregister(_id: ParaId) {}
+
+    fn deregister_weight() -> Weight {
+        Weight::default()
     }
 }

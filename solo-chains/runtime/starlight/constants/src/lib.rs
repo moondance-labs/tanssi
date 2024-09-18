@@ -25,13 +25,21 @@ pub mod currency {
     /// The existential deposit.
     pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
+    // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
+    pub const SUPPLY_FACTOR: Balance = 100;
+
     pub const UNITS: Balance = 1_000_000_000_000;
     pub const CENTS: Balance = UNITS / 30_000;
     pub const GRAND: Balance = CENTS * 100_000;
     pub const MILLICENTS: Balance = CENTS / 1_000;
+    pub const MICROUNITS: Balance = 1_000_000;
+    pub const MILLIUNITS: Balance = 1_000_000_000;
+
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNITS * SUPPLY_FACTOR;
+    pub const STORAGE_ITEM_FEE: Balance = 100 * MILLIUNITS * SUPPLY_FACTOR;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 2_000 * CENTS + (bytes as Balance) * 100 * MILLICENTS
+        items as Balance * STORAGE_ITEM_FEE + (bytes as Balance) * STORAGE_BYTE_FEE
     }
 }
 
@@ -44,8 +52,7 @@ pub mod time {
     pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
     frame_support::parameter_types! {
-        pub EpochDurationInBlocks: BlockNumber =
-            prod_or_fast!(1 * HOURS, 1 * MINUTES, "STARLIGHT_EPOCH_DURATION");
+        pub const EpochDurationInBlocks: BlockNumber = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     }
 
     // These time units are defined in number of blocks.
@@ -125,7 +132,7 @@ pub mod system_parachain {
 }
 
 /// Starlight Treasury pallet instance.
-pub const TREASURY_PALLET_ID: u8 = 18;
+pub const TREASURY_PALLET_ID: u8 = 40;
 
 #[cfg(test)]
 mod tests {

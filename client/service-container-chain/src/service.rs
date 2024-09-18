@@ -23,19 +23,20 @@ use {
         StartRelayChainTasksParams,
     },
     cumulus_primitives_core::ParaId,
-    cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
+    cumulus_relay_chain_interface::{
+        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
+    },
     dancebox_runtime::{
         opaque::{Block, Hash},
         RuntimeApi,
     },
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
-    nimbus_primitives::NimbusPair,
+    nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{NodeBuilder, NodeBuilderConfig},
-    polkadot_primitives::CollatorPair,
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
-    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
+    sc_executor::WasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
@@ -56,6 +57,9 @@ use {
     },
     tokio_util::sync::CancellationToken,
 };
+
+#[allow(deprecated)]
+use sc_executor::NativeElseWasmExecutor;
 
 type FullBackend = TFullBackend<Block>;
 
@@ -101,12 +105,12 @@ impl<BI> OrchestratorParachainBlockImport<BI> {
 #[async_trait::async_trait]
 impl<BI> BlockImport<Block> for OrchestratorParachainBlockImport<BI>
 where
-    BI: BlockImport<Block> + Send,
+    BI: BlockImport<Block> + Send + Sync,
 {
     type Error = BI::Error;
 
     async fn check_block(
-        &mut self,
+        &self,
         block: sc_consensus::BlockCheckParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         self.inner.check_block(block).await
@@ -126,6 +130,7 @@ where
 impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 // Orchestrator chain types
+#[allow(deprecated)]
 pub type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
@@ -231,13 +236,7 @@ pub async fn start_node_impl_container(
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
-    if let Some(crate::spawner::CollationParams {
-        collator_key,
-        orchestrator_tx_pool,
-        orchestrator_client,
-        orchestrator_para_id,
-    }) = collation_params
-    {
+    if let Some(collation_params) = collation_params {
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
         let node_backend = node_builder.backend.clone();
@@ -245,8 +244,7 @@ pub async fn start_node_impl_container(
         start_consensus_container(
             node_client.clone(),
             node_backend.clone(),
-            orchestrator_client.clone(),
-            orchestrator_tx_pool.clone(),
+            collation_params,
             block_import.clone(),
             prometheus_registry.clone(),
             node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
@@ -259,8 +257,6 @@ pub async fn start_node_impl_container(
             force_authoring,
             relay_chain_slot_duration,
             para_id,
-            orchestrator_para_id,
-            collator_key.clone(),
             overseer_handle.clone(),
             announce_block.clone(),
         );
@@ -306,8 +302,7 @@ pub fn container_chain_import_queue(
 fn start_consensus_container(
     client: Arc<ContainerChainClient>,
     backend: Arc<FullBackend>,
-    orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
+    collation_params: crate::spawner::CollationParams,
     block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -320,13 +315,26 @@ fn start_consensus_container(
     force_authoring: bool,
     relay_chain_slot_duration: Duration,
     para_id: ParaId,
-    orchestrator_para_id: ParaId,
-    collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
-        .expect("start_consensus_container: slot duration should exist");
+    let crate::spawner::CollationParams {
+        collator_key,
+        orchestrator_tx_pool,
+        orchestrator_client,
+        orchestrator_para_id,
+        solochain,
+    } = collation_params;
+    let slot_duration = if solochain {
+        // Solochains use Babe instead of Aura, which has 6s slot duration
+        let relay_slot_ms = relay_chain_slot_duration.as_millis();
+        SlotDuration::from_millis(
+            u64::try_from(relay_slot_ms).expect("relay chain slot duration overflows u64"),
+        )
+    } else {
+        cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
+            .expect("start_consensus_container: slot duration should exist")
+    };
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
@@ -376,14 +384,21 @@ fn start_consensus_container(
             let client = client_for_cidp.clone();
 
             async move {
-                let authorities_noting_inherent =
+                let authorities_noting_inherent = if solochain {
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at_solochain(
+                        relay_parent,
+                        &relay_chain_interface,
+                    )
+                        .await
+                } else {
                     ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
                         orchestrator_para_id,
                     )
-                    .await;
+                        .await
+                };
 
                 let slot_duration = {
                     // Default to 12s if runtime API does not exist
@@ -417,50 +432,87 @@ fn start_consensus_container(
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
             async move {
-                let latest_header =
-                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
-                        relay_parent,
+                if solochain {
+                    let authorities: Option<Vec<NimbusId>> = call_remote_runtime_function(
                         &relay_chain_interace_for_orch,
-                        orchestrator_para_id,
+                        "TanssiAuthorityAssignmentApi_para_id_authorities",
+                        relay_parent,
+                        &para_id,
                     )
-                    .await;
+                    .await?;
 
-                let latest_header = latest_header.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch latest header",
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        relay_parent
+                    );
+
+                    let slot_freq: Option<_> = call_remote_runtime_function(
+                        &relay_chain_interace_for_orch,
+                        "OnDemandBlockProductionApi_parathread_slot_frequency",
+                        relay_parent,
+                        &para_id,
                     )
-                })?;
+                    .await?;
 
-                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
 
-                let authorities = authorities.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch authorities with error",
-                    )
-                })?;
+                    Ok(aux_data)
+                } else {
+                    let latest_header =
+                        ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                            relay_parent,
+                            &relay_chain_interace_for_orch,
+                            orchestrator_para_id,
+                        )
+                            .await;
 
-                log::info!(
-                    "Authorities {:?} found for header {:?}",
-                    authorities,
-                    latest_header
-                );
+                    let latest_header = latest_header.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch latest header",
+                        )
+                    })?;
 
-                let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        &latest_header.hash(),
+                        para_id,
+                    );
 
-                let aux_data = OrchestratorAuraWorkerAuxData {
-                    authorities,
-                    slot_freq,
-                };
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
 
-                Ok(aux_data)
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        latest_header
+                    );
+
+                    let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        &latest_header.hash(),
+                        para_id,
+                    );
+
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
+
+                    Ok(aux_data)
+                }
             }
         },
         block_import,
@@ -483,6 +535,7 @@ fn start_consensus_container(
         cancellation_token: CancellationToken::new(),
         orchestrator_tx_pool,
         orchestrator_client,
+        solochain,
     };
 
     let (fut, _exit_notification_receiver) =

@@ -117,6 +117,7 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
     pub sync_mode: SelectSyncMode,
+    pub data_preserver: bool,
 }
 
 /// Params specific to collation. This struct can contain types obtained through running an
@@ -128,6 +129,7 @@ pub struct CollationParams {
         Arc<sc_transaction_pool::TransactionPoolImpl<OpaqueBlock, ParachainClient>>,
     pub orchestrator_client: Arc<ParachainClient>,
     pub orchestrator_para_id: ParaId,
+    pub solochain: bool,
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
@@ -187,6 +189,7 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         spawn_handle,
         mut collation_params,
         sync_mode,
+        data_preserver,
         ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
@@ -253,12 +256,14 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         container_chain_para_id
     );
 
-    if !start_collation {
+    if !data_preserver && !start_collation {
+        log::info!("This is a syncing container chain, using random ports");
+
         collation_params = None;
 
-        log::info!("This is a syncing container chain, using random ports");
         // Use random ports to avoid conflicts with the other running container chain
         let random_ports = [23456, 23457, 23458];
+
         container_chain_cli
             .base
             .base
@@ -527,7 +532,37 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
     Ok(())
 }
 
-impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
+/// Interface for spawning and stopping container chain embeded nodes.
+pub trait Spawner {
+    /// Access to the Orchestrator Chain Interface
+    fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface>;
+
+    /// Try to start a new container chain. In case of an error, this does not stop the node, and
+    /// the container chain will be attempted to spawn again when the collator is reassigned to it.
+    ///
+    /// It is possible that we try to spawn-stop-spawn the same chain, and the second spawn fails
+    /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
+    /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
+    /// `handle_update_assignment`.
+    fn spawn(
+        &self,
+        container_chain_para_id: ParaId,
+        start_collation: bool,
+    ) -> impl std::future::Future<Output = ()> + Send;
+
+    /// Stop a container chain. Prints a warning if the container chain was not running.
+    /// Returns the database path for the container chain, can be used with `wait_for_paritydb_lock`
+    /// to ensure that the container chain has fully stopped. The database path can be `None` if the
+    /// chain was not running.
+    fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
+}
+
+impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSyncMode> {
+    /// Access to the Orchestrator Chain Interface
+    fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
+        self.params.orchestrator_chain_interface.clone()
+    }
+
     /// Try to start a new container chain. In case of an error, this does not stop the node, and
     /// the container chain will be attempted to spawn again when the collator is reassigned to it.
     ///
@@ -600,15 +635,23 @@ impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
             }
         }
     }
+}
 
+impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
+    pub async fn rx_loop(
+        mut self,
+        mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>,
+        validator: bool,
+        solochain: bool,
+    ) {
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
         // collators stop at the same time, when they start again nobody will produce the new block.
         // So all nodes start as orchestrator chain collators, until the first block is imported,
         // then the real assignment is used.
-        if validator {
+        // Except in solochain mode, then the initial assignment is None.
+        if validator && !solochain {
             self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
                 .await;
         }
@@ -1019,7 +1062,7 @@ fn parse_boot_nodes_ignore_invalid(
         .collect()
 }
 
-async fn wait_for_paritydb_lock(db_path: &Path, max_timeout: Duration) -> Result<(), String> {
+pub async fn wait_for_paritydb_lock(db_path: &Path, max_timeout: Duration) -> Result<(), String> {
     let now = Instant::now();
 
     while now.elapsed() < max_timeout {

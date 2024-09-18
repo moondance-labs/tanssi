@@ -1,4 +1,3 @@
-import "@tanssi/api-augment";
 import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
@@ -8,6 +7,7 @@ import {
 } from "@polkadot/types/lookup";
 import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
+import { ApiPromise } from "@polkadot/api";
 
 // Creates and returns the tx that overrides the paraHRMP existence
 // This needs to be inserted at every block in which you are willing to test
@@ -945,6 +945,16 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
     return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
 };
 
+export const extractPaidDeliveryFeesStarlight = async (context: DevModeContext) => {
+    const records = await context.polkadotJs().query.system.events();
+
+    const filteredEvents = records
+        .map(({ event }) => (context.polkadotJs().events.xcmPallet.FeesPaid.is(event) ? event : undefined))
+        .filter((event) => event);
+
+    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+};
+
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {
     const upwardMessages = await context.polkadotJs().query.parachainSystem.upwardMessages();
     expect(upwardMessages.length > 0, "There is no upward message").to.be.true;
@@ -955,6 +965,25 @@ export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDeli
 
     const txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
     const deliveryFeeFactor = await context.polkadotJs().query.parachainSystem.upwardDeliveryFeeFactor();
+    const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
+    return fee;
+};
+
+export const getLastSentDmpMessageFee = async (
+    context: DevModeContext,
+    baseDelivery: bigint,
+    txByteFee: bigint,
+    paraId: number
+) => {
+    const downwardMessages = await context.polkadotJs().query.dmp.downwardMessageQueues(paraId);
+    expect(downwardMessages.length > 0, "There is no downward message").to.be.true;
+    const sentXcm = downwardMessages[0].msg;
+
+    // We need to slice once to get to the actual message (version)
+    const messageBytes = sentXcm.slice(1);
+
+    const txPrice = baseDelivery + txByteFee * BigInt(messageBytes.length);
+    const deliveryFeeFactor = await context.polkadotJs().query.dmp.deliveryFeeFactor(paraId);
     const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
     return fee;
 };
@@ -974,4 +1003,36 @@ export const getLastSentHrmpMessageFee = async (
     const deliveryFeeFactor = await context.polkadotJs().query.xcmpQueue.deliveryFeeFactor(paraId);
     const fee = (BigInt(deliveryFeeFactor.toString()) * txPrice) / BigInt(10 ** 18);
     return fee;
+};
+
+export const getParathreadRelayTankAddress = async (
+    relayApi: ApiPromise,
+    tanssiParaId: number,
+    containerParaId: number
+) => {
+    const targetParaId = relayApi.createType("ParaId", containerParaId);
+    const containerAddress = u8aToHex(
+        new Uint8Array([...new TextEncoder().encode("para"), ...targetParaId.toU8a()])
+    ).padEnd(66, "0");
+
+    // We are going to generate the address from the relay runtime apis
+    const address = await relayApi.call.locationToAccountApi.convertLocation({
+        V3: {
+            parents: 0,
+            interior: {
+                X2: [
+                    {
+                        Parachain: tanssiParaId,
+                    },
+                    {
+                        AccountId32: {
+                            network: null,
+                            id: containerAddress,
+                        },
+                    },
+                ],
+            },
+        },
+    });
+    return address.asOk.toHuman();
 };

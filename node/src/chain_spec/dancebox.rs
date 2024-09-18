@@ -34,8 +34,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec =
-    sc_service::GenericChainSpec<dancebox_runtime::RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Generate the session keys from individual elements.
 ///
@@ -98,6 +97,7 @@ pub fn development_config(
                 collators_per_parathread: 1,
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
+                max_parachain_cores_percentage: None,
             },
             ..Default::default()
         },
@@ -160,6 +160,7 @@ pub fn local_dancebox_config(
                 collators_per_parathread: 1,
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
+                max_parachain_cores_percentage: None,
             },
             ..Default::default()
         },
@@ -257,6 +258,7 @@ fn testnet_genesis(
                     )
                 })
                 .collect(),
+            ..Default::default()
         },
         parachain_system: Default::default(),
         configuration,

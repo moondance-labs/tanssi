@@ -68,7 +68,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         dataPreservers: {
-            /** Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and `AssignerParameter`. */
+            /**
+             * Made for `AssignmentPayment` implementors to report a mismatch between `ProviderRequest` and
+             * `AssignerParameter`.
+             */
             AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;
             CantDeleteAssignedProfile: AugmentedError<ApiType>;
             MaxAssignmentsPerParaIdReached: AugmentedError<ApiType>;
@@ -248,6 +251,8 @@ declare module "@polkadot/api-base/types/errors" {
         registrar: {
             /** Attempted to register a ParaId with a genesis data size greater than the limit */
             GenesisDataTooBig: AugmentedError<ApiType>;
+            /** Tried to register a paraId in a relay context without specifying a proper HeadData. */
+            HeadDataNecessary: AugmentedError<ApiType>;
             /** The provided signature from the parachain manager in the relay is not valid */
             InvalidRelayManagerSignature: AugmentedError<ApiType>;
             /** The provided relay storage proof is not valid */
@@ -276,6 +281,8 @@ declare module "@polkadot/api-base/types/errors" {
             ParaStillExistsInRelay: AugmentedError<ApiType>;
             /** The relay storage root for the corresponding block number could not be retrieved */
             RelayStorageRootNotFound: AugmentedError<ApiType>;
+            /** Tried to register a paraId in a relay context without specifying a wasm chain code. */
+            WasmCodeNecessary: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
@@ -364,8 +371,6 @@ declare module "@polkadot/api-base/types/errors" {
             Inconclusive: AugmentedError<ApiType>;
             /** The spend origin is valid but the amount it is allowed to spend is lower than the amount to be spent. */
             InsufficientPermission: AugmentedError<ApiType>;
-            /** Proposer's balance is too low. */
-            InsufficientProposersBalance: AugmentedError<ApiType>;
             /** No proposal, bounty or spend at that index. */
             InvalidIndex: AugmentedError<ApiType>;
             /** The payout was not yet attempted/claimed. */

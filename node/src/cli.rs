@@ -123,6 +123,10 @@ pub struct RunCmd {
     #[arg(long)]
     pub dev_service: bool,
 
+    /// Enable collators to run against a solo-chain such as Starlight
+    #[arg(long)]
+    pub solo_chain: bool,
+
     /// When blocks should be sealed in the dev service.
     ///
     /// Options are "instant", "manual", or timer interval in milliseconds
@@ -184,7 +188,7 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and orchestrator chain arguments
+    /// Extra arguments, `container-args -- relay-args` or `relay-args` if no `--`
     #[arg(raw = true)]
     extra_args: Vec<String>,
 }

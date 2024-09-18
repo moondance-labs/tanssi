@@ -10,6 +10,7 @@ import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts
 import jsonBg from "json-bigint";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
 import { getKeyringNimbusIdHex } from "../../util/keys.ts";
+import { getParathreadRelayTankAddress } from "../../util/xcm.ts";
 import Bottleneck from "bottleneck";
 import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
@@ -132,10 +133,8 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-                // Hard coded tank accounts; we still need to find a way to generate them
-                const paraId2000Tank = "5Eyq93LQvDWbHmncBeXcMcDvyRKShc2ywpFUzhCX7AcJfsxm";
-                const paraId2001Tank = "5GhKA47pfc1XWbMGbAYoP3F8Lpnvodc2M71NC7bgJH8JGbqB";
+                const paraId2000Tank = await getParathreadRelayTankAddress(relayApi, 1000, 2000);
+                const paraId2001Tank = await getParathreadRelayTankAddress(relayApi, 1000, 2001);
 
                 const aliceBalance = (await relayApi.query.system.account(alice.address)).data.free.toBigInt();
                 const balanceToTransfer = aliceBalance / 4n;
@@ -466,7 +465,7 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId) {
+async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId, headData?: null) {
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",
@@ -479,7 +478,7 @@ async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq
 
     const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
     const txs = [];
-    const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
+    const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData, headData);
     txs.push(
         api.tx.utility.dispatchAs(
             {

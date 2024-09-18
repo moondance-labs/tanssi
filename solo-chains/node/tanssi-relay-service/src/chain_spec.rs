@@ -18,10 +18,17 @@
 
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    cumulus_primitives_core::ParaId,
+    dp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+    },
     grandpa::AuthorityId as GrandpaId,
     polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
+    starlight_runtime::genesis_config_presets::{
+        starlight_development_config_genesis, starlight_local_testnet_genesis,
+    },
 };
 
 #[cfg(any(feature = "starlight-native"))]
@@ -33,7 +40,7 @@ use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, Pair, Public},
+    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys, Pair, Public},
     sp_runtime::traits::IdentifyAccount,
 };
 
@@ -60,11 +67,11 @@ pub struct Extensions {
 }
 
 // Generic chain spec, in case when we don't have the native runtime.
-pub type GenericChainSpec = service::GenericChainSpec<(), Extensions>;
+pub type GenericChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the starlight runtime.
 #[cfg(feature = "starlight-native")]
-pub type StarlightChainSpec = service::GenericChainSpec<(), Extensions>;
+pub type StarlightChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the starlight runtime.
 // Dummy chain spec, but that is fine when we don't have the native runtime.
@@ -161,7 +168,28 @@ pub fn get_authority_keys_from_seed_no_beefy(
 
 /// Starlight development config (single validator Alice)
 #[cfg(feature = "starlight-native")]
-pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
+pub fn starlight_development_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+    let container_chains: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
     Ok(StarlightChainSpec::builder(
         starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
@@ -169,14 +197,38 @@ pub fn starlight_development_config() -> Result<StarlightChainSpec, String> {
     .with_name("Development")
     .with_id("starlight_dev")
     .with_chain_type(ChainType::Development)
-    .with_genesis_config_preset_name("development")
+    .with_genesis_config_patch(starlight_development_config_genesis(
+        container_chains,
+        invulnerables,
+    ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
 }
 
 /// Starlight local testnet config (multivalidator Alice + Bob)
 #[cfg(feature = "starlight-native")]
-pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
+pub fn starlight_local_testnet_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+    let container_chains: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
     Ok(StarlightChainSpec::builder(
         starlight::fast_runtime_binary::WASM_BINARY
             .ok_or("Starlight development wasm not available")?,
@@ -185,7 +237,31 @@ pub fn starlight_local_testnet_config() -> Result<StarlightChainSpec, String> {
     .with_name("Starlight Local Testnet")
     .with_id("starlight_local_testnet")
     .with_chain_type(ChainType::Local)
-    .with_genesis_config_preset_name("local_testnet")
+    .with_genesis_config_patch(starlight_local_testnet_genesis(
+        container_chains,
+        invulnerables,
+    ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
+}
+
+fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: vec![
+            dp_container_chain_genesis_data::ContainerChainGenesisDataItem {
+                key: StorageWellKnownKeys::CODE.to_vec(),
+                value: dummy_validation_code().0,
+            },
+        ],
+        name: format!("Container Chain {}", para_id).into(),
+        id: format!("container-chain-{}", para_id).into(),
+        fork_id: None,
+        extensions: vec![],
+        properties: Default::default(),
+    }
+}
+
+/// Create meaningless validation code.
+pub fn dummy_validation_code() -> cumulus_primitives_core::relay_chain::ValidationCode {
+    cumulus_primitives_core::relay_chain::ValidationCode(vec![1, 2, 3, 4, 5, 6, 7, 8, 9])
 }

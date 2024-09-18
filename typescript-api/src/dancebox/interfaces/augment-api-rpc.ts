@@ -136,7 +136,10 @@ declare module "@polkadot/rpc-core/types/jsonrpc" {
             >;
         };
         babe: {
-            /** Returns data about which slots (primary or secondary) can be claimed in the current epoch with the keys in the keystore */
+            /**
+             * Returns data about which slots (primary or secondary) can be claimed in the current epoch with the keys in the
+             * keystore
+             */
             epochAuthorship: AugmentedRpc<() => Observable<HashMap<AuthorityId, EpochAuthorship>>>;
         };
         beefy: {
@@ -563,7 +566,10 @@ declare module "@polkadot/rpc-core/types/jsonrpc" {
             queryFeeDetails: AugmentedRpc<
                 (extrinsic: Bytes | string | Uint8Array, at?: BlockHash | string | Uint8Array) => Observable<FeeDetails>
             >;
-            /** @deprecated Use `api.call.transactionPaymentApi.queryInfo` instead Retrieves the fee information for an encoded extrinsic */
+            /**
+             * @deprecated Use `api.call.transactionPaymentApi.queryInfo` instead Retrieves the fee information for an encoded
+             *   extrinsic
+             */
             queryInfo: AugmentedRpc<
                 (
                     extrinsic: Bytes | string | Uint8Array,

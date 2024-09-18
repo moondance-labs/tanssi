@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
 
 describeSuite({
-    id: "CT1101",
+    id: "DT0501",
     title: "Registrar test suite: de-register with relay proof",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -54,7 +54,7 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
-                const tx = polkadotJs.tx.registrar.register(2003, containerChainGenesisData);
+                const tx = polkadotJs.tx.registrar.register(2003, containerChainGenesisData, null);
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({

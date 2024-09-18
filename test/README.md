@@ -44,8 +44,14 @@ Run tests:
 ```sh
 # manual-seal tests, only orchestrator chain runs, container chains are mocked
 pnpm moonwall test dev_tanssi
+# manual-seal tests, only orchestrator chain runs in relay mode, container chains are mocked
+pnpm moonwall test dev_tanssi_relay
+# manual-seal tests, only frontier template runs, orchestrator is mocked
+pnpm moonwall test dev_frontier_template
 # zombienet tests, all the chains run
 pnpm moonwall test zombie_tanssi
+# zombienet tests, all the chains run, but orchestrator is in relay mode (starlight)
+pnpm moonwall test zombie_tanssi_relay
 # smoke tests, checks the live stagenet/testnet
 pnpm moonwall test dancebox_smoke
 # chopsticks upgrade tests, creates a fork of the live network and performs a runtime upgrade
@@ -70,6 +76,37 @@ running the test, allowing you to use polkadot.js to see all the blocks, events,
 ```sh
 pnpm moonwall run zombie_tanssi
 ```
+
+## Dev test organization
+
+With all the chains that are being tested it would be impossible to duplicate all tests to run in all runtimes.
+In contrast, the tests are organized in different folders that should or should not be run with the runtime
+being tested. A short explanation of these folders is below:
+
+- *common-all*: tests that run against all runtimes, including dancebox, flashbox, starlight variants and templates
+- *common-all-parachain*: tests that run against all runtimes that are parachains, i.e., dancebox, flashbox and templates
+- *common-tanssi*: tests that run against all orchestrator runtimes, i.e., dancebox, flashbox and starlight variants
+- *common-tanssi-parachain*: tests that run against all orchestrator runtimes in parachain mode, i.e., dancebox and flashbox
+- *common-xcm-parachain*: tests that run against all parachain runtimes with xcm configured, i.e., dancebox and templates
+- *common-container-chains*: tests that run against all templates
+- *dev-tanssi*: tests that run against the dancebox runtime
+- *dev-tanssi-relay*: tests that run against the starlight runtime
+- *dev-frontier-template*: tests that run against the frontier runtime
+
+If unsure of where to add a new test, please read the above list carefully and inject it wherever it applies
+
+| **Folder**                  | **Dancebox** | **Flashbox** | **Starlight Variants** | **Simple Template** | **Frontier Template** |
+|-----------------------------|:------------:|:------------:|:----------------------:|:-------------------:|:---------------------:|
+| `common-all`                |      x       |      x       |           x            |          x          |          x            |
+| `common-all-parachain`      |      x       |      x       |                        |          x          |          x            |
+| `common-tanssi`             |      x       |      x       |           x            |                     |                       |
+| `common-tanssi-parachain`   |      x       |      x       |                        |                     |                       |
+| `common-xcm-parachain`      |      x       |              |                        |          x          |          x            |
+| `common-container-chains`   |              |              |                        |          x          |          x            |
+| `dev-tanssi`                |      x       |              |                        |                     |                       |
+| `dev-tanssi-relay`          |              |              |           x            |                     |                       |
+| `dev-frontier-template`     |              |              |                        |                     |          x            |
+
 
 ## Where to find node logs
 

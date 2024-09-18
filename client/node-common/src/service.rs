@@ -37,8 +37,8 @@ use {
     },
     sc_executor::{
         sp_wasm_interface::{ExtendedHostFunctions, HostFunctions},
-        HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, RuntimeVersionOf,
-        WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
+        HeapAllocStrategy, NativeExecutionDispatch, RuntimeVersionOf, WasmExecutor,
+        DEFAULT_HEAP_ALLOC_STRATEGY,
     },
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
@@ -66,6 +66,9 @@ type FullBasicPool<T> = sc_transaction_pool::BasicPool<
     sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
     BlockOf<T>,
 >;
+
+#[allow(deprecated)]
+use sc_executor::NativeElseWasmExecutor;
 
 /// Trait to configure the main types the builder rely on, bundled in a single
 /// type to reduce verbosity and the amount of type parameters.
@@ -180,6 +183,7 @@ impl TanssiExecutorExt for WasmExecutor<ParachainHostFunctions> {
     }
 }
 
+#[allow(deprecated)]
 impl<D> TanssiExecutorExt for NativeElseWasmExecutor<D>
 where
     D: NativeExecutionDispatch,
@@ -187,6 +191,7 @@ where
     type HostFun = ExtendedHostFunctions<sp_io::SubstrateHostFunctions, D::ExtendHostFunctions>;
 
     fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
+        #[allow(deprecated)]
         NativeElseWasmExecutor::new_with_wasm_executor(wasm_executor)
     }
 }

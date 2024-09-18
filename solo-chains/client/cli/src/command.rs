@@ -22,9 +22,9 @@ use {
     polkadot_service::{
         self,
         benchmarking::{benchmark_inherent_data, RemarkBuilder, TransferKeepAliveBuilder},
-        HeaderBackend, IdentifyVariant,
+        HeaderBackend, IdentifyVariant, ParaId,
     },
-    sc_cli::SubstrateCli,
+    sc_cli::{CliConfiguration, SubstrateCli},
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
@@ -76,57 +76,24 @@ impl SubstrateCli for Cli {
         "tanssi".into()
     }
 
+    #[cfg(not(feature = "runtime-benchmarks"))]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        let id = if id.is_empty() {
-            let n = get_exec_name().unwrap_or_default();
-            ["starlight"]
-                .iter()
-                .cloned()
-                .find(|&chain| n.starts_with(chain))
-                .unwrap_or("starlight")
-        } else {
-            id
-        };
-        Ok(match id {
-            #[cfg(feature = "starlight-native")]
-            "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
-            #[cfg(feature = "starlight-native")]
-            "dev" | "starlight-dev" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_development_config()?)
-            }
-            #[cfg(feature = "starlight-native")]
-            "starlight-local" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_local_testnet_config()?)
-            }
-            #[cfg(feature = "starlight-native")]
-            "starlight-staging" => {
-                Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
-            }
-            #[cfg(not(feature = "starlight-native"))]
-            name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
-                Err(format!(
-                    "`{}` only supported with `starlight-native` feature enabled.",
-                    name
-                ))?
-            }
-            path => {
-                let path = std::path::PathBuf::from(path);
+        load_spec(
+            id,
+            vec![],
+            vec![2000, 2001],
+            Some(vec![
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+                "Eve".to_string(),
+            ]),
+        )
+    }
 
-                let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
-                    path.clone(),
-                )?) as Box<dyn polkadot_service::ChainSpec>;
-
-                // When `force_*` is given or the file name starts with the name of one of the known
-                // chains, we use the chain spec for the specific chain.
-                if self.run.force_starlight {
-                    Box::new(
-                        tanssi_relay_service::chain_spec::StarlightChainSpec::from_json_file(path)?,
-                    )
-                } else {
-                    chain_spec
-                }
-            }
-        })
+    #[cfg(feature = "runtime-benchmarks")]
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        load_spec(id, vec![], vec![], None)
     }
 }
 
@@ -166,7 +133,7 @@ where
     F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
 {
     let runner = cli
-        .create_runner_with_logger_hook::<sc_cli::RunCmd, F>(&cli.run.base, logger_hook)
+        .create_runner_with_logger_hook::<sc_cli::RunCmd, _, F>(&cli.run.base, logger_hook)
         .map_err(Error::from)?;
     let chain_spec = &runner.config().chain_spec;
 
@@ -314,7 +281,13 @@ pub fn run() -> Result<()> {
         ),
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            Ok(runner.sync_run(|config| cmd.run(config.chain_spec, config.network))?)
+            let chain_spec = load_spec(
+                &cmd.base.chain_id(cmd.base.is_dev()?)?,
+                cmd.add_container_chain.clone().unwrap_or_default(),
+                cmd.mock_container_chain.clone().unwrap_or_default(),
+                cmd.invulnerable.clone(),
+            )?;
+            Ok(runner.sync_run(|config| cmd.base.run(chain_spec, config.network))?)
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd).map_err(Error::SubstrateCli)?;
@@ -520,4 +493,65 @@ pub fn run() -> Result<()> {
         agent.shutdown();
     }
     Ok(())
+}
+
+fn load_spec(
+    id: &str,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<u32>,
+    invulnerables: Option<Vec<String>>,
+) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+    let id = if id.is_empty() {
+        let n = get_exec_name().unwrap_or_default();
+        ["starlight"]
+            .iter()
+            .cloned()
+            .find(|&chain| n.starts_with(chain))
+            .unwrap_or("starlight")
+    } else {
+        id
+    };
+    let mock_container_chains: Vec<ParaId> =
+        mock_container_chains.iter().map(|&x| x.into()).collect();
+    let invulnerables = invulnerables.unwrap_or_default();
+    Ok(match id {
+        #[cfg(feature = "starlight-native")]
+        "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
+        #[cfg(feature = "starlight-native")]
+        "dev" | "starlight-dev" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_development_config(
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            )?,
+        ),
+        #[cfg(feature = "starlight-native")]
+        "starlight-local" => Box::new(
+            tanssi_relay_service::chain_spec::starlight_local_testnet_config(
+                container_chains,
+                mock_container_chains,
+                invulnerables,
+            )?,
+        ),
+        #[cfg(feature = "starlight-native")]
+        "starlight-staging" => {
+            Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
+        }
+        #[cfg(not(feature = "starlight-native"))]
+        name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
+            Err(format!(
+                "`{}` only supported with `starlight-native` feature enabled.",
+                name
+            ))?
+        }
+        path => {
+            let path = std::path::PathBuf::from(path);
+
+            let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
+                path.clone(),
+            )?) as Box<dyn polkadot_service::ChainSpec>;
+
+            chain_spec
+        }
+    })
 }

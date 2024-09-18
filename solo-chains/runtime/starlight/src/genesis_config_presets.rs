@@ -16,6 +16,9 @@
 
 //! Genesis configs presets for the Starlight runtime
 
+use pallet_configuration::HostConfiguration;
+use sp_arithmetic::traits::Saturating;
+use sp_arithmetic::Perbill;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
 use {
@@ -23,19 +26,40 @@ use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
+    dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
+    nimbus_primitives::NimbusId,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
-    sp_core::{sr25519, Pair, Public},
+    scale_info::prelude::string::String,
+    sp_core::{
+        crypto::{key_types, KeyTypeId},
+        sr25519, ByteArray, Pair, Public,
+    },
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
+    sp_std::vec,
     sp_std::vec::Vec,
     starlight_runtime_constants::currency::UNITS as STAR,
+    tp_traits::ParaId,
 };
 
 /// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
+fn get_from_seed<TPublic: Public>(
+    seed: &str,
+    add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>,
+) -> <TPublic::Pair as Pair>::Public {
+    let secret_uri = format!("//{}", seed);
+    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+
+    let public = pair.public();
+
+    if let Some((keystore, key_type)) = add_to_keystore {
+        keystore
+            .insert(key_type, &secret_uri, &public.to_raw_vec())
+            .unwrap();
+    }
+    public
 }
 
 /// Helper function to generate an account ID from seed
@@ -43,7 +67,7 @@ fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
     AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+    AccountPublic::from(get_from_seed::<TPublic>(seed, None)).into_account()
 }
 
 #[derive(Clone, Debug)]
@@ -56,12 +80,12 @@ pub struct AuthorityKeys {
     pub para_assignment: AssignmentId,
     pub authority_discovery: AuthorityDiscoveryId,
     pub beefy: BeefyId,
-    pub nimbus: nimbus_primitives::NimbusId,
+    pub nimbus: NimbusId,
 }
 
 /// Helper function to generate stash, controller and session key from seed
-pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
-    let keys = get_authority_keys_from_seed_no_beefy(seed);
+pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) -> AuthorityKeys {
+    let keys = get_authority_keys_from_seed_no_beefy(seed, keystore);
 
     AuthorityKeys {
         stash: keys.0,
@@ -71,13 +95,13 @@ pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
         para_validator: keys.4,
         para_assignment: keys.5,
         authority_discovery: keys.6,
-        beefy: get_from_seed::<BeefyId>(seed),
+        beefy: get_from_seed::<BeefyId>(seed, None),
         nimbus: get_aura_id_from_seed(seed),
     }
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
@@ -87,6 +111,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> nimbus_primitives::NimbusId {
 /// Helper function to generate stash, controller and session key from seed
 fn get_authority_keys_from_seed_no_beefy(
     seed: &str,
+    keystore: Option<&KeystorePtr>,
 ) -> (
     AccountId,
     AccountId,
@@ -99,11 +124,14 @@ fn get_authority_keys_from_seed_no_beefy(
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_from_seed::<BabeId>(seed, keystore.map(|k| (k, key_types::BABE))),
+        get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
+        get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
+        get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
+        get_from_seed::<AuthorityDiscoveryId>(
+            seed,
+            keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY)),
+        ),
     )
 }
 
@@ -131,7 +159,7 @@ fn starlight_session_keys(
     para_assignment: AssignmentId,
     authority_discovery: AuthorityDiscoveryId,
     beefy: BeefyId,
-    nimbus: nimbus_primitives::NimbusId,
+    nimbus: NimbusId,
 ) -> SessionKeys {
     SessionKeys {
         babe,
@@ -203,10 +231,92 @@ fn starlight_testnet_genesis(
     initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+    host_configuration: HostConfiguration,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
+    let invulnerable_keys: Vec<_> = invulnerables
+        .iter()
+        .map(|seed| get_authority_keys_from_seed(seed, None))
+        .collect();
+
+    let invulnerable_accounts: Vec<_> = invulnerables
+        .iter()
+        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .collect();
+
+    let data_preservers_bootnodes: Vec<_> = container_chains
+        .iter()
+        .flat_map(|(para_id, _genesis_data, bootnodes)| {
+            bootnodes.clone().into_iter().map(|bootnode| {
+                (
+                    *para_id,
+                    AccountId::from([0u8; 32]),
+                    bootnode,
+                    crate::PreserversAssignmentPaymentRequest::Free,
+                    crate::PreserversAssignmentPaymentWitness::Free,
+                )
+            })
+        })
+        .collect();
+
+    let para_ids: Vec<_> = container_chains
+        .iter()
+        .cloned()
+        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data, None))
+        .collect();
+
+    // In order to register container-chains from genesis, we need to register their
+    // head on the relay registrar. However there is no easy way to do that unless we touch all the code
+    // so we generate a dummy head state for it. This can be then overriden (as zombienet does) and everything would work
+    // TODO: make this cleaner
+    let registrar_para_ids_info: Vec<_> = container_chains
+        .into_iter()
+        .filter_map(|(para_id, genesis_data, _boot_nodes)| {
+            // Check if the wasm code is present in storage
+            // If not present, we ignore it
+            let validation_code = match genesis_data
+                .storage
+                .into_iter()
+                .find(|item| item.key == crate::StorageWellKnownKeys::CODE)
+            {
+                Some(item) => Some(crate::ValidationCode(item.value.clone())),
+                None => None,
+            }?;
+            let genesis_args = runtime_parachains::paras::ParaGenesisArgs {
+                genesis_head: vec![0x01].into(),
+                validation_code,
+                para_kind: runtime_parachains::paras::ParaKind::Parachain,
+            };
+
+            Some((
+                para_id,
+                (
+                    genesis_args.genesis_head,
+                    genesis_args.validation_code,
+                    genesis_args.para_kind,
+                ),
+            ))
+        })
+        .collect();
+
+    // Assign 1000 block credits to all container chains registered in genesis
+    // Assign 100 collator assignment credits to all container chains registered in genesis
+    let para_id_credits: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
+        .collect();
 
     const ENDOWMENT: u128 = 1_000_000 * STAR;
+
+    let core_percentage_for_pool_paras = Perbill::from_percent(100).saturating_sub(
+        host_configuration
+            .max_parachain_cores_percentage
+            .unwrap_or(Perbill::from_percent(50)),
+    );
+    let num_cores =
+        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32);
 
     serde_json::json!({
         "balances": {
@@ -231,15 +341,35 @@ fn starlight_testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
+            "nonAuthorityKeys": invulnerable_keys
+                .into_iter()
+                .enumerate()
+                .map(|(i, x)| {
+                    (
+                        invulnerable_accounts[i].clone(),
+                        invulnerable_accounts[i].clone(),
+                        starlight_session_keys(
+                            x.babe.clone(),
+                            x.grandpa.clone(),
+                            x.para_validator.clone(),
+                            x.para_assignment.clone(),
+                            x.authority_discovery.clone(),
+                            x.beefy.clone(),
+                            x.nimbus.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
         },
         "babe": {
-            "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
+            "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG)
         },
         "sudo": { "key": Some(root_key.clone()) },
         "configuration": {
             "config": runtime_parachains::configuration::HostConfiguration {
                 scheduler_params: SchedulerParams {
                     max_validators_per_core: Some(1),
+                    num_cores,
                     ..default_parachains_host_configuration().scheduler_params
                 },
                 ..default_parachains_host_configuration()
@@ -247,6 +377,22 @@ fn starlight_testnet_genesis(
         },
         "registrar": {
             "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
+        },
+        "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
+            invulnerables: invulnerable_accounts,
+        },
+        "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
+        "paras": {
+            "paras": registrar_para_ids_info,
+        },
+        "servicesPayment": crate::ServicesPaymentConfig { para_id_credits },
+            "dataPreservers": crate::DataPreserversConfig {
+                bootnodes: data_preservers_bootnodes,
+                ..Default::default()
+        },
+        "collatorConfiguration": crate::CollatorConfigurationConfig {
+            config: host_configuration,
+            ..Default::default()
         }
     })
 }
@@ -264,95 +410,95 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
     let initial_authorities = Vec::from([
         AuthorityKeys {
             stash: //5EHZkbp22djdbuMFH9qt1DVzSCvqi3zWpj6DAYfANa828oei
-            hex!["62475fe5406a7cb6a64c51d0af9d3ab5c2151bcae982fb812f7a76b706914d6a"].into(),
-            controller: //5FeSEpi9UYYaWwXXb3tV88qtZkmSdB3mvgj3pXkxKyYLGhcd
-            hex!["9e6e781a76810fe93187af44c79272c290c2b9e2b8b92ee11466cd79d8023f50"].into(),
-            babe: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
-            hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
-            grandpa: //5CPd3zoV9Aaah4xWucuDivMHJ2nEEmpdi864nPTiyRZp4t87
-            hex!["0e6d7d1afbcc6547b92995a394ba0daed07a2420be08220a5a1336c6731f0bfa"].unchecked_into(),
-            para_validator: //5CP6oGfwqbEfML8efqm1tCZsUgRsJztp9L8ZkEUxA16W8PPz
-            hex!["0e07a51d3213842f8e9363ce8e444255990a225f87e80a3d651db7841e1a0205"].unchecked_into(),
-            para_assignment: //5HQdwiDh8Qtd5dSNWajNYpwDvoyNWWA16Y43aEkCNactFc2b
-            hex!["ec60e71fe4a567ef9fef99d4bbf37ffae70564b41aa6f94ef0317c13e0a5477b"].unchecked_into(),
-            authority_discovery: //5HbSgM72xVuscsopsdeG3sCSCYdAeM1Tay9p79N6ky6vwDGq
-            hex!["f49eae66a0ac9f610316906ec8f1a0928e20d7059d76a5ca53cbcb5a9b50dd3c"].unchecked_into(),
-            beefy: //5DPSWdgw38Spu315r6LSvYCggeeieBAJtP5A1qzuzKhqmjVu
-            hex!["034f68c5661a41930c82f26a662276bf89f33467e1c850f2fb8ef687fe43d62276"].unchecked_into(),
-            nimbus: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
-            hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
-        },
+                hex!["62475fe5406a7cb6a64c51d0af9d3ab5c2151bcae982fb812f7a76b706914d6a"].into(),
+                controller: //5FeSEpi9UYYaWwXXb3tV88qtZkmSdB3mvgj3pXkxKyYLGhcd
+                hex!["9e6e781a76810fe93187af44c79272c290c2b9e2b8b92ee11466cd79d8023f50"].into(),
+                babe: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
+                hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
+                grandpa: //5CPd3zoV9Aaah4xWucuDivMHJ2nEEmpdi864nPTiyRZp4t87
+                hex!["0e6d7d1afbcc6547b92995a394ba0daed07a2420be08220a5a1336c6731f0bfa"].unchecked_into(),
+                para_validator: //5CP6oGfwqbEfML8efqm1tCZsUgRsJztp9L8ZkEUxA16W8PPz
+                hex!["0e07a51d3213842f8e9363ce8e444255990a225f87e80a3d651db7841e1a0205"].unchecked_into(),
+                para_assignment: //5HQdwiDh8Qtd5dSNWajNYpwDvoyNWWA16Y43aEkCNactFc2b
+                hex!["ec60e71fe4a567ef9fef99d4bbf37ffae70564b41aa6f94ef0317c13e0a5477b"].unchecked_into(),
+                authority_discovery: //5HbSgM72xVuscsopsdeG3sCSCYdAeM1Tay9p79N6ky6vwDGq
+                hex!["f49eae66a0ac9f610316906ec8f1a0928e20d7059d76a5ca53cbcb5a9b50dd3c"].unchecked_into(),
+                beefy: //5DPSWdgw38Spu315r6LSvYCggeeieBAJtP5A1qzuzKhqmjVu
+                hex!["034f68c5661a41930c82f26a662276bf89f33467e1c850f2fb8ef687fe43d62276"].unchecked_into(),
+                nimbus: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
+                hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
+            },
         AuthorityKeys {
-            stash: //5DvH8oEjQPYhzCoQVo7WDU91qmQfLZvxe9wJcrojmJKebCmG
-            hex!["520b48452969f6ddf263b664de0adb0c729d0e0ad3b0e5f3cb636c541bc9022a"].into(),
-            controller: //5ENZvCRzyXJJYup8bM6yEzb2kQHEb1NDpY2ZEyVGBkCfRdj3
-            hex!["6618289af7ae8621981ffab34591e7a6486e12745dfa3fd3b0f7e6a3994c7b5b"].into(),
-            babe: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
-            hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
-            grandpa: //5HnDVBN9mD6mXyx8oryhDbJtezwNSj1VRXgLoYCBA6uEkiao
-            hex!["fcd5f87a6fd5707a25122a01b4dac0a8482259df7d42a9a096606df1320df08d"].unchecked_into(),
-            para_validator: //5EPEWRecy2ApL5n18n3aHyU1956zXTRqaJpzDa9DoqiggNwF
-            hex!["669a10892119453e9feb4e3f1ee8e028916cc3240022920ad643846fbdbee816"].unchecked_into(),
-            para_assignment: //5ES3fw5X4bndSgLNmtPfSbM2J1kLqApVB2CCLS4CBpM1UxUZ
-            hex!["68bf52c482630a8d1511f2edd14f34127a7d7082219cccf7fd4c6ecdb535f80d"].unchecked_into(),
-            authority_discovery: //5HeXbwb5PxtcRoopPZTp5CQun38atn2UudQ8p2AxR5BzoaXw
-            hex!["f6f8fe475130d21165446a02fb1dbce3a7bf36412e5d98f4f0473aed9252f349"].unchecked_into(),
-            beefy: //5F7nTtN8MyJV4UsXpjg7tHSnfANXZ5KRPJmkASc1ZSH2Xoa5
-            hex!["03a90c2bb6d3b7000020f6152fe2e5002fa970fd1f42aafb6c8edda8dacc2ea77e"].unchecked_into(),
-            nimbus: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
-            hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
-        },
+                stash: //5DvH8oEjQPYhzCoQVo7WDU91qmQfLZvxe9wJcrojmJKebCmG
+                hex!["520b48452969f6ddf263b664de0adb0c729d0e0ad3b0e5f3cb636c541bc9022a"].into(),
+                controller: //5ENZvCRzyXJJYup8bM6yEzb2kQHEb1NDpY2ZEyVGBkCfRdj3
+                hex!["6618289af7ae8621981ffab34591e7a6486e12745dfa3fd3b0f7e6a3994c7b5b"].into(),
+                babe: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
+                hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
+                grandpa: //5HnDVBN9mD6mXyx8oryhDbJtezwNSj1VRXgLoYCBA6uEkiao
+                hex!["fcd5f87a6fd5707a25122a01b4dac0a8482259df7d42a9a096606df1320df08d"].unchecked_into(),
+                para_validator: //5EPEWRecy2ApL5n18n3aHyU1956zXTRqaJpzDa9DoqiggNwF
+                hex!["669a10892119453e9feb4e3f1ee8e028916cc3240022920ad643846fbdbee816"].unchecked_into(),
+                para_assignment: //5ES3fw5X4bndSgLNmtPfSbM2J1kLqApVB2CCLS4CBpM1UxUZ
+                hex!["68bf52c482630a8d1511f2edd14f34127a7d7082219cccf7fd4c6ecdb535f80d"].unchecked_into(),
+                authority_discovery: //5HeXbwb5PxtcRoopPZTp5CQun38atn2UudQ8p2AxR5BzoaXw
+                hex!["f6f8fe475130d21165446a02fb1dbce3a7bf36412e5d98f4f0473aed9252f349"].unchecked_into(),
+                beefy: //5F7nTtN8MyJV4UsXpjg7tHSnfANXZ5KRPJmkASc1ZSH2Xoa5
+                hex!["03a90c2bb6d3b7000020f6152fe2e5002fa970fd1f42aafb6c8edda8dacc2ea77e"].unchecked_into(),
+                nimbus: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
+                hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
+            },
         AuthorityKeys {
-            stash: //5FPMzsezo1PRxYbVpJMWK7HNbR2kUxidsAAxH4BosHa4wd6S
-            hex!["92ef83665b39d7a565e11bf8d18d41d45a8011601c339e57a8ea88c8ff7bba6f"].into(),
-            controller: //5G6NQidFG7YiXsvV7hQTLGArir9tsYqD4JDxByhgxKvSKwRx
-            hex!["b235f57244230589523271c27b8a490922ffd7dccc83b044feaf22273c1dc735"].into(),
-            babe: //5GpZhzAVg7SAtzLvaAC777pjquPEcNy1FbNUAG2nZvhmd6eY
-            hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
-            grandpa: //5HAes2RQYPbYKbLBfKb88f4zoXv6pPA6Ke8CjN7dob3GpmSP
-            hex!["e1b68fbd84333e31486c08e6153d9a1415b2e7e71b413702b7d64e9b631184a1"].unchecked_into(),
-            para_validator: //5FtAGDZYJKXkhVhAxCQrXmaP7EE2mGbBMfmKDHjfYDgq2BiU
-            hex!["a8e61ffacafaf546283dc92d14d7cc70ea0151a5dd81fdf73ff5a2951f2b6037"].unchecked_into(),
-            para_assignment: //5CtK7JHv3h6UQZ44y54skxdwSVBRtuxwPE1FYm7UZVhg8rJV
-            hex!["244f3421b310c68646e99cdbf4963e02067601f57756b072a4b19431448c186e"].unchecked_into(),
-            authority_discovery: //5D4r6YaB6F7A7nvMRHNFNF6zrR9g39bqDJFenrcaFmTCRwfa
-            hex!["2c57f81fd311c1ab53813c6817fe67f8947f8d39258252663b3384ab4195494d"].unchecked_into(),
-            beefy: //5EPoHj8uV4fFKQHYThc6Z9fDkU7B6ih2ncVzQuDdNFb8UyhF
-            hex!["039d065fe4f9234f0a4f13cc3ae585f2691e9c25afa469618abb6645111f607a53"].unchecked_into(),
-            nimbus: hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
-        },
+                stash: //5FPMzsezo1PRxYbVpJMWK7HNbR2kUxidsAAxH4BosHa4wd6S
+                hex!["92ef83665b39d7a565e11bf8d18d41d45a8011601c339e57a8ea88c8ff7bba6f"].into(),
+                controller: //5G6NQidFG7YiXsvV7hQTLGArir9tsYqD4JDxByhgxKvSKwRx
+                hex!["b235f57244230589523271c27b8a490922ffd7dccc83b044feaf22273c1dc735"].into(),
+                babe: //5GpZhzAVg7SAtzLvaAC777pjquPEcNy1FbNUAG2nZvhmd6eY
+                hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
+                grandpa: //5HAes2RQYPbYKbLBfKb88f4zoXv6pPA6Ke8CjN7dob3GpmSP
+                hex!["e1b68fbd84333e31486c08e6153d9a1415b2e7e71b413702b7d64e9b631184a1"].unchecked_into(),
+                para_validator: //5FtAGDZYJKXkhVhAxCQrXmaP7EE2mGbBMfmKDHjfYDgq2BiU
+                hex!["a8e61ffacafaf546283dc92d14d7cc70ea0151a5dd81fdf73ff5a2951f2b6037"].unchecked_into(),
+                para_assignment: //5CtK7JHv3h6UQZ44y54skxdwSVBRtuxwPE1FYm7UZVhg8rJV
+                hex!["244f3421b310c68646e99cdbf4963e02067601f57756b072a4b19431448c186e"].unchecked_into(),
+                authority_discovery: //5D4r6YaB6F7A7nvMRHNFNF6zrR9g39bqDJFenrcaFmTCRwfa
+                hex!["2c57f81fd311c1ab53813c6817fe67f8947f8d39258252663b3384ab4195494d"].unchecked_into(),
+                beefy: //5EPoHj8uV4fFKQHYThc6Z9fDkU7B6ih2ncVzQuDdNFb8UyhF
+                hex!["039d065fe4f9234f0a4f13cc3ae585f2691e9c25afa469618abb6645111f607a53"].unchecked_into(),
+                nimbus: hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
+            },
         AuthorityKeys {
-            stash: //5DMNx7RoX6d7JQ38NEM7DWRcW2THu92LBYZEWvBRhJeqcWgR
-            hex!["38f3c2f38f6d47f161e98c697bbe3ca0e47c033460afda0dda314ab4222a0404"].into(),
-            controller: //5GGdKNDr9P47dpVnmtq3m8Tvowwf1ot1abw6tPsTYYFoKm2v
-            hex!["ba0898c1964196474c0be08d364cdf4e9e1d47088287f5235f70b0590dfe1704"].into(),
-            babe: //5EjkyPCzR2SjhDZq8f7ufsw6TfkvgNRepjCRQFc4TcdXdaB1
-            hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
-                .unchecked_into(),
-            grandpa: //5DJV3zCBTJBLGNDCcdWrYxWDacSz84goGTa4pFeKVvehEBte
-            hex!["36be9069cdb4a8a07ecd51f257875150f0a8a1be44a10d9d98dabf10a030aef4"]
-                .unchecked_into(),
-            para_validator: //5F9FsRjpecP9GonktmtFL3kjqNAMKjHVFjyjRdTPa4hbQRZA
-            hex!["882d72965e642677583b333b2d173ac94b5fd6c405c76184bb14293be748a13b"]
-                .unchecked_into(),
-            para_assignment: //5F1FZWZSj3JyTLs8sRBxU6QWyGLSL9BMRtmSKDmVEoiKFxSP
-            hex!["821271c99c958b9220f1771d9f5e29af969edfa865631dba31e1ab7bc0582b75"]
-                .unchecked_into(),
-            authority_discovery: //5CtgRR74VypK4h154s369abs78hDUxZSJqcbWsfXvsjcHJNA
-            hex!["2496f28d887d84705c6dae98aee8bf90fc5ad10bb5545eca1de6b68425b70f7c"]
-                .unchecked_into(),
-            beefy: //5CPx6dsr11SCJHKFkcAQ9jpparS7FwXQBrrMznRo4Hqv1PXz
-            hex!["0307d29bbf6a5c4061c2157b44fda33b7bb4ec52a5a0305668c74688cedf288d58"]
-                .unchecked_into(),
-            nimbus: hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
-                .unchecked_into(),
-        },
+                stash: //5DMNx7RoX6d7JQ38NEM7DWRcW2THu92LBYZEWvBRhJeqcWgR
+                hex!["38f3c2f38f6d47f161e98c697bbe3ca0e47c033460afda0dda314ab4222a0404"].into(),
+                controller: //5GGdKNDr9P47dpVnmtq3m8Tvowwf1ot1abw6tPsTYYFoKm2v
+                hex!["ba0898c1964196474c0be08d364cdf4e9e1d47088287f5235f70b0590dfe1704"].into(),
+                babe: //5EjkyPCzR2SjhDZq8f7ufsw6TfkvgNRepjCRQFc4TcdXdaB1
+                hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
+                    .unchecked_into(),
+                grandpa: //5DJV3zCBTJBLGNDCcdWrYxWDacSz84goGTa4pFeKVvehEBte
+                hex!["36be9069cdb4a8a07ecd51f257875150f0a8a1be44a10d9d98dabf10a030aef4"]
+                    .unchecked_into(),
+                para_validator: //5F9FsRjpecP9GonktmtFL3kjqNAMKjHVFjyjRdTPa4hbQRZA
+                hex!["882d72965e642677583b333b2d173ac94b5fd6c405c76184bb14293be748a13b"]
+                    .unchecked_into(),
+                para_assignment: //5F1FZWZSj3JyTLs8sRBxU6QWyGLSL9BMRtmSKDmVEoiKFxSP
+                hex!["821271c99c958b9220f1771d9f5e29af969edfa865631dba31e1ab7bc0582b75"]
+                    .unchecked_into(),
+                authority_discovery: //5CtgRR74VypK4h154s369abs78hDUxZSJqcbWsfXvsjcHJNA
+                hex!["2496f28d887d84705c6dae98aee8bf90fc5ad10bb5545eca1de6b68425b70f7c"]
+                    .unchecked_into(),
+                beefy: //5CPx6dsr11SCJHKFkcAQ9jpparS7FwXQBrrMznRo4Hqv1PXz
+                hex!["0307d29bbf6a5c4061c2157b44fda33b7bb4ec52a5a0305668c74688cedf288d58"]
+                    .unchecked_into(),
+                nimbus: hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
+                    .unchecked_into(),
+            },
         AuthorityKeys {
-            stash: //5C8AL1Zb4bVazgT3EgDxFgcow1L4SJjVu44XcLC9CrYqFN4N
-            hex!["02a2d8cfcf75dda85fafc04ace3bcb73160034ed1964c43098fb1fe831de1b16"].into(),
-            controller: //5FLYy3YKsAnooqE4hCudttAsoGKbVG3hYYBtVzwMjJQrevPa
-            hex!["90cab33f0bb501727faa8319f0845faef7d31008f178b65054b6629fe531b772"].into(),
-            babe: //5Et3tfbVf1ByFThNAuUq5pBssdaPPskip5yob5GNyUFojXC7
+                stash: //5C8AL1Zb4bVazgT3EgDxFgcow1L4SJjVu44XcLC9CrYqFN4N
+                hex!["02a2d8cfcf75dda85fafc04ace3bcb73160034ed1964c43098fb1fe831de1b16"].into(),
+                controller: //5FLYy3YKsAnooqE4hCudttAsoGKbVG3hYYBtVzwMjJQrevPa
+                hex!["90cab33f0bb501727faa8319f0845faef7d31008f178b65054b6629fe531b772"].into(),
+                babe: //5Et3tfbVf1ByFThNAuUq5pBssdaPPskip5yob5GNyUFojXC7
             hex!["7c94715e5dd8ab54221b1b6b2bfa5666f593f28a92a18e28052531de1bd80813"]
                 .unchecked_into(),
             grandpa: //5EX1JBghGbQqWohTPU6msR9qZ2nYPhK9r3RTQ2oD1K8TCxaG
@@ -499,64 +645,60 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 }
 
 //development
-fn starlight_development_config_genesis() -> serde_json::Value {
+pub fn starlight_development_config_genesis(
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+) -> serde_json::Value {
     starlight_testnet_genesis(
-        Vec::from([get_authority_keys_from_seed("Alice")]),
+        Vec::from([get_authority_keys_from_seed("Alice", None)]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
+        container_chains,
+        invulnerables,
+        HostConfiguration {
+            max_collators: 100u32,
+            min_orchestrator_collators: 0u32,
+            max_orchestrator_collators: 0u32,
+            collators_per_container: 2u32,
+            full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
+            max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
+            ..Default::default()
+        },
     )
 }
 
 //local_testnet
-fn starlight_local_testnet_genesis() -> serde_json::Value {
+pub fn starlight_local_testnet_genesis(
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+) -> serde_json::Value {
     starlight_testnet_genesis(
         Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
+            get_authority_keys_from_seed("Alice", None),
+            get_authority_keys_from_seed("Bob", None),
         ]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
-    )
-}
-
-/// `Versi` is a temporary testnet that uses the same runtime as starlight.
-// versi_local_testnet
-fn versi_local_testnet_genesis() -> serde_json::Value {
-    starlight_testnet_genesis(
-        Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
-            get_authority_keys_from_seed("Charlie"),
-            get_authority_keys_from_seed("Dave"),
-        ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
-    )
-}
-
-/// Wococo is a temporary testnet that uses almost the same runtime as starlight.
-//wococo_local_testnet
-fn wococo_local_testnet_genesis() -> serde_json::Value {
-    starlight_testnet_genesis(
-        Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
-            get_authority_keys_from_seed("Charlie"),
-            get_authority_keys_from_seed("Dave"),
-        ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
+        container_chains,
+        invulnerables,
+        HostConfiguration {
+            max_collators: 100u32,
+            min_orchestrator_collators: 0u32,
+            max_orchestrator_collators: 0u32,
+            collators_per_container: 2u32,
+            full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
+            max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
+            ..Default::default()
+        },
     )
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
     let patch = match id.try_into() {
-        Ok("local_testnet") => starlight_local_testnet_genesis(),
-        Ok("development") => starlight_development_config_genesis(),
+        Ok("local_testnet") => starlight_local_testnet_genesis(vec![], vec![]),
+        Ok("development") => starlight_development_config_genesis(vec![], vec![]),
         Ok("staging_testnet") => starlight_staging_testnet_config_genesis(),
-        Ok("wococo_local_testnet") => wococo_local_testnet_genesis(),
-        Ok("versi_local_testnet") => versi_local_testnet_genesis(),
         _ => return None,
     };
     Some(

@@ -25,11 +25,15 @@ mod consensus_orchestrator;
 mod manual_seal;
 
 #[cfg(test)]
+mod mocks;
+#[cfg(test)]
 mod tests;
 
 pub use {
     crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,
+    cumulus_relay_chain_interface::{call_remote_runtime_function, RelayChainInterface},
+    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_consensus::TanssiAuthorityAssignmentApi,
     manual_seal::{
         get_aura_id_from_seed, ContainerManualSealAuraConsensusDataProvider,
@@ -45,7 +49,10 @@ pub use {
     sp_api::{Core, ProvideRuntimeApi},
     sp_application_crypto::AppPublic,
     sp_consensus::Error as ConsensusError,
-    sp_core::crypto::{ByteArray, Public},
+    sp_core::{
+        crypto::{ByteArray, Public},
+        H256,
+    },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
@@ -143,14 +150,13 @@ use {
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
 /// It also returns its ParaId assignment
-pub fn first_eligible_key<B: BlockT, C, P>(
+pub async fn first_eligible_key<C, P>(
     client: &C,
-    parent_hash: &B::Hash,
+    parent_hash: &H256,
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
-    C: ProvideRuntimeApi<B>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    C: OrchestratorChainInterface + ?Sized,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
@@ -168,30 +174,27 @@ where
         return None;
     }
 
-    let runtime_api = client.runtime_api();
-
     // Iterate keys until we find an eligible one, or run out of candidates.
-    // If we are skipping prediction, then we author with the first key we find.
-    // prediction skipping only really makes sense when there is a single key in the keystore.
-    available_keys.into_iter().find_map(|type_public_pair| {
+    for type_public_pair in available_keys {
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 
-            if let Ok(Some(para_id)) =
-                runtime_api.check_para_id_assignment(*parent_hash, nimbus_id.clone().into())
+            if let Ok(Some(para_id)) = client
+                .check_para_id_assignment(*parent_hash, nimbus_id.clone())
+                .await
             {
                 log::debug!("Para id found for assignment {:?}", para_id);
 
-                Some((nimbus_id.into(), para_id))
+                return Some((nimbus_id.into(), para_id));
             } else {
                 log::debug!("No Para id found for assignment {:?}", nimbus_id);
-
-                None
             }
         } else {
-            None
+            log::debug!("Invalid nimbus id: {:?}", type_public_pair);
         }
-    })
+    }
+
+    None
 }
 
 /// Grab the first eligible nimbus key from the keystore
@@ -199,14 +202,13 @@ where
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
 /// It also returns its ParaId assignment
-pub fn first_eligible_key_next_session<B: BlockT, C, P>(
+pub async fn first_eligible_key_next_session<C, P>(
     client: &C,
-    parent_hash: &B::Hash,
+    parent_hash: &H256,
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
-    C: ProvideRuntimeApi<B>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    C: OrchestratorChainInterface + ?Sized,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
@@ -224,28 +226,25 @@ where
         return None;
     }
 
-    let runtime_api = client.runtime_api();
-
     // Iterate keys until we find an eligible one, or run out of candidates.
-    // If we are skipping prediction, then we author with the first key we find.
-    // prediction skipping only really makes sense when there is a single key in the keystore.
-    available_keys.into_iter().find_map(|type_public_pair| {
+    for type_public_pair in available_keys {
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 
-            if let Ok(Some(para_id)) = runtime_api
-                .check_para_id_assignment_next_session(*parent_hash, nimbus_id.clone().into())
+            if let Ok(Some(para_id)) = client
+                .check_para_id_assignment_next_session(*parent_hash, nimbus_id.clone())
+                .await
             {
                 log::debug!("Para id found for assignment {:?}", para_id);
 
-                Some((nimbus_id.into(), para_id))
+                return Some((nimbus_id.into(), para_id));
             } else {
                 log::debug!("No Para id found for assignment {:?}", nimbus_id);
-
-                None
             }
         } else {
-            None
+            log::debug!("Invalid nimbus id: {:?}", type_public_pair);
         }
-    })
+    }
+
+    None
 }

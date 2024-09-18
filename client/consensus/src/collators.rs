@@ -111,7 +111,7 @@ where
         &self,
         relay_parent: PHash,
         validation_data: &PersistedValidationData,
-        parent_hash: Block::Hash,
+        parent_hash: <Block as BlockT>::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
         let paras_inherent_data = ParachainInherentDataProvider::create_at(
@@ -161,7 +161,11 @@ where
         proposal_duration: Duration,
         max_pov_size: usize,
     ) -> Result<
-        Option<(Collation, ParachainBlockData<Block>, Block::Hash)>,
+        Option<(
+            Collation,
+            ParachainBlockData<Block>,
+            <Block as BlockT>::Hash,
+        )>,
         Box<dyn Error + Send + 'static>,
     > {
         let mut digest = additional_pre_digest.into().unwrap_or_default();

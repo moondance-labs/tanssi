@@ -249,7 +249,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 800,
+    spec_version: 900,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -559,7 +559,7 @@ impl pallet_async_backing::Config for Runtime {
 fn relay_chain_state_proof() -> RelayChainStateProof {
     let relay_storage_root =
         RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
-    let relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof()
+    let relay_chain_state = cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get()
         .expect("set in `set_validation_data`");
     RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
         .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
@@ -573,7 +573,8 @@ impl BabeCurrentBlockRandomnessGetter {
             let _relay_storage_root =
                 RelaychainDataProvider::<Runtime>::current_relay_chain_state().state_root;
 
-            let _relay_chain_state = RelaychainDataProvider::<Runtime>::current_relay_state_proof();
+            let _relay_chain_state =
+                cumulus_pallet_parachain_system::RelayStateProof::<Runtime>::get();
             let benchmarking_babe_output = Hash::default();
             return Some(benchmarking_babe_output);
         }
@@ -767,11 +768,10 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
                 buf
             } else {
                 // If there is no randomness (e.g when running in dev mode), return [0; 32]
-                // TODO: smoke test to ensure this never happens in a live network
                 [0; 32]
             }
         } else {
-            // In block 0 (genesis) there is randomness
+            // In block 0 (genesis) there is no randomness
             [0; 32]
         };
 
@@ -901,6 +901,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;
+    type CoreAllocationConfiguration = ();
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
@@ -964,7 +965,7 @@ parameter_types! {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
     // TODO: Add Stream Payment (with config)
@@ -978,7 +979,7 @@ pub enum PreserversAssignementPaymentExtra {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
     // TODO: Add Stream Payment (with stream id)
@@ -1051,13 +1052,15 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     }
 }
 
+pub type DataPreserversProfileId = u64;
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
-    type ProfileId = u64;
+    type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentPayment = PreserversAssignementPayment;
 
@@ -1260,6 +1263,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -1704,7 +1708,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {
             TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+            TimeUnit::Timestamp => Some(Timestamp::get().into()),
         }
     }
 
@@ -1784,29 +1788,23 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub const MaxBalance: Balance = Balance::max_value();
+    // We allow it to be 1 minute in fast mode to be able to test it
+    pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
 }
 
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryId;
     type Currency = Balances;
 
-    type ApproveOrigin = EnsureRoot<AccountId>;
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type OnSlash = Treasury;
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
-    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type SpendPeriod = SpendPeriod;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Disabled, no spending
-    #[cfg(feature = "runtime-benchmarks")]
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
     type AssetKind = ();
@@ -1817,7 +1815,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
+    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
@@ -1888,7 +1886,6 @@ construct_runtime!(
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
-        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 54,
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
@@ -1930,7 +1927,6 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [cumulus_pallet_dmp_queue, DmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_assets, ForeignAssets]
@@ -2569,6 +2565,25 @@ impl_runtime_apis! {
                 Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
+            }
+        }
+    }
+
+    impl pallet_data_preservers_runtime_api::DataPreserversApi<Block, DataPreserversProfileId, ParaId> for Runtime {
+        fn get_active_assignment(
+            profile_id: DataPreserversProfileId,
+        ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
+            use pallet_data_preservers_runtime_api::Assignment;
+
+            let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
+                .and_then(|x| x.assignment) else
+            {
+                return Assignment::NotAssigned;
+            };
+
+            match witness {
+                PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
+                // TODO: Add Stream Payment. Stalled stream should return Inactive.
             }
         }
     }

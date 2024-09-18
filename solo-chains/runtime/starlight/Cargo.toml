@@ -35,8 +35,10 @@ sp-api = { workspace = true }
 sp-arithmetic = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-io = { workspace = true }
+sp-keystore = { workspace = true }
 sp-mmr-primitives = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -69,7 +71,6 @@ pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
-pallet-indices = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-membership = { workspace = true }
@@ -82,7 +83,6 @@ pallet-parameters = { workspace = true }
 pallet-preimage = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-ranked-collective = { workspace = true }
-pallet-recovery = { workspace = true }
 pallet-referenda = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-scheduler = { workspace = true }
@@ -120,14 +120,18 @@ cumulus-primitives-core = { workspace = true }
 
 # Tanssi
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
 pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
+pallet-data-preservers = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-services-payment = { workspace = true }
+pallet-services-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
@@ -159,6 +163,7 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -187,11 +192,11 @@ std = [
 	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
+	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
-	"pallet-indices/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
 	"pallet-membership/std",
@@ -205,12 +210,13 @@ std = [
 	"pallet-preimage/std",
 	"pallet-proxy/std",
 	"pallet-ranked-collective/std",
-	"pallet-recovery/std",
 	"pallet-referenda/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
+	"pallet-services-payment-runtime-api/std",
+	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
 	"pallet-sudo/std",
@@ -236,8 +242,10 @@ std = [
 	"sp-arithmetic/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
+	"sp-debug-derive/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
+	"sp-keystore/std",
 	"sp-mmr-primitives/std",
 	"sp-runtime/std",
 	"sp-session/std",
@@ -278,11 +286,11 @@ runtime-benchmarks = [
 	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
+	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
-	"pallet-indices/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
@@ -295,10 +303,10 @@ runtime-benchmarks = [
 	"pallet-preimage/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-ranked-collective/runtime-benchmarks",
-	"pallet-recovery/runtime-benchmarks",
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
+	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -342,11 +350,11 @@ try-runtime = [
 	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
+	"pallet-data-preservers/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
-	"pallet-indices/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-membership/try-runtime",
@@ -360,11 +368,11 @@ try-runtime = [
 	"pallet-preimage/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-ranked-collective/try-runtime",
-	"pallet-recovery/try-runtime",
 	"pallet-referenda/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-scheduler/try-runtime",
+	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
 	"pallet-sudo/try-runtime",
@@ -383,6 +391,9 @@ try-runtime = [
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
 fast-runtime = [ "starlight-runtime-constants/fast-runtime" ]
+
+# Allow to print logs details (no wasm:stripped)
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-metrics = [ "runtime-parachains/runtime-metrics", "sp-io/with-tracing" ]
 

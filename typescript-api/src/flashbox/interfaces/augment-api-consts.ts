@@ -6,7 +6,7 @@
 import "@polkadot/api-base/types/consts";
 
 import type { ApiTypes, AugmentedConst } from "@polkadot/api-base/types";
-import type { Option, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
+import type { u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { Codec } from "@polkadot/types-codec/types";
 import type { AccountId32, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -46,7 +46,8 @@ declare module "@polkadot/api-base/types/consts" {
             /** The maximum number of individual freeze locks that can exist on an account at any time. */
             maxFreezes: u32 & AugmentedConst<ApiType>;
             /**
-             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight estimation.
+             * The maximum number of locks that should exist on an account. Not strictly enforced, but used for weight
+             * estimation.
              *
              * Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
              */
@@ -77,7 +78,10 @@ declare module "@polkadot/api-base/types/consts" {
             basicDeposit: u128 & AugmentedConst<ApiType>;
             /** The amount held on deposit per encoded byte for a registered identity. */
             byteDeposit: u128 & AugmentedConst<ApiType>;
-            /** Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
+            /**
+             * Maximum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating
+             * judgements.
+             */
             maxRegistrars: u32 & AugmentedConst<ApiType>;
             /** The maximum number of sub-accounts allowed per identified account. */
             maxSubAccounts: u32 & AugmentedConst<ApiType>;
@@ -114,7 +118,8 @@ declare module "@polkadot/api-base/types/consts" {
         };
         multisig: {
             /**
-             * The base amount of currency needed to reserve for creating a multisig execution or to store a dispatch call for later.
+             * The base amount of currency needed to reserve for creating a multisig execution or to store a dispatch call for
+             * later.
              *
              * This is held for an additional storage item whose value size is `4 + sizeof((BlockNumber, Balance, AccountId))`
              * bytes and whose key size is `32 + sizeof(AccountId)` bytes.
@@ -147,7 +152,8 @@ declare module "@polkadot/api-base/types/consts" {
             /**
              * The amount of currency needed per announcement made.
              *
-             * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes) into a pre-existing storage value.
+             * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes) into a pre-existing
+             * storage value.
              */
             announcementDepositFactor: u128 & AugmentedConst<ApiType>;
             /** The maximum amount of time-delayed announcements that are allowed to be pending. */
@@ -165,7 +171,8 @@ declare module "@polkadot/api-base/types/consts" {
              * The amount of currency needed per proxy added.
              *
              * This is held for adding 32 bytes plus an instance of `ProxyType` more into a pre-existing storage value. Thus,
-             * when configuring `ProxyDepositFactor` one should take into account `32 + proxy_type.encode().len()` bytes of data.
+             * when configuring `ProxyDepositFactor` one should take into account `32 + proxy_type.encode().len()` bytes of
+             * data.
              */
             proxyDepositFactor: u128 & AugmentedConst<ApiType>;
             /** Generic const */
@@ -275,15 +282,6 @@ declare module "@polkadot/api-base/types/consts" {
             palletId: FrameSupportPalletId & AugmentedConst<ApiType>;
             /** The period during which an approved treasury spend has to be claimed. */
             payoutPeriod: u32 & AugmentedConst<ApiType>;
-            /**
-             * Fraction of a proposal's value that should be bonded in order to place the proposal. An accepted proposal gets
-             * these back. A rejected proposal does not.
-             */
-            proposalBond: Permill & AugmentedConst<ApiType>;
-            /** Maximum amount of funds that should be placed in a deposit for making a proposal. */
-            proposalBondMaximum: Option<u128> & AugmentedConst<ApiType>;
-            /** Minimum amount of funds that should be placed in a deposit for making a proposal. */
-            proposalBondMinimum: u128 & AugmentedConst<ApiType>;
             /** Period between successive spends. */
             spendPeriod: u32 & AugmentedConst<ApiType>;
             /** Generic const */

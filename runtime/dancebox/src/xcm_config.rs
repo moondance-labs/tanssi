@@ -49,7 +49,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_consensus_slots::Slot,
-    sp_core::ConstU32,
+    sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
     staging_xcm::latest::prelude::*,
@@ -279,21 +279,13 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     // Enqueue XCMP messages from siblings for later processing.
     type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
     type MaxInboundSuspended = sp_core::ConstU32<1_000>;
+    type MaxActiveOutboundChannels = ConstU32<128>;
+    type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-}
-
-parameter_types! {
-    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-    type WeightInfo = weights::cumulus_pallet_dmp_queue::SubstrateWeight<Runtime>;
-    type RuntimeEvent = RuntimeEvent;
-    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
 
 parameter_types! {
@@ -589,7 +581,7 @@ impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
 
 /// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
 /// pallet indices for pallet_on_demand_assignment_provider
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum RelayChain {
     #[default]
     Westend,

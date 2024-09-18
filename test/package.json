@@ -47,7 +47,7 @@
         "eslint": "8.56.0",
         "ethers": "6.11.1",
         "json-bigint": "1.0.0",
-        "pnpm": "8.12.1",
+        "pnpm": "9.9.0",
         "prettier": "2.8.8",
         "solc": "0.8.21",
         "tsx": "4.7.1",
@@ -59,7 +59,7 @@
         "yargs": "17.7.2"
     },
     "dependencies": {
-        "@zombienet/orchestrator": "0.0.86",
+        "@zombienet/orchestrator": "0.0.87",
         "inquirer": "9.2.16",
         "ps-node": "0.1.6"
     }
