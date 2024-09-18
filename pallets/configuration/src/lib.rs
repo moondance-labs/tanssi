@@ -86,6 +86,8 @@ pub struct HostConfiguration {
     pub parathreads_per_collator: u32,
     /// Ratio of collators that we expect to be assigned to container chains. Affects fees.
     pub target_container_chain_fullness: Perbill,
+    ///  Maximum number of cores that can be allocated to parachains (only applicable for solo chain)
+    pub max_parachain_cores_percentage: Option<Perbill>,
 }
 
 impl Default for HostConfiguration {
@@ -99,6 +101,7 @@ impl Default for HostConfiguration {
             collators_per_parathread: 1,
             parathreads_per_collator: 1,
             target_container_chain_fullness: Perbill::from_percent(80),
+            max_parachain_cores_percentage: None,
         }
     }
 }
@@ -335,6 +338,21 @@ pub mod pallet {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.target_container_chain_fullness = new;
+            })
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_max_parachain_cores_percentage(
+            origin: OriginFor<T>,
+            new: Option<Perbill>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.max_parachain_cores_percentage = new;
             })
         }
 
@@ -576,6 +594,10 @@ pub mod pallet {
 
         fn target_container_chain_fullness(session_index: T::SessionIndex) -> Perbill {
             Self::config_at_session(session_index).target_container_chain_fullness
+        }
+
+        fn max_parachain_cores_percentage(session_index: T::SessionIndex) -> Option<Perbill> {
+            Self::config_at_session(session_index).max_parachain_cores_percentage
         }
     }
 }
