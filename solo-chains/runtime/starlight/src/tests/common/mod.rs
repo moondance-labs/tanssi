@@ -58,8 +58,9 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    ContainerRegistrar, DataPreservers, Grandpa, Initializer, Runtime, RuntimeOrigin, Session,
-    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
+    Balances, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards, Initializer, Runtime,
+    RuntimeOrigin, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -115,7 +116,7 @@ pub fn run_to_session(n: u32) {
 /// well, for example to test a runtime api, manually call `end_block` after this, run the test, and
 /// call `start_block` to ensure that this function keeps working as expected.
 /// Extrinsics should always be executed before on_finalize.
-pub fn run_to_block(n: u32) {
+pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
     let current_block_number = System::block_number();
     assert!(
         current_block_number < n,
@@ -124,9 +125,15 @@ pub fn run_to_block(n: u32) {
         current_block_number
     );
 
+    let mut summaries = BTreeMap::new();
+
     while System::block_number() < n {
-        run_block();
+        let summary = run_block();
+        let block_number = System::block_number();
+        summaries.insert(block_number, summary);
     }
+
+    summaries
 }
 
 pub fn get_genesis_data_with_validation_code() -> (ContainerChainGenesisData, Vec<u8>) {
@@ -160,6 +167,11 @@ pub fn insert_authorities_and_slot_digests(slot: u64) {
         &System::parent_hash(),
         &pre_digest,
     );
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RunSummary {
+    pub inflation: Balance,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
@@ -209,7 +221,7 @@ fn advance_block_state_machine(new_state: RunBlockState) {
     frame_support::storage::unhashed::put(b"__mock_debug_block_state", &new_state);
 }
 
-pub fn start_block() {
+pub fn start_block() -> RunSummary {
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::Start(block_number + 1));
 
@@ -221,9 +233,18 @@ pub fn start_block() {
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());
+
+    let current_issuance = Balances::total_issuance();
+    InflationRewards::on_initialize(System::block_number());
+    let new_issuance = Balances::total_issuance();
+
     let maybe_mock_inherent = take_new_inherent_data();
     if let Some(mock_inherent_data) = maybe_mock_inherent {
         set_paras_inherent(mock_inherent_data);
+    }
+
+    RunSummary {
+        inflation: new_issuance - current_issuance,
     }
 }
 
@@ -240,7 +261,7 @@ pub fn end_block() {
     TanssiCollatorAssignment::on_finalize(System::block_number());
 }
 
-pub fn run_block() {
+pub fn run_block() -> RunSummary {
     end_block();
 
     start_block()

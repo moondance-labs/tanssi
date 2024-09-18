@@ -87,8 +87,7 @@ pub mod pallet {
             weight += T::DbWeight::get().reads_writes(1, 1);
             let registered_para_ids = T::ContainerChains::current_container_chains();
 
-            let mut number_of_chains: BalanceOf<T> =
-            (registered_para_ids.len() as u32).into();
+            let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
 
             if T::RewardOrchestratorAuthor::get() {
                 number_of_chains = number_of_chains.saturating_add(1u32.into());
