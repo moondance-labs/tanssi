@@ -102,6 +102,7 @@ where
             collators_per_parathread: default_config.collators_per_parathread,
             parathreads_per_collator: default_config.parathreads_per_collator,
             target_container_chain_fullness: default_config.target_container_chain_fullness,
+            max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
         };
         frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
 
@@ -121,6 +122,7 @@ where
                 collators_per_parathread: default_config.collators_per_parathread,
                 parathreads_per_collator: default_config.parathreads_per_collator,
                 target_container_chain_fullness: default_config.target_container_chain_fullness,
+                max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
             };
             new_pending_configs.push((session_index, new_config));
         }

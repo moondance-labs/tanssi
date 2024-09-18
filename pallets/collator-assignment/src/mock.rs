@@ -17,7 +17,7 @@
 use {
     crate::{
         self as pallet_collator_assignment, pallet::CollatorContainerChain,
-        GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
+        CoreAllocationConfiguration, GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
     },
     frame_support::{
         parameter_types,
@@ -101,6 +101,10 @@ pub mod mock_data {
     #[pallet::storage]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
+    #[pallet::storage]
+    pub(super) type MockCoreAllocationConfiguration<T: Config> =
+        StorageValue<_, CoreAllocationConfiguration, OptionQuery>;
+
     impl<T: Config> Pallet<T> {
         pub fn mock() -> Mocks {
             Mock::<T>::get()
@@ -110,6 +114,14 @@ pub mod mock_data {
             F: FnOnce(&mut Mocks) -> R,
         {
             Mock::<T>::mutate(f)
+        }
+
+        pub fn core_allocation_config() -> Option<CoreAllocationConfiguration> {
+            MockCoreAllocationConfiguration::<T>::get()
+        }
+
+        pub fn set_core_allocation_config(config: Option<CoreAllocationConfiguration>) {
+            MockCoreAllocationConfiguration::<T>::set(config);
         }
     }
 }
@@ -135,6 +147,7 @@ pub struct Mocks {
     pub container_chains: Vec<u32>,
     pub parathreads: Vec<u32>,
     pub random_seed: [u8; 32],
+    pub chains_that_are_tipping: Vec<ParaId>,
     // None means 5
     pub full_rotation_period: Option<u32>,
     pub apply_tip: bool,
@@ -155,6 +168,7 @@ impl Default for Mocks {
             container_chains: Default::default(),
             parathreads: Default::default(),
             random_seed: Default::default(),
+            chains_that_are_tipping: vec![1003.into(), 1004.into()],
             full_rotation_period: Default::default(),
             apply_tip: Default::default(),
             assignment_hook_errors: Default::default(),
@@ -195,6 +209,10 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
 
     fn target_container_chain_fullness(_session_index: u32) -> Perbill {
         MockData::mock().target_container_chain_fullness
+    }
+
+    fn max_parachain_cores_percentage(_session_index: u32) -> Option<Perbill> {
+        None
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -284,7 +302,8 @@ pub struct MockCollatorAssignmentTip;
 
 impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
     fn get_para_tip(para_id: ParaId) -> Option<u32> {
-        if MockData::mock().apply_tip && (para_id == 1003u32.into() || para_id == 1004u32.into()) {
+        if MockData::mock().apply_tip && MockData::mock().chains_that_are_tipping.contains(&para_id)
+        {
             Some(1_000u32)
         } else {
             None
@@ -309,6 +328,20 @@ impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
     }
 }
 
+pub struct GetCoreAllocationConfigurationImpl;
+
+impl GetCoreAllocationConfigurationImpl {
+    pub fn set(config: Option<CoreAllocationConfiguration>) {
+        MockData::set_core_allocation_config(config);
+    }
+}
+
+impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
+    fn get() -> Option<CoreAllocationConfiguration> {
+        MockData::core_allocation_config()
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
@@ -324,6 +357,7 @@ impl pallet_collator_assignment::Config for Test {
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
     type ForceEmptyOrchestrator = ConstBool<false>;
     type Currency = ();
+    type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
     type WeightInfo = ();
 }
 
