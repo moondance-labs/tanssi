@@ -884,7 +884,7 @@ impl CollatorLookaheadTestBuilder {
         impl Future<Output = ()> + Send + 'static,
         oneshot::Receiver<()>,
         Arc<TestClient>,
-        Arc<sc_transaction_pool::FullPool<Block, TestClient>>,
+        Arc<sc_transaction_pool::TransactionPoolImpl<Block, TestClient>>,
         CancellationToken,
     ) {
         // Creation of keystore
