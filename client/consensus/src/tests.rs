@@ -33,7 +33,6 @@ use {
     sc_client_api::HeaderBackend,
     sc_keystore::LocalKeystore,
     sc_network_test::{Block as TestBlock, Header as TestHeader, *},
-    sc_transaction_pool_api::TransactionPool,
     sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration, AURA_ENGINE_ID},
     sp_consensus_slots::Slot,
     sp_keyring::sr25519::Keyring,
