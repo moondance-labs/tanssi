@@ -187,7 +187,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Set of Parachains should be sort by tip and truncated according to max cores allocated if we have less cores",
+            title: "Set of Parathreads would not be truncated",
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -199,8 +199,39 @@ describeSuite({
                     2000, 2001, 2004, 2002, 2003,
                 ]);
 
-                // Record previous config value to restore later
-                const previousConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
+                // Let's change the parachain percentage to 90
+                const tx = await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.collatorConfiguration.setMaxParachainCoresPercentage(900000000))
+                    .signAsync(alice);
+                await context.createBlock([tx]);
+
+                // Wait for two sessions for the effect
+                await jumpSessions(context, 2);
+
+                // Check the active assignment
+                const collatorAssignmentAfter = (
+                    await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
+                ).toJSON();
+                // Pool paras are not truncated but they are sorted by tip
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([
+                    2000, 2001, 2004, 2002, 2003,
+                ]);
+            },
+        });
+
+        it({
+            id: "E02",
+            title: "Set of Parachains should be sort by tip and truncated according to max cores allocated if we have less cores",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const collatorAssignmentBefore = (
+                    await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
+                ).toJSON();
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
+                    2000, 2001, 2004, 2002, 2003,
+                ]);
 
                 // Let's change percentage of parachain to 30%
                 const tx = await polkadotJs.tx.sudo
@@ -231,53 +262,6 @@ describeSuite({
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
                 expect(sortCollatorAssignment(collatorAssignmentAtZeroPercent)).to.be.deep.equal([2002, 2003, 2004]);
-
-                // Restore previous config
-                const restoringTx = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.collatorConfiguration.setMaxParachainCoresPercentage(
-                            previousConfig.maxParachainCoresPercentage
-                        )
-                    )
-                    .signAsync(alice);
-                await context.createBlock([restoringTx]);
-
-                // Wait for two sessions for the effect
-                await jumpSessions(context, 2);
-            },
-        });
-
-        it({
-            id: "E02",
-            title: "Set of Parathreads would not be truncated",
-            test: async function () {
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-                const collatorAssignmentBefore = (
-                    await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
-                ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
-                    2000, 2001, 2004, 2002, 2003,
-                ]);
-
-                // Let's change the parachain percentage to 90
-                const tx = await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.collatorConfiguration.setMaxParachainCoresPercentage(900000000))
-                    .signAsync(alice);
-                await context.createBlock([tx]);
-
-                // Wait for two sessions for the effect
-                await jumpSessions(context, 2);
-
-                // Check the active assignment
-                const collatorAssignmentAfter = (
-                    await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
-                ).toJSON();
-                // Pool paras are not truncated but they are sorted by tip
-                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([
-                    2000, 2001, 2004, 2002, 2003,
-                ]);
             },
         });
     },
