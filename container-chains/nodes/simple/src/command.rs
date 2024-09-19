@@ -617,6 +617,8 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     orchestrator_para_id: para_id,
                     collation_params: None,
                     spawn_handle: task_manager.spawn_handle().clone(),
+                    // We can use warp sync because the warp sync bug only affects collators
+                    sync_mode: { move |_db_exists, _para_id| Ok(sc_cli::SyncMode::Warp) },
                     data_preserver: true,
                 },
                 state: Default::default(),
