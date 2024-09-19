@@ -18,7 +18,7 @@
 
 use crate::command::solochain::{
     build_solochain_config_dir, build_solochain_net_config_dir, copy_zombienet_keystore,
-    dummy_config, NotParachainConfiguration,
+    dummy_config,
 };
 use sc_cli::CliConfiguration;
 use sc_network_common::role::Role;
@@ -704,18 +704,16 @@ fn keystore_config(
 /// Start a solochain node.
 pub async fn start_solochain_node(
     // Parachain config not used directly, but we need it to derive the default values for some container_config args
-    orchestrator_config: NotParachainConfiguration,
     polkadot_config: Configuration,
     container_chain_config: (ContainerChainCli, tokio::runtime::Handle),
     collator_options: CollatorOptions,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, ())> {
+) -> sc_service::error::Result<TaskManager> {
     let orchestrator_para_id = Default::default();
     //orchestrator_config.announce_block = false; // prepare_node_config()
-    let parachain_config = orchestrator_config;
 
-    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_type.clone();
-    let relay_chain = parachain_config.relay_chain.clone();
+    let chain_type = polkadot_config.chain_spec.chain_type().clone();
+    let relay_chain = polkadot_config.chain_spec.id().to_string();
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
@@ -781,7 +779,7 @@ pub async fn start_solochain_node(
 
     // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
     // are collators or not
-    let validator = parachain_config.collator;
+    let validator = container_chain_config.0.base.collator;
     let mut dummy_parachain_config = dummy_config(
         polkadot_config.tokio_handle.clone(),
         polkadot_config.base_path.clone(),
@@ -899,7 +897,7 @@ pub async fn start_solochain_node(
         )
     }
 
-    Ok((task_manager, ()))
+    Ok(task_manager)
 }
 
 pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);

@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::command::solochain::NotParachainConfiguration;
 use {
     crate::{
         chain_spec,
@@ -373,12 +372,10 @@ pub fn run() -> Result<()> {
                 let relay_chain_args = binding.iter().chain(cmd.relay_chain_args.iter());
                 let polkadot_cli = {
                     let base_path = config.base_path.path().join("polkadot");
-                    // TODO: where to get chain_id from?
-                    let chain_id = Some("starlight_local_testnet".to_string());
 
                     RelayChainCli {
                         base_path,
-                        chain_id,
+                        chain_id: Some(config.relay_chain.clone()),
                         base: clap::Parser::parse_from(relay_chain_args),
                     }
                 };
@@ -405,26 +402,17 @@ pub fn run() -> Result<()> {
                 let container_chain_cli = normalized_run;
                 let tokio_handle = config.tokio_handle.clone();
                 let container_chain_config = (container_chain_cli, tokio_handle);
-                let not_config = NotParachainConfiguration {
-                    chain_type: polkadot_config.chain_spec.chain_type(),
-                    // relay_chain will be set to "starlight_local_testnet"
-                    // But everywhere else it is hardcoded to "rococo-local" so not sure if it's used
-                    relay_chain: polkadot_config.chain_spec.id().to_string(),
-                    collator: container_chain_config.0.base.collator,
-                };
 
                 // TODO: we can't enable hwbench because we don't have a db. Find a workaround
                 let hwbench = None;
 
                 crate::service::start_solochain_node(
-                    not_config,
                     polkadot_config,
                     container_chain_config,
                     collator_options,
                     hwbench,
                 )
                 .await
-                .map(|r| r.0)
                 .map_err(Into::into)
             })
         }

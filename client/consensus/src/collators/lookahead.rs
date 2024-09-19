@@ -371,15 +371,6 @@ impl<TxPool, OClient> Clone for BuyCoreParams<TxPool, OClient> {
     }
 }
 
-impl<TxPool, OClient> BuyCoreParams<TxPool, OClient> {
-    pub fn is_solochain(&self) -> bool {
-        match self {
-            BuyCoreParams::Solochain { .. } => true,
-            _ => false,
-        }
-    }
-}
-
 /// Run async-backing-friendly for Tanssi Aura.
 pub fn run<
     GSD,

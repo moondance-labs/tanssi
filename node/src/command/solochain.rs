@@ -33,21 +33,23 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tc_service_container_chain::cli::ContainerChainCli;
 
-pub struct SlimConfig {
+/// Alternative to [Configuration] struct used in solochain context.
+pub struct SolochainConfig {
     pub tokio_handle: tokio::runtime::Handle,
     pub base_path: BasePath,
     pub network_node_name: String,
-    pub display_role: String,
+    pub role: Role,
+    pub relay_chain: String,
 }
 
-/// A Substrate CLI runtime that can be used to run a node or a command
-pub struct NotRunner {
-    config: SlimConfig,
+/// Alternative to [Runner](sc_cli::Runner) struct used in solochain context.
+pub struct SolochainRunner {
+    config: SolochainConfig,
     tokio_runtime: tokio::runtime::Runtime,
     signals: Signals,
 }
 
-impl NotRunner {
+impl SolochainRunner {
     /// Log information about the node itself.
     ///
     /// # Example:
@@ -76,7 +78,7 @@ impl NotRunner {
         );
         //info!("📋 Chain specification: {}", config.chain_spec.name());
         info!("🏷  Node name: {}", self.config.network_node_name);
-        info!("👤 Role: {}", self.config.display_role);
+        info!("👤 Role: {}", self.config.role);
         /*
         info!(
             "💾 Database: {} at {}",
@@ -100,7 +102,7 @@ impl NotRunner {
     /// `SIGTERM` or `SIGINT`.
     pub fn run_node_until_exit<F, E>(
         self,
-        initialize: impl FnOnce(SlimConfig) -> F,
+        initialize: impl FnOnce(SolochainConfig) -> F,
     ) -> std::result::Result<(), E>
     where
         F: Future<Output = std::result::Result<TaskManager, E>>,
@@ -161,7 +163,7 @@ impl NotRunner {
 pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     cli: &Cli,
     command: &T,
-) -> sc_cli::Result<NotRunner> {
+) -> sc_cli::Result<SolochainRunner> {
     let tokio_runtime = sc_cli::build_runtime()?;
 
     // `capture` needs to be called in a tokio context.
@@ -177,14 +179,18 @@ pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     } else {
         Role::Full
     };
-    let config = SlimConfig {
+    // TODO: where to get chain_id from?
+    let chain_id = "starlight_local_testnet".to_string();
+
+    let config = SolochainConfig {
         tokio_handle: tokio_runtime.handle().clone(),
         base_path,
         network_node_name,
-        display_role: role.to_string(),
+        role,
+        relay_chain: chain_id,
     };
 
-    Ok(NotRunner {
+    Ok(SolochainRunner {
         config,
         tokio_runtime,
         signals,
@@ -241,13 +247,6 @@ fn init_cmd<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     }
 
     Ok(())
-}
-
-// TODO: merge this with SlimConfig
-pub struct NotParachainConfiguration {
-    pub chain_type: sc_chain_spec::ChainType,
-    pub relay_chain: String,
-    pub collator: bool,
 }
 
 /// Create a dummy [Configuration] that should only be used as input to polkadot-sdk functions that
