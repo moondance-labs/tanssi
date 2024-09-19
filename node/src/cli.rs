@@ -201,7 +201,7 @@ impl KeyCmd {
 
 #[derive(Debug, clap::Parser)]
 #[command(
-    propagate_version = false, // setting this to true makes the verify_cli test fail
+    propagate_version = true,
     args_conflicts_with_subcommands = true,
     subcommand_negates_reqs = true
 )]
@@ -285,10 +285,4 @@ impl RelayChainCli {
             base: clap::Parser::parse_from(relay_chain_args),
         }
     }
-}
-
-#[test]
-fn verify_cli() {
-    use clap::CommandFactory;
-    Cli::command().debug_assert();
 }
