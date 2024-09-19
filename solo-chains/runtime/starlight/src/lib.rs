@@ -21,8 +21,7 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common::{self as polkadot_runtime_common};
-
+use runtime_common as polkadot_runtime_common;
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -88,8 +87,8 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, GetSessionContainerChains, RegistrarHandler,
-        RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
+        apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
+        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
 
@@ -145,6 +144,7 @@ pub mod xcm_config;
 
 // Governance and configurations.
 pub mod governance;
+use pallet_collator_assignment::CoreAllocationConfiguration;
 use {
     governance::{
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
@@ -518,6 +518,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 use frame_support::traits::Currency;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
+use runtime_parachains::configuration::HostConfiguration;
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -1439,51 +1440,44 @@ construct_runtime! {
         Babe: pallet_babe = 1,
 
         Timestamp: pallet_timestamp = 2,
-        Balances: pallet_balances = 4,
-        Parameters: pallet_parameters = 6,
-        TransactionPayment: pallet_transaction_payment = 33,
+        Balances: pallet_balances = 3,
+        Parameters: pallet_parameters = 4,
+        TransactionPayment: pallet_transaction_payment = 5,
 
         // Consensus support.
         // Authorship must be before session in order to note author in the correct session and era.
-        Authorship: pallet_authorship = 5,
+        Authorship: pallet_authorship = 6,
         Offences: pallet_offences = 7,
-        Historical: session_historical = 34,
+        Historical: session_historical = 8,
 
-        Session: pallet_session = 8,
-        Grandpa: pallet_grandpa = 10,
-        AuthorityDiscovery: pallet_authority_discovery = 12,
+        // Container stuff should go before session
+        // Container stuff starts at index 10
+        ContainerRegistrar: pallet_registrar = 10,
+        CollatorConfiguration: pallet_configuration = 11,
+        TanssiInitializer: tanssi_initializer = 12,
+        TanssiInvulnerables: pallet_invulnerables = 13,
+        TanssiCollatorAssignment: pallet_collator_assignment = 14,
+        TanssiAuthorityAssignment: pallet_authority_assignment = 15,
+        TanssiAuthorityMapping: pallet_authority_mapping = 16,
+        AuthorNoting: pallet_author_noting = 17,
+        ServicesPayment: pallet_services_payment = 18,
+        DataPreservers: pallet_data_preservers = 19,
+
+        // Session management
+        Session: pallet_session = 30,
+        Grandpa: pallet_grandpa = 31,
+        AuthorityDiscovery: pallet_authority_discovery = 32,
 
         // Governance stuff; uncallable initially.
-        Treasury: pallet_treasury = 18,
-        ConvictionVoting: pallet_conviction_voting = 20,
-        Referenda: pallet_referenda = 21,
+        Treasury: pallet_treasury = 40,
+        ConvictionVoting: pallet_conviction_voting = 41,
+        Referenda: pallet_referenda = 42,
         //	pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;
-        FellowshipCollective: pallet_ranked_collective::<Instance1> = 22,
+        FellowshipCollective: pallet_ranked_collective::<Instance1> = 43,
         // pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
-        FellowshipReferenda: pallet_referenda::<Instance2> = 23,
-        Origins: pallet_custom_origins = 43,
-        Whitelist: pallet_whitelist = 44,
-
-        // Utility module.
-        Utility: pallet_utility = 24,
-
-        // Less simple identity module.
-        Identity: pallet_identity = 25,
-
-        // System scheduler.
-        Scheduler: pallet_scheduler = 29,
-
-        // Proxy module. Late addition.
-        Proxy: pallet_proxy = 30,
-
-        // Multisig module. Late addition.
-        Multisig: pallet_multisig = 31,
-
-        // Preimage registrar.
-        Preimage: pallet_preimage = 32,
-
-        // Asset rate.
-        AssetRate: pallet_asset_rate = 39,
+        FellowshipReferenda: pallet_referenda::<Instance2> = 44,
+        Origins: pallet_custom_origins = 45,
+        Whitelist: pallet_whitelist = 46,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -1500,13 +1494,38 @@ construct_runtime! {
         ParasDisputes: parachains_disputes = 62,
         ParasSlashing: parachains_slashing = 63,
         MessageQueue: pallet_message_queue = 64,
-        OnDemandAssignmentProvider: parachains_assigner_on_demand = 66,
+        OnDemandAssignmentProvider: parachains_assigner_on_demand = 65,
 
         // Parachain Onboarding Pallets. Start indices at 70 to leave room.
         Registrar: paras_registrar = 70,
 
+        // Utility module.
+        Utility: pallet_utility = 80,
+
+        // Less simple identity module.
+        Identity: pallet_identity = 81,
+
+        // System scheduler.
+        Scheduler: pallet_scheduler = 82,
+
+        // Proxy module. Late addition.
+        Proxy: pallet_proxy = 83,
+
+        // Multisig module. Late addition.
+        Multisig: pallet_multisig = 84,
+
+        // Preimage registrar.
+        Preimage: pallet_preimage = 85,
+
+        // Asset rate.
+        AssetRate: pallet_asset_rate = 86,
+
         // Pallet for sending XCM.
-        XcmPallet: pallet_xcm = 99,
+        XcmPallet: pallet_xcm = 90,
+
+        // Migration stuff
+        Migrations: pallet_migrations = 120,
+        MultiBlockMigrations: pallet_multiblock_migrations = 121,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -1526,19 +1545,8 @@ construct_runtime! {
         // Sudo.
         Sudo: pallet_sudo = 255,
 
-        // FIXME: correct ordering
-        ContainerRegistrar: pallet_registrar = 100,
-        CollatorConfiguration: pallet_configuration = 101,
-        TanssiInitializer: tanssi_initializer = 102,
-        TanssiInvulnerables: pallet_invulnerables = 103,
-        TanssiCollatorAssignment: pallet_collator_assignment = 104,
-        TanssiAuthorityAssignment: pallet_authority_assignment = 105,
-        TanssiAuthorityMapping: pallet_authority_mapping = 106,
-        Migrations: pallet_migrations = 107,
-        MultiBlockMigrations: pallet_multiblock_migrations = 108,
-        AuthorNoting: pallet_author_noting = 109,
-        ServicesPayment: pallet_services_payment = 110,
-        DataPreservers: pallet_data_preservers = 111,
+
+
     }
 }
 
@@ -2939,6 +2947,57 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
+fn host_config_at_session(
+    session_index_to_consider: SessionIndex,
+) -> HostConfiguration<BlockNumber> {
+    let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
+
+    let mut pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+
+    // We are not making any assumptions about number of configurations existing in pending config
+    // storage item.
+    // First remove any pending configs greater than session index in consideration
+    pending_configs = pending_configs
+        .into_iter()
+        .filter(|element| element.0 <= session_index_to_consider)
+        .collect::<Vec<_>>();
+    // Reverse sorting by the session index
+    pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
+
+    if pending_configs.is_empty() {
+        active_config
+    } else {
+        // We will take first pending config which should be as close to the session index as possible
+        pending_configs
+            .first()
+            .expect("already checked for emptiness above")
+            .1
+            .clone()
+    }
+}
+
+pub struct GetCoreAllocationConfigurationImpl;
+
+impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfigurationImpl {
+    fn get() -> Option<CoreAllocationConfiguration> {
+        // We do not have to check for session ending as new session always starts at block initialization which means
+        // whenever this is called, we are either in old session or in start of a one
+        // as on block initialization epoch index have been incremented and by extension session has been changed.
+        let session_index_to_consider = Session::current_index() + 1;
+
+        let max_parachain_percentage =
+            CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
+                .unwrap_or(Perbill::from_percent(50));
+
+        let config_to_consider = host_config_at_session(session_index_to_consider);
+
+        Some(CoreAllocationConfiguration {
+            core_count: config_to_consider.scheduler_params.num_cores,
+            max_parachain_percentage,
+        })
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
@@ -2954,6 +3013,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
+    type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
     type WeightInfo = ();
 }
 

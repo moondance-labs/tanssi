@@ -150,6 +150,7 @@ describeSuite({
                 const onChainGenesisDataAfter = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
                 expect(onChainGenesisDataAfter.toHuman()).to.be.null;
 
+                await context.createBlock();
                 // Para should be offboarding
                 const isOffboarding = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isOffboarding.toString()).to.eq("OffboardingParathread");

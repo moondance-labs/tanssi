@@ -69,21 +69,11 @@ const MAX_DB_RESTART_TIMEOUT: Duration = Duration::from_secs(60);
 /// Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
 const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 
-pub trait TSelectSyncMode:
-    Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>)
-{
-}
-impl<
-        T: Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>),
-    > TSelectSyncMode for T
-{
-}
-
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner<SelectSyncMode> {
+pub struct ContainerChainSpawner {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams<SelectSyncMode>,
+    pub params: ContainerChainSpawnParams,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -106,7 +96,7 @@ pub struct ContainerChainSpawner<SelectSyncMode> {
 /// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
 /// connected to an orchestrator node through WebSocket.
 #[derive(Clone)]
-pub struct ContainerChainSpawnParams<SelectSyncMode> {
+pub struct ContainerChainSpawnParams {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -117,7 +107,6 @@ pub struct ContainerChainSpawnParams<SelectSyncMode> {
     pub orchestrator_para_id: ParaId,
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
-    pub sync_mode: SelectSyncMode,
     pub data_preserver: bool,
 }
 
@@ -172,8 +161,8 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
-    try_spawn_params: ContainerChainSpawnParams<SelectSyncMode>,
+async fn try_spawn(
+    try_spawn_params: ContainerChainSpawnParams,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
@@ -188,7 +177,6 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         sync_keystore,
         spawn_handle,
         mut collation_params,
-        sync_mode,
         data_preserver,
         ..
     } = try_spawn_params;
@@ -318,8 +306,7 @@ async fn try_spawn<SelectSyncMode: TSelectSyncMode>(
         // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
         for _ in 0..2 {
             let db_existed_before = check_db_exists();
-            container_chain_cli.base.base.network_params.sync =
-                sync_mode(db_existed_before, container_chain_para_id)?;
+            container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
             log::info!(
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
@@ -557,7 +544,7 @@ pub trait Spawner {
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
 }
 
-impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSyncMode> {
+impl Spawner for ContainerChainSpawner {
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
         self.params.orchestrator_chain_interface.clone()
@@ -637,7 +624,7 @@ impl<SelectSyncMode: TSelectSyncMode> Spawner for ContainerChainSpawner<SelectSy
     }
 }
 
-impl<SelectSyncMode: TSelectSyncMode> ContainerChainSpawner<SelectSyncMode> {
+impl ContainerChainSpawner {
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(
         mut self,

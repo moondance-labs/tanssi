@@ -132,7 +132,7 @@ pub mod system_parachain {
 }
 
 /// Starlight Treasury pallet instance.
-pub const TREASURY_PALLET_ID: u8 = 18;
+pub const TREASURY_PALLET_ID: u8 = 40;
 
 #[cfg(test)]
 mod tests {

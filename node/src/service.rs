@@ -474,15 +474,6 @@ async fn start_node_impl(
                     None
                 },
                 spawn_handle,
-                sync_mode: {
-                    move |db_exists, para_id| {
-                        spawner::select_sync_mode_using_client(
-                            db_exists,
-                            &orchestrator_client.clone(),
-                            para_id,
-                        )
-                    }
-                },
             },
             state: Default::default(),
             collate_on_tanssi,
@@ -887,19 +878,6 @@ pub async fn start_solochain_node(
                     None
                 },
                 spawn_handle,
-                sync_mode: {
-                    move |_db_exists, _para_id| {
-                        // Default to full sync because it always works
-                        // TODO: allow select_sync_mode_using_client to use orchestrator_chain_interface
-                        /*
-                        spawner::select_sync_mode_using_client(
-                            db_exists,
-                            &orchestrator_chain_interface,
-                            para_id,
-                        ).await*/
-                        Ok(sc_cli::SyncMode::Full)
-                    }
-                },
                 data_preserver: false,
             },
             state: Default::default(),
