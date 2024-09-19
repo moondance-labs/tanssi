@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use tc_service_container_chain::cli::ContainerChainRunCmd;
 use {
     node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
+    tc_service_container_chain::cli::ContainerChainRunCmd,
 };
 
 /// Sub-commands supported by the collator.
@@ -86,17 +86,6 @@ pub struct SoloChainCmd {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
-    /*
-    /// Enable the development service to run without a backing relay chain
-    #[arg(long)]
-    pub dev_service: bool,
-
-    /// When blocks should be sealed in the dev service.
-    ///
-    /// Options are "instant", "manual", or timer interval in milliseconds
-    #[arg(long, default_value = "instant")]
-    pub sealing: Sealing,
-     */
     /// Relay chain arguments
     #[arg(raw = true)]
     pub relay_chain_args: Vec<String>,

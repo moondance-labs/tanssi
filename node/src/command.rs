@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::command::solochain::relay_chain_cli_new;
 use {
     crate::{
         chain_spec,
@@ -343,8 +344,8 @@ pub fn run() -> Result<()> {
         Some(Subcommand::SoloChain(cmd)) => {
             // Cannot use create_configuration function because that needs a chain spec.
             // So write our own `create_runner` function that doesn't need chain spec.
-            let normalized_run = cmd.run.normalize();
-            let runner = solochain::create_runner(&cli, &normalized_run)?;
+            let container_chain_cli = cmd.run.normalize();
+            let runner = solochain::create_runner(&cli, &container_chain_cli)?;
 
             // TODO: Assert that there are no flags between `tanssi-node` and `solo-chain`.
             // These will be ignored anyway.
@@ -359,56 +360,23 @@ pub fn run() -> Result<()> {
             let collator_options = cmd.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
-                /*
-                let polkadot_cli = RelayChainCli::new(
+                let polkadot_cli = relay_chain_cli_new(
                     &config,
                     [RelayChainCli::executable_name()]
                         .iter()
                         .chain(cmd.relay_chain_args.iter()),
                 );
-                 */
-                // TODO: refactor this into function that returns `RelayChainCli`
-                let binding = [RelayChainCli::executable_name()];
-                let relay_chain_args = binding.iter().chain(cmd.relay_chain_args.iter());
-                let polkadot_cli = {
-                    let base_path = config.base_path.path().join("polkadot");
-
-                    RelayChainCli {
-                        base_path,
-                        chain_id: Some(config.relay_chain.clone()),
-                        base: clap::Parser::parse_from(relay_chain_args),
-                    }
-                };
-
-                // TODO: dev mode does not make sense for starlight collator?
-                // But better to detect --dev flag and panic than ignore it
-                /*
-                let dev_service = config.chain_spec.is_dev()
-                    || relay_chain_id == Some("dev-service".to_string())
-                    || cli_run_dev_service;
-
-                if dev_service {
-                    return crate::service::start_dev_node(config, cli_run_sealing, hwbench, id)
-                        .map_err(Into::into);
-                }
-                 */
-
                 let tokio_handle = config.tokio_handle.clone();
                 let polkadot_config =
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
-
-                // We need to bake in some container-chain args
-                let container_chain_cli = normalized_run;
-                let tokio_handle = config.tokio_handle.clone();
-                let container_chain_config = (container_chain_cli, tokio_handle);
 
                 // TODO: we can't enable hwbench because we don't have a db. Find a workaround
                 let hwbench = None;
 
                 crate::service::start_solochain_node(
                     polkadot_config,
-                    container_chain_config,
+                    container_chain_cli,
                     collator_options,
                     hwbench,
                 )

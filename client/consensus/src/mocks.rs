@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    crate::collators::lookahead::BuyCoreParams,
     crate::{
         collators::lookahead::Params as LookAheadParams, OrchestratorAuraWorkerAuxData,
         SlotFrequency,
@@ -23,7 +24,10 @@ use {
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{ParachainBlockImportMarker, ValidationCodeHashProvider},
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
-    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::{BlockId, ValidationCodeHash},
+        CollationInfo, CollectCollationInfo, ParaId,
+    },
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
@@ -35,7 +39,10 @@ use {
     pallet_xcm_core_buyer_runtime_api::BuyingError,
     parity_scale_codec::Encode,
     polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
-    polkadot_node_subsystem::messages::{RuntimeApiMessage, RuntimeApiRequest},
+    polkadot_node_subsystem::{
+        messages::{RuntimeApiMessage, RuntimeApiRequest},
+        overseer, OverseerSignal,
+    },
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
@@ -511,12 +518,6 @@ impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
         Ok(block)
     }
 }
-
-use crate::collators::lookahead::BuyCoreParams;
-use {
-    cumulus_primitives_core::relay_chain::ValidationCodeHash,
-    polkadot_node_subsystem::{overseer, OverseerSignal},
-};
 
 pub struct DummyCodeHashProvider;
 impl ValidationCodeHashProvider<PHash> for DummyCodeHashProvider {

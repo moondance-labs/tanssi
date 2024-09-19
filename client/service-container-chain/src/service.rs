@@ -52,7 +52,7 @@ use {
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::lookahead::{
-            self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
+            self as lookahead_tanssi_aura, BuyCoreParams, Params as LookaheadTanssiAuraParams,
         },
         OrchestratorAuraWorkerAuxData,
     },
@@ -61,7 +61,6 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
-use tc_consensus::collators::lookahead::BuyCoreParams;
 
 type FullBackend = TFullBackend<Block>;
 
