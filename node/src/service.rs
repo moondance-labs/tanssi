@@ -18,8 +18,7 @@
 
 use {
     crate::command::solochain::{
-        build_solochain_config_dir, build_solochain_net_config_dir, copy_zombienet_keystore,
-        dummy_config,
+        build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
     },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -62,10 +61,7 @@ use {
     sc_network::NetworkBlock,
     sc_network_common::role::Role,
     sc_network_sync::SyncingService,
-    sc_service::{
-        config::KeystoreConfig, Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
-        TaskManager,
-    },
+    sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
@@ -74,7 +70,7 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{path::PathBuf, pin::Pin, sync::Arc, time::Duration},
+    std::{pin::Pin, sync::Arc, time::Duration},
     tc_consensus::{
         collators::lookahead::{
             self as lookahead_tanssi_aura, BuyCoreParams, Params as LookaheadTanssiAuraParams,
@@ -673,15 +669,6 @@ pub async fn start_parachain_node(
     .await
 }
 
-fn keystore_config(
-    keystore_params: Option<&sc_cli::KeystoreParams>,
-    config_dir: &PathBuf,
-) -> sc_cli::Result<KeystoreConfig> {
-    keystore_params
-        .map(|x| x.keystore_config(config_dir))
-        .unwrap_or_else(|| Ok(KeystoreConfig::InMemory))
-}
-
 /// Start a solochain node.
 pub async fn start_solochain_node(
     polkadot_config: Configuration,
@@ -703,7 +690,6 @@ pub async fn start_solochain_node(
         .as_ref()
         .expect("base_path is always set");
     let config_dir = build_solochain_config_dir(&base_path);
-    let _net_config_dir = build_solochain_net_config_dir(&config_dir);
     let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 

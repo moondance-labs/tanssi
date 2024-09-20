@@ -348,9 +348,13 @@ pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
     base_path.join("config")
 }
 
-/// Returns the default path for the network configuration inside the configuration dir
-pub(crate) fn build_solochain_net_config_dir(config_dir: &PathBuf) -> PathBuf {
-    config_dir.join("network")
+pub fn keystore_config(
+    keystore_params: Option<&sc_cli::KeystoreParams>,
+    config_dir: &PathBuf,
+) -> sc_cli::Result<KeystoreConfig> {
+    keystore_params
+        .map(|x| x.keystore_config(config_dir))
+        .unwrap_or_else(|| Ok(KeystoreConfig::InMemory))
 }
 
 /// Get the zombienet keystore path from the solochain collator keystore.
