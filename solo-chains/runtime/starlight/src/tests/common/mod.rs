@@ -240,9 +240,8 @@ pub fn end_block() {
 }
 
 pub fn run_block() {
-    end_block();
-
-    start_block()
+    start_block();
+    end_block()
 }
 
 #[derive(Default, Clone)]

@@ -236,10 +236,9 @@ pub fn end_block() {
 }
 
 pub fn run_block() -> RunSummary {
-    let summary = start_block();
     end_block();
-    summary
-}
+
+    start_block()
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
