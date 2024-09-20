@@ -15,7 +15,7 @@ async function mockAndInsertHeadData(
     sudoAccount: KeyringPair
 ) {
     const relayApi = context.polkadotJs();
-    let aura_engine_id = stringToHex("aura");
+    const aura_engine_id = stringToHex("aura");
 
     const digestItem: DigestItem = await relayApi.createType("DigestItem", {
         PreRuntime: [aura_engine_id, numberToHex(slotNumber, 64)],
@@ -106,7 +106,7 @@ describeSuite({
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
                 // The first account of container 2000 will be rewarded.
-                let accountToReward: string = assignment.containerChains[2000][0];
+                const accountToReward: string = assignment.containerChains[2000][0];
 
                 const { block } = await context.createBlock();
                 const accountBalanceBefore = (
