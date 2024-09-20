@@ -194,8 +194,27 @@ macro_rules! construct_async_run {
 
 /// Parse command line arguments into service configuration.
 pub fn run() -> Result<()> {
-    let cli = Cli::from_args();
+    let mut cli = Cli::from_args();
 
+    // If subcommand is `solochain-key`, modify default value of `--keystore-path` to be
+    // `base_path/config/keystore` instead of `base_path/chains/dancebox/keystore`.
+    if matches!(&cli.subcommand, Some(Subcommand::SolochainKey(_cmd))) {
+        if cli.run.base.base.keystore_params.keystore_path.is_none() {
+            let base_path = cli
+                .run
+                .base
+                .base
+                .shared_params
+                .base_path()?
+                .unwrap_or_else(|| BasePath::from_project("", "", &Cli::executable_name()));
+
+            let keystore_path = base_path.path().join("config/keystore");
+
+            cli.run.base.base.keystore_params.keystore_path = Some(keystore_path);
+        }
+    }
+
+    let cli = cli;
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -330,6 +349,10 @@ pub fn run() -> Result<()> {
             }
         }
         Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
+        Some(Subcommand::SolochainKey(cmd)) => {
+            // Same as Key but set a different keystore-path by default, set above
+            Ok(cmd.run(&cli)?)
+        }
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
