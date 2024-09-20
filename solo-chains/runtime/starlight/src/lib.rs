@@ -1508,12 +1508,14 @@ construct_runtime! {
         AuthorNoting: pallet_author_noting = 17,
         ServicesPayment: pallet_services_payment = 18,
         DataPreservers: pallet_data_preservers = 19,
-        InflationRewards: pallet_inflation_rewards = 20,
 
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
         AuthorityDiscovery: pallet_authority_discovery = 32,
+
+        // TODO: recheck order
+        InflationRewards: pallet_inflation_rewards = 33,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
