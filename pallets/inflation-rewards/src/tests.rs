@@ -71,7 +71,7 @@ fn test_undistributed_rewards() {
 #[test]
 fn test_reward_orchestrator_author() {
     new_test_ext().execute_with(|| {
-        let author = <Test as Config>::GetSelfChainBlockAuthor::get();
+        let author = <Test as Config>::GetSelfChainBlockAuthor::get_block_author().unwrap();
         let author_balance = get_balance(&author);
 
         let total_supply_0 = get_total_issuance();
@@ -97,7 +97,7 @@ fn test_reward_orchestrator_author_less_if_more_chains() {
             data.container_chains.try_push(1003.into()).unwrap();
         });
 
-        let author = <Test as Config>::GetSelfChainBlockAuthor::get();
+        let author = <Test as Config>::GetSelfChainBlockAuthor::get_block_author().unwrap();
         let author_balance = get_balance(&author);
 
         let total_supply_0 = get_total_issuance();

@@ -43,7 +43,9 @@ use {
         traits::{Get, Saturating},
         Perbill,
     },
-    tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
+    tp_traits::{
+        AuthorNotingHook, DistributeRewards, GetCurrentContainerChains, MaybeSelfChainBlockAuthor,
+    },
 };
 
 #[frame_support::pallet]
@@ -89,7 +91,7 @@ pub mod pallet {
 
             let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
 
-            if T::RewardOrchestratorAuthor::get() {
+            if let Some(_) = T::GetSelfChainBlockAuthor::get_block_author() {
                 number_of_chains = number_of_chains.saturating_add(1u32.into());
             }
 
@@ -123,8 +125,8 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
-            if T::RewardOrchestratorAuthor::get() {
-                weight += Self::reward_orchestrator_author();
+            if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
+                weight += Self::reward_orchestrator_author(orchestrator_author);
             }
 
             weight
@@ -141,7 +143,7 @@ pub mod pallet {
         type ContainerChains: GetCurrentContainerChains;
 
         /// Get block author for self chain
-        type GetSelfChainBlockAuthor: Get<Self::AccountId>;
+        type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::AccountId>;
 
         /// Inflation rate per orchestrator block (proportion of the total issuance)
         #[pallet::constant]
@@ -160,8 +162,6 @@ pub mod pallet {
         /// Proportion of the new supply dedicated to staking
         #[pallet::constant]
         type RewardsPortion: Get<Perbill>;
-
-        type RewardOrchestratorAuthor: Get<bool>;
     }
 
     #[pallet::event]
@@ -198,10 +198,8 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn reward_orchestrator_author() -> Weight {
+        fn reward_orchestrator_author(orchestrator_author: T::AccountId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads(1);
-            let orchestrator_author = T::GetSelfChainBlockAuthor::get();
-
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
                 total_weight += T::DbWeight::get().reads(1);
                 match T::StakingRewardsDistributor::distribute_rewards(
@@ -232,7 +230,6 @@ pub mod pallet {
             } else {
                 panic!("ChainsToReward not filled");
             }
-
             total_weight
         }
 

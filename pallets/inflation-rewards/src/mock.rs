@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_inflation_rewards},
+    crate::{self as pallet_inflation_rewards, MaybeSelfChainBlockAuthor},
     bounded_collections::bounded_vec,
     dp_core::ParaId,
     frame_support::{
@@ -176,9 +176,9 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
 
 pub struct MockGetSelfChainBlockAuthor;
 
-impl Get<AccountId> for MockGetSelfChainBlockAuthor {
-    fn get() -> AccountId {
-        MockData::mock().orchestrator_author
+impl MaybeSelfChainBlockAuthor<AccountId> for MockGetSelfChainBlockAuthor {
+    fn get_block_author() -> Option<AccountId> {
+        Some(MockData::mock().orchestrator_author)
     }
 }
 
@@ -222,7 +222,6 @@ impl pallet_inflation_rewards::Config for Test {
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = MockRewardsDistributor;
     type RewardsPortion = RewardsPortion;
-    type RewardOrchestratorAuthor = ConstBool<true>;
 }
 
 // Build genesis storage according to the mock runtime.

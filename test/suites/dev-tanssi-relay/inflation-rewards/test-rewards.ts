@@ -43,7 +43,7 @@ async function mockAndInsertHeadData(
 }
 
 describeSuite({
-    id: "DTR0410",
+    id: "DTR1101",
     title: "Starlight: InflationRewards test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

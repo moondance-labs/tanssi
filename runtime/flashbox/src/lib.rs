@@ -98,8 +98,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, RelayStorageRootProvider,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
     },
 };
 pub use {
@@ -1317,15 +1317,14 @@ parameter_types! {
 }
 
 pub struct GetSelfChainBlockAuthor;
-impl Get<AccountId32> for GetSelfChainBlockAuthor {
-    fn get() -> AccountId32 {
+impl MaybeSelfChainBlockAuthor<AccountId32> for GetSelfChainBlockAuthor {
+    fn get_block_author() -> Option<AccountId32> {
         // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
         // we should also make sure we actually account for the weight of these
         // although most of these should be cached as they are read every block
         let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         let self_para_id = ParachainInfo::get();
-        let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
-        author.expect("author should be set")
+        CollatorAssignment::author_for_slot(slot.into(), self_para_id)
     }
 }
 
@@ -1346,7 +1345,6 @@ impl pallet_inflation_rewards::Config for Runtime {
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
     type RewardsPortion = RewardsPortion;
-    type RewardOrchestratorAuthor = ConstBool<true>;
 }
 
 impl pallet_tx_pause::Config for Runtime {

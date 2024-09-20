@@ -89,7 +89,8 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
-        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
+        MaybeSelfChainBlockAuthor, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot,
+        SlotFrequency,
     },
 };
 
@@ -1447,12 +1448,11 @@ parameter_types! {
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
-// This will be skipped in the case of Starlight, but we need to provide an impl for it to compile.
-pub struct GetDummyBlockAuthor;
-impl Get<AccountId32> for GetDummyBlockAuthor {
-    fn get() -> AccountId32 {
-        // TODO: check if we are good by retrieving [0u8;32]
-        AccountId32::new([0u8; 32])
+// No orchestrator author in Starlight.
+pub struct EmptyBlockAuthor;
+impl MaybeSelfChainBlockAuthor<AccountId32> for EmptyBlockAuthor {
+    fn get_block_author() -> Option<AccountId32> {
+        None
     }
 }
 
@@ -1467,13 +1467,12 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
-    type GetSelfChainBlockAuthor = GetDummyBlockAuthor;
+    type GetSelfChainBlockAuthor = EmptyBlockAuthor;
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
     type RewardsPortion = RewardsPortion;
-    type RewardOrchestratorAuthor = ConstBool<false>;
 }
 
 construct_runtime! {
@@ -1514,7 +1513,7 @@ construct_runtime! {
         Grandpa: pallet_grandpa = 31,
         AuthorityDiscovery: pallet_authority_discovery = 32,
 
-        // TODO: recheck order
+        // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
 
         // Governance stuff; uncallable initially.
