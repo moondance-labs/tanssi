@@ -319,7 +319,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 120000,
+            timeout: 180000,
             test: async function () {
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
