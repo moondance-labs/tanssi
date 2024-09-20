@@ -16,22 +16,27 @@
 
 //! Helper functions used to implement solochain collator
 
-use crate::cli::{Cli, RelayChainCli};
-use futures::FutureExt;
-use jsonrpsee::server::BatchRequestConfig;
-use log::{info, warn};
-use sc_chain_spec::{ChainType, GenericChainSpec, NoExtension};
-use sc_cli::{CliConfiguration, DefaultConfigurationValues, Signals, SubstrateCli};
-use sc_network::config::{NetworkBackendType, NetworkConfiguration, TransportConfig};
-use sc_network_common::role::Role;
-use sc_service::config::KeystoreConfig;
-use sc_service::{BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager};
-use sc_tracing::logging::LoggerBuilder;
-use std::future::Future;
-use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-use tc_service_container_chain::cli::ContainerChainCli;
+use {
+    crate::cli::{Cli, RelayChainCli},
+    futures::FutureExt,
+    jsonrpsee::server::BatchRequestConfig,
+    log::{info, warn},
+    sc_chain_spec::{ChainType, GenericChainSpec, NoExtension},
+    sc_cli::{CliConfiguration, DefaultConfigurationValues, Signals, SubstrateCli},
+    sc_network::config::{NetworkBackendType, NetworkConfiguration, TransportConfig},
+    sc_network_common::role::Role,
+    sc_service::{
+        config::KeystoreConfig, BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager,
+    },
+    sc_tracing::logging::LoggerBuilder,
+    std::{
+        future::Future,
+        num::NonZeroUsize,
+        path::{Path, PathBuf},
+        time::Duration,
+    },
+    tc_service_container_chain::cli::ContainerChainCli,
+};
 
 /// Alternative to [Configuration] struct used in solochain context.
 pub struct SolochainConfig {

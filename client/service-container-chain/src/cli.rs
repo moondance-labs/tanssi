@@ -74,8 +74,6 @@ pub struct ContainerChainRunCmd {
 impl ContainerChainRunCmd {
     /// Create a [`NormalizedRunCmd`] which merges the `collator` cli argument into `validator` to
     /// have only one.
-    // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
-    // TODO: deduplicate this function and [ContainerChainCli::new]
     pub fn normalize(&self) -> ContainerChainCli {
         let mut new_base = self.clone();
 
@@ -149,16 +147,24 @@ impl ContainerChainCli {
         let mut base: ContainerChainRunCmd = clap::Parser::parse_from(container_chain_args);
 
         // Copy some parachain args into container chain args
-        // TODO: warn the user if they try to set one of these args using container chain args,
-        // because that args will be ignored
-        let base_path = para_config.base_path.path().join("containers");
-        base.base.shared_params.base_path = Some(base_path);
-        // TODO: move wasmtime_precompiled here
 
-        Self {
-            base,
-            preloaded_chain_spec: None,
+        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
+        if base.base.import_params.wasmtime_precompiled.is_none() {
+            base.base
+                .import_params
+                .wasmtime_precompiled
+                .clone_from(&para_config.wasmtime_precompiled);
         }
+
+        // Set container base path to the same value as orchestrator base_path.
+        // "containers" is appended in `base.normalize()`
+        if base.base.shared_params.base_path.is_some() {
+            log::warn!("Container chain --base-path is being ignored");
+        }
+        let base_path = para_config.base_path.path().to_owned();
+        base.base.shared_params.base_path = Some(base_path);
+
+        base.normalize()
     }
 
     pub fn chain_spec_from_genesis_data(

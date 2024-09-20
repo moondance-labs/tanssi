@@ -245,30 +245,12 @@ pub fn import_queue(
 async fn start_node_impl(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
-    mut container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
+    container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
-    if let Some((container_chain_cli, _)) = &mut container_chain_config {
-        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-        if container_chain_cli
-            .base
-            .base
-            .import_params
-            .wasmtime_precompiled
-            .is_none()
-        {
-            container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .clone_from(&parachain_config.wasmtime_precompiled);
-        }
-    }
-
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
         .map(|e| e.relay_chain.clone())

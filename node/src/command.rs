@@ -378,13 +378,13 @@ pub fn run() -> Result<()> {
             // Zombienet appends a --chain flag after "solo-chain" subcommand, which is ignored, so it's fine,
             // but warn users that this is not expected here.
             // We cannot do this before create_runner because logging is not setup there yet.
-            if cmd.run.base.shared_params.chain.is_some() {
+            if container_chain_cli.base.base.shared_params.chain.is_some() {
                 log::warn!(
                     "Ignoring --chain argument: solochain mode does only need the relay chain-spec"
                 );
             }
 
-            let collator_options = cmd.run.collator_options();
+            let collator_options = container_chain_cli.base.collator_options();
 
             runner.run_node_until_exit(|config| async move {
                 let containers_base_path = container_chain_cli
