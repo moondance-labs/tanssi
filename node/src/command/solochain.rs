@@ -161,7 +161,6 @@ impl SolochainRunner {
 
 /// Equivalent to [Cli::create_runner]
 pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
-    cli: &Cli,
     command: &T,
 ) -> sc_cli::Result<SolochainRunner> {
     let tokio_runtime = sc_cli::build_runtime()?;
@@ -174,20 +173,17 @@ pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
 
     let base_path = command.base_path()?.unwrap();
     let network_node_name = command.node_name()?;
-    let role = if cli.run.collator {
-        Role::Authority
-    } else {
-        Role::Full
-    };
-    // TODO: where to get chain_id from?
-    let chain_id = "starlight_local_testnet".to_string();
+    let is_dev = command.is_dev()?;
+    let role = command.role(is_dev)?;
+    // TODO: where to get relay_chain_id from?
+    let relay_chain_id = "starlight_local_testnet".to_string();
 
     let config = SolochainConfig {
         tokio_handle: tokio_runtime.handle().clone(),
         base_path,
         network_node_name,
         role,
-        relay_chain: chain_id,
+        relay_chain: relay_chain_id,
     };
 
     Ok(SolochainRunner {

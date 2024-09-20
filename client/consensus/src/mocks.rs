@@ -15,10 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::collators::lookahead::BuyCoreParams,
     crate::{
-        collators::lookahead::Params as LookAheadParams, OrchestratorAuraWorkerAuxData,
-        SlotFrequency,
+        collators::lookahead::{BuyCoreParams, Params as LookAheadParams},
+        OrchestratorAuraWorkerAuxData, SlotFrequency,
     },
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,

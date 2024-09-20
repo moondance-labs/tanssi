@@ -345,12 +345,17 @@ pub fn run() -> Result<()> {
             // Cannot use create_configuration function because that needs a chain spec.
             // So write our own `create_runner` function that doesn't need chain spec.
             let container_chain_cli = cmd.run.normalize();
-            let runner = solochain::create_runner(&cli, &container_chain_cli)?;
+            let runner = solochain::create_runner(&container_chain_cli)?;
 
-            // TODO: Assert that there are no flags between `tanssi-node` and `solo-chain`.
-            // These will be ignored anyway.
-            // We need to do this after create_runner because before that logging is not setup yet
-            // Zombienet appends a --chain flag after "solo-chain" subcommand, which is ignored,
+            // The expected usage is
+            // `tanssi-node solochain --flag`
+            // So `cmd` stores the flags from after `solochain`, and `cli` has the flags from between
+            // `tanssi-node` and `solo-chain`. We are ignoring the flags from `cli` intentionally.
+            // Would be nice to error if the user passes any flag there, but it's not easy to detect.
+
+            // Zombienet appends a --chain flag after "solo-chain" subcommand, which is ignored, so it's fine,
+            // but warn users that this is not expected here.
+            // We cannot do this before create_runner because logging is not setup there yet.
             if cmd.run.base.shared_params.chain.is_some() {
                 log::warn!(
                     "Ignoring --chain argument: solochain mode does only need the relay chain-spec"
@@ -360,6 +365,20 @@ pub fn run() -> Result<()> {
             let collator_options = cmd.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
+                let containers_base_path = container_chain_cli
+                    .base
+                    .base
+                    .shared_params
+                    .base_path
+                    .as_ref()
+                    .expect("base_path is always set");
+                let hwbench = (!cmd.no_hardware_benchmarks)
+                    .then_some(Some(containers_base_path).map(|database_path| {
+                        let _ = std::fs::create_dir_all(database_path);
+                        sc_sysinfo::gather_hwbench(Some(database_path))
+                    }))
+                    .flatten();
+
                 let polkadot_cli = relay_chain_cli_new(
                     &config,
                     [RelayChainCli::executable_name()]
@@ -371,8 +390,14 @@ pub fn run() -> Result<()> {
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
-                // TODO: we can't enable hwbench because we don't have a db. Find a workaround
-                let hwbench = None;
+                info!(
+                    "Is collating: {}",
+                    if config.role.is_authority() {
+                        "yes"
+                    } else {
+                        "no"
+                    }
+                );
 
                 crate::service::start_solochain_node(
                     polkadot_config,

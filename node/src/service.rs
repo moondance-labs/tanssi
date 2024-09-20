@@ -703,7 +703,6 @@ fn keystore_config(
 
 /// Start a solochain node.
 pub async fn start_solochain_node(
-    // Parachain config not used directly, but we need it to derive the default values for some container_config args
     polkadot_config: Configuration,
     container_chain_cli: ContainerChainCli,
     collator_options: CollatorOptions,
