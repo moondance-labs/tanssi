@@ -26,7 +26,7 @@ use {
             ConstU64, Everything,
         },
     },
-    sp_core::{ConstBool, H256},
+    sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
