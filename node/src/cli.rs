@@ -62,10 +62,6 @@ pub enum Subcommand {
     #[command(subcommand)]
     Key(KeyCmd),
 
-    /// Same as key but using a different default keystore path
-    #[command(subcommand)]
-    SolochainKey(KeyCmd),
-
     /// Precompile the WASM runtime into native code
     PrecompileWasm(sc_cli::PrecompileWasmCmd),
 
