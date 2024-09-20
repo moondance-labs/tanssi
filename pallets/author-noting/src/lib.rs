@@ -142,8 +142,6 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
 
-            log::info!("ENTERING AUTHOR_NOTING...");
-
             assert!(
                 !<DidSetContainerAuthorData<T>>::exists(),
                 "DidSetContainerAuthorData must be updated only once in a block",
@@ -177,7 +175,6 @@ pub mod pallet {
                                 >| {
                                     if let Some(ref mut old_block_info) = maybe_old_block_info {
                                         if block_info.block_number > old_block_info.block_number {
-                                            log::info!("1 - FIRST_AUTHOR_NOTING...");
                                             // We only reward author if the block increases
                                             total_weight = total_weight.saturating_add(
                                                 T::AuthorNotingHook::on_container_author_noted(
@@ -189,7 +186,6 @@ pub mod pallet {
                                             let _ = core::mem::replace(old_block_info, block_info);
                                         }
                                     } else {
-                                        log::info!("2 - SECOND_AUTHOR_NOTING...");
                                         // If there is no previous block, we should reward the author of the first block
                                         total_weight = total_weight.saturating_add(
                                             T::AuthorNotingHook::on_container_author_noted(
@@ -320,7 +316,6 @@ impl<T: Config> Pallet<T> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
         let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
-        log::warn!("KEY: {:?}", key.clone());
         // We might encounter empty vecs
         // We only note if we can decode
         // In this process several errors can occur, but we will only log if such errors happen
@@ -334,12 +329,6 @@ impl<T: Config> Pallet<T> {
                 _ => Error::<T>::FailedReading,
             })?;
 
-        log::warn!(
-            "HEAD DATA FOR PARA {:?}: {:?}",
-            u32::from(para_id),
-            head_data.0
-        );
-
         // We later take the Header decoded
         let author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
             &mut head_data.0.as_slice(),
@@ -350,7 +339,6 @@ impl<T: Config> Pallet<T> {
         // If there are no aura logs, it iterates over all the logs, then returns the error from the first element.
         // This is because it is hard to return a `Vec<Error<T>>`.
         let mut first_error = None;
-        log::warn!("DIGEST: {:?}", author_header.digest().logs().get(0).clone());
         for aura_digest in author_header.digest().logs() {
             match Self::author_from_log(aura_digest, para_id, &author_header, tanssi_slot) {
                 Ok(x) => return Ok(x),
@@ -379,17 +367,12 @@ impl<T: Config> Pallet<T> {
 
         // Match against the Aura digest
         if id == AURA_ENGINE_ID {
-            log::warn!("ENTERING AURA ID");
-            log::warn!("DATA OF SIZE: {:?}", data);
             // DecodeSlot
             let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
-            log::warn!("AURA ID SLOT: {:?}", slot);
 
             // Fetch Author
             let author = T::ContainerChainAuthor::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
-
-            log::warn!("continuing");
 
             Ok(ContainerChainBlockInfo {
                 block_number: author_header.number,
