@@ -76,21 +76,13 @@ impl SolochainRunner {
             C::copyright_start_year(),
             Local::now().year()
         );
+        // No chain spec
         //info!("📋 Chain specification: {}", config.chain_spec.name());
         info!("🏷  Node name: {}", self.config.network_node_name);
         info!("👤 Role: {}", self.config.role);
-        /*
         info!(
             "💾 Database: {} at {}",
-            config.database,
-            config
-                .database
-                .path()
-                .map_or_else(|| "<unknown>".to_owned(), |p| p.display().to_string())
-        );
-         */
-        info!(
-            "💾 Database: {} at {}",
+            // Container chains only support paritydb
             "ParityDb",
             // Print base path instead of db path because each container will have its own db in a
             // different subdirectory.
@@ -341,7 +333,7 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
     }
 }
 
-/// Returns the default path for configuration  directory based on the chain_spec
+/// Returns the default path for configuration directory based on the chain_spec
 pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
     // base_path:  Collator1000-01/data/containers
     // config_dir: Collator1000-01/data/config
@@ -391,6 +383,7 @@ pub fn copy_zombienet_keystore(keystore: &KeystoreConfig) -> std::io::Result<()>
     }
 }
 
+/// Equivalent to `cp -r src/* dst`
 // https://stackoverflow.com/a/65192210
 fn copy_dir_all(
     src: impl AsRef<Path>,

@@ -118,6 +118,7 @@ pub struct CollationParams {
     pub orchestrator_tx_pool: Option<Arc<FullPool<OpaqueBlock, ParachainClient>>>,
     pub orchestrator_client: Option<Arc<ParachainClient>>,
     pub orchestrator_para_id: ParaId,
+    /// If this is `false`, then `orchestrator_tx_pool` and `orchestrator_client` must be `Some`.
     pub solochain: bool,
 }
 

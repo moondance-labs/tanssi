@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::command::solochain::relay_chain_cli_new;
 use {
     crate::{
         chain_spec,
@@ -379,7 +378,7 @@ pub fn run() -> Result<()> {
                     }))
                     .flatten();
 
-                let polkadot_cli = relay_chain_cli_new(
+                let polkadot_cli = solochain::relay_chain_cli_new(
                     &config,
                     [RelayChainCli::executable_name()]
                         .iter()

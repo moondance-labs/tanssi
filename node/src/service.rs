@@ -16,17 +16,11 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use crate::command::solochain::{
-    build_solochain_config_dir, build_solochain_net_config_dir, copy_zombienet_keystore,
-    dummy_config,
-};
-use sc_cli::CliConfiguration;
-use sc_network_common::role::Role;
-use sc_service::config::KeystoreConfig;
-use sc_service::KeystoreContainer;
-use std::path::PathBuf;
-use tc_consensus::collators::lookahead::BuyCoreParams;
 use {
+    crate::command::solochain::{
+        build_solochain_config_dir, build_solochain_net_config_dir, copy_zombienet_keystore,
+        dummy_config,
+    },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer,
@@ -60,13 +54,18 @@ use {
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
+    sc_cli::CliConfiguration,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::BasicQueue,
     sc_network::NetworkBlock,
+    sc_network_common::role::Role,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TaskManager},
+    sc_service::{
+        config::KeystoreConfig, Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
+        TaskManager,
+    },
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
@@ -75,10 +74,10 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{pin::Pin, sync::Arc, time::Duration},
+    std::{path::PathBuf, pin::Pin, sync::Arc, time::Duration},
     tc_consensus::{
         collators::lookahead::{
-            self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
+            self as lookahead_tanssi_aura, BuyCoreParams, Params as LookaheadTanssiAuraParams,
         },
         OnDemandBlockProductionApi, OrchestratorAuraWorkerAuxData, TanssiAuthorityAssignmentApi,
     },
@@ -714,64 +713,35 @@ pub async fn start_solochain_node(
     let chain_type = polkadot_config.chain_spec.chain_type().clone();
     let relay_chain = polkadot_config.chain_spec.id().to_string();
 
-    let (telemetry_worker_handle, mut task_manager, keystore_container) = {
-        let base_path = container_chain_cli
-            .base
-            .base
-            .shared_params
-            .base_path
-            .as_ref()
-            .expect("base_path is always set");
-        let config_dir = build_solochain_config_dir(&base_path);
-        let _net_config_dir = build_solochain_net_config_dir(&config_dir);
-        let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
-            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+    let base_path = container_chain_cli
+        .base
+        .base
+        .shared_params
+        .base_path
+        .as_ref()
+        .expect("base_path is always set");
+    let config_dir = build_solochain_config_dir(&base_path);
+    let _net_config_dir = build_solochain_net_config_dir(&config_dir);
+    let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-        // Instead of putting keystore in
-        // Collator1000-01/data/chains/simple_container_2000/keystore
-        // We put it in
-        // Collator1000-01/data/config/keystore
-        // And same for "network" folder
-        // But zombienet will put the keys in the old path, so we need to manually copy it if we
-        // are running under zombienet
-        copy_zombienet_keystore(&keystore)?;
+    // Instead of putting keystore in
+    // Collator1000-01/data/chains/simple_container_2000/keystore
+    // We put it in
+    // Collator1000-01/data/config/keystore
+    // And same for "network" folder
+    // But zombienet will put the keys in the old path, so we need to manually copy it if we
+    // are running under zombienet
+    copy_zombienet_keystore(&keystore)?;
 
-        let keystore_container = KeystoreContainer::new(&keystore)?;
+    let keystore_container = KeystoreContainer::new(&keystore)?;
 
-        let task_manager = {
-            //let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-            let registry = None;
-            TaskManager::new(tokio_handle.clone(), registry)?
-        };
+    // No metrics so no prometheus registry
+    let prometheus_registry = None;
+    let mut task_manager = TaskManager::new(tokio_handle.clone(), prometheus_registry)?;
 
-        // TODO: impl telemetry
-        /*
-        let telemetry = parachain_config
-            .telemetry_endpoints
-            .clone()
-            .filter(|x| !x.is_empty())
-            .map(|endpoints| -> Result<_, sc_telemetry::Error> {
-                let worker = TelemetryWorker::new(16)?;
-                let telemetry = worker.handle().new_telemetry(endpoints);
-                Ok((worker, telemetry))
-            })
-            .transpose()?;
-
-
-        let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-        let telemetry = telemetry.map(|(worker, telemetry)| {
-            task_manager
-                .spawn_handle()
-                .spawn("telemetry", None, worker.run());
-            telemetry
-        });
-
-         */
-        let telemetry_worker_handle = None;
-
-        (telemetry_worker_handle, task_manager, keystore_container)
-    };
+    // Each container chain will spawn its own telemetry
+    let telemetry_worker_handle = None;
 
     // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
     // are collators or not
