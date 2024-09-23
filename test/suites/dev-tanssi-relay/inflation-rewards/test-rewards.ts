@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { Header, ParaId, HeadData, Digest, DigestItem } from "@polkadot/types/interfaces";
 import { KeyringPair } from "@moonwall/util";
 import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/block";
-import { STARLIGHT_BOND, PARACHAIN_BOND } from "util/constants";
+import { STARLIGHT_BOND } from "util/constants";
 import { numberToHex, stringToHex } from "@polkadot/util";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
