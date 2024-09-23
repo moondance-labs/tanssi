@@ -239,6 +239,7 @@ pub fn run_block() -> RunSummary {
     end_block();
 
     start_block()
+}
 
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
