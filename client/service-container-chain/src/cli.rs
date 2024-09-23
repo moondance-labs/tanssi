@@ -20,8 +20,9 @@ use {
     dc_orchestrator_chain_interface::ContainerChainGenesisData,
     dp_container_chain_genesis_data::json::properties_to_map,
     sc_chain_spec::ChainSpec,
-    sc_cli::CliConfiguration,
+    sc_cli::{CliConfiguration, SubstrateCli},
     sc_network::config::MultiaddrWithPeerId,
+    sc_service::BasePath,
     sp_runtime::Storage,
     std::{collections::BTreeMap, net::SocketAddr},
     url::Url,
@@ -83,16 +84,10 @@ impl ContainerChainRunCmd {
         // a new container chain, its database is always inside the `containers` folder.
         // So if the user passes `--base-path /tmp/node`, we want the ephemeral container data in
         // `/tmp/node/containers`, and the persistent storage in `/tmp/node/config`.
-        // TODO: there should be a way to avoid this if we refactor the code that creates the db,
-        // but maybe that breaks dancebox
-        let base_path = match self.base.base_path() {
-            Ok(Some(x)) => x,
-            _ => {
-                // This is maybe unreachable. There is always a default base path, and if run in
-                // `--dev` or `--tmp` mode, a temporary base path is created.
-                panic!("No base path")
-            }
-        };
+        let base_path = base_path_or_default(
+            self.base.base_path().expect("failed to get base_path"),
+            &ContainerChainCli::executable_name(),
+        );
 
         let base_path = base_path.path().join("containers");
         new_base.base.shared_params.base_path = Some(base_path);
@@ -459,4 +454,12 @@ fn validate_relay_chain_url(arg: &str) -> Result<Url, String> {
             url.scheme()
         ))
     }
+}
+
+/// Returns the value of `base_path` or the default_path if it is None
+pub(crate) fn base_path_or_default(
+    base_path: Option<BasePath>,
+    executable_name: &String,
+) -> BasePath {
+    base_path.unwrap_or_else(|| BasePath::from_project("", "", executable_name))
 }
