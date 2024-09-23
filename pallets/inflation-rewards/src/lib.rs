@@ -40,7 +40,7 @@ use {
     },
     frame_system::pallet_prelude::*,
     sp_runtime::{
-        traits::{Get, Saturating},
+        traits::{Get, Saturating, Zero},
         Perbill,
     },
     tp_traits::{
@@ -97,39 +97,42 @@ pub mod pallet {
                 number_of_chains = number_of_chains.saturating_add(1u32.into());
             }
 
-            // Issue new supply
-            let new_supply =
-                T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());
+            // Only create new supply and rewards if number_of_chains is not zero.
+            if !number_of_chains.is_zero() {
+                // Issue new supply
+                let new_supply =
+                    T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());
 
-            // Split staking reward portion
-            let total_rewards = T::RewardsPortion::get() * new_supply.peek();
-            let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
+                // Split staking reward portion
+                let total_rewards = T::RewardsPortion::get() * new_supply.peek();
+                let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
 
-            let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
-            let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
-                total_rewards % number_of_chains,
-                (reminder_credit, CreditOf::<T>::zero()),
-            );
+                let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
+                let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
+                    total_rewards % number_of_chains,
+                    (reminder_credit, CreditOf::<T>::zero()),
+                );
 
-            // Deposit the new supply dedicated to rewards in the pending rewards account
-            if let Err(undistributed_rewards) =
-                T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
-            {
-                total_reminder = total_reminder.merge(undistributed_rewards);
-            }
+                // Deposit the new supply dedicated to rewards in the pending rewards account
+                if let Err(undistributed_rewards) =
+                    T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
+                {
+                    total_reminder = total_reminder.merge(undistributed_rewards);
+                }
 
-            // Keep track of chains to reward
-            ChainsToReward::<T>::put(ChainsToRewardValue {
-                para_ids: registered_para_ids,
-                rewards_per_chain,
-            });
+                // Keep track of chains to reward
+                ChainsToReward::<T>::put(ChainsToRewardValue {
+                    para_ids: registered_para_ids,
+                    rewards_per_chain,
+                });
 
-            // Let the runtime handle the non-staking part
-            T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
+                // Let the runtime handle the non-staking part
+                T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
-            // We don't reward the orchestrator in solochain mode
-            if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
-                weight += Self::reward_orchestrator_author(orchestrator_author);
+                // We don't reward the orchestrator in solochain mode
+                if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
+                    weight += Self::reward_orchestrator_author(orchestrator_author);
+                }
             }
 
             weight
