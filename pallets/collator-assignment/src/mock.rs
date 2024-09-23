@@ -33,8 +33,8 @@ use {
     },
     sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     tp_traits::{
-        CollatorAssignmentHook, CollatorAssignmentTip, ParaId, ParathreadParams,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, SessionContainerChains,
+        CollatorAssignmentTip, ParaId, ParathreadParams, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
@@ -310,23 +310,6 @@ impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
         }
     }
 }
-pub struct MockCollatorAssignmentHook;
-
-impl CollatorAssignmentHook<u32> for MockCollatorAssignmentHook {
-    fn on_collators_assigned(
-        para_id: ParaId,
-        _maybe_tip: Option<&u32>,
-        _is_parathread: bool,
-    ) -> Result<Weight, sp_runtime::DispatchError> {
-        // Only fail for para 1001
-        if MockData::mock().assignment_hook_errors && para_id == 1001.into() {
-            // The error doesn't matter
-            Err(sp_runtime::DispatchError::Unavailable)
-        } else {
-            Ok(Weight::default())
-        }
-    }
-}
 
 pub struct GetCoreAllocationConfigurationImpl;
 
@@ -353,7 +336,6 @@ impl pallet_collator_assignment::Config for Test {
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
-    type CollatorAssignmentHook = MockCollatorAssignmentHook;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
     type ForceEmptyOrchestrator = ConstBool<false>;
     type Currency = ();
@@ -416,12 +398,21 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
 /// Any ParaId >= 5000 will be considered to not have enough credits
 pub struct RemoveParaIdsAbove5000;
 
-impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
-    fn remove_para_ids_with_no_credits(
+impl<AC> RemoveParaIdsWithNoCredits<u32, AC> for RemoveParaIdsAbove5000 {
+    fn pre_assignment_remove_para_ids_with_no_credits(
         para_ids: &mut Vec<ParaId>,
-        _currently_assigned: &BTreeSet<ParaId>,
+        _old_assigned: &BTreeSet<ParaId>,
     ) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
+    }
+
+    fn post_assignment_remove_para_ids_with_no_credits(
+        _current_assigned: &BTreeSet<ParaId>,
+        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        _maybe_tip: &Option<u32>,
+    ) -> Weight {
+        new_assigned.retain(|para_id, _| *para_id <= ParaId::from(5000));
+        Weight::zero()
     }
 
     #[cfg(feature = "runtime-benchmarks")]
