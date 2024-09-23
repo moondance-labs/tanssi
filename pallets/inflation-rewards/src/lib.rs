@@ -91,6 +91,8 @@ pub mod pallet {
 
             let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
 
+            // We only add 1 extra chain to number_of_chains if we are
+            // in a parachain context with an orchestrator configured.
             if let Some(_) = T::GetSelfChainBlockAuthor::get_block_author() {
                 number_of_chains = number_of_chains.saturating_add(1u32.into());
             }
@@ -125,6 +127,7 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
+            // We don't reward the orchestrator in solochain mode
             if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
                 weight += Self::reward_orchestrator_author(orchestrator_author);
             }

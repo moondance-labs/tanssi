@@ -7,6 +7,13 @@ import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/bl
 import { PARACHAIN_BOND } from "util/constants";
 import { numberToHex, stringToHex } from "@polkadot/util";
 
+// Helper function to make rewards work for a specific block and slot.
+// We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
+// rewards take place.
+//
+// Basically, if we don't call this function before testing the rewards given
+// to collators in a block, the HeadData object mocked in genesis will not be decoded properly
+// and the AuthorNoting inherent will fail.
 async function mockAndInsertHeadData(
     context: DevModeContext,
     paraId: ParaId,

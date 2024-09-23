@@ -89,8 +89,7 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
-        MaybeSelfChainBlockAuthor, RegistrarHandler, RemoveParaIdsWithNoCredits, Slot,
-        SlotFrequency,
+        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
 
@@ -1447,15 +1446,6 @@ parameter_types! {
     // 30% for parachain bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
-
-// No orchestrator author in Starlight.
-pub struct EmptyBlockAuthor;
-impl MaybeSelfChainBlockAuthor<AccountId32> for EmptyBlockAuthor {
-    fn get_block_author() -> Option<AccountId32> {
-        None
-    }
-}
-
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
@@ -1467,7 +1457,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
-    type GetSelfChainBlockAuthor = EmptyBlockAuthor;
+    type GetSelfChainBlockAuthor = ();
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
