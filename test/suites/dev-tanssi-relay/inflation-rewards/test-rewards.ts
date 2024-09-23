@@ -4,8 +4,9 @@ import { ApiPromise } from "@polkadot/api";
 import { Header, ParaId, HeadData, Digest, DigestItem } from "@polkadot/types/interfaces";
 import { KeyringPair } from "@moonwall/util";
 import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/block";
-import { PARACHAIN_BOND } from "util/constants";
+import { STARLIGHT_BOND, PARACHAIN_BOND } from "util/constants";
 import { numberToHex, stringToHex } from "@polkadot/util";
+//5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 // Helper function to make rewards work for a specific block and slot.
 // We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
@@ -76,8 +77,8 @@ describeSuite({
                     expectedAmountParachainBond += pendingChainsToReward * rewardPerChain;
                 }
 
-                const parachainBondBalanceBefore = (
-                    await polkadotJs.query.system.account(PARACHAIN_BOND)
+                const starlightBondBalanceBefore = (
+                    await polkadotJs.query.system.account(STARLIGHT_BOND)
                 ).data.free.toBigInt();
 
                 await context.createBlock();
@@ -91,14 +92,14 @@ describeSuite({
                     const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
                     dust = (issuance * 7n) / 10n - 2n * currentRewardPerChain;
                 }
-                const parachainBondBalanceAfter = (
-                    await polkadotJs.query.system.account(PARACHAIN_BOND)
+                const starlightBondBalanceAfter = (
+                    await polkadotJs.query.system.account(STARLIGHT_BOND)
                 ).data.free.toBigInt();
 
                 expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
                 await context.createBlock();
 
-                expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(
+                expect(starlightBondBalanceAfter - starlightBondBalanceBefore).to.equal(
                     expectedAmountParachainBond + 1n
                 );
             },

@@ -1433,7 +1433,7 @@ impl pallet_data_preservers::Config for Runtime {
 }
 
 parameter_types! {
-    pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
+    pub StarlightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
     // The equation to solve is:
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
@@ -1443,13 +1443,13 @@ parameter_types! {
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
-    // 30% for parachain bond, so 70% for staking
+    // 30% for starlight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
-        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+        let _ = <Balances as Balanced<_>>::resolve(&StarlightBondAccount::get(), credit);
     }
 }
 
