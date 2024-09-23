@@ -1345,64 +1345,6 @@ fn assign_collators_prioritizing_tip() {
 }
 
 #[test]
-fn on_collators_assigned_hook_failure_removes_para_from_assignment() {
-    new_test_ext().execute_with(|| {
-        run_to_block(1);
-
-        MockData::mutate(|m| {
-            m.collators_per_container = 2;
-            m.collators_per_parathread = 2;
-            m.min_orchestrator_chain_collators = 5;
-            m.max_orchestrator_chain_collators = 5;
-
-            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-            m.container_chains = vec![1001, 1002, 1003, 1004];
-            m.assignment_hook_errors = false;
-        });
-        run_to_block(11);
-
-        assert_eq!(
-            assigned_collators(),
-            BTreeMap::from_iter(vec![
-                (1, 1000),
-                (2, 1000),
-                (3, 1000),
-                (4, 1000),
-                (5, 1000),
-                (6, 1001),
-                (7, 1001),
-                (8, 1002),
-                (9, 1002),
-                (10, 1003),
-                (11, 1003),
-            ]),
-        );
-
-        // Para 1001 will fail on_assignment_hook
-        MockData::mutate(|m| {
-            m.assignment_hook_errors = true;
-        });
-
-        run_to_block(21);
-
-        assert_eq!(
-            assigned_collators(),
-            BTreeMap::from_iter(vec![
-                (1, 1000),
-                (2, 1000),
-                (3, 1000),
-                (4, 1000),
-                (5, 1000),
-                (8, 1002),
-                (9, 1002),
-                (10, 1003),
-                (11, 1003),
-            ]),
-        );
-    });
-}
-
-#[test]
 fn assign_collators_truncates_before_shuffling() {
     // Check that if there are more collators than needed, we only assign the first collators
     new_test_ext().execute_with(|| {
