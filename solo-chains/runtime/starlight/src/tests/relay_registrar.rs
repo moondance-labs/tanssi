@@ -45,7 +45,7 @@ fn registrar_needs_a_reserved_para_id() {
         .with_next_free_para_id(2000u32.into())
         .build()
         .execute_with(|| {
-            run_to_block(2);
+            //run_to_block(3);
             assert_noop!(
                 Registrar::register(
                     origin_of(ALICE.into()),
@@ -408,7 +408,6 @@ fn deregister_calls_schedule_para_cleanup() {
             );
 
             run_to_session(9);
-            end_block();
 
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
 
@@ -553,7 +552,6 @@ fn deregister_two_paras_in_the_same_block() {
             );
 
             run_to_session(9);
-            end_block();
 
             assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
             assert_eq!(Runtime::genesis_data(1004.into()).as_ref(), None);

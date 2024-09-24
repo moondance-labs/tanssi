@@ -599,10 +599,6 @@ impl ExtBuilder {
         if let Some(keystore) = keystore {
             ext.register_extension(KeystoreExt(keystore));
         }
-        ext.execute_with(|| {
-            // Start block 1
-            start_block();
-        });
         ext
     }
 }

@@ -82,13 +82,11 @@ fn test_collator_assignment_rotation() {
             // Check that the randomness in CollatorAssignment is set
             // in the block before the session change
             run_to_block(session_to_block(rotation_period) - 1);
-            end_block();
             let expected_randomness: [u8; 32] =
                 BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
                     .unwrap()
                     .into();
             assert_eq!(TanssiCollatorAssignment::randomness(), expected_randomness);
-            start_block();
 
             // Assignment changed
             assert_ne!(
