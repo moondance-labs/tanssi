@@ -172,7 +172,8 @@ pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     let network_node_name = command.node_name()?;
     let is_dev = command.is_dev()?;
     let role = command.role(is_dev)?;
-    // TODO: where to get relay_chain_id from?
+    // This relay chain id is only used when the relay chain args have no `--chain` value
+    // TODO: check if this works with an external relay rpc / light client
     let relay_chain_id = "starlight_local_testnet".to_string();
 
     let config = SolochainConfig {
