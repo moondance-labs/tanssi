@@ -1441,6 +1441,7 @@ parameter_types! {
     // 1% in the case of dev mode
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
+    // TODO: check if we need to change inflation in the future
     pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
     // 30% for starlight bond, so 70% for staking
