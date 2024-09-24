@@ -16,12 +16,13 @@
 
 use {
     crate::{
-        service::{ContainerChainBackend, ContainerChainClient},
+        service::{ContainerChainBackend},
         spawner::{CcSpawnMsg, ContainerChainSpawnerState},
     },
     cumulus_primitives_core::ParaId,
     frame_support::DefaultNoBound,
     std::{
+        any::Any,
         cell::Cell,
         collections::VecDeque,
         sync::{Arc, Mutex},
@@ -34,15 +35,15 @@ use {
 };
 
 #[derive(DefaultNoBound)]
-pub struct SpawnedContainersMonitor<RuntimeApi> {
+pub struct SpawnedContainersMonitor {
     /// List of the N most recently started container chains, with some statistics related to
     /// stopping time and reference count.
-    list: VecDeque<SpawnedContainer<RuntimeApi>>,
+    list: VecDeque<SpawnedContainer>,
     /// Count the number of times a container chain has been started
     count: usize,
 }
 
-pub struct SpawnedContainer<RuntimeApi> {
+pub struct SpawnedContainer {
     /// Unique identifier for a spawned container (not ParaId)
     pub id: usize,
     /// Container chain para id
@@ -60,10 +61,10 @@ pub struct SpawnedContainer<RuntimeApi> {
     /// Used to check the reference count, if it's 0 it means the database has been closed
     pub backend: std::sync::Weak<ContainerChainBackend>,
     /// Used to check the reference count, if it's 0 it means that the client has been closed.
-    pub client: std::sync::Weak<ContainerChainClient<RuntimeApi>>,
+    pub client: std::sync::Weak<dyn Any + Send + Sync>,
 }
 
-impl<RuntimeApi> SpawnedContainer<RuntimeApi> {
+impl SpawnedContainer {
     pub fn is_stopped(&self) -> bool {
         self.stop_refcount_time.get().is_some() || {
             // Check reference count, and set stop_refcount_time if zero
@@ -119,9 +120,9 @@ impl<RuntimeApi> SpawnedContainer<RuntimeApi> {
     }
 }
 
-impl<RuntimeApi> SpawnedContainersMonitor<RuntimeApi> {
+impl SpawnedContainersMonitor {
     /// Returns a unique id which is not the ParaId
-    pub fn push(&mut self, mut x: SpawnedContainer<RuntimeApi>) -> usize {
+    pub fn push(&mut self, mut x: SpawnedContainer) -> usize {
         assert_eq!(x.id, 0, "SpawnedContainer.id must be set to 0, the actual id will be returned from push function");
         let id = self.count;
         x.id = id;
@@ -156,7 +157,7 @@ impl<RuntimeApi> SpawnedContainersMonitor<RuntimeApi> {
         }
     }
 
-    pub fn running_chains(&self) -> Vec<&SpawnedContainer<RuntimeApi>> {
+    pub fn running_chains(&self) -> Vec<&SpawnedContainer> {
         self.list
             .iter()
             .filter(|container| !container.is_stopped())
@@ -201,7 +202,7 @@ impl<RuntimeApi> SpawnedContainersMonitor<RuntimeApi> {
 }
 
 /// Background task that monitors the number of running container chains.
-pub async fn monitor_task<RuntimeApi>(state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>) {
+pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
     // Main loop frequency, doesn't need to be fast
     let monitor_period = Duration::from_secs(300 * 0 + 10);
     // Max number of allowed container chains before printing warnings.
@@ -287,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_truncate() {
-        let mut monitor = SpawnedContainersMonitor::<dancebox_runtime::RuntimeApi>::default();
+        let mut monitor = SpawnedContainersMonitor::default();
         let default_container = || SpawnedContainer {
             id: Default::default(),
             para_id: Default::default(),
@@ -296,7 +297,7 @@ mod tests {
             stop_task_manager_time: Default::default(),
             stop_refcount_time: Default::default(),
             backend: Default::default(),
-            client: Default::default(),
+            client: std::sync::Weak::<()>::new(),
         };
 
         // Truncating empty list does not panic

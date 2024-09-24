@@ -686,9 +686,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
             task_manager.spawn_essential_handle().spawn(
                 "container-chain-spawner-debug-state",
                 None,
-                tc_service_container_chain::monitor::monitor_task::<
-                    container_chain_template_frontier_runtime::RuntimeApi,
-                >(state),
+                tc_service_container_chain::monitor::monitor_task(state),
             );
         }
 

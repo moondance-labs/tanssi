@@ -55,6 +55,7 @@ use {
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
         time::Instant,
+        any::Any,
     },
     tokio::{
         sync::{mpsc, oneshot},
@@ -96,7 +97,7 @@ pub struct ContainerChainSpawner<
     pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
 
     /// State
-    pub state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
+    pub state: Arc<Mutex<ContainerChainSpawnerState>>,
 
     /// Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi:
@@ -150,13 +151,13 @@ pub struct CollationParams {
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
 #[derive(DefaultNoBound)]
-pub struct ContainerChainSpawnerState<RuntimeApi> {
+pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
     next_assigned_para_id: Option<ParaId>,
     failed_para_ids: HashSet<ParaId>,
     // For debugging and detecting errors
-    pub spawned_containers_monitor: SpawnedContainersMonitor<RuntimeApi>,
+    pub spawned_containers_monitor: SpawnedContainersMonitor,
 }
 
 pub struct ContainerChainState {
@@ -194,7 +195,7 @@ async fn try_spawn<
     SelectSyncMode: TSelectSyncMode,
 >(
     try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
-    state: Arc<Mutex<ContainerChainSpawnerState<RuntimeApi>>>,
+    state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
 ) -> sc_service::error::Result<()> {
@@ -464,6 +465,7 @@ async fn try_spawn<
     let monitor_id;
     {
         let mut state = state.lock().expect("poison error");
+        let container_chain_client = container_chain_client as Arc<dyn Any + Sync + Send>;
 
         monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
             id: 0,
@@ -785,8 +787,8 @@ struct HandleUpdateAssignmentResult {
 }
 
 // This is a separate function to allow testing
-fn handle_update_assignment_state_change<RuntimeApi: MinimalContainerRuntimeApi>(
-    state: &mut ContainerChainSpawnerState<RuntimeApi>,
+fn handle_update_assignment_state_change(
+    state: &mut ContainerChainSpawnerState,
     orchestrator_para_id: ParaId,
     current: Option<ParaId>,
     next: Option<ParaId>,
@@ -1133,7 +1135,7 @@ mod tests {
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
-        state: Arc<Mutex<ContainerChainSpawnerState<dancebox_runtime::RuntimeApi>>>,
+        state: Arc<Mutex<ContainerChainSpawnerState>>,
         orchestrator_para_id: ParaId,
         collate_on_tanssi: Arc<
             dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
