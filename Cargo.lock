@@ -16505,6 +16505,7 @@ dependencies = [
  "pallet-elections-phragmen",
  "pallet-grandpa",
  "pallet-identity",
+ "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
  "pallet-membership",
