@@ -17,6 +17,9 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
+    crate::command::solochain::{
+        build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
+    },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer,
@@ -50,13 +53,15 @@ use {
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
+    sc_cli::CliConfiguration,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::BasicQueue,
     sc_network::NetworkBlock,
+    sc_network_common::role::Role,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TaskManager},
+    sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::FullPool,
     sp_api::StorageProof,
@@ -68,7 +73,7 @@ use {
     std::{pin::Pin, sync::Arc, time::Duration},
     tc_consensus::{
         collators::lookahead::{
-            self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
+            self as lookahead_tanssi_aura, BuyCoreParams, Params as LookaheadTanssiAuraParams,
         },
         OnDemandBlockProductionApi, OrchestratorAuraWorkerAuxData, TanssiAuthorityAssignmentApi,
     },
@@ -236,30 +241,12 @@ pub fn import_queue(
 async fn start_node_impl(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
-    mut container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
+    container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
-    if let Some((container_chain_cli, _)) = &mut container_chain_config {
-        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-        if container_chain_cli
-            .base
-            .base
-            .import_params
-            .wasmtime_precompiled
-            .is_none()
-        {
-            container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .clone_from(&parachain_config.wasmtime_precompiled);
-        }
-    }
-
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
         .map(|e| e.relay_chain.clone())
@@ -453,8 +440,8 @@ async fn start_node_impl(
                 data_preserver: false,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
-                        orchestrator_client: orchestrator_client.clone(),
-                        orchestrator_tx_pool,
+                        orchestrator_client: Some(orchestrator_client.clone()),
+                        orchestrator_tx_pool: Some(orchestrator_tx_pool),
                         orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
@@ -549,6 +536,10 @@ fn start_consensus_orchestrator(
     };
 
     let cancellation_token = CancellationToken::new();
+    let buy_core_params = BuyCoreParams::Orchestrator {
+        orchestrator_tx_pool,
+        orchestrator_client: client.clone(),
+    };
 
     let params = LookaheadTanssiAuraParams {
         get_current_slot_duration: move |block_hash| {
@@ -630,7 +621,7 @@ fn start_consensus_orchestrator(
             }
         },
         block_import,
-        para_client: client.clone(),
+        para_client: client,
         relay_client: relay_chain_interface,
         sync_oracle,
         keystore,
@@ -646,9 +637,7 @@ fn start_consensus_orchestrator(
         code_hash_provider,
         para_backend: backend,
         cancellation_token: cancellation_token.clone(),
-        orchestrator_tx_pool,
-        orchestrator_client: client,
-        solochain: false,
+        buy_core_params,
     };
 
     let (fut, exit_notification_receiver) =
@@ -682,69 +671,76 @@ pub async fn start_parachain_node(
 
 /// Start a solochain node.
 pub async fn start_solochain_node(
-    // Parachain config not used directly, but we need it to derive the default values for some container_config args
-    orchestrator_config: Configuration,
     polkadot_config: Configuration,
-    mut container_chain_config: (ContainerChainCli, tokio::runtime::Handle),
+    container_chain_cli: ContainerChainCli,
     collator_options: CollatorOptions,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<TaskManager> {
+    let tokio_handle = polkadot_config.tokio_handle.clone();
     let orchestrator_para_id = Default::default();
-    let parachain_config = prepare_node_config(orchestrator_config);
-    {
-        let (container_chain_cli, _) = &mut container_chain_config;
-        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-        if container_chain_cli
-            .base
-            .base
-            .import_params
-            .wasmtime_precompiled
-            .is_none()
-        {
-            container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .clone_from(&parachain_config.wasmtime_precompiled);
-        }
-    }
 
-    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
-    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
-        .map(|e| e.relay_chain.clone())
-        .ok_or("Could not find relay_chain extension in chain-spec.")?;
+    let chain_type = polkadot_config.chain_spec.chain_type().clone();
+    let relay_chain = polkadot_config.chain_spec.id().to_string();
 
-    // Channel to send messages to start/stop container chains
-    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
+    let base_path = container_chain_cli
+        .base
+        .base
+        .shared_params
+        .base_path
+        .as_ref()
+        .expect("base_path is always set");
+    let config_dir = build_solochain_config_dir(&base_path);
+    let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+    // Instead of putting keystore in
+    // Collator1000-01/data/chains/simple_container_2000/keystore
+    // We put it in
+    // Collator1000-01/data/config/keystore
+    // And same for "network" folder
+    // But zombienet will put the keys in the old path, so we need to manually copy it if we
+    // are running under zombienet
+    copy_zombienet_keystore(&keystore)?;
 
-    let (_block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+    let keystore_container = KeystoreContainer::new(&keystore)?;
 
-    let (relay_chain_interface, collator_key) = node_builder
-        .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
-        .await?;
+    // No metrics so no prometheus registry
+    let prometheus_registry = None;
+    let mut task_manager = TaskManager::new(tokio_handle.clone(), prometheus_registry)?;
 
-    let validator = parachain_config.role.is_authority();
+    // Each container chain will spawn its own telemetry
+    let telemetry_worker_handle = None;
+
+    // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
+    // are collators or not
+    let validator = container_chain_cli.base.collator;
+    let mut dummy_parachain_config = dummy_config(
+        polkadot_config.tokio_handle.clone(),
+        polkadot_config.base_path.clone(),
+    );
+    dummy_parachain_config.role = if validator {
+        Role::Authority
+    } else {
+        Role::Full
+    };
+    let (relay_chain_interface, collator_key) =
+        cumulus_client_service::build_relay_chain_interface(
+            polkadot_config,
+            &dummy_parachain_config,
+            telemetry_worker_handle.clone(),
+            &mut task_manager,
+            collator_options.clone(),
+            hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
     log::info!("start_solochain_node: is validator? {}", validator);
 
-    let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
-            &parachain_config,
-            orchestrator_para_id,
-            import_queue,
-            relay_chain_interface.clone(),
-        )
-        .await?;
-
-    let relay_chain_slot_duration = Duration::from_secs(6);
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let sync_keystore = node_builder.keystore_container.keystore();
+    let sync_keystore = keystore_container.keystore();
     let collate_on_tanssi: Arc<
         dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
     > = Arc::new(move || {
@@ -754,35 +750,13 @@ pub async fn start_solochain_node(
         panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
     });
 
-    let announce_block = {
-        let sync_service = node_builder.network.sync_service.clone();
-        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-    };
-
-    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
-
-    start_relay_chain_tasks(StartRelayChainTasksParams {
-        client: node_builder.client.clone(),
-        announce_block: announce_block.clone(),
-        para_id: orchestrator_para_id,
-        relay_chain_interface: relay_chain_interface.clone(),
-        task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if validator {
-            DARecoveryProfile::Collator
-        } else {
-            DARecoveryProfile::FullNode
-        },
-        import_queue: import_queue_service,
-        relay_chain_slot_duration,
-        recovery_handle: Box::new(overseer_handle.clone()),
-        sync_service: node_builder.network.sync_service.clone(),
-    })?;
-
     let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
         overseer_handle: overseer_handle.clone(),
         relay_chain_interface: relay_chain_interface.clone(),
     };
     let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
+    // Channel to send messages to start/stop container chains
+    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
 
     if validator {
         // Start task which detects para id assignment, and starts/stops container chains.
@@ -790,80 +764,73 @@ pub async fn start_solochain_node(
             orchestrator_chain_interface.clone(),
             sync_keystore.clone(),
             cc_spawn_tx.clone(),
-            node_builder.task_manager.spawn_essential_handle(),
+            task_manager.spawn_essential_handle(),
         );
     }
 
-    let sync_keystore = node_builder.keystore_container.keystore();
-
-    {
-        let (container_chain_cli, tokio_handle) = container_chain_config;
-        // If the orchestrator chain is running as a full-node, we start a full node for the
-        // container chain immediately, because only collator nodes detect their container chain
-        // assignment so otherwise it will never start.
-        if !validator {
-            if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
-                // Spawn new container chain node
-                cc_spawn_tx
-                    .send(CcSpawnMsg::UpdateAssignment {
-                        current: Some(container_chain_para_id.into()),
-                        next: Some(container_chain_para_id.into()),
-                    })
-                    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-            }
+    // If the orchestrator chain is running as a full-node, we start a full node for the
+    // container chain immediately, because only collator nodes detect their container chain
+    // assignment so otherwise it will never start.
+    if !validator {
+        if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
+            // Spawn new container chain node
+            cc_spawn_tx
+                .send(CcSpawnMsg::UpdateAssignment {
+                    current: Some(container_chain_para_id.into()),
+                    next: Some(container_chain_para_id.into()),
+                })
+                .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
         }
-
-        // Start container chain spawner task. This will start and stop container chains on demand.
-        let orchestrator_client = node_builder.client.clone();
-        let orchestrator_tx_pool = node_builder.transaction_pool.clone();
-        let spawn_handle = node_builder.task_manager.spawn_handle();
-
-        let container_chain_spawner = ContainerChainSpawner {
-            params: ContainerChainSpawnParams {
-                orchestrator_chain_interface,
-                container_chain_cli,
-                tokio_handle,
-                chain_type,
-                relay_chain,
-                relay_chain_interface,
-                sync_keystore,
-                orchestrator_para_id,
-                collation_params: if validator {
-                    Some(spawner::CollationParams {
-                        // TODO: all these args must be solochain instead of orchestrator
-                        orchestrator_client: orchestrator_client.clone(),
-                        orchestrator_tx_pool,
-                        orchestrator_para_id,
-                        collator_key: collator_key
-                            .expect("there should be a collator key if we're a validator"),
-                        solochain: true,
-                    })
-                } else {
-                    None
-                },
-                spawn_handle,
-                data_preserver: false,
-            },
-            state: Default::default(),
-            collate_on_tanssi,
-            collation_cancellation_constructs: None,
-        };
-        let state = container_chain_spawner.state.clone();
-
-        node_builder.task_manager.spawn_essential_handle().spawn(
-            "container-chain-spawner-rx-loop",
-            None,
-            container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
-        );
-
-        node_builder.task_manager.spawn_essential_handle().spawn(
-            "container-chain-spawner-debug-state",
-            None,
-            monitor::monitor_task(state),
-        )
     }
 
-    Ok((node_builder.task_manager, node_builder.client))
+    // Start container chain spawner task. This will start and stop container chains on demand.
+    let spawn_handle = task_manager.spawn_handle();
+
+    let container_chain_spawner = ContainerChainSpawner {
+        params: ContainerChainSpawnParams {
+            orchestrator_chain_interface,
+            container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            sync_keystore,
+            orchestrator_para_id,
+            collation_params: if validator {
+                Some(spawner::CollationParams {
+                    // TODO: all these args must be solochain instead of orchestrator
+                    orchestrator_client: None,
+                    orchestrator_tx_pool: None,
+                    orchestrator_para_id,
+                    collator_key: collator_key
+                        .expect("there should be a collator key if we're a validator"),
+                    solochain: true,
+                })
+            } else {
+                None
+            },
+            spawn_handle,
+            data_preserver: false,
+        },
+        state: Default::default(),
+        collate_on_tanssi,
+        collation_cancellation_constructs: None,
+    };
+    let state = container_chain_spawner.state.clone();
+
+    task_manager.spawn_essential_handle().spawn(
+        "container-chain-spawner-rx-loop",
+        None,
+        container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
+    );
+
+    task_manager.spawn_essential_handle().spawn(
+        "container-chain-spawner-debug-state",
+        None,
+        monitor::monitor_task(state),
+    );
+
+    Ok(task_manager)
 }
 
 pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);
