@@ -144,6 +144,9 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 // XCM configurations.
 pub mod xcm_config;
 
+// Weights
+mod weights;
+
 // Governance and configurations.
 pub mod governance;
 use pallet_collator_assignment::CoreAllocationConfiguration;
@@ -248,7 +251,7 @@ impl frame_system::Config for Runtime {
     type BlockHashCount = BlockHashCount;
     type Version = Version;
     type AccountData = pallet_balances::AccountData<Balance>;
-    type SystemWeightInfo = ();
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     type SS58Prefix = SS58Prefix;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type MultiBlockMigrator = MultiBlockMigrations;
@@ -341,7 +344,7 @@ impl pallet_scheduler::Config for Runtime {
     // OpenGov to schedule periodic auctions.
     type ScheduleOrigin = EitherOf<EnsureRoot<AccountId>, AuctionAdmin>;
     type MaxScheduledPerBlock = MaxScheduledPerBlock;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
     type Preimages = Preimage;
 }
@@ -351,7 +354,7 @@ parameter_types! {
 }
 
 impl pallet_preimage::Config for Runtime {
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_preimage::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ManagerOrigin = EnsureRoot<AccountId>;
@@ -401,7 +404,7 @@ impl pallet_balances::Config for Runtime {
     type MaxLocks = MaxLocks;
     type MaxReserves = MaxReserves;
     type ReserveIdentifier = [u8; 8];
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
     type FreezeIdentifier = ();
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
@@ -431,7 +434,7 @@ impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authorship::Config for Runtime {
@@ -547,7 +550,7 @@ impl pallet_treasury::Config for Runtime {
     type Burn = Burn;
     type BurnDestination = ();
     type MaxApprovals = MaxApprovals;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type SpendOrigin = TreasurySpender;
     type AssetKind = ();
@@ -679,14 +682,14 @@ impl pallet_identity::Config for Runtime {
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -704,7 +707,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -821,7 +824,7 @@ impl pallet_proxy::Config for Runtime {
     type ProxyDepositBase = ProxyDepositBase;
     type ProxyDepositFactor = ProxyDepositFactor;
     type MaxProxies = MaxProxies;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
     type MaxPending = MaxPending;
     type CallHasher = BlakeTwo256;
     type AnnouncementDepositBase = AnnouncementDepositBase;
@@ -831,7 +834,7 @@ impl pallet_proxy::Config for Runtime {
 impl parachains_origin::Config for Runtime {}
 
 impl parachains_configuration::Config for Runtime {
-    type WeightInfo = parachains_configuration::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_configuration::SubstrateWeight<Runtime>;
 }
 
 impl parachains_shared::Config for Runtime {
@@ -854,7 +857,7 @@ impl parachains_inclusion::Config for Runtime {
     type DisputesHandler = ParasDisputes;
     type RewardValidators = RewardValidators;
     type MessageQueue = MessageQueue;
-    type WeightInfo = ();
+    type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -863,7 +866,7 @@ parameter_types! {
 
 impl parachains_paras::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = parachains_paras::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_paras::SubstrateWeight<Runtime>;
     type UnsignedPriority = ParasUnsignedPriority;
     type QueueFootprinter = ParaInclusion;
     type NextSessionRotation = Babe;
@@ -918,7 +921,7 @@ impl pallet_message_queue::Config for Runtime {
         pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
     type QueueChangeHandler = ParaInclusion;
     type QueuePausedQuery = ();
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }
 
 impl parachains_dmp::Config for Runtime {}
@@ -937,12 +940,12 @@ impl parachains_hrmp::Config for Runtime {
             Runtime,
             HrmpChannelSizeAndCapacityWithSystemRatio,
         >;
-    type WeightInfo = parachains_hrmp::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_hrmp::SubstrateWeight<Runtime>;
     type VersionWrapper = XcmPallet;
 }
 
 impl parachains_paras_inherent::Config for Runtime {
-    type WeightInfo = parachains_paras_inherent::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_paras_inherent::SubstrateWeight<Runtime>;
 }
 
 impl parachains_scheduler::Config for Runtime {
@@ -1060,7 +1063,7 @@ impl parachains_assigner_on_demand::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type TrafficDefaultValue = OnDemandTrafficDefaultValue;
-    type WeightInfo = parachains_assigner_on_demand::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_assigner_on_demand::SubstrateWeight<Runtime>;
     type MaxHistoricalRevenue = MaxHistoricalRevenue;
     type PalletId = OnDemandPalletId;
 }
@@ -1068,7 +1071,7 @@ impl parachains_assigner_on_demand::Config for Runtime {
 impl parachains_initializer::Config for Runtime {
     type Randomness = pallet_babe::RandomnessFromOneEpochAgo<Runtime>;
     type ForceOrigin = EnsureRoot<AccountId>;
-    type WeightInfo = ();
+    type WeightInfo = weights::runtime_parachains_initializer::SubstrateWeight<Runtime>;
     type CoretimeOnNewSession = ();
 }
 
@@ -1076,7 +1079,7 @@ impl parachains_disputes::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RewardValidators = ();
     type SlashingHandler = parachains_slashing::SlashValidatorsForDisputes<ParasSlashing>;
-    type WeightInfo = parachains_disputes::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_disputes::SubstrateWeight<Runtime>;
 }
 
 impl parachains_slashing::Config for Runtime {
@@ -1107,14 +1110,14 @@ impl paras_registrar::Config for Runtime {
     type OnSwap = ();
     type ParaDeposit = ParaDeposit;
     type DataDepositPerByte = DataDepositPerByte;
-    type WeightInfo = paras_registrar::TestWeightInfo;
+    type WeightInfo = weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>;
 }
 
 impl pallet_parameters::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeParameters = RuntimeParameters;
     type AdminOrigin = DynamicParameterOrigin;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_parameters::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1196,7 +1199,7 @@ impl validator_manager::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_root_testing::Config for Runtime {
@@ -1204,7 +1207,7 @@ impl pallet_root_testing::Config for Runtime {
 }
 
 impl pallet_asset_rate::Config for Runtime {
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type CreateOrigin = EnsureRoot<AccountId>;
     type RemoveOrigin = EnsureRoot<AccountId>;
@@ -1314,7 +1317,7 @@ impl pallet_services_payment::Config for Runtime {
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin = EnsureRoot<AccountId>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
