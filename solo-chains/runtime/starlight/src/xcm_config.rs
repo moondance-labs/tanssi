@@ -17,8 +17,9 @@
 //! XCM configuration for Starlight.
 
 use super::{
-    parachains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
-    RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee, XcmPallet,
+    parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId,
+    Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee,
+    XcmPallet,
 };
 
 use crate::governance::StakingAdmin;
@@ -284,6 +285,6 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
-    type WeightInfo = pallet_xcm::TestWeightInfo;
+    type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
 }

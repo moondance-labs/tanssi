@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-
 pub mod frame_system;
 pub mod pallet_asset_rate;
 pub mod pallet_balances;
@@ -42,5 +41,5 @@ pub mod runtime_parachains_disputes;
 pub mod runtime_parachains_hrmp;
 pub mod runtime_parachains_inclusion;
 pub mod runtime_parachains_initializer;
-pub mod runtime_parachains_paras_inherent;
 pub mod runtime_parachains_paras;
+pub mod runtime_parachains_paras_inherent;
