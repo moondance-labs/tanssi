@@ -33,7 +33,7 @@ polkadot-node-core-pvf-execute-worker = { workspace = true }
 polkadot-node-core-pvf-prepare-worker = { workspace = true }
 
 polkadot-overseer = { workspace = true }
-tanssi-relay-cli = { workspace = true, features = [ "starlight-native" ] }
+tanssi-relay-cli = { workspace = true, features = [ "dancelight-native" ] }
 
 [dev-dependencies]
 polkadot-core-primitives = { workspace = true }

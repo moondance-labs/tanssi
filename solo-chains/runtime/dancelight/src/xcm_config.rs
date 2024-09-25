@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! XCM configuration for Starlight.
+//! XCM configuration for Dancelight.
 
 use super::{
     parachains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
@@ -24,6 +24,7 @@ use super::{
 use crate::governance::StakingAdmin;
 
 use {
+    dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
     frame_support::{
         parameter_types,
         traits::{Contains, Equals, Everything, Nothing},
@@ -35,7 +36,6 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    starlight_runtime_constants::{currency::CENTS, system_parachain::*},
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
@@ -53,7 +53,7 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Starlight
+    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Dancelight
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);

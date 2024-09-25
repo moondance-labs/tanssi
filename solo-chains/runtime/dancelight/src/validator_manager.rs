@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! A pallet for managing validators on Starlight.
+//! A pallet for managing validators on Dancelight.
 
 use {sp_staking::SessionIndex, sp_std::vec::Vec};
 

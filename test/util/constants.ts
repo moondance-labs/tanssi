@@ -1,5 +1,5 @@
 export const PARACHAIN_BOND = "5EYCAe5cJkHcthonN7KrsVp11XYHMqtrFPimDd3Af755ET2D";
-export const STARLIGHT_BOND = "5EYCAe5cvUJf6LZWiVyKqfq5JZJo4n9WeKq8C5FQBaUEDWA6";
+export const DANCELIGHT_BOND = "5EYCAe5cvUJf6LZWiVyKqfq5JZJo4n9WeKq8C5FQBaUEDWA6";
 export const DANCE = 1_000_000_000_000n;
 export const STAKING_ACCOUNT = "5EYCAe5cHvXp3GAe94dYPGjLqQdn7cnYuENAn66SntQkNTAG";
 export const RELAY_SOURCE_LOCATION = { parents: 1, interior: "Here" };
