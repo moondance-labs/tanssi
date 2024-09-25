@@ -32,6 +32,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node
+          cp target/production/tanssi-relay binaries/tanssi-relay
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node
       - name: Save parachain custom binary
@@ -39,6 +40,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
+          cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
       - name: Upload binary
@@ -53,7 +55,7 @@ jobs:
     needs: ["build-binary"]
     strategy:
         matrix:
-            image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+            image: ["tanssi", "tanssi-relay", "container-chain-simple-template", "container-chain-evm-template"]
     steps:
         - name: Checkout
           uses: actions/checkout@v4
