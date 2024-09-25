@@ -1,6 +1,6 @@
 [package]
-name = "starlight-runtime-constants"
-description = "Constants used throughout the Starlight network."
+name = "dancelight-runtime-constants"
+description = "Constants used throughout the Dancelight network."
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"

@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
-import { MultiLocation, extractPaidDeliveryFeesStarlight, getLastSentDmpMessageFee } from "../../../util/xcm";
+import { MultiLocation, extractPaidDeliveryFeesDancelight, getLastSentDmpMessageFee } from "../../../util/xcm";
 import { ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
@@ -86,7 +86,7 @@ describeSuite({
                 await context.createBlock(await tx.signAsync(alice), { allowFailures: false });
 
                 const fee = await getLastSentDmpMessageFee(context, baseDelivery, txByteFee, 1001);
-                const paid = await extractPaidDeliveryFeesStarlight(context);
+                const paid = await extractPaidDeliveryFeesDancelight(context);
                 // Test ranges, as we can have rounding errors for Perbill manipulation
                 expect(paid).toBeGreaterThanOrEqual(fee - 1n);
                 expect(paid).toBeLessThanOrEqual(fee + 1n);

@@ -20,17 +20,17 @@
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `runtime/starlight/constants/src/weights/`
+//! WEIGHT-PATH: `runtime/dancelight/constants/src/weights/`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
 //   ./target/production/polkadot
 //   benchmark
 //   overhead
-//   --chain=starlight-dev
+//   --chain=dancelight-dev
 //   --execution=wasm
 //   --wasm-execution=compiled
-//   --weight-path=runtime/starlight/constants/src/weights/
+//   --weight-path=runtime/dancelight/constants/src/weights/
 //   --warmup=10
 //   --repeat=100
 //   --header=./file_header.txt

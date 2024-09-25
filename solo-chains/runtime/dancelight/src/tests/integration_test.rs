@@ -20,12 +20,12 @@ use {
     crate::tests::common::*,
     crate::{Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers},
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
+    dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     sp_std::vec,
-    starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
 };
 
 #[test]

@@ -1407,7 +1407,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         _orchestrator_parent: PHash,
         _profile_id: DataPreserverProfileId,
     ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        unimplemented!("Data preserver node does not support Starlight yet")
+        unimplemented!("Data preserver node does not support Dancelight yet")
     }
 
     async fn check_para_id_assignment(

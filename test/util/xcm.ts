@@ -945,7 +945,7 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
     return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
 };
 
-export const extractPaidDeliveryFeesStarlight = async (context: DevModeContext) => {
+export const extractPaidDeliveryFeesDancelight = async (context: DevModeContext) => {
     const records = await context.polkadotJs().query.system.events();
 
     const filteredEvents = records
