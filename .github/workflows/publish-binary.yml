@@ -45,6 +45,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node
+          cp target/production/tanssi-relay binaries/tanssi-relay
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node
       - name: Save parachain custom binary
@@ -52,6 +53,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
+          cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
       - name: Upload binaries
@@ -109,7 +111,7 @@ jobs:
     strategy:
       matrix:
         cpu: ["", "skylake", "znver3"]
-        node: ["tanssi-node", "container-chain-frontier-node", "container-chain-simple-node"]
+        node: ["tanssi-node", "tanssi-relay" "container-chain-frontier-node", "container-chain-simple-node"]
     steps:
       - uses: actions/download-artifact@v3
         with:
