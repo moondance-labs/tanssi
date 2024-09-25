@@ -1855,7 +1855,6 @@ mod benches {
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
         // Substrate
         [pallet_balances, Balances]
-        [pallet_babe, Babe]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
