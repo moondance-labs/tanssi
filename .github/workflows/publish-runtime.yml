@@ -22,6 +22,7 @@ on:
           - templates-only
           - simple-template-only
           - frontier-template-only
+          - starlight-only
           - run-all
 
 jobs:
@@ -71,8 +72,10 @@ jobs:
             echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
+            elif [[ ${{ github.event.inputs.chains }} = "dancebox-only" ]]; then
+            echo "matrix_tests=[$starlight]" >> $GITHUB_OUTPUT
           else
-            echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $starlight]" >> $GITHUB_OUTPUT
           fi
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
