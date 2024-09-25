@@ -16,6 +16,7 @@ jobs:
       matrix:
         image: [
           { name: "tanssi", file_name: "tanssi-node" },
+          { name: "dancelight", file_name: "tanssi-relay" },
           { name: "container-chain-simple-template", file_name: "container-chain-simple-node" },
           {  name: "container-chain-evm-template", file_name: "container-chain-frontier-node" },
         ]
