@@ -16,12 +16,16 @@
 
 use {
     crate::chain_spec::RawGenesisConfig,
+    cumulus_client_cli::{CollatorOptions, RelayChainMode},
     dc_orchestrator_chain_interface::ContainerChainGenesisData,
     dp_container_chain_genesis_data::json::properties_to_map,
     sc_chain_spec::ChainSpec,
+    sc_cli::{CliConfiguration, SubstrateCli},
     sc_network::config::MultiaddrWithPeerId,
+    sc_service::BasePath,
     sp_runtime::Storage,
-    std::{collections::BTreeMap, net::SocketAddr, path::PathBuf},
+    std::{collections::BTreeMap, net::SocketAddr},
+    url::Url,
 };
 
 /// The `run` command used to run a container chain node.
@@ -45,15 +49,75 @@ pub struct ContainerChainRunCmd {
     /// Keep container-chain db after changing collator assignments
     #[arg(long)]
     pub keep_db: bool,
+
+    /// Creates a less resource-hungry node that retrieves relay chain data from an RPC endpoint.
+    ///
+    /// The provided URLs should point to RPC endpoints of the relay chain.
+    /// This node connects to the remote nodes following the order they were specified in. If the
+    /// connection fails, it attempts to connect to the next endpoint in the list.
+    ///
+    /// Note: This option doesn't stop the node from connecting to the relay chain network but
+    /// reduces bandwidth use.
+    #[arg(
+		long,
+		value_parser = validate_relay_chain_url,
+		num_args = 0..,
+		alias = "relay-chain-rpc-url"
+    )]
+    pub relay_chain_rpc_urls: Vec<Url>,
+
+    /// EXPERIMENTAL: Embed a light client for the relay chain. Only supported for full-nodes.
+    /// Will use the specified relay chain chainspec.
+    #[arg(long, conflicts_with_all = ["relay_chain_rpc_urls", "collator"])]
+    pub relay_chain_light_client: bool,
+}
+
+impl ContainerChainRunCmd {
+    /// Create a [`NormalizedRunCmd`] which merges the `collator` cli argument into `validator` to
+    /// have only one.
+    pub fn normalize(&self) -> ContainerChainCli {
+        let mut new_base = self.clone();
+
+        new_base.base.validator = self.base.validator || self.collator;
+
+        // Append `containers/` to base_path for this object. This is to ensure that when spawning
+        // a new container chain, its database is always inside the `containers` folder.
+        // So if the user passes `--base-path /tmp/node`, we want the ephemeral container data in
+        // `/tmp/node/containers`, and the persistent storage in `/tmp/node/config`.
+        let base_path = base_path_or_default(
+            self.base.base_path().expect("failed to get base_path"),
+            &ContainerChainCli::executable_name(),
+        );
+
+        let base_path = base_path.path().join("containers");
+        new_base.base.shared_params.base_path = Some(base_path);
+
+        ContainerChainCli {
+            base: new_base,
+            preloaded_chain_spec: None,
+        }
+    }
+
+    /// Create [`CollatorOptions`] representing options only relevant to parachain collator nodes
+    // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
+    pub fn collator_options(&self) -> CollatorOptions {
+        let relay_chain_mode = match (
+            self.relay_chain_light_client,
+            !self.relay_chain_rpc_urls.is_empty(),
+        ) {
+            (true, _) => RelayChainMode::LightClient,
+            (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
+            _ => RelayChainMode::Embedded,
+        };
+
+        CollatorOptions { relay_chain_mode }
+    }
 }
 
 #[derive(Debug)]
 pub struct ContainerChainCli {
     /// The actual container chain cli object.
     pub base: ContainerChainRunCmd,
-
-    /// The base path that should be used by the container chain.
-    pub base_path: PathBuf,
 
     /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
     /// by calling preload_chain_spec_file.
@@ -64,7 +128,6 @@ impl Clone for ContainerChainCli {
     fn clone(&self) -> Self {
         Self {
             base: self.base.clone(),
-            base_path: self.base_path.clone(),
             preloaded_chain_spec: self.preloaded_chain_spec.as_ref().map(|x| x.cloned_box()),
         }
     }
@@ -76,13 +139,27 @@ impl ContainerChainCli {
         para_config: &sc_service::Configuration,
         container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
-        let base_path = para_config.base_path.path().join("containers");
+        let mut base: ContainerChainRunCmd = clap::Parser::parse_from(container_chain_args);
 
-        Self {
-            base_path,
-            base: clap::Parser::parse_from(container_chain_args),
-            preloaded_chain_spec: None,
+        // Copy some parachain args into container chain args
+
+        // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
+        if base.base.import_params.wasmtime_precompiled.is_none() {
+            base.base
+                .import_params
+                .wasmtime_precompiled
+                .clone_from(&para_config.wasmtime_precompiled);
         }
+
+        // Set container base path to the same value as orchestrator base_path.
+        // "containers" is appended in `base.normalize()`
+        if base.base.shared_params.base_path.is_some() {
+            log::warn!("Container chain --base-path is being ignored");
+        }
+        let base_path = para_config.base_path.path().to_owned();
+        base.base.shared_params.base_path = Some(base_path);
+
+        base.normalize()
     }
 
     pub fn chain_spec_from_genesis_data(
@@ -249,10 +326,7 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
     }
 
     fn base_path(&self) -> sc_cli::Result<Option<sc_service::BasePath>> {
-        Ok(self
-            .shared_params()
-            .base_path()?
-            .or_else(|| Some(self.base_path.clone().into())))
+        self.shared_params().base_path()
     }
 
     fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<SocketAddr>> {
@@ -365,4 +439,27 @@ fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
             }
         })
         .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
+}
+
+// Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
+fn validate_relay_chain_url(arg: &str) -> Result<Url, String> {
+    let url = Url::parse(arg).map_err(|e| e.to_string())?;
+
+    let scheme = url.scheme();
+    if scheme == "ws" || scheme == "wss" {
+        Ok(url)
+    } else {
+        Err(format!(
+            "'{}' URL scheme not supported. Only websocket RPC is currently supported",
+            url.scheme()
+        ))
+    }
+}
+
+/// Returns the value of `base_path` or the default_path if it is None
+pub(crate) fn base_path_or_default(
+    base_path: Option<BasePath>,
+    executable_name: &String,
+) -> BasePath {
+    base_path.unwrap_or_else(|| BasePath::from_project("", "", executable_name))
 }

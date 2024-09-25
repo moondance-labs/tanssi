@@ -429,3 +429,15 @@ impl<AccountId> RegistrarHandler<AccountId> for () {
         Weight::default()
     }
 }
+
+/// Trait to retrieve the orchestrator block author (if any).
+/// In a relay-chain context we will return None.
+pub trait MaybeSelfChainBlockAuthor<AccountId> {
+    fn get_block_author() -> Option<AccountId>;
+}
+
+impl<AccountId> MaybeSelfChainBlockAuthor<AccountId> for () {
+    fn get_block_author() -> Option<AccountId> {
+        None
+    }
+}

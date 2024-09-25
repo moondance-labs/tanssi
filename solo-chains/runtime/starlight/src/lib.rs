@@ -43,6 +43,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_initializer as tanssi_initializer,
+    pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
@@ -79,7 +80,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::traits::BlockNumberProvider,
+    sp_runtime::{traits::BlockNumberProvider, AccountId32},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -100,9 +101,9 @@ use {
         genesis_builder_helper::{build_state, get_preset},
         parameter_types,
         traits::{
-            fungible::HoldConsideration, EitherOf, EitherOfDiverse, EnsureOriginWithArg,
-            InstanceFilter, KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
-            ProcessMessageError,
+            fungible::{Balanced, Credit, HoldConsideration},
+            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
+            LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
         PalletId,
@@ -116,8 +117,9 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT, Hash as HashT,
-            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
+            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT,
+            Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify,
+            Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -1430,6 +1432,40 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
+parameter_types! {
+    pub StarlightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
+    pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
+    // The equation to solve is:
+    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
+    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
+    // 1% in the case of dev mode
+    // TODO: check if we can put the prod inflation for tests too
+    // TODO: better calculus for going from annual to block inflation (if it can be done)
+    // TODO: check if we need to change inflation in the future
+    pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
+
+    // 30% for starlight bond, so 70% for staking
+    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+}
+pub struct OnUnbalancedInflation;
+impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
+    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
+        let _ = <Balances as Balanced<_>>::resolve(&StarlightBondAccount::get(), credit);
+    }
+}
+
+impl pallet_inflation_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type ContainerChains = ContainerRegistrar;
+    type GetSelfChainBlockAuthor = ();
+    type InflationRate = InflationRate;
+    type OnUnbalanced = OnUnbalancedInflation;
+    type PendingRewardsAccount = PendingRewardsAccount;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
+    type RewardsPortion = RewardsPortion;
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1467,6 +1503,9 @@ construct_runtime! {
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
         AuthorityDiscovery: pallet_authority_discovery = 32,
+
+        // InflationRewards must be after Session
+        InflationRewards: pallet_inflation_rewards = 33,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -1544,9 +1583,6 @@ construct_runtime! {
 
         // Sudo.
         Sudo: pallet_sudo = 255,
-
-
-
     }
 }
 
@@ -1790,9 +1826,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type AuthorNotingHook = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type AuthorNotingHook = ServicesPayment;
-    // TODO: uncomment when pallets exist
-    //type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }

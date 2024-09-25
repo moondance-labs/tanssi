@@ -319,7 +319,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 120000,
+            timeout: 180000,
             test: async function () {
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
@@ -386,12 +386,12 @@ describeSuite({
             timeout: 300000,
             test: async function () {
                 const logs = [
-                    "/Collator1000-01.log",
-                    "/Collator1000-02.log",
-                    "/Collator1000-03.log",
-                    "/Collator1000-04.log",
-                    "/Collator2000-01.log",
-                    "/Collator2000-02.log",
+                    "/Collator-01.log",
+                    "/Collator-02.log",
+                    "/Collator-03.log",
+                    "/Collator-04.log",
+                    "/Collator-05.log",
+                    "/Collator-06.log",
                 ];
                 for (const log of logs) {
                     const logFilePath = getTmpZombiePath() + log;
