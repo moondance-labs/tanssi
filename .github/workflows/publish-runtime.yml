@@ -59,7 +59,7 @@ jobs:
           flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs"}'
           frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/runtime-templates/frontier/src/lib.rs"}'
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/runtime-templates/simple/src/lib.rs"}'
-          dancelight='{"runtime_name": "dancelight","runtime_path" : "./solo-chains/runtime/src/lib.rs"}'
+          dancelight='{"runtime_name": "dancelight","runtime_path" : "./solo-chains/runtime/dancelight/src/lib.rs"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
