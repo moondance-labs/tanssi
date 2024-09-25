@@ -51,7 +51,7 @@ describeSuite({
                     rotationEndAssignment.containerChains[2000].toSorted()
                 );
 
-                // As randomness isn't deterministic in starlight we can't be
+                // As randomness isn't deterministic in dancelight we can't be
                 // 100% certain that the assignation will indeed change. So the
                 // best we can do is verify that the pending rotation event for
                 // next session is emitted and is a full rotation as expected
@@ -70,7 +70,7 @@ describeSuite({
                 const sessionDuration = 10;
                 await jumpBlocks(context, sessionDuration - 1);
                 const assignmentRandomness = await polkadotJs.query.collatorAssignment.randomness();
-                // TODO: in starlight isEmpty == false because we have randomness there
+                // TODO: in dancelight isEmpty == false because we have randomness there
                 // In dancebox dev tests there is no rotation because there is no randomness
                 expect(assignmentRandomness.isEmpty).toBe(true);
             },

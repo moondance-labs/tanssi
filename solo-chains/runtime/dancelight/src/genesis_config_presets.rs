@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Genesis configs presets for the Starlight runtime
+//! Genesis configs presets for the Dancelight runtime
 
 use pallet_configuration::HostConfiguration;
 use sp_arithmetic::traits::Saturating;
@@ -27,6 +27,7 @@ use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
+    dancelight_runtime_constants::currency::UNITS as STAR,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
@@ -40,7 +41,6 @@ use {
     sp_runtime::traits::IdentifyAccount,
     sp_std::vec,
     sp_std::vec::Vec,
-    starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
 };
 
@@ -152,7 +152,7 @@ fn testnet_accounts() -> Vec<AccountId> {
     ])
 }
 
-fn starlight_session_keys(
+fn dancelight_session_keys(
     babe: BabeId,
     grandpa: GrandpaId,
     para_validator: ValidatorId,
@@ -227,7 +227,7 @@ fn default_parachains_host_configuration_is_consistent() {
     default_parachains_host_configuration().panic_if_not_consistent();
 }
 
-fn starlight_testnet_genesis(
+fn dancelight_testnet_genesis(
     initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
@@ -329,7 +329,7 @@ fn starlight_testnet_genesis(
                     (
                         x.stash.clone(),
                         x.stash.clone(),
-                        starlight_session_keys(
+                        dancelight_session_keys(
                             x.babe.clone(),
                             x.grandpa.clone(),
                             x.para_validator.clone(),
@@ -348,7 +348,7 @@ fn starlight_testnet_genesis(
                     (
                         invulnerable_accounts[i].clone(),
                         invulnerable_accounts[i].clone(),
-                        starlight_session_keys(
+                        dancelight_session_keys(
                             x.babe.clone(),
                             x.grandpa.clone(),
                             x.para_validator.clone(),
@@ -398,7 +398,7 @@ fn starlight_testnet_genesis(
 }
 
 // staging_testnet
-fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
+fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
     use {hex_literal::hex, sp_core::crypto::UncheckedInto};
 
     // subkey inspect "$SECRET"
@@ -618,7 +618,7 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
                     (
                         x.stash.clone(),
                         x.stash,
-                        starlight_session_keys(
+                        dancelight_session_keys(
                             x.babe,
                             x.grandpa,
                             x.para_validator,
@@ -645,11 +645,11 @@ fn starlight_staging_testnet_config_genesis() -> serde_json::Value {
 }
 
 //development
-pub fn starlight_development_config_genesis(
+pub fn dancelight_development_config_genesis(
     container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
-    starlight_testnet_genesis(
+    dancelight_testnet_genesis(
         Vec::from([get_authority_keys_from_seed("Alice", None)]),
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         None,
@@ -668,11 +668,11 @@ pub fn starlight_development_config_genesis(
 }
 
 //local_testnet
-pub fn starlight_local_testnet_genesis(
+pub fn dancelight_local_testnet_genesis(
     container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
-    starlight_testnet_genesis(
+    dancelight_testnet_genesis(
         Vec::from([
             get_authority_keys_from_seed("Alice", None),
             get_authority_keys_from_seed("Bob", None),
@@ -696,9 +696,9 @@ pub fn starlight_local_testnet_genesis(
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
     let patch = match id.try_into() {
-        Ok("local_testnet") => starlight_local_testnet_genesis(vec![], vec![]),
-        Ok("development") => starlight_development_config_genesis(vec![], vec![]),
-        Ok("staging_testnet") => starlight_staging_testnet_config_genesis(),
+        Ok("local_testnet") => dancelight_local_testnet_genesis(vec![], vec![]),
+        Ok("development") => dancelight_development_config_genesis(vec![], vec![]),
+        Ok("staging_testnet") => dancelight_staging_testnet_config_genesis(),
         _ => return None,
     };
     Some(
