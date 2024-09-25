@@ -174,7 +174,7 @@ pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     let role = command.role(is_dev)?;
     // This relay chain id is only used when the relay chain args have no `--chain` value
     // TODO: check if this works with an external relay rpc / light client
-    let relay_chain_id = "starlight_local_testnet".to_string();
+    let relay_chain_id = "dancelight_local_testnet".to_string();
 
     let config = SolochainConfig {
         tokio_handle: tokio_runtime.handle().clone(),

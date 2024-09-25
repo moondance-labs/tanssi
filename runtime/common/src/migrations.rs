@@ -1030,9 +1030,9 @@ where
     }
 }
 
-pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
+pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
 
-impl<Runtime> GetMigrations for StarlightMigrations<Runtime> {
+impl<Runtime> GetMigrations for DancelightMigrations<Runtime> {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         vec![]
     }

@@ -179,7 +179,7 @@ pub mod pallet {
         /// External manager that takes care of executing specific operations
         /// when register-like functions of this pallet are called.
         ///
-        /// Mostly used when we are in a relay-chain configuration context (Starlight)
+        /// Mostly used when we are in a relay-chain configuration context (Dancelight)
         /// to also register, deregister and upgrading paraIds in polkadot's
         /// paras_registrar pallet.
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;
@@ -248,7 +248,7 @@ pub mod pallet {
     /// end of the block execution by calling 'T::InnerRegistrar::deregister()' implementation.
     ///
     /// We need this buffer because when we are using this pallet on a relay-chain environment
-    /// like Starlight (where 'T::InnerRegistrar' implementation is usually the
+    /// like Dancelight (where 'T::InnerRegistrar' implementation is usually the
     /// 'paras_registrar' pallet) we need to deregister (via 'paras_registrar::deregister')
     /// the same paraIds we have in 'PendingToRemove<T>', and we need to do this deregistration
     /// process inside 'on_finalize' hook.
@@ -925,7 +925,7 @@ pub mod pallet {
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
 
-                // If we have InnerRegistrar set to a relay context (like Starlight),
+                // If we have InnerRegistrar set to a relay context (like Dancelight),
                 // we first need to downgrade the paraId (if it was a parachain before)
                 // and convert it to a parathread before deregistering it. Otherwise
                 // the deregistration process will fail in the scheduled session.

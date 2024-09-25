@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Polkadot. If not, see <http://www.gnu.org/licenses/>.
 
-//! Tests for the Starlight Runtime Configuration
+//! Tests for the Dancelight Runtime Configuration
 
 use {crate::*, std::collections::HashSet};
 
@@ -59,6 +59,6 @@ fn check_whitelist() {
 fn check_treasury_pallet_id() {
     assert_eq!(
         <Treasury as frame_support::traits::PalletInfoAccess>::index() as u8,
-        starlight_runtime_constants::TREASURY_PALLET_ID
+        dancelight_runtime_constants::TREASURY_PALLET_ID
     );
 }

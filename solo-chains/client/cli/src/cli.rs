@@ -98,13 +98,13 @@ pub struct RunCmd {
     #[clap(flatten)]
     pub base: sc_cli::RunCmd,
 
-    /// Force using Starlight native runtime.
-    #[arg(long = "force-starlight")]
-    pub force_starlight: bool,
+    /// Force using Dancelight native runtime.
+    #[arg(long = "force-dancelight")]
+    pub force_dancelight: bool,
 
     /// Disable the BEEFY gadget.
     ///
-    /// Currently enabled by default on 'Starlight'.
+    /// Currently enabled by default on 'Dancelight'.
     #[arg(long)]
     pub no_beefy: bool,
 

@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 # mkdir just in case as the benchmarking fails if they don't exist
-mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/starlight_weights
+mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/dancelight_weights
 
 # Empty directories
 rm -rf tmp/*_weights/*
@@ -35,9 +35,9 @@ BINARY=target/release/container-chain-frontier-node \
     OUTPUT_PATH=tmp/frontier_template_weights \
     tools/benchmarking.sh "*" "*"
 
-# Starlight weights
+# Dancelight weights
 BINARY=target/release/tannsi-relay\
     TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-    CHAIN=starlight-dev \
-    OUTPUT_PATH=tmp/starlight_weights \
+    CHAIN=dancelight-dev \
+    OUTPUT_PATH=tmp/dancelight_weights \
     tools/benchmarking.sh "*" "*"
