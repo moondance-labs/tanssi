@@ -111,10 +111,10 @@ polkadot-rpc = { workspace = true }
 polkadot-runtime-parachains = { workspace = true }
 
 # Polkadot Runtime Constants
-starlight-runtime-constants = { workspace = true, optional = true }
+dancelight-runtime-constants = { workspace = true, optional = true }
 
 # Polkadot Runtimes
-starlight-runtime = { workspace = true, optional = true }
+dancelight-runtime = { workspace = true, optional = true }
 
 # Polkadot Subsystems
 polkadot-approval-distribution = { workspace = true, optional = true }
@@ -194,11 +194,12 @@ full-node = [
 ]
 
 # Configure the native runtimes to use.
-starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants" ]
+dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants" ]
 
-fast-runtime = [ "starlight-runtime?/fast-runtime" ]
+fast-runtime = [ "dancelight-runtime?/fast-runtime" ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
+	"dancelight-runtime?/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -213,10 +214,10 @@ runtime-benchmarks = [
 	"sc-client-db/runtime-benchmarks",
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
 ]
 try-runtime = [
+	"dancelight-runtime?/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"pallet-babe/try-runtime",
@@ -225,11 +226,10 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
-	"starlight-runtime?/try-runtime",
 ]
 
 malus = [ "full-node" ]
 runtime-metrics = [
+	"dancelight-runtime?/runtime-metrics",
 	"polkadot-runtime-parachains/runtime-metrics",
-	"starlight-runtime?/runtime-metrics",
 ]

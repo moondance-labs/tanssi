@@ -33,7 +33,7 @@ describeSuite({
             title: "Checking that authority assignment is correct in the first assignment",
             test: async function () {
                 // We need at least a couple of session to start seeing the first assignment
-                // The reason is that the session pallet goes before the tanssiInvulnerables in the starlight runtime
+                // The reason is that the session pallet goes before the tanssiInvulnerables in the dancelight runtime
                 // Otherwise we would not need this (as in dancebox)
                 await jumpToSession(context, 2);
 

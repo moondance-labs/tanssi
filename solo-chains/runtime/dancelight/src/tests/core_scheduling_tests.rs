@@ -21,13 +21,13 @@ use {
     cumulus_primitives_core::relay_chain::{
         vstaging::SchedulerParams, AsyncBackingParams, CoreIndex, HeadData,
     },
+    dancelight_runtime_constants::time::EpochDurationInBlocks,
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
     primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
     sp_core::{Decode, Encode},
     sp_keystore::testing::MemoryKeystore,
     sp_std::{collections::btree_map::BTreeMap, vec},
-    starlight_runtime_constants::time::EpochDurationInBlocks,
     std::sync::Arc,
     tp_traits::SlotFrequency,
 };

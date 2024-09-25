@@ -1,7 +1,7 @@
 [package]
-name = "starlight-runtime"
+name = "dancelight-runtime"
 authors = { workspace = true }
-description = "Starlight runtime"
+description = "Dancelight runtime"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -28,6 +28,7 @@ babe-primitives = { workspace = true }
 beefy-primitives = { workspace = true }
 binary-merkle-tree = { workspace = true }
 block-builder-api = { workspace = true }
+dancelight-runtime-constants = { workspace = true }
 grandpa_primitives = { workspace = true }
 inherents = { workspace = true }
 offchain-primitives = { workspace = true }
@@ -47,7 +48,6 @@ sp-std = { workspace = true }
 sp-storage = { workspace = true }
 sp-trie = { workspace = true }
 sp-version = { workspace = true }
-starlight-runtime-constants = { workspace = true }
 tx-pool-api = { workspace = true }
 
 frame-executive = { workspace = true }
@@ -163,6 +163,7 @@ std = [
 	"block-builder-api/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
+	"dancelight-runtime-constants/std",
 	"dp-consensus/std",
 	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
@@ -257,7 +258,6 @@ std = [
 	"sp-tracing/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"starlight-runtime-constants/std",
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
@@ -394,7 +394,7 @@ try-runtime = [
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
-fast-runtime = [ "starlight-runtime-constants/fast-runtime" ]
+fast-runtime = [ "dancelight-runtime-constants/fast-runtime" ]
 
 # Allow to print logs details (no wasm:stripped)
 force-debug = [ "sp-debug-derive/force-debug" ]

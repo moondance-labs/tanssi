@@ -97,7 +97,7 @@ pub mod fee {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            // in Starlight, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+            // in Dancelight, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
             let p = super::currency::CENTS;
             let q = 10 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
             smallvec![WeightToFeeCoefficient {
@@ -127,11 +127,11 @@ pub mod system_parachain {
     /// Brokerage parachain ID.
     pub const BROKER_ID: u32 = 1005;
 
-    /// All system parachains of Starlight.
+    /// All system parachains of Dancelight.
     pub type SystemParachains = IsChildSystemParachain<Id>;
 }
 
-/// Starlight Treasury pallet instance.
+/// Dancelight Treasury pallet instance.
 pub const TREASURY_PALLET_ID: u8 = 40;
 
 #[cfg(test)]

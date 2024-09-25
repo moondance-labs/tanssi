@@ -54,7 +54,7 @@ fn test_author_noting_not_self_para() {
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
-            // In starlight there is no orchestrator chain, so instead of Charlie and Dave
+            // In dancelight there is no orchestrator chain, so instead of Charlie and Dave
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -195,7 +195,7 @@ fn test_author_noting_runtime_api() {
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
-            // In starlight there is no orchestrator chain, so instead of Charlie and Dave
+            // In dancelight there is no orchestrator chain, so instead of Charlie and Dave
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
