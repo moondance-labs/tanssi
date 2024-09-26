@@ -1,4 +1,4 @@
-name: Publish Docker
+name: Publish Dancelight Docker
 
 on:
   workflow_dispatch:
