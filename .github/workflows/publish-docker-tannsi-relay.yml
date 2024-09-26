@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         image: [
-          { name: "dancelight", file_name: "tanssi-relay" },
+          { name: "starlight", file_name: "tanssi-relay" },
         ]
     steps:
       - name: Checkout
