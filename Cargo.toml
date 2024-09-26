@@ -84,9 +84,9 @@ manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
-tanssi-relay-cli = { path = "solo-chains/client/cli", default-features = false }
+tanssi-relay-cli = { path = "solo-chains/client/cli" }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
-tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service", default-features = false }
+tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service" }
 tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
