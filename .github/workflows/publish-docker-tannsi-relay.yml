@@ -1,6 +1,9 @@
 name: Publish Dancelight Docker
 
 on:
+  push:
+    branches:
+      - 'aleks-starlight-runtime-generation-ci'
   workflow_dispatch:
     inputs:
       tag:

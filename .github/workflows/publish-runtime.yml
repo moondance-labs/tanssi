@@ -2,6 +2,9 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
+  push:
+    branches:
+      - 'aleks-starlight-runtime-generation-ci'
   workflow_dispatch:
     inputs:
       from:

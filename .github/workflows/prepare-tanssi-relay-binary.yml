@@ -2,6 +2,9 @@ name: Prepare Optimized Dancelight Binary Draft (internal only)
 
 # The code (like generate-release-body) will be taken from the tag version, not master
 on:
+  push:
+    branches:
+      - 'aleks-starlight-runtime-generation-ci'
   workflow_dispatch:
     inputs:
       sha:
