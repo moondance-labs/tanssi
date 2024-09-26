@@ -68,7 +68,7 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=starlight-dev",
+                            "--chain=dancelight-dev",
                             "--no-hardware-benchmarks",
                             "--unsafe-force-node-key-generation"
                         ],
@@ -698,14 +698,14 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "build-spec-starlight.sh",
+                "build-spec-dancelight.sh",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
             ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieStarlight.json",
+                    "configPath": "./configs/zombieDancelight.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },

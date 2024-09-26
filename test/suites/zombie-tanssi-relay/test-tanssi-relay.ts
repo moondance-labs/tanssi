@@ -27,7 +27,7 @@ describeSuite({
             ethersSigner = context.ethers();
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
-            expect(relayNetwork, "Relay API incorrect").to.contain("starlight");
+            expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
             const container2000Network = container2000Api.consts.system.version.specName.toString();
             const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
@@ -59,7 +59,7 @@ describeSuite({
             title: "Blocks are being produced on tanssi-relay",
             test: async function () {
                 const relayNetwork = relayApi.consts.system.version.specName.toString();
-                expect(relayNetwork, "Relay API incorrect").to.contain("starlight");
+                expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -75,7 +75,7 @@ describeSuite({
                 const allCollators = (
                     await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON();
-                // We can only check the number because zombienet starlight has randomness and rotation,
+                // We can only check the number because zombienet dancelight has randomness and rotation,
                 // so the assigned collators will change every time this test is run.
                 // 0 collators in orchestrator and 2 collators in each para
                 expect(allCollators.orchestratorChain.length).to.equal(0);
@@ -225,7 +225,7 @@ describeSuite({
                 });
 
                 const tx3 = relayApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");
-                // In Starlight we must wait 2 session before calling markValidForCollating, because the para needs to be
+                // In Dancelight we must wait 2 session before calling markValidForCollating, because the para needs to be
                 // onboarded in the relay registrar first.
                 // And before being allowed to do that, we must mark the validationCode as trusted
                 const tx4 = relayApi.tx.paras.addTrustedValidationCode(genesisCode);

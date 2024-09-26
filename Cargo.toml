@@ -13,8 +13,8 @@ members = [
 	"runtime/relay-encoder",
 	"solo-chains/client/*",
 	"solo-chains/node/*",
-	"solo-chains/runtime/starlight",
-	"solo-chains/runtime/starlight/constants",
+	"solo-chains/runtime/dancelight",
+	"solo-chains/runtime/dancelight/constants",
 ]
 resolver = "2"
 
@@ -78,11 +78,11 @@ container-chain-template-simple-runtime = { path = "container-chains/runtime-tem
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 
+dancelight-runtime = { path = "solo-chains/runtime/dancelight", default-features = false }
+dancelight-runtime-constants = { path = "solo-chains/runtime/dancelight/constants", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
-starlight-runtime = { path = "solo-chains/runtime/starlight", default-features = false }
-starlight-runtime-constants = { path = "solo-chains/runtime/starlight/constants", default-features = false }
 stream-payment-rpc = { path = "client/stream-payment" }
 tanssi-relay-cli = { path = "solo-chains/client/cli", default-features = false }
 tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
@@ -357,7 +357,7 @@ tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.18" }
 url = "2.2.2"
 
-# Starlight runtime
+# Dancelight runtime
 bitvec = { version = "1.0.1", default-features = false, features = [ "alloc" ] }
 separator = "0.4.1"
 serde_derive = { version = "1.0.117" }

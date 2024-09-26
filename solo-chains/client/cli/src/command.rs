@@ -503,11 +503,11 @@ fn load_spec(
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
     let id = if id.is_empty() {
         let n = get_exec_name().unwrap_or_default();
-        ["starlight"]
+        ["dancelight"]
             .iter()
             .cloned()
             .find(|&chain| n.starts_with(chain))
-            .unwrap_or("starlight")
+            .unwrap_or("dancelight")
     } else {
         id
     };
@@ -515,32 +515,32 @@ fn load_spec(
         mock_container_chains.iter().map(|&x| x.into()).collect();
     let invulnerables = invulnerables.unwrap_or_default();
     Ok(match id {
-        #[cfg(feature = "starlight-native")]
-        "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
-        #[cfg(feature = "starlight-native")]
-        "dev" | "starlight-dev" => Box::new(
-            tanssi_relay_service::chain_spec::starlight_development_config(
+        #[cfg(feature = "dancelight-native")]
+        "dancelight" => Box::new(tanssi_relay_service::chain_spec::dancelight_config()?),
+        #[cfg(feature = "dancelight-native")]
+        "dev" | "dancelight-dev" => Box::new(
+            tanssi_relay_service::chain_spec::dancelight_development_config(
                 container_chains,
                 mock_container_chains,
                 invulnerables,
             )?,
         ),
-        #[cfg(feature = "starlight-native")]
-        "starlight-local" => Box::new(
-            tanssi_relay_service::chain_spec::starlight_local_testnet_config(
+        #[cfg(feature = "dancelight-native")]
+        "dancelight-local" => Box::new(
+            tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
                 container_chains,
                 mock_container_chains,
                 invulnerables,
             )?,
         ),
-        #[cfg(feature = "starlight-native")]
-        "starlight-staging" => {
-            Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
+        #[cfg(feature = "dancelight-native")]
+        "dancelight-staging" => {
+            Box::new(tanssi_relay_service::chain_spec::dancelight_staging_testnet_config()?)
         }
-        #[cfg(not(feature = "starlight-native"))]
-        name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
+        #[cfg(not(feature = "dancelight-native"))]
+        name if name.starts_with("dancelight-") && !name.ends_with(".json") || name == "dev" => {
             Err(format!(
-                "`{}` only supported with `starlight-native` feature enabled.",
+                "`{}` only supported with `dancelight-native` feature enabled.",
                 name
             ))?
         }

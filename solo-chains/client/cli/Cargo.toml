@@ -76,7 +76,7 @@ try-runtime = [
 ]
 
 # Configure the native runtimes to use.
-starlight-native = [ "tanssi-relay-service/starlight-native" ]
+dancelight-native = [ "tanssi-relay-service/dancelight-native" ]
 
 malus = [ "full-node", "polkadot-service/malus" ]
 runtime-metrics = [
