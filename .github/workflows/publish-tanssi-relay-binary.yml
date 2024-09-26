@@ -1,4 +1,4 @@
-name: Publish Binary Draft
+name: Publish Dancelight Binary Draft
 
 # The code (like generate-release-body) will be taken from the tag version, not master
 on:
@@ -40,20 +40,16 @@ jobs:
         run: rustup show
       - name: Build Node
         run: cargo build --profile=production --all
-      - name: Save parachain binary
+      - name: Save dancelight binary
         if: ${{ matrix.cpu == '' }}
         run: |
           mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node
-      - name: Save parachain custom binary
+          cp target/production/tanssi-relay binaries/tanssi-relay
+      - name: Save dancelight custom binary
         if: ${{ matrix.cpu != '' }}
         run: |
           mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
+          cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
@@ -109,13 +105,13 @@ jobs:
     strategy:
       matrix:
         cpu: ["", "skylake", "znver3"]
-        node: ["tanssi-node", "container-chain-frontier-node", "container-chain-simple-node"]
+        node: ["tanssi-relay"]
     steps:
       - uses: actions/download-artifact@v3
         with:
           name: binaries
           path: build
-      - name: Upload tanssi and templates
+      - name: Upload dancelight
         uses: actions/upload-release-asset@v1
         if: ${{ matrix.cpu == '' }}
         env:
@@ -125,7 +121,7 @@ jobs:
           asset_path: build/${{matrix.node}}
           asset_name: ${{matrix.node}}
           asset_content_type: application/octet-stream
-      - name: Upload tanssi and templates custom binaries
+      - name: Upload dancelight
         uses: actions/upload-release-asset@v1
         if: ${{ matrix.cpu != '' }}
         env:
