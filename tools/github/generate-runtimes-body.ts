@@ -28,6 +28,18 @@ function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
       ),
     };
   }
+  else if (runtimeName.includes("light")) {
+    const specVersion = execSync(
+      `cat ../solo-chains/runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+    ).toString();
+    return {
+      name: runtimeName,
+      version: /:\s?([0-9A-z\-]*)/.exec(specVersion)[1],
+      srtool: JSON.parse(
+        readFileSync(path.join(srtoolReportFolder, `./${runtimeName}-srtool-digest.json`)).toString()
+      ),
+    };
+  }
   else {
     const specVersion = execSync(
       `cat ../runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
