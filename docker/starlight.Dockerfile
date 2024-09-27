@@ -8,21 +8,21 @@ RUN apt-get update && apt-get install -y ca-certificates lsof && update-ca-certi
 
 FROM debian:bookworm-slim
 LABEL maintainer "gorka@moondancelabs.com"
-LABEL description="Binary for Tanssi Relay"
+LABEL description="Binary for Dancelight"
 
-RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi tanssi && \
-	mkdir -p /tanssi/.local/share && \
+RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi-relay tanssi-relay && \
+	mkdir -p /tanssi-relay/.local/share && \
 	mkdir /data && \
-	chown -R tanssi:tanssi /data && \
-	ln -s /data /tanssi/.local/share/tanssi && \
+	chown -R tanssi-relay:tanssi-relay /data && \
+	ln -s /data /tanssi-relay/.local/share/tanssi-relay && \
 	rm -rf /usr/sbin
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-USER tanssi
+USER tanssi-relay
 
-COPY --chown=tanssi build/tanssi-node* /tanssi
-RUN chmod uog+x /tanssi/tanssi*
+COPY --chown=tanssi-relay build/tanssi-relay* /tanssi-relay
+RUN chmod uog+x /tanssi-relay/tanssi-relay*
 
 # 30333 for parachain p2p
 # 30334 for relaychain p2p
@@ -37,4 +37,4 @@ EXPOSE 30333 30334 30335 9933 9944 9615 9935 9946 9617
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/tanssi/tanssi-relay"]
+ENTRYPOINT ["/tanssi-relay/tanssi-relay"]
