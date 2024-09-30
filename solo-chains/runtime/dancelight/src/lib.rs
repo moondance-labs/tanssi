@@ -1737,9 +1737,6 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
     }
 
     fn para_deregistered(para_id: ParaId) -> Weight {
-        // Clear pallet_author_noting storage
-        // TODO: uncomment when pallets exists
-        /*
         if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
             log::warn!(
                 "Failed to kill_author_data after para id {} deregistered: {:?}",
@@ -1748,6 +1745,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
             );
         }
 
+        /*
         XcmCoreBuyer::para_deregistered(para_id);
         */
 
@@ -1831,7 +1829,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 frame_support::ord_parameter_types! {
