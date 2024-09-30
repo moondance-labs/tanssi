@@ -7,8 +7,8 @@ set -e
 cd $(dirname $0)/..
 
 # Grab Polkadot version
-branch=$(egrep -o '/polkadot-sdk.*#([^\"]*)' ../Cargo.lock | head -1)
-polkadot_release=$(echo $branch | sed 's/.*tanssi-polkadot-//' | sed 's/#.*//')
+branch=$(egrep -o '/polkadot.*#([^\"]*)' ../Cargo.lock | head -1 | sed 's/.*release-//#')
+polkadot_release="1.14.1"
 
 # There is a bug where moonwall saves a html file as an executable, and we try to execute that html file.
 # To avoid it, delete any files that are not executables according to "file".

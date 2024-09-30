@@ -63,7 +63,6 @@ use {
     sc_network_sync::SyncingService,
     sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
-    sc_transaction_pool::FullPool,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_consensus_slots::Slot,
@@ -278,6 +277,7 @@ async fn start_node_impl(
 
     let rpc_builder = {
         let client = node_builder.client.clone();
+
         let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
@@ -507,7 +507,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<sc_transaction_pool::TransactionPoolImpl<Block, ParachainClient>>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
@@ -985,7 +985,14 @@ pub fn start_dev_node(
     // This node RPC builder.
     let rpc_builder = {
         let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
+        let transaction_pool = sc_transaction_pool::Builder::new()
+            .with_options(parachain_config.transaction_pool.clone())
+            .build(
+                parachain_config.role.is_authority().into(),
+                parachain_config.prometheus_registry(),
+                node_builder.task_manager.spawn_essential_handle(),
+                client.clone(),
+            );
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
