@@ -58,7 +58,7 @@ mod test_sproof {
 benchmarks! {
     set_latest_author_data {
         // Depend on the number of parachains registered
-        let x in 0..100;
+        let x in 1..100;
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
@@ -90,9 +90,9 @@ benchmarks! {
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
 
-            for para_id in 0..x {
+            for para_id in 1..x {
                 let slot: crate::InherentType = 13u64.into();
-                let header = dp_core::Header {
+                let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: Default::default(),
                     state_root: Default::default(),
@@ -101,14 +101,20 @@ benchmarks! {
                         logs: vec![crate::DigestItem::PreRuntime(crate::AURA_ENGINE_ID, slot.encode())],
                     },
                 };
-                let para_id: ParaId = x.into();
+                let para_id: ParaId = para_id.into();
                 let bytes = para_id.twox_64_concat();
                 container_chains.push(para_id);
 
+                // Mock assigned authors for this para id
+                let author: T::AccountId = account("account id", 0u32, 0u32);
+                // Use the max allowed value for num_each_container_chain
+                let num_each_container_chain = 2;
+                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author.clone(); num_each_container_chain]);
                 // CONCAT
                 let key = [crate::PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
-                frame_support::storage::unhashed::put(&key, &header);
+                let head_data = HeadData(header.encode());
+                frame_support::storage::unhashed::put(&key, &head_data);
             }
             let arg = ();
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
