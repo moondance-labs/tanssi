@@ -18,14 +18,16 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet, RelayOrPara, ParaId, HeadData, ReadEntryErr},
+    crate::{Call, Config, HeadData, Pallet, ParaId, ReadEntryErr, RelayOrPara},
     core::any::{Any, TypeId},
     frame_benchmarking::{account, benchmarks},
     frame_support::{assert_ok, Hashable},
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
-    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains, GenericStorageReader,GenericStateProof},
+    tp_traits::{
+        GenericStateProof, GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChains,
+    },
 };
 
 mod test_sproof {
@@ -63,7 +65,7 @@ benchmarks! {
 
 
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
-    
+
                 for para_id in 0..x {
                     let para_id = para_id.into();
                     container_chains.push(para_id);
@@ -74,7 +76,7 @@ benchmarks! {
                     T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
                     sproof_builder.num_items += 1;
                 }
-    
+
             let (root, proof) = sproof_builder.into_state_root_and_proof();
             T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
                 state_root: root,
@@ -98,7 +100,7 @@ benchmarks! {
                     digest: sp_runtime::generic::Digest {
                         logs: vec![crate::DigestItem::PreRuntime(crate::AURA_ENGINE_ID, slot.encode())],
                     },
-                }; 
+                };
                 let para_id: ParaId = x.into();
                 let bytes = para_id.twox_64_concat();
                 container_chains.push(para_id);
