@@ -66,7 +66,7 @@ benchmarks! {
 
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-                for para_id in 0..x {
+                for para_id in 1..x {
                     let para_id = para_id.into();
                     container_chains.push(para_id);
                     // Mock assigned authors for this para id
