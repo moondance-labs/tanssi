@@ -95,10 +95,10 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                const tx1 = await paraApi.tx.configuration.setCollatorsPerContainer(1);
-                const tx2 = await paraApi.tx.configuration.setMinOrchestratorCollators(1);
-                const tx3 = await paraApi.tx.configuration.setMaxOrchestratorCollators(1);
-                const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(5);
+                const tx1 = paraApi.tx.configuration.setCollatorsPerContainer(1);
+                const tx2 = paraApi.tx.configuration.setMinOrchestratorCollators(1);
+                const tx3 = paraApi.tx.configuration.setMaxOrchestratorCollators(1);
+                const tx4 = paraApi.tx.configuration.setFullRotationPeriod(5);
                 const tx1234 = paraApi.tx.utility.batchAll([tx1, tx2, tx3, tx4]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx1234), alice);
             },
