@@ -18,13 +18,14 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet, RelayOrPara},
+    crate::{Call, Config, Pallet, RelayOrPara, ParaId, HeadData, ReadEntryErr},
     core::any::{Any, TypeId},
     frame_benchmarking::{account, benchmarks},
-    frame_support::assert_ok,
+    frame_support::{assert_ok, Hashable},
     frame_system::RawOrigin,
+    parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
-    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains, GenericStorageReader,GenericStateProof},
 };
 
 mod test_sproof {
@@ -56,25 +57,25 @@ benchmarks! {
     set_latest_author_data {
         // Depend on the number of parachains registered
         let x in 0..100;
-
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
+
+
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
-
-            for para_id in 0..x {
-                let para_id = para_id.into();
-                container_chains.push(para_id);
-                // Mock assigned authors for this para id
-                let author: T::AccountId = account("account id", 0u32, 0u32);
-                // Use the max allowed value for num_each_container_chain
-                let num_each_container_chain = 2;
-                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
-                sproof_builder.num_items += 1;
-            }
-
+    
+                for para_id in 0..x {
+                    let para_id = para_id.into();
+                    container_chains.push(para_id);
+                    // Mock assigned authors for this para id
+                    let author: T::AccountId = account("account id", 0u32, 0u32);
+                    // Use the max allowed value for num_each_container_chain
+                    let num_each_container_chain = 2;
+                    T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
+                    sproof_builder.num_items += 1;
+                }
+    
             let (root, proof) = sproof_builder.into_state_root_and_proof();
-
             T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
                 state_root: root,
                 number: 0,
@@ -86,10 +87,29 @@ benchmarks! {
 
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
-            // TODO: we need to write to storage the elements from the proof
-            unimplemented!("Benchmark will fail because headers have not been written to storage");
-            //let arg = ();
-            //*(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
+
+            for para_id in 0..x {
+                let slot: crate::InherentType = 13u64.into();
+                let header = dp_core::Header {
+                    parent_hash: Default::default(),
+                    number: Default::default(),
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![crate::DigestItem::PreRuntime(crate::AURA_ENGINE_ID, slot.encode())],
+                    },
+                }; 
+                let para_id: ParaId = x.into();
+                let bytes = para_id.twox_64_concat();
+                container_chains.push(para_id);
+
+                // CONCAT
+                let key = [crate::PARAS_HEADS_INDEX, bytes.as_slice()].concat();
+
+                frame_support::storage::unhashed::put(&key, &header);
+            }
+            let arg = ();
+            *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else {
             unreachable!("Unknown InherentArg")
         };

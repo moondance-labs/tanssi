@@ -111,10 +111,10 @@ polkadot-rpc = { workspace = true }
 polkadot-runtime-parachains = { workspace = true }
 
 # Polkadot Runtime Constants
-dancelight-runtime-constants = { workspace = true, optional = true, features = [ "std" ] }
+dancelight-runtime-constants = { workspace = true, optional = true, features=["std"] }
 
 # Polkadot Runtimes
-dancelight-runtime = { workspace = true, optional = true, features = [ "std" ] }
+dancelight-runtime = { workspace = true, optional = true, features=["std"] }
 
 # Polkadot Subsystems
 polkadot-approval-distribution = { workspace = true, optional = true }
