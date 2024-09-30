@@ -12,7 +12,7 @@ yargs(hideBin(process.argv))
     .version("1.0.0")
     .command(
         `register`,
-        "Registers a parachain, adds bootnodes, and sets it valid for collating",
+        "Registers a parachain, adds bootnodes, and marks the validation code as trusted. Does not mark the para as validForCollating",
         (yargs) => {
             return yargs
                 .options({
@@ -26,13 +26,17 @@ yargs(hideBin(process.argv))
                         describe: "Input path of raw chainSpec file",
                         type: "string",
                     },
+                    genesisState: {
+                        describe: "Input path of genesis state file",
+                        type: "string",
+                    },
                     parathread: {
                         describe: "Set the chain as a parathread instead of a parachain",
                         type: "boolean",
                         default: false,
                     },
                 })
-                .demandOption(["chain", "account-priv-key"]);
+                .demandOption(["chain", "genesis-state", "account-priv-key"]);
         },
         async (argv) => {
             const api = await getApiFor(argv);
@@ -41,6 +45,8 @@ yargs(hideBin(process.argv))
             try {
                 process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
                 const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+                const genesisCode = rawSpec.genesis.raw.top["0x3a636f6465"];
+                const headData = await fs.readFile(argv.genesisState!, "utf8");
 
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
@@ -53,14 +59,14 @@ yargs(hideBin(process.argv))
                         min: 1,
                         max: 1,
                     });
-                    tx1 = api.tx.registrar.registerParathread(
+                    tx1 = api.tx.containerRegistrar.registerParathread(
                         rawSpec.para_id,
                         slotFreq,
                         containerChainGenesisData,
-                        null
+                        headData
                     );
                 } else {
-                    tx1 = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData, null);
+                    tx1 = api.tx.containerRegistrar.register(rawSpec.para_id, containerChainGenesisData, headData);
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
@@ -79,15 +85,18 @@ yargs(hideBin(process.argv))
                         txs.push(tx2s);
                     }
                 }
-                const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
+                // In Starlight we must wait 2 session before calling markValidForCollating, because the para needs to be
+                // onboarded in the relay registrar first.
+                // And before being allowed to do that, we must mark the validationCode as trusted
+                const tx3 = api.tx.paras.addTrustedValidationCode(genesisCode);
                 const tx3s = api.tx.sudo.sudo(tx3);
                 txs.push(tx3s);
 
                 if (txs.length == 2) {
-                    process.stdout.write(`Sending register transaction (register + markValidForCollating)... `);
+                    process.stdout.write(`Sending register transaction (register + addTrustedValidationCode)... `);
                 } else {
                     process.stdout.write(
-                        `Sending register transaction (register + createProfile + startAssignment + markValidForCollating)... `
+                        `Sending register transaction (register + createProfile + startAssignment + addTrustedValidationCode)... `
                     );
                 }
                 const txBatch = api.tx.utility.batchAll(txs);
@@ -127,7 +136,7 @@ yargs(hideBin(process.argv))
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
-                let tx = api.tx.registrar.markValidForCollating(argv.paraId);
+                let tx = api.tx.containerRegistrar.markValidForCollating(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
                 process.stdout.write(`Sending transaction... `);
                 const txHash = await tx.signAndSend(account);
@@ -181,7 +190,7 @@ yargs(hideBin(process.argv))
                 let bootnodes = [];
                 if (argv.keepExisting) {
                     // Read existing bootnodes
-                    const onChainBootnodes = (await api.query.registrar.bootNodes(argv.paraId)) as any;
+                    const onChainBootnodes = (await api.query.containerRegistrar.bootNodes(argv.paraId)) as any;
                     bootnodes = [...bootnodes, ...onChainBootnodes];
                 }
                 if (!argv.bootnode) {
@@ -208,10 +217,10 @@ yargs(hideBin(process.argv))
 
                 if (argv.markValidForCollating) {
                     // Check if not already valid, and only in that case call markValidForCollating
-                    const notValidParas = (await api.query.registrar.pendingVerification()) as any;
+                    const notValidParas = (await api.query.containerRegistrar.pendingVerification()) as any;
                     if (notValidParas.toJSON().includes(argv.paraId)) {
                         process.stdout.write(`Will set container chain valid for collating\n`);
-                        const tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
+                        const tx2 = api.tx.containerRegistrar.markValidForCollating(argv.paraId);
                         tx2s = api.tx.sudo.sudo(tx2);
                         txs.push(tx2s);
                     } else {
@@ -257,7 +266,7 @@ yargs(hideBin(process.argv))
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
-                let tx = api.tx.registrar.deregister(argv.paraId);
+                let tx = api.tx.containerRegistrar.deregister(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
                 process.stdout.write(`Sending transaction... `);
                 const txHash = await tx.signAndSend(account);
@@ -296,7 +305,7 @@ yargs(hideBin(process.argv))
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
-                let tx = api.tx.registrar.pauseContainerChain(argv.paraId);
+                let tx = api.tx.containerRegistrar.pauseContainerChain(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
                 process.stdout.write(`Sending transaction... `);
                 const txHash = await tx.signAndSend(account);
