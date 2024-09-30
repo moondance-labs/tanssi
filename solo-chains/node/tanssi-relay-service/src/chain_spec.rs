@@ -173,6 +173,13 @@ pub fn dancelight_development_config(
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
 ) -> Result<DancelightChainSpec, String> {
+    // Give your base currency a unit name and decimal places
+    let mut properties = sc_chain_spec::Properties::new();
+    properties.insert("tokenSymbol".into(), "STAR".into());
+    properties.insert("tokenDecimals".into(), 12.into());
+    properties.insert("ss58Format".into(), 42.into());
+    properties.insert("isEthereum".into(), false.into());
+
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
@@ -202,6 +209,7 @@ pub fn dancelight_development_config(
         invulnerables,
     ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .with_properties(properties)
     .build())
 }
 
