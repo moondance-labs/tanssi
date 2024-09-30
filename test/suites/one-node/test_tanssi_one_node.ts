@@ -53,7 +53,7 @@ describeSuite({
                 const tx1 = paraApi.tx.configuration.setMinOrchestratorCollators(1);
                 const tx2 = paraApi.tx.configuration.setMaxOrchestratorCollators(1);
                 const tx3 = paraApi.tx.configuration.setFullRotationPeriod(0);
-                const tx123 = await paraApi.tx.utility.batchAll([tx1, tx2, tx3]);
+                const tx123 = paraApi.tx.utility.batchAll([tx1, tx2, tx3]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx123), alice);
             },
         });
