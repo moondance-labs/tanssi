@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
-           cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
+          cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
           cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
       - name: Upload binaries
         uses: actions/upload-artifact@v3
