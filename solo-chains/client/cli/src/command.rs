@@ -530,7 +530,8 @@ fn load_spec(
             tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
                 container_chains,
                 mock_container_chains,
-                invulnerables,
+                // Ignoring invulnerables in local network
+                vec![],
             )?,
         ),
         #[cfg(feature = "dancelight-native")]
