@@ -168,10 +168,6 @@ yargs(hideBin(process.argv))
                         describe: "Container chain para id",
                         type: "array",
                     },
-                    "keep-existing": {
-                        describe: "Keep exisiting bootnodes, and append to the list instead of overwriting them",
-                        type: "boolean",
-                    },
                     "mark-valid-for-collating": {
                         describe: "Also mark the registered chain as valid, if it was not marked already",
                         type: "boolean",
@@ -188,11 +184,6 @@ yargs(hideBin(process.argv))
                 const account = keyring.addFromUri(privKey);
 
                 let bootnodes = [];
-                if (argv.keepExisting) {
-                    // Read existing bootnodes
-                    const onChainBootnodes = (await api.query.containerRegistrar.bootNodes(argv.paraId)) as any;
-                    bootnodes = [...bootnodes, ...onChainBootnodes];
-                }
                 if (!argv.bootnode) {
                     argv.bootnode = [];
                 }
