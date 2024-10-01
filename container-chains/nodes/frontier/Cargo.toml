@@ -23,6 +23,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true, features = [ "arbitrary_precision" ] }
 url = { workspace = true }
+color-eyre = { workspace = true, default-features = false }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
