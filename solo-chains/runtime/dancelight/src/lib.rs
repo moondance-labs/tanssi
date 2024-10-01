@@ -1040,7 +1040,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
     fn session_core_count() -> u32 {
         let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-        log::info!(
+        log::debug!(
             "session core count is {:?}",
             config.scheduler_params.num_cores
         );
