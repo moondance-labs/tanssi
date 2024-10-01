@@ -66,6 +66,21 @@ describeSuite({
         });
 
         it({
+            id: "T02",
+            title: "Set config params",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const tx1 = relayApi.tx.collatorConfiguration.setFullRotationPeriod(5);
+                const fillAmount = 990_000_000; // equal to 99% Perbill
+                const tx2 = relayApi.tx.collatorConfiguration.setMaxParachainCoresPercentage(fillAmount);
+                const txBatch = relayApi.tx.utility.batchAll([tx1, tx2]);
+                await signAndSendAndInclude(relayApi.tx.sudo.sudo(txBatch), alice);
+            },
+        });
+
+        it({
             id: "T03",
             timeout: 600000,
             title: "Test assignation did not change",
