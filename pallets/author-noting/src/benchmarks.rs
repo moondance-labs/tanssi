@@ -66,16 +66,16 @@ benchmarks! {
 
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-                for para_id in 1..x {
-                    let para_id = para_id.into();
-                    container_chains.push(para_id);
-                    // Mock assigned authors for this para id
-                    let author: T::AccountId = account("account id", 0u32, 0u32);
-                    // Use the max allowed value for num_each_container_chain
-                    let num_each_container_chain = 2;
-                    T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
-                    sproof_builder.num_items += 1;
-                }
+            for para_id in 1..x {
+                let para_id = para_id.into();
+                container_chains.push(para_id);
+                // Mock assigned authors for this para id
+                let author: T::AccountId = account("account id", 0u32, 0u32);
+                // Use the max allowed value for num_each_container_chain
+                let num_each_container_chain = 2;
+                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
+                sproof_builder.num_items += 1;
+            }
 
             let (root, proof) = sproof_builder.into_state_root_and_proof();
             T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
