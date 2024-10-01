@@ -82,12 +82,7 @@ impl SubstrateCli for Cli {
             id,
             vec![],
             vec![2000, 2001],
-            Some(vec![
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-                "Eve".to_string(),
-            ]),
+            None,
         )
     }
 
@@ -530,8 +525,7 @@ fn load_spec(
             tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
                 container_chains,
                 mock_container_chains,
-                // Ignoring invulnerables in local network
-                vec![],
+                invulnerables,
             )?,
         ),
         #[cfg(feature = "dancelight-native")]
