@@ -15,6 +15,7 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+color-eyre = { workspace = true, default-features = false }
 exit-future = { workspace = true }
 fdlimit = { workspace = true }
 flume = { workspace = true }
@@ -28,7 +29,6 @@ serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-color-eyre = { workspace = true, default-features = false }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
