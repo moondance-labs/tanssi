@@ -78,17 +78,7 @@ impl SubstrateCli for Cli {
 
     #[cfg(not(feature = "runtime-benchmarks"))]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(
-            id,
-            vec![],
-            vec![2000, 2001],
-            Some(vec![
-                "Bob".to_string(),
-                "Charlie".to_string(),
-                "Dave".to_string(),
-                "Eve".to_string(),
-            ]),
-        )
+        load_spec(id, vec![], vec![2000, 2001], None)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -513,26 +503,39 @@ fn load_spec(
     };
     let mock_container_chains: Vec<ParaId> =
         mock_container_chains.iter().map(|&x| x.into()).collect();
-    let invulnerables = invulnerables.unwrap_or_default();
     Ok(match id {
         #[cfg(feature = "dancelight-native")]
         "dancelight" => Box::new(tanssi_relay_service::chain_spec::dancelight_config()?),
         #[cfg(feature = "dancelight-native")]
-        "dev" | "dancelight-dev" => Box::new(
-            tanssi_relay_service::chain_spec::dancelight_development_config(
-                container_chains,
-                mock_container_chains,
-                invulnerables,
-            )?,
-        ),
+        "dev" | "dancelight-dev" => {
+            // Default invulnerables for dev mode, used in dev_tanssi_relay tests
+            let invulnerables = invulnerables.unwrap_or(vec![
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+                "Eve".to_string(),
+            ]);
+
+            Box::new(
+                tanssi_relay_service::chain_spec::dancelight_development_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
+        }
         #[cfg(feature = "dancelight-native")]
-        "dancelight-local" => Box::new(
-            tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
-                container_chains,
-                mock_container_chains,
-                invulnerables,
-            )?,
-        ),
+        "dancelight-local" => {
+            let invulnerables = invulnerables.unwrap_or_default();
+
+            Box::new(
+                tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
+        }
         #[cfg(feature = "dancelight-native")]
         "dancelight-staging" => {
             Box::new(tanssi_relay_service::chain_spec::dancelight_staging_testnet_config()?)
