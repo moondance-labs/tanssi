@@ -55,6 +55,10 @@
         "./flashbox": {
             "types": "./build/flashbox/index.d.ts",
             "default": "./build/flashbox/index.js"
+        },
+        "./dancelight": {
+            "types": "./build/dancelight/index.d.ts",
+            "default": "./build/dancelight/index.js"
         }
     },
     "typesVersions": {
@@ -64,6 +68,9 @@
             ],
             "flashbox": [
                 "./build/flashbox/index.d.ts"
+            ],
+            "dancelight": [
+                "./build/dancelight/index.d.ts"
             ]
         }
     },

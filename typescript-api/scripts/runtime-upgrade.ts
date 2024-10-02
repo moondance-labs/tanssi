@@ -26,34 +26,19 @@ async function main() {
     // Get runtimes metadata
     for (const CHAIN of CHAINS) {
         console.log(`Starting ${CHAIN} node`);
-        if (CHAIN.includes("light")) {
-            nodeProcess = spawn("../target/release/tanssi-relay", [
-                "--no-hardware-benchmarks",
-                "--no-telemetry",
-                "--no-prometheus",
-                "--alice",
-                "--tmp",
-                `--chain=${CHAIN}-local`,
-                "--dev-service",
-                "--wasm-execution=interpreted-i-know-what-i-do",
-                "--rpc-port=9933",
-                "--unsafe-force-node-key-generation",
-            ]);
-        }
-        else {
-            nodeProcess = spawn("../target/release/tanssi-node", [
-                "--no-hardware-benchmarks",
-                "--no-telemetry",
-                "--no-prometheus",
-                "--alice",
-                "--tmp",
-                `--chain=${CHAIN}-local`,
-                "--dev-service",
-                "--wasm-execution=interpreted-i-know-what-i-do",
-                "--rpc-port=9933",
-                "--unsafe-force-node-key-generation",
-            ]);
-        }
+        const isStarlightChain = CHAIN.includes("light");
+        nodeProcess = spawn(`../target/release/tanssi-${isStarlightChain ? 'relay' : 'node'}`, [
+            "--no-hardware-benchmarks",
+            "--no-telemetry",
+            "--no-prometheus",
+            "--alice",
+            "--tmp",
+            `--chain=${CHAIN}-local`,
+            "--dev-service",
+            "--wasm-execution=interpreted-i-know-what-i-do",
+            "--rpc-port=9933",
+            "--unsafe-force-node-key-generation",
+        ]);
 
         const onProcessExit = () => {
             nodeProcess && nodeProcess.kill();
