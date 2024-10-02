@@ -85,7 +85,7 @@ where
     where
         TShuffle: FnOnce(&mut Vec<T::AccountId>),
     {
-        if collators.is_empty() {
+        if collators.is_empty() && !T::ForceEmptyOrchestrator::get() {
             return Err(AssignmentError::ZeroCollators);
         }
         // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
