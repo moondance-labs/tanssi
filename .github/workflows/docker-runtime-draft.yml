@@ -53,7 +53,7 @@ jobs:
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
           cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: binaries
           path: binaries
@@ -67,7 +67,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v3
         with:
           name: binaries
           path: build
