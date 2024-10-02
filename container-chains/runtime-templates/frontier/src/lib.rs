@@ -843,6 +843,7 @@ parameter_types! {
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
+    pub GasLimitPovSizeRatio: u32 = 16;
 }
 
 impl_on_charge_evm_transaction!();
@@ -870,8 +871,7 @@ impl pallet_evm::Config for Runtime {
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
-    // TODO: update in the future
-    type GasLimitPovSizeRatio = ();
+    type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
     type SuicideQuickClearLimit = SuicideQuickClearLimit;
     type Timestamp = Timestamp;
     type WeightInfo = ();
