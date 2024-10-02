@@ -172,7 +172,7 @@ where
 
         let database_source = config.database.clone();
 
-        let task_manager = if config.chain_spec.is_dev() {
+        let task_manager = if config.chain_spec.is_dev() || cli.run.dev_service {
             log::info!("Starting service in Development mode");
             build_full_dev(
                 Sealing::Manual,
