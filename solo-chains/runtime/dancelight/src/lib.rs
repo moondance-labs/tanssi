@@ -971,11 +971,11 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 }
             })
             .collect();
-        log::info!("pop assigned collators {:?}", assigned_paras);
-        log::info!("looking for core idx {:?}", core_idx);
+        log::debug!("pop assigned collators {:?}", assigned_paras);
+        log::debug!("looking for core idx {:?}", core_idx);
 
         if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
-            log::info!("outputing assignment for  {:?}", para_id);
+            log::debug!("outputing assignment for  {:?}", para_id);
 
             Some(Assignment::Bulk(*para_id))
         } else {
@@ -1040,7 +1040,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
     fn session_core_count() -> u32 {
         let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-        log::info!(
+        log::debug!(
             "session core count is {:?}",
             config.scheduler_params.num_cores
         );
