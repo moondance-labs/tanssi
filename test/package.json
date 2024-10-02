@@ -17,6 +17,7 @@
         "register-para": "tsx scripts/registerPara.ts",
         "generate-test-ids": "tsx scripts/deriveTestIds.ts process suites",
         "sudo-register-para": "tsx scripts/sudoRegisterPara.ts",
+        "sudo-starlight-register-para": "tsx scripts/sudoStarlightRegisterPara.ts",
         "zombienet-restart": "tsx scripts/zombienetRestart.ts"
     },
     "keywords": [],
