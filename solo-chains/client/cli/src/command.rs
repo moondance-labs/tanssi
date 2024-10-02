@@ -547,11 +547,9 @@ fn load_spec(
         path => {
             let path = std::path::PathBuf::from(path);
 
-            let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
+            (Box::new(polkadot_service::GenericChainSpec::from_json_file(
                 path.clone(),
-            )?) as Box<dyn polkadot_service::ChainSpec>;
-
-            chain_spec
+            )?)) as std::boxed::Box<dyn sc_cli::ChainSpec>
         }
     })
 }

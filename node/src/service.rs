@@ -689,7 +689,7 @@ pub async fn start_solochain_node(
         .base_path
         .as_ref()
         .expect("base_path is always set");
-    let config_dir = build_solochain_config_dir(&base_path);
+    let config_dir = build_solochain_config_dir(base_path);
     let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
