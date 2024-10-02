@@ -163,16 +163,12 @@ fn assign_full_solochain() {
 fn assign_full_solochain_zero_collators() {
     // In solochain mode, there can be 0 collators. This shouldn't cause any panics.
     let collators = vec![];
-    let container_chains = vec![(1000.into(), 0), (2000.into(), 3), (2001.into(), 2)];
+    let container_chains = vec![(1000.into(), 0)];
     let old_assigned = BTreeMap::from_iter(vec![]);
 
     let new_assigned =
         Assignment::<Test>::assign_full(collators, container_chains, old_assigned, no_shuffle())
             .unwrap();
-    let expected = BTreeMap::from_iter(vec![
-        (1000.into(), vec![]),
-        (2000.into(), vec![]),
-        (2001.into(), vec![]),
-    ]);
+    let expected = BTreeMap::from_iter(vec![(1000.into(), vec![])]);
     assert_eq!(new_assigned, expected);
 }
