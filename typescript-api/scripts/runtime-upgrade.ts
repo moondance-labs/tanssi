@@ -6,7 +6,7 @@ import chalk from "chalk";
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 async function main() {
-    const CHAINS = ["dancebox", "flashbox"];
+    const CHAINS = ["dancebox", "flashbox", "dancelight"];
 
     const RUNTIME_CHAIN_SPEC = process.argv[2];
 
@@ -26,22 +26,40 @@ async function main() {
     // Get runtimes metadata
     for (const CHAIN of CHAINS) {
         console.log(`Starting ${CHAIN} node`);
-        nodeProcess = spawn("../target/release/tanssi-node", [
-            "--no-hardware-benchmarks",
-            "--no-telemetry",
-            "--no-prometheus",
-            "--alice",
-            "--tmp",
-            `--chain=${CHAIN}-local`,
-            "--dev-service",
-            "--wasm-execution=interpreted-i-know-what-i-do",
-            "--rpc-port=9933",
-            "--unsafe-force-node-key-generation",
-        ]);
+        if (CHAIN.includes("light")) {
+            nodeProcess = spawn("../target/release/tanssi-relay", [
+                "--no-hardware-benchmarks",
+                "--no-telemetry",
+                "--no-prometheus",
+                "--alice",
+                "--tmp",
+                `--chain=${CHAIN}-local`,
+                "--dev-service",
+                "--wasm-execution=interpreted-i-know-what-i-do",
+                "--rpc-port=9933",
+                "--unsafe-force-node-key-generation",
+            ]);
+        }
+        else {
+            nodeProcess = spawn("../target/release/tanssi-node", [
+                "--no-hardware-benchmarks",
+                "--no-telemetry",
+                "--no-prometheus",
+                "--alice",
+                "--tmp",
+                `--chain=${CHAIN}-local`,
+                "--dev-service",
+                "--wasm-execution=interpreted-i-know-what-i-do",
+                "--rpc-port=9933",
+                "--unsafe-force-node-key-generation",
+            ]);
+        }
 
         const onProcessExit = () => {
+            console.log
             nodeProcess && nodeProcess.kill();
         };
+
 
         process.once("exit", onProcessExit);
         process.once("SIGINT", onProcessExit);
