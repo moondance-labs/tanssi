@@ -28,14 +28,13 @@ use {
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
+    tanssi_relay_service::dev_service::build_full as build_full_dev,
 };
 
 pub use crate::error::Error;
-#[cfg(feature = "hostperfcheck")]
-pub use polkadot_performance_test::PerfCheckError;
+
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
-use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 

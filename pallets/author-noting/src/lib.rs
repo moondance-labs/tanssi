@@ -427,7 +427,7 @@ impl<T: Config> LatestAuthorInfoFetcher<T::AccountId> for Pallet<T> {
 
 /// This pallet has slightly different behavior when used in a parachain vs when used in a relay chain
 /// (solochain). The main difference is:
-/// * In relay mode, we don't need a storage proof, so the inherent doesn't need any input argument,
+/// In relay mode, we don't need a storage proof, so the inherent doesn't need any input argument,
 /// and instead of reading from a storage proof we read from storage directly.
 pub trait RelayOrPara {
     type InherentArg: TypeInfo + Clone + PartialEq + Encode + Decode + core::fmt::Debug;
