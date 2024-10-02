@@ -43,6 +43,7 @@ jobs:
           cp target/production/tanssi-node binaries/tanssi-node
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node
+          cp target/production/tanssi-relay binaries/tanssi-relay
       - name: Save parachain custom binary
         if: ${{ matrix.cpu != '' }}
         run: |
@@ -50,8 +51,9 @@ jobs:
           cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
+          cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: binaries
@@ -61,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template", "starlight"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
