@@ -743,7 +743,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template", "starlight"]
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout
