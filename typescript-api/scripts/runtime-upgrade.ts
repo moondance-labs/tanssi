@@ -56,10 +56,8 @@ async function main() {
         }
 
         const onProcessExit = () => {
-            console.log
             nodeProcess && nodeProcess.kill();
         };
-
 
         process.once("exit", onProcessExit);
         process.once("SIGINT", onProcessExit);
