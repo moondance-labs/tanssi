@@ -138,6 +138,10 @@ tanssi-runtime-common = { workspace = true }
 # Moonkit
 pallet-migrations = { workspace = true }
 
+# Bridges
+snowbridge-pallet-ethereum-client = { workspace = true }
+snowbridge-beacon-primitives = { workspace = true }
+
 [dev-dependencies]
 keyring = { workspace = true }
 remote-externalities = { workspace = true }
@@ -241,6 +245,8 @@ std = [
 	"serde/std",
 	"serde_derive",
 	"serde_json/std",
+	"snowbridge-pallet-ethereum-client/std",
+	"snowbridge-beacon-primitives/std",
 	"sp-api/std",
 	"sp-arithmetic/std",
 	"sp-consensus-aura/std",
@@ -323,6 +329,7 @@ runtime-benchmarks = [
 	"primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
+	"snowbridge-pallet-ethereum-client/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
