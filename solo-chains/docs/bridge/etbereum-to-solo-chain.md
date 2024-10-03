@@ -74,12 +74,40 @@ def validate_light_client_update(snapshot: LightClientSnapshot,
     assert bls.FastAggregateVerify(participant_pubkeys, signing_root, update.sync_committee_signature)
 ```
 
+## Transmiting Ethereum Headers to Starlight
+
+### The relayers job to transmit Ethereum's header
+1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block
+2. The relayer needs to aggregrate the public keys responsible for generating that block.
+3. If the sync committee changes, the relayer needs to generate a merkle proof proving that the sync committee has changed.
+4. The relayer presents all these components to the appropriate pallet in starlight
+
+### Eth state receiver pallets job
+1. If the relayer claims the sync committee changes, verify the merkle proof to make sure the new sync committee is correct.
+2. Perform a verification of the validity of the committee members that signed the aggregated message
+3. Perform a verification of the aggregated signature
+4. If all of those pass, accept the header, with the new **state root ready to receive storage proofs**
+
 ### Overall Diagram ETH state validity Reception
 
 <p align="center">
   <img src="images/beacon_chain_altair.drawio.png" width="1000">
 </p>
 
+
+
+## Proving symbiotic validator selection to starlight (or any other Ethereum state)
+
+### The relayers job to transmit symbiotic validators
+1. The relayer node checks the latest accepted header in starlight, and it generates a storage proof of the validators storage item in the symbiotic smart contract
+2. The relayer sends this information to the Symbiotic validator receiver pallet
+
+### The Symbiotic validator Receiver pallets job to verify the validators
+
+1. The symbiotic validator pallet receiver asks the Ethereum state receiver pallet about the correctness of the validators.
+2. The ethereum state pallet receiver repplies with a yes or no, depending on the validity of the storage proof against the storage root stored
+3. If accepted, the next validator set is stored on-chain
+4. In the next session, the new era will get started
 
 ### Overall Diagram Validator Information passing
 
