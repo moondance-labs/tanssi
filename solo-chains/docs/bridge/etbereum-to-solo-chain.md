@@ -74,8 +74,15 @@ def validate_light_client_update(snapshot: LightClientSnapshot,
     assert bls.FastAggregateVerify(participant_pubkeys, signing_root, update.sync_committee_signature)
 ```
 
-### Overall Diagram
+### Overall Diagram ETH state validity Reception
 
 <p align="center">
   <img src="images/beacon_chain_altair.drawio.png" width="1000">
+</p>
+
+
+### Overall Diagram Validator Information passing
+
+<p align="center">
+  <img src="images/relayer_proof_starlight.drawio.png" width="1000">
 </p>
