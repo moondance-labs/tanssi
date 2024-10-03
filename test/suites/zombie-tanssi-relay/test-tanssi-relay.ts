@@ -226,6 +226,7 @@ describeSuite({
                 const chainSpec2002 = JSON.parse(spec2002);
                 const genesisCode = chainSpec2002.genesis.raw.top["0x3a636f6465"];
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(relayApi, chainSpec2002);
+                const tx0 = relayApi.tx.registrar.reserve();
                 const tx1 = relayApi.tx.containerRegistrar.register(2002, containerChainGenesisData, headData2002);
                 const purchasedCredits = 100000n;
                 const requiredBalance = purchasedCredits * 1_000_000n;
@@ -247,6 +248,7 @@ describeSuite({
 
                 // Send the batch transaction: [register, purchaseCredits, createProfile, sudo(forceStartAssignment), sudo(addTrustedValidationCode)]
                 const txBatch = relayApi.tx.utility.batchAll([
+                    tx0,
                     tx1,
                     tx2,
                     profileTx,

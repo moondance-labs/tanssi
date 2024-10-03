@@ -16,6 +16,7 @@
 
 #![cfg(test)]
 
+use crate::Registrar;
 use {
     crate::{tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Session},
     cumulus_primitives_core::relay_chain::{
@@ -471,7 +472,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![ParaRegistrationParams {
-            para_id: 1001,
+            para_id: 2001,
             genesis_data: empty_genesis_data(),
             block_production_credits: u32::MAX,
             collator_assignment_credits: u32::MAX,
@@ -508,19 +509,20 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             run_to_block(2);
 
             // Now the parathread should be there
-            assert!(Paras::is_parathread(1001u32.into()));
+            assert!(Paras::is_parathread(2001u32.into()));
             let alice_keys =
                 get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
 
             // Parathread should have collators
             assert!(
-                authorities_for_container(1001u32.into()) == Some(vec![alice_keys.nimbus.clone()])
+                authorities_for_container(2001u32.into()) == Some(vec![alice_keys.nimbus.clone()])
             );
 
             // Register parachain
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1000.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -545,10 +547,10 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             run_to_session(4);
             run_block();
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1000.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1000.into()
+                2000.into()
             ));
 
             // The parathread now uses core 0 but once the parachain is onboarded (and gets collators)
@@ -558,20 +560,20 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
             run_to_block(6 * epoch_duration - 1);
             // we are not a parachain yet
-            assert!(!Paras::is_parachain(1000u32.into()));
+            assert!(!Paras::is_parachain(2000u32.into()));
             // we dont have authorities
-            assert_eq!(authorities_for_container(1000u32.into()), None);
+            assert_eq!(authorities_for_container(2000u32.into()), None);
 
             // let's buy core for 1001
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1001u32.into()
+                2001u32.into()
             ));
 
             // We try producing having an on-demand core
             let cores_with_backed: BTreeMap<_, _> =
-                vec![(1001u32, Session::validators().len() as u32)]
+                vec![(2001u32, Session::validators().len() as u32)]
                     .into_iter()
                     .collect();
 
@@ -584,7 +586,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             let key = storage_map_final_key::<frame_support::Twox64Concat>(
                 "OnDemandAssignmentProvider",
                 "ParaIdAffinity",
-                &cumulus_primitives_core::ParaId::from(1001u32).encode(),
+                &cumulus_primitives_core::ParaId::from(2001u32).encode(),
             );
             let value_before_session: Option<CoreAffinityCount> =
                 frame_support::storage::unhashed::get(key.as_ref());
@@ -603,12 +605,12 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             run_to_session(6);
             run_block();
             // Now the parachain should be there
-            assert!(Paras::is_parachain(1000u32.into()));
+            assert!(Paras::is_parachain(2000u32.into()));
 
             let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
             // we should have authorities now: two sessions elapsed and para is parachain already
             assert_eq!(
-                authorities_for_container(1000u32.into()),
+                authorities_for_container(2000u32.into()),
                 Some(vec![bob_keys.nimbus.clone()])
             );
 
@@ -618,13 +620,13 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1001u32.into()
+                2001u32.into()
             ));
 
             // We try producing having an on-demand core
             let cores_with_backed: BTreeMap<_, _> = vec![
-                (1000u32, Session::validators().len() as u32),
-                (1001u32, Session::validators().len() as u32),
+                (2000u32, Session::validators().len() as u32),
+                (2001u32, Session::validators().len() as u32),
             ]
             .into_iter()
             .collect();
@@ -639,7 +641,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             let value_after_session: Option<CoreAffinityCount> =
                 frame_support::storage::unhashed::get(key.as_ref());
 
-            // 1001 is bounded to core 1!
+            // 2001 is bounded to core 1!
             assert_eq!(
                 value_after_session,
                 Some(CoreAffinityCount {

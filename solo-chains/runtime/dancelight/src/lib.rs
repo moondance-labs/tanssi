@@ -1650,6 +1650,7 @@ where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
     Runtime: pallet_registrar::Config,
+    sp_runtime::AccountId32: From<AccountId>,
 {
     fn register(
         who: AccountId,
@@ -1673,7 +1674,14 @@ where
         };
 
         // Try to register the parachain
-        RegistrarManager::register(who, id, genesis_head, validation_code)
+        // Using register extrinsic instead of `RegistrarInterface` trait because we want
+        // to check that the para id has been reserved.
+        Registrar::register(
+            RuntimeOrigin::signed(who.into()),
+            id,
+            genesis_head,
+            validation_code,
+        )
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
@@ -1722,7 +1730,6 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;

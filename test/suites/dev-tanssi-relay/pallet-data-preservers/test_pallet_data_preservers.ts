@@ -2,6 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
+import { initializeCustomCreateBlock } from "../../../util/block.ts";
 
 describeSuite({
     id: "DTR0601",
@@ -18,6 +19,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
             general_user_bob = context.keyring.charlie;
+            initializeCustomCreateBlock(context);
         });
 
         it({
@@ -287,6 +289,8 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
+                await context.createBlock([]);
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
@@ -356,7 +360,7 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
@@ -426,12 +430,13 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
                     "0x010203"
                 );
+                await context.createBlock([]);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
@@ -498,7 +503,7 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
@@ -570,7 +575,8 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-
+                await context.createBlock([]);
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
