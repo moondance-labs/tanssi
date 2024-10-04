@@ -104,9 +104,9 @@ def generate_comparison_markdown(base_covdir, incoming_covdir, base_html_url):
     for item in differences:
         # Determine emoji based on coverage difference
         if item["diff"] > 0:
-            emoji = "🔼"
+            emoji = "✅"
         elif item["diff"] < 0:
-            emoji = "🔽"
+            emoji = "❗"
         else:
             emoji = ""
 
