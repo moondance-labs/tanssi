@@ -339,10 +339,9 @@ jobs:
             echo "CURRENT_FLASHBOX=$CURRENT_FLASHBOX" >> $GITHUB_ENV
             echo "CURRENT_DANCELIGHT=$CURRENT_DANCELIGHT" >> $GITHUB_ENV
             echo "CURRENT_CONTAINER_SIMPLE=$CURRENT_CONTAINER_SIMPLE" >> $GITHUB_ENV
-            echo "CURRENT_CONTAINER_FRONTIER=$CURRENT_CONTAINER_FRONTIER" >> $GITHUB_ENV
+            echo "CURRENT_CONTAINER_FRONTIER=$CURRENT_CONTAINER_FRONTIER" >> $GITHUB_ENV  
         - name: Compare Runtimes sizes
           run: |
-            path: twiggy-diff-reports
             # Create or truncate the file
             echo "" > runtime_size_report.md
 
