@@ -340,24 +340,6 @@ jobs:
             echo "CURRENT_DANCELIGHT=$CURRENT_DANCELIGHT" >> $GITHUB_ENV
             echo "CURRENT_CONTAINER_SIMPLE=$CURRENT_CONTAINER_SIMPLE" >> $GITHUB_ENV
             echo "CURRENT_CONTAINER_FRONTIER=$CURRENT_CONTAINER_FRONTIER" >> $GITHUB_ENV
-        - name: Create Twiggy diff reports
-          run: |
-            # Install Twiggy if not already installed
-            if ! command -v twiggy &> /dev/null; then
-              cargo install twiggy
-            fi
-
-            # Generate Twiggy diff reports in JSON format with top 100 entries
-            mkdir -p twiggy-diff-reports
-            twiggy diff -n 100 --format json runtimes-target-branch/dancebox_runtime.wasm runtimes-current-branch/dancebox_runtime.wasm > twiggy-diff-reports/twiggy_diff_dancebox.json
-            twiggy diff -n 100 --format json runtimes-target-branch/flashbox_runtime.wasm runtimes-current-branch/flashbox_runtime.wasm > twiggy-diff-reports/twiggy_diff_flashbox.json
-            twiggy diff -n 100 --format json runtimes-target-branch/dancelight_runtime.wasm runtimes-current-branch/dancelight_runtime.wasm > twiggy-diff-reports/twiggy_diff_dancelight.json
-            twiggy diff -n 100 --format json runtimes-target-branch/container_chain_template_simple_runtime.wasm runtimes-current-branch/container_chain_template_simple_runtime.wasm > twiggy-diff-reports/twiggy_diff_container_chain_template_simple.json
-            twiggy diff -n 100 --format json runtimes-target-branch/container_chain_template_frontier_runtime.wasm runtimes-current-branch/container_chain_template_frontier_runtime.wasm > twiggy-diff-reports/twiggy_diff_container_chain_template_frontier.json
-        - name: Upload Twiggy diff reports
-          uses: actions/upload-artifact@v4
-          with:
-            name: twiggy-diff-reports
         - name: Compare Runtimes sizes
           run: |
             path: twiggy-diff-reports
