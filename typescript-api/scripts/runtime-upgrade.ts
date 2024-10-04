@@ -6,7 +6,7 @@ import chalk from "chalk";
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 async function main() {
-    const CHAINS = ["dancebox", "flashbox"];
+    const CHAINS = ["dancebox", "flashbox", "dancelight"];
 
     const RUNTIME_CHAIN_SPEC = process.argv[2];
 
@@ -26,7 +26,8 @@ async function main() {
     // Get runtimes metadata
     for (const CHAIN of CHAINS) {
         console.log(`Starting ${CHAIN} node`);
-        nodeProcess = spawn("../target/release/tanssi-node", [
+        const isStarlightChain = CHAIN.includes("light");
+        nodeProcess = spawn(`../target/release/tanssi-${isStarlightChain ? 'relay' : 'node'}`, [
             "--no-hardware-benchmarks",
             "--no-telemetry",
             "--no-prometheus",

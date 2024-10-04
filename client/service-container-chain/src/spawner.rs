@@ -883,12 +883,11 @@ async fn get_latest_container_block_number_from_orchestrator(
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
     // Get the container chain's latest block from orchestrator chain and compare with client's one
-    let last_container_block_from_orchestrator = orchestrator_chain_interface
+
+    orchestrator_chain_interface
         .latest_block_number(orchestrator_block_hash, container_chain_para_id)
         .await
-        .unwrap_or_default();
-
-    last_container_block_from_orchestrator
+        .unwrap_or_default()
 }
 
 #[derive(Debug)]
@@ -924,23 +923,21 @@ async fn db_needs_removal(
         let last_container_block_temp = container_chain_client.chain_info().best_number;
         if last_container_block_temp == 0 {
             // Don't remove an empty database, as it may be in the process of a warp sync
-        } else {
-            if get_latest_container_block_number_from_orchestrator(
-                orchestrator_chain_interface,
-                orchestrator_block_hash,
-                container_chain_para_id,
-            )
-            .await
-            .unwrap_or(0)
-            .abs_diff(last_container_block_temp)
-                > MAX_BLOCK_DIFF_FOR_FULL_SYNC
-            {
-                // if the diff is big, delete db and restart using warp sync
-                return Ok(Some(DbRemovalReason::HighBlockDiff {
-                    best_block_number_db: last_container_block_temp,
-                    best_block_number_onchain: last_container_block_temp,
-                }));
-            }
+        } else if get_latest_container_block_number_from_orchestrator(
+            orchestrator_chain_interface,
+            orchestrator_block_hash,
+            container_chain_para_id,
+        )
+        .await
+        .unwrap_or(0)
+        .abs_diff(last_container_block_temp)
+            > MAX_BLOCK_DIFF_FOR_FULL_SYNC
+        {
+            // if the diff is big, delete db and restart using warp sync
+            return Ok(Some(DbRemovalReason::HighBlockDiff {
+                best_block_number_db: last_container_block_temp,
+                best_block_number_onchain: last_container_block_temp,
+            }));
         }
     }
 

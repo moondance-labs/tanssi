@@ -17,7 +17,8 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*, crate::Configuration, frame_support::assert_ok,
+    crate::{tests::common::*, Configuration},
+    frame_support::assert_ok,
     runtime_parachains::configuration as parachains_configuration,
 };
 
