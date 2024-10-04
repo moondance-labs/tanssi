@@ -59,7 +59,7 @@ pub struct FullDeps<C, P> {
 
 tp_traits::alias!(
     /// Test
-    pub trait MinimalSubstrateRpcCompatibleRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
+    pub trait SubstrateRpcRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
         sp_api::ConstructRuntimeApi<
             Block,
             Client,
@@ -184,12 +184,14 @@ impl<RuntimeApi> GenerateSubstrateRpcBuilder<RuntimeApi> {
     }
 }
 
-const _: () = {
-    use generate_rpc_builder::*;
+mod impl_generate_rpc_builder {
+    use {super::*, generate_rpc_builder::*};
 
     impl<
             RuntimeApi: MinimalContainerRuntimeApi
-                + crate::rpc::MinimalSubstrateRpcCompatibleRuntimeApi<ContainerChainClient<RuntimeApi>>,
+                + crate::rpc::SubstrateRpcRuntimeApi<
+                    ContainerChainClient<RuntimeApi>,
+                >,
         > GenerateRpcBuilder<RuntimeApi> for GenerateSubstrateRpcBuilder<RuntimeApi>
     {
         fn generate(
@@ -218,4 +220,4 @@ const _: () = {
             }))
         }
     }
-};
+}

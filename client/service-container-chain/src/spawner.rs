@@ -50,12 +50,12 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
+        any::Any,
         collections::{HashMap, HashSet},
         marker::PhantomData,
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
         time::Instant,
-        any::Any,
     },
     tokio::{
         sync::{mpsc, oneshot},

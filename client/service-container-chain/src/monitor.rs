@@ -16,7 +16,7 @@
 
 use {
     crate::{
-        service::{ContainerChainBackend},
+        service::ContainerChainBackend,
         spawner::{CcSpawnMsg, ContainerChainSpawnerState},
     },
     cumulus_primitives_core::ParaId,

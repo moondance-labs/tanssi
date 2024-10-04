@@ -17,10 +17,10 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    core::marker::PhantomData,
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
     },
+    core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer,

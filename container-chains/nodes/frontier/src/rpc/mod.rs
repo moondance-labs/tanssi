@@ -60,9 +60,7 @@ use {
         sync::{Arc, Mutex},
         time::Duration,
     },
-    tc_service_container_chain::{
-        service::{ContainerChainClient, MinimalContainerRuntimeApi},
-    },
+    tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
 };
 
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
@@ -473,7 +471,7 @@ impl<Api> RuntimeApiCollection for Api where
 }
 
 tp_traits::alias!(
-    pub trait MinimalFrontierRpcCompatibleRuntimeApi:
+    pub trait FrontierRpcRuntimeApi:
         MinimalContainerRuntimeApi +
         sp_api::ConstructRuntimeApi<
             Block,
@@ -490,11 +488,9 @@ pub struct GenerateFrontierRpcBuilder<RuntimeApi> {
 }
 
 const _: () = {
-    use {
-        tc_service_container_chain::rpc::generate_rpc_builder::*,
-    };
+    use tc_service_container_chain::rpc::generate_rpc_builder::*;
 
-    impl<RuntimeApi: MinimalFrontierRpcCompatibleRuntimeApi> GenerateRpcBuilder<RuntimeApi>
+    impl<RuntimeApi: FrontierRpcRuntimeApi> GenerateRpcBuilder<RuntimeApi>
         for GenerateFrontierRpcBuilder<RuntimeApi>
     {
         fn generate(
