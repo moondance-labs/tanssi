@@ -18,12 +18,16 @@
 
 #![warn(missing_docs)]
 
+use color_eyre::eyre;
+
 mod chain_spec;
 mod cli;
 mod command;
 mod rpc;
 mod service;
 
-fn main() -> sc_cli::Result<()> {
-    command::run()
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
+    command::run()?;
+    Ok(())
 }

@@ -972,11 +972,11 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 }
             })
             .collect();
-        log::info!("pop assigned collators {:?}", assigned_paras);
-        log::info!("looking for core idx {:?}", core_idx);
+        log::debug!("pop assigned collators {:?}", assigned_paras);
+        log::debug!("looking for core idx {:?}", core_idx);
 
         if let Some(para_id) = assigned_paras.get(core_idx.0 as usize) {
-            log::info!("outputing assignment for  {:?}", para_id);
+            log::debug!("outputing assignment for  {:?}", para_id);
 
             Some(Assignment::Bulk(*para_id))
         } else {
@@ -1041,7 +1041,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
     fn session_core_count() -> u32 {
         let config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-        log::info!(
+        log::debug!(
             "session core count is {:?}",
             config.scheduler_params.num_cores
         );
@@ -1738,9 +1738,6 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
     }
 
     fn para_deregistered(para_id: ParaId) -> Weight {
-        // Clear pallet_author_noting storage
-        // TODO: uncomment when pallets exists
-        /*
         if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
             log::warn!(
                 "Failed to kill_author_data after para id {} deregistered: {:?}",
@@ -1749,6 +1746,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
             );
         }
 
+        /*
         XcmCoreBuyer::para_deregistered(para_id);
         */
 
@@ -1832,7 +1830,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 frame_support::ord_parameter_types! {
@@ -1875,6 +1873,8 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
+        // Tanssi
+        [pallet_author_noting, AuthorNoting]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
