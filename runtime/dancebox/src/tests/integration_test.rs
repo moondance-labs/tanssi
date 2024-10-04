@@ -17,10 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
     crate::{
-        xcm_config::ForeignAssetsInstance, RewardsCollatorCommission, StreamPayment,
-        StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        tests::common::*, xcm_config::ForeignAssetsInstance, RewardsCollatorCommission,
+        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
@@ -44,6 +43,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
+    rococo_runtime_constants::fee::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -60,7 +60,8 @@ use {
     },
     std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, MigrateConfigurationParathreads,
+        ForeignAssetCreatorMigration, HostConfigurationV2,
+        MigrateConfigurationAddParachainPercentage, MigrateConfigurationParathreads,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -3894,6 +3895,113 @@ fn test_reward_to_invulnerable_with_key_change() {
                 "alice should get the correct reward portion"
             );
         });
+}
+
+#[test]
+fn test_migration_config_add_parachain_percentage() {
+    ExtBuilder::default().build().execute_with(|| {
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+
+        // Modify active config
+        frame_support::storage::unhashed::put_raw(
+            CONFIGURATION_ACTIVE_CONFIG_KEY,
+            &HostConfigurationV2 {
+                max_collators: 5,
+                min_orchestrator_collators: 2,
+                max_orchestrator_collators: 1,
+                collators_per_container: 3,
+                full_rotation_period: 4,
+                collators_per_parathread: 2,
+                parathreads_per_collator: 1,
+                target_container_chain_fullness: Perbill::from_percent(45),
+            }
+            .encode(),
+        );
+        // Modify pending configs
+        frame_support::storage::unhashed::put_raw(
+            CONFIGURATION_PENDING_CONFIGS_KEY,
+            &vec![
+                (
+                    1234u32,
+                    HostConfigurationV2 {
+                        max_collators: 1,
+                        min_orchestrator_collators: 4,
+                        max_orchestrator_collators: 45,
+                        collators_per_container: 5,
+                        full_rotation_period: 1,
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(65),
+                    },
+                ),
+                (
+                    5678u32,
+                    HostConfigurationV2 {
+                        max_collators: 1,
+                        min_orchestrator_collators: 4,
+                        max_orchestrator_collators: 45,
+                        collators_per_container: 5,
+                        full_rotation_period: 1,
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(65),
+                    },
+                ),
+            ]
+            .encode(),
+        );
+
+        let migration = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        let expected_active = pallet_configuration::HostConfiguration {
+            max_collators: 5,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 1,
+            collators_per_container: 3,
+            full_rotation_period: 4,
+            collators_per_parathread: 2,
+            parathreads_per_collator: 1,
+            target_container_chain_fullness: Perbill::from_percent(45),
+            ..Default::default()
+        };
+        assert_eq!(Configuration::config(), expected_active);
+
+        let expected_pending = vec![
+            (
+                1234u32,
+                pallet_configuration::HostConfiguration {
+                    max_collators: 1,
+                    min_orchestrator_collators: 4,
+                    max_orchestrator_collators: 45,
+                    collators_per_container: 5,
+                    full_rotation_period: 1,
+                    collators_per_parathread: 1,
+                    parathreads_per_collator: 1,
+                    target_container_chain_fullness: Perbill::from_percent(65),
+                    ..Default::default()
+                },
+            ),
+            (
+                5678u32,
+                pallet_configuration::HostConfiguration {
+                    max_collators: 1,
+                    min_orchestrator_collators: 4,
+                    max_orchestrator_collators: 45,
+                    collators_per_container: 5,
+                    full_rotation_period: 1,
+                    collators_per_parathread: 1,
+                    parathreads_per_collator: 1,
+                    target_container_chain_fullness: Perbill::from_percent(65),
+                    ..Default::default()
+                },
+            ),
+        ];
+        assert_eq!(Configuration::pending_configs(), expected_pending);
+    });
 }
 
 #[test]

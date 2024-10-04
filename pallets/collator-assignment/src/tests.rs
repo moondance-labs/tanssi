@@ -23,6 +23,7 @@ use {
 mod assign_full;
 mod prioritize_invulnerables;
 mod select_chains;
+mod with_core_config;
 
 #[test]
 fn assign_initial_collators() {

@@ -101,6 +101,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     // TODO: log indexer?
     pub frontier_backend: Arc<dyn fc_api::Backend<Block>>,
     /// Backend.
+    #[allow(dead_code)] // not used but keep nice type inference
     pub backend: Arc<BE>,
     /// Maximum number of logs in a query.
     pub max_past_logs: u32,

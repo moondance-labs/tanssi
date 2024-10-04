@@ -119,6 +119,7 @@ mod tests {
         },
         dp_container_chain_genesis_data::ContainerChainGenesisData,
         futures::Stream,
+        nimbus_primitives::NimbusId,
         polkadot_overseer::Handle,
         sc_client_api::StorageProof,
         sp_core::H256,
@@ -271,6 +272,22 @@ mod tests {
                 .get(&profile_id)
                 .cloned()
                 .unwrap_or(DataPreserverAssignment::NotAssigned))
+        }
+
+        async fn check_para_id_assignment(
+            &self,
+            _orchestrator_parent: PHash,
+            _authority: NimbusId,
+        ) -> OrchestratorChainResult<Option<ParaId>> {
+            unimplemented!("not used in test")
+        }
+
+        async fn check_para_id_assignment_next_session(
+            &self,
+            _orchestrator_parent: PHash,
+            _authority: NimbusId,
+        ) -> OrchestratorChainResult<Option<ParaId>> {
+            unimplemented!("not used in test")
         }
     }
 

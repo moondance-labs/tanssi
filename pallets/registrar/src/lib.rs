@@ -179,7 +179,7 @@ pub mod pallet {
         /// External manager that takes care of executing specific operations
         /// when register-like functions of this pallet are called.
         ///
-        /// Mostly used when we are in a relay-chain configuration context (Starlight)
+        /// Mostly used when we are in a relay-chain configuration context (Dancelight)
         /// to also register, deregister and upgrading paraIds in polkadot's
         /// paras_registrar pallet.
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;
@@ -248,7 +248,7 @@ pub mod pallet {
     /// end of the block execution by calling 'T::InnerRegistrar::deregister()' implementation.
     ///
     /// We need this buffer because when we are using this pallet on a relay-chain environment
-    /// like Starlight (where 'T::InnerRegistrar' implementation is usually the
+    /// like Dancelight (where 'T::InnerRegistrar' implementation is usually the
     /// 'paras_registrar' pallet) we need to deregister (via 'paras_registrar::deregister')
     /// the same paraIds we have in 'PendingToRemove<T>', and we need to do this deregistration
     /// process inside 'on_finalize' hook.
@@ -355,12 +355,14 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            // Account for on_finalize weight
-            let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads(1));
+            let mut weight = Weight::zero().saturating_add(T::DbWeight::get().reads_writes(1, 1));
 
-            let buffered_paras = BufferedParasToDeregister::<T>::get();
-            for _ in 0..buffered_paras.len() {
+            let buffered_paras = BufferedParasToDeregister::<T>::take();
+
+            for para_id in buffered_paras {
                 weight += T::InnerRegistrar::deregister_weight();
+                // Deregister (in the relay context) each paraId present inside the buffer
+                T::InnerRegistrar::deregister(para_id);
             }
             weight
         }
@@ -465,14 +467,6 @@ pub mod pallet {
             assert_is_sorted_and_unique(&pending, "PendingToRemove");
 
             Ok(())
-        }
-
-        fn on_finalize(_: BlockNumberFor<T>) {
-            let buffered_paras = BufferedParasToDeregister::<T>::take();
-            for para_id in buffered_paras {
-                // Deregister (in the relay context) each paraId present inside the buffer.
-                T::InnerRegistrar::deregister(para_id);
-            }
         }
     }
 
@@ -931,7 +925,7 @@ pub mod pallet {
                 // Mark this para id for cleanup later
                 Self::schedule_parachain_cleanup(para_id)?;
 
-                // If we have InnerRegistrar set to a relay context (like Starlight),
+                // If we have InnerRegistrar set to a relay context (like Dancelight),
                 // we first need to downgrade the paraId (if it was a parachain before)
                 // and convert it to a parathread before deregistering it. Otherwise
                 // the deregistration process will fail in the scheduled session.

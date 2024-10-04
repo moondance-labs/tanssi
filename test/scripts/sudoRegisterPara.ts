@@ -53,9 +53,14 @@ yargs(hideBin(process.argv))
                         min: 1,
                         max: 1,
                     });
-                    tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
+                    tx1 = api.tx.registrar.registerParathread(
+                        rawSpec.para_id,
+                        slotFreq,
+                        containerChainGenesisData,
+                        null
+                    );
                 } else {
-                    tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, containerChainGenesisData);
+                    tx1 = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData, null);
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
@@ -69,7 +74,7 @@ yargs(hideBin(process.argv))
                         });
                         txs.push(profileTx);
 
-                        const tx2 = api.tx.dataPreservers.startAssignment(profileId++, rawSpec.para_id, "Free");
+                        const tx2 = api.tx.dataPreservers.forceStartAssignment(profileId++, rawSpec.para_id, "Free");
                         const tx2s = api.tx.sudo.sudo(tx2);
                         txs.push(tx2s);
                     }
@@ -154,10 +159,6 @@ yargs(hideBin(process.argv))
                         describe: "Container chain para id",
                         type: "array",
                     },
-                    "keep-existing": {
-                        describe: "Keep exisiting bootnodes, and append to the list instead of overwriting them",
-                        type: "boolean",
-                    },
                     "mark-valid-for-collating": {
                         describe: "Also mark the registered chain as valid, if it was not marked already",
                         type: "boolean",
@@ -174,11 +175,6 @@ yargs(hideBin(process.argv))
                 const account = keyring.addFromUri(privKey);
 
                 let bootnodes = [];
-                if (argv.keepExisting) {
-                    // Read existing bootnodes
-                    const onChainBootnodes = (await api.query.registrar.bootNodes(argv.paraId)) as any;
-                    bootnodes = [...bootnodes, ...onChainBootnodes];
-                }
                 if (!argv.bootnode) {
                     argv.bootnode = [];
                 }
@@ -196,7 +192,7 @@ yargs(hideBin(process.argv))
                     });
                     txs.push(profileTx);
 
-                    const tx2 = api.tx.dataPreservers.startAssignment(profileId++, argv.paraId, "Free");
+                    const tx2 = api.tx.dataPreservers.forceStartAssignment(profileId++, argv.paraId, "Free");
                     const tx2s = api.tx.sudo.sudo(tx2);
                     txs.push(tx2s);
                 }

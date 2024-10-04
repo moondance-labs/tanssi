@@ -16,14 +16,17 @@
 
 use {
     crate::{
-        collators::lookahead::Params as LookAheadParams, OrchestratorAuraWorkerAuxData,
-        SlotFrequency,
+        collators::lookahead::{BuyCoreParams, Params as LookAheadParams},
+        OrchestratorAuraWorkerAuxData, SlotFrequency,
     },
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{ParachainBlockImportMarker, ValidationCodeHashProvider},
     cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
-    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::{BlockId, ValidationCodeHash},
+        CollationInfo, CollectCollationInfo, ParaId,
+    },
     cumulus_relay_chain_interface::{
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
@@ -35,7 +38,10 @@ use {
     pallet_xcm_core_buyer_runtime_api::BuyingError,
     parity_scale_codec::Encode,
     polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
-    polkadot_node_subsystem::messages::{RuntimeApiMessage, RuntimeApiRequest},
+    polkadot_node_subsystem::{
+        messages::{RuntimeApiMessage, RuntimeApiRequest},
+        overseer, OverseerSignal,
+    },
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
@@ -512,11 +518,6 @@ impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     }
 }
 
-use {
-    cumulus_primitives_core::relay_chain::ValidationCodeHash,
-    polkadot_node_subsystem::{overseer, OverseerSignal},
-};
-
 pub struct DummyCodeHashProvider;
 impl ValidationCodeHashProvider<PHash> for DummyCodeHashProvider {
     fn code_hash_at(&self, _at: PHash) -> Option<ValidationCodeHash> {
@@ -984,9 +985,11 @@ impl CollatorLookaheadTestBuilder {
             para_client: environ.clone().into(),
             sync_oracle: DummyOracle,
             para_backend: backend,
-            orchestrator_client: environ.into(),
+            buy_core_params: BuyCoreParams::Orchestrator {
+                orchestrator_client: environ.into(),
+                orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+            },
             orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
-            orchestrator_tx_pool: orchestrator_tx_pool.clone(),
         };
         let (fut, exit_notification_receiver) = crate::collators::lookahead::run::<
             _,

@@ -427,7 +427,7 @@ impl<T: Config> LatestAuthorInfoFetcher<T::AccountId> for Pallet<T> {
 
 /// This pallet has slightly different behavior when used in a parachain vs when used in a relay chain
 /// (solochain). The main difference is:
-/// * In relay mode, we don't need a storage proof, so the inherent doesn't need any input argument,
+/// In relay mode, we don't need a storage proof, so the inherent doesn't need any input argument,
 /// and instead of reading from a storage proof we read from storage directly.
 pub trait RelayOrPara {
     type InherentArg: TypeInfo + Clone + PartialEq + Encode + Decode + core::fmt::Debug;
@@ -466,10 +466,7 @@ impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
     type GenericStorageReader = GenericStateProof<cumulus_primitives_core::relay_chain::Block>;
 
     fn create_inherent_arg(data: &InherentData) -> Self::InherentArg {
-        
-
-        data
-            .get_data(&INHERENT_IDENTIFIER)
+        data.get_data(&INHERENT_IDENTIFIER)
             .ok()
             .flatten()
             .expect("there is not data to be posted; qed")
@@ -482,10 +479,9 @@ impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
 
         let relay_chain_state = RCSP::current_relay_chain_state();
         let relay_storage_root = relay_chain_state.state_root;
-        
 
         GenericStateProof::new(relay_storage_root, relay_storage_proof)
-                .expect("Invalid relay chain state proof")
+            .expect("Invalid relay chain state proof")
     }
 
     #[cfg(feature = "runtime-benchmarks")]

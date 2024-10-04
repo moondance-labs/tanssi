@@ -174,3 +174,42 @@ fn select_chains_not_enough_to_reach_min_container_but_enough_for_parathread() {
     let new_assigned = Assignment::<Test>::select_chains_with_collators(3, &container_chains);
     assert_eq!(new_assigned, vec![(1000.into(), 2), (3000.into(), 1)]);
 }
+
+#[test]
+fn select_chains_solochain() {
+    // In solochain mode, orchestrator chain has 0 collators. This shouldn't cause any panics.
+    let container_chains = vec![
+        ChainNumCollators {
+            para_id: 1000.into(),
+            min_collators: 0,
+            max_collators: 0,
+        },
+        ChainNumCollators {
+            para_id: 2000.into(),
+            min_collators: 2,
+            max_collators: 5,
+        },
+        ChainNumCollators {
+            para_id: 2001.into(),
+            min_collators: 2,
+            max_collators: 5,
+        },
+    ];
+    let new_assigned = Assignment::<Test>::select_chains_with_collators(5, &container_chains);
+    assert_eq!(
+        new_assigned,
+        vec![(1000.into(), 0), (2000.into(), 3), (2001.into(), 2)]
+    );
+}
+
+#[test]
+fn select_chains_solochain_zero_collators() {
+    // In solochain mode, there can be 0 collators. This shouldn't cause any panics.
+    let container_chains = vec![ChainNumCollators {
+        para_id: 1000.into(),
+        min_collators: 0,
+        max_collators: 0,
+    }];
+    let new_assigned = Assignment::<Test>::select_chains_with_collators(0, &container_chains);
+    assert_eq!(new_assigned, vec![(1000.into(), 0)]);
+}

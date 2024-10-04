@@ -418,6 +418,10 @@ pub fn end_block() {
     ParaRegistrar::on_finalize(System::block_number());
 }
 
+pub fn start_block() {
+    ParaRegistrar::on_finalize(System::block_number());
+}
+
 pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {
     let seed: u128 = 12345678901234567890123456789012;
     let mut pairs = Vec::new();

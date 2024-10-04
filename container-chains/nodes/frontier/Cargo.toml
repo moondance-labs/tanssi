@@ -14,6 +14,7 @@ workspace = true
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+color-eyre = { workspace = true }
 flume = { workspace = true }
 futures = { workspace = true }
 hex-literal = { workspace = true }

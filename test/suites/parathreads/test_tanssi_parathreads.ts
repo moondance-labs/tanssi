@@ -10,6 +10,7 @@ import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts
 import jsonBg from "json-bigint";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
 import { getKeyringNimbusIdHex } from "../../util/keys.ts";
+import { getParathreadRelayTankAddress } from "../../util/xcm.ts";
 import Bottleneck from "bottleneck";
 import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
@@ -132,10 +133,8 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-                // Hard coded tank accounts; we still need to find a way to generate them
-                const paraId2000Tank = "5Eyq93LQvDWbHmncBeXcMcDvyRKShc2ywpFUzhCX7AcJfsxm";
-                const paraId2001Tank = "5GhKA47pfc1XWbMGbAYoP3F8Lpnvodc2M71NC7bgJH8JGbqB";
+                const paraId2000Tank = await getParathreadRelayTankAddress(relayApi, 1000, 2000);
+                const paraId2001Tank = await getParathreadRelayTankAddress(relayApi, 1000, 2001);
 
                 const aliceBalance = (await relayApi.query.system.account(alice.address)).data.free.toBigInt();
                 const balanceToTransfer = aliceBalance / 4n;
@@ -155,7 +154,7 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-                const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(0);
+                const tx4 = paraApi.tx.configuration.setFullRotationPeriod(0);
 
                 const tx = paraApi.tx.sudo.sudo(
                     paraApi.tx.xcmCoreBuyer.setRelayXcmWeightConfig({

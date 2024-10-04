@@ -528,28 +528,12 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
         // Spawn assignment watcher
         {
-            let mut container_chain_cli = ContainerChainCli::new(
+            let container_chain_cli = ContainerChainCli::new(
                 &config,
                 [ContainerChainCli::executable_name()]
                     .iter()
                     .chain(cli.container_chain_args().iter()),
             );
-
-            // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-            if container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .is_none()
-            {
-                container_chain_cli
-                    .base
-                    .base
-                    .import_params
-                    .wasmtime_precompiled
-                    .clone_from(&config.wasmtime_precompiled);
-            }
 
             log::info!("Container chain CLI: {container_chain_cli:?}");
 
@@ -617,8 +601,6 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     orchestrator_para_id: para_id,
                     collation_params: None,
                     spawn_handle: task_manager.spawn_handle().clone(),
-                    // We can use warp sync because the warp sync bug only affects collators
-                    sync_mode: { move |_db_exists, _para_id| Ok(sc_cli::SyncMode::Warp) },
                     data_preserver: true,
                     generate_rpc_builder:
                         tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<

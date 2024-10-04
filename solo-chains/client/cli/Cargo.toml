@@ -58,7 +58,7 @@ cli = [
 	"tanssi-relay-service",
 ]
 db = [ "polkadot-service/db" ]
-fast-runtime = [ "polkadot-service/fast-runtime", "tanssi-relay-service" ]
+fast-runtime = [ "polkadot-service?/fast-runtime", "tanssi-relay-service?/fast-runtime" ]
 full-node = [ "polkadot-service/full-node" ]
 pyroscope = [ "pyro", "pyroscope_pprofrs" ]
 runtime-benchmarks = [
@@ -67,16 +67,16 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service?/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"tanssi-relay-service/runtime-benchmarks",
+	"tanssi-relay-service?/runtime-benchmarks",
 ]
 try-runtime = [
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
-	"tanssi-relay-service/try-runtime",
+	"tanssi-relay-service?/try-runtime",
 ]
 
 # Configure the native runtimes to use.
-starlight-native = [ "tanssi-relay-service/starlight-native" ]
+dancelight-native = [ "tanssi-relay-service/dancelight-native" ]
 
 malus = [ "full-node", "polkadot-service/malus" ]
 runtime-metrics = [

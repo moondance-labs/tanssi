@@ -13,8 +13,11 @@ workspace = true
 [dependencies]
 async-io = { workspace = true }
 async-trait = { workspace = true }
+chrono = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+color-eyre = { workspace = true }
 exit-future = { workspace = true }
+fdlimit = { workspace = true }
 flume = { workspace = true }
 fs2 = { workspace = true }
 futures = { workspace = true }
@@ -79,7 +82,6 @@ sp-api = { workspace = true, features = [ "std" ] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
-
 sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
@@ -87,6 +89,7 @@ sp-inherents = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
 sp-keystore = { workspace = true, features = [ "std" ] }
 sp-offchain = { workspace = true, features = [ "std" ] }
+sp-panic-handler = { workspace = true }
 sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true, features = [ "std" ] }
 sp-state-machine = { workspace = true, features = [ "std" ] }

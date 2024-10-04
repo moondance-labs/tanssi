@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
 
 describeSuite({
-    id: "C0103",
+    id: "CA0303",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -190,8 +190,11 @@ describeSuite({
             id: "E07",
             title: "Account with non transfer proxy can call system.remark",
             test: async function () {
-                await context.createBlock();
-
+                // relay session change blocks happen at 1, 11, 21..
+                // parachain at 0, 10, 20..
+                if (!chain.includes("light")) {
+                    await context.createBlock();
+                }
                 // Dave has NonTransfer proxy, that allows to call system.remark
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,

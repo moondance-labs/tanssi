@@ -76,16 +76,6 @@ const MAX_DB_RESTART_TIMEOUT: Duration = Duration::from_secs(60);
 /// Assuming a syncing speed of 100 blocks per second, this will take 5 minutes to sync.
 const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 
-pub trait TSelectSyncMode:
-    Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>)
-{
-}
-impl<
-        T: Send + Sync + Clone + 'static + (Fn(bool, ParaId) -> sc_service::error::Result<SyncMode>),
-    > TSelectSyncMode for T
-{
-}
-
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
 pub struct ContainerChainSpawner<
@@ -132,7 +122,6 @@ pub struct ContainerChainSpawnParams<
     pub orchestrator_para_id: ParaId,
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
-    pub sync_mode: SelectSyncMode,
     pub data_preserver: bool,
     pub generate_rpc_builder: TGenerateRpcBuilder,
 
@@ -144,9 +133,11 @@ pub struct ContainerChainSpawnParams<
 #[derive(Clone)]
 pub struct CollationParams {
     pub collator_key: CollatorPair,
-    pub orchestrator_tx_pool: Arc<FullPool<OpaqueBlock, ParachainClient>>,
-    pub orchestrator_client: Arc<ParachainClient>,
+    pub orchestrator_tx_pool: Option<Arc<FullPool<OpaqueBlock, ParachainClient>>>,
+    pub orchestrator_client: Option<Arc<ParachainClient>>,
     pub orchestrator_para_id: ParaId,
+    /// If this is `false`, then `orchestrator_tx_pool` and `orchestrator_client` must be `Some`.
+    pub solochain: bool,
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
@@ -209,7 +200,6 @@ async fn try_spawn<
         sync_keystore,
         spawn_handle,
         mut collation_params,
-        sync_mode,
         data_preserver,
         generate_rpc_builder,
         ..
@@ -340,8 +330,7 @@ async fn try_spawn<
         // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
         for _ in 0..2 {
             let db_existed_before = check_db_exists();
-            container_chain_cli.base.base.network_params.sync =
-                sync_mode(db_existed_before, container_chain_para_id)?;
+            container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
             log::info!(
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
@@ -673,13 +662,19 @@ impl<
     > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>
 {
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(mut self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>, validator: bool) {
+    pub async fn rx_loop(
+        mut self,
+        mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>,
+        validator: bool,
+        solochain: bool,
+    ) {
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
         // collators stop at the same time, when they start again nobody will produce the new block.
         // So all nodes start as orchestrator chain collators, until the first block is imported,
         // then the real assignment is used.
-        if validator {
+        // Except in solochain mode, then the initial assignment is None.
+        if validator && !solochain {
             self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
                 .await;
         }
@@ -923,8 +918,6 @@ async fn get_latest_container_block_number_from_orchestrator(
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
     // Get the container chain's latest block from orchestrator chain and compare with client's one
-    
-
     orchestrator_chain_interface
         .latest_block_number(orchestrator_block_hash, container_chain_para_id)
         .await

@@ -992,7 +992,7 @@ declare module "@polkadot/api-base/types/storage" {
              * This storage aims to act as a 'buffer' for paraIds that must be deregistered at the end of the block execution
              * by calling 'T::InnerRegistrar::deregister()' implementation.
              *
-             * We need this buffer because when we are using this pallet on a relay-chain environment like Starlight (where
+             * We need this buffer because when we are using this pallet on a relay-chain environment like Dancelight (where
              * 'T::InnerRegistrar' implementation is usually the 'paras_registrar' pallet) we need to deregister (via
              * 'paras_registrar::deregister') the same paraIds we have in 'PendingToRemove<T>', and we need to do this
              * deregistration process inside 'on_finalize' hook.

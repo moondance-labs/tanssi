@@ -22,6 +22,7 @@ on:
           - templates-only
           - simple-template-only
           - frontier-template-only
+          - dancelight-only
           - run-all
 
 jobs:
@@ -58,6 +59,7 @@ jobs:
           flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs"}'
           frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/runtime-templates/frontier/src/lib.rs"}'
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/runtime-templates/simple/src/lib.rs"}'
+          dancelight='{"runtime_name": "dancelight","runtime_path" : "./solo-chains/runtime/dancelight/src/lib.rs"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
@@ -71,8 +73,10 @@ jobs:
             echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "dancelight-only" ]]; then
+            echo "matrix_tests=[$dancelight]" >> $GITHUB_OUTPUT
           else
-            echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $dancelight]" >> $GITHUB_OUTPUT
           fi
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]

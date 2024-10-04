@@ -17,7 +17,7 @@ describeSuite({
             title: "Checking runtime version",
             test: async function () {
                 const specName = polkadotJs.consts.system.version.specName.toString();
-                expect(specName, "Relay API incorrect").to.toBe("starlight");
+                expect(specName, "Relay API incorrect").to.toBe("dancelight");
 
                 const specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
                 expect(specVersion, "Relay API incorrect").toBe(1_011_000);
@@ -26,7 +26,7 @@ describeSuite({
                 expect(authoringVersion, "Relay API incorrect").to.toBe(0);
 
                 const implName = polkadotJs.consts.system.version.implName.toString();
-                expect(implName, "Relay API incorrect").to.toBe("tanssi-starlight-v2.0");
+                expect(implName, "Relay API incorrect").to.toBe("tanssi-dancelight-v2.0");
 
                 const implVersion = polkadotJs.consts.system.version.implVersion.toNumber();
                 expect(implVersion, "Relay API incorrect").to.toBe(0);

@@ -85,7 +85,7 @@ where
     where
         TShuffle: FnOnce(&mut Vec<T::AccountId>),
     {
-        if collators.is_empty() {
+        if collators.is_empty() && !T::ForceEmptyOrchestrator::get() {
             return Err(AssignmentError::ZeroCollators);
         }
         // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
@@ -150,12 +150,12 @@ where
     ///
     /// If the available number of collators is:
     /// * lower than the min of the first chain: we assign all the collators to the first chain. This is the
-    /// orchestrator chain and we always want it to have collators.
+    ///   orchestrator chain and we always want it to have collators.
     /// * lower than the sum of all the min: we cannot assign collators to all the chains. So remove chains until
-    /// we can. The order is important, the first chains will be assigned collators and the last ones will not.
+    ///   we can. The order is important, the first chains will be assigned collators and the last ones will not.
     /// * lower than the sum of all the max: we can assign the min value to all the chains, and have some leftover.
-    /// We use the same order to decide where this extra collators will go, by filling the max of the first chain,
-    /// then the max of the second chain, and so on.
+    ///   We use the same order to decide where this extra collators will go, by filling the max of the first chain,
+    ///   then the max of the second chain, and so on.
     /// * greater than the sum of all the max: all the chains will be assigned their max number of collators.
     ///
     /// # Params
@@ -340,12 +340,12 @@ where
     ///
     /// * `old_assigned` does not need to be a subset of `collators`: collators are checked and removed.
     /// * `old_assigned` does not need to be a subset of `chains`, unused para ids are removed. Collators
-    /// assigned to a para_id not present in `chains` may be reassigned to another para_id.
+    ///   assigned to a para_id not present in `chains` may be reassigned to another para_id.
     /// * `chains` `num_collators` can be 0. In that case an empty vec is returned for that para id.
     /// * `old_assigned` must not have duplicate collators.
     /// * `shuffle` is used to shuffle the list collators. The list will be truncated to only have
-    /// the number of required collators, to ensure that shuffling doesn't cause a collator with low
-    /// priority to be assigned instead of a collator with higher priority.
+    ///   the number of required collators, to ensure that shuffling doesn't cause a collator with low
+    ///   priority to be assigned instead of a collator with higher priority.
     ///
     /// # Returns
     ///

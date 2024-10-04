@@ -24,7 +24,9 @@ use {
         StartRelayChainTasksParams,
     },
     cumulus_primitives_core::ParaId,
-    cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
+    cumulus_relay_chain_interface::{
+        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
+    },
     dancebox_runtime::{
         opaque::{Block, Hash},
         RuntimeApi,
@@ -34,6 +36,8 @@ use {
     nimbus_primitives::NimbusPair,
     node_common::service::{MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig},
     polkadot_primitives::CollatorPair,
+    nimbus_primitives::{NimbusId, NimbusPair},
+    node_common::service::{NodeBuilder, NodeBuilderConfig},
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
     sc_executor::WasmExecutor,
@@ -52,7 +56,7 @@ use {
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::lookahead::{
-            self as lookahead_tanssi_aura, Params as LookaheadTanssiAuraParams,
+            self as lookahead_tanssi_aura, BuyCoreParams, Params as LookaheadTanssiAuraParams,
         },
         OrchestratorAuraWorkerAuxData,
     },
@@ -254,13 +258,7 @@ pub async fn start_node_impl_container<
         sync_service: node_builder.network.sync_service.clone(),
     })?;
 
-    if let Some(crate::spawner::CollationParams {
-        collator_key,
-        orchestrator_tx_pool,
-        orchestrator_client,
-        orchestrator_para_id,
-    }) = collation_params
-    {
+    if let Some(collation_params) = collation_params {
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
         let node_backend = node_builder.backend.clone();
@@ -268,8 +266,7 @@ pub async fn start_node_impl_container<
         start_consensus_container(
             node_client.clone(),
             node_backend.clone(),
-            orchestrator_client.clone(),
-            orchestrator_tx_pool.clone(),
+            collation_params,
             block_import.clone(),
             prometheus_registry.clone(),
             node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
@@ -282,8 +279,6 @@ pub async fn start_node_impl_container<
             force_authoring,
             relay_chain_slot_duration,
             para_id,
-            orchestrator_para_id,
-            collator_key.clone(),
             overseer_handle.clone(),
             announce_block.clone(),
         );
@@ -343,13 +338,30 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
     force_authoring: bool,
     relay_chain_slot_duration: Duration,
     para_id: ParaId,
-    orchestrator_para_id: ParaId,
-    collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
-        .expect("start_consensus_container: slot duration should exist");
+    let crate::spawner::CollationParams {
+        collator_key,
+        orchestrator_tx_pool,
+        orchestrator_client,
+        orchestrator_para_id,
+        solochain,
+    } = collation_params;
+    let slot_duration = if solochain {
+        // Solochains use Babe instead of Aura, which has 6s slot duration
+        let relay_slot_ms = relay_chain_slot_duration.as_millis();
+        SlotDuration::from_millis(
+            u64::try_from(relay_slot_ms).expect("relay chain slot duration overflows u64"),
+        )
+    } else {
+        cumulus_client_consensus_aura::slot_duration(
+            orchestrator_client
+                .as_deref()
+                .expect("solochain is false, orchestrator_client must be Some"),
+        )
+        .expect("start_consensus_container: slot duration should exist")
+    };
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
@@ -382,6 +394,16 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
             .map(polkadot_primitives::ValidationCode)
             .map(|c| c.hash())
     };
+    let buy_core_params = if solochain {
+        BuyCoreParams::Solochain {}
+    } else {
+        BuyCoreParams::Orchestrator {
+            orchestrator_tx_pool: orchestrator_tx_pool
+                .expect("solochain is false, orchestrator_tx_pool must be Some"),
+            orchestrator_client: orchestrator_client
+                .expect("solochain is false, orchestrator_client must be Some"),
+        }
+    };
 
     let params = LookaheadTanssiAuraParams {
         get_current_slot_duration: move |block_hash| {
@@ -399,14 +421,21 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
             let client = client_for_cidp.clone();
 
             async move {
-                let authorities_noting_inherent =
+                let authorities_noting_inherent = if solochain {
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at_solochain(
+                        relay_parent,
+                        &relay_chain_interface,
+                    )
+                        .await
+                } else {
                     ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
                         orchestrator_para_id,
                     )
-                    .await;
+                        .await
+                };
 
                 let slot_duration = {
                     // Default to 12s if runtime API does not exist
@@ -440,50 +469,91 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
             async move {
-                let latest_header =
-                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
-                        relay_parent,
+                if solochain {
+                    let authorities: Option<Vec<NimbusId>> = call_remote_runtime_function(
                         &relay_chain_interace_for_orch,
-                        orchestrator_para_id,
+                        "TanssiAuthorityAssignmentApi_para_id_authorities",
+                        relay_parent,
+                        &para_id,
                     )
-                    .await;
+                    .await?;
 
-                let latest_header = latest_header.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch latest header",
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        relay_parent
+                    );
+
+                    let slot_freq: Option<_> = call_remote_runtime_function(
+                        &relay_chain_interace_for_orch,
+                        "OnDemandBlockProductionApi_parathread_slot_frequency",
+                        relay_parent,
+                        &para_id,
                     )
-                })?;
+                    .await?;
 
-                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
 
-                let authorities = authorities.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to fetch authorities with error",
-                    )
-                })?;
+                    Ok(aux_data)
+                } else {
+                    let latest_header =
+                        ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                            relay_parent,
+                            &relay_chain_interace_for_orch,
+                            orchestrator_para_id,
+                        )
+                            .await;
 
-                log::info!(
-                    "Authorities {:?} found for header {:?}",
-                    authorities,
-                    latest_header
-                );
+                    let latest_header = latest_header.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch latest header",
+                        )
+                    })?;
 
-                let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    &latest_header.hash(),
-                    para_id,
-                );
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp
+                            .as_ref()
+                            .expect("solochain is false, orchestrator_client must be Some"),
+                        &latest_header.hash(),
+                        para_id,
+                    );
 
-                let aux_data = OrchestratorAuraWorkerAuxData {
-                    authorities,
-                    slot_freq,
-                };
+                    let authorities = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
 
-                Ok(aux_data)
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        authorities,
+                        latest_header
+                    );
+
+                    let slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp
+                            .as_ref()
+                            .expect("solochain is false, orchestrator_client must be Some"),
+                        &latest_header.hash(),
+                        para_id,
+                    );
+
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        slot_freq,
+                    };
+
+                    Ok(aux_data)
+                }
             }
         },
         block_import,
@@ -504,8 +574,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
         code_hash_provider,
         // This cancellation token is no-op as it is not shared outside.
         cancellation_token: CancellationToken::new(),
-        orchestrator_tx_pool,
-        orchestrator_client,
+        buy_core_params,
     };
 
     let (fut, _exit_notification_receiver) =
