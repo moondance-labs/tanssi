@@ -25,9 +25,6 @@ mod command;
 #[cfg(feature = "cli")]
 mod error;
 
-#[cfg(feature = "service")]
-pub use polkadot_service::{self, Block, CoreApi, IdentifyVariant, ProvideRuntimeApi, TFullClient};
-
 #[cfg(feature = "malus")]
 pub use polkadot_service::overseer::validator_overseer_builder;
 

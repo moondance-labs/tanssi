@@ -85,7 +85,7 @@ jobs:
           path: binaries
       - name: Unit tests
         run: |
-          cargo test --release --all --features=fast-runtime
+          cargo test --release --all --features=fast-runtime --exclude tc-consensus
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:

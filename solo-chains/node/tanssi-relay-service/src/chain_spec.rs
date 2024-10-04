@@ -33,9 +33,9 @@ use {
 
 #[cfg(feature = "dancelight-native")]
 use dancelight_runtime as dancelight;
-#[cfg(any(feature = "dancelight-native"))]
+#[cfg(feature = "dancelight-native")]
 use sc_chain_spec::ChainType;
-#[cfg(any(feature = "dancelight-native"))]
+#[cfg(feature = "dancelight-native")]
 use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
@@ -46,7 +46,7 @@ use {
 
 #[cfg(feature = "dancelight-native")]
 const DANCELIGHT_STAGING_TELEMETRY_URL: &str = "wss://telemetry.tanssi.network/submit/";
-#[cfg(any(feature = "dancelight-native"))]
+#[cfg(feature = "dancelight-native")]
 const DEFAULT_PROTOCOL_ID: &str = "star";
 
 /// Node `ChainSpec` extensions.

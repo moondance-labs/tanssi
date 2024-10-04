@@ -28,14 +28,13 @@ use {
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
+    tanssi_relay_service::dev_service::build_full as build_full_dev,
 };
 
 pub use crate::error::Error;
-#[cfg(feature = "hostperfcheck")]
-pub use polkadot_performance_test::PerfCheckError;
+
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
-use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -550,11 +549,9 @@ fn load_spec(
         path => {
             let path = std::path::PathBuf::from(path);
 
-            let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
+            (Box::new(polkadot_service::GenericChainSpec::from_json_file(
                 path.clone(),
-            )?) as Box<dyn polkadot_service::ChainSpec>;
-
-            chain_spec
+            )?)) as std::boxed::Box<dyn sc_cli::ChainSpec>
         }
     })
 }
