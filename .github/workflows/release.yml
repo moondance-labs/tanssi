@@ -306,7 +306,7 @@ jobs:
         - name: Lookup for latest target branch build
           run: |
             TARGET_BRANCH=${{ github.event.pull_request.base.ref }}
-            LATEST_TARGET_BRANCH_BUILD=$(gh run -R moondance-labs/tanssi list -w Build --limit=100 --json databaseId,url,headBranch,event,status,conclusion,createdAt --jq ".[] | select(.headBranch == \"$TARGET_BRANCH\" and .event == \"push\" and .status == \"completed\" and .conclusion == \"success\") | .databaseId" | head -n 1)
+            LATEST_TARGET_BRANCH_BUILD=$(gh run -R moondance-labs/tanssi list -w CI --limit=100 --json databaseId,url,headBranch,event,status,conclusion,createdAt --jq ".[] | select(.headBranch == \"$TARGET_BRANCH\" and .event == \"push\" and .status == \"completed\" and .conclusion == \"success\") | .databaseId" | head -n 1)
             echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
         - name: Download latest target branch build artifacts
           run: |
