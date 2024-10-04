@@ -128,6 +128,7 @@ runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
@@ -136,17 +137,16 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
 	"tc-service-container-chain/runtime-benchmarks",
-	"tp-traits/runtime-benchmarks"
+	"tp-traits/runtime-benchmarks",
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
+	"frame-support/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-ethereum/try-runtime",
 	"polkadot-cli/try-runtime",
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
-	"frame-support/try-runtime",
-	"tc-service-container-chain/try-runtime"
+	"tc-service-container-chain/try-runtime",
 ]

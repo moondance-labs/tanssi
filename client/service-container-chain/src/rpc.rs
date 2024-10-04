@@ -189,9 +189,7 @@ mod impl_generate_rpc_builder {
 
     impl<
             RuntimeApi: MinimalContainerRuntimeApi
-                + crate::rpc::SubstrateRpcRuntimeApi<
-                    ContainerChainClient<RuntimeApi>,
-                >,
+                + crate::rpc::SubstrateRpcRuntimeApi<ContainerChainClient<RuntimeApi>>,
         > GenerateRpcBuilder<RuntimeApi> for GenerateSubstrateRpcBuilder<RuntimeApi>
     {
         fn generate(
