@@ -16,12 +16,10 @@
 
 #![cfg(test)]
 
-use rococo_runtime_constants::fee::Perbill;
 use {
-    crate::tests::common::*,
     crate::{
-        xcm_config::ForeignAssetsInstance, RewardsCollatorCommission, StreamPayment,
-        StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        tests::common::*, xcm_config::ForeignAssetsInstance, RewardsCollatorCommission,
+        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
@@ -45,6 +43,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
+    rococo_runtime_constants::fee::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -6236,7 +6235,7 @@ fn test_migration_registrar_reserves_to_hold() {
                 ParaId::from(1001),
                 DepositInfo {
                     creator: account.clone(),
-                    deposit: deposit,
+                    deposit,
                 },
             );
             assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);

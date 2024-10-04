@@ -319,7 +319,6 @@ pub fn run() -> Result<()> {
 					eth_statuses_cache: cli.run.eth_statuses_cache,
 					fee_history_limit: cli.run.fee_history_limit,
 					max_past_logs: cli.run.max_past_logs,
-					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
 				};
 
                 let extension = chain_spec::Extensions::try_get(&*config.chain_spec);

@@ -16,20 +16,19 @@
 
 #![cfg(test)]
 
-use crate::{Configuration, GetCoreAllocationConfigurationImpl};
-use frame_support::dispatch::RawOrigin;
-use primitives::vstaging::SchedulerParams;
-use sp_core::Get;
 use {
     crate::{
         tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        ContainerRegistrar, Paras, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras,
+        ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
-    frame_support::{assert_noop, assert_ok},
+    frame_support::{assert_noop, assert_ok, dispatch::RawOrigin},
     parity_scale_codec::Encode,
+    primitives::vstaging::SchedulerParams,
     runtime_common::paras_registrar,
     sp_consensus_aura::AURA_ENGINE_ID,
+    sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -2458,10 +2457,10 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             // The first parachain has collator even without tip as it is highest priority without tip
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parachain_ids_without_tip
+                    [parachain_ids_without_tip
                         .first()
                         .expect("at least one parachain id is without tip")]
-                    .len(),
+                .len(),
                 2
             );
 
@@ -2477,7 +2476,7 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parathread_id in &parathread_ids_offering_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     1,
                 );
@@ -2486,7 +2485,7 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parathread_id in &parathread_ids_without_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     0
                 );
@@ -2646,17 +2645,17 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             // The first parathread has collator even without tip as it is highest priority without tip and we have one collator remaining
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parathread_ids_without_tip
+                    [parathread_ids_without_tip
                         .first()
                         .expect("at least one parathread id is without tip")]
-                    .len(),
+                .len(),
                 1
             );
 
             for parathread_id in &mut parathread_ids_without_tip.iter().skip(1) {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     0
                 );

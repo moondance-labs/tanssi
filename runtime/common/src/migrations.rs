@@ -36,7 +36,6 @@
 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
-use sp_runtime::Perbill;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -54,6 +53,7 @@ use {
     pallet_migrations::{GetMigrations, Migration},
     pallet_registrar::HoldReason,
     sp_core::Get,
+    sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
 
