@@ -358,9 +358,9 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: twiggy-diff-reports
-            path: twiggy-diff-reports
         - name: Compare Runtimes sizes
           run: |
+            path: twiggy-diff-reports
             # Create or truncate the file
             echo "" > runtime_size_report.md
 
