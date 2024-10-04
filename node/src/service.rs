@@ -456,15 +456,6 @@ async fn start_node_impl(
                     None
                 },
                 spawn_handle,
-                sync_mode: {
-                    move |db_exists, para_id| {
-                        spawner::select_sync_mode_using_client(
-                            db_exists,
-                            &orchestrator_client.clone(),
-                            para_id,
-                        )
-                    }
-                },
                 generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
                     dancebox_runtime::RuntimeApi,
                 >::new(),
@@ -829,6 +820,10 @@ pub async fn start_solochain_node(
             },
             spawn_handle,
             data_preserver: false,
+            generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+                dancebox_runtime::RuntimeApi,
+            >::new(),
+            phantom: PhantomData,
         },
         state: Default::default(),
         collate_on_tanssi,

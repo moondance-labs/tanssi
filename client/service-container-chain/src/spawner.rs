@@ -81,10 +81,9 @@ const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 pub struct ContainerChainSpawner<
     RuntimeApi: MinimalContainerRuntimeApi,
     TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
-    SelectSyncMode: Clone,
 > {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
+    pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -110,7 +109,6 @@ pub struct ContainerChainSpawner<
 pub struct ContainerChainSpawnParams<
     RuntimeApi: MinimalContainerRuntimeApi,
     TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
-    SelectSyncMode: Clone,
 > {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
@@ -183,9 +181,8 @@ pub enum CcSpawnMsg {
 async fn try_spawn<
     RuntimeApi: MinimalContainerRuntimeApi,
     TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
-    SelectSyncMode: TSelectSyncMode,
 >(
-    try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>,
+    try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
@@ -573,8 +570,7 @@ pub trait Spawner {
 impl<
         RuntimeApi: MinimalContainerRuntimeApi,
         TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
-        SelectSyncMode: TSelectSyncMode,
-    > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>
+    > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
 {
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
@@ -658,8 +654,7 @@ impl<
 impl<
         RuntimeApi: MinimalContainerRuntimeApi,
         TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
-        SelectSyncMode: TSelectSyncMode,
-    > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder, SelectSyncMode>
+    > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
 {
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(

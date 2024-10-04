@@ -35,7 +35,6 @@ use {
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig},
-    polkadot_primitives::CollatorPair,
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
     sc_executor::WasmExecutor,
@@ -322,8 +321,7 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
 fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
     client: Arc<ContainerChainClient<RuntimeApi>>,
     backend: Arc<FullBackend>,
-    orchestrator_client: Arc<ParachainClient>,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    collation_params: crate::spawner::CollationParams,
     block_import: ContainerChainBlockImport<RuntimeApi>,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
