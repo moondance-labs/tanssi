@@ -319,7 +319,7 @@ jobs:
             path: runtimes-current-branch
         - name: Setup runtimes to Compare
           run: |
-            RUNTIMES_TO_COMPARE=("dancebox_runtime" "flashbox_runtime" "dancelight_runtime" "container_chain_template_simple_runtime" "container_chain_template_frontier_runtime")
+            RUNTIMES_TO_COMPARE=('dancebox_runtime' 'flashbox_runtime' 'dancelight_runtime' 'container_chain_template_simple_runtime' 'container_chain_template_frontier_runtime')
             echo "RUNTIMES_TO_COMPARE=$RUNTIMES_TO_COMPARE" >> $GITHUB_ENV
         - name: Prepare file
           run: |
@@ -343,6 +343,10 @@ jobs:
               fi
             }
             echo $RUNTIMES_TO_COMPARE
+            for $RUNTIME in "${RUNTIMES_TO_COMPARE[@]}"
+            do
+              echo $RUNTIME
+            done
             for RUNTIME in ${RUNTIMES_TO_COMPARE[@]};
             do
               echo "INSIDE LOOP WITH $RUNTIME"
