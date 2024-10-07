@@ -17,13 +17,11 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::{AuthorNoting, RewardsPortion},
+    crate::{tests::common::*, AuthorNoting, RewardsPortion},
     cumulus_primitives_core::ParaId,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_runtime::generic::DigestItem,
-    sp_runtime::traits::BlakeTwo256,
+    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::ContainerChainBlockInfo,
