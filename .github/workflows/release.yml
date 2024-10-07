@@ -367,7 +367,7 @@ jobs:
             FLASHBOX_STATUS=$(get_status_emoji $CURRENT_FLASHBOX $FLASHBOX_DIFF)
             DANCELIGHT_STATUS=$(get_status_emoji $CURRENT_DANCELIGHT $DANCELIGHT_DIFF)
             CONTAINER_SIMPLE_STATUS=$(get_status_emoji $CURRENT_CONTAINER_SIMPLE $CONTAINER_SIMPLE_DIFF)
-            CONTAINER_FRONTIER_STATUS=$(get_status_emoji $CURRENT_CONTAINER_FRONTIER" $CURRENT_CONTAINER_FRONTIER)
+            CONTAINER_FRONTIER_STATUS=$(get_status_emoji $CURRENT_CONTAINER_FRONTIER $CURRENT_CONTAINER_FRONTIER)
 
             DANCEBOX_MSG="Dancebox runtime: ${CURRENT_DANCEBOX} KB ($( [ $DANCEBOX_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DANCEBOX_DIFF -gt 0 ] && echo "+" )${DANCEBOX_DIFF} KB")) ${DANCEBOX_STATUS}"
             FLASHBOX_MSG="Flashbox runtime: ${CURRENT_FLASHBOX} KB ($( [ $FLASHBOX_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $FLASHBOX_DIFF -gt 0 ] && echo "+" )${FLASHBOX_DIFF} KB")) ${FLASHBOX_STATUS}"
