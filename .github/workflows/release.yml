@@ -317,10 +317,6 @@ jobs:
           with:
             name: runtimes
             path: runtimes-current-branch
-        - name: Setup runtimes to Compare
-          run: |
-            RUNTIMES_TO_COMPARE=('dancebox_runtime' 'flashbox_runtime' 'dancelight_runtime' 'container_chain_template_simple_runtime' 'container_chain_template_frontier_runtime')
-            echo "RUNTIMES_TO_COMPARE=$RUNTIMES_TO_COMPARE" >> $GITHUB_ENV
         - name: Prepare file
           run: |
             # Create or truncate the file
@@ -331,6 +327,7 @@ jobs:
             echo "" >> runtime_size_report.md
         - name: Retrieve runtime diff
           run: |
+            RUNTIMES_TO_COMPARE=('dancebox_runtime' 'flashbox_runtime' 'dancelight_runtime' 'container_chain_template_simple_runtime' 'container_chain_template_frontier_runtime')
             get_status_emoji() {
               local size=$1
               local diff=$2
