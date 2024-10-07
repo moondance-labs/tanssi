@@ -347,8 +347,11 @@ jobs:
             do
               echo "INSIDE LOOP WITH $RUNTIME"
               PREVIOUS=$(du -k runtimes-target-branch/* | awk '/$RUNTIME/ {print $1}')
+              echo $PREVIOUS
               CURRENT=$(du -k runtimes-current-branch/* | awk '/$RUNTIME/ {print $1}')
+              echo $CURRENT
               DIFF=$((CURRENT - PREVIOUS))
+              echo $DIFF
               RUNTIME_NAME="${RUNTIME//_/ }"
               STATUS=$(get_status_emoji $CURRENT $DIFF)
               MSG="$RUNTIME_NAME: ${CURRENT} KB ($( [ $DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DIFF -gt 0 ] && echo "+" )${DIFF} KB")) ${STATUS}"
