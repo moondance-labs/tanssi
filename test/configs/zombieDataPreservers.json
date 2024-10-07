@@ -131,7 +131,7 @@
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9952"
+                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
                     ],
                     "prometheus_port": 33103
                 }
