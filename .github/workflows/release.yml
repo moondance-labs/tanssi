@@ -379,7 +379,7 @@ jobs:
             echo "" >> runtime_size_report.md
             echo "#### Compared to target branch" >> runtime_size_report.md
             echo "" >> runtime_size_report.md
-            echo "$DANCEBOX_STATUS" >> runtime_size_report.md
+            echo "$DANCEBOX_MSG" >> runtime_size_report.md
             echo "" >> runtime_size_report.md
             echo "$FLASHBOX_MSG" >> runtime_size_report.md
             echo "" >> runtime_size_report.md
