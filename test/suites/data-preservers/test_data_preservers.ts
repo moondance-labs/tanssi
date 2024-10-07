@@ -154,6 +154,14 @@ describeSuite({
                 expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
             },
         });
+
+        it({
+            id: "T08",
+            title: "RPC endpoint 2001 is Ethereum compatible",
+            test: async function () {
+                const ethersApi = context.ethers();
+            },
+        });
     },
 });
 
