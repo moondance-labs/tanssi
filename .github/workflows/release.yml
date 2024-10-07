@@ -290,6 +290,7 @@ jobs:
       needs: ["set-tags", "build"]
       env:
         GH_TOKEN: ${{ github.token }}
+        RUNTIMES_AS_STRING: 'dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime'
       steps:
         - name: Checkout
           uses: actions/checkout@v4
@@ -327,7 +328,7 @@ jobs:
             echo "" >> runtime_size_report.md
         - name: Retrieve runtime diff
           run: |
-            RUNTIMES_TO_COMPARE=('dancebox_runtime' 'flashbox_runtime' 'dancelight_runtime' 'container_chain_template_simple_runtime' 'container_chain_template_frontier_runtime')
+            IFS="," read -a RUNTIMES_TO_COMPARE <<< ${{ env.RUNTIMES_AS_STRING }}
             get_status_emoji() {
               local size=$1
               local diff=$2
