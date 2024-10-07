@@ -29,20 +29,21 @@ correctness = { level = "deny", priority = 1 }
 suspicious = { level = "deny", priority = 1 }
 
 # Add some additional lints
-as_underscore = { level = "warn", priority = 1 }
-cast_lossless = { level = "warn", priority = 1 }
-cast_possible_wrap = { level = "warn", priority = 1 }
-cast_precision_loss = { level = "warn", priority = 1 }
-cast_sign_loss = { level = "warn", priority = 1 }
-debug_assert_with_mut_call = { level = "warn", priority = 1 }
-fn_to_numeric_cast_any = { level = "warn", priority = 1 }
-invalid_upcast_comparisons = { level = "warn", priority = 1 }
+as_underscore = { level = "warn", priority = 2 }
+cast_lossless = { level = "warn", priority = 2 }
+cast_possible_wrap = { level = "warn", priority = 2 }
+cast_precision_loss = { level = "warn", priority = 2 }
+cast_sign_loss = { level = "warn", priority = 2 }
+debug_assert_with_mut_call = { level = "warn", priority = 2 }
+fn_to_numeric_cast_any = { level = "warn", priority = 2 }
+invalid_upcast_comparisons = { level = "warn", priority = 2 }
 
 # Allow annoying lints and false positives
-erasing_op = { level = "allow", priority = 2 }
-identity_op = { level = "allow", priority = 2 }
-too-many-arguments = { level = "allow", priority = 2 }
-type_complexity = { level = "allow", priority = 2 }
+erasing_op = { level = "allow", priority = 3 }
+identity_op = { level = "allow", priority = 3 }
+manual_inspect = { level = "allow", priority = 3 }
+too-many-arguments = { level = "allow", priority = 3 }
+type_complexity = { level = "allow", priority = 3 }
 
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }

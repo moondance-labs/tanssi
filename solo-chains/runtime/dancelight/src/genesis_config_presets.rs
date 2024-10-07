@@ -16,9 +16,6 @@
 
 //! Genesis configs presets for the Dancelight runtime
 
-use pallet_configuration::HostConfiguration;
-use sp_arithmetic::traits::Saturating;
-use sp_arithmetic::Perbill;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
 use {
@@ -31,16 +28,17 @@ use {
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
+    pallet_configuration::HostConfiguration,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
+    sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
         crypto::{key_types, KeyTypeId},
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
-    sp_std::vec,
-    sp_std::vec::Vec,
+    sp_std::{vec, vec::Vec},
     tp_traits::ParaId,
 };
 

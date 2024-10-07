@@ -176,6 +176,10 @@ pub struct RunCmd {
     /// TESTING ONLY: disable the version check between nodes and workers.
     #[arg(long, hide = true)]
     pub disable_worker_version_check: bool,
+
+    // Enable the development service
+    #[arg(long)]
+    pub dev_service: bool,
 }
 
 #[allow(missing_docs)]

@@ -17,8 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::{RuntimeOrigin, StreamPaymentAssetId, TimeUnit},
+    crate::{tests::common::*, RuntimeOrigin, StreamPaymentAssetId, TimeUnit},
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -4096,7 +4095,7 @@ fn test_migration_registrar_reserves_to_hold() {
                 ParaId::from(1001),
                 DepositInfo {
                     creator: account.clone(),
-                    deposit: deposit,
+                    deposit,
                 },
             );
             assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);
