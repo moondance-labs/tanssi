@@ -790,16 +790,6 @@
                     "name": "DataPreserver-2001",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9952"]
-                },
-                {
-                    "name": "ethers",
-                    "type": "ethers",
-                    "endpoints": ["ws://127.0.0.1:9952"]
-                },
-                {
-                    "name": "w3",
-                    "type": "web3",
-                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },

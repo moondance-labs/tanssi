@@ -161,8 +161,8 @@ describeSuite({
             id: "T08",
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async function () {
-                let url = "ws://127.0.0.1:9952";
-                let customHttpProvider = new ethers.providers.WebSocketProvider(url)
+                const url = "ws://127.0.0.1:9952";
+                const customHttpProvider = new ethers.providers.WebSocketProvider(url)
                 console.log((await customHttpProvider.getNetwork()).chainId)
             }
         });
