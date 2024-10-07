@@ -3,6 +3,8 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
+import ethers from "ethers";
+
 
 describeSuite({
     id: "DP01",
@@ -159,8 +161,10 @@ describeSuite({
             id: "T08",
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async function () {
-                const ethersApi = context.ethers();
-            },
+                let url = "ws://127.0.0.1:9952";
+                let customHttpProvider = new ethers.providers.WebSocketProvider(url)
+                console.log((await customHttpProvider.getNetwork()).chainId)
+            }
         });
     },
 });
