@@ -343,7 +343,7 @@ jobs:
               fi
             }
             echo $RUNTIMES_TO_COMPARE
-            for $RUNTIME in "${RUNTIMES_TO_COMPARE[@]}"
+            for RUNTIME in "${RUNTIMES_TO_COMPARE[@]}"
             do
               echo $RUNTIME
             done
