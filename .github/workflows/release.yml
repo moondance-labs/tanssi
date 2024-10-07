@@ -340,8 +340,10 @@ jobs:
                 echo "✅"
               fi
             }
+            echo $RUNTIMES_TO_COMPARE
             for RUNTIME in ${RUNTIMES_TO_COMPARE[@]};
             do
+              echo "INSIDE LOOP WITH $RUNTIME"
               PREVIOUS=$(du -k runtimes-target-branch/* | awk '/$RUNTIME/ {print $1}')
               CURRENT=$(du -k runtimes-current-branch/* | awk '/$RUNTIME/ {print $1}')
               DIFF=$((CURRENT - PREVIOUS))
