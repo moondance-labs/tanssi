@@ -12,11 +12,13 @@ describeSuite({
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
+        let container2001Api: ApiPromise;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
             container2000Api = context.polkadotJs("Container2000");
+            container2001Api = context.polkadotJs("Container2001");
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -30,6 +32,11 @@ describeSuite({
             const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
             expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
             expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
+
+            const container2001Network = container2001Api.consts.system.version.specName.toString();
+            const paraId2001 = (await container2001Api.query.parachainInfo.parachainId()).toString();
+            expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+            expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
             // Test block numbers in relay are 0 yet
             const header2000 = await getHeaderFromRelay(relayApi, 2000);
@@ -48,18 +55,18 @@ describeSuite({
 
         it({
             id: "T02",
-            title: "Data preservers watcher properly starts",
+            title: "Data preservers 2000 watcher properly starts",
             test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver.log";
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
                 await waitForLogs(logFilePath, 300, ["Assignement for block"]);
             },
         });
 
         it({
             id: "T03",
-            title: "Change assignment",
+            title: "Change assignment 2000",
             test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver.log";
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -87,13 +94,64 @@ describeSuite({
 
         it({
             id: "T04",
-            title: "RPC endpoint is properly started",
+            title: "RPC endpoint 2000 is properly started",
             test: async function () {
-                const preserverApi = context.polkadotJs("DataPreserver");
+                const preserverApi = context.polkadotJs("DataPreserver-2000");
                 const container2000Network = preserverApi.consts.system.version.specName.toString();
                 const paraId2000 = (await preserverApi.query.parachainInfo.parachainId()).toString();
                 expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
                 expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
+            },
+        });
+
+        it({
+            id: "T05",
+            title: "Data preservers 2001 watcher properly starts",
+            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                await waitForLogs(logFilePath, 300, ["Assignement for block"]);
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "Change assignment 2001",
+            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const profile = {
+                    url: "exemple",
+                    paraIds: "AnyParaId",
+                    mode: { rpc: { supportsEthereumRpc: true } },
+                };
+
+                {
+                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, alice.address);
+                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                {
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(1, 2001, "Free");
+                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                await waitForLogs(logFilePath, 300, ["Active(Id(2001))"]);
+            },
+        });
+
+        it({
+            id: "T07",
+            title: "RPC endpoint 2001 is properly started",
+            test: async function () {
+                const preserverApi = context.polkadotJs("DataPreserver-2001");
+                const container2001Network = preserverApi.consts.system.version.specName.toString();
+                const paraId2001 = (await preserverApi.query.parachainInfo.parachainId()).toString();
+                expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+                expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
             },
         });
     },

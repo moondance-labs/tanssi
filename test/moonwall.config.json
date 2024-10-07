@@ -746,10 +746,11 @@
             "name": "zombie_data_preservers",
             "testFileDir": ["suites/data-preservers"],
             "runScripts": [
-                "build-spec-single-container.sh",
+                "build-spec-data-preservers.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -776,9 +777,19 @@
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "DataPreserver",
+                    "name": "DataPreserver-2000",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "DataPreserver-2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },
