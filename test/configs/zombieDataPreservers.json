@@ -33,6 +33,14 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
             }
         ]
     },
@@ -119,7 +127,7 @@
                     "command": "../target/release/container-chain-frontier-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9951,
-                    "p2p_port": 33051,
+                    "p2p_port": 33050,
                     "prometheus_port": 33103
                 },
                 {
