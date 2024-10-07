@@ -311,46 +311,24 @@ jobs:
         - name: Download latest target branch build artifacts
           run: |
             gh run download $LATEST_TARGET_BRANCH_BUILD -n runtimes --dir runtimes-target-branch
-        - name: Check Runtimes size for target branch
-          run: |
-            PREVIOUS_DANCEBOX=$(du -k runtimes-target-branch/* | awk '/dancebox_runtime/ {print $1}')
-            PREVIOUS_FLASHBOX=$(du -k runtimes-target-branch/* | awk '/flashbox_runtime/ {print $1}')
-            PREVIOUS_DANCELIGHT=$(du -k runtimes-target-branch/* | awk '/dancelight_runtime/ {print $1}')
-            PREVIOUS_CONTAINER_SIMPLE=$(du -k runtimes-target-branch/* | awk '/container_chain_template_simple_runtime./ {print $1}')
-            PREVIOUS_CONTAINER_FRONTIER=$(du -k runtimes-target-branch/* | awk '/container_chain_template_frontier_runtime./ {print $1}')
-            echo "PREVIOUS_DANCEBOX=$PREVIOUS_DANCEBOX" >> $GITHUB_ENV
-            echo "PREVIOUS_FLASHBOX=$PREVIOUS_FLASHBOX" >> $GITHUB_ENV
-            echo "PREVIOUS_DANCELIGHT=$PREVIOUS_DANCELIGHT" >> $GITHUB_ENV
-            echo "PREVIOUS_CONTAINER_SIMPLE=$PREVIOUS_CONTAINER_SIMPLE" >> $GITHUB_ENV
-            echo "PREVIOUS_CONTAINER_FRONTIER=$PREVIOUS_CONTAINER_FRONTIER" >> $GITHUB_ENV
+
         - name: "Download branch built runtime"
           uses: actions/download-artifact@v4
           with:
             name: runtimes
             path: runtimes-current-branch
-        - name: Check Runtimes size for current branch
+        - name: Setup runtimes to Compare
           run: |
-            CURRENT_DANCEBOX=$(du -k runtimes-current-branch/* | awk '/dancebox_runtime/ {print $1}')
-            CURRENT_FLASHBOX=$(du -k runtimes-current-branch/* | awk '/flashbox_runtime/ {print $1}')
-            CURRENT_DANCELIGHT=$(du -k runtimes-current-branch/* | awk '/dancelight_runtime/ {print $1}')
-            CURRENT_CONTAINER_SIMPLE=$(du -k runtimes-current-branch/* | awk '/container_chain_template_simple_runtime/ {print $1}')
-            CURRENT_CONTAINER_FRONTIER=$(du -k runtimes-current-branch/* | awk '/container_chain_template_frontier_runtime/ {print $1}')
-            echo "CURRENT_DANCEBOX=$CURRENT_DANCEBOX" >> $GITHUB_ENV
-            echo "CURRENT_FLASHBOX=$CURRENT_FLASHBOX" >> $GITHUB_ENV
-            echo "CURRENT_DANCELIGHT=$CURRENT_DANCELIGHT" >> $GITHUB_ENV
-            echo "CURRENT_CONTAINER_SIMPLE=$CURRENT_CONTAINER_SIMPLE" >> $GITHUB_ENV
-            echo "CURRENT_CONTAINER_FRONTIER=$CURRENT_CONTAINER_FRONTIER" >> $GITHUB_ENV  
-        - name: Compare Runtimes sizes
+            RUNTIMES_TO_COMPARE=["dancebox_runtime", "flashbox_runtime", "dangelight_runtime", "container_chain_template_simple_runtime", "container_chain_template_frontier_runtime"]
+            echo "RUNTIMES_TO_COMPARE=$RUNTIMES_TO_COMPARE" >> $GITHUB_ENV
+        - name: Prepare file
           run: |
             # Create or truncate the file
             echo "" > runtime_size_report.md
-
-            DANCEBOX_DIFF=$((CURRENT_DANCEBOX - PREVIOUS_DANCEBOX))
-            FLASHBOX_DIFF=$((CURRENT_FLASHBOX - PREVIOUS_FLASHBOX))
-            CONTAINER_SIMPLE_DIFF=$((CURRENT_CONTAINER_SIMPLE - PREVIOUS_CONTAINER_SIMPLE))
-            CONTAINER_FRONTIER_DIFF=$((CURRENT_CONTAINER_FRONTIER - PREVIOUS_CONTAINER_FRONTIER))
-            DANCELIGHT_DIFF=$((CURRENT_DANCELIGHT - PREVIOUS_DANCELIGHT))
-
+            echo "### WASM runtime size check:" > runtime_size_report.md
+            echo "" >> runtime_size_report.md
+        - name: Retrieve runtime diff
+          run: |
             get_status_emoji() {
               local size=$1
               local diff=$2
@@ -362,32 +340,15 @@ jobs:
                 echo "✅"
               fi
             }
-
-            DANCEBOX_STATUS=$(get_status_emoji $CURRENT_DANCEBOX $DANCEBOX_DIFF)
-            FLASHBOX_STATUS=$(get_status_emoji $CURRENT_FLASHBOX $FLASHBOX_DIFF)
-            DANCELIGHT_STATUS=$(get_status_emoji $CURRENT_DANCELIGHT $DANCELIGHT_DIFF)
-            CONTAINER_SIMPLE_STATUS=$(get_status_emoji $CURRENT_CONTAINER_SIMPLE $CONTAINER_SIMPLE_DIFF)
-            CONTAINER_FRONTIER_STATUS=$(get_status_emoji $CURRENT_CONTAINER_FRONTIER $CONTAINER_FRONTIER_DIFF)
-
-            DANCEBOX_MSG="Dancebox runtime: ${CURRENT_DANCEBOX} KB ($( [ $DANCEBOX_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DANCEBOX_DIFF -gt 0 ] && echo "+" )${DANCEBOX_DIFF} KB")) ${DANCEBOX_STATUS}"
-            FLASHBOX_MSG="Flashbox runtime: ${CURRENT_FLASHBOX} KB ($( [ $FLASHBOX_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $FLASHBOX_DIFF -gt 0 ] && echo "+" )${FLASHBOX_DIFF} KB")) ${FLASHBOX_STATUS}"
-            DANCELIGHT_MSG="Dancelight runtime: ${CURRENT_DANCELIGHT} KB ($( [ $DANCELIGHT_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DANCELIGHT_DIFF -gt 0 ] && echo "+" )${DANCELIGHT_DIFF} KB")) ${DANCELIGHT_STATUS}"
-            CONTAINER_SIMPLE_MSG="Container simple template runtime: ${CURRENT_CONTAINER_SIMPLE} KB ($( [ $CONTAINER_SIMPLE_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $CONTAINER_SIMPLE_DIFF -gt 0 ] && echo "+" )${CONTAINER_SIMPLE_DIFF} KB")) ${CONTAINER_SIMPLE_STATUS}"
-            CONTAINER_FRONTIER_MSG="Container frontier template runtime: ${CURRENT_CONTAINER_FRONTIER} KB ($( [ $CONTAINER_FRONTIER_DIFF -eq 0 ] && echo "no changes" || echo "$( [ $CONTAINER_FRONTIER_DIFF -gt 0 ] && echo "+" )${CONTAINER_FRONTIER_DIFF} KB")) ${CONTAINER_FRONTIER_STATUS}"
-
-            echo "### WASM runtime size check:" > runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "#### Compared to target branch" >> runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "$DANCEBOX_MSG" >> runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "$FLASHBOX_MSG" >> runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "$DANCELIGHT_MSG" >> runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "$CONTAINER_SIMPLE_MSG" >> runtime_size_report.md
-            echo "" >> runtime_size_report.md
-            echo "$CONTAINER_FRONTIER_MSG" >> runtime_size_report.md
+            for RUNTIME in $RUNTIMES_TO_COMPARE
+            do
+              PREVIOUS=$(du -k runtimes-target-branch/* | awk '/$RUNTIME/ {print $1}')
+              CURRENT=$(du -k runtimes-current-branch/* | awk '/$RUNTIME/ {print $1}')
+              DIFF=$((CURRENT - PREVIOUS))
+              RUNTIME_NAME="${RUNTIME//_/ }"
+              STATUS=$(get_status_emoji $CURRENT $DIFF)
+              MSG="$RUNTIME_NAME: ${CURRENT} KB ($( [ $DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DIFF -gt 0 ] && echo "+" )${DIFF} KB")) ${STATUS}"
+            done
             echo "" >> runtime_size_report.md
             cat runtime_size_report.md
         - name: Find Comment
