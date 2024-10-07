@@ -327,6 +327,8 @@ jobs:
             echo "" > runtime_size_report.md
             echo "### WASM runtime size check:" > runtime_size_report.md
             echo "" >> runtime_size_report.md
+            echo "#### Compared to target branch" >> runtime_size_report.md
+            echo "" >> runtime_size_report.md
         - name: Retrieve runtime diff
           run: |
             get_status_emoji() {
@@ -350,6 +352,8 @@ jobs:
               RUNTIME_NAME="${RUNTIME//_/ }"
               STATUS=$(get_status_emoji $CURRENT $DIFF)
               MSG="$RUNTIME_NAME: ${CURRENT} KB ($( [ $DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DIFF -gt 0 ] && echo "+" )${DIFF} KB")) ${STATUS}"
+              echo "$MSG" >> runtime_size_report.md
+              echo "" >> runtime_size_report.md
             done
             echo "" >> runtime_size_report.md
             cat runtime_size_report.md
