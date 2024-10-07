@@ -346,9 +346,9 @@ jobs:
             for RUNTIME in ${RUNTIMES_TO_COMPARE[@]};
             do
               echo "INSIDE LOOP WITH $RUNTIME"
-              PREVIOUS=$(du -k runtimes-target-branch/* | awk '/$RUNTIME/ {print $1}')
+              PREVIOUS=$(du -k runtimes-target-branch/* | awk -v myrun="$RUNTIME" '$0 ~ myrun {print $1}')
               echo $PREVIOUS
-              CURRENT=$(du -k runtimes-current-branch/* | awk '/$RUNTIME/ {print $1}')
+              CURRENT=$(du -k runtimes-current-branch/* | awk -v myrun="$RUNTIME" '$0 ~ myrun {print $1}')
               echo $CURRENT
               DIFF=$((CURRENT - PREVIOUS))
               echo $DIFF
