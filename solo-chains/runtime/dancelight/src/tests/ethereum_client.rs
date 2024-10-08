@@ -28,6 +28,8 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, ParaId},
+    snowbridge_pallet_ethereum_client::mock::*,
+    snowbridge_pallet_ethereum_client::functions::*
 };
 #[test]
 fn test_ethereum_force_checkpoint() {
@@ -96,18 +98,74 @@ fn test_invalid_initial_checkpoint() {
                 }).collect();
                 check_invalid_sync_committee.current_sync_committee.pubkeys = new_random_keys.try_into().expect("cannot convert keys");
                 assert_noop!(
-                    EthereumBeaconClient::force_checkpoint(RuntimeOrigin::root(), checkpoint_invalid_sync_committee_proof),
+                    EthereumBeaconClient::force_checkpoint(root_origin(), checkpoint_invalid_sync_committee_proof),
                     snowbridge_pallet_ethereum_client::Error::<Runtime>::InvalidSyncCommitteeMerkleProof
                 );
 
                 assert_noop!(
-                    EthereumBeaconClient::force_checkpoint(RuntimeOrigin::root(), checkpoint_invalid_blocks_root_proof),
+                    EthereumBeaconClient::force_checkpoint(root_origin(), checkpoint_invalid_blocks_root_proof),
                     snowbridge_pallet_ethereum_client::Error::<Runtime>::InvalidBlockRootsRootMerkleProof
                 );
 
                 assert_noop!(
-                    EthereumBeaconClient::force_checkpoint(RuntimeOrigin::root(), check_invalid_sync_committee),
+                    EthereumBeaconClient::force_checkpoint(root_origin(), check_invalid_sync_committee),
                     snowbridge_pallet_ethereum_client::Error::<Runtime>::InvalidSyncCommitteeMerkleProof
                 );
 	});
+}
+
+#[test]
+fn test_submit_update_using_same_committee_same_checkpoint() {
+    ExtBuilder::default()
+            .with_balances(vec![
+                // Alice gets 10k extra tokens for her mapping deposit
+                (AccountId::from(ALICE), 210_000 * UNIT),
+                (AccountId::from(BOB), 100_000 * UNIT),
+                (AccountId::from(CHARLIE), 100_000 * UNIT),
+                (AccountId::from(DAVE), 100_000 * UNIT),
+            ])
+            .build()
+            .execute_with(|| {
+	            let initial_checkpoint = Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
+                println!("INITIAL {:?}", initial_checkpoint);
+	            let update_header = Box::new(snowbridge_pallet_ethereum_client::mock::load_finalized_header_update_fixture());
+                println!("UPDATE {:?}", initial_checkpoint);
+
+                let initial_period = compute_period(initial_checkpoint.header.slot);
+                let update_period = compute_period(update_header.finalized_header.slot);
+	            assert_eq!(initial_period, update_period);
+                assert_ok!(EthereumBeaconClient::force_checkpoint(
+                    root_origin(),
+                    initial_checkpoint.clone()
+                ));
+                assert_ok!(EthereumBeaconClient::submit(origin_of(ALICE.into()), update_header.clone()));
+                let block_root: H256 = update_header.finalized_header.hash_tree_root().unwrap();
+                assert!(snowbridge_pallet_ethereum_client::FinalizedBeaconState::<Runtime>::contains_key(block_root));
+	        });
+}
+
+#[test]
+fn test_submit_update_with_sync_committee_in_current_period() {
+    ExtBuilder::default()
+            .with_balances(vec![
+                // Alice gets 10k extra tokens for her mapping deposit
+                (AccountId::from(ALICE), 210_000 * UNIT),
+                (AccountId::from(BOB), 100_000 * UNIT),
+                (AccountId::from(CHARLIE), 100_000 * UNIT),
+                (AccountId::from(DAVE), 100_000 * UNIT),
+            ])
+            .build()
+            .execute_with(|| {
+	            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
+	            let update_header = Box::new(load_sync_committee_update_fixture());
+                let initial_period = compute_period(initial_checkpoint.header.slot);
+                let update_period = compute_period(update_header.finalized_header.slot);
+	            assert_eq!(initial_period, update_period);
+                assert_ok!(EthereumBeaconClient::force_checkpoint(
+                    root_origin(),
+                    initial_checkpoint.clone()
+                ));
+                assert_ok!(EthereumBeaconClient::submit(origin_of(ALICE.into()), update_header.clone()));
+                assert!(snowbridge_pallet_ethereum_client::NextSyncCommittee::<Runtime>::exists());
+	        });
 }
