@@ -152,6 +152,8 @@ sp-trie = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
+milagro-bls = { workspace = true, features = [ "std" ] }
+rand = { version = "0.8.5", features = [ "std", "std_rng" ] }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -246,6 +248,7 @@ std = [
 	"serde_derive",
 	"serde_json/std",
 	"snowbridge-pallet-ethereum-client/std",
+	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-beacon-primitives/std",
 	"sp-api/std",
 	"sp-arithmetic/std",
@@ -276,6 +279,7 @@ std = [
 	"xcm/std",
 ]
 no_std = []
+
 runtime-benchmarks = [
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
