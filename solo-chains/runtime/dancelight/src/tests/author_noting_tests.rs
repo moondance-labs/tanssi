@@ -18,18 +18,14 @@
 
 use {
     crate::tests::common::*,
-    frame_support::assert_noop,
-    frame_support::assert_ok,
-    frame_support::error::BadOrigin,
+    frame_support::{assert_noop, assert_ok, error::BadOrigin},
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_runtime::generic::DigestItem,
-    sp_runtime::traits::BlakeTwo256,
+    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_traits::ContainerChainBlockInfo,
-    tp_traits::ParaId,
+    tp_traits::{ContainerChainBlockInfo, ParaId},
 };
 #[test]
 fn test_author_noting_not_self_para() {

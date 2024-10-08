@@ -14,15 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-#![cfg(feature = "runtime-benchmarks")]
-
-use {super::*, crate::Pallet as PooledStaking};
-
 use {
+    super::*,
     crate::{
         pools::Pool,
         traits::{IsCandidateEligible, Timer},
-        HoldReason,
+        HoldReason, Pallet as PooledStaking,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
     frame_benchmarking::{account, v2::*, BenchmarkError},
