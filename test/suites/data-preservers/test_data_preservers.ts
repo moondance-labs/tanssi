@@ -4,7 +4,7 @@ import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 import ethers from "ethers";
-
+import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS } from "@moonwall/util";
 
 describeSuite({
     id: "DP01",
@@ -162,9 +162,18 @@ describeSuite({
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async function () {
                 const url = "ws://127.0.0.1:9952";
-                const customHttpProvider = new ethers.providers.WebSocketProvider(url)
-                console.log((await customHttpProvider.getNetwork()).chainId)
-            }
+                const customHttpProvider = new ethers.providers.WebSocketProvider(url);
+                console.log((await customHttpProvider.getNetwork()).chainId);
+
+                const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
+                const tx = await signer.sendTransaction({
+                    to: CHARLETH_ADDRESS,
+                    value: ethers.utils.parseUnits("0.001", "ether"),
+                });
+
+                await customHttpProvider.waitForTransaction(tx.hash);
+                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+            },
         });
     },
 });

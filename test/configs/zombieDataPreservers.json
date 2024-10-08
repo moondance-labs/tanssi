@@ -86,6 +86,32 @@
                     "name": "Collator2001-02",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "DataPreserver-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": [
+                        "--rpc-provider-profile-id=0",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9950"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "DataPreserver-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": [
+                        "--rpc-provider-profile-id=1",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
+                    ],
+                    "prometheus_port": 33103
                 }
             ]
         },
@@ -100,19 +126,6 @@
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
                     "p2p_port": 33049,
-                    "prometheus_port": 33102
-                },
-                {
-                    "name": "DataPreserver-2000",
-                    "validator": false,
-                    "command": "../target/release/container-chain-simple-node",
-                    "args": [
-                        "--rpc-provider-profile-id=0",
-                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9950"
-                    ],
                     "prometheus_port": 33102
                 }
             ]
@@ -129,23 +142,9 @@
                     "ws_port": 9951,
                     "p2p_port": 33050,
                     "prometheus_port": 33103
-                },
-                {
-                    "name": "DataPreserver-2001",
-                    "validator": false,
-                    "command": "../target/release/container-chain-frontier-node",
-                    "args": [
-                        "--rpc-provider-profile-id=1",
-                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
-                    ],
-                    "prometheus_port": 33103
                 }
             ]
         }
-        
     ],
     "types": {
         "Header": {
