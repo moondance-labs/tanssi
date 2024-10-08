@@ -25,12 +25,17 @@ use {
     crate::{
         cli::ContainerChainCli,
         monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, ContainerChainClient, ParachainClient},
+        rpc::generate_rpc_builder::GenerateRpcBuilder,
+        service::{
+            start_node_impl_container, ContainerChainClient, MinimalContainerRuntimeApi,
+            ParachainClient,
+        },
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block as OpaqueBlock, Block},
     dc_orchestrator_chain_interface::{OrchestratorChainInterface, PHash},
+    frame_support::{CloneNoBound, DefaultNoBound},
     fs2::FileExt,
     futures::FutureExt,
     node_common::command::generate_genesis_block,
@@ -45,7 +50,9 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
+        any::Any,
         collections::{HashMap, HashSet},
+        marker::PhantomData,
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
         time::Instant,
@@ -71,9 +78,12 @@ const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner {
+pub struct ContainerChainSpawner<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+> {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams,
+    pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -95,8 +105,11 @@ pub struct ContainerChainSpawner {
 /// This struct MUST NOT contain types (outside of `Option<CollationParams>`) obtained through
 /// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
 /// connected to an orchestrator node through WebSocket.
-#[derive(Clone)]
-pub struct ContainerChainSpawnParams {
+#[derive(CloneNoBound)]
+pub struct ContainerChainSpawnParams<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+> {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -108,6 +121,9 @@ pub struct ContainerChainSpawnParams {
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
     pub data_preserver: bool,
+    pub generate_rpc_builder: TGenerateRpcBuilder,
+
+    pub phantom: PhantomData<RuntimeApi>,
 }
 
 /// Params specific to collation. This struct can contain types obtained through running an
@@ -123,7 +139,7 @@ pub struct CollationParams {
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
-#[derive(Default)]
+#[derive(DefaultNoBound)]
 pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
@@ -162,8 +178,11 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn(
-    try_spawn_params: ContainerChainSpawnParams,
+async fn try_spawn<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+>(
+    try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
@@ -179,6 +198,7 @@ async fn try_spawn(
         spawn_handle,
         mut collation_params,
         data_preserver,
+        generate_rpc_builder,
         ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
@@ -338,6 +358,7 @@ async fn try_spawn(
                     sync_keystore.clone(),
                     container_chain_para_id,
                     collation_params.clone(),
+                    generate_rpc_builder.clone(),
                 )
                 .await?;
 
@@ -430,6 +451,7 @@ async fn try_spawn(
     let monitor_id;
     {
         let mut state = state.lock().expect("poison error");
+        let container_chain_client = container_chain_client as Arc<dyn Any + Sync + Send>;
 
         monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
             id: 0,
@@ -545,7 +567,11 @@ pub trait Spawner {
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
 }
 
-impl Spawner for ContainerChainSpawner {
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
+{
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
         self.params.orchestrator_chain_interface.clone()
@@ -625,7 +651,11 @@ impl Spawner for ContainerChainSpawner {
     }
 }
 
-impl ContainerChainSpawner {
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
+{
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(
         mut self,
@@ -883,7 +913,6 @@ async fn get_latest_container_block_number_from_orchestrator(
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
     // Get the container chain's latest block from orchestrator chain and compare with client's one
-
     orchestrator_chain_interface
         .latest_block_number(orchestrator_block_hash, container_chain_para_id)
         .await
@@ -909,8 +938,8 @@ enum DbRemovalReason {
 /// Reasons may be:
 /// * High block diff: when the local db is outdated and it would take a long time to sync using full sync, we remove it to be able to use warp sync.
 /// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
-async fn db_needs_removal(
-    container_chain_client: &Arc<ContainerChainClient>,
+async fn db_needs_removal<RuntimeApi: MinimalContainerRuntimeApi>(
+    container_chain_client: &Arc<ContainerChainClient<RuntimeApi>>,
     orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,

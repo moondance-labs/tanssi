@@ -24,6 +24,7 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
+    frame_support::{CloneNoBound, DefaultNoBound},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
     sc_client_api::{AuxStore, UsageProvider},
@@ -33,14 +34,10 @@ use {
     },
     sc_rpc::DenyUnsafe,
     sc_transaction_pool_api::TransactionPool,
-    services_payment_rpc::{
-        ServicesPayment, ServicesPaymentApiServer as _, ServicesPaymentRuntimeApi,
-    },
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
-    std::sync::Arc,
-    stream_payment_rpc::{StreamPayment, StreamPaymentApiServer as _, StreamPaymentRuntimeApi},
+    std::{marker::PhantomData, sync::Arc},
 };
 
 /// A type representing all RPC extensions.
@@ -60,6 +57,18 @@ pub struct FullDeps<C, P> {
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
+tp_traits::alias!(
+    /// Test
+    pub trait SubstrateRpcRuntimeApi<Client : (sp_api::CallApiAt<Block>)>:
+        sp_api::ConstructRuntimeApi<
+            Block,
+            Client,
+            RuntimeApi:
+                substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
+                + BlockBuilder<Block>
+        > + Send + Sync + 'static
+);
+
 /// Instantiate all RPC extensions.
 pub fn create_full<C, P>(
     deps: FullDeps<C, P>,
@@ -75,8 +84,6 @@ where
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
-    C::Api: StreamPaymentRuntimeApi<Block, u64, u128, u128>,
-    C::Api: ServicesPaymentRuntimeApi<Block, u128, ParaId>,
     P: TransactionPool + Sync + Send + 'static,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -91,8 +98,6 @@ where
     } = deps;
 
     module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-    module.merge(StreamPayment::<_, Block>::new(client.clone()).into_rpc())?;
-    module.merge(ServicesPayment::<_, Block>::new(client).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(
@@ -113,4 +118,104 @@ where
     }
 
     Ok(module)
+}
+
+/// Contains the `GenerateRpcBuilder` trait and defines or re-exports all types it uses.
+pub mod generate_rpc_builder {
+    // We re-export types with specific type parameters, no need to be verbose documenting that.
+    #![allow(missing_docs)]
+
+    pub use {
+        crate::service::{ContainerChainBackend, ContainerChainClient, MinimalContainerRuntimeApi},
+        sc_service::{Error as ServiceError, TaskManager},
+        std::sync::Arc,
+        substrate_prometheus_endpoint::Registry as PrometheusRegistry,
+        tc_consensus::ParaId,
+    };
+
+    // TODO: It would be better to use a container chain types.
+    pub use dancebox_runtime::{opaque::Block, Hash};
+
+    pub type SyncingService = sc_network_sync::SyncingService<Block>;
+    pub type TransactionPool<RuntimeApi> =
+        sc_transaction_pool::FullPool<Block, ContainerChainClient<RuntimeApi>>;
+    pub type CommandSink =
+        futures::channel::mpsc::Sender<sc_consensus_manual_seal::EngineCommand<Hash>>;
+    pub type XcmSenders = (flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>);
+    pub type Network = dyn sc_network::service::traits::NetworkService;
+    pub type CompleteRpcBuilder = Box<
+        dyn Fn(
+            sc_rpc::DenyUnsafe,
+            sc_rpc::SubscriptionTaskExecutor,
+        ) -> Result<jsonrpsee::RpcModule<()>, ServiceError>,
+    >;
+
+    pub struct GenerateRpcBuilderParams<'a, RuntimeApi: MinimalContainerRuntimeApi> {
+        pub task_manager: &'a TaskManager,
+        pub container_chain_config: &'a sc_service::Configuration,
+
+        pub client: Arc<ContainerChainClient<RuntimeApi>>,
+        pub backend: Arc<ContainerChainBackend>,
+        pub sync_service: Arc<SyncingService>,
+        pub transaction_pool: Arc<TransactionPool<RuntimeApi>>,
+        pub prometheus_registry: Option<PrometheusRegistry>,
+        pub command_sink: Option<CommandSink>,
+        pub xcm_senders: Option<XcmSenders>,
+        pub network: Arc<Network>,
+    }
+
+    pub trait GenerateRpcBuilder<RuntimeApi: MinimalContainerRuntimeApi>:
+        Clone + Sync + Send
+    {
+        fn generate(
+            &self,
+            params: GenerateRpcBuilderParams<RuntimeApi>,
+        ) -> Result<CompleteRpcBuilder, ServiceError>;
+    }
+}
+
+/// Generate an rpc builder for simple substrate container chains.
+#[derive(CloneNoBound, DefaultNoBound)]
+pub struct GenerateSubstrateRpcBuilder<RuntimeApi>(pub PhantomData<RuntimeApi>);
+impl<RuntimeApi> GenerateSubstrateRpcBuilder<RuntimeApi> {
+    /// Creates a new instance.
+    pub fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+mod impl_generate_rpc_builder {
+    use {super::*, generate_rpc_builder::*};
+
+    impl<
+            RuntimeApi: MinimalContainerRuntimeApi
+                + crate::rpc::SubstrateRpcRuntimeApi<ContainerChainClient<RuntimeApi>>,
+        > GenerateRpcBuilder<RuntimeApi> for GenerateSubstrateRpcBuilder<RuntimeApi>
+    {
+        fn generate(
+            &self,
+            GenerateRpcBuilderParams {
+                client,
+                transaction_pool,
+                command_sink,
+                xcm_senders,
+                ..
+            }: GenerateRpcBuilderParams<RuntimeApi>,
+        ) -> Result<CompleteRpcBuilder, ServiceError> {
+            let client = client.clone();
+            let transaction_pool = transaction_pool.clone();
+
+            Ok(Box::new(move |deny_unsafe, _| {
+                let deps = FullDeps {
+                    client: client.clone(),
+                    pool: transaction_pool.clone(),
+                    deny_unsafe,
+                    command_sink: command_sink.clone(),
+                    xcm_senders: xcm_senders.clone(),
+                };
+
+                create_full(deps).map_err(Into::into)
+            }))
+        }
+    }
 }
