@@ -22,14 +22,14 @@ use {
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     parity_scale_codec::Encode,
+    snowbridge_pallet_ethereum_client::functions::*,
+    snowbridge_pallet_ethereum_client::mock::*,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::H256,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, ParaId},
-    snowbridge_pallet_ethereum_client::mock::*,
-    snowbridge_pallet_ethereum_client::functions::*
 };
 #[test]
 fn test_ethereum_force_checkpoint() {
@@ -117,35 +117,75 @@ fn test_invalid_initial_checkpoint() {
 #[test]
 fn test_submit_update_using_same_committee_same_checkpoint() {
     ExtBuilder::default()
-            .with_balances(vec![
-                // Alice gets 10k extra tokens for her mapping deposit
-                (AccountId::from(ALICE), 210_000 * UNIT),
-                (AccountId::from(BOB), 100_000 * UNIT),
-                (AccountId::from(CHARLIE), 100_000 * UNIT),
-                (AccountId::from(DAVE), 100_000 * UNIT),
-            ])
-            .build()
-            .execute_with(|| {
-	            let initial_checkpoint = Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
-                println!("INITIAL {:?}", initial_checkpoint);
-	            let update_header = Box::new(snowbridge_pallet_ethereum_client::mock::load_finalized_header_update_fixture());
-                println!("UPDATE {:?}", initial_checkpoint);
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let initial_checkpoint =
+                Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
+            let update_header = Box::new(
+                snowbridge_pallet_ethereum_client::mock::load_finalized_header_update_fixture(),
+            );
 
-                let initial_period = compute_period(initial_checkpoint.header.slot);
-                let update_period = compute_period(update_header.finalized_header.slot);
-	            assert_eq!(initial_period, update_period);
-                assert_ok!(EthereumBeaconClient::force_checkpoint(
-                    root_origin(),
-                    initial_checkpoint.clone()
-                ));
-                assert_ok!(EthereumBeaconClient::submit(origin_of(ALICE.into()), update_header.clone()));
-                let block_root: H256 = update_header.finalized_header.hash_tree_root().unwrap();
-                assert!(snowbridge_pallet_ethereum_client::FinalizedBeaconState::<Runtime>::contains_key(block_root));
-	        });
+            let initial_period = compute_period(initial_checkpoint.header.slot);
+            let update_period = compute_period(update_header.finalized_header.slot);
+            assert_eq!(initial_period, update_period);
+            assert_ok!(EthereumBeaconClient::force_checkpoint(
+                root_origin(),
+                initial_checkpoint.clone()
+            ));
+            assert_ok!(EthereumBeaconClient::submit(
+                origin_of(ALICE.into()),
+                update_header.clone()
+            ));
+            let block_root: H256 = update_header.finalized_header.hash_tree_root().unwrap();
+            assert!(snowbridge_pallet_ethereum_client::FinalizedBeaconState::<
+                Runtime,
+            >::contains_key(block_root));
+        });
 }
 
 #[test]
-fn test_submit_update_with_sync_committee_in_current_period() {
+fn test_submit_update_with_next_sync_committee_in_current_period() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
+            let update_header = Box::new(load_sync_committee_update_fixture());
+            let initial_period = compute_period(initial_checkpoint.header.slot);
+            let update_period = compute_period(update_header.finalized_header.slot);
+            assert_eq!(initial_period, update_period);
+            assert_ok!(EthereumBeaconClient::force_checkpoint(
+                root_origin(),
+                initial_checkpoint.clone()
+            ));
+            assert!(!snowbridge_pallet_ethereum_client::NextSyncCommittee::<
+                Runtime,
+            >::exists());
+            assert_ok!(EthereumBeaconClient::submit(
+                origin_of(ALICE.into()),
+                update_header.clone()
+            ));
+            assert!(snowbridge_pallet_ethereum_client::NextSyncCommittee::<
+                Runtime,
+            >::exists());
+        });
+}
+
+#[test]
+fn test_submit_update_with_next_sync_committee_in_current_period_without_majority() {
     ExtBuilder::default()
             .with_balances(vec![
                 // Alice gets 10k extra tokens for her mapping deposit
@@ -157,7 +197,8 @@ fn test_submit_update_with_sync_committee_in_current_period() {
             .build()
             .execute_with(|| {
 	            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
-	            let update_header = Box::new(load_sync_committee_update_fixture());
+	            let mut update_header = Box::new(load_sync_committee_update_fixture());
+                update_header.sync_aggregate.sync_committee_bits = [0u8; snowbridge_pallet_ethereum_client::config::SYNC_COMMITTEE_BITS_SIZE];
                 let initial_period = compute_period(initial_checkpoint.header.slot);
                 let update_period = compute_period(update_header.finalized_header.slot);
 	            assert_eq!(initial_period, update_period);
@@ -165,7 +206,87 @@ fn test_submit_update_with_sync_committee_in_current_period() {
                     root_origin(),
                     initial_checkpoint.clone()
                 ));
-                assert_ok!(EthereumBeaconClient::submit(origin_of(ALICE.into()), update_header.clone()));
-                assert!(snowbridge_pallet_ethereum_client::NextSyncCommittee::<Runtime>::exists());
+                assert_noop!(EthereumBeaconClient::submit(origin_of(ALICE.into()), update_header.clone()), snowbridge_pallet_ethereum_client::Error::<Runtime>::SyncCommitteeParticipantsNotSupermajority);
 	        });
+}
+
+#[test]
+fn reject_submit_update_in_next_period() {
+    let checkpoint = Box::new(load_checkpoint_update_fixture());
+    let sync_committee_update = Box::new(load_sync_committee_update_fixture());
+    let update = Box::new(load_next_finalized_header_update_fixture());
+    let sync_committee_period = compute_period(sync_committee_update.finalized_header.slot);
+    let next_sync_committee_period = compute_period(update.finalized_header.slot);
+    assert_eq!(sync_committee_period + 1, next_sync_committee_period);
+    let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
+            let sync_committee_update = Box::new(load_sync_committee_update_fixture());
+            let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
+            let next_update = Box::new(load_next_finalized_header_update_fixture());
+
+            assert_ok!(EthereumBeaconClient::force_checkpoint(
+                root_origin(),
+                initial_checkpoint.clone()
+            ));
+
+            // we need an update about the sync committee before we proceed
+            assert_noop!(
+                EthereumBeaconClient::submit(origin_of(ALICE.into()), next_update.clone()),
+                snowbridge_pallet_ethereum_client::Error::<Runtime>::SkippedSyncCommitteePeriod
+            );
+
+            assert_ok!(EthereumBeaconClient::submit(
+                origin_of(ALICE.into()),
+                sync_committee_update.clone()
+            ));
+
+            // we need an update about the next sync committee
+            assert_noop!(
+                EthereumBeaconClient::submit(origin_of(ALICE.into()), next_update.clone()),
+                snowbridge_pallet_ethereum_client::Error::<Runtime>::SyncCommitteeUpdateRequired
+            );
+
+            assert_ok!(EthereumBeaconClient::submit(
+                origin_of(ALICE.into()),
+                next_sync_committee_update.clone()
+            ));
+
+            assert_ok!(EthereumBeaconClient::submit(
+                origin_of(ALICE.into()),
+                next_update.clone()
+            ));
+
+            /*
+            let result =
+                EthereumBeaconClient::submit(RuntimeOrigin::signed(1), sync_committee_update.clone());
+            assert_ok!(result);
+            assert_eq!(result.unwrap().pays_fee, Pays::No);
+
+            // check an update in the next period is rejected
+            let second_result = EthereumBeaconClient::submit(RuntimeOrigin::signed(1), update.clone());
+            assert_err!(second_result, Error::<Test>::SyncCommitteeUpdateRequired);
+            assert_eq!(second_result.unwrap_err().post_info.pays_fee, Pays::Yes);
+
+            // submit update with next sync committee
+            let third_result =
+                EthereumBeaconClient::submit(RuntimeOrigin::signed(1), next_sync_committee_update);
+            assert_ok!(third_result);
+            assert_eq!(third_result.unwrap().pays_fee, Pays::No);
+            // check same header in the next period can now be submitted successfully
+            assert_ok!(EthereumBeaconClient::submit(RuntimeOrigin::signed(1), update.clone()));
+            let block_root: H256 = update.finalized_header.clone().hash_tree_root().unwrap();
+            assert!(<FinalizedBeaconState<Test>>::contains_key(block_root));
+            */
+        });
 }

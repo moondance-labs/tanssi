@@ -20,27 +20,66 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 use crate::{parameter_types, ConstU32, Runtime, RuntimeEvent};
 use snowbridge_beacon_primitives::{Fork, ForkVersions};
 
+// For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
+#[cfg(any(
+    feature = "std",
+    feature = "fast-runtime",
+    feature = "runtime-benchmarks",
+    test
+))]
 parameter_types! {
     pub const ChainForkVersions: ForkVersions = ForkVersions {
         genesis: Fork {
-            version: [144, 0, 0, 111], // 0x90000069
+            version: [0, 0, 0, 0], // 0x00000000
             epoch: 0,
         },
         altair: Fork {
-            version: [144, 0, 0, 112], // 0x90000070
-            epoch: 50,
+            version: [1, 0, 0, 0], // 0x01000000
+            epoch: 0,
         },
         bellatrix: Fork {
-            version: [144, 0, 0, 113], // 0x90000071
-            epoch: 100,
+            version: [2, 0, 0, 0], // 0x02000000
+            epoch: 0,
         },
         capella: Fork {
-            version: [144, 0, 0, 114], // 0x90000072
-            epoch: 56832,
+            version: [3, 0, 0, 0], // 0x03000000
+            epoch: 0,
         },
         deneb: Fork {
-            version: [144, 0, 0, 115], // 0x90000073
-            epoch: 132608,
+            version: [4, 0, 0, 0], // 0x04000000
+            epoch: 0,
+        }
+    };
+}
+
+// Holesky: https://github.com/eth-clients/holesky
+#[cfg(not(any(
+    feature = "std",
+    feature = "fast-runtime",
+    feature = "runtime-benchmarks",
+    test
+)))]
+parameter_types! {
+    pub const ChainForkVersions: ForkVersions = ForkVersions {
+        genesis: Fork {
+            version: [1, 1, 112, 0], // 0x01017000
+            epoch: 0,
+        },
+        altair: Fork {
+            version: [1, 0, 0, 0], // 0x01017000
+            epoch: 0,
+        },
+        bellatrix: Fork {
+            version: [1, 0, 0, 0], // 0x01017000
+            epoch: 0,
+        },
+        capella: Fork {
+            version: [1, 1, 112, 1], // 0x01017001
+            epoch: 256,
+        },
+        deneb: Fork {
+            version: [1, 1, 112, 2], // 0x01017002
+            epoch: 29696,
         },
     };
 }
