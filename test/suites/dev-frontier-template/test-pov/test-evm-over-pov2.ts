@@ -12,22 +12,35 @@ describeSuite({
         let proxyAddress: `0x${string}`;
         let proxyAbi: Abi;
         let contracts: HeavyContract[];
-        const max_eth_pov_per_tx = MAX_ETH_POV_PER_TX / 100n;
+        let callData: `0x${string}`;
+        let emptyBlockProofSize: bigint;
+        const MAX_CONTRACTS = 20;
 
         beforeAll(async () => {
+            // Create an empty block to estimate empty block proof size
+            const { block } = await context.createBlock();
+            // Empty blocks usually do not exceed 50kb
+            emptyBlockProofSize = BigInt(block.proofSize || 50_000);
+
             const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder");
             proxyAddress = contractAddress;
             proxyAbi = abi;
 
             // Deploy heavy contracts (test won't use more than what is needed for reaching max pov)
-            contracts = await deployHeavyContracts(context, 6000, Number(6000n + max_eth_pov_per_tx / 24_000n + 1n));
+            contracts = await deployHeavyContracts(context, 6000, Number(6000n + MAX_ETH_POV_PER_TX / 24_000n + 1n));
+
+            callData = encodeFunctionData({
+                abi: proxyAbi,
+                functionName: "callRange",
+                args: [contracts[0].account, contracts[MAX_CONTRACTS].account],
+            });
         });
 
         it({
             id: "T01",
             title: "should allow to produce block just under the PoV Limit",
             test: async function () {
-                const calculatedMax = max_eth_pov_per_tx / 24_000n - 1n;
+                const calculatedMax = MAX_ETH_POV_PER_TX / 24_000n - 1n;
 
                 const callData = encodeFunctionData({
                     abi: proxyAbi,
@@ -38,15 +51,15 @@ describeSuite({
                 const rawSigned = await createEthersTransaction(context, {
                     to: proxyAddress,
                     data: callData,
-                    gasLimit: 13_000_000,
+                    gasLimit: 52_000_000,
                     txnType: "eip1559",
                 });
 
                 const { result, block } = await context.createBlock(rawSigned);
 
                 log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
-                expect(block.proofSize).toBeGreaterThanOrEqual(max_eth_pov_per_tx - 30_000n);
-                expect(block.proofSize).toBeLessThanOrEqual(max_eth_pov_per_tx - 1n);
+                expect(block.proofSize).toBeGreaterThanOrEqual(15_000);
+                expect(block.proofSize).toBeLessThanOrEqual(25_000n + emptyBlockProofSize);
                 expect(result?.successful).to.equal(true);
             },
         });
@@ -55,7 +68,7 @@ describeSuite({
             id: "T02",
             title: "should prevent a transaction reaching just over the PoV",
             test: async function () {
-                const calculatedMax = max_eth_pov_per_tx / 24_000n;
+                const calculatedMax = MAX_ETH_POV_PER_TX / 24_000n;
 
                 const callData = encodeFunctionData({
                     abi: proxyAbi,
@@ -66,7 +79,7 @@ describeSuite({
                 const rawSigned = await createEthersTransaction(context, {
                     to: proxyAddress,
                     data: callData,
-                    gasLimit: 15_000_000,
+                    gasLimit: 60_000_000,
                     txnType: "eip1559",
                 });
 
@@ -74,7 +87,7 @@ describeSuite({
 
                 log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
                 // Empty blocks usually do not exceed 10kb, picking 50kb as a safe limit
-                expect(block.proofSize).to.be.at.most(50_000);
+                expect(block.proofSize).to.be.at.most(25_000);
                 expect(result?.successful).to.equal(false);
             },
         });

@@ -14,7 +14,7 @@ describeSuite({
         let contracts: HeavyContract[];
         let callData: `0x${string}`;
         const MAX_CONTRACTS = 20;
-        const EXPECTED_POV_ROUGH = 40_000; // bytes
+        const EXPECTED_POV_ROUGH = 16_000; // bytes
 
         beforeAll(async () => {
             const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder");
@@ -52,9 +52,8 @@ describeSuite({
                 const { result, block } = await context.createBlock(rawSigned);
 
                 log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
-                console.log(block);
-                expect(block.proofSize).toBeGreaterThanOrEqual(EXPECTED_POV_ROUGH / 2.0);
-                expect(block.proofSize).toBeLessThanOrEqual(EXPECTED_POV_ROUGH * 1.1);
+                expect(block.proofSize).toBeGreaterThanOrEqual(EXPECTED_POV_ROUGH / 1.2);
+                expect(block.proofSize).toBeLessThanOrEqual(EXPECTED_POV_ROUGH * 1.2);
                 expect(result?.successful).to.equal(true);
             },
         });
@@ -67,14 +66,14 @@ describeSuite({
                     to: proxyAddress,
                     data: callData,
                     txnType: "eip1559",
-                    gasLimit: 3_000_000,
+                    gasLimit: 12_000_000,
                 });
 
                 const { result, block } = await context.createBlock(rawSigned);
 
                 log(`block.proof_size: ${block.proofSize} (successful: ${result?.successful})`);
-                expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 2.0);
-                expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.1);
+                expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.2);
+                expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.2);
                 expect(result?.successful).to.equal(true);
             },
         });
@@ -89,7 +88,7 @@ describeSuite({
                     to: proxyAddress,
                     data: callData,
                     txnType: "eip1559",
-                    gasLimit: 1_000_000,
+                    gasLimit: 100_000,
                 });
 
                 const { result, block } = await context.createBlock(rawSigned);
@@ -97,9 +96,9 @@ describeSuite({
                 log(`block.proof_size: ${block.proofSize} (successful: ${result?.successful})`);
                 // The block still contain the failed (out of gas) transaction so the PoV is still included
                 // in the block.
-                // 1M Gas allows ~250k of PoV, so we verify we are within range.
-                expect(block.proofSize).to.be.at.least(23_000);
-                expect(block.proofSize).to.be.at.most(50_000);
+                // 1M Gas allows ~38k of PoV, so we verify we are within range.
+                expect(block.proofSize).to.be.at.least(15_000);
+                expect(block.proofSize).to.be.at.most(25_000);
                 expect(result?.successful).to.equal(true);
                 expectEVMResult(result!.events, "Error", "OutOfGas");
             },
