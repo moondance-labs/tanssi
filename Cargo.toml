@@ -254,9 +254,9 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 
 
 # Bridges (wasm)
-snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
+milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
-milagro-bls = { version = "1.5.4", default-features = false, package = "snowbridge-milagro-bls" }
+snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407" }

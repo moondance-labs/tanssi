@@ -139,11 +139,13 @@ tanssi-runtime-common = { workspace = true }
 pallet-migrations = { workspace = true }
 
 # Bridges
-snowbridge-pallet-ethereum-client = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
+snowbridge-pallet-ethereum-client = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
+milagro-bls = { workspace = true, features = [ "std" ] }
+rand = { version = "0.8.5", features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
@@ -152,8 +154,6 @@ sp-trie = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
-milagro-bls = { workspace = true, features = [ "std" ] }
-rand = { version = "0.8.5", features = [ "std", "std_rng" ] }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -183,6 +183,7 @@ std = [
 	"inherents/std",
 	"keyring/std",
 	"log/std",
+	"milagro-bls/std",
 	"nimbus-primitives/std",
 	"offchain-primitives/std",
 	"pallet-asset-rate/std",
@@ -247,9 +248,9 @@ std = [
 	"serde/std",
 	"serde_derive",
 	"serde_json/std",
-	"snowbridge-pallet-ethereum-client/std",
-	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-beacon-primitives/std",
+	"snowbridge-pallet-ethereum-client/fuzzing",
+	"snowbridge-pallet-ethereum-client/std",
 	"sp-api/std",
 	"sp-arithmetic/std",
 	"sp-consensus-aura/std",
@@ -277,7 +278,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"milagro-bls/std"
 ]
 no_std = []
 
@@ -401,9 +401,9 @@ try-runtime = [
 	"pallet-xcm/try-runtime",
 	"runtime-common/try-runtime",
 	"runtime-parachains/try-runtime",
+	"snowbridge-pallet-ethereum-client/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"snowbridge-pallet-ethereum-client/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
