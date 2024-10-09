@@ -277,6 +277,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"milagro-bls/std"
 ]
 no_std = []
 
@@ -402,6 +403,7 @@ try-runtime = [
 	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"snowbridge-pallet-ethereum-client/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
