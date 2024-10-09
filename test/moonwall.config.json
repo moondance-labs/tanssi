@@ -51,6 +51,7 @@
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
+            "runScripts": ["download-ethereum-cient-test-files.sh"],
             "multiThreads": true,
             "timeout": 240000,
             "reporters": ["basic"],
