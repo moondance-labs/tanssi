@@ -18,6 +18,7 @@ use {
     node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
+    tc_service_container_chain::cli::ContainerChainRunCmd,
 };
 
 /// Sub-commands supported by the collator.
@@ -63,10 +64,36 @@ pub enum Subcommand {
 
     /// Precompile the WASM runtime into native code
     PrecompileWasm(sc_cli::PrecompileWasmCmd),
+
+    /// Solochain collator mode
+    SoloChain(SoloChainCmd),
+}
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct SoloChainCmd {
+    #[command(flatten)]
+    pub run: ContainerChainRunCmd,
+
+    /// Disable automatic hardware benchmarks.
+    ///
+    /// By default these benchmarks are automatically ran at startup and measure
+    /// the CPU speed, the memory bandwidth and the disk speed.
+    ///
+    /// The results are then printed out in the logs, and also sent as part of
+    /// telemetry, if telemetry is enabled.
+    #[arg(long)]
+    pub no_hardware_benchmarks: bool,
+
+    /// Relay chain arguments
+    #[arg(raw = true)]
+    pub relay_chain_args: Vec<String>,
 }
 
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
+#[group(skip)]
 pub struct BuildSpecCmd {
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
@@ -184,7 +211,7 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and orchestrator chain arguments
+    /// Extra arguments, `container-args -- relay-args` or `relay-args` if no `--`
     #[arg(raw = true)]
     extra_args: Vec<String>,
 }

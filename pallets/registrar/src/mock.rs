@@ -18,7 +18,7 @@ use {
     crate::{self as pallet_registrar, ParathreadParamsTy, RegistrarHooks},
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
-        traits::{ConstU16, ConstU64},
+        traits::{ConstU16, ConstU64, OnFinalize, OnInitialize},
         weights::Weight,
     },
     parity_scale_codec::{Decode, Encode},
@@ -29,7 +29,7 @@ use {
         BuildStorage,
     },
     std::collections::BTreeMap,
-    tp_traits::{ParaId, RelayStorageRootProvider},
+    tp_traits::{ParaId, RegistrarHandler, RelayStorageRootProvider},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -148,6 +148,7 @@ impl pallet_registrar::Config for Test {
     type DepositAmount = DepositAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
+    type InnerRegistrar = Mock;
     type WeightInfo = ();
 }
 
@@ -195,6 +196,11 @@ pub mod mock_data {
 pub enum HookCall {
     MarkedValid(ParaId),
     Deregistered(ParaId),
+    InnerRegister(ParaId),
+    InnerScheduleParaUpgrade(ParaId),
+    InnerScheduleParaDowngrade(ParaId),
+    InnerDeregister(ParaId),
+    InnerDeregisterWeight,
 }
 
 pub enum HookCallType {
@@ -228,6 +234,50 @@ impl<T> RegistrarHooks for mock_data::Pallet<T> {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
+}
+
+// We also use mock_data pallet to check whether InnerRegistrar methods are called properly.
+impl<T, AccountId> RegistrarHandler<AccountId> for mock_data::Pallet<T> {
+    fn register(
+        _who: AccountId,
+        id: ParaId,
+        _genesis_storage: &[tp_traits::ContainerChainGenesisDataItem],
+        _head_data: Option<tp_traits::HeadData>,
+    ) -> sp_runtime::DispatchResult {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::InnerRegister(id));
+
+            Ok(())
+        })
+    }
+
+    fn deregister(id: ParaId) {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::InnerDeregister(id));
+        })
+    }
+
+    fn schedule_para_upgrade(id: ParaId) -> sp_runtime::DispatchResult {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::InnerScheduleParaUpgrade(id));
+            Ok(())
+        })
+    }
+
+    fn schedule_para_downgrade(id: ParaId) -> sp_runtime::DispatchResult {
+        Mock::mutate(|m| {
+            m.called_hooks
+                .push(HookCall::InnerScheduleParaDowngrade(id));
+            Ok(())
+        })
+    }
+
+    fn deregister_weight() -> Weight {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::InnerDeregisterWeight);
+            Weight::default()
+        })
+    }
 }
 
 impl mock_data::Config for Test {}
@@ -281,6 +331,7 @@ impl Mocks {
                         }
                         last_call_type.insert(*para_id, HookCallType::Deregistered);
                     }
+                    _ => {}
                 }
             }
         }
@@ -358,8 +409,17 @@ pub fn run_to_block(n: u64) {
         if x % SESSION_LEN == 1 {
             let session_index = (x / SESSION_LEN) as u32;
             ParaRegistrar::initializer_on_new_session(&session_index);
+            ParaRegistrar::on_initialize(session_index.into());
         }
     }
+}
+
+pub fn end_block() {
+    ParaRegistrar::on_finalize(System::block_number());
+}
+
+pub fn start_block() {
+    ParaRegistrar::on_finalize(System::block_number());
 }
 
 pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {

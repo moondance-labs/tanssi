@@ -478,9 +478,12 @@ impl ExtBuilder {
                     )
                 })
                 .collect();
-            pallet_session::GenesisConfig::<Runtime> { keys }
-                .assimilate_storage(&mut t)
-                .unwrap();
+            pallet_session::GenesisConfig::<Runtime> {
+                keys,
+                ..Default::default()
+            }
+            .assimilate_storage(&mut t)
+            .unwrap();
         }
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)

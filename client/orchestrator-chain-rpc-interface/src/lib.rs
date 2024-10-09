@@ -20,8 +20,9 @@ use {
     async_trait::async_trait,
     core::pin::Pin,
     dc_orchestrator_chain_interface::{
-        BlockNumber, ContainerChainGenesisData, OrchestratorChainError, OrchestratorChainInterface,
-        OrchestratorChainResult, PHash, PHeader,
+        BlockNumber, ContainerChainGenesisData, DataPreserverAssignment, DataPreserverProfileId,
+        NimbusId, OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+        PHash, PHeader,
     },
     dp_core::ParaId,
     futures::{Stream, StreamExt},
@@ -114,7 +115,7 @@ impl OrchestratorChainRpcClient {
         };
         let res = self
             .request_tracing::<sp_core::Bytes, _>("state_call", params, |err| {
-                tracing::trace!(
+                tracing::debug!(
                     target: LOG_TARGET,
                     %method_name,
                     %hash,
@@ -289,8 +290,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        self.call_remote_runtime_function("genesis_data", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "RegistrarApi_genesis_data",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn boot_nodes(
@@ -298,8 +303,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        self.call_remote_runtime_function("boot_nodes", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "RegistrarApi_boot_nodes",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn latest_block_number(
@@ -307,8 +316,12 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
         orchestrator_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        self.call_remote_runtime_function("latest_block_number", orchestrator_parent, Some(para_id))
-            .await
+        self.call_remote_runtime_function(
+            "AuthorNotingApi_latest_block_number",
+            orchestrator_parent,
+            Some(para_id),
+        )
+        .await
     }
 
     async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
@@ -317,5 +330,44 @@ impl OrchestratorChainInterface for OrchestratorChainRpcClient {
 
     async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
         self.request("chain_getFinalizedHead", rpc_params![]).await
+    }
+
+    async fn data_preserver_active_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        profile_id: DataPreserverProfileId,
+    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
+        self.call_remote_runtime_function(
+            "DataPreserversApi_get_active_assignment",
+            orchestrator_parent,
+            Some(profile_id),
+        )
+        .await
+    }
+
+    async fn check_para_id_assignment(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        self.call_remote_runtime_function(
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment",
+            orchestrator_parent,
+            Some(authority),
+        )
+        .await
+    }
+
+    async fn check_para_id_assignment_next_session(
+        &self,
+        orchestrator_parent: PHash,
+        authority: NimbusId,
+    ) -> OrchestratorChainResult<Option<ParaId>> {
+        self.call_remote_runtime_function(
+            "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
+            orchestrator_parent,
+            Some(authority),
+        )
+        .await
     }
 }

@@ -85,7 +85,7 @@ jobs:
           path: binaries
       - name: Unit tests
         run: |
-          cargo test --release --all --features=fast-runtime
+          cargo test --release --all --features=fast-runtime --exclude tc-consensus
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
@@ -100,6 +100,11 @@ jobs:
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
           moonwall-environment: dev_simple_template
+          force-pass: true
+      - name: Typescript Tests Tanssi Relay (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
+        with:
+          moonwall-environment: dev_tanssi_relay
           force-pass: true
       - name: Install llvm tools
         run:

@@ -86,6 +86,8 @@ pub struct HostConfiguration {
     pub parathreads_per_collator: u32,
     /// Ratio of collators that we expect to be assigned to container chains. Affects fees.
     pub target_container_chain_fullness: Perbill,
+    ///  Maximum number of cores that can be allocated to parachains (only applicable for solo chain)
+    pub max_parachain_cores_percentage: Option<Perbill>,
 }
 
 impl Default for HostConfiguration {
@@ -99,6 +101,7 @@ impl Default for HostConfiguration {
             collators_per_parathread: 1,
             parathreads_per_collator: 1,
             target_container_chain_fullness: Perbill::from_percent(80),
+            max_parachain_cores_percentage: None,
         }
     }
 }
@@ -338,6 +341,21 @@ pub mod pallet {
             })
         }
 
+        #[pallet::call_index(8)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_max_parachain_cores_percentage(
+            origin: OriginFor<T>,
+            new: Option<Perbill>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.max_parachain_cores_percentage = new;
+            })
+        }
+
         /// Setting this to true will disable consistency checks for the configuration setters.
         /// Use with caution.
         #[pallet::call_index(44)]
@@ -537,72 +555,49 @@ pub mod pallet {
         pub fn pending_configs() -> Vec<(T::SessionIndex, HostConfiguration)> {
             PendingConfigs::<T>::get()
         }
+
+        pub fn config_at_session(session_index: T::SessionIndex) -> HostConfiguration {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+
+            config
+        }
     }
 
     impl<T: Config> GetHostConfiguration<T::SessionIndex> for Pallet<T> {
         fn max_collators(session_index: T::SessionIndex) -> u32 {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.max_collators
+            Self::config_at_session(session_index).max_collators
         }
 
         fn collators_per_container(session_index: T::SessionIndex) -> u32 {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.collators_per_container
+            Self::config_at_session(session_index).collators_per_container
         }
 
         fn collators_per_parathread(session_index: T::SessionIndex) -> u32 {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.collators_per_parathread
+            Self::config_at_session(session_index).collators_per_parathread
         }
 
         fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.min_orchestrator_collators
+            Self::config_at_session(session_index).min_orchestrator_collators
         }
 
         fn max_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
-            let (past_and_present, _) = Pallet::<T>::pending_configs()
-                .into_iter()
-                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+            Self::config_at_session(session_index).max_orchestrator_collators
+        }
 
-            let config = if let Some(last) = past_and_present.last() {
-                last.1.clone()
-            } else {
-                Pallet::<T>::config()
-            };
-            config.max_orchestrator_collators
+        fn target_container_chain_fullness(session_index: T::SessionIndex) -> Perbill {
+            Self::config_at_session(session_index).target_container_chain_fullness
+        }
+
+        fn max_parachain_cores_percentage(session_index: T::SessionIndex) -> Option<Perbill> {
+            Self::config_at_session(session_index).max_parachain_cores_percentage
         }
     }
 }

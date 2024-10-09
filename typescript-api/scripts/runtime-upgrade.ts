@@ -6,7 +6,7 @@ import chalk from "chalk";
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 async function main() {
-    const CHAINS = ["dancebox", "flashbox"];
+    const CHAINS = ["dancebox", "flashbox", "dancelight"];
 
     const RUNTIME_CHAIN_SPEC = process.argv[2];
 
@@ -26,7 +26,8 @@ async function main() {
     // Get runtimes metadata
     for (const CHAIN of CHAINS) {
         console.log(`Starting ${CHAIN} node`);
-        nodeProcess = spawn("../target/release/tanssi-node", [
+        const isStarlightChain = CHAIN.includes("light");
+        nodeProcess = spawn(`../target/release/tanssi-${isStarlightChain ? 'relay' : 'node'}`, [
             "--no-hardware-benchmarks",
             "--no-telemetry",
             "--no-prometheus",
@@ -36,7 +37,7 @@ async function main() {
             "--dev-service",
             "--wasm-execution=interpreted-i-know-what-i-do",
             "--rpc-port=9933",
-            "--unsafe-force-node-key-generation"
+            "--unsafe-force-node-key-generation",
         ]);
 
         const onProcessExit = () => {
@@ -97,7 +98,6 @@ async function main() {
     console.log("Building package...");
     execSync("pnpm run build", { stdio: "inherit" });
     console.log("Post build...");
-    execSync("pnpm run postbuild", { stdio: "inherit" });
     execSync("pnpm run postgenerate", { stdio: "inherit" });
 
     console.log(`Script complete ${chalk.bgBlackBright.greenBright("api-augment")} package built successfully ✅`);

@@ -16,11 +16,13 @@
 
 use {
     crate::{
-        service::{ContainerChainBackend, ContainerChainClient},
+        service::ContainerChainBackend,
         spawner::{CcSpawnMsg, ContainerChainSpawnerState},
     },
     cumulus_primitives_core::ParaId,
+    frame_support::DefaultNoBound,
     std::{
+        any::Any,
         cell::Cell,
         collections::VecDeque,
         sync::{Arc, Mutex},
@@ -32,7 +34,7 @@ use {
     },
 };
 
-#[derive(Default)]
+#[derive(DefaultNoBound)]
 pub struct SpawnedContainersMonitor {
     /// List of the N most recently started container chains, with some statistics related to
     /// stopping time and reference count.
@@ -59,7 +61,7 @@ pub struct SpawnedContainer {
     /// Used to check the reference count, if it's 0 it means the database has been closed
     pub backend: std::sync::Weak<ContainerChainBackend>,
     /// Used to check the reference count, if it's 0 it means that the client has been closed.
-    pub client: std::sync::Weak<ContainerChainClient>,
+    pub client: std::sync::Weak<dyn Any + Send + Sync>,
 }
 
 impl SpawnedContainer {
@@ -295,7 +297,7 @@ mod tests {
             stop_task_manager_time: Default::default(),
             stop_refcount_time: Default::default(),
             backend: Default::default(),
-            client: Default::default(),
+            client: std::sync::Weak::<()>::new(),
         };
 
         // Truncating empty list does not panic

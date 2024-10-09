@@ -28,14 +28,13 @@ use {
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
     std::net::ToSocketAddrs,
+    tanssi_relay_service::dev_service::build_full as build_full_dev,
 };
 
 pub use crate::error::Error;
-#[cfg(feature = "hostperfcheck")]
-pub use polkadot_performance_test::PerfCheckError;
+
 #[cfg(feature = "pyroscope")]
 use pyroscope_pprofrs::{pprof_backend, PprofConfig};
-use tanssi_relay_service::dev_service::build_full as build_full_dev;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -76,8 +75,14 @@ impl SubstrateCli for Cli {
         "tanssi".into()
     }
 
+    #[cfg(not(feature = "runtime-benchmarks"))]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(id, vec![], vec![2000, 2001], None)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        load_spec(id, vec![], vec![], None)
     }
 }
 
@@ -156,7 +161,7 @@ where
 
         let database_source = config.database.clone();
 
-        let task_manager = if config.chain_spec.is_dev() {
+        let task_manager = if config.chain_spec.is_dev() || cli.run.dev_service {
             log::info!("Starting service in Development mode");
             build_full_dev(
                 Sealing::Manual,
@@ -487,55 +492,66 @@ fn load_spec(
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
     let id = if id.is_empty() {
         let n = get_exec_name().unwrap_or_default();
-        ["starlight"]
+        ["dancelight"]
             .iter()
             .cloned()
             .find(|&chain| n.starts_with(chain))
-            .unwrap_or("starlight")
+            .unwrap_or("dancelight")
     } else {
         id
     };
     let mock_container_chains: Vec<ParaId> =
         mock_container_chains.iter().map(|&x| x.into()).collect();
-    let invulnerables = invulnerables.unwrap_or_default();
     Ok(match id {
-        #[cfg(feature = "starlight-native")]
-        "starlight" => Box::new(tanssi_relay_service::chain_spec::starlight_config()?),
-        #[cfg(feature = "starlight-native")]
-        "dev" | "starlight-dev" => Box::new(
-            tanssi_relay_service::chain_spec::starlight_development_config(
-                container_chains,
-                mock_container_chains,
-                invulnerables,
-            )?,
-        ),
-        #[cfg(feature = "starlight-native")]
-        "starlight-local" => Box::new(
-            tanssi_relay_service::chain_spec::starlight_local_testnet_config(
-                container_chains,
-                mock_container_chains,
-                invulnerables,
-            )?,
-        ),
-        #[cfg(feature = "starlight-native")]
-        "starlight-staging" => {
-            Box::new(tanssi_relay_service::chain_spec::starlight_staging_testnet_config()?)
+        #[cfg(feature = "dancelight-native")]
+        "dancelight" => Box::new(tanssi_relay_service::chain_spec::dancelight_config()?),
+        #[cfg(feature = "dancelight-native")]
+        "dev" | "dancelight-dev" => {
+            // Default invulnerables for dev mode, used in dev_tanssi_relay tests
+            let invulnerables = invulnerables.unwrap_or(vec![
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+                "Eve".to_string(),
+            ]);
+
+            Box::new(
+                tanssi_relay_service::chain_spec::dancelight_development_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
         }
-        #[cfg(not(feature = "starlight-native"))]
-        name if name.starts_with("starlight-") && !name.ends_with(".json") || name == "dev" => {
+        #[cfg(feature = "dancelight-native")]
+        "dancelight-local" => {
+            let invulnerables = invulnerables.unwrap_or_default();
+
+            Box::new(
+                tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
+        }
+        #[cfg(feature = "dancelight-native")]
+        "dancelight-staging" => {
+            Box::new(tanssi_relay_service::chain_spec::dancelight_staging_testnet_config()?)
+        }
+        #[cfg(not(feature = "dancelight-native"))]
+        name if name.starts_with("dancelight-") && !name.ends_with(".json") || name == "dev" => {
             Err(format!(
-                "`{}` only supported with `starlight-native` feature enabled.",
+                "`{}` only supported with `dancelight-native` feature enabled.",
                 name
             ))?
         }
         path => {
             let path = std::path::PathBuf::from(path);
 
-            let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(
+            (Box::new(polkadot_service::GenericChainSpec::from_json_file(
                 path.clone(),
-            )?) as Box<dyn polkadot_service::ChainSpec>;
-
-            chain_spec
+            )?)) as std::boxed::Box<dyn sc_cli::ChainSpec>
         }
     })
 }

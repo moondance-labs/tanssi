@@ -185,9 +185,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
@@ -208,9 +208,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
@@ -324,9 +324,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: "Download binaries"
               uses: actions/download-artifact@v4
               with:
@@ -340,6 +340,7 @@ jobs:
             - name: "Generate Local interfaces"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -356,9 +357,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: "Download binaries"
               uses: actions/download-artifact@v4
               with:
@@ -372,6 +373,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -390,9 +392,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: "Download binaries"
               uses: actions/download-artifact@v4
               with:
@@ -406,6 +408,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -424,9 +427,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
@@ -440,6 +443,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -458,9 +462,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
@@ -474,6 +478,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -492,9 +497,9 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
@@ -521,9 +526,9 @@ jobs:
             with:
                 ref: ${{ needs.set-tags.outputs.git_ref }}
           - name: Pnpm
-            uses: pnpm/action-setup@v3.0.0
+            uses: pnpm/action-setup@v4.0.0
             with:
-                version: 8
+                version: 9
           - name: "Download binaries"
             uses: actions/download-artifact@v4
             with:
@@ -537,6 +542,7 @@ jobs:
           - name: "Generate typescript api"
             run: |
                 chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
                 cd typescript-api
                 pnpm install
                 pnpm create-local-interfaces
@@ -555,7 +561,7 @@ jobs:
         strategy:
           fail-fast: false
           matrix:
-            test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay]
+            test_name: [zombie_tanssi, zombie_tanssi_parathreads, zombie_tanssi_rotation, zombie_tanssi_warp_sync, zombie_tanssi_relay, zombie_data_preservers]
         steps:
           - name: Checkout
             uses: actions/checkout@v4
@@ -587,9 +593,9 @@ jobs:
           uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
-        - uses: pnpm/action-setup@v3.0.0
+        - uses: pnpm/action-setup@v4.0.0
           with:
-            version: 8
+            version: 9
         - uses: actions/setup-node@v4
           with:
             node-version: 20.x
@@ -623,9 +629,9 @@ jobs:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
 
             - name: Setup node
               uses: actions/setup-node@v4
@@ -706,9 +712,9 @@ jobs:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
             - name: Pnpm
-              uses: pnpm/action-setup@v3.0.0
+              uses: pnpm/action-setup@v4.0.0
               with:
-                  version: 8
+                  version: 9
 
             - name: Setup node
               uses: actions/setup-node@v4
@@ -743,7 +749,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template", "starlight"]
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout

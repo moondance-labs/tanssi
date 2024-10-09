@@ -98,13 +98,13 @@ pub struct RunCmd {
     #[clap(flatten)]
     pub base: sc_cli::RunCmd,
 
-    /// Force using Starlight native runtime.
-    #[arg(long = "force-starlight")]
-    pub force_starlight: bool,
+    /// Force using Dancelight native runtime.
+    #[arg(long = "force-dancelight")]
+    pub force_dancelight: bool,
 
     /// Disable the BEEFY gadget.
     ///
-    /// Currently enabled by default on 'Starlight'.
+    /// Currently enabled by default on 'Dancelight'.
     #[arg(long)]
     pub no_beefy: bool,
 
@@ -176,6 +176,10 @@ pub struct RunCmd {
     /// TESTING ONLY: disable the version check between nodes and workers.
     #[arg(long, hide = true)]
     pub disable_worker_version_check: bool,
+
+    // Enable the development service
+    #[arg(long)]
+    pub dev_service: bool,
 }
 
 #[allow(missing_docs)]

@@ -40,8 +40,7 @@ use {
     async_backing_primitives::UnincludedSegmentApi,
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
     cumulus_client_consensus_common::{
-        self as consensus_common, load_abridged_host_configuration, ParachainBlockImportMarker,
-        ParentSearchParams,
+        self as consensus_common, load_abridged_host_configuration, ParentSearchParams,
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
@@ -344,8 +343,32 @@ pub struct Params<
     pub authoring_duration: Duration,
     pub force_authoring: bool,
     pub cancellation_token: CancellationToken,
-    pub orchestrator_tx_pool: Arc<TxPool>,
-    pub orchestrator_client: Arc<OClient>,
+    pub buy_core_params: BuyCoreParams<TxPool, OClient>,
+}
+
+pub enum BuyCoreParams<TxPool, OClient> {
+    Orchestrator {
+        orchestrator_tx_pool: Arc<TxPool>,
+        orchestrator_client: Arc<OClient>,
+    },
+    Solochain {
+        // TODO: relay_tx_pool
+    },
+}
+
+impl<TxPool, OClient> Clone for BuyCoreParams<TxPool, OClient> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Orchestrator {
+                orchestrator_tx_pool,
+                orchestrator_client,
+            } => Self::Orchestrator {
+                orchestrator_tx_pool: orchestrator_tx_pool.clone(),
+                orchestrator_client: orchestrator_client.clone(),
+            },
+            Self::Solochain {} => Self::Solochain {},
+        }
+    }
 }
 
 /// Run async-backing-friendly for Tanssi Aura.
@@ -404,7 +427,7 @@ where
         + 'static
         + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
@@ -637,7 +660,22 @@ where
                                 let slot = inherent_providers.slot();
                                 let container_chain_slot_duration = (params.get_current_slot_duration)(parent_header.hash());
 
-                                match try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, params.orchestrator_client.clone(), params.orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await {
+                                let buy_core_result = match &params.buy_core_params {
+                                    BuyCoreParams::Orchestrator {
+                                        orchestrator_client,
+                                        orchestrator_tx_pool,
+                                    } => {
+                                        try_to_buy_core::<_, _, <<OBlock as BlockT>::Header as HeaderT>::Number, _, CIDP, _, _>(params.para_id, aux_data, inherent_providers, &params.keystore, orchestrator_client.clone(), orchestrator_tx_pool.clone(), parent_header, params.orchestrator_slot_duration, container_chain_slot_duration).await
+                                    }
+                                    BuyCoreParams::Solochain {
+
+                                    } => {
+                                        // TODO: implement parathread support for solochain
+                                        log::warn!("Unimplemented: cannot buy core for parathread in solochain");
+                                        break;
+                                    }
+                                };
+                                match buy_core_result {
                                     Ok(block_hash) => {
                                         tracing::trace!(target: crate::LOG_TARGET, ?block_hash, "Sent unsigned extrinsic to buy the core");
                                     },
@@ -780,7 +818,7 @@ async fn can_build_upon<Block: BlockT, Client, P>(
     slot: Slot,
     aux_data: OrchestratorAuraWorkerAuxData<P>,
     parent_header: Block::Header,
-    included_block: Block::Hash,
+    included_block: <Block as BlockT>::Hash,
     force_authoring: bool,
     client: &Client,
     keystore: &KeystorePtr,

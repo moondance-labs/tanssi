@@ -11,9 +11,11 @@
         "baseUrl": ".",
         "composite": true,
         "declaration": true,
+        "types": ["node"],
         "paths": {
             "dancebox": ["dancebox/src"],
-            "flashbox": ["flashbox/src"]
+            "flashbox": ["flashbox/src"],
+            "dancelight": ["dancelight/src"]
         }
     },
     "exclude": ["node_modules", "build"]

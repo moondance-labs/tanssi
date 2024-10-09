@@ -38,7 +38,7 @@ pub mod weights;
 mod tests;
 
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
@@ -53,7 +53,7 @@ use {
                 UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -98,8 +98,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, RelayStorageRootProvider, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, RelayStorageRootProvider,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators,
     },
 };
 pub use {
@@ -504,7 +504,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ();
     type XcmpMessageHandler = ();
     type ReservedXcmpWeight = ();
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 
@@ -747,6 +747,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;
+    type CoreAllocationConfiguration = ();
     type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
@@ -920,13 +921,15 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     }
 }
 
+pub type DataPreserversProfileId = u64;
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
-    type ProfileId = u64;
+    type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentPayment = PreserversAssignementPayment;
 
@@ -1126,6 +1129,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -1277,17 +1281,20 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
     }
 }
 
-/// Normal Call Filter
-pub struct NormalFilter;
-impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(_c: &RuntimeCall) -> bool {
-        true
+/// We allow everything but registering parathreads
+pub struct IsRegisterParathreads;
+impl Contains<RuntimeCall> for IsRegisterParathreads {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Registrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = NormalFilter;
+    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
@@ -1333,15 +1340,14 @@ parameter_types! {
 }
 
 pub struct GetSelfChainBlockAuthor;
-impl Get<AccountId32> for GetSelfChainBlockAuthor {
-    fn get() -> AccountId32 {
+impl MaybeSelfChainBlockAuthor<AccountId32> for GetSelfChainBlockAuthor {
+    fn get_block_author() -> Option<AccountId32> {
         // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
         // we should also make sure we actually account for the weight of these
         // although most of these should be cached as they are read every block
         let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         let self_para_id = ParachainInfo::get();
-        let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
-        author.expect("author should be set")
+        CollatorAssignment::author_for_slot(slot.into(), self_para_id)
     }
 }
 
@@ -1556,6 +1562,7 @@ parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub const MaxBalance: Balance = Balance::max_value();
+    pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1565,7 +1572,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     // If proposal gets rejected, bond goes to treasury
-    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type SpendPeriod = SpendPeriod;
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
@@ -1580,7 +1587,7 @@ impl pallet_treasury::Config for Runtime {
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasurtBenchmarkHelper<Runtime>;
+    type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
@@ -2096,6 +2103,25 @@ impl_runtime_apis! {
                 Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
                 => Err(StreamPaymentApiError::UnknownStreamId),
                 Err(e) => Err(StreamPaymentApiError::Other(format!("{e:?}")))
+            }
+        }
+    }
+
+    impl pallet_data_preservers_runtime_api::DataPreserversApi<Block, DataPreserversProfileId, ParaId> for Runtime {
+        fn get_active_assignment(
+            profile_id: DataPreserversProfileId,
+        ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
+            use pallet_data_preservers_runtime_api::Assignment;
+
+            let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
+                .and_then(|x| x.assignment) else
+            {
+                return Assignment::NotAssigned;
+            };
+
+            match witness {
+                PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
+                // TODO: Add Stream Payment. Stalled stream should return Inactive.
             }
         }
     }

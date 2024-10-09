@@ -2,7 +2,7 @@
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
         "rootDir": ".",
-        "outDir": "../../build",
+        "outDir": "../../build/dancebox",
         "paths": {
             "@tanssi/api-augment/dancebox/*": ["src/dancebox/*"],
             "@polkadot/api/augment": ["src/dancebox/interfaces/augment-api.ts"],

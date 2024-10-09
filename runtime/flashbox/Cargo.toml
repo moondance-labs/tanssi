@@ -31,6 +31,7 @@ pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-proxy = { workspace = true }
@@ -157,6 +158,7 @@ std = [
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
+	"pallet-data-preservers-runtime-api/std",
 	"pallet-data-preservers/std",
 	"pallet-identity/std",
 	"pallet-inflation-rewards/std",

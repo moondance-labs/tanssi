@@ -8,7 +8,14 @@
             "name": "dev_tanssi",
             "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-all-parachain",
+                "suites/common-xcm-parachain",
+                "suites/common-tanssi-parachain",
+                "suites/common-tanssi",
+                "suites/dev-tanssi"
+            ],
             "runScripts": [
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c dancebox_dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
             ],
@@ -43,9 +50,9 @@
         {
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/dev-tanssi-relay"],
-            "runScripts": ["download-polkadot.sh"],
+            "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
             "multiThreads": true,
+            "timeout": 240000,
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
@@ -61,7 +68,7 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=starlight-dev",
+                            "--chain=dancelight-dev",
                             "--no-hardware-benchmarks",
                             "--unsafe-force-node-key-generation"
                         ],
@@ -99,7 +106,8 @@
             "name": "dev_frontier_template",
             "testFileDir": [
                 "suites/common-all",
-                "suites/common-xcm",
+                "suites/common-all-parachain",
+                "suites/common-xcm-parachain",
                 "suites/common-container-chains",
                 "suites/dev-frontier-template"
             ],
@@ -137,7 +145,12 @@
         },
         {
             "name": "dev_simple_template",
-            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-container-chains"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-all-parachain",
+                "suites/common-xcm-parachain",
+                "suites/common-container-chains"
+            ],
             "runScripts": ["compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c dev"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -565,6 +578,45 @@
             ]
         },
         {
+            "name": "zombie_simple_template_upgrade_with_latest_releases",
+            "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
+            "runScripts": [
+                "download-latest-rt-binaries.sh",
+                "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
+                "download-polkadot.sh",
+                "download-latest-binaries.sh ../target/release",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+
+            "timeout": 900000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieTemplateUpgradeSimple.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
             "name": "zombie_frontier_template_upgrade",
             "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
             "runScripts": [
@@ -603,17 +655,58 @@
             ]
         },
         {
+            "name": "zombie_frontier_template_upgrade_with_latest_releases",
+            "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
+            "runScripts": [
+                "download-latest-rt-binaries.sh",
+                "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
+                "download-polkadot.sh",
+                "download-latest-binaries.sh ../target/release",
+                "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+
+            "timeout": 900000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieTemplateUpgradeFrontier.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
             "name": "zombie_tanssi_relay",
             "timeout": 600000,
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
-                "build-spec-starlight-plus-dancebox-container.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-dancebox-container-1000.json"
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
             ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieStarlight.json"
+                    "configPath": "./configs/zombieDancelight.json",
+                    "skipBlockCheck": ["Container2002"]
                 }
             },
             "connections": [
@@ -623,9 +716,80 @@
                     "endpoints": ["ws://127.0.0.1:9947"]
                 },
                 {
-                    "name": "Container1000",
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_data_preservers",
+            "testFileDir": ["suites/data-preservers"],
+            "runScripts": [
+                "build-spec-data-preservers.sh",
+                "download-polkadot.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
+            ],
+            "timeout": 600000,
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDataPreservers.json",
+                    "skipBlockCheck": ["DataPreserver"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "DataPreserver-2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "DataPreserver-2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },
@@ -743,7 +907,12 @@
         {
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/common-all", "suites/common-tanssi"],
+            "testFileDir": [
+                "suites/common-all",
+                "suites/common-all-parachain",
+                "suites/common-tanssi-parachain",
+                "suites/common-tanssi"
+            ],
             "runScripts": [
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c flashbox_dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
             ],

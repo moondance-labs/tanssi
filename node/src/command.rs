@@ -40,6 +40,8 @@ use {
     tc_service_container_chain::{chain_spec::RawChainSpec, cli::ContainerChainCli},
 };
 
+pub mod solochain;
+
 fn load_spec(
     id: &str,
     para_id: Option<u32>,
@@ -338,6 +340,74 @@ pub fn run() -> Result<()> {
                 ))
             })
         }
+        Some(Subcommand::SoloChain(cmd)) => {
+            // Cannot use create_configuration function because that needs a chain spec.
+            // So write our own `create_runner` function that doesn't need chain spec.
+            let container_chain_cli = cmd.run.normalize();
+            let runner = solochain::create_runner(&container_chain_cli)?;
+
+            // The expected usage is
+            // `tanssi-node solochain --flag`
+            // So `cmd` stores the flags from after `solochain`, and `cli` has the flags from between
+            // `tanssi-node` and `solo-chain`. We are ignoring the flags from `cli` intentionally.
+            // Would be nice to error if the user passes any flag there, but it's not easy to detect.
+
+            // Zombienet appends a --chain flag after "solo-chain" subcommand, which is ignored, so it's fine,
+            // but warn users that this is not expected here.
+            // We cannot do this before create_runner because logging is not setup there yet.
+            if container_chain_cli.base.base.shared_params.chain.is_some() {
+                log::warn!(
+                    "Ignoring --chain argument: solochain mode does only need the relay chain-spec"
+                );
+            }
+
+            let collator_options = container_chain_cli.base.collator_options();
+
+            runner.run_node_until_exit(|config| async move {
+                let containers_base_path = container_chain_cli
+                    .base
+                    .base
+                    .shared_params
+                    .base_path
+                    .as_ref()
+                    .expect("base_path is always set");
+                let hwbench = (!cmd.no_hardware_benchmarks)
+                    .then_some(Some(containers_base_path).map(|database_path| {
+                        let _ = std::fs::create_dir_all(database_path);
+                        sc_sysinfo::gather_hwbench(Some(database_path))
+                    }))
+                    .flatten();
+
+                let polkadot_cli = solochain::relay_chain_cli_new(
+                    &config,
+                    [RelayChainCli::executable_name()]
+                        .iter()
+                        .chain(cmd.relay_chain_args.iter()),
+                );
+                let tokio_handle = config.tokio_handle.clone();
+                let polkadot_config =
+                    SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                        .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+                info!(
+                    "Is collating: {}",
+                    if config.role.is_authority() {
+                        "yes"
+                    } else {
+                        "no"
+                    }
+                );
+
+                crate::service::start_solochain_node(
+                    polkadot_config,
+                    container_chain_cli,
+                    collator_options,
+                    hwbench,
+                )
+                .await
+                .map_err(Into::into)
+            })
+        }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
@@ -371,17 +441,17 @@ pub fn run() -> Result<()> {
 					return crate::service::start_dev_node(config, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
 
+                let tokio_handle = config.tokio_handle.clone();
+                let polkadot_config =
+                    SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                        .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
 				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
 					.map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
-
-				let tokio_handle = config.tokio_handle.clone();
-				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
-						.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);

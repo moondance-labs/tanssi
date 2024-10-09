@@ -17,10 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
     crate::{
-        xcm_config::ForeignAssetsInstance, RewardsCollatorCommission, StreamPayment,
-        StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        tests::common::*, xcm_config::ForeignAssetsInstance, RewardsCollatorCommission,
+        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
@@ -44,6 +43,7 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
+    rococo_runtime_constants::fee::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -60,7 +60,8 @@ use {
     },
     std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, MigrateConfigurationParathreads,
+        ForeignAssetCreatorMigration, HostConfigurationV2,
+        MigrateConfigurationAddParachainPercentage, MigrateConfigurationParathreads,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -240,7 +241,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
                 Registrar::register(
                     origin_of(ALICE.into()),
                     1003.into(),
-                    genesis_data_1003.clone()
+                    genesis_data_1003.clone(),
+                    None
                 ),
                 ()
             );
@@ -493,7 +495,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -508,7 +511,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1002.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -578,7 +582,8 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -642,7 +647,8 @@ fn test_paras_registered_but_zero_credits() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -700,7 +706,8 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -779,7 +786,8 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -3890,6 +3898,113 @@ fn test_reward_to_invulnerable_with_key_change() {
 }
 
 #[test]
+fn test_migration_config_add_parachain_percentage() {
+    ExtBuilder::default().build().execute_with(|| {
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+
+        // Modify active config
+        frame_support::storage::unhashed::put_raw(
+            CONFIGURATION_ACTIVE_CONFIG_KEY,
+            &HostConfigurationV2 {
+                max_collators: 5,
+                min_orchestrator_collators: 2,
+                max_orchestrator_collators: 1,
+                collators_per_container: 3,
+                full_rotation_period: 4,
+                collators_per_parathread: 2,
+                parathreads_per_collator: 1,
+                target_container_chain_fullness: Perbill::from_percent(45),
+            }
+            .encode(),
+        );
+        // Modify pending configs
+        frame_support::storage::unhashed::put_raw(
+            CONFIGURATION_PENDING_CONFIGS_KEY,
+            &vec![
+                (
+                    1234u32,
+                    HostConfigurationV2 {
+                        max_collators: 1,
+                        min_orchestrator_collators: 4,
+                        max_orchestrator_collators: 45,
+                        collators_per_container: 5,
+                        full_rotation_period: 1,
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(65),
+                    },
+                ),
+                (
+                    5678u32,
+                    HostConfigurationV2 {
+                        max_collators: 1,
+                        min_orchestrator_collators: 4,
+                        max_orchestrator_collators: 45,
+                        collators_per_container: 5,
+                        full_rotation_period: 1,
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(65),
+                    },
+                ),
+            ]
+            .encode(),
+        );
+
+        let migration = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        let expected_active = pallet_configuration::HostConfiguration {
+            max_collators: 5,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 1,
+            collators_per_container: 3,
+            full_rotation_period: 4,
+            collators_per_parathread: 2,
+            parathreads_per_collator: 1,
+            target_container_chain_fullness: Perbill::from_percent(45),
+            ..Default::default()
+        };
+        assert_eq!(Configuration::config(), expected_active);
+
+        let expected_pending = vec![
+            (
+                1234u32,
+                pallet_configuration::HostConfiguration {
+                    max_collators: 1,
+                    min_orchestrator_collators: 4,
+                    max_orchestrator_collators: 45,
+                    collators_per_container: 5,
+                    full_rotation_period: 1,
+                    collators_per_parathread: 1,
+                    parathreads_per_collator: 1,
+                    target_container_chain_fullness: Perbill::from_percent(65),
+                    ..Default::default()
+                },
+            ),
+            (
+                5678u32,
+                pallet_configuration::HostConfiguration {
+                    max_collators: 1,
+                    min_orchestrator_collators: 4,
+                    max_orchestrator_collators: 45,
+                    collators_per_container: 5,
+                    full_rotation_period: 1,
+                    collators_per_parathread: 1,
+                    parathreads_per_collator: 1,
+                    target_container_chain_fullness: Perbill::from_percent(65),
+                    ..Default::default()
+                },
+            ),
+        ];
+        assert_eq!(Configuration::pending_configs(), expected_pending);
+    });
+}
+
+#[test]
 fn test_migration_config_full_rotation_period() {
     ExtBuilder::default()
         .build()
@@ -4153,7 +4268,8 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             assert_noop!(
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
@@ -4217,7 +4333,8 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4257,7 +4374,8 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ),);
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4286,7 +4404,8 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ),);
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4478,7 +4597,8 @@ fn test_register_parathread() {
                 origin_of(ALICE.into()),
                 3001.into(),
                 SlotFrequency { min: 1, max: 1 },
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 3001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4571,7 +4691,8 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4667,7 +4788,8 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4734,7 +4856,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4842,7 +4965,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -4941,7 +5065,8 @@ fn test_block_credits_with_purchase_can_be_combined() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -5078,7 +5203,8 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -5173,7 +5299,8 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -5240,7 +5367,8 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -5311,7 +5439,8 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 1001.into(),
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
             set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
             assert_ok!(Registrar::mark_valid_for_collating(
@@ -5373,7 +5502,8 @@ fn test_migration_services_collator_assignment_payment() {
         assert_ok!(Registrar::register(
             origin_of(ALICE.into()),
             1001.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
         assert_ok!(Registrar::mark_valid_for_collating(
@@ -5384,7 +5514,8 @@ fn test_migration_services_collator_assignment_payment() {
         assert_ok!(Registrar::register(
             origin_of(ALICE.into()),
             1002.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
         assert_ok!(Registrar::mark_valid_for_collating(
@@ -5961,12 +6092,14 @@ fn test_migration_data_preservers_assignments() {
         assert_ok!(Registrar::register(
             origin_of(ALICE.into()),
             1001.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
         assert_ok!(Registrar::register(
             origin_of(BOB.into()),
             1002.into(),
-            empty_genesis_data()
+            empty_genesis_data(),
+            None
         ));
 
         // Set bootnodes in old storage
@@ -6102,7 +6235,7 @@ fn test_migration_registrar_reserves_to_hold() {
                 ParaId::from(1001),
                 DepositInfo {
                     creator: account.clone(),
-                    deposit: deposit,
+                    deposit,
                 },
             );
             assert_eq!(Balances::reserved_balance(&account), deposit.clone(),);
@@ -6150,7 +6283,8 @@ fn test_container_deregister_unassign_data_preserver() {
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
                 para_id,
-                empty_genesis_data()
+                empty_genesis_data(),
+                None
             ));
 
             assert_ok!(DataPreservers::create_profile(
