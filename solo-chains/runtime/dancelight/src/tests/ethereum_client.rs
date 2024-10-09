@@ -19,17 +19,12 @@
 use {
     crate::tests::common::*,
     crate::EthereumBeaconClient,
-    frame_support::{assert_noop, assert_ok, error::BadOrigin},
-    pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
-    parity_scale_codec::Encode,
+    frame_support::{assert_noop, assert_ok},
     snowbridge_pallet_ethereum_client::functions::*,
     snowbridge_pallet_ethereum_client::mock::*,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::H256,
-    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     sp_std::vec,
-    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_traits::{ContainerChainBlockInfo, ParaId},
 };
 #[test]
 fn test_ethereum_force_checkpoint() {
@@ -219,14 +214,6 @@ fn test_submit_update_with_next_sync_committee_in_current_period_without_majorit
 
 #[test]
 fn test_submit_update_in_next_period() {
-    let checkpoint = Box::new(load_checkpoint_update_fixture());
-    let sync_committee_update = Box::new(load_sync_committee_update_fixture());
-    let update = Box::new(load_next_finalized_header_update_fixture());
-    let sync_committee_period = compute_period(sync_committee_update.finalized_header.slot);
-    let next_sync_committee_period = compute_period(update.finalized_header.slot);
-    assert_eq!(sync_committee_period + 1, next_sync_committee_period);
-    let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
-
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -247,6 +234,7 @@ fn test_submit_update_in_next_period() {
             let sync_committee_update = Box::new(load_sync_committee_update_fixture());
             let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
             let next_update = Box::new(load_next_finalized_header_update_fixture());
+            let initial_period = compute_period(initial_checkpoint.header.slot);
 
             assert_ok!(EthereumBeaconClient::force_checkpoint(
                 root_origin(),
@@ -274,6 +262,16 @@ fn test_submit_update_in_next_period() {
                 origin_of(ALICE.into()),
                 next_sync_committee_update.clone()
             ));
+
+            // check we are now in period +1
+            let latest_finalized_block_root =
+                snowbridge_pallet_ethereum_client::LatestFinalizedBlockRoot::<Runtime>::get();
+            let last_finalized_state = snowbridge_pallet_ethereum_client::FinalizedBeaconState::<
+                Runtime,
+            >::get(latest_finalized_block_root)
+            .unwrap();
+            let last_synced_period = compute_period(last_finalized_state.slot);
+            assert_eq!(last_synced_period, initial_period + 1);
 
             assert_ok!(EthereumBeaconClient::submit(
                 origin_of(ALICE.into()),

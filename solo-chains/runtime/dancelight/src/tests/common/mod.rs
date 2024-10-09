@@ -1183,7 +1183,7 @@ use milagro_bls::Keypair;
 pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     let mut keys = vec![];
 
-    for i in 0..n {
+    for _i in 0..n {
         let keypair = Keypair::random(&mut rand::thread_rng());
         keys.push(keypair);
     }
