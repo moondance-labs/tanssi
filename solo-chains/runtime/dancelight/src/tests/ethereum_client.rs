@@ -43,6 +43,7 @@ fn test_ethereum_force_checkpoint() {
         ])
         .build()
         .execute_with(|| {
+            // This tests submits the initial checkpoint that contains the initial sync committee
             let checkpoint =
                 Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
             assert_ok!(EthereumBeaconClient::force_checkpoint(
@@ -126,6 +127,8 @@ fn test_submit_update_using_same_committee_same_checkpoint() {
         ])
         .build()
         .execute_with(|| {
+            // This tests submits a new header signed by the sync committee members within the same
+            // period BUT without injecting the next sync committee
             let initial_checkpoint =
                 Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
             let update_header = Box::new(
@@ -162,6 +165,8 @@ fn test_submit_update_with_next_sync_committee_in_current_period() {
         ])
         .build()
         .execute_with(|| {
+            // This tests submits a new header signed by the sync committee members within the same
+            // period AND injecting the next sync committee
             let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
             let update_header = Box::new(load_sync_committee_update_fixture());
             let initial_period = compute_period(initial_checkpoint.header.slot);
@@ -196,6 +201,8 @@ fn test_submit_update_with_next_sync_committee_in_current_period_without_majorit
             ])
             .build()
             .execute_with(|| {
+                // This tests submits a new header signed by the sync committee members within the same
+                // period BUT putting all signed bits to 0
 	            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
 	            let mut update_header = Box::new(load_sync_committee_update_fixture());
                 update_header.sync_aggregate.sync_committee_bits = [0u8; snowbridge_pallet_ethereum_client::config::SYNC_COMMITTEE_BITS_SIZE];
@@ -211,7 +218,7 @@ fn test_submit_update_with_next_sync_committee_in_current_period_without_majorit
 }
 
 #[test]
-fn reject_submit_update_in_next_period() {
+fn test_submit_update_in_next_period() {
     let checkpoint = Box::new(load_checkpoint_update_fixture());
     let sync_committee_update = Box::new(load_sync_committee_update_fixture());
     let update = Box::new(load_next_finalized_header_update_fixture());
@@ -230,6 +237,12 @@ fn reject_submit_update_in_next_period() {
         ])
         .build()
         .execute_with(|| {
+            // This test submits, assuming current period is n:
+            // 1. A header in the next period n+1 but without having set the next sync committee, which fails
+            // 2. Then submits a proper sync committee update for this period (n), indicating who the next sync committee will be
+            // 3. Then submits an update on the next period (n+1), but without indicating who the next committee is going to be again (in period n+2), which fails
+            // 4. Then submits a header on the next period(n+1), this time indicating who the next sync committee is going to be
+            // 4. Then submits an update on the next period(n+1)
             let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
             let sync_committee_update = Box::new(load_sync_committee_update_fixture());
             let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
@@ -266,27 +279,5 @@ fn reject_submit_update_in_next_period() {
                 origin_of(ALICE.into()),
                 next_update.clone()
             ));
-
-            /*
-            let result =
-                EthereumBeaconClient::submit(RuntimeOrigin::signed(1), sync_committee_update.clone());
-            assert_ok!(result);
-            assert_eq!(result.unwrap().pays_fee, Pays::No);
-
-            // check an update in the next period is rejected
-            let second_result = EthereumBeaconClient::submit(RuntimeOrigin::signed(1), update.clone());
-            assert_err!(second_result, Error::<Test>::SyncCommitteeUpdateRequired);
-            assert_eq!(second_result.unwrap_err().post_info.pays_fee, Pays::Yes);
-
-            // submit update with next sync committee
-            let third_result =
-                EthereumBeaconClient::submit(RuntimeOrigin::signed(1), next_sync_committee_update);
-            assert_ok!(third_result);
-            assert_eq!(third_result.unwrap().pays_fee, Pays::No);
-            // check same header in the next period can now be submitted successfully
-            assert_ok!(EthereumBeaconClient::submit(RuntimeOrigin::signed(1), update.clone()));
-            let block_root: H256 = update.finalized_header.clone().hash_tree_root().unwrap();
-            assert!(<FinalizedBeaconState<Test>>::contains_key(block_root));
-            */
         });
 }
