@@ -19,7 +19,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
 
-            let initialCheckpoint = JSON.parse(
+            const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
             initialSlot = initialCheckpoint["header"]["slot"].toString();
@@ -32,7 +32,7 @@ describeSuite({
             id: "E02",
             title: "Ethreum client should not be able to receive an update for the next period without the next sync committee",
             test: async function () {
-                let nextPeriodUpdate = JSON.parse(
+                const nextPeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/next-finalized-header-update.json").toString()
                 );
                 const tx = polkadotJs.tx.ethereumBeaconClient.submit(nextPeriodUpdate);

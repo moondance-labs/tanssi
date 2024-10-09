@@ -17,7 +17,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
 
-            let initialCheckpoint = JSON.parse(
+            const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
             const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);
@@ -29,7 +29,7 @@ describeSuite({
             id: "E02",
             title: "Ethreum client should be able to receive an update within the same period by same committee",
             test: async function () {
-                let samePeriodUpdate = JSON.parse(
+                const samePeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/finalized-header-update.json").toString()
                 );
                 const tx = polkadotJs.tx.ethereumBeaconClient.submit(samePeriodUpdate);

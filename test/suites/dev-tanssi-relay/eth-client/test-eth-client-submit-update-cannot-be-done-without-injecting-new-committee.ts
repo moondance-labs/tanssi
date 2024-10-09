@@ -19,7 +19,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
 
-            let initialCheckpoint = JSON.parse(
+            const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
             initialSlot = initialCheckpoint["header"]["slot"].toString();
@@ -38,7 +38,7 @@ describeSuite({
                     "0x0000000000000000000000000000000000000000000000000000000000000000"
                 );
 
-                let thisPeriodNextSyncCommitteeUpdate = JSON.parse(
+                const thisPeriodNextSyncCommitteeUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/sync-committee-update.json").toString()
                 );
                 await context.createBlock([
@@ -53,7 +53,7 @@ describeSuite({
 
                 // Now we are injecting an update for the next period, but without specifying who the next committee is.
                 // this will fail, if you push an update in a new period, you always need to push the new sync committee
-                let nextPeriodUpdate = JSON.parse(
+                const nextPeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/next-finalized-header-update.json").toString()
                 );
                 const tx = polkadotJs.tx.ethereumBeaconClient.submit(nextPeriodUpdate);

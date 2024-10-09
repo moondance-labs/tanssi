@@ -22,7 +22,7 @@ describeSuite({
             id: "E01",
             title: "Ethreum client should accept an intiial checkpoint",
             test: async function () {
-                let initialCheckpoint = JSON.parse(
+                const initialCheckpoint = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
                 );
                 const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);

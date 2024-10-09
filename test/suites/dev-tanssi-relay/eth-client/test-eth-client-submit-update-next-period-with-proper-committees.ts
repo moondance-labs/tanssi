@@ -12,17 +12,14 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let initialSlot;
-        String;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
 
-            let initialCheckpoint = JSON.parse(
+            const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
-            initialSlot = initialCheckpoint["header"]["slot"].toString();
             const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);
             const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
             await context.createBlock([signedTx]);
@@ -38,7 +35,7 @@ describeSuite({
                     "0x0000000000000000000000000000000000000000000000000000000000000000"
                 );
 
-                let thisPeriodNextSyncCommitteeUpdate = JSON.parse(
+                const thisPeriodNextSyncCommitteeUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/sync-committee-update.json").toString()
                 );
                 await context.createBlock([
@@ -53,7 +50,7 @@ describeSuite({
 
                 // Now we are injecting the first update of the next period
                 // this should contain the next sync committee
-                let nextPeriodSyncCommitteeUpdate = JSON.parse(
+                const nextPeriodSyncCommitteeUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/next-sync-committee-update.json").toString()
                 );
                 await context.createBlock([
@@ -63,7 +60,7 @@ describeSuite({
                 // Now we are injecting an update for the period 'intial period +1' for which
                 // we have already pushed the sync committee update. Since this needs to be done
                 // only once per period, we shoudl be good
-                let nextPeriodUpdate = JSON.parse(
+                const nextPeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/next-finalized-header-update.json").toString()
                 );
 
@@ -77,7 +74,7 @@ describeSuite({
                 );
 
                 // The update did go through, we should have the latest state
-                let expectedSlot = nextPeriodUpdate["finalized_header"]["slot"];
+                const expectedSlot = nextPeriodUpdate["finalized_header"]["slot"];
                 expect(latestFinalizedSlot.toHuman().slot.replace(/,/g, "")).to.equal(expectedSlot.toString());
             },
         });
