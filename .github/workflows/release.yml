@@ -668,6 +668,7 @@ jobs:
             { chain: "flashbox", runtime: "flashbox" },
             { chain: "dancebox", runtime: "dancebox" },
             { chain: "frontier_template", runtime: "container-chain-template-frontier" },
+            { chain: "stagelight", runtime: "dancelight" },
           ]
       env:
         GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
@@ -698,7 +699,6 @@ jobs:
             cd test
             pnpm install
             pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
-
     zombienet-test-upgrade:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
