@@ -699,21 +699,6 @@ jobs:
             cd test
             pnpm install
             pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
-        - name: "Zip and Upload Node Logs on Failure"
-          if: failure()
-          run: |
-            ls
-            TIMESTAMP=$(date +%Y%m%d%H%M%S)
-            export NODE_LOGS_ZIP="node_logs_$TIMESTAMP_${{ matrix.chains.chain }}.zip"
-            echo $NODE_LOGS_ZIP
-            cat test/tmp/node_logs/*
-            find "test/tmp/node_logs/" -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
-            echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-        - uses: actions/upload-artifact@v4
-          if: failure()
-          with:
-            name: failed-chopsticks-node-logs
-            path: ${{ env.NODE_LOGS_ZIP }}
     zombienet-test-upgrade:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
