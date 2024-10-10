@@ -24,7 +24,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@acala-network/chopsticks": "0.16.1",
+        "@acala-network/chopsticks": "0.16.2",
         "@moonbeam-network/api-augment": "0.2902.0",
         "@moonwall/cli": "5.3.3",
         "@moonwall/util": "5.3.3",
