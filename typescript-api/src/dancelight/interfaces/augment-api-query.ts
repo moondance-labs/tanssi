@@ -103,6 +103,9 @@ import type {
     PolkadotRuntimeParachainsSchedulerPalletCoreOccupied,
     PolkadotRuntimeParachainsSchedulerPalletParasEntry,
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
+    SnowbridgeBeaconPrimitivesCompactBeaconState,
+    SnowbridgeBeaconPrimitivesSyncCommitteePrepared,
+    SnowbridgeCoreOperatingModeBasicOperatingMode,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -604,6 +607,55 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumBeaconClient: {
+            /** Sync committee for current period */
+            currentSyncCommittee: AugmentedQuery<
+                ApiType,
+                () => Observable<SnowbridgeBeaconPrimitivesSyncCommitteePrepared>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /** Beacon state by finalized block root */
+            finalizedBeaconState: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<SnowbridgeBeaconPrimitivesCompactBeaconState>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /** Finalized Headers: Current position in ring buffer */
+            finalizedBeaconStateIndex: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Finalized Headers: Mapping of ring buffer index to a pruning candidate */
+            finalizedBeaconStateMapping: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<H256>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Latest imported checkpoint root */
+            initialCheckpointRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Latest imported finalized block root */
+            latestFinalizedBlockRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Sync committee for next period */
+            nextSyncCommittee: AugmentedQuery<
+                ApiType,
+                () => Observable<SnowbridgeBeaconPrimitivesSyncCommitteePrepared>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /** The current operating mode of the pallet. */
+            operatingMode: AugmentedQuery<
+                ApiType,
+                () => Observable<SnowbridgeCoreOperatingModeBasicOperatingMode>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            validatorsRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
