@@ -840,7 +840,6 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -857,13 +856,12 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:8000"]
+                    "endpoints": ["ws://localhost:8000"]
                 }
             ]
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -880,13 +878,12 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:8000"]
+                    "endpoints": ["ws://localhost:8000"]
                 }
             ]
         },
         {
             "name": "chopsticks_flashbox_upgrade",
-            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -903,13 +900,12 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:8000"]
+                    "endpoints": ["ws://localhost:8000"]
                 }
             ]
         },
         {
             "name": "chopsticks_stagelight_upgrade",
-            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -926,7 +922,7 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:8000"]
+                    "endpoints": ["ws://localhost:8000"]
                 }
             ]
         },
