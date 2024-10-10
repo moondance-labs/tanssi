@@ -2596,6 +2596,7 @@ impl_runtime_apis! {
             profile_id: DataPreserversProfileId,
         ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
             use pallet_data_preservers_runtime_api::Assignment;
+            use pallet_stream_payment::StreamPaymentStatus;
 
             let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
                 .and_then(|x| x.assignment) else
@@ -2605,7 +2606,19 @@ impl_runtime_apis! {
 
             match witness {
                 PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
-                // TODO: Add Stream Payment. Stalled stream should return Inactive.
+                PreserversAssignementPaymentWitness::StreamPayment { stream_id } => {
+                    // Error means no Stream exists with that ID or some issue occured when computing
+                    // the status. In that case we cannot consider the assignment as active.
+                    let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {
+                        return Assignment::Inactive(para_id);
+                    };
+
+                    if stalled {
+                        Assignment::Inactive(para_id)
+                    } else {
+                        Assignment::Active(para_id)
+                    }
+                },
             }
         }
     }
