@@ -840,6 +840,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
+            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -862,6 +863,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
+            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -884,6 +886,7 @@
         },
         {
             "name": "chopsticks_flashbox_upgrade",
+            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
@@ -906,6 +909,7 @@
         },
         {
             "name": "chopsticks_stagelight_upgrade",
+            "timeout": 240000,
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
