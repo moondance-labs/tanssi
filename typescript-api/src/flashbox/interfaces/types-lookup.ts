@@ -2254,19 +2254,31 @@ declare module "@polkadot/types/lookup" {
     /** @name FlashboxRuntimePreserversAssignementPaymentRequest (235) */
     interface FlashboxRuntimePreserversAssignementPaymentRequest extends Enum {
         readonly isFree: boolean;
-        readonly type: "Free";
+        readonly isStreamPayment: boolean;
+        readonly asStreamPayment: {
+            readonly config: PalletStreamPaymentStreamConfig;
+        } & Struct;
+        readonly type: "Free" | "StreamPayment";
     }
 
     /** @name FlashboxRuntimePreserversAssignementPaymentExtra (236) */
     interface FlashboxRuntimePreserversAssignementPaymentExtra extends Enum {
         readonly isFree: boolean;
-        readonly type: "Free";
+        readonly isStreamPayment: boolean;
+        readonly asStreamPayment: {
+            readonly initialDeposit: u128;
+        } & Struct;
+        readonly type: "Free" | "StreamPayment";
     }
 
     /** @name FlashboxRuntimePreserversAssignementPaymentWitness (237) */
     interface FlashboxRuntimePreserversAssignementPaymentWitness extends Enum {
         readonly isFree: boolean;
-        readonly type: "Free";
+        readonly isStreamPayment: boolean;
+        readonly asStreamPayment: {
+            readonly streamId: u64;
+        } & Struct;
+        readonly type: "Free" | "StreamPayment";
     }
 
     /** @name PalletInvulnerablesCall (238) */

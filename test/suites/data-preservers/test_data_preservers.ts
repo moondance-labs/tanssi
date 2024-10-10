@@ -1,10 +1,11 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 import ethers from "ethers";
-import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS } from "@moonwall/util";
+import { baltathar, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
+import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
     id: "DP01",
@@ -16,11 +17,25 @@ describeSuite({
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
 
+        let dataProvider2000Api: ApiPromise;
+        let dataProvider2001Api: ApiPromise;
+
+        let keyring: Keyring;
+        let alice: KeyringPair;
+        let bob: KeyringPair;
+
+        let profile2000;
+        let profile2001;
+
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
             container2000Api = context.polkadotJs("Container2000");
             container2001Api = context.polkadotJs("Container2001");
+
+            keyring = new Keyring({ type: "sr25519" });
+            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+            bob = keyring.addFromUri("//Bob", { name: "Bob default" });
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -69,26 +84,33 @@ describeSuite({
             title: "Change assignment 2000",
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
+                
                 const profile = {
                     url: "exemple",
                     paraIds: "AnyParaId",
                     mode: { rpc: { supportsEthereumRpc: false } },
                 };
 
+                profile2000 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                expect(profile2000).to.be.eq(2); // 0 and 1 are auto assigned for bootnodes
+
                 {
-                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, alice.address);
+                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(0, 2000, "Free");
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2000, 2000, "Free");
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
+
+                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2000)).unwrap();
+                console.log(onChainProfile.account.toString());
+                console.log(bob.addressRaw.toString());
+                expect(onChainProfile.account).to.be.eq(bob.addressRaw);
+                expect(onChainProfile.assignment).to.be.eq({});
 
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000))"]);
             },
@@ -98,9 +120,11 @@ describeSuite({
             id: "T04",
             title: "RPC endpoint 2000 is properly started",
             test: async function () {
-                const preserverApi = context.polkadotJs("DataPreserver-2000");
-                const container2000Network = preserverApi.consts.system.version.specName.toString();
-                const paraId2000 = (await preserverApi.query.parachainInfo.parachainId()).toString();
+                const wsProvider = new WsProvider('ws://127.0.0.1:9950');
+                dataProvider2000Api = await ApiPromise.create({ provider: wsProvider });
+
+                const container2000Network = dataProvider2000Api.consts.system.version.specName.toString();
+                const paraId2000 = (await dataProvider2000Api.query.parachainInfo.parachainId()).toString();
                 expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
                 expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
             },
@@ -120,8 +144,6 @@ describeSuite({
             title: "Change assignment 2001",
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 const profile = {
                     url: "exemple",
@@ -129,14 +151,17 @@ describeSuite({
                     mode: { rpc: { supportsEthereumRpc: true } },
                 };
 
+                profile2001 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                expect(profile2001).to.be.eq(3);
+
                 {
-                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, alice.address);
+                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(1, 2001, "Free");
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2001, 2001, "Free");
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
@@ -149,9 +174,11 @@ describeSuite({
             id: "T07",
             title: "RPC endpoint 2001 is properly started",
             test: async function () {
-                const preserverApi = context.polkadotJs("DataPreserver-2001");
-                const container2001Network = preserverApi.consts.system.version.specName.toString();
-                const paraId2001 = (await preserverApi.query.parachainInfo.parachainId()).toString();
+                const wsProvider = new WsProvider('ws://127.0.0.1:9952');
+                dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
+
+                const container2001Network = dataProvider2001Api.consts.system.version.specName.toString();
+                const paraId2001 = (await dataProvider2001Api.query.parachainInfo.parachainId()).toString();
                 expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
                 expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
             },
@@ -173,6 +200,28 @@ describeSuite({
 
                 await customHttpProvider.waitForTransaction(tx.hash);
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+            },
+        });
+
+        it({
+            id: "T09",
+            title: "Stop assignement 2001",
+            test: async function () {
+                {
+                    const tx = paraApi.tx.dataPreservers.stopAssignment(profile2001, 2001);
+                    await signAndSendAndInclude(tx, bob);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                let profile = (await paraApi.query.dataPreservers.profiles(profile2001));
+                // console.log(profile);
+                // console.log(JSON.stringify(profile));
+
+                expect(profile.assignment).to.be.null();
+
+                expect(0).to.be.eq(1);
+
+                // await waitForLogs(logFilePath, 300, ["Active(Id(2001))"]);
             },
         });
     },
