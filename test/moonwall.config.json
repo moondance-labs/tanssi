@@ -848,7 +848,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-dancebox.yml"
+                        "configPath": "./configs/stagenet-dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -856,7 +857,7 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://localhost:8000"]
+                    "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
         },
@@ -870,7 +871,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/dancebox.yml"
+                        "configPath": "./configs/dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -878,7 +880,7 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://localhost:8000"]
+                    "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
         },
@@ -892,7 +894,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-flashbox.yml"
+                        "configPath": "./configs/stagenet-flashbox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -900,7 +903,7 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://localhost:8000"]
+                    "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
         },
@@ -913,8 +916,9 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "relaychain",
-                        "configPath": "./configs/stagelight.yml"
+                        "type": "parachain",
+                        "configPath": "./configs/stagelight.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -922,7 +926,7 @@
                 {
                     "name": "DB",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://localhost:8000"]
+                    "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
         },
