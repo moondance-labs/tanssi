@@ -913,7 +913,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/stagelight.yml"
                     }
                 ]
