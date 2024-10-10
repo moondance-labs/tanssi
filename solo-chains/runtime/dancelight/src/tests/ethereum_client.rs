@@ -22,7 +22,6 @@ use {
     frame_support::{assert_noop, assert_ok},
     snowbridge_pallet_ethereum_client::functions::*,
     snowbridge_pallet_ethereum_client::mock::*,
-    sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::H256,
     sp_std::vec,
 };
