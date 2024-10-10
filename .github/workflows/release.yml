@@ -658,7 +658,7 @@ jobs:
 
     chopsticks-upgrade-test:
       runs-on:
-        labels: ubuntu-latest
+        labels: self-hosted
       needs: ["set-tags", "build"]
       strategy:
         fail-fast: false
