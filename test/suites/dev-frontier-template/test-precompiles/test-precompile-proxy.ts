@@ -564,9 +564,15 @@ describeSuite({
                     .viem()
                     .getTransactionReceipt({ hash: result2!.hash as `0x${string}` });
 
+                // The tx can create an account, so record 148 bytes of storage growth
+                // Storage growth ratio is 366  (Not defined in frontier template)
+                // storage_gas = 148 * 366 = 54168
+                // pov_gas = 5693 * 16 = 91088
+                const expectedGas = 91_088n;
+
                 // Allow 10% variance
-                expect(gasUsed).toBeLessThanOrEqual((87_538n * 110n) / 100n);
-                expect(gasUsed).toBeGreaterThanOrEqual((87_538n * 90n) / 100n);
+                expect(gasUsed).toBeLessThanOrEqual((expectedGas * 110n) / 100n);
+                expect(gasUsed).toBeGreaterThanOrEqual((expectedGas * 90n) / 100n);
                 expect(await context.viem().getBalance({ address: randomAccount })).toBe(parseEther("5"));
 
                 const balAfter = await context.viem().getBalance({ address: DOROTHY_ADDRESS });
