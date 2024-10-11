@@ -5,7 +5,8 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 import ethers from "ethers";
 import { baltathar, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
-import { u8aToHex } from "@polkadot/util";
+import { BN, u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
     id: "DP01",
@@ -19,13 +20,14 @@ describeSuite({
 
         let dataProvider2000Api: ApiPromise;
         let dataProvider2001Api: ApiPromise;
+        let dataProvider2000BApi: ApiPromise;
 
         let keyring: Keyring;
         let alice: KeyringPair;
         let bob: KeyringPair;
 
-        let profile2000;
-        let profile2001;
+        let profile1;
+        let profile2;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -89,10 +91,11 @@ describeSuite({
                     url: "exemple",
                     paraIds: "AnyParaId",
                     mode: { rpc: { supportsEthereumRpc: false } },
+                    assignmentRequest: "Free",
                 };
 
-                profile2000 = Number(await paraApi.query.dataPreservers.nextProfileId());
-                expect(profile2000).to.be.eq(2); // 0 and 1 are auto assigned for bootnodes
+                profile1 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                expect(profile1).to.be.eq(2); // 0 and 1 are auto assigned for bootnodes
 
                 {
                     const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
@@ -101,16 +104,17 @@ describeSuite({
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2000, 2000, "Free");
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile1, 2000, "Free");
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2000)).unwrap();
-                console.log(onChainProfile.account.toString());
-                console.log(bob.addressRaw.toString());
-                expect(onChainProfile.account).to.be.eq(bob.addressRaw);
-                expect(onChainProfile.assignment).to.be.eq({});
+                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile1)).unwrap();
+                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                let bobAccount = u8aToHex(bob.addressRaw);
+
+                expect(onChainProfileAccount).to.be.eq(bobAccount);
+                expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000))"]);
             },
@@ -149,10 +153,11 @@ describeSuite({
                     url: "exemple",
                     paraIds: "AnyParaId",
                     mode: { rpc: { supportsEthereumRpc: true } },
+                    assignmentRequest: "Free",
                 };
 
-                profile2001 = Number(await paraApi.query.dataPreservers.nextProfileId());
-                expect(profile2001).to.be.eq(3);
+                profile2 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                expect(profile2).to.be.eq(3);
 
                 {
                     const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
@@ -161,10 +166,17 @@ describeSuite({
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2001, 2001, "Free");
+                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2, 2001, "Free");
                     await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Tanssi");
                 }
+
+                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                let bobAccount = u8aToHex(bob.addressRaw);
+
+                expect(onChainProfileAccount).to.be.eq(bobAccount);
+                expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
 
                 await waitForLogs(logFilePath, 300, ["Active(Id(2001))"]);
             },
@@ -208,20 +220,57 @@ describeSuite({
             title: "Stop assignement 2001",
             test: async function () {
                 {
-                    const tx = paraApi.tx.dataPreservers.stopAssignment(profile2001, 2001);
+                    const tx = paraApi.tx.dataPreservers.stopAssignment(profile2, 2001);
                     await signAndSendAndInclude(tx, bob);
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let profile = (await paraApi.query.dataPreservers.profiles(profile2001));
-                // console.log(profile);
-                // console.log(JSON.stringify(profile));
+                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                let bobAccount = u8aToHex(bob.addressRaw);
 
-                expect(profile.assignment).to.be.null();
+                expect(onChainProfileAccount).to.be.eq(bobAccount);
+                expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
+            },
+        });
 
-                expect(0).to.be.eq(1);
+        it({
+            id: "T10",
+            title: "Update profile to Stream Payment",
+            test: async function () {
+                const newProfile = {
+                    url: "exemple",
+                    paraIds: "AnyParaId",
+                    mode: { rpc: { supportsEthereumRpc: true } },
+                    assignmentRequest: { "StreamPayment": {
+                        "config": {
+                            timeUnit: "BlockNumber",
+                            assetId: "Native",
+                            rate: '1000000',
+                        } 
+                    }},
+                };
 
-                // await waitForLogs(logFilePath, 300, ["Active(Id(2001))"]);
+                {
+                    const tx = paraApi.tx.dataPreservers.updateProfile(profile2, newProfile);
+                    console.log(`tx: ${tx.toHuman().toString()}`);
+                    await signAndSendAndInclude(tx, bob);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                let bobAccount = u8aToHex(bob.addressRaw);
+
+                expect(onChainProfileAccount).to.be.eq(bobAccount);
+                expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
+                expect(JSON.stringify(onChainProfile.profile.assignmentRequest.toHuman())).to.be.eq(JSON.stringify({ "StreamPayment": {
+                    "config": {
+                        timeUnit: "BlockNumber",
+                        assetId: "Native",
+                        rate: '1,000,000',
+                    } 
+                }}));
             },
         });
     },
