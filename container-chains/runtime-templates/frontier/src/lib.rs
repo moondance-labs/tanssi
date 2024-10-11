@@ -843,7 +843,7 @@ parameter_types! {
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
-    pub GasLimitPovSizeRatio: u32 = 4;
+    pub GasLimitPovSizeRatio: u32 = 16;
 }
 
 impl_on_charge_evm_transaction!();
