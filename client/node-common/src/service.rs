@@ -64,6 +64,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sp_api::StorageProof;
 
 /// Trait to configure the main types the builder rely on, bundled in a single
 /// type to reduce verbosity and the amount of type parameters.
@@ -625,7 +626,7 @@ where
 
         let prometheus_registry = self.prometheus_registry.clone();
 
-        let mut env = sc_basic_authorship::ProposerFactory::new(
+        let mut env = sc_basic_authorship::ProposerFactory::with_proof_recording(
             self.task_manager.spawn_handle(),
             self.client.clone(),
             self.transaction_pool.clone(),
@@ -953,6 +954,6 @@ pub struct ManualSealConfiguration<B, BI, SC, CIDP> {
     pub block_import: BI,
     pub soft_deadline: Option<Percent>,
     pub select_chain: SC,
-    pub consensus_data_provider: Option<Box<dyn ConsensusDataProvider<B, Proof = ()>>>,
+    pub consensus_data_provider: Option<Box<dyn ConsensusDataProvider<B, Proof = StorageProof>>>,
     pub create_inherent_data_providers: CIDP,
 }
