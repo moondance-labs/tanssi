@@ -30,7 +30,7 @@
 - Finalized header: the latest finalized header, can be different to attested header (e.g., the latest finalized block is 5 but we have sync committee signatures for 7)
 - Slot: an interval of 12s
 - Period: A range of slots, in this case 8192 slots (around 27 hours)
-### Verification PseudoCode
+### Verification PseudoCode and explanation
 
 The pseudo-code for the verification update can be found in [Altair](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md). We describe the pseudo-code in our own words in the following steps:
 
@@ -46,7 +46,7 @@ The pseudo-code for the verification update can be found in [Altair](https://git
 ## Transmiting Ethereum Headers to Starlight
 
 ### The relayers job to transmit Ethereum's header
-1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block
+1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block 
 2. The relayer needs to aggregrate the public keys responsible for generating that block.
 3. If the sync committee changes, the relayer needs to generate a merkle proof proving that the sync committee has changed.
 4. The relayer presents all these components to the appropriate pallet in starlight
@@ -69,8 +69,9 @@ This is our own diagram, but a more low level diagram can be found in [Altair lo
 ## Proving symbiotic validator selection to starlight (or any other Ethereum state)
 
 ### The relayers job to transmit symbiotic validators
-1. The relayer node checks the latest accepted header in starlight, and it generates a storage proof of the validators storage item in the symbiotic smart contract
-2. The relayer sends this information to the Symbiotic validator receiver pallet
+1.  We assuume there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
+2. The relayer node checks the latest accepted header in starlight, and it generates a merkle proof of this event against the latest stored header
+3. The relayer sends this information to the Symbiotic validator receiver pallet
 
 ### The Symbiotic validator Receiver pallets job to verify the validators
 
