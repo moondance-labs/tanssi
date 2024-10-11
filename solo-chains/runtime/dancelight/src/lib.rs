@@ -1882,6 +1882,9 @@ mod benches {
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
+        // Bridges
+        [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
     );
 }
 

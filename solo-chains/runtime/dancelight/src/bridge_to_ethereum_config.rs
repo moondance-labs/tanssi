@@ -17,7 +17,7 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
-use crate::{parameter_types, Runtime, RuntimeEvent};
+use crate::{parameter_types, weights, Runtime, RuntimeEvent};
 use snowbridge_beacon_primitives::{Fork, ForkVersions};
 
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
@@ -87,5 +87,5 @@ parameter_types! {
 impl snowbridge_pallet_ethereum_client::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ForkVersions = ChainForkVersions;
-    type WeightInfo = ();
+    type WeightInfo = weights::snowbridge_pallet_ethereum_client::SubstrateWeight<Runtime>;
 }
