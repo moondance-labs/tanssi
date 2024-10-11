@@ -1,4 +1,4 @@
-import "@moonbeam-network/api-augment";
+import "@tanssi/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { MAX_ETH_POV_PER_TX, createEthersTransaction } from "@moonwall/util";
 import { Abi, encodeFunctionData } from "viem";
