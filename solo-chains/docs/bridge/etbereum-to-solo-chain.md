@@ -69,13 +69,15 @@ This is our own diagram, but a more low level diagram can be found in [Altair lo
 ## Proving symbiotic validator selection to starlight (or any other Ethereum state)
 
 ### The relayers job to transmit symbiotic validators
-1.  We assuume there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
-2. The relayer node checks the latest accepted header in starlight, and it generates a merkle proof of this event against the latest stored header
-3. The relayer sends this information to the Symbiotic validator receiver pallet
+1.  We assme there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
+2. The relayer node checks the latest accepted finalized header in starlight
+3. It generates a merkle ancestry proof of the block where the event was emitted against the latest finalized state stored in starlight
+3. It generates a merkle proof of the event against the receipt log
+4. The relayer sends this information to the Symbiotic validator receiver pallet
 
 ### The Symbiotic validator Receiver pallets job to verify the validators
 
-1. The symbiotic validator pallet receiver asks the Ethereum state receiver pallet about the correctness of the validators.
+1. The symbiotic validator pallet receiver asks the Ethereum state receiver pallet about the correctness of the validators and the ancestry proof.
 2. The ethereum state pallet receiver repplies with a yes or no, depending on the validity of the storage proof against the storage root stored
 3. If accepted, the next validator set is stored on-chain
 4. In the next session, the new era will get started
