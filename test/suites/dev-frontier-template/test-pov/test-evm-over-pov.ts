@@ -14,7 +14,7 @@ describeSuite({
         let contracts: HeavyContract[];
         let callData: `0x${string}`;
         const MAX_CONTRACTS = 20;
-        const EXPECTED_POV_ROUGH = 16_000; // bytes
+        const EXPECTED_POV_ROUGH = 38_000; // bytes
 
         beforeAll(async () => {
             const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder");
@@ -98,7 +98,7 @@ describeSuite({
                 // in the block.
                 // 1M Gas allows ~38k of PoV, so we verify we are within range.
                 expect(block.proofSize).to.be.at.least(15_000);
-                expect(block.proofSize).to.be.at.most(25_000);
+                expect(block.proofSize).to.be.at.most(38_000 * 1.2);
                 expect(result?.successful).to.equal(true);
                 expectEVMResult(result!.events, "Error", "OutOfGas");
             },

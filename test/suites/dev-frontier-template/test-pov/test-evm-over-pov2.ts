@@ -79,7 +79,7 @@ describeSuite({
 
                 log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
                 // Empty blocks usually do not exceed 10kb, picking 50kb as a safe limit
-                expect(block.proofSize).to.be.at.most(25_000);
+                expect(block.proofSize).to.be.at.most(50_000);
                 expect(result?.successful).to.equal(false);
             },
         });
