@@ -18,16 +18,14 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, HeadData, Pallet, ParaId, ReadEntryErr, RelayOrPara},
+    crate::{Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
     core::any::{Any, TypeId},
     frame_benchmarking::{account, benchmarks},
     frame_support::{assert_ok, Hashable},
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
-    tp_traits::{
-        GenericStateProof, GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChains,
-    },
+    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
 mod test_sproof {

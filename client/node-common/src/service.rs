@@ -66,6 +66,36 @@ use {
 use sc_executor::NativeElseWasmExecutor;
 use sp_api::StorageProof;
 
+tp_traits::alias!(
+    pub trait MinimalRuntimeApi<
+        Block: (cumulus_primitives_core::BlockT),
+        Client: (sp_api::CallApiAt<Block>),
+    > :
+        ConstructRuntimeApi<
+            Block,
+            Client,
+            RuntimeApi:
+                TaggedTransactionQueue<Block>
+                + BlockBuilder<Block> + OffchainWorkerApi<Block>
+                + sp_api::Metadata<Block>
+                + sp_session::SessionKeys<Block>,
+        > + Send + Sync + 'static
+);
+
+tp_traits::alias!(
+    pub trait MinimalCumulusRuntimeApi<
+        Block: (cumulus_primitives_core::BlockT),
+        Client: (sp_api::CallApiAt<Block>),
+    > :
+        MinimalRuntimeApi<Block, Client> +
+        ConstructRuntimeApi<
+            Block,
+            Client,
+            RuntimeApi:
+                cumulus_primitives_core::CollectCollationInfo<Block>,
+        >
+);
+
 /// Trait to configure the main types the builder rely on, bundled in a single
 /// type to reduce verbosity and the amount of type parameters.
 pub trait NodeBuilderConfig {
@@ -84,10 +114,7 @@ pub trait NodeBuilderConfig {
         BlockOf<Self>: cumulus_primitives_core::BlockT,
         ExecutorOf<Self>:
             Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
-        RuntimeApiOf<Self>:
-            ConstructRuntimeApi<BlockOf<Self>, ClientOf<Self>> + Sync + Send + 'static,
-        ConstructedRuntimeApiOf<Self>:
-            TaggedTransactionQueue<BlockOf<Self>> + BlockBuilder<BlockOf<Self>>,
+        RuntimeApiOf<Self>: MinimalRuntimeApi<BlockOf<Self>, ClientOf<Self>>,
     {
         NodeBuilder::<Self>::new(parachain_config, hwbench)
     }
@@ -138,8 +165,7 @@ pub struct NodeBuilder<
 > where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
-    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
-    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
+    RuntimeApiOf<T>: MinimalRuntimeApi<BlockOf<T>, ClientOf<T>>,
 {
     pub client: Arc<ClientOf<T>>,
     pub backend: Arc<BackendOf<T>>,
@@ -199,8 +225,7 @@ where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>:
         Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
-    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
-    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
+    RuntimeApiOf<T>: MinimalRuntimeApi<BlockOf<T>, ClientOf<T>>,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it only starts telemetry, and doesn't provide any
@@ -294,10 +319,7 @@ impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
-    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
-    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>>
-        + BlockBuilder<BlockOf<T>>
-        + cumulus_primitives_core::CollectCollationInfo<BlockOf<T>>,
+    RuntimeApiOf<T>: MinimalCumulusRuntimeApi<BlockOf<T>, ClientOf<T>>,
 {
     pub async fn build_relay_chain_interface(
         &mut self,
