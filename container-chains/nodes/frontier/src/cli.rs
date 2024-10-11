@@ -19,6 +19,7 @@ use {
     node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
+    url::Url,
 };
 
 /// Sub-commands supported by the collator.
@@ -126,13 +127,48 @@ pub struct Cli {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
-    /// Relay chain arguments
-    #[arg(raw = true)]
-    pub relay_chain_args: Vec<String>,
+    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
+    #[arg(long)]
+    pub rpc_provider_profile_id: Option<u64>,
+
+    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
+    /// If this list is empty, a local embeded orchestrator node is started.
+    #[arg(long)]
+    pub orchestrator_endpoints: Vec<Url>,
 
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
+
+    /// Relay chain arguments, optionally followed by "--" and container chain arguments
+    #[arg(raw = true)]
+    extra_args: Vec<String>,
+}
+
+impl Cli {
+    pub fn relaychain_args(&self) -> &[String] {
+        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
+
+        relay_chain_args
+    }
+
+    pub fn container_chain_args(&self) -> &[String] {
+        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
+
+        container_chain_args
+    }
+
+    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
+        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
+
+        if let Some(i) = index_of_dashdash {
+            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
+            (&extra_extra[1..], container_chain_args)
+        } else {
+            // Only relay chain args
+            (&self.extra_args, &[])
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -190,10 +226,10 @@ impl CliConfiguration for BuildSpecCmd {
     }
 }
 
+#[derive(Clone)]
 pub struct RpcConfig {
     pub eth_log_block_cache: usize,
     pub eth_statuses_cache: usize,
     pub fee_history_limit: u64,
     pub max_past_logs: u32,
-    pub relay_chain_rpc_urls: Vec<url::Url>,
 }

@@ -20,6 +20,7 @@ use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
     },
+    core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_proposer::Proposer,
@@ -427,6 +428,10 @@ async fn start_node_impl(
         let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
 
+        // This considers that the container chains have the same APIs as dancebox, which
+        // is not the case. However the spawner don't call APIs that are not part of the expected
+        // common APIs for a container chain.
+        // TODO: Depend on the simple container chain runtime which should be the minimal api?
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
                 orchestrator_chain_interface,
@@ -451,6 +456,10 @@ async fn start_node_impl(
                     None
                 },
                 spawn_handle,
+                generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+                    dancebox_runtime::RuntimeApi,
+                >::new(),
+                phantom: PhantomData,
             },
             state: Default::default(),
             collate_on_tanssi,
@@ -689,7 +698,7 @@ pub async fn start_solochain_node(
         .base_path
         .as_ref()
         .expect("base_path is always set");
-    let config_dir = build_solochain_config_dir(&base_path);
+    let config_dir = build_solochain_config_dir(base_path);
     let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
@@ -811,6 +820,10 @@ pub async fn start_solochain_node(
             },
             spawn_handle,
             data_preserver: false,
+            generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+                dancebox_runtime::RuntimeApi,
+            >::new(),
+            phantom: PhantomData,
         },
         state: Default::default(),
         collate_on_tanssi,

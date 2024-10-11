@@ -93,7 +93,7 @@ pub mod pallet {
 
             // We only add 1 extra chain to number_of_chains if we are
             // in a parachain context with an orchestrator configured.
-            if let Some(_) = T::GetSelfChainBlockAuthor::get_block_author() {
+            if T::GetSelfChainBlockAuthor::get_block_author().is_some() {
                 number_of_chains = number_of_chains.saturating_add(1u32.into());
             }
 

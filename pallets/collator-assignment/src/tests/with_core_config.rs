@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::assignment::ChainNumCollators;
-use crate::mock::*;
-use crate::{CoreAllocationConfiguration, Pallet};
-use sp_runtime::Perbill;
-use tp_traits::ParaId;
+use {
+    crate::{assignment::ChainNumCollators, mock::*, CoreAllocationConfiguration, Pallet},
+    sp_runtime::Perbill,
+    tp_traits::ParaId,
+};
 
 fn create_blank_chain_num_collator(id: u32) -> ChainNumCollators {
     ChainNumCollators {

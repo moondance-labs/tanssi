@@ -1772,7 +1772,7 @@ checksum = "cd7e35aee659887cbfb97aaf227ac12cad1a9d7c71e55ff3376839ed4e282d08"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -1789,6 +1789,8 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
+ "dc-orchestrator-chain-interface",
+ "dp-core",
  "fc-api",
  "fc-cli",
  "fc-consensus",
@@ -1802,6 +1804,7 @@ dependencies = [
  "fp-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "frame-support",
  "frame-system-rpc-runtime-api",
  "futures 0.3.30",
  "hex-literal 0.3.4",
@@ -1859,12 +1862,15 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
+ "tc-orchestrator-chain-rpc-interface",
+ "tc-service-container-chain",
+ "tp-traits",
  "url",
 ]
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -8043,6 +8049,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
+ "tp-traits",
 ]
 
 [[package]]
@@ -17061,7 +17068,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -17162,7 +17169,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -17181,7 +17188,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "clap 4.5.4",
  "frame-benchmarking-cli",
@@ -17222,7 +17229,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
@@ -17502,6 +17509,7 @@ dependencies = [
 name = "tc-service-container-chain"
 version = "0.1.0"
 dependencies = [
+ "async-backing-primitives",
  "async-trait",
  "ccp-authorities-noting-inherent",
  "clap 4.5.4",
@@ -17518,6 +17526,7 @@ dependencies = [
  "dp-container-chain-genesis-data",
  "dp-slot-duration-runtime-api",
  "flume 0.10.14",
+ "frame-support",
  "fs2",
  "futures 0.3.30",
  "jsonrpsee",
@@ -17556,6 +17565,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
+ "sp-transaction-pool",
  "stream-payment-rpc",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -17564,6 +17574,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
+ "tp-traits",
  "url",
 ]
 
@@ -17747,9 +17758,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.34"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
  "itoa",
@@ -17768,9 +17779,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ba3a3ef41e6672a2f0f001392bb5dcd3ff0a9992d618ca761a11c3121547774"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
  "num-conv",
  "time-core",

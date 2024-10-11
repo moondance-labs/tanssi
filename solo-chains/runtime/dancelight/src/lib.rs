@@ -21,7 +21,6 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common as polkadot_runtime_common;
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -58,8 +57,8 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper,
-        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
+        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -149,11 +148,11 @@ mod weights;
 
 // Governance and configurations.
 pub mod governance;
-use pallet_collator_assignment::CoreAllocationConfiguration;
 use {
     governance::{
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
+    pallet_collator_assignment::CoreAllocationConfiguration,
     xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
@@ -183,7 +182,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancelight"),
     impl_name: create_runtime_str!("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1_011_000,
+    spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 25,
@@ -605,10 +604,12 @@ where
     )> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -1166,7 +1167,7 @@ impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
         let mut para_heads: Vec<(u32, Vec<u8>)> = parachains_paras::Parachains::<Runtime>::get()
             .into_iter()
             .filter_map(|id| {
-                parachains_paras::Heads::<Runtime>::get(&id).map(|head| (id.into(), head.0))
+                parachains_paras::Heads::<Runtime>::get(id).map(|head| (id.into(), head.0))
             })
             .collect();
         para_heads.sort();
@@ -1665,7 +1666,7 @@ where
 
         // Check if the wasm code is present in storage
         let validation_code = match genesis_storage
-            .into_iter()
+            .iter()
             .find(|item| item.key == StorageWellKnownKeys::CODE)
         {
             Some(item) => ValidationCode(item.value.clone()),

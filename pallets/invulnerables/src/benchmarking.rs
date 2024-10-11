@@ -16,8 +16,6 @@
 
 //! Benchmarking setup for pallet-invulnerables
 
-#![cfg(feature = "runtime-benchmarks")]
-
 use super::*;
 
 #[allow(unused)]

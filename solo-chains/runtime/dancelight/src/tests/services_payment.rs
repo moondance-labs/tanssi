@@ -17,8 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::{ContainerRegistrar, Paras, ServicesPayment},
+    crate::{tests::common::*, ContainerRegistrar, Paras, ServicesPayment},
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::assert_ok,
     sp_std::vec,

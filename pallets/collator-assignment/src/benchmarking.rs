@@ -16,12 +16,9 @@
 
 //! Benchmarking setup for pallet-invulnerables
 
-#![cfg(feature = "runtime-benchmarks")]
-
-use super::*;
-
 #[allow(unused)]
 use {
+    super::*,
     crate::Pallet,
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{

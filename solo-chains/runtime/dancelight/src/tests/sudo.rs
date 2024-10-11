@@ -17,8 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::Sudo,
+    crate::{tests::common::*, Sudo},
     frame_support::{assert_noop, assert_ok},
     sp_std::vec,
 };
