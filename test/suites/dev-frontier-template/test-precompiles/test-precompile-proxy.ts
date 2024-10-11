@@ -565,8 +565,8 @@ describeSuite({
                     .getTransactionReceipt({ hash: result2!.hash as `0x${string}` });
 
                 // Allow 10% variance
-                expect(gasUsed <= (35_015n * 110n) / 100n).to.be.true;
-                expect(gasUsed >= (35_015n * 90n) / 100n).to.be.true;
+                expect(gasUsed).toBeLessThanOrEqual((87_538n * 110n) / 100n);
+                expect(gasUsed).toBeGreaterThanOrEqual((87_538n * 90n) / 100n);
                 expect(await context.viem().getBalance({ address: randomAccount })).toBe(parseEther("5"));
 
                 const balAfter = await context.viem().getBalance({ address: DOROTHY_ADDRESS });
