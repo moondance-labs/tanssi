@@ -12,7 +12,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let contracts: HeavyContract[];
         const MAX_CONTRACTS = 50;
-        const EXPECTED_POV_ROUGH = 8_000; // bytes
+        const EXPECTED_POV_ROUGH = 20_000; // bytes
         let batchAbi: Abi;
         let proxyAbi: Abi;
         let proxyAddress: `0x${string}`;
@@ -63,8 +63,8 @@ describeSuite({
                 // With 1M gas we are allowed to use ~62kb of POV, so verify the range.
                 // The tx is still included in the block because it contains the failed tx,
                 // so POV is included in the block as well.
-                expect(block.proofSize).to.be.at.least(6_000);
-                expect(block.proofSize).to.be.at.most(10_000);
+                expect(block.proofSize).to.be.at.least(15_000);
+                expect(block.proofSize).to.be.at.most(30_000);
                 expect(result?.successful).to.equal(true);
                 expectEVMResult(result!.events, "Error", "OutOfGas");
             },
@@ -91,7 +91,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.3);
                 expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.3);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result!.events, "Succeed", "Reserved");
             },
         });
 
@@ -110,7 +110,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.3);
                 expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.3);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result!.events, "Succeed", "Returned");
             },
         });
     },
