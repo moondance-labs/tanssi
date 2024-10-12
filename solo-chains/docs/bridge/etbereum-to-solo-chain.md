@@ -22,62 +22,31 @@
 - 2/3rds quorum needs to be reached
 - For now sync committee members are not slashed if the vote for a malicious header (although subject to change after EIP-7657)
 
-### Verification PseudoCode
 
-```python
-def validate_light_client_update(snapshot: LightClientSnapshot,
-                                 update: LightClientUpdate,
-                                 genesis_validators_root: Root) -> None:
-    # Verify update slot is larger than snapshot slot
-    assert update.header.slot > snapshot.header.slot
+### Definitions and abreviations
+- SC: Current Sync Committee
+- NSC: Next Sync Committee
+- Attested header: the header for which we have the signatures by the sync committee
+- Finalized header: the latest finalized header, can be different to attested header (e.g., the latest finalized block is 5 but we have sync committee signatures for 7)
+- Slot: an interval of 12s
+- Period: A range of slots, in this case 8192 slots (around 27 hours)
+### Verification PseudoCode and explanation
 
-    # Verify update does not skip a sync committee period
-    snapshot_period = compute_epoch_at_slot(snapshot.header.slot) // EPOCHS_PER_SYNC_COMMITTEE_PERIOD
-    update_period = compute_epoch_at_slot(update.header.slot) // EPOCHS_PER_SYNC_COMMITTEE_PERIOD
-    assert update_period in (snapshot_period, snapshot_period + 1)
+The pseudo-code for the verification update can be found in [Altair](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md). We describe the pseudo-code in our own words in the following steps:
 
-    # Verify update header root is the finalized root of the finality header, if specified
-    if update.finality_header == BeaconBlockHeader():
-        signed_header = update.header
-        assert update.finality_branch == [Bytes32() for _ in range(floorlog2(FINALIZED_ROOT_INDEX))]
-    else:
-        signed_header = update.finality_header
-        assert is_valid_merkle_branch(
-            leaf=hash_tree_root(update.header),
-            branch=update.finality_branch,
-            depth=floorlog2(FINALIZED_ROOT_INDEX),
-            index=get_subtree_index(FINALIZED_ROOT_INDEX),
-            root=update.finality_header.state_root,
-        )
-
-    # Verify update next sync committee if the update period incremented
-    if update_period == snapshot_period:
-        sync_committee = snapshot.current_sync_committee
-        assert update.next_sync_committee_branch == [Bytes32() for _ in range(floorlog2(NEXT_SYNC_COMMITTEE_INDEX))]
-    else:
-        sync_committee = snapshot.next_sync_committee
-        assert is_valid_merkle_branch(
-            leaf=hash_tree_root(update.next_sync_committee),
-            branch=update.next_sync_committee_branch,
-            depth=floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-            index=get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
-            root=update.header.state_root,
-        )
-
-    # Verify sync committee has sufficient participants
-    assert sum(update.sync_committee_bits) >= MIN_SYNC_COMMITTEE_PARTICIPANTS
-
-    # Verify sync committee aggregate signature
-    participant_pubkeys = [pubkey for (bit, pubkey) in zip(update.sync_committee_bits, sync_committee.pubkeys) if bit]
-    domain = compute_domain(DOMAIN_SYNC_COMMITTEE, update.fork_version, genesis_validators_root)
-    signing_root = compute_signing_root(signed_header, domain)
-    assert bls.FastAggregateVerify(participant_pubkeys, signing_root, update.sync_committee_signature)
-```
+1. First we verify that the update is meaningful, which basically means that the slot number provided is higher than the one stored in the light client
+2. Second we verify that the period is either the current one stored or the following one. OBviously an update for a past period cannot be provided,  neither we can skip period updates by injecting a period too far in the future.
+3. If we arre injecting an attested header (header for which the sync committee provided signatues) that is different than the finalized heaer (latest finalized header), a merkle proof verification is carried out to verify the validity of the finalized header in the attested header
+4. We take the sync committee against which we have to verify the signatues. In this case we have two options
+4.1 If the period of the attested header is the same one as we have stored, we take the current sync committe (SC), and verify the signatures against it.
+4.2 If the period of the attested header is higher (+1) of the latest one stored, then we take the next sync committee(NSC), and additionally, the prover needs to inject a merkle proof for the following next committee that needs to be validated.
+5. The aggreagated signature is verified against the selected committee.
+6. The header is accepted
 
 ## Transmiting Ethereum Headers to Starlight
 
 ### The relayers job to transmit Ethereum's header
-1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block
+1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block 
 2. The relayer needs to aggregrate the public keys responsible for generating that block.
 3. If the sync committee changes, the relayer needs to generate a merkle proof proving that the sync committee has changed.
 4. The relayer presents all these components to the appropriate pallet in starlight
@@ -90,21 +59,25 @@ def validate_light_client_update(snapshot: LightClientSnapshot,
 
 ### Overall Diagram ETH state validity Reception
 
+This is our own diagram, but a more low level diagram can be found in [Altair low-level diagram](https://github.com/ethereum/annotated-spec/raw/master/altair/lightsync.png)
+
 <p align="center">
   <img src="images/beacon_chain_altair.drawio.png" width="1000">
 </p>
 
 
-
 ## Proving symbiotic validator selection to starlight (or any other Ethereum state)
 
 ### The relayers job to transmit symbiotic validators
-1. The relayer node checks the latest accepted header in starlight, and it generates a storage proof of the validators storage item in the symbiotic smart contract
-2. The relayer sends this information to the Symbiotic validator receiver pallet
+1.  We assme there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
+2. The relayer node checks the latest accepted finalized header in starlight
+3. It generates a merkle ancestry proof of the block where the event was emitted against the latest finalized state stored in starlight
+3. It generates a merkle proof of the event against the receipt log
+4. The relayer sends this information to the Symbiotic validator receiver pallet
 
 ### The Symbiotic validator Receiver pallets job to verify the validators
 
-1. The symbiotic validator pallet receiver asks the Ethereum state receiver pallet about the correctness of the validators.
+1. The symbiotic validator pallet receiver asks the Ethereum state receiver pallet about the correctness of the validators and the ancestry proof.
 2. The ethereum state pallet receiver repplies with a yes or no, depending on the validity of the storage proof against the storage root stored
 3. If accepted, the next validator set is stored on-chain
 4. In the next session, the new era will get started
