@@ -145,7 +145,7 @@ snowbridge-pallet-ethereum-client = { workspace = true }
 [dev-dependencies]
 keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
-rand = { version = "0.8.5", features = [ "std", "std_rng" ] }
+rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
