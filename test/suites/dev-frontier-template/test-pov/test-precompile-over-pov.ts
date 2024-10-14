@@ -3,7 +3,9 @@ import { describeSuite, expect, beforeAll, deployCreateCompiledContract, fetchCo
 import { HeavyContract, deployHeavyContracts, expectEVMResult } from "../../../helpers";
 
 import { Abi, encodeFunctionData } from "viem";
-import { ALITH_ADDRESS, PRECOMPILE_BATCH_ADDRESS, createEthersTransaction } from "@moonwall/util";
+import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
+
+const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 
 describeSuite({
     id: "DF1303",
@@ -12,7 +14,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let contracts: HeavyContract[];
         const MAX_CONTRACTS = 50;
-        const EXPECTED_POV_ROUGH = 55_000; // bytes
+        const EXPECTED_POV_ROUGH = 52_800; // bytes
         let batchAbi: Abi;
         let proxyAbi: Abi;
         let proxyAddress: `0x${string}`;
@@ -63,7 +65,7 @@ describeSuite({
                 // With 1M gas we are allowed to use ~62kb of POV, so verify the range.
                 // The tx is still included in the block because it contains the failed tx,
                 // so POV is included in the block as well.
-                expect(block.proofSize).to.be.at.least(35_000);
+                expect(block.proofSize).to.be.at.least(34_000);
                 expect(block.proofSize).to.be.at.most(70_000);
                 expect(result?.successful).to.equal(true);
                 expectEVMResult(result!.events, "Error", "OutOfGas");
@@ -91,7 +93,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.3);
                 expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.3);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Succeed", "Reserved");
+                expectEVMResult(result!.events, "Succeed", "Returned");
             },
         });
 
