@@ -3,7 +3,7 @@
 ## Altair Sync protocol
 
 ### Preliminaries
-- Ethereum epochs consis of 32 slots, where each slot is 12s
+- Ethereum epochs consist of 32 slots, where each slot is 12s
 - Ethereum distributes all validators in attestation 32 attestation committees (one per slot)
 - At the beginning of each epoch, each validator is assigned a slot
 - Ethereum pseudo-randomly selects, among all validators, a block producer for a slot n
@@ -15,7 +15,7 @@
 - In order to verify a block header, you need the information of the previous header
 
 ### The Altair sync protocol
-- A sync committe made up of 512 pseudo-randomly chosen validators is selected every 256 epochs (approx, 27hours)
+- A sync committee composed of 512 pseudo-randomly chosen validators is selected every 256 epochs (approx, 27hours)
 - Each block header includes the aggregated signature of the validators in the sync committee,
 - Each header lists the current and the next sync committee
 - Sync committee members are rewarded with 0.1ETH for their service, and they are charged that amount if they dont sign
@@ -35,9 +35,9 @@
 The pseudo-code for the verification update can be found in [Altair](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md). We describe the pseudo-code in our own words in the following steps:
 
 1. First we verify that the update is meaningful, which basically means that the slot number provided is higher than the one stored in the light client
-2. Second we verify that the period is either the current one stored or the following one. OBviously an update for a past period cannot be provided,  neither we can skip period updates by injecting a period too far in the future.
-3. If we arre injecting an attested header (header for which the sync committee provided signatues) that is different than the finalized heaer (latest finalized header), a merkle proof verification is carried out to verify the validity of the finalized header in the attested header
-4. We take the sync committee against which we have to verify the signatues. In this case we have two options
+2. Second we verify that the period is either the current one stored or the following one. Obviously an update for a past period cannot be provided,  neither we can skip period updates by injecting a period too far in the future.
+3. If we arre injecting an attested header (header for which the sync committee provided signatures) that is different than the finalized header (latest finalized header), a merkle proof verification is carried out to verify the validity of the finalized header in the attested header
+4. We take the sync committee against which we have to verify the signatures. In this case we have two options
 4.1 If the period of the attested header is the same one as we have stored, we take the current sync committe (SC), and verify the signatures against it.
 4.2 If the period of the attested header is higher (+1) of the latest one stored, then we take the next sync committee(NSC), and additionally, the prover needs to inject a merkle proof for the following next committee that needs to be validated.
 5. The aggreagated signature is verified against the selected committee.
@@ -46,7 +46,7 @@ The pseudo-code for the verification update can be found in [Altair](https://git
 ## Transmiting Ethereum Headers to Starlight
 
 ### The relayers job to transmit Ethereum's header
-1. The relayer node needs to collect the aggergated sync committee signature embeedded into the Ethereum block 
+1. The relayer node needs to collect the aggregated sync committee signature embedded into the Ethereum block 
 2. The relayer needs to aggregrate the public keys responsible for generating that block.
 3. If the sync committee changes, the relayer needs to generate a merkle proof proving that the sync committee has changed.
 4. The relayer presents all these components to the appropriate pallet in starlight
@@ -69,7 +69,7 @@ This is our own diagram, but a more low level diagram can be found in [Altair lo
 ## Proving symbiotic validator selection to starlight (or any other Ethereum state)
 
 ### The relayers job to transmit symbiotic validators
-1.  We assme there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
+1.  We assume there exists a contract that emits an event indicating the new validators, which is verifiable against the transaction receipt trie root in the block.
 2. The relayer node checks the latest accepted finalized header in starlight
 3. It generates a merkle ancestry proof of the block where the event was emitted against the latest finalized state stored in starlight
 3. It generates a merkle proof of the event against the receipt log
