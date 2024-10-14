@@ -77,7 +77,7 @@ describeSuite({
             title: "Data preservers 2000 watcher properly starts",
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
-                await waitForLogs(logFilePath, 300, ["Assignement for block"]);
+                await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
 
@@ -116,7 +116,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
-                await waitForLogs(logFilePath, 300, ["Active(Id(2000))"]);
+                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
             },
         });
 
@@ -139,7 +139,7 @@ describeSuite({
             title: "Data preservers 2001 watcher properly starts",
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
-                await waitForLogs(logFilePath, 300, ["Assignement for block"]);
+                await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
 
@@ -178,7 +178,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
 
-                await waitForLogs(logFilePath, 300, ["Active(Id(2001))"]);
+                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
             },
         });
 
@@ -231,6 +231,9 @@ describeSuite({
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
+
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                await waitForLogs(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
             },
         });
 
