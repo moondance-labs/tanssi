@@ -243,6 +243,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"primitives/std",
 	"rand/std",
+	"rand/std",
 	"runtime-common/std",
 	"runtime-parachains/std",
 	"scale-info/std",
@@ -279,7 +280,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"rand/std"
 ]
 no_std = []
 
