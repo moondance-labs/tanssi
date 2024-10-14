@@ -849,7 +849,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-dancebox.yml"
+                        "configPath": "./configs/stagenet-dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -871,7 +872,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/dancebox.yml"
+                        "configPath": "./configs/dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -893,7 +895,31 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-flashbox.yml"
+                        "configPath": "./configs/stagenet-flashbox.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_stagelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/stagelight.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
