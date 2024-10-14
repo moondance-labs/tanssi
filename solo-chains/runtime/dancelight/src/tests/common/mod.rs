@@ -1057,7 +1057,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     pub(crate) fn group_validators(group_index: GroupIndex) -> Option<Vec<ValidatorIndex>> {
         runtime_parachains::scheduler::ValidatorGroups::<T>::get()
             .get(group_index.0 as usize)
-            .map(|g| g.clone())
+            .cloned()
     }
 
     pub fn heads_insert(para_id: &ParaId, head_data: HeadData) {
@@ -1094,7 +1094,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .iter()
             .enumerate()
             .map(|(i, public)| {
-                let unchecked_signed = UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
+                UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
                     public,
                     availability_bitvec.clone(),
                     &SigningContext {
@@ -1102,9 +1102,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         session_index: Session::current_index(),
                     },
                     ValidatorIndex(i as u32),
-                );
-
-                unchecked_signed
+                )
             })
             .collect();
 
@@ -1121,9 +1119,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     }
 }
 
-use frame_support::StorageHasher;
-use primitives::vstaging::SchedulerParams;
-use tp_traits::ParathreadParams;
+use {
+    frame_support::StorageHasher, primitives::vstaging::SchedulerParams,
+    tp_traits::ParathreadParams,
+};
 
 pub fn storage_map_final_key<H: frame_support::StorageHasher>(
     pallet_prefix: &str,

@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::rpc::generate_rpc_builder::{GenerateRpcBuilder, GenerateRpcBuilderParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
@@ -33,7 +34,7 @@ use {
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
-    node_common::service::{NodeBuilder, NodeBuilderConfig},
+    node_common::service::{MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig},
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
     sc_executor::WasmExecutor,
@@ -48,7 +49,7 @@ use {
     sp_consensus::EnableProofRecording,
     sp_consensus_aura::SlotDuration,
     sp_keystore::KeystorePtr,
-    std::{sync::Arc, time::Duration},
+    std::{marker::PhantomData, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{
         collators::lookahead::{
@@ -79,13 +80,20 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 }
 
-pub struct ContainerChainNodeConfig;
-impl NodeBuilderConfig for ContainerChainNodeConfig {
+#[derive(Default, Copy, Clone)]
+pub struct ContainerChainNodeConfig<RuntimeApi>(PhantomData<RuntimeApi>);
+impl<RuntimeApi> NodeBuilderConfig for ContainerChainNodeConfig<RuntimeApi> {
     type Block = Block;
-    // TODO: RuntimeApi here should be the subset of runtime apis available for all containers
-    // Currently we are using the orchestrator runtime apis
+    /// RuntimeApi is customizable to allow supporting more features than the common subset of
+    /// runtime api features.
     type RuntimeApi = RuntimeApi;
     type ParachainExecutor = ContainerChainExecutor;
+}
+
+impl<RuntimeApi> ContainerChainNodeConfig<RuntimeApi> {
+    pub fn new() -> Self {
+        Self(PhantomData)
+    }
 }
 
 /// Orchestrator Parachain Block import. We cannot use the one in cumulus as it overrides the best
@@ -143,25 +151,42 @@ pub type ParachainProposerFactory =
 
 // Container chains types
 type ContainerChainExecutor = WasmExecutor<ParachainHostFunctions>;
-pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
+pub type ContainerChainClient<RuntimeApi> = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
 pub type ContainerChainBackend = TFullBackend<Block>;
-type ContainerChainBlockImport =
-    TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
+type ContainerChainBlockImport<RuntimeApi> =
+    TParachainBlockImport<Block, Arc<ContainerChainClient<RuntimeApi>>, ContainerChainBackend>;
+
+tp_traits::alias!(
+    pub trait MinimalContainerRuntimeApi:
+        MinimalCumulusRuntimeApi<Block, ContainerChainClient<Self>>
+        + sp_api::ConstructRuntimeApi<
+            Block,
+            ContainerChainClient<Self>,
+            RuntimeApi:
+                TanssiSlotDurationApi<Block>
+                + async_backing_primitives::UnincludedSegmentApi<Block>,
+        >
+        + Sized
+);
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-pub async fn start_node_impl_container(
+pub async fn start_node_impl_container<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+>(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     keystore: KeystorePtr,
     para_id: ParaId,
     collation_params: Option<crate::spawner::CollationParams>,
+    generate_rpc_builder: TGenerateRpcBuilder,
 ) -> sc_service::error::Result<(
     TaskManager,
-    Arc<ContainerChainClient>,
+    Arc<ContainerChainClient<RuntimeApi>>,
     Arc<ParachainBackend>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
@@ -186,22 +211,18 @@ pub async fn start_node_impl_container(
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
-    let rpc_builder = {
-        let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
-
-        Box::new(move |deny_unsafe, _| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: transaction_pool.clone(),
-                deny_unsafe,
-                command_sink: None,
-                xcm_senders: None,
-            };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
+    let rpc_builder = generate_rpc_builder.generate(GenerateRpcBuilderParams {
+        task_manager: &node_builder.task_manager,
+        container_chain_config: &parachain_config,
+        client: node_builder.client.clone(),
+        backend: node_builder.backend.clone(),
+        sync_service: node_builder.network.sync_service.clone(),
+        transaction_pool: node_builder.transaction_pool.clone(),
+        prometheus_registry: node_builder.prometheus_registry.clone(),
+        command_sink: None,
+        xcm_senders: None,
+        network: node_builder.network.network.clone(),
+    })?;
 
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
@@ -269,10 +290,10 @@ pub async fn start_node_impl_container(
     ))
 }
 
-pub fn container_chain_import_queue(
+pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
     parachain_config: &Configuration,
-    node_builder: &NodeBuilder<ContainerChainNodeConfig>,
-) -> (ContainerChainBlockImport, BasicQueue<Block>) {
+    node_builder: &NodeBuilder<ContainerChainNodeConfig<RuntimeApi>>,
+) -> (ContainerChainBlockImport<RuntimeApi>, BasicQueue<Block>) {
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
     // in the runtime
@@ -297,17 +318,17 @@ pub fn container_chain_import_queue(
 }
 
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-fn start_consensus_container(
-    client: Arc<ContainerChainClient>,
+fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
+    client: Arc<ContainerChainClient<RuntimeApi>>,
     backend: Arc<FullBackend>,
     collation_params: crate::spawner::CollationParams,
-    block_import: ContainerChainBlockImport,
+    block_import: ContainerChainBlockImport<RuntimeApi>,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
+    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient<RuntimeApi>>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,

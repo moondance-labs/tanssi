@@ -18,8 +18,9 @@
 
 use crate::Registrar;
 use {
-    crate::tests::common::*,
-    crate::{Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers},
+    crate::{
+        tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
+    },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_noop, assert_ok, BoundedVec},

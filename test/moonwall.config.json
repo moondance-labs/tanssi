@@ -746,10 +746,11 @@
             "name": "zombie_data_preservers",
             "testFileDir": ["suites/data-preservers"],
             "runScripts": [
-                "build-spec-single-container.sh",
+                "build-spec-data-preservers.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
             ],
             "timeout": 600000,
             "foundation": {
@@ -776,9 +777,19 @@
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "DataPreserver",
+                    "name": "DataPreserver-2000",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "DataPreserver-2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },
@@ -837,7 +848,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-dancebox.yml"
+                        "configPath": "./configs/stagenet-dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -859,7 +871,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/dancebox.yml"
+                        "configPath": "./configs/dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -881,7 +894,31 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-flashbox.yml"
+                        "configPath": "./configs/stagenet-flashbox.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_stagelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/stagelight.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
