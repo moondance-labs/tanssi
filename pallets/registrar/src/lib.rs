@@ -626,12 +626,15 @@ pub mod pallet {
             para_id: ParaId,
             manager_address: T::AccountId,
         ) -> DispatchResult {
-            let origin = ensure_signed(origin)?;
+            // Allow root to force set para manager.
+            if let Err(_) = ensure_root(origin.clone()) {
+                let origin = ensure_signed(origin)?;
 
-            let creator =
-                RegistrarDeposit::<T>::get(para_id).map(|deposit_info| deposit_info.creator);
+                let creator =
+                    RegistrarDeposit::<T>::get(para_id).map(|deposit_info| deposit_info.creator);
 
-            ensure!(Some(origin) == creator, Error::<T>::NotParaCreator);
+                ensure!(Some(origin) == creator, Error::<T>::NotParaCreator);
+            }
 
             ParaManager::<T>::insert(para_id, manager_address.clone());
 
