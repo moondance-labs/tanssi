@@ -160,7 +160,6 @@ use {
 mod tests;
 
 pub mod genesis_config_presets;
-mod validator_manager;
 
 impl_runtime_weights!(dancelight_runtime_constants);
 
@@ -467,7 +466,7 @@ impl pallet_session::Config for Runtime {
     type ValidatorIdOf = ValidatorIdOf;
     type ShouldEndSession = Babe;
     type NextSessionRotation = Babe;
-    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ValidatorManager>;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = ();
@@ -1192,9 +1191,17 @@ parameter_types! {
     pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
 }
 
-impl validator_manager::Config for Runtime {
+impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type PrivilegedOrigin = EnsureRoot<AccountId>;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type MaxInvulnerables = MaxInvulnerables;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    //type ValidatorRegistration = ();
+    type UnixTime = Timestamp;
+    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1580,7 +1587,8 @@ construct_runtime! {
         ParasSudoWrapper: paras_sudo_wrapper = 250,
 
         // Validator Manager pallet.
-        ValidatorManager: validator_manager = 252,
+        //ValidatorManager: validator_manager = 252,
+        ExternalValidators: pallet_external_validators = 253,
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,

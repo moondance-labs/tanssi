@@ -6,15 +6,6 @@ settings:
 
 importers:
 
-  .:
-    dependencies:
-      api-augment:0.400.0:
-        specifier: link:@tanssi/api-augment:0.400.0
-        version: link:@tanssi/api-augment:0.400.0
-      api-augment:latest:
-        specifier: link:@tanssi/api-augment:latest
-        version: link:@tanssi/api-augment:latest
-
   test:
     dependencies:
       '@zombienet/orchestrator':

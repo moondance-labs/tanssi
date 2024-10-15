@@ -896,6 +896,46 @@ where
     }
 }
 
+pub struct ExternalValidatorsInitialMigration<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for ExternalValidatorsInitialMigration<Runtime>
+where
+    Runtime: pallet_external_validators::Config,
+    Runtime: pallet_session::Config<
+        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+    >,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_ExternalValidatorsInitialMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use frame_support::pallet_prelude::*;
+
+        // Set initial WhitelistedValidators to current validators from pallet session
+        let session_validators = pallet_session::Validators::<Runtime>::get();
+        let session_validators = BoundedVec::truncate_from(session_validators);
+        pallet_external_validators::WhitelistedValidators::<Runtime>::put(session_validators);
+
+        // Kill storage of ValidatorManager pallet
+        let pallet_prefix: &[u8] = b"ValidatorManager";
+        let _ = clear_storage_prefix(pallet_prefix, b"", b"", None, None);
+
+        // One db read and one db write per element, plus the on-chain storage
+        Runtime::DbWeight::get().reads_writes(1, 1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1032,8 +1072,17 @@ where
 
 pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
 
-impl<Runtime> GetMigrations for DancelightMigrations<Runtime> {
+impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
+where
+    Runtime: pallet_external_validators::Config,
+    Runtime: pallet_session::Config<
+        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+    >,
+{
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        vec![]
+        let migrate_external_validators =
+            ExternalValidatorsInitialMigration::<Runtime>(Default::default());
+
+        vec![Box::new(migrate_external_validators)]
     }
 }

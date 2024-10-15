@@ -69,6 +69,7 @@ pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }
+pallet-external-validators = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-initializer = { workspace = true }
@@ -268,6 +269,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"pallet-external-validators/std"
 ]
 no_std = []
 runtime-benchmarks = [
@@ -330,6 +332,7 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-external-validators/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -391,6 +394,7 @@ try-runtime = [
 	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-external-validators/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.

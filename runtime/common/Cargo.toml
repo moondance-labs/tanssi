@@ -21,11 +21,13 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-session = { workspace = true }
 pallet-treasury = { workspace = true }
 
 # Moonkit
