@@ -52,6 +52,7 @@ describeSuite({
                 await context.createBlock();
                 const containerChainGenesisData = emptyGenesisData();
 
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(alice)]);
                 const tx = await polkadotJs.tx.containerRegistrar
                     .register(2002, containerChainGenesisData, "0x111")
                     .signAsync(alice);

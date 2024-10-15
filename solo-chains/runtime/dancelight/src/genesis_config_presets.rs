@@ -315,6 +315,15 @@ fn dancelight_testnet_genesis(
     );
     let num_cores =
         para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32);
+    // Initialize nextFreeParaId to a para id that is greater than all registered para ids.
+    // This is needed for Registrar::reserve.
+    let max_para_id = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| para_id)
+        .max();
+    let next_free_para_id = max_para_id
+        .map(|x| ParaId::from(u32::from(*x) + 1))
+        .unwrap_or(primitives::LOWEST_PUBLIC_ID);
 
     serde_json::json!({
         "balances": {
@@ -374,9 +383,9 @@ fn dancelight_testnet_genesis(
             },
         },
         "registrar": {
-            "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
+            "nextFreeParaId": next_free_para_id,
         },
-        "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
+        "tanssiInvulnerables": crate::TanssiInvulnerablesConfig {
             invulnerables: invulnerable_accounts,
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
