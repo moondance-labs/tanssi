@@ -4,8 +4,8 @@ import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 import ethers from "ethers";
-import { baltathar, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
-import { BN, u8aToHex } from "@polkadot/util";
+import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
+import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
@@ -86,7 +86,7 @@ describeSuite({
             title: "Change assignment 2000",
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
-                
+
                 const profile = {
                     url: "exemple",
                     paraIds: "AnyParaId",
@@ -109,9 +109,9 @@ describeSuite({
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile1)).unwrap();
-                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
-                let bobAccount = u8aToHex(bob.addressRaw);
+                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile1)).unwrap();
+                const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                const bobAccount = u8aToHex(bob.addressRaw);
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
@@ -124,7 +124,7 @@ describeSuite({
             id: "T04",
             title: "RPC endpoint 2000 is properly started",
             test: async function () {
-                const wsProvider = new WsProvider('ws://127.0.0.1:9950');
+                const wsProvider = new WsProvider("ws://127.0.0.1:9950");
                 dataProvider2000Api = await ApiPromise.create({ provider: wsProvider });
 
                 const container2000Network = dataProvider2000Api.consts.system.version.specName.toString();
@@ -171,9 +171,9 @@ describeSuite({
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
-                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
-                let bobAccount = u8aToHex(bob.addressRaw);
+                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                const bobAccount = u8aToHex(bob.addressRaw);
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
@@ -186,7 +186,7 @@ describeSuite({
             id: "T07",
             title: "RPC endpoint 2001 is properly started",
             test: async function () {
-                const wsProvider = new WsProvider('ws://127.0.0.1:9952');
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
                 dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
 
                 const container2001Network = dataProvider2001Api.consts.system.version.specName.toString();
@@ -225,9 +225,9 @@ describeSuite({
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
-                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
-                let bobAccount = u8aToHex(bob.addressRaw);
+                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                const bobAccount = u8aToHex(bob.addressRaw);
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
@@ -245,13 +245,15 @@ describeSuite({
                     url: "exemple",
                     paraIds: "AnyParaId",
                     mode: { rpc: { supportsEthereumRpc: true } },
-                    assignmentRequest: { "StreamPayment": {
-                        "config": {
-                            timeUnit: "BlockNumber",
-                            assetId: "Native",
-                            rate: '1000000',
-                        } 
-                    }},
+                    assignmentRequest: {
+                        StreamPayment: {
+                            config: {
+                                timeUnit: "BlockNumber",
+                                assetId: "Native",
+                                rate: "1000000",
+                            },
+                        },
+                    },
                 };
 
                 {
@@ -261,19 +263,71 @@ describeSuite({
                     await context.waitBlock(1, "Tanssi");
                 }
 
-                let onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
-                let onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
-                let bobAccount = u8aToHex(bob.addressRaw);
+                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                const bobAccount = u8aToHex(bob.addressRaw);
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
-                expect(JSON.stringify(onChainProfile.profile.assignmentRequest.toHuman())).to.be.eq(JSON.stringify({ "StreamPayment": {
-                    "config": {
-                        timeUnit: "BlockNumber",
-                        assetId: "Native",
-                        rate: '1,000,000',
-                    } 
-                }}));
+                expect(JSON.stringify(onChainProfile.profile.assignmentRequest.toHuman())).to.be.eq(
+                    JSON.stringify({
+                        StreamPayment: {
+                            config: {
+                                timeUnit: "BlockNumber",
+                                assetId: "Native",
+                                rate: "1,000,000",
+                            },
+                        },
+                    })
+                );
+            },
+        });
+
+        it({
+            id: "T11",
+            title: "Start new assignment for chain 2000 with stream payment",
+            test: async function () {
+                {
+                    // to non-force assign we need to have a para manager, which is not the case
+                    // with paras registered in genesis. we thus set the para manager manually here
+                    const tx = paraApi.tx.registrar.setParaManager(2000, alice.address);
+                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                {
+                    // pays for 10 blocks of service
+                    const tx = paraApi.tx.dataPreservers.startAssignment(profile2, 2000, {
+                        StreamPayment: { initialDeposit: 10000000 },
+                    });
+                    await signAndSendAndInclude(tx, alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                expect(JSON.stringify(onChainProfile.assignment.toHuman())).to.be.eq(
+                    JSON.stringify(["2,000", { StreamPayment: { streamId: "0" } }])
+                );
+
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
+
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
+                dataProvider2000BApi = await ApiPromise.create({ provider: wsProvider });
+
+                const newContainerNetwork = dataProvider2000BApi.consts.system.version.specName.toString();
+                const newParaId = (await dataProvider2000BApi.query.parachainInfo.parachainId()).toString();
+                expect(newContainerNetwork, "Container2000 API incorrect").to.contain("container-chain-template");
+                expect(newParaId, "Container2000 API incorrect").to.be.equal("2000");
+            },
+        });
+
+        it({
+            id: "T12",
+            title: "Data preserver services halt after stream payment is stalled",
+            test: async function () {
+                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
             },
         });
     },
