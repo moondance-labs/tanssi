@@ -38,7 +38,7 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
 
     if let OrchestratorChainResult::Err(e) = try_fut(async move {
         log::info!("Starting data preserver assignment watcher");
-        
+
         let orchestrator_chain_interface = spawner.orchestrator_chain_interface();
 
         let mut current_assignment = DataPreserverAssignment::<ParaId>::NotAssigned;
@@ -58,7 +58,9 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
                 continue;
             }
 
-            log::info!("Assignement changed at block {hash}: {current_assignment:?} => {new_assignment:?}");
+            log::info!(
+                "Assignement changed at block {hash}: {current_assignment:?} => {new_assignment:?}"
+            );
 
             match (current_assignment, new_assignment) {
                 // switch from not assigned/inactive to active, start embeded node
