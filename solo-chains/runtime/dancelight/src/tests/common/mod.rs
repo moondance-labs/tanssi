@@ -22,6 +22,10 @@ use {
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
     },
+    beefy_primitives::{
+        ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
+        ConsensusLog, BEEFY_ENGINE_ID,
+    },
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
@@ -103,6 +107,10 @@ pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
         .container_chains
         .get(&para_id)
         .cloned()
+}
+
+pub fn get_beefy_digest(log: ConsensusLog<BeefyId>) -> DigestItem {
+    DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
 pub fn run_to_session(n: u32) {
@@ -612,6 +620,7 @@ impl ExtBuilder {
                                 para_validator: authority_keys.para_validator.clone(),
                                 para_assignment: authority_keys.para_assignment.clone(),
                                 authority_discovery: authority_keys.authority_discovery.clone(),
+                                // TODO: we should not include beefy for collators
                                 beefy: authority_keys.beefy.clone(),
                                 nimbus: authority_keys.nimbus.clone(),
                             },
