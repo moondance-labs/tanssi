@@ -1742,7 +1742,7 @@ impl pallet_registrar::Config for Runtime {
     // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 pub struct DancelightRegistrarHooks;
