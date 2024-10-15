@@ -16,6 +16,7 @@
 
 //! The Manual Seal implementation for the OrchestratorAuraConsensus
 
+use sp_api::StorageProof;
 use {
     cumulus_primitives_core::ParaId,
     dp_consensus::TanssiAuthorityAssignmentApi,
@@ -175,7 +176,7 @@ impl<B> ConsensusDataProvider<B> for ContainerManualSealAuraConsensusDataProvide
 where
     B: BlockT,
 {
-    type Proof = ();
+    type Proof = StorageProof;
 
     fn create_digest(
         &self,
