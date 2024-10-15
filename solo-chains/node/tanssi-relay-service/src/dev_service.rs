@@ -361,7 +361,7 @@ fn new_full<
     let mut command_sink = None;
 
     if role.is_authority() {
-        let proposer = sc_basic_authorship::ProposerFactory::new(
+        let proposer = sc_basic_authorship::ProposerFactory::with_proof_recording(
             task_manager.spawn_handle(),
             client.clone(),
             transaction_pool.clone(),

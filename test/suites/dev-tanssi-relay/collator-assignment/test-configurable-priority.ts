@@ -319,6 +319,15 @@ async function createTxBatchForCreatingPara(
     headData
 ) {
     const txs = [];
+    const reserveTx = api.tx.registrar.reserve();
+    txs.push(
+        api.tx.utility.dispatchAs(
+            {
+                system: { Signed: manager },
+            } as any,
+            reserveTx
+        )
+    );
 
     let registerTx;
     if (slotFreq == null) {
