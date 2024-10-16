@@ -102,6 +102,10 @@ parachains-common = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
+
+# Off-chain workers (testing)
+pallet-ocw-simple = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -180,6 +184,7 @@ std = [
 	"tanssi-runtime-common/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"pallet-ocw-simple/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -261,4 +266,5 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-ocw-simple/try-runtime",
 ]
