@@ -41,12 +41,12 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_application_crypto::{AppCrypto, AppPublic, Pair, RuntimeAppPublic},
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_core::Public,
+    sp_core::{Public, H256},
     sp_runtime::{
         generic::DigestItem,
         traits::{BlakeTwo256, Keccak256},
     },
-    sp_std::vec,
+    sp_std::{str::FromStr, vec},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::ContainerChainBlockInfo,
 };
@@ -311,7 +311,6 @@ fn test_report_future_voting_valid_and_invalid_proofs() {
             let validator_set = Beefy::validator_set().unwrap();
             let authorities = validator_set.validators();
             let set_id = validator_set.id();
-            let validators = Session::validators();
 
             assert_eq!(authorities.len(), 4);
             let equivocation_authority_index = 1;
@@ -373,5 +372,75 @@ fn test_report_future_voting_valid_and_invalid_proofs() {
                 ),
                 BeefyError::<Runtime>::InvalidFutureBlockVotingProof
             );
+        });
+}
+
+#[test]
+fn test_mmr_digest_updates_after_session_and_single_block() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(ValidatorSetId::<Runtime>::get(), 0);
+
+            run_to_session(1);
+            assert_eq!(ValidatorSetId::<Runtime>::get(), 1);
+
+            // Get beefy keys for our validators
+            let alice_keys =
+                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+
+            let expected_authorities_digest = get_beefy_digest(ConsensusLog::AuthoritiesChange(
+                ValidatorSet::new(
+                    vec![
+                        alice_keys.beefy.clone(),
+                        bob_keys.beefy.clone(),
+                        charlie_keys.beefy.clone(),
+                        dave_keys.beefy.clone(),
+                    ],
+                    1,
+                )
+                .unwrap(),
+            ));
+
+            let expected_mmr_digest = get_beefy_digest(ConsensusLog::MmrRoot(
+                H256::from_str(
+                    "0x32a121bf4f1bdbd038188c79494261c5f32fbaf11a0104fd425578a3deb65994",
+                )
+                .unwrap(),
+            ));
+
+            // Check that both authorities and MMR digests were correctly placed after session change.
+            let actual_authorities_digest = System::digest().logs[2].clone();
+            let actual_mmr_digest = System::digest().logs[3].clone();
+            assert_eq!(expected_mmr_digest, actual_mmr_digest);
+            assert_eq!(expected_authorities_digest, actual_authorities_digest);
+
+            // After running a single block the MMR digest should update again.
+            run_block();
+            let expected_digest = get_beefy_digest(ConsensusLog::MmrRoot(
+                H256::from_str(
+                    "0xa9c9ff91da137a07fc3ce6f370cc01a4f42012216a81448c4497ea26d2a20ab2",
+                )
+                .unwrap(),
+            ));
+            let actual_digest = System::digest().logs[1].clone();
+            assert_eq!(expected_digest, actual_digest);
         });
 }
