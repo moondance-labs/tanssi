@@ -17,28 +17,74 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, AuthorNoting, RewardsPortion},
+    crate::{tests::common::*, AuthorNoting, Beefy, Historical, RewardsPortion},
     beefy_primitives::{
-        ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
-        ConsensusLog, ValidatorSet, BEEFY_ENGINE_ID,
+        check_double_voting_proof,
+        ecdsa_crypto::{
+            AuthorityId as BeefyId, Public as BeefyPublic, Signature as BeefySignature,
+        },
         known_payloads::MMR_ROOT_ID,
         test_utils::{
-            generate_double_voting_proof, generate_fork_voting_proof,
-            generate_future_block_voting_proof, Keyring as BeefyKeyring,
+            generate_double_voting_proof, generate_fork_voting_proof, BeefySignerAuthority,
+            Keyring as BeefyKeyring,
         },
-        check_double_voting_proof,
-        Payload
+        BeefySignatureHasher, Commitment, ConsensusLog, FutureBlockVotingProof, Payload,
+        ValidatorSet, ValidatorSetId as ValidatorSetIdType, VoteMessage, BEEFY_ENGINE_ID,
+        KEY_TYPE as BEEFY_KEY_TYPE,
     },
     cumulus_primitives_core::ParaId,
-    frame_support::traits::OnInitialize,
-    pallet_beefy::ValidatorSetId,
+    frame_support::{
+        assert_err, assert_ok,
+        traits::{KeyOwnerProofSystem, OnInitialize},
+    },
+    pallet_beefy::{Error as BeefyError, GenesisBlock, ValidatorSetId},
     parity_scale_codec::{Decode, Encode},
+    sp_application_crypto::{AppCrypto, AppPublic, Pair, RuntimeAppPublic},
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_runtime::{generic::DigestItem, print, traits::{BlakeTwo256, Keccak256}},
+    sp_core::Public,
+    sp_runtime::{
+        generic::DigestItem,
+        traits::{BlakeTwo256, Keccak256},
+    },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::ContainerChainBlockInfo,
 };
+
+/// Create a new `VoteMessage` from commitment primitives and key pair.
+pub fn signed_vote<TPublic: AppCrypto + RuntimeAppPublic<Signature = BeefySignature>>(
+    block_number: u32,
+    payload: Payload,
+    validator_set_id: ValidatorSetIdType,
+    key_pair: <TPublic as AppCrypto>::Pair,
+) -> VoteMessage<u32, <<TPublic as AppCrypto>::Pair as AppCrypto>::Public, BeefySignature>
+where
+    <TPublic as AppCrypto>::Pair: BeefySignerAuthority<BeefySignatureHasher>,
+    <TPublic as RuntimeAppPublic>::Signature:
+        Send + Sync + From<<<TPublic as AppCrypto>::Pair as AppCrypto>::Signature>,
+{
+    let commitment = Commitment {
+        validator_set_id,
+        block_number,
+        payload,
+    };
+    let signature: <TPublic as RuntimeAppPublic>::Signature =
+        key_pair.sign_with_hasher(&commitment.encode()).into();
+    VoteMessage {
+        commitment,
+        id: key_pair.public(),
+        signature,
+    }
+}
+
+/// Create a new `FutureBlockVotingProof` based on vote.
+pub fn generate_future_block_voting_proof(
+    vote: (u32, Payload, ValidatorSetIdType),
+    key_pair: <BeefyId as AppCrypto>::Pair,
+) -> FutureBlockVotingProof<u32, BeefyPublic> {
+    let signed_vote = signed_vote::<BeefyId>(vote.0, vote.1, vote.2, key_pair);
+    FutureBlockVotingProof { vote: signed_vote }
+}
 
 #[test]
 fn test_session_change_updates_beefy_authorities_digest() {
@@ -145,7 +191,9 @@ fn test_valid_and_invalid_double_voting_proofs() {
             );
 
             // Previous equivocation proof should be invalid.
-            assert!(!check_double_voting_proof::<_, _, Keccak256>(&equivocation_proof));
+            assert!(!check_double_voting_proof::<_, _, Keccak256>(
+                &equivocation_proof
+            ));
 
             // 2nd case (invalid proof):
             // Equivocation proof with two votes in different rounds for
@@ -156,9 +204,11 @@ fn test_valid_and_invalid_double_voting_proofs() {
             );
 
             // Previous equivocation proof should be invalid.
-            assert!(!check_double_voting_proof::<_, _, Keccak256>(&equivocation_proof));
+            assert!(!check_double_voting_proof::<_, _, Keccak256>(
+                &equivocation_proof
+            ));
 
-            // 3rd case (invalid proof): 
+            // 3rd case (invalid proof):
             // Equivocation proof with two votes by different authorities.
             let equivocation_proof = generate_double_voting_proof(
                 (1, payload1.clone(), set_id, &BeefyKeyring::Alice),
@@ -166,9 +216,11 @@ fn test_valid_and_invalid_double_voting_proofs() {
             );
 
             // Previous equivocation proof should be invalid.
-            assert!(!check_double_voting_proof::<_, _, Keccak256>(&equivocation_proof));
+            assert!(!check_double_voting_proof::<_, _, Keccak256>(
+                &equivocation_proof
+            ));
 
-            // 4th case (invalid proof): 
+            // 4th case (invalid proof):
             // Equivocation proof with two votes in different set ids.
             let equivocation_proof = generate_double_voting_proof(
                 (1, payload1.clone(), set_id, &BeefyKeyring::Bob),
@@ -176,7 +228,9 @@ fn test_valid_and_invalid_double_voting_proofs() {
             );
 
             // Previous equivocation proof should be invalid.
-            assert!(!check_double_voting_proof::<_, _, Keccak256>(&equivocation_proof));
+            assert!(!check_double_voting_proof::<_, _, Keccak256>(
+                &equivocation_proof
+            ));
 
             // Last case (valid proof):
             // Equivocation proof with two votes in the same round for
@@ -188,6 +242,136 @@ fn test_valid_and_invalid_double_voting_proofs() {
             );
 
             // Previous equivocation proof should be valid.
-            assert!(check_double_voting_proof::<_, _, Keccak256>(&equivocation_proof))
+            assert!(check_double_voting_proof::<_, _, Keccak256>(
+                &equivocation_proof
+            ))
+        });
+}
+
+#[test]
+fn test_set_new_genesis() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_session(1);
+
+            let new_beefy_genesis_delay = 5u32;
+            assert_ok!(Beefy::set_new_genesis(
+                root_origin(),
+                new_beefy_genesis_delay,
+            ));
+
+            let expected_new_genesis = System::block_number() + new_beefy_genesis_delay;
+
+            // Check the new genesis was placed correctly.
+            assert_eq!(GenesisBlock::<Runtime>::get(), Some(expected_new_genesis));
+
+            // We should not be able to set a genesis < 1
+            assert_err!(
+                Beefy::set_new_genesis(root_origin(), 0u32,),
+                BeefyError::<Runtime>::InvalidConfiguration,
+            );
+        });
+}
+
+#[test]
+fn test_report_future_voting_valid_and_invalid_proofs() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_session(1);
+
+            let block_num = System::block_number();
+            let validator_set = Beefy::validator_set().unwrap();
+            let authorities = validator_set.validators();
+            let set_id = validator_set.id();
+            let validators = Session::validators();
+
+            assert_eq!(authorities.len(), 4);
+            let equivocation_authority_index = 1;
+            let equivocation_key = &authorities[equivocation_authority_index];
+
+            // Create key ownership proof
+            let key_owner_proof = Historical::prove((BEEFY_KEY_TYPE, &equivocation_key)).unwrap();
+
+            // Let's generate a key_pair to proof that BOB corresponds to index 1.
+            let secret_uri = format!("//{}", &AccountId::from(BOB));
+            let key_pair_bob = <BeefyId as AppCrypto>::Pair::from_string(&secret_uri, None)
+                .expect("should succeed generating key_pair");
+
+            let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![42]);
+
+            // Build the future block equivocation proof using the generated key_pair.
+            let valid_equivocation_proof = generate_future_block_voting_proof(
+                (block_num + 100, payload.clone(), set_id),
+                key_pair_bob.clone(),
+            );
+
+            // Should succeed as BOB is present in validator set.
+            assert_ok!(Beefy::report_future_block_voting_unsigned(
+                RuntimeOrigin::none(),
+                Box::new(valid_equivocation_proof),
+                key_owner_proof.clone(),
+            ));
+
+            // Let's generate a key_pair of an account that is not present in validator set.
+            let secret_uri = format!("//{}", &AccountId::from(FERDIE));
+            let key_pair_ferdie = <BeefyId as AppCrypto>::Pair::from_string(&secret_uri, None)
+                .expect("should succeed generating invalid key_pair");
+
+            // Build the invalid equivocation proof.
+            let invalid_equivocation_proof = generate_future_block_voting_proof(
+                (block_num + 100, payload.clone(), set_id),
+                key_pair_ferdie,
+            );
+
+            // Should fail as FERDIE is not part of the validator set.
+            assert_err!(
+                Beefy::report_future_block_voting_unsigned(
+                    RuntimeOrigin::none(),
+                    Box::new(invalid_equivocation_proof),
+                    key_owner_proof.clone(),
+                ),
+                BeefyError::<Runtime>::InvalidKeyOwnershipProof
+            );
+
+            let invalid_equivocation_proof =
+                generate_future_block_voting_proof((1, payload.clone(), set_id), key_pair_bob);
+
+            // Should fail if the proof targets an old block.
+            assert_err!(
+                Beefy::report_future_block_voting_unsigned(
+                    RuntimeOrigin::none(),
+                    Box::new(invalid_equivocation_proof),
+                    key_owner_proof,
+                ),
+                BeefyError::<Runtime>::InvalidFutureBlockVotingProof
+            );
         });
 }

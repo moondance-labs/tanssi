@@ -3295,6 +3295,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "sp-api",
+ "sp-application-crypto",
  "sp-arithmetic",
  "sp-authority-discovery",
  "sp-block-builder",
