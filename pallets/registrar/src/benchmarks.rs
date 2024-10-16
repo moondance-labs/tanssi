@@ -26,12 +26,15 @@ use {
     frame_benchmarking::{account, v2::*},
     frame_support::{
         assert_ok,
-        traits::{fungible::Mutate, EnsureOrigin, EnsureOriginWithArg},
+        traits::{
+            fungible::{Inspect, Mutate},
+            EnsureOrigin, EnsureOriginWithArg,
+        },
     },
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
-    tp_traits::{ParaId, RelayStorageRootProvider, SlotFrequency},
+    tp_traits::{ParaId, RegistrarHandler, RelayStorageRootProvider, SlotFrequency},
 };
 
 /// Create a funded user.
@@ -43,7 +46,7 @@ fn create_funded_user<T: Config>(
 ) -> (T::AccountId, DepositBalanceOf<T>) {
     const SEED: u32 = 0;
     let user = account(string, n, SEED);
-    let min_reserve_amount = T::DepositAmount::get();
+    let min_reserve_amount = T::Currency::minimum_balance() * 10_000_000u32.into();
     let total = min_reserve_amount + extra;
     assert_ok!(T::Currency::mint_into(&user, total));
     (user, total)
@@ -51,6 +54,7 @@ fn create_funded_user<T: Config>(
 
 #[benchmarks]
 mod benchmarks {
+    use cumulus_primitives_core::relay_chain::MIN_CODE_SIZE;
     use {super::*, parity_scale_codec::Encode};
 
     fn new_genesis_data(storage: Vec<ContainerChainGenesisDataItem>) -> ContainerChainGenesisData {
@@ -69,7 +73,14 @@ mod benchmarks {
     fn max_size_genesis_data(num_keys: u32, max_encoded_size: u32) -> ContainerChainGenesisData {
         let mut storage = vec![];
         // Create one big storage item
-        storage.push((b"code".to_vec(), vec![1; max_encoded_size as usize]).into());
+        storage.push(
+            (
+                b"dummy".to_vec(),
+                vec![1; max_encoded_size.saturating_sub(MIN_CODE_SIZE) as usize],
+            )
+                .into(),
+        );
+        storage.push((b":code".to_vec(), vec![1; MIN_CODE_SIZE as usize]).into());
         // Fill rest of keys with empty values
         for _i in 1..num_keys {
             storage.push((b"".to_vec(), b"".to_vec()).into());
@@ -106,6 +117,20 @@ mod benchmarks {
         genesis_data
     }
 
+    fn get_code(storage: &ContainerChainGenesisData) -> Vec<u8> {
+        storage
+            .storage
+            .iter()
+            .find_map(|kv| {
+                if kv.key == b":code" {
+                    Some(kv.value.clone())
+                } else {
+                    None
+                }
+            })
+            .unwrap()
+    }
+
     // Returns number of para ids in pending verification (registered but not marked as valid)
     fn pending_verification_len<T: Config>() -> usize {
         crate::PendingVerification::<T>::iter_keys().count()
@@ -119,7 +144,12 @@ mod benchmarks {
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
         #[extrinsic_call]
-        Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage, None);
+        Pallet::<T>::register(
+            RawOrigin::Signed(caller),
+            Default::default(),
+            storage,
+            T::InnerRegistrar::bench_head_data(),
+        );
 
         // verification code
         assert_eq!(pending_verification_len::<T>(), 1usize);
@@ -189,7 +219,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
             // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
@@ -212,6 +242,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data(1, x);
+        let code = get_code(&storage);
 
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
@@ -226,17 +257,25 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for i in 0..y {
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
-            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
         // We should have registered y
         assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
@@ -252,7 +291,9 @@ mod benchmarks {
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(
+            &(T::SessionDelay::get() * 2u32.into() + 3u32.into()),
+        );
 
         // Now it has been removed
         assert_eq!(Pallet::<T>::registered_para_ids().len(), (y - 1) as usize);
@@ -276,7 +317,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
             // Do not call mark_valid_for_collating, to ensure that the deregister call also executes the cleanup hooks
@@ -317,6 +358,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data(1, x);
+        let code = get_code(&storage);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -330,17 +372,25 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for i in 0..y {
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
-            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
         // We should have registered y
         assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
@@ -369,7 +419,9 @@ mod benchmarks {
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(
+            &(T::SessionDelay::get() * 2u32.into() + 3u32.into()),
+        );
 
         // Now it has been removed
         assert_eq!(Pallet::<T>::registered_para_ids().len(), (y - 1) as usize);
@@ -382,6 +434,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data(1, x);
+        let code = get_code(&storage);
 
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
@@ -398,7 +451,7 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
         }
@@ -412,15 +465,25 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for k in 1000..(1000 + y - 1) {
+            // Call mark_valid_for_collating to ensure that the deregister call
+            // does not execute the cleanup hooks immediately
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // We should have registered y
         assert_eq!(pending_verification_len::<T>(), y as usize);
@@ -438,6 +501,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data(1, x);
+        let code = get_code(&storage);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -452,12 +516,11 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
-            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
-            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
         // First loop to fill RegisteredParaIds to its maximum
@@ -469,10 +532,22 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for k in 1000..(1000 + y - 1) {
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+        for i in 0..y {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -491,7 +566,7 @@ mod benchmarks {
         Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into());
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // Check y-1 is in Paused
         assert!(Pallet::<T>::paused().contains(&ParaId::from(y - 1)));
@@ -504,6 +579,7 @@ mod benchmarks {
         let x = T::MaxGenesisDataSize::get();
         let y = T::MaxLengthParaIds::get();
         let storage = max_size_genesis_data(1, x);
+        let code = get_code(&storage);
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
@@ -518,12 +594,11 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
-            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
-            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
         // First loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
@@ -535,10 +610,22 @@ mod benchmarks {
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
+            T::InnerRegistrar::add_trusted_validation_code(code.clone());
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for k in 1000..(1000 + y) {
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+        for i in 0..(y - 1) {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -557,7 +644,7 @@ mod benchmarks {
         Pallet::<T>::unpause_container_chain(RawOrigin::Root, 1000u32.into());
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // Check 1000 is not in Paused
         assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000)));
@@ -579,7 +666,7 @@ mod benchmarks {
             Default::default(),
             slot_frequency,
             storage,
-            None,
+            T::InnerRegistrar::bench_head_data(),
         );
 
         // verification code
@@ -608,10 +695,17 @@ mod benchmarks {
                 i.into(),
                 slot_frequency.clone(),
                 storage.clone(),
-                None,
+                T::InnerRegistrar::bench_head_data(),
             )
             .unwrap();
             T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+        }
+
+        T::InnerRegistrar::registrar_new_session(1);
+        T::InnerRegistrar::registrar_new_session(2);
+        T::InnerRegistrar::registrar_new_session(3);
+
+        for i in 0..y {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -625,7 +719,7 @@ mod benchmarks {
         );
 
         // Start a new session
-        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+        Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // Check y-1 has new slot frequency
         assert_eq!(
