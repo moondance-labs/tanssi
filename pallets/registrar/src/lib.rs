@@ -627,9 +627,7 @@ pub mod pallet {
             manager_address: T::AccountId,
         ) -> DispatchResult {
             // Allow root to force set para manager.
-            if let Err(_) = ensure_root(origin.clone()) {
-                let origin = ensure_signed(origin)?;
-
+            if let Some(origin) = ensure_signed_or_root(origin)? {
                 let creator =
                     RegistrarDeposit::<T>::get(para_id).map(|deposit_info| deposit_info.creator);
 
