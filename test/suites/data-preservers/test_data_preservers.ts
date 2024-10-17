@@ -29,6 +29,8 @@ describeSuite({
         let profile1;
         let profile2;
 
+        let balanceBeforeAssignment;
+
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
@@ -295,6 +297,9 @@ describeSuite({
                     await context.waitBlock(1, "Tanssi");
                 }
 
+                balanceBeforeAssignment = (await paraApi.query.system.account(bob.address)).data.free.toBigInt();
+                console.log(`balanceBeforeAssignment: ${balanceBeforeAssignment}`);
+
                 {
                     // pays for 10 blocks of service
                     const tx = paraApi.tx.dataPreservers.startAssignment(profile2, 2000, {
@@ -307,6 +312,17 @@ describeSuite({
                 const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
                 expect(JSON.stringify(onChainProfile.assignment.toHuman())).to.be.eq(
                     JSON.stringify(["2,000", { StreamPayment: { streamId: "0" } }])
+                );
+
+                const streamPayment = (await paraApi.query.streamPayment.streams(0)).unwrap();
+                expect(JSON.stringify(streamPayment.source.toHuman())).to.eq(JSON.stringify(alice.address));
+                expect(JSON.stringify(streamPayment.target.toHuman())).to.eq(JSON.stringify(bob.address));
+                expect(JSON.stringify(streamPayment.config)).to.eq(
+                    JSON.stringify({
+                        timeUnit: "BlockNumber",
+                        assetId: "Native",
+                        rate: 1000000,
+                    })
                 );
 
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
@@ -328,6 +344,22 @@ describeSuite({
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
+
+                
+                await context.waitBlock(1, "Tanssi");
+
+                {
+                    // pays for 10 blocks of service
+                    const tx = paraApi.tx.streamPayment.performPayment(0);
+                    await signAndSendAndInclude(tx, alice);
+                    await context.waitBlock(1, "Tanssi");
+                }
+
+                const balanceAfter = (await paraApi.query.system.account(bob.address)).data.free.toBigInt();
+                console.log(`balanceAfter: ${balanceAfter}`);
+                expect(balanceAfter).to.be.eq(balanceBeforeAssignment + BigInt(10000000));
+
+                await context.waitBlock(1, "Tanssi");
             },
         });
     },
