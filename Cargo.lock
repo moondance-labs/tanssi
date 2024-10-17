@@ -2089,6 +2089,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-multisig",
+ "pallet-ocw-simple",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
@@ -9696,6 +9697,21 @@ dependencies = [
  "pallet-nomination-pools",
  "parity-scale-codec",
  "sp-api",
+]
+
+[[package]]
+name = "pallet-ocw-simple"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

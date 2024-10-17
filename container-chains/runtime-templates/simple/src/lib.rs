@@ -659,6 +659,10 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+impl pallet_ocw_simple::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -701,6 +705,7 @@ construct_runtime!(
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
+        OffchainWorker: pallet_ocw_simple::{Pallet,Call,Event<T>} = 120,
     }
 );
 
