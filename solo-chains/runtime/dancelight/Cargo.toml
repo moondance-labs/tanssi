@@ -198,6 +198,7 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
+	"pallet-external-validators/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
 	"pallet-inflation-rewards/std",
@@ -269,7 +270,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"pallet-external-validators/std"
 ]
 no_std = []
 runtime-benchmarks = [
@@ -293,6 +293,7 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
+	"pallet-external-validators/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
@@ -332,7 +333,6 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-external-validators/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -359,6 +359,7 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
+	"pallet-external-validators/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
@@ -394,7 +395,6 @@ try-runtime = [
 	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"pallet-external-validators/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.

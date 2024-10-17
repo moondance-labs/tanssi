@@ -1200,7 +1200,7 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorIdOf = ValidatorIdOf;
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -1906,6 +1906,7 @@ mod benches {
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
+        [pallet_external_validators, ExternalValidators]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]

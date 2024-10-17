@@ -60,7 +60,7 @@ fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
     use rand::{RngCore, SeedableRng};
 
     let keys = {
-        let mut keys = [0u8; 128];
+        let mut keys = [0u8; 256];
 
         if c > 0 {
             let mut rng = rand::rngs::StdRng::seed_from_u64(u64::from(c));
@@ -75,9 +75,13 @@ fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
 
 fn invulnerable<T: Config + session::Config + pallet_balances::Config>(
     c: u32,
-) -> (T::AccountId, T::CollatorId, <T as session::Config>::Keys) {
+) -> (
+    T::AccountId,
+    <T as Config>::ValidatorId,
+    <T as session::Config>::Keys,
+) {
     let funded_user = create_funded_user::<T>("candidate", c, 100);
-    let collator_id = T::CollatorIdOf::convert(funded_user.clone())
+    let collator_id = <T as Config>::ValidatorIdOf::convert(funded_user.clone())
         .expect("Converstion of account id of collator id failed.");
     (funded_user, collator_id, keys::<T>(c))
 }
@@ -86,7 +90,7 @@ fn invulnerables<
     T: Config + frame_system::Config + pallet_session::Config + pallet_balances::Config,
 >(
     count: u32,
-) -> Vec<(T::AccountId, T::CollatorId)> {
+) -> Vec<(T::AccountId, <T as Config>::ValidatorId)> {
     let invulnerables = (0..count).map(|c| invulnerable::<T>(c)).collect::<Vec<_>>();
 
     for (who, _collator_id, keys) in invulnerables.clone() {
@@ -116,22 +120,32 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn add_invulnerable(
-        b: Linear<1, { T::MaxInvulnerables::get() - 1 }>,
+    fn skip_external_validators() -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
+        #[extrinsic_call]
+        _(origin as T::RuntimeOrigin, true);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn add_whitelisted(
+        b: Linear<1, { T::MaxWhitelistedValidators::get() - 1 }>,
     ) -> Result<(), BenchmarkError> {
         let origin =
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 
         // now we need to fill up invulnerables
-        let mut invulnerables = invulnerables::<T>(b);
-        invulnerables.sort();
+        let invulnerables = invulnerables::<T>(b);
 
-        let (_account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+        let (_account_ids, collator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
             invulnerables.into_iter().unzip();
 
-        let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
+        let invulnerables: frame_support::BoundedVec<_, T::MaxWhitelistedValidators> =
             frame_support::BoundedVec::try_from(collator_ids).unwrap();
-        <Invulnerables<T>>::put(invulnerables);
+        <WhitelistedValidators<T>>::put(invulnerables);
 
         let (new_invulnerable, _collator_id, keys) = invulnerable::<T>(b + 1);
         <session::Pallet<T>>::set_keys(
@@ -154,20 +168,19 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn remove_invulnerable(
-        b: Linear<{ 1 }, { T::MaxInvulnerables::get() }>,
+    fn remove_whitelisted(
+        b: Linear<{ 1 }, { T::MaxWhitelistedValidators::get() }>,
     ) -> Result<(), BenchmarkError> {
         let origin =
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
-        let mut invulnerables = invulnerables::<T>(b);
-        invulnerables.sort();
+        let invulnerables = invulnerables::<T>(b);
 
-        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
             invulnerables.into_iter().unzip();
 
-        let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
+        let invulnerables: frame_support::BoundedVec<_, T::MaxWhitelistedValidators> =
             frame_support::BoundedVec::try_from(collator_ids).unwrap();
-        <Invulnerables<T>>::put(invulnerables);
+        <WhitelistedValidators<T>>::put(invulnerables);
 
         let to_remove = account_ids.last().unwrap().clone();
 
@@ -185,19 +198,20 @@ mod benchmarks {
 
     // worst case for new session.
     #[benchmark]
-    fn new_session(r: Linear<1, { T::MaxInvulnerables::get() }>) -> Result<(), BenchmarkError> {
+    fn new_session(
+        r: Linear<1, { T::MaxWhitelistedValidators::get() }>,
+    ) -> Result<(), BenchmarkError> {
         // start fresh
-        Invulnerables::<T>::kill();
+        WhitelistedValidators::<T>::kill();
 
         let origin =
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 
         frame_system::Pallet::<T>::set_block_number(0u32.into());
         // now we need to fill up invulnerables
-        let mut invulnerables = invulnerables::<T>(r);
-        invulnerables.sort();
+        let invulnerables = invulnerables::<T>(r);
 
-        let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+        let (account_ids, _collator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
             invulnerables.into_iter().unzip();
 
         for account in account_ids {
@@ -214,18 +228,17 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn reward_invulnerable(
-        b: Linear<{ 1 }, { T::MaxInvulnerables::get() }>,
+    fn reward_validator(
+        b: Linear<{ 1 }, { T::MaxWhitelistedValidators::get() }>,
     ) -> Result<(), BenchmarkError> where {
-        let mut invulnerables = invulnerables::<T>(b);
-        invulnerables.sort();
+        let invulnerables = invulnerables::<T>(b);
 
-        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<T::CollatorId>) =
+        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
             invulnerables.into_iter().unzip();
 
-        let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
+        let invulnerables: frame_support::BoundedVec<_, T::MaxWhitelistedValidators> =
             frame_support::BoundedVec::try_from(collator_ids).unwrap();
-        <Invulnerables<T>>::put(invulnerables);
+        <WhitelistedValidators<T>>::put(invulnerables);
         let to_reward = account_ids.first().unwrap().clone();
         // Create new supply for rewards
         let new_supply = currency_issue::<T>(1000u32.into());
