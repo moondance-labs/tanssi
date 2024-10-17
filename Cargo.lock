@@ -9348,6 +9348,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-external-validator-info"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections 0.1.9",
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "hex-literal 0.3.4",
+ "log",
+ "nimbus-primitives",
+ "pallet-session",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+ "sp-version",
+ "test-relay-sproof-builder",
+ "tp-author-noting-inherent",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-fast-unstake"
 version = "36.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
