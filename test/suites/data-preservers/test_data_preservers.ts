@@ -335,6 +335,8 @@ describeSuite({
                 const newParaId = (await dataProvider2000BApi.query.parachainInfo.parachainId()).toString();
                 expect(newContainerNetwork, "Container2000 API incorrect").to.contain("container-chain-template");
                 expect(newParaId, "Container2000 API incorrect").to.be.equal("2000");
+
+                await context.waitBlock(10, "Tanssi");
             },
         });
 
@@ -344,8 +346,6 @@ describeSuite({
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
-
-                await context.waitBlock(1, "Tanssi");
 
                 {
                     // pays for 10 blocks of service
