@@ -403,6 +403,15 @@ pub trait RegistrarHandler<AccountId> {
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
     fn deregister(id: ParaId);
     fn deregister_weight() -> Weight;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_head_data() -> Option<HeadData> {
+        None
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_trusted_validation_code(_code: Vec<u8>) {}
+    #[cfg(feature = "runtime-benchmarks")]
+    fn registrar_new_session(_session: u32) {}
 }
 
 impl<AccountId> RegistrarHandler<AccountId> for () {
