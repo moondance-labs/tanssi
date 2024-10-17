@@ -345,7 +345,6 @@ describeSuite({
                 const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
 
-                
                 await context.waitBlock(1, "Tanssi");
 
                 {
