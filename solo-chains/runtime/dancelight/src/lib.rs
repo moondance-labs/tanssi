@@ -744,6 +744,7 @@ pub enum ProxyType {
     CancelProxy,
     Auction,
     OnDemandOrdering,
+    SudoRegistrar,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -804,6 +805,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
+            ProxyType::SudoRegistrar => matches!(
+                c,
+                RuntimeCall::DataPreservers(..) |				
+                RuntimeCall::Registrar(..) |
+                RuntimeCall::ContainerRegistrar(..)
+            ),
         }
     }
     fn is_superset(&self, o: &Self) -> bool {

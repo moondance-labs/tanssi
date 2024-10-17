@@ -2580,7 +2580,16 @@ export default {
     },
     /** Lookup288: dancelight_runtime::ProxyType */
     DancelightRuntimeProxyType: {
-        _enum: ["Any", "NonTransfer", "Governance", "IdentityJudgement", "CancelProxy", "Auction", "OnDemandOrdering"],
+        _enum: [
+            "Any",
+            "NonTransfer",
+            "Governance",
+            "IdentityJudgement",
+            "CancelProxy",
+            "Auction",
+            "OnDemandOrdering",
+            "SudoRegistrar",
+        ],
     },
     /** Lookup289: pallet_multisig::pallet::Call<T> */
     PalletMultisigCall: {
