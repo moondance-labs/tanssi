@@ -1222,6 +1222,37 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        externalValidators: {
+            /**
+             * Add a new account `who` to the list of `WhitelistedValidators`.
+             *
+             * The origin for this call must be the `UpdateOrigin`.
+             */
+            addWhitelisted: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Remove an account `who` from the list of `WhitelistedValidators` collators.
+             *
+             * The origin for this call must be the `UpdateOrigin`.
+             */
+            removeWhitelisted: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Allow to ignore external validators and use only whitelisted ones.
+             *
+             * The origin for this call must be the `UpdateOrigin`.
+             */
+            skipExternalValidators: AugmentedSubmittable<
+                (skip: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         fellowshipCollective: {
             /**
              * Introduce a new member.
@@ -3898,7 +3929,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 [AccountId32]
             >;
             /**
-             * Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must be sorted.
+             * Remove an account `who` from the list of `Invulnerables` collators.
              *
              * The origin for this call must be the `UpdateOrigin`.
              */
@@ -4232,28 +4263,6 @@ declare module "@polkadot/api-base/types/submittable" {
                     weight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [Call, SpWeightsWeightV2Weight]
-            >;
-            /** Generic tx */
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
-        validatorManager: {
-            /**
-             * Remove validators from the set.
-             *
-             * The removed validators will be deactivated from current session + 2.
-             */
-            deregisterValidators: AugmentedSubmittable<
-                (validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<AccountId32>]
-            >;
-            /**
-             * Add new validators to the set.
-             *
-             * The new validators will be active from current session + 2.
-             */
-            registerValidators: AugmentedSubmittable<
-                (validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<AccountId32>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
