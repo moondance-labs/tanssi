@@ -27,6 +27,7 @@ pub mod pallet_preimage;
 pub mod pallet_proxy;
 pub mod pallet_ranked_collective;
 pub mod pallet_referenda;
+pub mod pallet_registrar;
 pub mod pallet_scheduler;
 pub mod pallet_services_payment;
 pub mod pallet_sudo;

@@ -797,14 +797,24 @@ pub mod pallet {
                     (user, total)
                 }
                 let new_balance =
-                    (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+                    T::Currency::minimum_balance() * 10_000_000u32.into() + T::DepositAmount::get();
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 let origin = RawOrigin::Signed(account);
+                let mut storage = vec![];
+                storage.push((b":code".to_vec(), vec![1; 10]).into());
+                let genesis_data = ContainerChainGenesisData {
+                    storage,
+                    name: Default::default(),
+                    id: Default::default(),
+                    fork_id: Default::default(),
+                    extensions: Default::default(),
+                    properties: Default::default(),
+                };
                 assert_ok!(Self::register(
                     origin.into(),
                     *para_id,
-                    Default::default(),
-                    None
+                    genesis_data,
+                    T::InnerRegistrar::bench_head_data(),
                 ));
             }
 
