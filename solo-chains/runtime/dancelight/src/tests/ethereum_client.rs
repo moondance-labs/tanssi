@@ -229,10 +229,28 @@ fn test_submit_update_in_next_period() {
             // 3. Then submits an update on the next period (n+1), but without indicating who the next committee is going to be again (in period n+2), which fails
             // 4. Then submits a header on the next period(n+1), this time indicating who the next sync committee is going to be
             // 4. Then submits an update on the next period(n+1)
-            let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
-            let sync_committee_update = Box::new(load_sync_committee_update_fixture());
-            let next_sync_committee_update = Box::new(load_next_sync_committee_update_fixture());
-            let next_update = Box::new(load_next_finalized_header_update_fixture());
+
+            // Generate fixtures using a separate thread with 50MB stack size because those structs are huge
+            let (
+                initial_checkpoint,
+                sync_committee_update,
+                next_sync_committee_update,
+                next_update,
+            ) = with_increased_stack_size(50, || {
+                let initial_checkpoint = Box::new(load_checkpoint_update_fixture());
+                let sync_committee_update = Box::new(load_sync_committee_update_fixture());
+                let next_sync_committee_update =
+                    Box::new(load_next_sync_committee_update_fixture());
+                let next_update = Box::new(load_next_finalized_header_update_fixture());
+
+                (
+                    initial_checkpoint,
+                    sync_committee_update,
+                    next_sync_committee_update,
+                    next_update,
+                )
+            });
+
             let initial_period = compute_period(initial_checkpoint.header.slot);
 
             assert_ok!(EthereumBeaconClient::force_checkpoint(
@@ -277,4 +295,15 @@ fn test_submit_update_in_next_period() {
                 next_update.clone()
             ));
         });
+}
+
+fn with_increased_stack_size<T, F>(stack_size_mb: usize, closure: F) -> T
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    let builder = std::thread::Builder::new().stack_size(stack_size_mb * 1024 * 1024);
+    let handle = builder.spawn(closure).unwrap();
+
+    handle.join().unwrap()
 }
