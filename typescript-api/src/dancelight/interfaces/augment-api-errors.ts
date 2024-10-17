@@ -191,6 +191,20 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        externalValidators: {
+            /** Account is already an Invulnerable. */
+            AlreadyInvulnerable: AugmentedError<ApiType>;
+            /** Account does not have keys registered */
+            NoKeysRegistered: AugmentedError<ApiType>;
+            /** Account is not an Invulnerable. */
+            NotInvulnerable: AugmentedError<ApiType>;
+            /** There are too many Invulnerables. */
+            TooManyInvulnerables: AugmentedError<ApiType>;
+            /** Unable to derive collator id from account id */
+            UnableToDeriveCollatorId: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         fellowshipCollective: {
             /** Account is already a member. */
             AlreadyMember: AugmentedError<ApiType>;

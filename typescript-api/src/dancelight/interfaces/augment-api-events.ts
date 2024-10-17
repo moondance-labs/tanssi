@@ -198,6 +198,14 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        externalValidators: {
+            /** A new Invulnerable was added. */
+            WhitelistedValidatorAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
+            /** An Invulnerable was removed. */
+            WhitelistedValidatorRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         fellowshipCollective: {
             /** A member `who` has been added. */
             MemberAdded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
@@ -1057,21 +1065,10 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         tanssiInvulnerables: {
-            /**
-             * An account was unable to be added to the Invulnerables because they did not have keys registered. Other
-             * Invulnerables may have been set.
-             */
-            InvalidInvulnerableSkipped: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** A new Invulnerable was added. */
             InvulnerableAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** An Invulnerable was removed. */
             InvulnerableRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
-            /** New Invulnerables were set. */
-            NewInvulnerables: AugmentedEvent<
-                ApiType,
-                [invulnerables: Vec<AccountId32>],
-                { invulnerables: Vec<AccountId32> }
-            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
@@ -1153,14 +1150,6 @@ declare module "@polkadot/api-base/types/events" {
             ItemCompleted: AugmentedEvent<ApiType, []>;
             /** A single item within a Batch of dispatches has completed with error. */
             ItemFailed: AugmentedEvent<ApiType, [error: SpRuntimeDispatchError], { error: SpRuntimeDispatchError }>;
-            /** Generic event */
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        validatorManager: {
-            /** Validators were removed from the set. */
-            ValidatorsDeregistered: AugmentedEvent<ApiType, [Vec<AccountId32>]>;
-            /** New validators were added to the set. */
-            ValidatorsRegistered: AugmentedEvent<ApiType, [Vec<AccountId32>]>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

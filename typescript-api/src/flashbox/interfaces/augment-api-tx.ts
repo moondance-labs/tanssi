@@ -876,7 +876,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 [AccountId32]
             >;
             /**
-             * Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must be sorted.
+             * Remove an account `who` from the list of `Invulnerables` collators.
              *
              * The origin for this call must be the `UpdateOrigin`.
              */

@@ -3248,6 +3248,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-external-validators",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -9345,6 +9346,28 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "xcm-primitives",
+]
+
+[[package]]
+name = "pallet-external-validators"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rand",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -17373,12 +17396,14 @@ dependencies = [
  "pallet-balances",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-external-validators",
  "pallet-foreign-asset-creator",
  "pallet-invulnerables",
  "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",
  "pallet-services-payment",
+ "pallet-session",
  "pallet-treasury",
  "pallet-xcm",
  "parity-scale-codec",
