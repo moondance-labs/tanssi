@@ -758,7 +758,7 @@
                 "type": "zombie",
                 "zombieSpec": {
                     "configPath": "./configs/zombieDataPreservers.json",
-                    "skipBlockCheck": ["DataPreserver"]
+                    "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
             "connections": [
@@ -778,19 +778,9 @@
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "DataPreserver-2000",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9950"]
-                },
-                {
                     "name": "Container2001",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9951"]
-                },
-                {
-                    "name": "DataPreserver-2001",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },
