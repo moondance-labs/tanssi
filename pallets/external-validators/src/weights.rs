@@ -54,10 +54,10 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_invulnerables.
 pub trait WeightInfo {
 	fn skip_external_validators() -> Weight;
-	fn add_invulnerable(_b: u32) -> Weight;
-	fn remove_invulnerable(_b: u32) -> Weight;
+	fn add_whitelisted(_b: u32) -> Weight;
+	fn remove_whitelisted(_b: u32) -> Weight;
 	fn new_session(_b: u32) -> Weight;
-	fn reward_invulnerable(_b: u32) -> Weight;
+	fn reward_validator(_b: u32) -> Weight;
 }
 
 /// Weights for pallet_invulnerables using the Substrate node and recommended hardware.
@@ -83,7 +83,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
 	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 99]`.
-	fn add_invulnerable(b: u32, ) -> Weight {
+	fn add_whitelisted(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `549 + b * (36 ±0)`
 		//  Estimated: `4687 + b * (37 ±0)`
@@ -98,7 +98,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
 	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 100]`.
-	fn remove_invulnerable(b: u32, ) -> Weight {
+	fn remove_whitelisted(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `70 + b * (32 ±0)`
 		//  Estimated: `4687`
@@ -130,7 +130,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 100]`.
-	fn reward_invulnerable(b: u32, ) -> Weight {
+	fn reward_validator(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `218 + b * (33 ±0)`
 		//  Estimated: `4687`
@@ -163,7 +163,7 @@ impl WeightInfo for () {
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
 	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 99]`.
-	fn add_invulnerable(b: u32, ) -> Weight {
+	fn add_whitelisted(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `549 + b * (36 ±0)`
 		//  Estimated: `4687 + b * (37 ±0)`
@@ -178,7 +178,7 @@ impl WeightInfo for () {
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
 	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 100]`.
-	fn remove_invulnerable(b: u32, ) -> Weight {
+	fn remove_whitelisted(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `70 + b * (32 ±0)`
 		//  Estimated: `4687`
@@ -210,7 +210,7 @@ impl WeightInfo for () {
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 100]`.
-	fn reward_invulnerable(b: u32, ) -> Weight {
+	fn reward_validator(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `218 + b * (33 ±0)`
 		//  Estimated: `4687`

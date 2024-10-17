@@ -402,7 +402,7 @@ fn dancelight_testnet_genesis(
             ..Default::default()
         },
         "externalValidators": crate::ExternalValidatorsConfig {
-            invulnerables: initial_authorities
+            whitelisted_validators: initial_authorities
                 .iter()
                 .map(|x| {
                     x.stash.clone()

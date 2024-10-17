@@ -145,7 +145,7 @@ mod benchmarks {
         _(origin as T::RuntimeOrigin, new_invulnerable.clone());
 
         assert_last_event::<T>(
-            Event::InvulnerableAdded {
+            Event::WhitelistedValidatorAdded {
                 account_id: new_invulnerable,
             }
             .into(),
@@ -175,7 +175,7 @@ mod benchmarks {
         _(origin as T::RuntimeOrigin, to_remove.clone());
 
         assert_last_event::<T>(
-            Event::InvulnerableRemoved {
+            Event::WhitelistedValidatorRemoved {
                 account_id: to_remove,
             }
             .into(),
@@ -201,7 +201,7 @@ mod benchmarks {
             invulnerables.into_iter().unzip();
 
         for account in account_ids {
-            <InvulnerablesPallet<T>>::add_invulnerable(origin.clone(), account)
+            <InvulnerablesPallet<T>>::add_whitelisted(origin.clone(), account)
                 .expect("add invulnerable failed");
         }
 

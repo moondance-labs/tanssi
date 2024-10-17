@@ -14,22 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Invulnerables pallet.
+//! ExternalValidators pallet.
 //!
-//! A pallet to manage invulnerable collators in a parachain.
+//! A pallet to manage external validators for a solochain.
 //!
 //! ## Terminology
 //!
-//! - Collator: A parachain block producer.
-//! - Invulnerable: An account appointed by governance and guaranteed to be in the collator set.
+//! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
+//! - ExternalValidators: Validators set using storage proofs from another blockchain. Changing them triggers a
+//!     new era. Can be disabled by setting `SkipExternalValidators` to true.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::dispatch::DispatchClass;
 pub use pallet::*;
-use sp_staking::SessionIndex;
 use {
     core::marker::PhantomData,
     sp_runtime::{traits::Convert, TokenError},
+    sp_staking::SessionIndex,
     sp_std::vec::Vec,
 };
 
@@ -51,6 +53,7 @@ pub mod pallet {
     use frame_support::traits::Currency;
 
     use {
+        super::*,
         frame_support::{
             dispatch::DispatchResultWithPostInfo,
             pallet_prelude::*,
@@ -58,9 +61,7 @@ pub mod pallet {
             BoundedVec, DefaultNoBound,
         },
         frame_system::pallet_prelude::*,
-        pallet_session::SessionManager,
         sp_runtime::{traits::Convert, SaturatedConversion},
-        sp_staking::SessionIndex,
         sp_std::vec::Vec,
     };
 
@@ -85,9 +86,13 @@ pub mod pallet {
         /// Origin that can dictate updating parameters of this pallet.
         type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-        /// Maximum number of invulnerables.
+        /// Maximum number of whitelisted validators.
         #[pallet::constant]
-        type MaxInvulnerables: Get<u32>;
+        type MaxWhitelistedValidators: Get<u32>;
+
+        /// Maximum number of external validators.
+        #[pallet::constant]
+        type MaxExternalValidators: Get<u32>;
 
         /// A stable ID for a validator.
         type ValidatorId: Member
@@ -101,8 +106,8 @@ pub mod pallet {
         /// Its cost must be at most one storage read.
         type ValidatorIdOf: Convert<Self::AccountId, Option<Self::ValidatorId>>;
 
-        // Validate a user is registered
-        //type ValidatorRegistration: ValidatorRegistration<Self::ValidatorId>;
+        /// Validate a user is registered
+        type ValidatorRegistration: ValidatorRegistration<Self::ValidatorId>;
 
         /// Time used for computing era duration.
         ///
@@ -125,12 +130,12 @@ pub mod pallet {
     /// The invulnerable, permissioned collators. This list must be sorted.
     #[pallet::storage]
     pub type WhitelistedValidators<T: Config> =
-        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxInvulnerables>, ValueQuery>;
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
     /// The invulnerable, permissioned collators. This list must be sorted.
     #[pallet::storage]
     pub type ExternalValidators<T: Config> =
-        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxInvulnerables>, ValueQuery>;
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxExternalValidators>, ValueQuery>;
 
     /// The invulnerable, permissioned collators. This list must be sorted.
     #[pallet::storage]
@@ -158,44 +163,40 @@ pub mod pallet {
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        pub invulnerables: Vec<T::ValidatorId>,
+        pub whitelisted_validators: Vec<T::ValidatorId>,
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            let duplicate_invulnerables = self
-                .invulnerables
+            let duplicate_validators = self
+                .whitelisted_validators
                 .iter()
                 // T::ValidatorId does not impl Ord or Hash so we cannot collect into set directly,
                 // but we can check for duplicates if we encode them first.
                 .map(|x| x.encode())
                 .collect::<sp_std::collections::btree_set::BTreeSet<_>>();
             assert!(
-                duplicate_invulnerables.len() == self.invulnerables.len(),
-                "duplicate invulnerables in genesis."
+                duplicate_validators.len() == self.whitelisted_validators.len(),
+                "duplicate validators in genesis."
             );
 
-            let bounded_invulnerables =
-                BoundedVec::<_, T::MaxInvulnerables>::try_from(self.invulnerables.clone())
-                    .expect("genesis invulnerables are more than T::MaxInvulnerables");
+            let bounded_validators = BoundedVec::<_, T::MaxWhitelistedValidators>::try_from(
+                self.whitelisted_validators.clone(),
+            )
+            .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
-            <WhitelistedValidators<T>>::put(bounded_invulnerables);
+            <WhitelistedValidators<T>>::put(bounded_validators);
         }
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// New Invulnerables were set.
-        NewInvulnerables { invulnerables: Vec<T::ValidatorId> },
         /// A new Invulnerable was added.
-        InvulnerableAdded { account_id: T::AccountId },
+        WhitelistedValidatorAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
-        InvulnerableRemoved { account_id: T::AccountId },
-        /// An account was unable to be added to the Invulnerables because they did not have keys
-        /// registered. Other Invulnerables may have been set.
-        InvalidInvulnerableSkipped { account_id: T::AccountId },
+        WhitelistedValidatorRemoved { account_id: T::AccountId },
     }
 
     #[pallet::error]
@@ -214,8 +215,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must
-        /// be sorted.
+        /// Allow to ignore external validators and use only whitelisted ones.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(0)]
@@ -228,21 +228,21 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Add a new account `who` to the list of `Invulnerables` collators.
+        /// Add a new account `who` to the list of `WhitelistedValidators`.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::add_invulnerable(
-			T::MaxInvulnerables::get().saturating_sub(1),
+        #[pallet::weight(T::WeightInfo::add_whitelisted(
+			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
-        pub fn add_invulnerable(
+        pub fn add_whitelisted(
             origin: OriginFor<T>,
             who: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared collator ruin things for everyone.
-            let maybe_collator_id = T::ValidatorIdOf::convert(who.clone());
-            //.filter(T::ValidatorRegistration::is_registered);
+            let maybe_collator_id = T::ValidatorIdOf::convert(who.clone())
+                .filter(T::ValidatorRegistration::is_registered);
 
             let collator_id = maybe_collator_id.ok_or(Error::<T>::NoKeysRegistered)?;
 
@@ -256,25 +256,24 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            Self::deposit_event(Event::InvulnerableAdded { account_id: who });
+            Self::deposit_event(Event::WhitelistedValidatorAdded { account_id: who });
 
-            let weight_used = <T as Config>::WeightInfo::add_invulnerable(
+            let weight_used = <T as Config>::WeightInfo::add_whitelisted(
                 WhitelistedValidators::<T>::decode_len()
                     .unwrap_or_default()
                     .try_into()
-                    .unwrap_or(T::MaxInvulnerables::get().saturating_sub(1)),
+                    .unwrap_or(T::MaxWhitelistedValidators::get().saturating_sub(1)),
             );
 
             Ok(Some(weight_used).into())
         }
 
-        /// Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must
-        /// be sorted.
+        /// Remove an account `who` from the list of `WhitelistedValidators` collators.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::remove_invulnerable(T::MaxInvulnerables::get()))]
-        pub fn remove_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+        #[pallet::weight(T::WeightInfo::remove_whitelisted(T::MaxWhitelistedValidators::get()))]
+        pub fn remove_whitelisted(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             let collator_id = T::ValidatorIdOf::convert(who.clone())
@@ -289,7 +288,7 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            Self::deposit_event(Event::InvulnerableRemoved { account_id: who });
+            Self::deposit_event(Event::WhitelistedValidatorRemoved { account_id: who });
             Ok(())
         }
     }
@@ -309,7 +308,10 @@ pub mod pallet {
             // Increase era
             <ActiveEra<T>>::mutate(|q| {
                 if q.is_none() {
-                    *q = Default::default();
+                    *q = Some(ActiveEraInfo {
+                        index: 0,
+                        start: None,
+                    });
                 }
 
                 let q = q.as_mut().unwrap();
@@ -319,8 +321,7 @@ pub mod pallet {
             });
         }
 
-        // TODO: for testing, remove
-        pub fn invulnerables() -> Vec<T::ValidatorId> {
+        pub fn whitelisted_validators() -> Vec<T::ValidatorId> {
             <WhitelistedValidators<T>>::get().into()
         }
     }
@@ -384,8 +385,9 @@ where
             }
         } else {
             Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
-            total_weight +=
-                Runtime::WeightInfo::reward_invulnerable(Runtime::MaxInvulnerables::get())
+            total_weight += Runtime::WeightInfo::reward_validator(
+                Runtime::MaxWhitelistedValidators::get() + Runtime::MaxExternalValidators::get(),
+            )
         }
         Ok(Some(total_weight).into())
     }
@@ -402,6 +404,11 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
         if !SkipExternalValidators::<T>::get() {
             validators.extend(ExternalValidators::<T>::get())
         }
+
+        frame_system::Pallet::<T>::register_extra_weight_unchecked(
+            T::WeightInfo::new_session(validators.len() as u32),
+            DispatchClass::Mandatory,
+        );
 
         Some(validators)
     }

@@ -1194,10 +1194,11 @@ parameter_types! {
 impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
-    type MaxInvulnerables = MaxInvulnerables;
+    type MaxWhitelistedValidators = MaxInvulnerables;
+    type MaxExternalValidators = MaxInvulnerables;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
-    //type ValidatorRegistration = ();
+    type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -1586,8 +1587,6 @@ construct_runtime! {
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
 
-        // Validator Manager pallet.
-        //ValidatorManager: validator_manager = 252,
         ExternalValidators: pallet_external_validators = 253,
 
         // Root testing pallet.

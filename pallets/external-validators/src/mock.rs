@@ -124,10 +124,11 @@ impl ValidatorRegistration<u64> for IsRegistered {
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
-    type MaxInvulnerables = ConstU32<20>;
+    type MaxWhitelistedValidators = ConstU32<20>;
+    type MaxExternalValidators = ConstU32<20>;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = IdentityCollator;
-    //type ValidatorRegistration = IsRegistered;
+    type ValidatorRegistration = IsRegistered;
     type UnixTime = Timestamp;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -188,7 +189,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();
-    let invulnerables = vec![1, 2];
+    let whitelisted_validators = vec![1, 2];
 
     let balances = vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)];
     let keys = balances
@@ -210,9 +211,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     pallet_balances::GenesisConfig::<Test> { balances }
         .assimilate_storage(&mut t)
         .unwrap();
-    pallet_external_validators::GenesisConfig::<Test> { invulnerables }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_external_validators::GenesisConfig::<Test> {
+        whitelisted_validators,
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     session.assimilate_storage(&mut t).unwrap();
 
     t.into()
