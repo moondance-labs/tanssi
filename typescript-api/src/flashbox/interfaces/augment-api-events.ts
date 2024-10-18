@@ -6,7 +6,7 @@
 import "@polkadot/api-base/types/events";
 
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
-import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
+import type { Bytes, Null, Option, Result, U8aFixed, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -255,21 +255,10 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         invulnerables: {
-            /**
-             * An account was unable to be added to the Invulnerables because they did not have keys registered. Other
-             * Invulnerables may have been set.
-             */
-            InvalidInvulnerableSkipped: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** A new Invulnerable was added. */
             InvulnerableAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** An Invulnerable was removed. */
             InvulnerableRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
-            /** New Invulnerables were set. */
-            NewInvulnerables: AugmentedEvent<
-                ApiType,
-                [invulnerables: Vec<AccountId32>],
-                { invulnerables: Vec<AccountId32> }
-            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

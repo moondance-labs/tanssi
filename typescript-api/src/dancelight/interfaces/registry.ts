@@ -26,8 +26,6 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
-    DancelightRuntimeValidatorManagerPalletCall,
-    DancelightRuntimeValidatorManagerPalletEvent,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -113,6 +111,10 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
+    PalletExternalValidatorsActiveEraInfo,
+    PalletExternalValidatorsCall,
+    PalletExternalValidatorsError,
+    PalletExternalValidatorsEvent,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -455,8 +457,6 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
-        DancelightRuntimeValidatorManagerPalletCall: DancelightRuntimeValidatorManagerPalletCall;
-        DancelightRuntimeValidatorManagerPalletEvent: DancelightRuntimeValidatorManagerPalletEvent;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -542,6 +542,10 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
+        PalletExternalValidatorsActiveEraInfo: PalletExternalValidatorsActiveEraInfo;
+        PalletExternalValidatorsCall: PalletExternalValidatorsCall;
+        PalletExternalValidatorsError: PalletExternalValidatorsError;
+        PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;

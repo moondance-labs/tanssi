@@ -629,6 +629,16 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        pallet_external_validators::GenesisConfig::<Runtime> {
+            whitelisted_validators: self
+                .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
             .unwrap();
