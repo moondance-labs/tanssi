@@ -16,10 +16,10 @@
 
 #![cfg(test)]
 
-use crate::Registrar;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
+        Registrar,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,

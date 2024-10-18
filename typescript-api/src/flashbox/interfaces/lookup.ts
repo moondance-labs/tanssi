@@ -1712,15 +1712,30 @@ export default {
     },
     /** Lookup235: flashbox_runtime::PreserversAssignementPaymentRequest */
     FlashboxRuntimePreserversAssignementPaymentRequest: {
-        _enum: ["Free"],
+        _enum: {
+            Free: "Null",
+            StreamPayment: {
+                config: "PalletStreamPaymentStreamConfig",
+            },
+        },
     },
     /** Lookup236: flashbox_runtime::PreserversAssignementPaymentExtra */
     FlashboxRuntimePreserversAssignementPaymentExtra: {
-        _enum: ["Free"],
+        _enum: {
+            Free: "Null",
+            StreamPayment: {
+                initialDeposit: "u128",
+            },
+        },
     },
     /** Lookup237: flashbox_runtime::PreserversAssignementPaymentWitness */
     FlashboxRuntimePreserversAssignementPaymentWitness: {
-        _enum: ["Free"],
+        _enum: {
+            Free: "Null",
+            StreamPayment: {
+                streamId: "u64",
+            },
+        },
     },
     /** Lookup238: pallet_invulnerables::pallet::Call<T> */
     PalletInvulnerablesCall: {
