@@ -15,7 +15,7 @@ import { secp256k1Sign } from "@polkadot/util-crypto";
 
 describeSuite({
     id: "DTR1203",
-    title: "BEEFY - Double voting proof",
+    title: "BEEFY - Double voting proofs",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
