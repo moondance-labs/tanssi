@@ -23,7 +23,7 @@ use {
         BABE_ENGINE_ID,
     },
     beefy_primitives::{
-        ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
+        ecdsa_crypto::AuthorityId as BeefyId,
         ConsensusLog, BEEFY_ENGINE_ID,
     },
     bitvec::prelude::BitVec,

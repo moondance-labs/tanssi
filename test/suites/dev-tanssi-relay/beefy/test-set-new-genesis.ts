@@ -24,10 +24,10 @@ describeSuite({
 
                 const newGenesisDelay: number = 5;
                 const { result } = await context.createBlock(
-                        polkadotJs
-                        .tx.sudo.sudo(polkadotJs.tx.beefy.setNewGenesis(newGenesisDelay))
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.beefy.setNewGenesis(newGenesisDelay))
                         .signAsync(context.keyring.alice),
-                    {allowFailures: false}
+                    { allowFailures: false }
                 );
                 expect(result!.successful, result!.error?.name).to.be.true;
 

@@ -268,6 +268,8 @@ fn test_set_new_genesis() {
         .execute_with(|| {
             run_to_session(1);
 
+            assert_eq!(GenesisBlock::<Runtime>::get(), Some(1u32));
+
             let new_beefy_genesis_delay = 5u32;
             assert_ok!(Beefy::set_new_genesis(
                 root_origin(),

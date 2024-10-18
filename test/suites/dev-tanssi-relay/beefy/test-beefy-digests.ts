@@ -13,8 +13,8 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let aliceStash: KeyringPair;
-        let firstMmrRootDigest:`0x${string}`;
-        let secondMmrRootDigest:`0x${string}`;
+        let firstMmrRootDigest: `0x${string}`;
+        let secondMmrRootDigest: `0x${string}`;
         beforeAll(() => {
             const keyring = new Keyring({ type: "sr25519" });
             aliceStash = keyring.addFromUri("//Alice//stash");
