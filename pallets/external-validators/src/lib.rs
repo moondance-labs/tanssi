@@ -33,6 +33,7 @@ use {
     sp_runtime::{traits::Convert, TokenError},
     sp_staking::SessionIndex,
     sp_std::vec::Vec,
+    tp_traits::{ActiveEraInfo, EraIndexProvider, InvulnerablesProvider},
 };
 
 #[cfg(test)]
@@ -144,21 +145,6 @@ pub mod pallet {
     /// The invulnerable, permissioned collators. This list must be sorted.
     #[pallet::storage]
     pub type ActiveEra<T: Config> = StorageValue<_, ActiveEraInfo>;
-
-    /// Information regarding the active era (era in used in session).
-    #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-    pub struct ActiveEraInfo {
-        /// Index of era.
-        pub index: EraIndex,
-        /// Moment of start expressed as millisecond from `$UNIX_EPOCH`.
-        ///
-        /// Start can be none if start hasn't been set for the era yet,
-        /// Start is set on the first on_finalize of the era to guarantee usage of `Time`.
-        pub start: Option<u64>,
-    }
-
-    /// Counter for the number of eras that have passed.
-    pub type EraIndex = u32;
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
@@ -430,5 +416,20 @@ impl<T: Config> pallet_session::historical::SessionManager<T::ValidatorId, ()> f
 
     fn end_session(end_index: SessionIndex) {
         <Self as pallet_session::SessionManager<_>>::end_session(end_index)
+    }
+}
+
+impl<T: Config> EraIndexProvider for Pallet<T> {
+    fn active_era() -> ActiveEraInfo {
+        <ActiveEra<T>>::get().unwrap_or(ActiveEraInfo {
+            index: 0,
+            start: None,
+        })
+    }
+}
+
+impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
+    fn invulnerables() -> Vec<T::ValidatorId> {
+        <WhitelistedValidators<T>>::get().into()
     }
 }
