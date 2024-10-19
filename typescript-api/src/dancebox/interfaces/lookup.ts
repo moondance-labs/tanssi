@@ -2917,30 +2917,15 @@ export default {
     },
     /** Lookup318: dancebox_runtime::PreserversAssignementPaymentRequest */
     DanceboxRuntimePreserversAssignementPaymentRequest: {
-        _enum: {
-            Free: "Null",
-            StreamPayment: {
-                config: "PalletStreamPaymentStreamConfig",
-            },
-        },
+        _enum: ["Free"],
     },
     /** Lookup319: dancebox_runtime::PreserversAssignementPaymentExtra */
     DanceboxRuntimePreserversAssignementPaymentExtra: {
-        _enum: {
-            Free: "Null",
-            StreamPayment: {
-                initialDeposit: "u128",
-            },
-        },
+        _enum: ["Free"],
     },
     /** Lookup320: dancebox_runtime::PreserversAssignementPaymentWitness */
     DanceboxRuntimePreserversAssignementPaymentWitness: {
-        _enum: {
-            Free: "Null",
-            StreamPayment: {
-                streamId: "u64",
-            },
-        },
+        _enum: ["Free"],
     },
     /** Lookup321: pallet_invulnerables::pallet::Call<T> */
     PalletInvulnerablesCall: {

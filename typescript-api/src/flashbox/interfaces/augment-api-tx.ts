@@ -357,12 +357,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
-                    assignmentWitness:
-                        | FlashboxRuntimePreserversAssignementPaymentWitness
-                        | { Free: any }
-                        | { StreamPayment: any }
-                        | string
-                        | Uint8Array
+                    assignmentWitness: FlashboxRuntimePreserversAssignementPaymentWitness | "Free" | number | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, u32, FlashboxRuntimePreserversAssignementPaymentWitness]
             >;
@@ -381,12 +376,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
-                    assignerParam:
-                        | FlashboxRuntimePreserversAssignementPaymentExtra
-                        | { Free: any }
-                        | { StreamPayment: any }
-                        | string
-                        | Uint8Array
+                    assignerParam: FlashboxRuntimePreserversAssignementPaymentExtra | "Free" | number | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, u32, FlashboxRuntimePreserversAssignementPaymentExtra]
             >;
