@@ -22,14 +22,12 @@ describeSuite({
         let aliceBeefyPair: KeyringPair;
         let bobBeefyPair: KeyringPair;
         let aliceBeefyPrivateKey: `0x${string}`;
-        let bobBeefyPrivateKey: `0x${string}`;
         let bob: KeyringPair;
         beforeAll(() => {
             const keyringBeefy = new Keyring({ type: "ecdsa" });
             aliceBeefyPair = keyringBeefy.addFromUri("//Alice");
             bobBeefyPair = keyringBeefy.addFromUri("//Bob");
             aliceBeefyPrivateKey = "0xcb6df9de1efca7a3998a8ead4e02159d5fa99c3e0d4fd6432667390bb4726854";
-            bobBeefyPrivateKey = "0x79c3b7fc0b7697b9414cb87adcb37317d1cab32818ae18c0e97ad76395d1fdcf";
             bob = context.keyring.bob;
             polkadotJs = context.polkadotJs();
         });
@@ -166,7 +164,6 @@ describeSuite({
                 ]);
 
                 const validatorSetId = 1;
-                const currentBlockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
 
                 // Commit to a past block
                 const blockNumber = 1;
