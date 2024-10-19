@@ -22,10 +22,7 @@ use {
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
     },
-    beefy_primitives::{
-        ecdsa_crypto::AuthorityId as BeefyId,
-        ConsensusLog, BEEFY_ENGINE_ID,
-    },
+    beefy_primitives::{ecdsa_crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID},
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{

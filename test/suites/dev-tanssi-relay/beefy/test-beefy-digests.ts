@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { jumpSessions, jumpToSession } from "../../../util/block";
+import { jumpToSession } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 import { Keyring } from "@polkadot/keyring";
 

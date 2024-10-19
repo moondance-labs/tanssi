@@ -1122,12 +1122,18 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
+    // TODO: BondingDuration is set to 28 days on Polkadot,
+    // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
 impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
     type MaxAuthorities = MaxAuthorities;
+    // MaxNominators is used in case we need to slash validators and check how many
+    // nominators do they have as maximum.
+    // This value is part of the parameters that are then used for extrinsics
+    // weight computation.
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
     type OnNewValidatorSet = MmrLeaf;

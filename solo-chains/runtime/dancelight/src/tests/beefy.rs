@@ -17,38 +17,25 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, AuthorNoting, Beefy, Historical, RewardsPortion},
+    crate::{tests::common::*, Beefy, Historical},
     beefy_primitives::{
         check_double_voting_proof,
         ecdsa_crypto::{
             AuthorityId as BeefyId, Public as BeefyPublic, Signature as BeefySignature,
         },
         known_payloads::MMR_ROOT_ID,
-        test_utils::{
-            generate_double_voting_proof, generate_fork_voting_proof, BeefySignerAuthority,
-            Keyring as BeefyKeyring,
-        },
+        test_utils::{generate_double_voting_proof, BeefySignerAuthority, Keyring as BeefyKeyring},
         BeefySignatureHasher, Commitment, ConsensusLog, FutureBlockVotingProof, Payload,
-        ValidatorSet, ValidatorSetId as ValidatorSetIdType, VoteMessage, BEEFY_ENGINE_ID,
+        ValidatorSet, ValidatorSetId as ValidatorSetIdType, VoteMessage,
         KEY_TYPE as BEEFY_KEY_TYPE,
     },
-    cumulus_primitives_core::ParaId,
-    frame_support::{
-        assert_err, assert_ok,
-        traits::{KeyOwnerProofSystem, OnInitialize},
-    },
+    frame_support::{assert_err, assert_ok, traits::KeyOwnerProofSystem},
     pallet_beefy::{Error as BeefyError, GenesisBlock, ValidatorSetId},
-    parity_scale_codec::{Decode, Encode},
-    sp_application_crypto::{AppCrypto, AppPublic, Pair, RuntimeAppPublic},
-    sp_consensus_aura::AURA_ENGINE_ID,
-    sp_core::{Public, H256},
-    sp_runtime::{
-        generic::DigestItem,
-        traits::{BlakeTwo256, Keccak256},
-    },
+    parity_scale_codec::Encode,
+    sp_application_crypto::{AppCrypto, Pair, RuntimeAppPublic},
+    sp_core::H256,
+    sp_runtime::traits::Keccak256,
     sp_std::{str::FromStr, vec},
-    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_traits::ContainerChainBlockInfo,
 };
 
 /// Create a new `VoteMessage` from commitment primitives and key pair.
