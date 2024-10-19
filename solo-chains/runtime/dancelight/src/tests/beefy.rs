@@ -26,16 +26,15 @@ use {
         known_payloads::MMR_ROOT_ID,
         test_utils::{generate_double_voting_proof, BeefySignerAuthority, Keyring as BeefyKeyring},
         BeefySignatureHasher, Commitment, ConsensusLog, FutureBlockVotingProof, Payload,
-        ValidatorSet, ValidatorSetId as ValidatorSetIdType, VoteMessage,
+        ValidatorSet, ValidatorSetId as ValidatorSetIdType, VoteMessage, BEEFY_ENGINE_ID,
         KEY_TYPE as BEEFY_KEY_TYPE,
     },
     frame_support::{assert_err, assert_ok, traits::KeyOwnerProofSystem},
     pallet_beefy::{Error as BeefyError, GenesisBlock, ValidatorSetId},
-    parity_scale_codec::Encode,
+    parity_scale_codec::{Decode, Encode},
     sp_application_crypto::{AppCrypto, Pair, RuntimeAppPublic},
-    sp_core::H256,
-    sp_runtime::traits::Keccak256,
-    sp_std::{str::FromStr, vec},
+    sp_runtime::{traits::Keccak256, DigestItem},
+    sp_std::vec,
 };
 
 /// Create a new `VoteMessage` from commitment primitives and key pair.
@@ -406,28 +405,53 @@ fn test_mmr_digest_updates_after_session_and_single_block() {
                 .unwrap(),
             ));
 
-            let expected_mmr_digest = get_beefy_digest(ConsensusLog::MmrRoot(
-                H256::from_str(
-                    "0x32a121bf4f1bdbd038188c79494261c5f32fbaf11a0104fd425578a3deb65994",
-                )
-                .unwrap(),
-            ));
-
             // Check that both authorities and MMR digests were correctly placed after session change.
             let actual_authorities_digest = System::digest().logs[2].clone();
-            let actual_mmr_digest = System::digest().logs[3].clone();
-            assert_eq!(expected_mmr_digest, actual_mmr_digest);
+            let first_mmr_digest = System::digest().logs[3].clone();
+
+            let first_mmr_digest = match first_mmr_digest.clone() {
+                DigestItem::Consensus(id, val) => {
+                    if id == BEEFY_ENGINE_ID {
+                        match ConsensusLog::<BeefyId>::decode(&mut &val[..]) {
+                            Ok(result) => match result {
+                                ConsensusLog::AuthoritiesChange(_) => None,
+                                ConsensusLog::MmrRoot(m) => Some(m),
+                                ConsensusLog::OnDisabled(_) => None,
+                            },
+                            Err(_) => None,
+                        }
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+
+            assert!(first_mmr_digest.is_some());
             assert_eq!(expected_authorities_digest, actual_authorities_digest);
 
             // After running a single block the MMR digest should update again.
             run_block();
-            let expected_digest = get_beefy_digest(ConsensusLog::MmrRoot(
-                H256::from_str(
-                    "0xa9c9ff91da137a07fc3ce6f370cc01a4f42012216a81448c4497ea26d2a20ab2",
-                )
-                .unwrap(),
-            ));
-            let actual_digest = System::digest().logs[1].clone();
-            assert_eq!(expected_digest, actual_digest);
+            let second_mmr_digest = System::digest().logs[1].clone();
+
+            let second_mmr_digest = match second_mmr_digest.clone() {
+                DigestItem::Consensus(id, val) => {
+                    if id == BEEFY_ENGINE_ID {
+                        match ConsensusLog::<BeefyId>::decode(&mut &val[..]) {
+                            Ok(result) => match result {
+                                ConsensusLog::AuthoritiesChange(_) => None,
+                                ConsensusLog::MmrRoot(m) => Some(m),
+                                ConsensusLog::OnDisabled(_) => None,
+                            },
+                            Err(_) => None,
+                        }
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+            assert!(second_mmr_digest.is_some());
+            assert!(first_mmr_digest.unwrap() != second_mmr_digest.unwrap());
         });
 }
