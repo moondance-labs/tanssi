@@ -20,7 +20,7 @@ describeSuite({
                 await jumpToSession(context, 1);
 
                 const genesisDelayBefore = (await polkadotJs.query.beefy.genesisBlock()).toHuman();
-                expect(genesisDelayBefore).to.eq(1);
+                expect(Number(genesisDelayBefore)).to.eq(1);
 
                 const newGenesisDelay: number = 5;
                 const { result } = await context.createBlock(
