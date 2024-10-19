@@ -72,7 +72,7 @@ describeSuite({
                     {
                         vote: voteMessage,
                     }
-                ); 
+                );
 
                 const keyOwnershipProof = await polkadotJs.call.beefyApi.generateKeyOwnershipProof(
                     validatorSetId,
@@ -86,7 +86,7 @@ describeSuite({
                 const tx = polkadotJs.tx.beefy.reportFutureBlockVoting(futureVotingProof, keyOwnershipProofHex);
 
                 const signedTx = await tx.signAsync(bob);
-                const { result } = await context.createBlock(signedTx, {allowFailures: false});
+                const { result } = await context.createBlock(signedTx, { allowFailures: false });
 
                 expect(result!.successful, result!.error?.name).to.be.true;
             },
@@ -130,7 +130,7 @@ describeSuite({
                     {
                         vote: voteMessage,
                     }
-                ); 
+                );
 
                 // Invalid proof: Bob is not part of the BEEFY validator set.
                 const keyOwnershipProof = await polkadotJs.call.beefyApi.generateKeyOwnershipProof(
@@ -191,7 +191,7 @@ describeSuite({
                     {
                         vote: voteMessage,
                     }
-                ); 
+                );
 
                 const keyOwnershipProof = await polkadotJs.call.beefyApi.generateKeyOwnershipProof(
                     validatorSetId,
