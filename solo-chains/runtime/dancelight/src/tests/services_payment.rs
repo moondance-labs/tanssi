@@ -17,7 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, ContainerRegistrar, Paras, ServicesPayment},
+    crate::{tests::common::*, ContainerRegistrar, Paras, Registrar, ServicesPayment},
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::assert_ok,
     sp_std::vec,
@@ -47,22 +47,22 @@ fn test_can_buy_credits_before_registering_para() {
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                block_credits_to_required_balance(u32::MAX, 1001.into())
+                2000.into(),
+                block_credits_to_required_balance(u32::MAX, 2000.into())
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
             // Now parachain tank should have this amount
-            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+            let balance_tank = System::account(ServicesPayment::parachain_tank(2000.into()))
                 .data
                 .free;
 
             assert_eq!(
                 balance_tank,
-                block_credits_to_required_balance(u32::MAX, 1001.into())
+                block_credits_to_required_balance(u32::MAX, 2000.into())
             );
 
-            let expected_cost = block_credits_to_required_balance(u32::MAX, 1001.into());
+            let expected_cost = block_credits_to_required_balance(u32::MAX, 2000.into());
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
@@ -91,16 +91,16 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 block_credits_to_required_balance(
                     crate::FreeBlockProductionCredits::get() - 1,
-                    1001.into()
+                    2000.into()
                 )
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
             // Now parachain tank should have this amount
-            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+            let balance_tank = System::account(ServicesPayment::parachain_tank(2000.into()))
                 .data
                 .free;
 
@@ -108,20 +108,21 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 balance_tank,
                 block_credits_to_required_balance(
                     crate::FreeBlockProductionCredits::get() - 1,
-                    1001.into()
+                    2000.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
                 crate::FreeBlockProductionCredits::get() - 1,
-                1001.into(),
+                2000.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 2u8, 3u8]))
             ));
@@ -135,16 +136,16 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             ));
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
 
             // We received free credits, because we cannot have more than FreeBlockProductionCredits
             let credits =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(2000))
                     .unwrap_or_default();
             assert_eq!(credits, crate::FreeBlockProductionCredits::get());
         });

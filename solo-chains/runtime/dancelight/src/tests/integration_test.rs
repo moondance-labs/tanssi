@@ -19,6 +19,7 @@
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
+        Registrar,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
@@ -138,8 +139,8 @@ fn genesis_para_registrar_runtime_api() {
 
 #[test]
 fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
-    let genesis_data_1001 = empty_genesis_data();
-    let genesis_data_1002 = ContainerChainGenesisData {
+    let genesis_data_2001 = empty_genesis_data();
+    let genesis_data_2002 = ContainerChainGenesisData {
         storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
         name: Default::default(),
         id: Default::default(),
@@ -149,52 +150,49 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     };
     ExtBuilder::default()
         .with_para_ids(vec![
-                       ParaRegistrationParams {
-                para_id: 1001,
-                genesis_data: genesis_data_1001.clone(),
+            ParaRegistrationParams {
+                para_id: 2001,
+                genesis_data: genesis_data_2001.clone(),
                 block_production_credits: u32::MAX,
                 collator_assignment_credits: u32::MAX,
                 parathread_params: None,
-            },ParaRegistrationParams {
-                para_id: 1002,
-                genesis_data: genesis_data_1002.clone(),
+            },
+            ParaRegistrationParams {
+                para_id: 2002,
+                genesis_data: genesis_data_2002.clone(),
                 block_production_credits: u32::MAX,
                 collator_assignment_credits: u32::MAX,
                 parathread_params: None,
             },
         ])
+        .with_next_free_para_id(2003.into())
         .build()
         .execute_with(|| {
             assert_eq!(
                 ContainerRegistrar::registered_para_ids(),
-                vec![1001.into(), 1002.into()]
+                vec![2001.into(), 2002.into()]
             );
-            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+            assert_eq!(Runtime::registered_paras(), vec![2001.into(), 2002.into()]);
 
             assert_eq!(
-                Runtime::genesis_data(1001.into()).as_ref(),
-                Some(&genesis_data_1001)
+                Runtime::genesis_data(2001.into()).as_ref(),
+                Some(&genesis_data_2001)
             );
             assert_eq!(
-                Runtime::genesis_data(1002.into()).as_ref(),
-                Some(&genesis_data_1002)
+                Runtime::genesis_data(2002.into()).as_ref(),
+                Some(&genesis_data_2002)
             );
-            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
-
-            // This API cannot be used to get the genesis data of the orchestrator chain,
-            // with id 100
-            // TODO: where is that 100 defined?
-            assert_eq!(Runtime::genesis_data(100.into()).as_ref(), None);
+            assert_eq!(Runtime::genesis_data(2003.into()).as_ref(), None);
 
             run_to_block(2);
-            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1002.into()), ());
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 2002.into()), ());
 
-            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
-
+            assert_eq!(Runtime::genesis_data(2002.into()).as_ref(), Some(&genesis_data_2002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(
                 ContainerRegistrar::register(
                     origin_of(ALICE.into()),
-                    1003.into(),
+                    2003.into(),
                     get_genesis_data_with_validation_code().0,
                     Some(HeadData(vec![1u8, 1u8, 1u8]))
                 ),
@@ -203,13 +201,13 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 
             // Registered container chains are inserted immediately
             assert_eq!(
-                Runtime::genesis_data(1003.into()).as_ref(),
+                Runtime::genesis_data(2003.into()).as_ref(),
                 Some(&get_genesis_data_with_validation_code().0)
             );
 
             // Deregistered container chain genesis data is removed after 2 sessions
             run_to_session(2u32);
-            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), None);
+            assert_eq!(Runtime::genesis_data(2002.into()).as_ref(), None);
         });
 }
 
@@ -291,14 +289,15 @@ fn test_cannot_mark_valid_para_with_no_bootnodes() {
         .build()
         .execute_with(|| {
             run_to_block(2);
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
             assert_noop!(
-                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 2000.into()),
                 pallet_data_preservers::Error::<Runtime>::NoBootNodes,
             );
         });
@@ -324,9 +323,9 @@ fn test_container_deregister_unassign_data_preserver() {
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
             };
 
-            let para_id = ParaId::from(1002);
+            let para_id = ParaId::from(2000);
             let profile_id = 0u64;
-
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 para_id,

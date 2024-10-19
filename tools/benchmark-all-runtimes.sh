@@ -36,7 +36,7 @@ BINARY=target/release/container-chain-frontier-node \
     tools/benchmarking.sh "*" "*"
 
 # Dancelight weights
-BINARY=target/release/tannsi-relay\
+BINARY=target/release/tanssi-relay\
     TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     CHAIN=dancelight-dev \
     OUTPUT_PATH=tmp/dancelight_weights \

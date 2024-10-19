@@ -1657,6 +1657,7 @@ where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
     Runtime: pallet_registrar::Config,
+    sp_runtime::AccountId32: From<AccountId>,
 {
     fn register(
         who: AccountId,
@@ -1680,7 +1681,14 @@ where
         };
 
         // Try to register the parachain
-        RegistrarManager::register(who, id, genesis_head, validation_code)
+        // Using register extrinsic instead of `RegistrarInterface` trait because we want
+        // to check that the para id has been reserved.
+        Registrar::register(
+            RuntimeOrigin::signed(who.into()),
+            id,
+            genesis_head,
+            validation_code,
+        )
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
@@ -1712,6 +1720,22 @@ where
     fn deregister_weight() -> Weight {
         RegistrarWeightInfo::deregister()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_head_data() -> Option<HeadData> {
+        let head_data = HeadData(vec![1; 10]);
+        Some(head_data)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_trusted_validation_code(code: Vec<u8>) {
+        Paras::add_trusted_validation_code(RuntimeOrigin::root(), code.into()).unwrap();
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn registrar_new_session(session: u32) {
+        benchmark_helpers::run_to_session(session)
+    }
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -1729,10 +1753,9 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 pub struct DancelightRegistrarHooks;
@@ -1881,6 +1904,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         // Tanssi
         [pallet_author_noting, AuthorNoting]
+        [pallet_registrar, ContainerRegistrar]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
@@ -3070,6 +3094,90 @@ impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmark_helpers {
+    use {
+        super::*,
+        babe_primitives::{
+            digests::{PreDigest, SecondaryPlainPreDigest},
+            BABE_ENGINE_ID,
+        },
+        frame_support::traits::Hooks,
+        sp_runtime::{Digest, DigestItem},
+    };
+
+    fn end_block() {
+        Babe::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
+        Grandpa::on_finalize(System::block_number());
+        TransactionPayment::on_finalize(System::block_number());
+        Initializer::on_finalize(System::block_number());
+        ContainerRegistrar::on_finalize(System::block_number());
+        TanssiCollatorAssignment::on_finalize(System::block_number());
+    }
+
+    pub fn insert_authorities_and_slot_digests(slot: u64) {
+        let pre_digest = Digest {
+            logs: vec![DigestItem::PreRuntime(
+                BABE_ENGINE_ID,
+                PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
+                    slot: slot.into(),
+                    authority_index: 0,
+                })
+                .encode(),
+            )],
+        };
+
+        System::reset_events();
+        System::initialize(
+            &(System::block_number() + 1),
+            &System::parent_hash(),
+            &pre_digest,
+        );
+    }
+
+    pub fn current_slot() -> u64 {
+        Babe::current_slot().into()
+    }
+
+    fn start_block() {
+        insert_authorities_and_slot_digests(current_slot() + 1);
+
+        // Initialize the new block
+        Babe::on_initialize(System::block_number());
+        ContainerRegistrar::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
+        Initializer::on_initialize(System::block_number());
+        TanssiCollatorAssignment::on_initialize(System::block_number());
+        InflationRewards::on_initialize(System::block_number());
+    }
+
+    pub fn session_to_block(n: u32) -> u32 {
+        // let block_number = flashbox_runtime::Period::get() * n;
+        let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
+
+        // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+        // so this is the first block of the new session that can actually be used
+        block_number + 1
+    }
+
+    pub fn run_to_block(n: u32) {
+        while System::block_number() < n {
+            run_block();
+        }
+    }
+
+    pub fn run_block() {
+        end_block();
+
+        start_block()
+    }
+
+    pub fn run_to_session(n: u32) {
+        run_to_block(session_to_block(n));
+    }
 }
 
 #[cfg(all(test, feature = "try-runtime"))]
