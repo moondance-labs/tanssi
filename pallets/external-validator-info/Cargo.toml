@@ -20,6 +20,7 @@ hex = { workspace = true, optional = true, features = [ "alloc" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 pallet-session = { workspace = true }
+pallet-staking = { workspace = true }
 
 scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
@@ -64,6 +65,7 @@ std = [
 	"hex?/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"pallet-staking/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-primitives/std",

@@ -9363,6 +9363,7 @@ dependencies = [
  "log",
  "nimbus-primitives",
  "pallet-session",
+ "pallet-staking",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-primitives",

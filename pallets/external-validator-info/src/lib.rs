@@ -37,10 +37,13 @@ use {
         ParaId,
     },
     dp_core::well_known_keys::PARAS_HEADS_INDEX,
-    frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
+    frame_support::{
+        dispatch::PostDispatchInfo, pallet_prelude::*, traits::DefensiveSaturating, Hashable,
+    },
     frame_system::pallet_prelude::*,
     log::log,
     nimbus_primitives::SlotBeacon,
+    pallet_staking::SessionInterface,
     parity_scale_codec::FullCodec,
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
@@ -128,6 +131,9 @@ pub mod pallet {
             + One
             + Ord
             + MaxEncodedLen;
+
+        /// Interface for interacting with a session pallet.
+        type SessionInterface: SessionInterface<Self::AccountId>;
     }
 
     #[pallet::error]
@@ -275,12 +281,12 @@ where
                 continue;
             }
 
-            //TODO
-            let slash = compute_slash::<T>(
+            let mut slash = compute_slash::<T>(
                 slash_fraction.clone(),
                 next_slash_id,
                 slash_era,
                 stash.clone(),
+                slash_defer_duration,
             );
 
             Self::deposit_event(Event::<T>::SlashReported {
@@ -291,34 +297,95 @@ where
 
             if let Some(mut slash) = slash {
                 slash.reporters = details.reporters.clone();
-                if slash_defer_duration == 0 {
-                } else {
-                    // Defer to end of some `slash_defer_duration` from now.
-                    log!(
-                        log::Level::Debug,
-                        "deferring slash of {:?}% happened in {:?} (reported in {:?}) to {:?}",
-                        slash_fraction,
-                        slash_era,
-                        active_era,
-                        slash_era + slash_defer_duration + 1,
-                    );
-                    Slashes::<T>::mutate(
-                        slash_era
-                            .saturating_add(slash_defer_duration)
-                            .saturating_add(One::one()),
-                        move |for_later| for_later.push(slash),
-                    );
 
-					// Fix unwrap
-                    next_slash_id = next_slash_id.checked_add(&One::one()).unwrap();
-                    add_db_reads_writes(1, 1);
-                }
+                // Defer to end of some `slash_defer_duration` from now.
+                log!(
+                    log::Level::Debug,
+                    "deferring slash of {:?}% happened in {:?} (reported in {:?}) to {:?}",
+                    slash_fraction,
+                    slash_era,
+                    active_era,
+                    slash_era + slash_defer_duration + 1,
+                );
+                Slashes::<T>::mutate(
+                    slash_era
+                        .saturating_add(slash_defer_duration)
+                        .saturating_add(One::one()),
+                    move |for_later| for_later.push(slash),
+                );
+
+                // Fix unwrap
+                next_slash_id = next_slash_id.checked_add(&One::one()).unwrap();
+                add_db_reads_writes(1, 1);
             } else {
                 add_db_reads_writes(4 /* fetch_spans */, 5 /* kick_out_if_recent */)
             }
         }
         NextSlashId::<T>::put(next_slash_id);
         consumed_weight
+    }
+}
+
+impl<T: Config> Pallet<T> {
+    /// Start a new era. It does:
+    /// * Increment `active_era.index`,
+    /// * reset `active_era.start`,
+    /// * update `BondedEras` and apply slashes.
+    fn start_era(start_session: SessionIndex) {
+        let active_era = ActiveEra::<T>::mutate(|active_era| {
+            let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
+            *active_era = Some(ActiveEraInfo {
+                index: new_index,
+                // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
+                start: None,
+            });
+            new_index
+        });
+
+        let bonding_duration = T::BondingDuration::get();
+
+        BondedEras::<T>::mutate(|bonded| {
+            bonded.push((active_era, start_session));
+
+            if active_era > bonding_duration {
+                let first_kept = active_era.defensive_saturating_sub(bonding_duration);
+
+                // Prune out everything that's from before the first-kept index.
+                let n_to_prune = bonded
+                    .iter()
+                    .take_while(|&&(era_idx, _)| era_idx < first_kept)
+                    .count();
+
+                // Kill slashing metadata.
+                for (pruned_era, _) in bonded.drain(..n_to_prune) {
+                    #[allow(deprecated)]
+                    ValidatorSlashInEra::<T>::remove_prefix(&pruned_era, None);
+                    #[allow(deprecated)]
+                    Slashes::<T>::remove(&pruned_era);
+                }
+
+                if let Some(&(_, first_session)) = bonded.first() {
+                    T::SessionInterface::prune_historical_up_to(first_session);
+                }
+            }
+        });
+
+        Self::apply_unapplied_slashes(active_era);
+    }
+
+    /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
+    fn apply_unapplied_slashes(active_era: EraIndex) {
+        let mut era_slashes = Slashes::<T>::take(&active_era);
+        log!(
+            log::Level::Debug,
+            "found {} slashes scheduled to be confirmed in era {:?}",
+            era_slashes.len(),
+            active_era,
+        );
+        for mut slash in &mut era_slashes {
+            slash.confirmed = true;
+        }
+        Slashes::<T>::insert(active_era, &era_slashes);
     }
 }
 
@@ -333,6 +400,8 @@ pub struct Slash<AccountId, SlashId> {
     /// The amount of payout.
     slash_id: SlashId,
     percentage: Perbill,
+    // Whether the slash is confirmed or still needs to go through deferred period
+    confirmed: bool,
 }
 
 /// Computes a slash of a validator and nominators. It returns an unapplied
@@ -346,6 +415,7 @@ pub(crate) fn compute_slash<T: Config>(
     slash_id: T::SlashId,
     slash_era: EraIndex,
     stash: T::AccountId,
+    slash_defer_duration: EraIndex,
 ) -> Option<Slash<T::AccountId, T::SlashId>> {
     let prior_slash_p = ValidatorSlashInEra::<T>::get(&slash_era, &stash).unwrap_or(Zero::zero());
 
@@ -364,10 +434,12 @@ pub(crate) fn compute_slash<T: Config>(
         return None;
     }
 
+    let confirmed = slash_defer_duration.is_zero();
     Some(Slash {
         validator: stash.clone(),
         percentage: slash_fraction,
         slash_id,
         reporters: Vec::new(),
+        confirmed,
     })
 }
