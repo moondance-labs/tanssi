@@ -22,6 +22,7 @@ use {
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
     },
+    beefy_primitives::{ecdsa_crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID},
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
@@ -58,9 +59,9 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Balances, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards, Initializer, Runtime,
-    RuntimeOrigin, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
-    TransactionPayment,
+    Balances, Beefy, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards, Initializer,
+    Mmr, MmrLeaf, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
+    TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -103,6 +104,10 @@ pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
         .container_chains
         .get(&para_id)
         .cloned()
+}
+
+pub fn get_beefy_digest(log: ConsensusLog<BeefyId>) -> DigestItem {
+    DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
 pub fn run_to_session(n: u32) {
@@ -243,6 +248,10 @@ pub fn start_block() -> RunSummary {
         set_paras_inherent(mock_inherent_data);
     }
 
+    Beefy::on_initialize(System::block_number());
+    Mmr::on_initialize(System::block_number());
+    MmrLeaf::on_initialize(System::block_number());
+
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
@@ -259,6 +268,9 @@ pub fn end_block() {
     Initializer::on_finalize(System::block_number());
     ContainerRegistrar::on_finalize(System::block_number());
     TanssiCollatorAssignment::on_finalize(System::block_number());
+    Beefy::on_finalize(System::block_number());
+    Mmr::on_finalize(System::block_number());
+    MmrLeaf::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
@@ -543,6 +555,7 @@ impl ExtBuilder {
         .unwrap();
 
         let mut keys: Vec<_> = Vec::new();
+        let mut non_authority_keys: Vec<_> = Vec::new();
         if !self.validators.is_empty() {
             let validator_keys: Vec<_> = self
                 .validators
@@ -619,12 +632,12 @@ impl ExtBuilder {
                     }
                 })
                 .collect();
-            keys.extend(collator_keys)
+            non_authority_keys.extend(collator_keys)
         }
 
         pallet_session::GenesisConfig::<Runtime> {
             keys,
-            ..Default::default()
+            non_authority_keys,
         }
         .assimilate_storage(&mut t)
         .unwrap();
