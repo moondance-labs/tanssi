@@ -470,6 +470,18 @@ pub fn run() -> Result<()> {
             }
         }
         Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
+        Some(Subcommand::PrecompileWasm(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            Ok(runner.async_run(|mut config| {
+                let (_, backend, _, task_manager) =
+                    polkadot_service::new_chain_ops(&mut config, None)?;
+                Ok((
+                    cmd.run(backend, config.chain_spec)
+                        .map_err(Error::SubstrateCli),
+                    task_manager,
+                ))
+            })?)
+        }
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             Ok(runner.sync_run(|config| cmd.run::<polkadot_service::Block>(&config))?)

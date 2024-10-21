@@ -54,6 +54,9 @@
             "multiThreads": true,
             "timeout": 240000,
             "reporters": ["basic"],
+            "runScripts": [
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c dancelight-dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
+            ],
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
@@ -68,8 +71,9 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=dancelight-dev",
+                            "--chain=tmp/dancelight-dev-raw.json",
                             "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm",
                             "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
