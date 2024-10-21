@@ -31,39 +31,28 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    cumulus_pallet_parachain_system::RelaychainStateProvider,
-    cumulus_primitives_core::{
-        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
-        ParaId,
-    },
-    dp_core::well_known_keys::PARAS_HEADS_INDEX,
-    frame_support::{
-        dispatch::PostDispatchInfo, pallet_prelude::*, traits::DefensiveSaturating, Hashable,
-    },
+    frame_support::{pallet_prelude::*, traits::DefensiveSaturating},
     frame_system::pallet_prelude::*,
     log::log,
-    nimbus_primitives::SlotBeacon,
     pallet_staking::SessionInterface,
     parity_scale_codec::FullCodec,
     parity_scale_codec::{Decode, Encode},
-    sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
-    sp_inherents::{InherentIdentifier, IsFatalError},
-    sp_runtime::traits::{CheckedAdd, Convert, Debug, One, Zero},
+    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
+    sp_runtime::DispatchResult,
     sp_runtime::Perbill,
-    sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
     sp_staking::{
         offence::{OffenceDetails, OnOffenceHandler},
-        EraIndex, Exposure, SessionIndex,
-    },
-    tp_author_noting_inherent::INHERENT_IDENTIFIER,
-    tp_traits::{
-        AuthorNotingHook, ContainerChainBlockInfo, GenericStateProof, GenericStorageReader,
-        GetContainerChainAuthor, GetCurrentContainerChains, LatestAuthorInfoFetcher,
-        NativeStorageReader, ReadEntryErr,
+        EraIndex, SessionIndex,
     },
 };
 
 pub use pallet::*;
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
 
 /// Information regarding the active era (era in used in session).
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -127,7 +116,7 @@ pub mod pallet {
             + Clone
             + Debug
             + Eq
-            + CheckedAdd
+            + Saturating
             + One
             + Ord
             + MaxEncodedLen;
@@ -138,14 +127,13 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        /// The new value for a configuration parameter is invalid.
-        FailedReading,
-        FailedDecodingHeader,
-        AuraDigestFirstItem,
-        AsPreRuntimeError,
-        NonDecodableSlot,
-        AuthorNotFound,
-        NonAuraDigest,
+        EmptyTargets,
+        InvalidSlashIndex,
+        NotSortedAndUnique,
+        ProvidedFutureEra,
+        ProvidedNonSlashableEra,
+        ActiveEraNotSet,
+        DeferPeriodIsOver,
     }
 
     #[pallet::pallet]
@@ -198,6 +186,78 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn active_era)]
     pub type ActiveEra<T> = StorageValue<_, ActiveEraInfo>;
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
+        #[pallet::weight(0)]
+        pub fn cancel_deferred_slash(
+            origin: OriginFor<T>,
+            era: EraIndex,
+            slash_indices: Vec<u32>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            let active_era = Self::active_era().ok_or(Error::<T>::ActiveEraNotSet)?.index;
+            ensure!(
+                era >= active_era.saturating_sub(T::SlashDeferDuration::get()),
+                Error::<T>::DeferPeriodIsOver
+            );
+
+            ensure!(!slash_indices.is_empty(), Error::<T>::EmptyTargets);
+            ensure!(
+                is_sorted_and_unique(&slash_indices),
+                Error::<T>::NotSortedAndUnique
+            );
+
+            let mut era_slashes = Slashes::<T>::get(&era);
+            let last_item = slash_indices[slash_indices.len() - 1];
+            ensure!(
+                (last_item as usize) < era_slashes.len(),
+                Error::<T>::InvalidSlashIndex
+            );
+
+            for (removed, index) in slash_indices.into_iter().enumerate() {
+                let index = (index as usize) - removed;
+                era_slashes.remove(index);
+            }
+
+            Slashes::<T>::insert(&era, &era_slashes);
+            Ok(())
+        }
+
+        #[pallet::call_index(1)]
+        #[pallet::weight(0)]
+        pub fn force_inject_slash(
+            origin: OriginFor<T>,
+            era: EraIndex,
+            validator: T::AccountId,
+            percentage: Perbill,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            let active_era = Self::active_era().ok_or(Error::<T>::ActiveEraNotSet)?.index;
+            ensure!(era < active_era, Error::<T>::ProvidedFutureEra);
+
+            let window_start = active_era.saturating_sub(T::BondingDuration::get());
+            ensure!(era >= window_start, Error::<T>::ProvidedNonSlashableEra);
+
+            let next_slash_id = NextSlashId::<T>::get();
+
+            let slash = Slash::<T::AccountId, T::SlashId> {
+                slash_id: next_slash_id,
+                reporters: vec![],
+                confirmed: false,
+
+                validator,
+                percentage,
+            };
+            let mut era_slashes = Slashes::<T>::get(&era);
+            era_slashes.push(slash);
+            Slashes::<T>::insert(&era, &era_slashes);
+            NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
+            Ok(())
+        }
+    }
 }
 
 /// This is intended to be used with `FilterHistoricalOffences`.
@@ -246,8 +306,6 @@ where
             });
         add_db_reads_writes(1, 0);
 
-        let window_start = active_era.saturating_sub(T::BondingDuration::get());
-
         // Fast path for active-era report - most likely.
         // `slash_session` cannot be in a future active era. It must be in `active_era` or before.
         let slash_era = if slash_session >= active_era_start_session_index {
@@ -281,7 +339,7 @@ where
                 continue;
             }
 
-            let mut slash = compute_slash::<T>(
+            let slash = compute_slash::<T>(
                 slash_fraction.clone(),
                 next_slash_id,
                 slash_era,
@@ -315,7 +373,7 @@ where
                 );
 
                 // Fix unwrap
-                next_slash_id = next_slash_id.checked_add(&One::one()).unwrap();
+                next_slash_id = next_slash_id.saturating_add(One::one());
                 add_db_reads_writes(1, 1);
             } else {
                 add_db_reads_writes(4 /* fetch_spans */, 5 /* kick_out_if_recent */)
@@ -370,11 +428,11 @@ impl<T: Config> Pallet<T> {
             }
         });
 
-        Self::apply_unapplied_slashes(active_era);
+        Self::confirm_unconfirmed_slashes(active_era);
     }
 
     /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
-    fn apply_unapplied_slashes(active_era: EraIndex) {
+    fn confirm_unconfirmed_slashes(active_era: EraIndex) {
         let mut era_slashes = Slashes::<T>::take(&active_era);
         log!(
             log::Level::Debug,
@@ -382,7 +440,7 @@ impl<T: Config> Pallet<T> {
             era_slashes.len(),
             active_era,
         );
-        for mut slash in &mut era_slashes {
+        for slash in &mut era_slashes {
             slash.confirmed = true;
         }
         Slashes::<T>::insert(active_era, &era_slashes);
@@ -391,7 +449,7 @@ impl<T: Config> Pallet<T> {
 
 /// A pending slash record. The value of the slash has been computed but not applied yet,
 /// rather deferred for several eras.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
 pub struct Slash<AccountId, SlashId> {
     /// The stash ID of the offending validator.
     validator: AccountId,
@@ -442,4 +500,9 @@ pub(crate) fn compute_slash<T: Config>(
         reporters: Vec::new(),
         confirmed,
     })
+}
+
+/// Check that list is sorted and has no duplicates.
+fn is_sorted_and_unique(list: &[u32]) -> bool {
+    list.windows(2).all(|w| w[0] < w[1])
 }
