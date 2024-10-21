@@ -1,8 +1,8 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
+import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
 
 describeSuite({
     id: "DTR1201",
@@ -10,51 +10,60 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice: KeyringPair;
-        let bob: KeyringPair;
+        let sudoAlice: KeyringPair;
+        let delegateBob: KeyringPair;
         let charlie: KeyringPair;
+        const REGISTRAR_PROXY_INDEX = 7;
+        let genesisData: any;
+        const VALIDATION_CODE = "0x546865205761736d20436f6465";
+        const GENESIS_HEAD = "0x6865616465722064617461";
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
 
-            alice = context.keyring.alice;
-            bob = context.keyring.bob;
+            sudoAlice = context.keyring.alice;
+            delegateBob = context.keyring.bob;
             charlie = context.keyring.charlie;
 
             polkadotJs = context.polkadotJs();
+
+            genesisData = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+                storage: [
+                    {
+                        key: "0x3a636f6465",
+                        value: VALIDATION_CODE,
+                    },
+                ],
+                name: "0x54657374696e672070726f78696573",
+                id: "0x54657374696e672070726f78696573",
+                forkId: null,
+                extensions: "0x",
+                properties: {
+                    tokenMetadata: {
+                        tokenSymbol: "0x50524f5859",
+                        ss58Format: 42,
+                        tokenDecimals: 12,
+                    },
+                    isEthereum: false,
+                },
+            });
+
         });
 
         it({
             id: "E01",
-            title: "No proxies at genesis",
-            test: async function () {
-                await context.createBlock();
-                const proxies = await polkadotJs.query.proxy.proxies(alice.address);
-                expect(proxies.toJSON()[0]).to.deep.equal([]);
-            },
-        });
-
-        it({
-            id: "E02",
-            title: "Add proxy",
+            title: "Can add proxy",
             test: async function () {
                 await context.createBlock();
 
-                const delegate = bob.address;
-                const tx = polkadotJs.tx.proxy.addProxy(delegate, "Any", 0);
-                await context.createBlock([await tx.signAsync(alice)]);
+                const tx = polkadotJs.tx.proxy.addProxy(delegateBob.address, REGISTRAR_PROXY_INDEX, 0);
+                await context.createBlock([await tx.signAsync(sudoAlice)]);
 
-                const events = await polkadotJs.query.system.events();
-                const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
-                });
-                expect(ev1.length).to.be.equal(1);
-
-                const proxies = await polkadotJs.query.proxy.proxies(alice.address);
+                const proxies = await polkadotJs.query.proxy.proxies(sudoAlice.address);
                 expect(proxies.toJSON()[0]).to.deep.equal([
                     {
-                        delegate,
-                        proxyType: "Any",
+                        delegate: delegateBob.address,
+                        proxyType: "SudoRegistrar",
                         delay: 0,
                     },
                 ]);
@@ -62,60 +71,101 @@ describeSuite({
         });
 
         it({
-            id: "E03",
-            title: "Delegate account can call proxy.proxy",
+            id: "E02",
+            title: "Delegated account can sudo txs in paras_registrar",
             test: async function () {
-                const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.proxy.proxy(
-                    alice.address,
+                const PARA_ID = 5555;
+                const txReserve = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
                     null,
-                    polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000)
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.registrar.forceRegister(delegateBob.address, 50, PARA_ID, GENESIS_HEAD, VALIDATION_CODE))
                 );
-                await context.createBlock([await tx.signAsync(bob)]);
-
-                const events = await polkadotJs.query.system.events();
-                const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
-                });
-                expect(ev1.length).to.be.equal(1);
-                expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
-
-                const fee = extractFeeAuthor(events, bob.address).amount.toBigInt();
-                const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
-
-                // Balance of Bob account increased
-                // (balanceBefore - fee) is the balance that the account would have if the extrinsic failed
-                expect(balanceAfter > balanceBefore - fee).to.be.true;
+                await context.createBlock([await txReserve.signAsync(delegateBob)]);
+                
+                const registrar_info = await polkadotJs.query.registrar.paras(PARA_ID);
+                expect(registrar_info.toJSON()).not.toBeNull();
             },
         });
 
         it({
-            id: "E04",
-            title: "Unauthorized account cannot call proxy.proxy",
+            id: "E03",
+            title: "Delegated account can sudo txs in data preservers and registrar",
             test: async function () {
-                await context.createBlock();
 
-                const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.proxy.proxy(
-                    alice.address,
-                    null,
-                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
-                );
-                await context.createBlock([await tx.signAsync(charlie)]);
-                const events = await polkadotJs.query.system.events();
-                const ev1 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                // A regular user registers a new avs
+
+                const txReserve = polkadotJs.tx.registrar.reserve();
+                await context.createBlock([await txReserve.signAsync(charlie)]);
+
+                let events = await polkadotJs.query.system.events();
+                const reservedEvent = events.filter((a) => {
+                    return a.event.method == "Reserved" && a.event.data[1].toString() == charlie.address;
                 });
-                expect(ev1.length).to.be.equal(1);
+                const reservedParaId = reservedEvent[0].event.data[0].toPrimitive();
+                
+                const txRegisterRelay = polkadotJs.tx.registrar.register(reservedParaId, GENESIS_HEAD, VALIDATION_CODE);
+                await context.createBlock([await txRegisterRelay.signAsync(charlie)]);
 
-                // Charlie receives rewards for authoring container, we should take this into account
-                const fee = extractFeeAuthor(events, charlie.address).amount.toBigInt();
-                const receivedReward = filterRewardFromContainer(events, charlie.address, 2000);
+                const txRegisterTanssi = polkadotJs.tx.containerRegistrar.register(reservedParaId, genesisData, GENESIS_HEAD);
+                await context.createBlock([await txRegisterTanssi.signAsync(charlie)]);
 
-                const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
+                await jumpSessions(context, 1);
 
-                // Balance of Charlie account must be the same (minus fee)
-                expect(balanceBefore + receivedReward - fee).to.equal(balanceAfter);
+                // Accept validation code so that para is onboarded after 2 sessions
+                const txAddsCode = polkadotJs.tx.sudo.sudo(polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE));
+                await context.createBlock([await txAddsCode.signAsync(sudoAlice)]);
+
+                await jumpSessions(context, 2);
+
+                // Proxy creates a data preserver. "The URL" translates to 0x5468652055524c when scale encoded
+
+                const profile = {
+                    url: "The URL",
+                    paraIds: { whitelist: [reservedParaId] },
+                    mode: "Bootnode",
+                };
+
+                const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+                const txProfile = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.dataPreservers.forceCreateProfile(profile, delegateBob.address))
+                );
+                await context.createBlock([await txProfile.signAsync(delegateBob)]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.toJSON()).to.be.deep.equal({
+                    account: delegateBob.address,
+                    deposit: 0,
+                    profile: {
+                        url: "0x5468652055524c",
+                        paraIds: { whitelist: [reservedParaId] },
+                        mode: { bootnode: null },
+                        assignmentRequest: "Free",
+                    },
+                    assignment: null,
+                });
+
+                // Data preservers need to be assigned before collating
+
+                const txAssignBootnode = polkadotJs.tx.dataPreservers.startAssignment(profileId, reservedParaId, "Free");
+                await context.createBlock([await txAssignBootnode.signAsync(charlie)]);
+
+                // Proxy can mark as valid for collating
+
+                const txStartCollating = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.containerRegistrar.markValidForCollating(reservedParaId))
+                );
+                await context.createBlock([await txStartCollating.signAsync(delegateBob)]);
+
+                events = await polkadotJs.query.system.events();
+                const startCollatingEvent = events.filter((a) => {
+                    return a.event.method == "ParaIdValidForCollating" && a.event.data[0].toString() == reservedParaId;
+                });
+
+                expect(startCollatingEvent.length).eq(1);
             },
         });
     },

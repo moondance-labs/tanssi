@@ -805,12 +805,16 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
-            ProxyType::SudoRegistrar => matches!(
-                c,
-                RuntimeCall::DataPreservers(..) |				
-                RuntimeCall::Registrar(..) |
-                RuntimeCall::ContainerRegistrar(..)
-            ),
+            ProxyType::SudoRegistrar => match c {
+				RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+					matches!(
+                        x.as_ref(),
+                        &RuntimeCall::DataPreservers(..) |
+                        &RuntimeCall::Registrar(..) |
+                        &RuntimeCall::ContainerRegistrar(..))
+				},
+				_ => false,
+			},
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
