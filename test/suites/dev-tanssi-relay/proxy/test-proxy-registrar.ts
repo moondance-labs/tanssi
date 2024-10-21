@@ -47,7 +47,6 @@ describeSuite({
                     isEthereum: false,
                 },
             });
-
         });
 
         it({
@@ -78,10 +77,18 @@ describeSuite({
                 const txReserve = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.registrar.forceRegister(delegateBob.address, 50, PARA_ID, GENESIS_HEAD, VALIDATION_CODE))
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.registrar.forceRegister(
+                            delegateBob.address,
+                            50,
+                            PARA_ID,
+                            GENESIS_HEAD,
+                            VALIDATION_CODE
+                        )
+                    )
                 );
                 await context.createBlock([await txReserve.signAsync(delegateBob)]);
-                
+
                 const registrar_info = await polkadotJs.query.registrar.paras(PARA_ID);
                 expect(registrar_info.toJSON()).not.toBeNull();
             },
@@ -91,7 +98,6 @@ describeSuite({
             id: "E03",
             title: "Delegated account can sudo txs in data preservers and registrar",
             test: async function () {
-
                 // A regular user registers a new avs
 
                 const txReserve = polkadotJs.tx.registrar.reserve();
@@ -102,17 +108,23 @@ describeSuite({
                     return a.event.method == "Reserved" && a.event.data[1].toString() == charlie.address;
                 });
                 const reservedParaId = reservedEvent[0].event.data[0].toPrimitive();
-                
+
                 const txRegisterRelay = polkadotJs.tx.registrar.register(reservedParaId, GENESIS_HEAD, VALIDATION_CODE);
                 await context.createBlock([await txRegisterRelay.signAsync(charlie)]);
 
-                const txRegisterTanssi = polkadotJs.tx.containerRegistrar.register(reservedParaId, genesisData, GENESIS_HEAD);
+                const txRegisterTanssi = polkadotJs.tx.containerRegistrar.register(
+                    reservedParaId,
+                    genesisData,
+                    GENESIS_HEAD
+                );
                 await context.createBlock([await txRegisterTanssi.signAsync(charlie)]);
 
                 await jumpSessions(context, 1);
 
                 // Accept validation code so that para is onboarded after 2 sessions
-                const txAddsCode = polkadotJs.tx.sudo.sudo(polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE));
+                const txAddsCode = polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE)
+                );
                 await context.createBlock([await txAddsCode.signAsync(sudoAlice)]);
 
                 await jumpSessions(context, 2);
@@ -129,7 +141,9 @@ describeSuite({
                 const txProfile = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.dataPreservers.forceCreateProfile(profile, delegateBob.address))
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.dataPreservers.forceCreateProfile(profile, delegateBob.address)
+                    )
                 );
                 await context.createBlock([await txProfile.signAsync(delegateBob)]);
 
@@ -148,7 +162,11 @@ describeSuite({
 
                 // Data preservers need to be assigned before collating
 
-                const txAssignBootnode = polkadotJs.tx.dataPreservers.startAssignment(profileId, reservedParaId, "Free");
+                const txAssignBootnode = polkadotJs.tx.dataPreservers.startAssignment(
+                    profileId,
+                    reservedParaId,
+                    "Free"
+                );
                 await context.createBlock([await txAssignBootnode.signAsync(charlie)]);
 
                 // Proxy can mark as valid for collating
@@ -173,17 +191,24 @@ describeSuite({
             id: "E04",
             title: "Unauthorized account cannot sudo calls",
             test: async function () {
-            
                 // Calling registering a para
 
                 const PARA_ID = 5556;
                 const txReserve = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.registrar.forceRegister(charlie.address, 50, PARA_ID, GENESIS_HEAD, VALIDATION_CODE))
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.registrar.forceRegister(
+                            charlie.address,
+                            50,
+                            PARA_ID,
+                            GENESIS_HEAD,
+                            VALIDATION_CODE
+                        )
+                    )
                 );
                 await context.createBlock([await txReserve.signAsync(charlie)]);
-                
+
                 const registrar_info = await polkadotJs.query.registrar.paras(PARA_ID);
                 expect(registrar_info.toJSON()).toBeNull();
 
