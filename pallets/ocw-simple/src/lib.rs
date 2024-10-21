@@ -15,35 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use frame_support::traits::Get;
-use frame_system::{
-    self as system,
-    offchain::{
-        AppCrypto, CreateSignedTransaction, SendSignedTransaction, SendUnsignedTransaction,
-        SignedPayload, Signer, SigningTypes, SubmitTransaction,
-    },
-    pallet_prelude::BlockNumberFor,
-};
-use parity_scale_codec::{Decode, Encode};
-use sp_runtime::{
-    offchain::{
-        http,
-        storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
-        Duration,
-    },
-    traits::Zero,
-    transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
-    RuntimeDebug,
-};
+use frame_system::pallet_prelude::BlockNumberFor;
+use sp_runtime::offchain::{http, Duration};
 
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{BlockNumber, BlockNumberProvider};
-
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
@@ -66,7 +45,9 @@ pub mod pallet {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
             log::info!("Entering off-chain worker.");
             // The entry point of your code called by offchain worker
-            Self::fetch_price(block_number);
+            Self::emit_offchain_event();
+            // Remove comment if you want to emit event on simple http request
+            //let _ = Self::fetch_price(block_number);
         }
     }
     #[pallet::call]
@@ -76,12 +57,18 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+        /// Simple offchain event
+        SimpleOffchainEvent,
         /// Event generated when new price is fetched
         PriceFetched { block_number: BlockNumberFor<T> },
     }
 }
 
 impl<T: Config> Pallet<T> {
+    /// Simple event emitter
+    fn emit_offchain_event() {
+        Self::deposit_event(Event::SimpleOffchainEvent);
+    }
     /// Fetch current price and return the result in cents.
     fn fetch_price(block_number: BlockNumberFor<T>) -> Result<u32, http::Error> {
         // We want to keep the offchain worker execution time reasonable, so we set a hard-coded
