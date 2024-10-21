@@ -11,7 +11,7 @@ branch=$(egrep -o '/polkadot-sdk.*#([^\"]*)' ../Cargo.lock | head -1)
 polkadot_release=$(echo $branch | sed 's/.*branch=//' | sed 's/#.*//')
 if [ -f tmp/ethereum_client_test/latest_version.txt ]; then
     stored_version=$(< tmp/ethereum_client_test/latest_version.txt)
-    if [[ "$VAR1" == "$VAR2" ]]; then
+    if [[ "$polkadot_release" == "$stored_version" ]]; then
         echo "Stored version is latest, nothing to do"
         exit 0;
     fi
