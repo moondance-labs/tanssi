@@ -33,10 +33,13 @@ async fn try_fut<T, E>(fut: impl Future<Output = Result<T, E>>) -> Result<T, E> 
 
 /// Watch assignements by indefinitly listening to finalized block notifications and switching to
 /// the chain the profile is assigned to.
+#[sc_tracing::logging::prefix_logs_with("Data Preserver Assignment Watcher")]
 pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId) {
     use dc_orchestrator_chain_interface::DataPreserverAssignment as Assignment;
 
     if let OrchestratorChainResult::Err(e) = try_fut(async move {
+        log::info!("Starting Data Preserver Assignment Watcher for profile #{profile_id}");
+
         let orchestrator_chain_interface = spawner.orchestrator_chain_interface();
 
         let mut current_assignment = DataPreserverAssignment::<ParaId>::NotAssigned;
@@ -52,11 +55,15 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
                 .data_preserver_active_assignment(hash, profile_id)
                 .await?;
 
-            log::info!("Assignement for block {hash}: {new_assignment:?}");
+            if current_assignment == new_assignment {
+                continue;
+            }
+
+            log::info!(
+                "Assignement changed at block {hash}: {current_assignment:?} => {new_assignment:?}"
+            );
 
             match (current_assignment, new_assignment) {
-                // no change
-                (x, y) if x == y => continue,
                 // switch from not assigned/inactive to active, start embeded node
                 (
                     Assignment::NotAssigned | Assignment::Inactive(_),
