@@ -14,6 +14,7 @@ import type {
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
     PalletReferendaTrackInfo,
+    SnowbridgeBeaconPrimitivesForkVersions,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
@@ -124,6 +125,11 @@ declare module "@polkadot/api-base/types/consts" {
             maxAssignmentsPerParaId: u32 & AugmentedConst<ApiType>;
             maxNodeUrlLen: u32 & AugmentedConst<ApiType>;
             maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        ethereumBeaconClient: {
+            forkVersions: SnowbridgeBeaconPrimitivesForkVersions & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

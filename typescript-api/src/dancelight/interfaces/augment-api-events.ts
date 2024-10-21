@@ -27,6 +27,7 @@ import type {
     PolkadotRuntimeParachainsDisputesDisputeLocation,
     PolkadotRuntimeParachainsDisputesDisputeResult,
     PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
+    SnowbridgeCoreOperatingModeBasicOperatingMode,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -195,6 +196,18 @@ declare module "@polkadot/api-base/types/events" {
                 [profileId: u64, oldDeposit: u128, newDeposit: u128],
                 { profileId: u64; oldDeposit: u128; newDeposit: u128 }
             >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumBeaconClient: {
+            BeaconHeaderImported: AugmentedEvent<ApiType, [blockHash: H256, slot: u64], { blockHash: H256; slot: u64 }>;
+            /** Set OperatingMode */
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            SyncCommitteeUpdated: AugmentedEvent<ApiType, [period: u64], { period: u64 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

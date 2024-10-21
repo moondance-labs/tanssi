@@ -111,7 +111,6 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
-    PalletExternalValidatorsActiveEraInfo,
     PalletExternalValidatorsCall,
     PalletExternalValidatorsError,
     PalletExternalValidatorsEvent,
@@ -318,6 +317,27 @@ import type {
     PolkadotRuntimeParachainsSchedulerPalletParasEntry,
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
     PolkadotRuntimeParachainsSharedPalletCall,
+    SnowbridgeAmclBls381Big,
+    SnowbridgeAmclBls381Ecp,
+    SnowbridgeAmclBls381Fp,
+    SnowbridgeBeaconPrimitivesBeaconHeader,
+    SnowbridgeBeaconPrimitivesBlsBlsError,
+    SnowbridgeBeaconPrimitivesCompactBeaconState,
+    SnowbridgeBeaconPrimitivesFork,
+    SnowbridgeBeaconPrimitivesForkVersions,
+    SnowbridgeBeaconPrimitivesPublicKey,
+    SnowbridgeBeaconPrimitivesSignature,
+    SnowbridgeBeaconPrimitivesSyncAggregate,
+    SnowbridgeBeaconPrimitivesSyncCommittee,
+    SnowbridgeBeaconPrimitivesSyncCommitteePrepared,
+    SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
+    SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate,
+    SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeCoreOperatingModeBasicOperatingMode,
+    SnowbridgeMilagroBlsKeysPublicKey,
+    SnowbridgePalletEthereumClientCall,
+    SnowbridgePalletEthereumClientError,
+    SnowbridgePalletEthereumClientEvent,
     SpArithmeticArithmeticError,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAllowedSlots,
@@ -382,6 +402,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -542,7 +563,6 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
-        PalletExternalValidatorsActiveEraInfo: PalletExternalValidatorsActiveEraInfo;
         PalletExternalValidatorsCall: PalletExternalValidatorsCall;
         PalletExternalValidatorsError: PalletExternalValidatorsError;
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
@@ -749,6 +769,27 @@ declare module "@polkadot/types/types/registry" {
         PolkadotRuntimeParachainsSchedulerPalletParasEntry: PolkadotRuntimeParachainsSchedulerPalletParasEntry;
         PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker: PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker;
         PolkadotRuntimeParachainsSharedPalletCall: PolkadotRuntimeParachainsSharedPalletCall;
+        SnowbridgeAmclBls381Big: SnowbridgeAmclBls381Big;
+        SnowbridgeAmclBls381Ecp: SnowbridgeAmclBls381Ecp;
+        SnowbridgeAmclBls381Fp: SnowbridgeAmclBls381Fp;
+        SnowbridgeBeaconPrimitivesBeaconHeader: SnowbridgeBeaconPrimitivesBeaconHeader;
+        SnowbridgeBeaconPrimitivesBlsBlsError: SnowbridgeBeaconPrimitivesBlsBlsError;
+        SnowbridgeBeaconPrimitivesCompactBeaconState: SnowbridgeBeaconPrimitivesCompactBeaconState;
+        SnowbridgeBeaconPrimitivesFork: SnowbridgeBeaconPrimitivesFork;
+        SnowbridgeBeaconPrimitivesForkVersions: SnowbridgeBeaconPrimitivesForkVersions;
+        SnowbridgeBeaconPrimitivesPublicKey: SnowbridgeBeaconPrimitivesPublicKey;
+        SnowbridgeBeaconPrimitivesSignature: SnowbridgeBeaconPrimitivesSignature;
+        SnowbridgeBeaconPrimitivesSyncAggregate: SnowbridgeBeaconPrimitivesSyncAggregate;
+        SnowbridgeBeaconPrimitivesSyncCommittee: SnowbridgeBeaconPrimitivesSyncCommittee;
+        SnowbridgeBeaconPrimitivesSyncCommitteePrepared: SnowbridgeBeaconPrimitivesSyncCommitteePrepared;
+        SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate: SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate;
+        SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate: SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate;
+        SnowbridgeBeaconPrimitivesUpdatesUpdate: SnowbridgeBeaconPrimitivesUpdatesUpdate;
+        SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
+        SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
+        SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
+        SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
+        SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpAuthorityDiscoveryAppPublic: SpAuthorityDiscoveryAppPublic;
         SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
@@ -813,6 +854,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4Response: StagingXcmV4Response;
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
+        TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
