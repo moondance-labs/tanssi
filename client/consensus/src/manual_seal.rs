@@ -16,7 +16,6 @@
 
 //! The Manual Seal implementation for the OrchestratorAuraConsensus
 
-use sp_api::StorageProof;
 use {
     cumulus_primitives_core::ParaId,
     dp_consensus::TanssiAuthorityAssignmentApi,
@@ -26,7 +25,7 @@ use {
     sc_client_api::{AuxStore, UsageProvider},
     sc_consensus::BlockImportParams,
     sc_consensus_manual_seal::{ConsensusDataProvider, Error},
-    sp_api::ProvideRuntimeApi,
+    sp_api::{ProvideRuntimeApi, StorageProof},
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
     sp_core::Pair,

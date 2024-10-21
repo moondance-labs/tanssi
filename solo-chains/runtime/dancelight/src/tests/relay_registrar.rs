@@ -16,7 +16,6 @@
 
 #![cfg(test)]
 
-use tp_traits::ParaId;
 use {
     crate::{
         tests::common::*, ContainerRegistrar, Paras, Registrar, RuntimeCall, SlotFrequency, System,
@@ -31,6 +30,7 @@ use {
     runtime_parachains::configuration as parachains_configuration,
     sp_runtime::traits::Dispatchable,
     sp_std::vec,
+    tp_traits::ParaId,
 };
 
 #[test]
