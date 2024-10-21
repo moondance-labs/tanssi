@@ -168,5 +168,60 @@ describeSuite({
                 expect(startCollatingEvent.length).eq(1);
             },
         });
+
+        it({
+            id: "E04",
+            title: "Unauthorized account cannot sudo calls",
+            test: async function () {
+            
+                // Calling registering a para
+
+                const PARA_ID = 5556;
+                const txReserve = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.registrar.forceRegister(charlie.address, 50, PARA_ID, GENESIS_HEAD, VALIDATION_CODE))
+                );
+                await context.createBlock([await txReserve.signAsync(charlie)]);
+                
+                const registrar_info = await polkadotJs.query.registrar.paras(PARA_ID);
+                expect(registrar_info.toJSON()).toBeNull();
+
+                // registering a profile
+
+                const profile = {
+                    url: "The URL",
+                    paraIds: { whitelist: [PARA_ID] },
+                    mode: "Bootnode",
+                };
+
+                const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+                const txProfile = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.dataPreservers.forceCreateProfile(profile, charlie.address))
+                );
+                await context.createBlock([await txProfile.signAsync(charlie)]);
+
+                const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
+                expect(storedProfile.isEmpty).to.be.true;
+
+                // Deregistering a chain
+
+                const txStartCollating = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.containerRegistrar.deregister(2002))
+                );
+                await context.createBlock([await txStartCollating.signAsync(charlie)]);
+
+                const events = await polkadotJs.query.system.events();
+                const startCollatingEvent = events.filter((a) => {
+                    return a.event.method == "ParaIdValidForCollating" && a.event.data[0].toString() == "2002";
+                });
+
+                expect(startCollatingEvent.length).eq(0);
+            },
+        });
     },
 });
