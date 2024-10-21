@@ -26,14 +26,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::dispatch::DispatchClass;
 pub use pallet::*;
 use {
-    core::marker::PhantomData,
-    sp_runtime::{traits::Convert, TokenError},
+    frame_support::{dispatch::DispatchClass, pallet_prelude::Weight},
+    sp_runtime::traits::Convert,
+    sp_runtime::traits::Get,
     sp_staking::SessionIndex,
     sp_std::vec::Vec,
-    tp_traits::{ActiveEraInfo, EraIndexProvider, InvulnerablesProvider},
+    tp_traits::{ActiveEraInfo, EraIndexProvider, ValidatorProvider},
 };
 
 #[cfg(test)]
@@ -128,21 +128,21 @@ pub mod pallet {
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
-    /// The invulnerable, permissioned collators. This list must be sorted.
+    /// Fixed validators set by root/governance. Have priority over the external validators.
     #[pallet::storage]
     pub type WhitelistedValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
-    /// The invulnerable, permissioned collators. This list must be sorted.
+    /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
     #[pallet::storage]
     pub type ExternalValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxExternalValidators>, ValueQuery>;
 
-    /// The invulnerable, permissioned collators. This list must be sorted.
+    /// Allow to disable external validators.
     #[pallet::storage]
     pub type SkipExternalValidators<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-    /// The invulnerable, permissioned collators. This list must be sorted.
+    /// The active era information, it holds index and start.
     #[pallet::storage]
     pub type ActiveEra<T: Config> = StorageValue<_, ActiveEraInfo>;
 
@@ -310,6 +310,16 @@ pub mod pallet {
         pub fn whitelisted_validators() -> Vec<T::ValidatorId> {
             <WhitelistedValidators<T>>::get().into()
         }
+
+        pub fn validators() -> Vec<T::ValidatorId> {
+            let mut validators: Vec<_> = WhitelistedValidators::<T>::get().into();
+
+            if !SkipExternalValidators::<T>::get() {
+                validators.extend(ExternalValidators::<T>::get())
+            }
+
+            validators
+        }
     }
 
     #[pallet::hooks]
@@ -335,61 +345,13 @@ pub mod pallet {
     }
 }
 
-/// If the rewarded account is an Invulnerable, distribute the entire reward
-/// amount to them. Otherwise use the `Fallback` distribution.
-pub struct InvulnerableRewardDistribution<Runtime, Currency, Fallback>(
-    PhantomData<(Runtime, Currency, Fallback)>,
-);
-
-use {frame_support::pallet_prelude::Weight, sp_runtime::traits::Get};
-
-type CreditOf<Runtime, Currency> =
-    frame_support::traits::fungible::Credit<<Runtime as frame_system::Config>::AccountId, Currency>;
-pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-
-impl<Runtime, Currency, Fallback>
-    tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>
-    for InvulnerableRewardDistribution<Runtime, Currency, Fallback>
-where
-    Runtime: frame_system::Config + Config,
-    Fallback: tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>,
-    Currency: frame_support::traits::fungible::Balanced<AccountIdOf<Runtime>>,
-{
-    fn distribute_rewards(
-        rewarded: AccountIdOf<Runtime>,
-        amount: CreditOf<Runtime, Currency>,
-    ) -> frame_support::pallet_prelude::DispatchResultWithPostInfo {
-        let mut total_weight = Weight::zero();
-        let collator_id = Runtime::ValidatorIdOf::convert(rewarded.clone())
-            .ok_or(Error::<Runtime>::UnableToDeriveCollatorId)?;
-        // weight to read invulnerables
-        total_weight += Runtime::DbWeight::get().reads(1);
-        if !WhitelistedValidators::<Runtime>::get().contains(&collator_id) {
-            let post_info = Fallback::distribute_rewards(rewarded, amount)?;
-            if let Some(weight) = post_info.actual_weight {
-                total_weight += weight;
-            }
-        } else {
-            Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
-            total_weight += Runtime::WeightInfo::reward_validator(
-                Runtime::MaxWhitelistedValidators::get() + Runtime::MaxExternalValidators::get(),
-            )
-        }
-        Ok(Some(total_weight).into())
-    }
-}
-
 impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
     fn new_session(new_index: SessionIndex) -> Option<Vec<T::ValidatorId>> {
         if new_index <= 1 {
             return None;
         }
 
-        let mut validators: Vec<_> = WhitelistedValidators::<T>::get().into();
-
-        if !SkipExternalValidators::<T>::get() {
-            validators.extend(ExternalValidators::<T>::get())
-        }
+        let validators: Vec<_> = Self::validators();
 
         frame_system::Pallet::<T>::register_extra_weight_unchecked(
             T::WeightInfo::new_session(validators.len() as u32),
@@ -428,8 +390,8 @@ impl<T: Config> EraIndexProvider for Pallet<T> {
     }
 }
 
-impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
-    fn invulnerables() -> Vec<T::ValidatorId> {
-        <WhitelistedValidators<T>>::get().into()
+impl<T: Config> ValidatorProvider<T::ValidatorId> for Pallet<T> {
+    fn validators() -> Vec<T::ValidatorId> {
+        Self::validators()
     }
 }

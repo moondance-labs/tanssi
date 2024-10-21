@@ -24,6 +24,7 @@ use {
     },
     frame_support::{assert_noop, assert_ok},
     sp_runtime::traits::BadOrigin,
+    tp_traits::ValidatorProvider,
 };
 
 #[test]
@@ -163,6 +164,19 @@ fn whitelisted_and_external_order() {
 
         let validators = ExternalValidators::new_session(2);
         assert_eq!(validators, Some(vec![1, 2, 50, 51]));
+    });
+}
+
+#[test]
+fn validator_provider_returns_all_validators() {
+    new_test_ext().execute_with(|| {
+        initialize_to_block(1);
+        assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
+        assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
+
+        let validators_new_session = ExternalValidators::new_session(2);
+        let validators_provider = <ExternalValidators as ValidatorProvider<u64>>::validators();
+        assert_eq!(validators_new_session, Some(validators_provider));
     });
 }
 

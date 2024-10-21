@@ -471,6 +471,6 @@ pub trait EraIndexProvider {
     fn active_era() -> ActiveEraInfo;
 }
 
-pub trait InvulnerablesProvider<ValidatorId> {
-    fn invulnerables() -> Vec<ValidatorId>;
+pub trait ValidatorProvider<ValidatorId> {
+    fn validators() -> Vec<ValidatorId>;
 }
