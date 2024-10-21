@@ -26,8 +26,6 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
-    DancelightRuntimeValidatorManagerPalletCall,
-    DancelightRuntimeValidatorManagerPalletEvent,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -113,6 +111,9 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
+    PalletExternalValidatorsCall,
+    PalletExternalValidatorsError,
+    PalletExternalValidatorsEvent,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -401,6 +402,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -476,8 +478,6 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
-        DancelightRuntimeValidatorManagerPalletCall: DancelightRuntimeValidatorManagerPalletCall;
-        DancelightRuntimeValidatorManagerPalletEvent: DancelightRuntimeValidatorManagerPalletEvent;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -563,6 +563,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
+        PalletExternalValidatorsCall: PalletExternalValidatorsCall;
+        PalletExternalValidatorsError: PalletExternalValidatorsError;
+        PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
@@ -851,6 +854,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4Response: StagingXcmV4Response;
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
+        TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;

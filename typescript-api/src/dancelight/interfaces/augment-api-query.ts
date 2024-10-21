@@ -120,6 +120,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Xcm,
+    TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     XcmVersionedAssetId,
@@ -656,6 +657,22 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, []>;
             validatorsRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        externalValidators: {
+            /** The invulnerable, permissioned collators. This list must be sorted. */
+            activeEra: AugmentedQuery<ApiType, () => Observable<Option<TpTraitsActiveEraInfo>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** The invulnerable, permissioned collators. This list must be sorted. */
+            externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** The invulnerable, permissioned collators. This list must be sorted. */
+            skipExternalValidators: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** The invulnerable, permissioned collators. This list must be sorted. */
+            whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -2083,7 +2100,7 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         tanssiInvulnerables: {
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** The invulnerable, permissioned collators. */
             invulnerables: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
@@ -2132,16 +2149,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        validatorManager: {
-            /** Validators that should be added. */
-            validatorsToAdd: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** Validators that should be retired, because their Parachain was deregistered. */
-            validatorsToRetire: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

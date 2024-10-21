@@ -331,21 +331,15 @@ export default {
     /** Lookup46: pallet_invulnerables::pallet::Event<T> */
     PalletInvulnerablesEvent: {
         _enum: {
-            NewInvulnerables: {
-                invulnerables: "Vec<AccountId32>",
-            },
             InvulnerableAdded: {
                 accountId: "AccountId32",
             },
             InvulnerableRemoved: {
                 accountId: "AccountId32",
             },
-            InvalidInvulnerableSkipped: {
-                accountId: "AccountId32",
-            },
         },
     },
-    /** Lookup48: pallet_collator_assignment::pallet::Event<T> */
+    /** Lookup47: pallet_collator_assignment::pallet::Event<T> */
     PalletCollatorAssignmentEvent: {
         _enum: {
             NewPendingAssignment: {
@@ -355,7 +349,7 @@ export default {
             },
         },
     },
-    /** Lookup49: pallet_author_noting::pallet::Event<T> */
+    /** Lookup48: pallet_author_noting::pallet::Event<T> */
     PalletAuthorNotingEvent: {
         _enum: {
             LatestAuthorChanged: {
@@ -369,7 +363,7 @@ export default {
             },
         },
     },
-    /** Lookup51: pallet_services_payment::pallet::Event<T> */
+    /** Lookup50: pallet_services_payment::pallet::Event<T> */
     PalletServicesPaymentEvent: {
         _enum: {
             CreditsPurchased: {
@@ -408,7 +402,7 @@ export default {
             },
         },
     },
-    /** Lookup54: pallet_data_preservers::pallet::Event<T> */
+    /** Lookup53: pallet_data_preservers::pallet::Event<T> */
     PalletDataPreserversEvent: {
         _enum: {
             BootNodesChanged: {
@@ -438,7 +432,7 @@ export default {
             },
         },
     },
-    /** Lookup55: pallet_session::pallet::Event */
+    /** Lookup54: pallet_session::pallet::Event */
     PalletSessionEvent: {
         _enum: {
             NewSession: {
@@ -446,7 +440,7 @@ export default {
             },
         },
     },
-    /** Lookup56: pallet_grandpa::pallet::Event */
+    /** Lookup55: pallet_grandpa::pallet::Event */
     PalletGrandpaEvent: {
         _enum: {
             NewAuthorities: {
@@ -456,9 +450,9 @@ export default {
             Resumed: "Null",
         },
     },
-    /** Lookup59: sp_consensus_grandpa::app::Public */
+    /** Lookup58: sp_consensus_grandpa::app::Public */
     SpConsensusGrandpaAppPublic: "[u8;32]",
-    /** Lookup60: pallet_inflation_rewards::pallet::Event<T> */
+    /** Lookup59: pallet_inflation_rewards::pallet::Event<T> */
     PalletInflationRewardsEvent: {
         _enum: {
             RewardedOrchestrator: {
@@ -472,7 +466,7 @@ export default {
             },
         },
     },
-    /** Lookup61: pallet_treasury::pallet::Event<T, I> */
+    /** Lookup60: pallet_treasury::pallet::Event<T, I> */
     PalletTreasuryEvent: {
         _enum: {
             Spending: {
@@ -525,14 +519,14 @@ export default {
             },
         },
     },
-    /** Lookup63: pallet_conviction_voting::pallet::Event<T, I> */
+    /** Lookup62: pallet_conviction_voting::pallet::Event<T, I> */
     PalletConvictionVotingEvent: {
         _enum: {
             Delegated: "(AccountId32,AccountId32)",
             Undelegated: "AccountId32",
         },
     },
-    /** Lookup64: pallet_referenda::pallet::Event<T, I> */
+    /** Lookup63: pallet_referenda::pallet::Event<T, I> */
     PalletReferendaEvent: {
         _enum: {
             Submitted: {
@@ -611,7 +605,7 @@ export default {
         },
     },
     /**
-     * Lookup66: frame_support::traits::preimages::Bounded<dancelight_runtime::RuntimeCall,
+     * Lookup65: frame_support::traits::preimages::Bounded<dancelight_runtime::RuntimeCall,
      * sp_runtime::traits::BlakeTwo256>
      */
     FrameSupportPreimagesBounded: {
@@ -632,7 +626,7 @@ export default {
             },
         },
     },
-    /** Lookup68: frame_system::pallet::Call<T> */
+    /** Lookup67: frame_system::pallet::Call<T> */
     FrameSystemCall: {
         _enum: {
             remark: {
@@ -675,7 +669,7 @@ export default {
             },
         },
     },
-    /** Lookup72: pallet_babe::pallet::Call<T> */
+    /** Lookup71: pallet_babe::pallet::Call<T> */
     PalletBabeCall: {
         _enum: {
             report_equivocation: {
@@ -692,7 +686,7 @@ export default {
         },
     },
     /**
-     * Lookup73: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, Hash>,
+     * Lookup72: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, Hash>,
      * sp_consensus_babe::app::Public>
      */
     SpConsensusSlotsEquivocationProof: {
@@ -701,7 +695,7 @@ export default {
         firstHeader: "SpRuntimeHeader",
         secondHeader: "SpRuntimeHeader",
     },
-    /** Lookup74: sp_runtime::generic::header::Header<Number, Hash> */
+    /** Lookup73: sp_runtime::generic::header::Header<Number, Hash> */
     SpRuntimeHeader: {
         parentHash: "H256",
         number: "Compact<u32>",
@@ -709,15 +703,15 @@ export default {
         extrinsicsRoot: "H256",
         digest: "SpRuntimeDigest",
     },
-    /** Lookup76: sp_consensus_babe::app::Public */
+    /** Lookup75: sp_consensus_babe::app::Public */
     SpConsensusBabeAppPublic: "[u8;32]",
-    /** Lookup77: sp_session::MembershipProof */
+    /** Lookup76: sp_session::MembershipProof */
     SpSessionMembershipProof: {
         session: "u32",
         trieNodes: "Vec<Bytes>",
         validatorCount: "u32",
     },
-    /** Lookup78: sp_consensus_babe::digests::NextConfigDescriptor */
+    /** Lookup77: sp_consensus_babe::digests::NextConfigDescriptor */
     SpConsensusBabeDigestsNextConfigDescriptor: {
         _enum: {
             __Unused0: "Null",
@@ -727,11 +721,11 @@ export default {
             },
         },
     },
-    /** Lookup80: sp_consensus_babe::AllowedSlots */
+    /** Lookup79: sp_consensus_babe::AllowedSlots */
     SpConsensusBabeAllowedSlots: {
         _enum: ["PrimarySlots", "PrimaryAndSecondaryPlainSlots", "PrimaryAndSecondaryVRFSlots"],
     },
-    /** Lookup81: pallet_timestamp::pallet::Call<T> */
+    /** Lookup80: pallet_timestamp::pallet::Call<T> */
     PalletTimestampCall: {
         _enum: {
             set: {
@@ -739,7 +733,7 @@ export default {
             },
         },
     },
-    /** Lookup82: pallet_balances::pallet::Call<T, I> */
+    /** Lookup81: pallet_balances::pallet::Call<T, I> */
     PalletBalancesCall: {
         _enum: {
             transfer_allow_death: {
@@ -3884,14 +3878,17 @@ export default {
         validationCode: "Bytes",
         paraKind: "bool",
     },
-    /** Lookup427: dancelight_runtime::validator_manager::pallet::Call<T> */
-    DancelightRuntimeValidatorManagerPalletCall: {
+    /** Lookup427: pallet_external_validators::pallet::Call<T> */
+    PalletExternalValidatorsCall: {
         _enum: {
-            register_validators: {
-                validators: "Vec<AccountId32>",
+            skip_external_validators: {
+                skip: "bool",
             },
-            deregister_validators: {
-                validators: "Vec<AccountId32>",
+            add_whitelisted: {
+                who: "AccountId32",
+            },
+            remove_whitelisted: {
+                who: "AccountId32",
             },
         },
     },
@@ -4566,11 +4563,15 @@ export default {
             },
         },
     },
-    /** Lookup469: dancelight_runtime::validator_manager::pallet::Event<T> */
-    DancelightRuntimeValidatorManagerPalletEvent: {
+    /** Lookup469: pallet_external_validators::pallet::Event<T> */
+    PalletExternalValidatorsEvent: {
         _enum: {
-            ValidatorsRegistered: "Vec<AccountId32>",
-            ValidatorsDeregistered: "Vec<AccountId32>",
+            WhitelistedValidatorAdded: {
+                accountId: "AccountId32",
+            },
+            WhitelistedValidatorRemoved: {
+                accountId: "AccountId32",
+            },
         },
     },
     /** Lookup470: pallet_root_testing::pallet::Event<T> */
@@ -6047,24 +6048,39 @@ export default {
             "TooManyCores",
         ],
     },
-    /** Lookup802: pallet_sudo::pallet::Error<T> */
+    /** Lookup802: tp_traits::ActiveEraInfo */
+    TpTraitsActiveEraInfo: {
+        index: "u32",
+        start: "Option<u64>",
+    },
+    /** Lookup804: pallet_external_validators::pallet::Error<T> */
+    PalletExternalValidatorsError: {
+        _enum: [
+            "TooManyInvulnerables",
+            "AlreadyInvulnerable",
+            "NotInvulnerable",
+            "NoKeysRegistered",
+            "UnableToDeriveCollatorId",
+        ],
+    },
+    /** Lookup805: pallet_sudo::pallet::Error<T> */
     PalletSudoError: {
         _enum: ["RequireSudo"],
     },
-    /** Lookup805: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+    /** Lookup808: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
     FrameSystemExtensionsCheckNonZeroSender: "Null",
-    /** Lookup806: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+    /** Lookup809: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
     FrameSystemExtensionsCheckSpecVersion: "Null",
-    /** Lookup807: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+    /** Lookup810: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
     FrameSystemExtensionsCheckTxVersion: "Null",
-    /** Lookup808: frame_system::extensions::check_genesis::CheckGenesis<T> */
+    /** Lookup811: frame_system::extensions::check_genesis::CheckGenesis<T> */
     FrameSystemExtensionsCheckGenesis: "Null",
-    /** Lookup811: frame_system::extensions::check_nonce::CheckNonce<T> */
+    /** Lookup814: frame_system::extensions::check_nonce::CheckNonce<T> */
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
-    /** Lookup812: frame_system::extensions::check_weight::CheckWeight<T> */
+    /** Lookup815: frame_system::extensions::check_weight::CheckWeight<T> */
     FrameSystemExtensionsCheckWeight: "Null",
-    /** Lookup813: pallet_transaction_payment::ChargeTransactionPayment<T> */
+    /** Lookup816: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup814: dancelight_runtime::Runtime */
+    /** Lookup817: dancelight_runtime::Runtime */
     DancelightRuntimeRuntime: "Null",
 };
