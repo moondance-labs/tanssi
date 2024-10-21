@@ -121,6 +121,10 @@ impl ValidatorRegistration<u64> for IsRegistered {
     }
 }
 
+parameter_types! {
+    pub const SessionsPerEra: SessionIndex = 6;
+}
+
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
@@ -130,6 +134,7 @@ impl Config for Test {
     type ValidatorIdOf = IdentityCollator;
     type ValidatorRegistration = IsRegistered;
     type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;

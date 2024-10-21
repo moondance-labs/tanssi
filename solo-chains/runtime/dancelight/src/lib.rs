@@ -487,7 +487,6 @@ impl pallet_session::historical::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = 28;
 }
 
@@ -1188,9 +1187,7 @@ impl pallet_beefy_mmr::Config for Runtime {
 impl paras_sudo_wrapper::Config for Runtime {}
 
 parameter_types! {
-    pub const PermanentSlotLeasePeriodLength: u32 = 365;
-    pub const TemporarySlotLeasePeriodLength: u32 = 5;
-    pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
+    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1202,6 +1199,7 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorIdOf = ValidatorIdOf;
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;

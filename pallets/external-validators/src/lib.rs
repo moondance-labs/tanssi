@@ -23,14 +23,19 @@
 //! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
 //! - ExternalValidators: Validators set using storage proofs from another blockchain. Changing them triggers a
 //!     new era. Can be disabled by setting `SkipExternalValidators` to true.
+//!
+//! Validators only change once per era. By default the era changes after a fixed number of sessions, but that can
+//! be changed by root/governance to increase era on every session, or to never change.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
 use {
     frame_support::{dispatch::DispatchClass, pallet_prelude::Weight},
-    sp_runtime::traits::Convert,
+    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    scale_info::TypeInfo,
     sp_runtime::traits::Get,
+    sp_runtime::RuntimeDebug,
     sp_staking::SessionIndex,
     sp_std::vec::Vec,
     tp_traits::{ActiveEraInfo, EraIndexProvider, ValidatorProvider},
@@ -116,6 +121,10 @@ pub mod pallet {
         /// genesis is not used.
         type UnixTime: UnixTime;
 
+        /// Number of sessions per era.
+        #[pallet::constant]
+        type SessionsPerEra: Get<SessionIndex>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
@@ -145,6 +154,14 @@ pub mod pallet {
     /// The active era information, it holds index and start.
     #[pallet::storage]
     pub type ActiveEra<T: Config> = StorageValue<_, ActiveEraInfo>;
+
+    /// Session index at the start of this era. Used to know when to start the next era.
+    #[pallet::storage]
+    pub type EraSessionStart<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+    /// Mode of era forcing.
+    #[pallet::storage]
+    pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
@@ -183,6 +200,8 @@ pub mod pallet {
         WhitelistedValidatorAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
         WhitelistedValidatorRemoved { account_id: T::AccountId },
+        /// A new force era mode was set.
+        ForceEra { mode: Forcing },
     }
 
     #[pallet::error]
@@ -277,6 +296,69 @@ pub mod pallet {
             Self::deposit_event(Event::WhitelistedValidatorRemoved { account_id: who });
             Ok(())
         }
+
+        /// Force there to be no new eras indefinitely.
+        ///
+        /// The dispatch origin must be Root.
+        ///
+        /// # Warning
+        ///
+        /// The election process starts multiple blocks before the end of the era.
+        /// Thus the election process may be ongoing when this is called. In this case the
+        /// election will continue until the next era is triggered.
+        ///
+        /// ## Complexity
+        /// - No arguments.
+        /// - Weight: O(1)
+        #[pallet::call_index(12)]
+        //#[pallet::weight(T::WeightInfo::force_no_eras())]
+        #[pallet::weight(0)]
+        pub fn force_no_eras(origin: OriginFor<T>) -> DispatchResult {
+            T::UpdateOrigin::ensure_origin(origin)?;
+            Self::set_force_era(Forcing::ForceNone);
+            Ok(())
+        }
+
+        /// Force there to be a new era at the end of the next session. After this, it will be
+        /// reset to normal (non-forced) behaviour.
+        ///
+        /// The dispatch origin must be Root.
+        ///
+        /// # Warning
+        ///
+        /// The election process starts multiple blocks before the end of the era.
+        /// If this is called just before a new era is triggered, the election process may not
+        /// have enough blocks to get a result.
+        ///
+        /// ## Complexity
+        /// - No arguments.
+        /// - Weight: O(1)
+        #[pallet::call_index(13)]
+        //#[pallet::weight(T::WeightInfo::force_new_era())]
+        #[pallet::weight(0)]
+        pub fn force_new_era(origin: OriginFor<T>) -> DispatchResult {
+            T::UpdateOrigin::ensure_origin(origin)?;
+            Self::set_force_era(Forcing::ForceNew);
+            Ok(())
+        }
+
+        /// Force there to be a new era at the end of sessions indefinitely.
+        ///
+        /// The dispatch origin must be Root.
+        ///
+        /// # Warning
+        ///
+        /// The election process starts multiple blocks before the end of the era.
+        /// If this is called just before a new era is triggered, the election process may not
+        /// have enough blocks to get a result.
+        #[pallet::call_index(16)]
+        //#[pallet::weight(T::WeightInfo::force_new_era_always())]
+        #[pallet::weight(0)]
+        pub fn force_new_era_always(origin: OriginFor<T>) -> DispatchResult {
+            T::UpdateOrigin::ensure_origin(origin)?;
+            Self::set_force_era(Forcing::ForceAlways);
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -285,12 +367,10 @@ pub mod pallet {
             let validators = BoundedVec::truncate_from(validators);
             <ExternalValidators<T>>::put(validators);
 
-            Self::increase_era();
-
             Ok(())
         }
 
-        fn increase_era() {
+        pub(crate) fn increase_era(new_index: SessionIndex) {
             // Increase era
             <ActiveEra<T>>::mutate(|q| {
                 if q.is_none() {
@@ -305,10 +385,22 @@ pub mod pallet {
                 // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
                 q.start = None;
             });
+            <EraSessionStart<T>>::put(new_index);
+        }
+
+        /// Helper to set a new `ForceEra` mode.
+        pub(crate) fn set_force_era(mode: Forcing) {
+            log::info!("Setting force era mode {:?}.", mode);
+            ForceEra::<T>::put(mode);
+            Self::deposit_event(Event::<T>::ForceEra { mode });
         }
 
         pub fn whitelisted_validators() -> Vec<T::ValidatorId> {
             <WhitelistedValidators<T>>::get().into()
+        }
+
+        pub fn current_era() -> Option<u32> {
+            <ActiveEra<T>>::get().map(|era_info| era_info.index)
         }
 
         pub fn validators() -> Vec<T::ValidatorId> {
@@ -350,6 +442,35 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
         if new_index <= 1 {
             return None;
         }
+
+        let new_era = match <ForceEra<T>>::get() {
+            Forcing::NotForcing => {
+                // If enough sessions have elapsed, start new era
+                let start_session = <EraSessionStart<T>>::get();
+                let current_session = new_index;
+
+                if current_session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
+                    true
+                } else {
+                    false
+                }
+            }
+            Forcing::ForceNew => {
+                // Only force once
+                <ForceEra<T>>::put(Forcing::NotForcing);
+
+                true
+            }
+            Forcing::ForceNone => false,
+            Forcing::ForceAlways => true,
+        };
+
+        if !new_era {
+            // If not starting a new era, keep the previous validators
+            return None;
+        }
+
+        Self::increase_era(new_index);
 
         let validators: Vec<_> = Self::validators();
 
@@ -394,4 +515,20 @@ impl<T: Config> ValidatorProvider<T::ValidatorId> for Pallet<T> {
     fn validators() -> Vec<T::ValidatorId> {
         Self::validators()
     }
+}
+
+/// Mode of era-forcing.
+#[derive(
+    Copy, Clone, PartialEq, Eq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
+)]
+pub enum Forcing {
+    /// Not forcing anything - just let whatever happen.
+    #[default]
+    NotForcing,
+    /// Force a new era, then reset to `NotForcing` as soon as it is done.
+    ForceNew,
+    /// Avoid a new era indefinitely.
+    ForceNone,
+    /// Force a new era at the end of all sessions indefinitely.
+    ForceAlways,
 }
