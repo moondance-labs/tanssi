@@ -36,6 +36,7 @@ pallet-migrations = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
+pallet-beefy-mmr = { workspace = true }
 pallet-balances = { workspace = true }
 
 # Cumulus

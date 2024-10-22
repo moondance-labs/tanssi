@@ -52,6 +52,7 @@ sp-version = { workspace = true }
 tx-pool-api = { workspace = true }
 
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
