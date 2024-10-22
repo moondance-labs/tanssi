@@ -21,11 +21,13 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-session = { workspace = true }
 pallet-treasury = { workspace = true }
 
 # Moonkit
@@ -66,12 +68,14 @@ std = [
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-external-validators/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-invulnerables/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
 	"pallet-registrar/std",
 	"pallet-services-payment/std",
+	"pallet-session/std",
 	"pallet-treasury/std",
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
@@ -90,6 +94,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-external-validators/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
@@ -109,12 +114,14 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-external-validators/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-services-payment/try-runtime",
+	"pallet-session/try-runtime",
 	"pallet-treasury/try-runtime",
 	"pallet-xcm/try-runtime",
 	"sp-runtime/try-runtime",

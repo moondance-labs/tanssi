@@ -400,7 +400,15 @@ fn dancelight_testnet_genesis(
         "collatorConfiguration": crate::CollatorConfigurationConfig {
             config: host_configuration,
             ..Default::default()
-        }
+        },
+        "externalValidators": crate::ExternalValidatorsConfig {
+            whitelisted_validators: initial_authorities
+                .iter()
+                .map(|x| {
+                    x.stash.clone()
+                })
+                .collect::<Vec<_>>(),
+        },
     })
 }
 

@@ -37,12 +37,13 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
+    scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
-        ArithmeticError, DispatchResult, Perbill,
+        ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
@@ -450,3 +451,38 @@ impl<AccountId> MaybeSelfChainBlockAuthor<AccountId> for () {
         None
     }
 }
+
+/// Information regarding the active era (era in used in session).
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct ActiveEraInfo {
+    /// Index of era.
+    pub index: EraIndex,
+    /// Moment of start expressed as millisecond from `$UNIX_EPOCH`.
+    ///
+    /// Start can be none if start hasn't been set for the era yet,
+    /// Start is set on the first on_finalize of the era to guarantee usage of `Time`.
+    pub start: Option<u64>,
+}
+
+/// Counter for the number of eras that have passed.
+pub type EraIndex = u32;
+
+pub trait EraIndexProvider {
+    fn active_era() -> ActiveEraInfo;
+}
+
+pub trait ValidatorProvider<ValidatorId> {
+    fn validators() -> Vec<ValidatorId>;
+}
+
+pub trait OnEraStart {
+    fn on_era_start() {}
+}
+
+impl OnEraStart for () {}
+
+pub trait OnEraEnd {
+    fn on_era_end() {}
+}
+
+impl OnEraEnd for () {}

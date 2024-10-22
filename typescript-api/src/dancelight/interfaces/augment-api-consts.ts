@@ -133,6 +133,16 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        externalValidators: {
+            /** Maximum number of external validators. */
+            maxExternalValidators: u32 & AugmentedConst<ApiType>;
+            /** Maximum number of whitelisted validators. */
+            maxWhitelistedValidators: u32 & AugmentedConst<ApiType>;
+            /** Number of sessions per era. */
+            sessionsPerEra: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         fellowshipReferenda: {
             /**
              * Quantization level for the referendum wakeup scheduler. A higher number will result in fewer storage
