@@ -913,8 +913,13 @@ where
         use frame_support::pallet_prelude::*;
 
         // Set initial WhitelistedValidators to current validators from pallet session
-        let session_validators = pallet_session::Validators::<Runtime>::get();
-        let session_validators = BoundedVec::truncate_from(session_validators);
+        let session_keys = pallet_session::QueuedKeys::<Runtime>::get();
+        let session_validators = BoundedVec::truncate_from(
+            session_keys
+                .into_iter()
+                .map(|(validator, _keys)| validator)
+                .collect(),
+        );
         pallet_external_validators::WhitelistedValidators::<Runtime>::put(session_validators);
 
         // Kill storage of ValidatorManager pallet
