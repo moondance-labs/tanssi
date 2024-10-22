@@ -16,9 +16,10 @@
 
 #![cfg(test)]
 
-use crate::Registrar;
 use {
-    crate::{tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Session},
+    crate::{
+        tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Registrar, Session,
+    },
     cumulus_primitives_core::relay_chain::{
         vstaging::SchedulerParams, AsyncBackingParams, CoreIndex, HeadData,
     },
