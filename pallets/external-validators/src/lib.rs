@@ -374,9 +374,10 @@ pub mod pallet {
             Ok(())
         }
 
-        pub(crate) fn increase_era(new_index: SessionIndex) {
+        /// Increase era. Returns new era index.
+        pub(crate) fn increase_era(new_session_index: SessionIndex) -> EraIndex {
             // Increase era
-            <ActiveEra<T>>::mutate(|q| {
+            let era_index = <ActiveEra<T>>::mutate(|q| {
                 if q.is_none() {
                     *q = Some(ActiveEraInfo {
                         index: 0,
@@ -387,12 +388,14 @@ pub mod pallet {
                 let q = q.as_mut().unwrap();
                 q.index += 1;
 
-                Self::deposit_event(Event::NewEra { era: q.index });
-
                 // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
                 q.start = None;
+
+                q.index
             });
-            <EraSessionStart<T>>::put(new_index);
+            <EraSessionStart<T>>::put(new_session_index);
+
+            era_index
         }
 
         /// Helper to set a new `ForceEra` mode.
@@ -445,8 +448,8 @@ pub mod pallet {
 }
 
 impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
-    fn new_session(new_index: SessionIndex) -> Option<Vec<T::ValidatorId>> {
-        if new_index <= 1 {
+    fn new_session(session: SessionIndex) -> Option<Vec<T::ValidatorId>> {
+        if session <= 1 {
             return None;
         }
 
@@ -454,7 +457,7 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
             Forcing::NotForcing => {
                 // If enough sessions have elapsed, start new era
                 let start_session = <EraSessionStart<T>>::get();
-                let current_session = new_index;
+                let current_session = session;
 
                 if current_session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
                     true
@@ -477,9 +480,11 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
             return None;
         }
 
-        Self::increase_era(new_index);
+        let new_era_index = Self::increase_era(session);
 
-        T::OnEraStart::on_era_start();
+        Self::deposit_event(Event::NewEra { era: new_era_index });
+
+        T::OnEraStart::on_era_start(new_era_index, session);
 
         let validators: Vec<_> = Self::validators();
 
@@ -492,6 +497,7 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
     }
 
     fn end_session(index: SessionIndex) {
+        // This function needs to predict whether new_session(index+1) will start a new era
         let new_index = index.saturating_add(1);
 
         if new_index <= 1 {
@@ -519,7 +525,7 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
             return;
         }
 
-        T::OnEraEnd::on_era_end();
+        T::OnEraEnd::on_era_end(index);
     }
 
     fn start_session(_start_index: SessionIndex) {}

@@ -476,13 +476,13 @@ pub trait ValidatorProvider<ValidatorId> {
 }
 
 pub trait OnEraStart {
-    fn on_era_start() {}
+    fn on_era_start(_era_index: EraIndex, _session_start: u32) {}
 }
 
 impl OnEraStart for () {}
 
 pub trait OnEraEnd {
-    fn on_era_end() {}
+    fn on_era_end(_era_index: EraIndex) {}
 }
 
 impl OnEraEnd for () {}
