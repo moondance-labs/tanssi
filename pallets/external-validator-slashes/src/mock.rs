@@ -23,8 +23,9 @@ use {
     frame_system as system,
     sp_core::H256,
     sp_runtime::{
+        testing::UintAuthorityId,
         traits::{BlakeTwo256, ConvertInto, IdentityLookup},
-        BuildStorage, testing::UintAuthorityId
+        BuildStorage,
     },
     sp_staking::SessionIndex,
 };
@@ -75,74 +76,73 @@ impl system::Config for Test {
 }
 
 parameter_types! {
-	pub static Validators: Option<Vec<u64>> = Some(vec![
-		1,
-		2,
-		3,
-	]);
+    pub static Validators: Option<Vec<u64>> = Some(vec![
+        1,
+        2,
+        3,
+    ]);
 }
 
 pub struct TestSessionManager;
 impl pallet_session::SessionManager<u64> for TestSessionManager {
-	fn new_session(_new_index: SessionIndex) -> Option<Vec<u64>> {
-		Validators::mutate(|l| l.take())
-	}
-	fn end_session(_: SessionIndex) {}
-	fn start_session(_: SessionIndex) {}
+    fn new_session(_new_index: SessionIndex) -> Option<Vec<u64>> {
+        Validators::mutate(|l| l.take())
+    }
+    fn end_session(_: SessionIndex) {}
+    fn start_session(_: SessionIndex) {}
 }
 
 impl pallet_session::historical::SessionManager<u64, ()> for TestSessionManager {
-	fn new_session(_new_index: SessionIndex) -> Option<Vec<(u64, ())>> {
-		Validators::mutate(|l| {
-			l.take().map(|validators| validators.iter().map(|v| (*v, ())).collect())
-		})
-	}
-	fn end_session(_: SessionIndex) {}
-	fn start_session(_: SessionIndex) {}
+    fn new_session(_new_index: SessionIndex) -> Option<Vec<(u64, ())>> {
+        Validators::mutate(|l| {
+            l.take()
+                .map(|validators| validators.iter().map(|v| (*v, ())).collect())
+        })
+    }
+    fn end_session(_: SessionIndex) {}
+    fn start_session(_: SessionIndex) {}
 }
 
 parameter_types! {
-	pub const Period: u64 = 1;
-	pub const Offset: u64 = 0;
+    pub const Period: u64 = 1;
+    pub const Offset: u64 = 0;
 }
 
 impl pallet_session::Config for Test {
-	type SessionManager = pallet_session::historical::NoteHistoricalRoot<Test, TestSessionManager>;
-	type Keys = SessionKeys;
-	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-	type SessionHandler = TestSessionHandler;
-	type RuntimeEvent = RuntimeEvent;
-	type ValidatorId = <Self as frame_system::Config>::AccountId;
-	type ValidatorIdOf = ConvertInto;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type WeightInfo = ();
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Test, TestSessionManager>;
+    type Keys = SessionKeys;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+    type SessionHandler = TestSessionHandler;
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = ConvertInto;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type WeightInfo = ();
 }
 
-
 sp_runtime::impl_opaque_keys! {
-	pub struct SessionKeys {
-		pub foo: sp_runtime::testing::UintAuthorityId,
-	}
+    pub struct SessionKeys {
+        pub foo: sp_runtime::testing::UintAuthorityId,
+    }
 }
 
 use sp_runtime::RuntimeAppPublic;
 type AccountId = u64;
 pub struct TestSessionHandler;
 impl pallet_session::SessionHandler<AccountId> for TestSessionHandler {
-	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
+    const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
 
-	fn on_genesis_session<Ks: sp_runtime::traits::OpaqueKeys>(_validators: &[(AccountId, Ks)]) {}
+    fn on_genesis_session<Ks: sp_runtime::traits::OpaqueKeys>(_validators: &[(AccountId, Ks)]) {}
 
-	fn on_new_session<Ks: sp_runtime::traits::OpaqueKeys>(
-		_: bool,
-		_: &[(AccountId, Ks)],
-		_: &[(AccountId, Ks)],
-	) {
-	}
+    fn on_new_session<Ks: sp_runtime::traits::OpaqueKeys>(
+        _: bool,
+        _: &[(AccountId, Ks)],
+        _: &[(AccountId, Ks)],
+    ) {
+    }
 
-	fn on_disabled(_: u32) {}
+    fn on_disabled(_: u32) {}
 }
-
 
 parameter_types! {
     pub const DeferPeriod: u32 = 2u32;
@@ -161,14 +161,14 @@ impl external_validator_info::Config for Test {
 
 pub struct FullIdentificationOf;
 impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
-	fn convert(_: AccountId) -> Option<()> {
-		Some(Default::default())
-	}
+    fn convert(_: AccountId) -> Option<()> {
+        Some(Default::default())
+    }
 }
 
 impl pallet_session::historical::Config for Test {
-	type FullIdentification = ();
-	type FullIdentificationOf = FullIdentificationOf;
+    type FullIdentification = ();
+    type FullIdentificationOf = FullIdentificationOf;
 }
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {

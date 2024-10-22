@@ -365,6 +365,7 @@ where
                     active_era,
                     slash_era + slash_defer_duration + 1,
                 );
+
                 Slashes::<T>::mutate(
                     slash_era
                         .saturating_add(slash_defer_duration)
@@ -414,7 +415,6 @@ impl<T: Config> Pallet<T> {
                     .take_while(|&&(era_idx, _)| era_idx < first_kept)
                     .count();
 
-
                 // Kill slashing metadata.
                 for (pruned_era, _) in bonded.drain(..n_to_prune) {
                     #[allow(deprecated)]
@@ -428,6 +428,8 @@ impl<T: Config> Pallet<T> {
                 }
             }
         });
+
+        ErasStartSessionIndex::<T>::insert(&active_era, &start_session);
 
         Self::confirm_unconfirmed_slashes(active_era);
     }

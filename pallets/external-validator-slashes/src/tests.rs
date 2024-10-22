@@ -157,7 +157,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         Pallet::<Test>::start_era(1);
 
         // we are storing a tuple (era index, start_session_block)
-        assert_eq!(BondedEras::<Test>::get(), [(0,0), (1,1)]);
+        assert_eq!(BondedEras::<Test>::get(), [(0, 0), (1, 1)]);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -184,10 +184,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         // whenever we start the 6th era, we can remove everything from era 0
         Pallet::<Test>::start_era(6);
 
-        assert_eq!(
-            Slashes::<Test>::get(0),
-            vec![]
-        );
+        assert_eq!(Slashes::<Test>::get(0), vec![]);
     });
 }
 
@@ -197,9 +194,51 @@ fn test_on_offence_injects_offences() {
         Pallet::<Test>::start_era(0);
         Pallet::<Test>::start_era(1);
         Pallet::<Test>::on_offence(
-            &[OffenceDetails { offender: (11, ()), reporters: vec![] }],
+            &[OffenceDetails {
+                offender: (1, ()),
+                reporters: vec![],
+            }],
             &[Perbill::from_percent(75)],
-            0
+            0,
         );
+        // current era (1) + defer period + 1
+        let slash_era = 0
+            .saturating_add(crate::mock::DeferPeriod::get())
+            .saturating_add(One::one());
+
+        assert_eq!(
+            Slashes::<Test>::get(slash_era),
+            vec![Slash {
+                validator: 1,
+                percentage: Perbill::from_percent(75),
+                confirmed: false,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
+    });
+}
+
+#[test]
+fn test_on_offence_does_not_work_for_invulnerables() {
+    new_test_ext().execute_with(|| {
+        Pallet::<Test>::start_era(0);
+        Pallet::<Test>::start_era(1);
+        // account 1 invulnerable
+        Invulnerables::<Test>::put(vec![1]);
+        Pallet::<Test>::on_offence(
+            &[OffenceDetails {
+                offender: (1, ()),
+                reporters: vec![],
+            }],
+            &[Perbill::from_percent(75)],
+            0,
+        );
+        // current era (1) + defer period + 1
+        let slash_era = 1
+            .saturating_add(crate::mock::DeferPeriod::get())
+            .saturating_add(One::one());
+
+        assert_eq!(Slashes::<Test>::get(slash_era), vec![]);
     });
 }
