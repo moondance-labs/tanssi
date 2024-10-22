@@ -38,7 +38,7 @@ use {
     sp_runtime::RuntimeDebug,
     sp_staking::SessionIndex,
     sp_std::vec::Vec,
-    tp_traits::{ActiveEraInfo, EraIndexProvider, ValidatorProvider},
+    tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider, ValidatorProvider},
 };
 
 #[cfg(test)]
@@ -125,6 +125,9 @@ pub mod pallet {
         #[pallet::constant]
         type SessionsPerEra: Get<SessionIndex>;
 
+        type OnEraStart: OnEraStart;
+        type OnEraEnd: OnEraEnd;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
@@ -200,6 +203,8 @@ pub mod pallet {
         WhitelistedValidatorAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
         WhitelistedValidatorRemoved { account_id: T::AccountId },
+        /// A new era has started.
+        NewEra { era: EraIndex },
         /// A new force era mode was set.
         ForceEra { mode: Forcing },
     }
@@ -382,6 +387,9 @@ pub mod pallet {
 
                 let q = q.as_mut().unwrap();
                 q.index += 1;
+
+                Self::deposit_event(Event::NewEra { era: q.index });
+
                 // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
                 q.start = None;
             });

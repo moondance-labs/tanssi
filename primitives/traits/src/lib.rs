@@ -474,3 +474,15 @@ pub trait EraIndexProvider {
 pub trait ValidatorProvider<ValidatorId> {
     fn validators() -> Vec<ValidatorId>;
 }
+
+pub trait OnEraStart {
+    fn on_era_start() {}
+}
+
+impl OnEraStart for () {}
+
+pub trait OnEraEnd {
+    fn on_era_end() {}
+}
+
+impl OnEraEnd for () {}

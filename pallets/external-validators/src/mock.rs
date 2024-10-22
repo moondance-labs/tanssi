@@ -135,6 +135,8 @@ impl Config for Test {
     type ValidatorRegistration = IsRegistered;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
+    type OnEraStart = ();
+    type OnEraEnd = ();
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
