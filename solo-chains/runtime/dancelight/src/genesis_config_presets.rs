@@ -38,7 +38,7 @@ use {
     },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
-    sp_std::{vec, vec::Vec},
+    sp_std::{vec, vec::Vec, cmp::max},
     tp_traits::ParaId,
 };
 
@@ -313,8 +313,13 @@ fn dancelight_testnet_genesis(
             .max_parachain_cores_percentage
             .unwrap_or(Perbill::from_percent(50)),
     );
-    let num_cores =
-        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32);
+
+    // don't go below 4 cores
+    let num_cores = max(
+        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32),
+        4
+    );
+
     // Initialize nextFreeParaId to a para id that is greater than all registered para ids.
     // This is needed for Registrar::reserve.
     let max_para_id = para_ids
