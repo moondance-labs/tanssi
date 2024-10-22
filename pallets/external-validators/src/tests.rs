@@ -162,7 +162,7 @@ fn whitelisted_and_external_order() {
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
-        let validators = ExternalValidators::new_session(2);
+        let validators = ExternalValidators::new_session(6);
         assert_eq!(validators, Some(vec![1, 2, 50, 51]));
     });
 }
@@ -202,7 +202,7 @@ fn validator_provider_returns_all_validators() {
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
-        let validators_new_session = ExternalValidators::new_session(2);
+        let validators_new_session = ExternalValidators::new_session(6);
         let validators_provider = <ExternalValidators as ValidatorProvider<u64>>::validators();
         assert_eq!(validators_new_session, Some(validators_provider));
     });
@@ -219,7 +219,7 @@ fn can_skip_external_validators() {
             true
         ));
 
-        let validators = ExternalValidators::new_session(2);
+        let validators = ExternalValidators::new_session(6);
         assert_eq!(validators, Some(vec![1, 2]));
     });
 }

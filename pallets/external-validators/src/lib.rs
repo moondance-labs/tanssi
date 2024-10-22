@@ -38,7 +38,9 @@ use {
     sp_runtime::RuntimeDebug,
     sp_staking::SessionIndex,
     sp_std::vec::Vec,
-    tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider, ValidatorProvider},
+    tp_traits::{
+        ActiveEraInfo, EraIndex, EraIndexProvider, OnEraEnd, OnEraStart, ValidatorProvider,
+    },
 };
 
 #[cfg(test)]
@@ -315,9 +317,8 @@ pub mod pallet {
         /// ## Complexity
         /// - No arguments.
         /// - Weight: O(1)
-        #[pallet::call_index(12)]
-        //#[pallet::weight(T::WeightInfo::force_no_eras())]
-        #[pallet::weight(0)]
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::force_no_eras())]
         pub fn force_no_eras(origin: OriginFor<T>) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             Self::set_force_era(Forcing::ForceNone);
@@ -338,9 +339,8 @@ pub mod pallet {
         /// ## Complexity
         /// - No arguments.
         /// - Weight: O(1)
-        #[pallet::call_index(13)]
-        //#[pallet::weight(T::WeightInfo::force_new_era())]
-        #[pallet::weight(0)]
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::force_new_era())]
         pub fn force_new_era(origin: OriginFor<T>) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             Self::set_force_era(Forcing::ForceNew);
@@ -356,9 +356,8 @@ pub mod pallet {
         /// The election process starts multiple blocks before the end of the era.
         /// If this is called just before a new era is triggered, the election process may not
         /// have enough blocks to get a result.
-        #[pallet::call_index(16)]
-        //#[pallet::weight(T::WeightInfo::force_new_era_always())]
-        #[pallet::weight(0)]
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::force_new_era_always())]
         pub fn force_new_era_always(origin: OriginFor<T>) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             Self::set_force_era(Forcing::ForceAlways);
@@ -480,6 +479,8 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
 
         Self::increase_era(new_index);
 
+        T::OnEraStart::on_era_start();
+
         let validators: Vec<_> = Self::validators();
 
         frame_system::Pallet::<T>::register_extra_weight_unchecked(
@@ -490,7 +491,36 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
         Some(validators)
     }
 
-    fn end_session(_: SessionIndex) {}
+    fn end_session(index: SessionIndex) {
+        let new_index = index.saturating_add(1);
+
+        if new_index <= 1 {
+            return;
+        }
+
+        let new_era = match <ForceEra<T>>::get() {
+            Forcing::NotForcing => {
+                // If enough sessions have elapsed, start new era
+                let start_session = <EraSessionStart<T>>::get();
+                let current_session = new_index;
+
+                if current_session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
+                    true
+                } else {
+                    false
+                }
+            }
+            Forcing::ForceNew => true,
+            Forcing::ForceNone => false,
+            Forcing::ForceAlways => true,
+        };
+
+        if !new_era {
+            return;
+        }
+
+        T::OnEraEnd::on_era_end();
+    }
 
     fn start_session(_start_index: SessionIndex) {}
 }

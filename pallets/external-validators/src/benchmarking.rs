@@ -28,7 +28,7 @@ use {
     },
     frame_system::{EventRecord, RawOrigin},
     pallet_session::{self as session, SessionManager},
-    sp_runtime::traits::AtLeast32BitUnsigned,
+    sp_runtime::traits::{AtLeast32BitUnsigned, Convert},
     sp_std::prelude::*,
     tp_traits::DistributeRewards,
 };
@@ -103,19 +103,8 @@ fn invulnerables<
         .collect()
 }
 
-pub type BalanceOf<T> =
-    <<T as crate::Config>::Currency as frame_support::traits::fungible::Inspect<
-        <T as frame_system::Config>::AccountId,
-    >>::Balance;
-
-pub(crate) fn currency_issue<T: Config + frame_system::Config>(
-    amount: BalanceOf<T>,
-) -> crate::CreditOf<T, T::Currency> {
-    <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
-}
-
 #[allow(clippy::multiple_bound_locations)]
-#[benchmarks(where T: session::Config + pallet_balances::Config, BalanceOf<T>: AtLeast32BitUnsigned)]
+#[benchmarks(where T: session::Config + pallet_balances::Config)]
 mod benchmarks {
     use super::*;
 
@@ -196,6 +185,39 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn force_no_eras() -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
+        #[extrinsic_call]
+        _(origin as T::RuntimeOrigin);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn force_new_era() -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
+        #[extrinsic_call]
+        _(origin as T::RuntimeOrigin);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn force_new_era_always() -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
+        #[extrinsic_call]
+        _(origin as T::RuntimeOrigin);
+
+        Ok(())
+    }
+
     // worst case for new session.
     #[benchmark]
     fn new_session(
@@ -219,38 +241,16 @@ mod benchmarks {
                 .expect("add invulnerable failed");
         }
 
+        let new_era_session = T::SessionsPerEra::get();
+
         #[block]
         {
-            <InvulnerablesPallet<T> as SessionManager<_>>::new_session(0);
+            <InvulnerablesPallet<T> as SessionManager<_>>::new_session(new_era_session);
         }
 
         Ok(())
     }
 
-    #[benchmark]
-    fn reward_validator(
-        b: Linear<{ 1 }, { T::MaxWhitelistedValidators::get() }>,
-    ) -> Result<(), BenchmarkError> where {
-        let invulnerables = invulnerables::<T>(b);
-
-        let (account_ids, collator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
-            invulnerables.into_iter().unzip();
-
-        let invulnerables: frame_support::BoundedVec<_, T::MaxWhitelistedValidators> =
-            frame_support::BoundedVec::try_from(collator_ids).unwrap();
-        <WhitelistedValidators<T>>::put(invulnerables);
-        let to_reward = account_ids.first().unwrap().clone();
-        // Create new supply for rewards
-        let new_supply = currency_issue::<T>(1000u32.into());
-        #[block]
-        {
-            let _ = InvulnerableRewardDistribution::<T, T::Currency, ()>::distribute_rewards(
-                to_reward, new_supply,
-            );
-        }
-
-        Ok(())
-    }
     impl_benchmark_test_suite!(
         InvulnerablesPallet,
         crate::mock::new_test_ext(),
