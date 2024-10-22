@@ -16,6 +16,7 @@
 
 #![cfg(test)]
 
+use std::collections::HashMap;
 use crate::ExternalValidators;
 use frame_support::traits::fungible::Mutate;
 use {crate::tests::common::*, frame_support::assert_ok, sp_std::vec};
@@ -34,10 +35,7 @@ fn validators_only_change_once_per_era() {
         .execute_with(|| {
             run_to_block(2);
 
-            // session 5 validators: ALICE, BOB
-            // session 6 validators: ALICE, BOB, 0x0f
-            // session 7 validators: ALICE, BOB, 0x0f
-            // session 12 validators: ALICE, BOB, 0x15
+            let mut session_validators = HashMap::new();
 
             for session in 1u32..=13 {
                 let mock_validator = AccountId::from([10u8 + session as u8; 32]);
@@ -62,9 +60,19 @@ fn validators_only_change_once_per_era() {
 
                 run_to_session(session);
                 let validators = Session::validators();
-                println!("session {} validators: {:?}", session, validators);
+                session_validators.insert(session, validators);
             }
 
-            todo!();
+            // 1 era = 6 sessions
+            // session_range => validators
+            // [0, 5] => Alice, Bob
+            // [6, 11] => Alice, Bob, 0x0f
+            // [12, ..] => Alice, Bob, 0x15
+            assert_eq!(session_validators[&5], vec![AccountId::from(ALICE), AccountId::from(BOB)]);
+            assert_eq!(session_validators[&6], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x0f; 32])]);
+            // TODO: if compiling with fast-runtime, this line will fail because 1 era = 3 sessions, so instead of
+            // validator 0x0f you will see 0x12
+            assert_eq!(session_validators[&11], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x0f; 32])]);
+            assert_eq!(session_validators[&12], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x15; 32])]);
         });
 }
