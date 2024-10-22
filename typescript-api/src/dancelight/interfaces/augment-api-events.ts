@@ -19,6 +19,7 @@ import type {
     FrameSupportPreimagesBounded,
     FrameSupportTokensMiscBalanceStatus,
     PalletConvictionVotingTally,
+    PalletExternalValidatorsForcing,
     PalletMultisigTimepoint,
     PalletRankedCollectiveTally,
     PalletRankedCollectiveVoteRecord,
@@ -212,6 +213,14 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         externalValidators: {
+            /** A new force era mode was set. */
+            ForceEra: AugmentedEvent<
+                ApiType,
+                [mode: PalletExternalValidatorsForcing],
+                { mode: PalletExternalValidatorsForcing }
+            >;
+            /** A new era has started. */
+            NewEra: AugmentedEvent<ApiType, [era: u32], { era: u32 }>;
             /** A new Invulnerable was added. */
             WhitelistedValidatorAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** An Invulnerable was removed. */

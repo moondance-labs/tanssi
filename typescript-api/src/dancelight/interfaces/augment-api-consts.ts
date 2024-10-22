@@ -138,6 +138,8 @@ declare module "@polkadot/api-base/types/consts" {
             maxExternalValidators: u32 & AugmentedConst<ApiType>;
             /** Maximum number of whitelisted validators. */
             maxWhitelistedValidators: u32 & AugmentedConst<ApiType>;
+            /** Number of sessions per era. */
+            sessionsPerEra: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

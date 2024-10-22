@@ -47,6 +47,7 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
+    PalletExternalValidatorsForcing,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
     PalletIdentityAuthorityProperties,
@@ -661,16 +662,21 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         externalValidators: {
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** The active era information, it holds index and start. */
             activeEra: AugmentedQuery<ApiType, () => Observable<Option<TpTraitsActiveEraInfo>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** Session index at the start of this era. Used to know when to start the next era. */
+            eraSessionStart: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true. */
             externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** Mode of era forcing. */
+            forceEra: AugmentedQuery<ApiType, () => Observable<PalletExternalValidatorsForcing>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Allow to disable external validators. */
             skipExternalValidators: AugmentedQuery<ApiType, () => Observable<bool>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** Fixed validators set by root/governance. Have priority over the external validators. */
             whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */

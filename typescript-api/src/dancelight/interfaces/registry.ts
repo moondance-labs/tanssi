@@ -114,6 +114,7 @@ import type {
     PalletExternalValidatorsCall,
     PalletExternalValidatorsError,
     PalletExternalValidatorsEvent,
+    PalletExternalValidatorsForcing,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -566,6 +567,7 @@ declare module "@polkadot/types/types/registry" {
         PalletExternalValidatorsCall: PalletExternalValidatorsCall;
         PalletExternalValidatorsError: PalletExternalValidatorsError;
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
+        PalletExternalValidatorsForcing: PalletExternalValidatorsForcing;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
