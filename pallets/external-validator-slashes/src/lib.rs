@@ -219,7 +219,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             let active_era = T::EraIndexProvider::active_era().index;
-            ensure!(era < active_era, Error::<T>::ProvidedFutureEra);
+            ensure!(era <= active_era, Error::<T>::ProvidedFutureEra);
 
             let window_start = active_era.saturating_sub(T::BondingDuration::get());
             ensure!(era >= window_start, Error::<T>::ProvidedNonSlashableEra);

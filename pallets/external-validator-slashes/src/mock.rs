@@ -28,6 +28,8 @@ use {
         BuildStorage,
     },
     sp_staking::SessionIndex,
+    sp_std::cell::RefCell,
+    tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -108,6 +110,27 @@ parameter_types! {
     pub const Offset: u64 = 0;
 }
 
+pub struct MockEraIndexProvider;
+
+thread_local! {
+    pub static ERA_INDEX: RefCell<EraIndex> = const { RefCell::new(0) };
+}
+
+impl MockEraIndexProvider {
+    pub fn with_era(era_index: EraIndex) {
+        ERA_INDEX.with(|r| *r.borrow_mut() = era_index);
+    }
+}
+
+impl EraIndexProvider for MockEraIndexProvider {
+    fn active_era() -> ActiveEraInfo {
+        ActiveEraInfo {
+            index: ERA_INDEX.with(|q| (*q.borrow()).clone()),
+            start: None,
+        }
+    }
+}
+
 impl pallet_session::Config for Test {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Test, TestSessionManager>;
     type Keys = SessionKeys;
@@ -157,6 +180,7 @@ impl external_validator_info::Config for Test {
     type BondingDuration = BondingDuration;
     type SlashId = u32;
     type SessionInterface = ();
+    type EraIndexProvider = MockEraIndexProvider;
 }
 
 pub struct FullIdentificationOf;

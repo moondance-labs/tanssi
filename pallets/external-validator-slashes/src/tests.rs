@@ -21,27 +21,9 @@ use {
 };
 
 #[test]
-fn cannot_inject_offence_if_era_info_is_not_there() {
-    new_test_ext().execute_with(|| {
-        assert_noop!(
-            ExternalValidatorSlashes::force_inject_slash(
-                RuntimeOrigin::root(),
-                1,
-                1u64,
-                Perbill::from_percent(75)
-            ),
-            Error::<Test>::ActiveEraNotSet
-        );
-    });
-}
-
-#[test]
 fn root_can_inject_manual_offence() {
     new_test_ext().execute_with(|| {
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 1,
-            start: Some(0u64),
-        });
+        start_era(0, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -65,10 +47,7 @@ fn root_can_inject_manual_offence() {
 #[test]
 fn cannot_inject_future_era_offence() {
     new_test_ext().execute_with(|| {
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 0,
-            start: Some(0u64),
-        });
+        start_era(0, 0);
         assert_noop!(
             ExternalValidatorSlashes::force_inject_slash(
                 RuntimeOrigin::root(),
@@ -84,10 +63,7 @@ fn cannot_inject_future_era_offence() {
 #[test]
 fn cannot_inject_era_offence_too_far_in_the_past() {
     new_test_ext().execute_with(|| {
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 10,
-            start: Some(0u64),
-        });
+        start_era(10, 0);
         //Bonding period is 5, we cannot inject slash for era 4
         assert_noop!(
             ExternalValidatorSlashes::force_inject_slash(
@@ -104,10 +80,7 @@ fn cannot_inject_era_offence_too_far_in_the_past() {
 #[test]
 fn root_can_cance_deferred_slash() {
     new_test_ext().execute_with(|| {
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 1,
-            start: Some(0u64),
-        });
+        start_era(1, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -127,10 +100,7 @@ fn root_can_cance_deferred_slash() {
 #[test]
 fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
     new_test_ext().execute_with(|| {
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 1,
-            start: Some(0u64),
-        });
+        start_era(1, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -138,10 +108,7 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
             Perbill::from_percent(75)
         ));
 
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 4,
-            start: Some(0u64),
-        });
+        start_era(4, 0);
 
         assert_noop!(
             ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
@@ -153,8 +120,8 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
 #[test]
 fn test_after_bonding_period_we_can_remove_slashes() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::on_era_start(0, 0);
-        Pallet::<Test>::on_era_start(1, 1);
+        start_era(0, 0);
+        start_era(1, 1);
 
         // we are storing a tuple (era index, start_session_block)
         assert_eq!(BondedEras::<Test>::get(), [(0, 0), (1, 1)]);
@@ -176,10 +143,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
             }]
         );
 
-        ActiveEra::<Test>::put(ActiveEraInfo {
-            index: 5,
-            start: Some(0u64),
-        });
+        start_era(5, 5);
 
         // whenever we start the 6th era, we can remove everything from era 0
         Pallet::<Test>::on_era_start(6, 6);
@@ -191,8 +155,8 @@ fn test_after_bonding_period_we_can_remove_slashes() {
 #[test]
 fn test_on_offence_injects_offences() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::on_era_start(0, 0);
-        Pallet::<Test>::on_era_start(1, 1);
+        start_era(0, 0);
+        start_era(1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 offender: (1, ()),
@@ -222,8 +186,8 @@ fn test_on_offence_injects_offences() {
 #[test]
 fn test_on_offence_does_not_work_for_invulnerables() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::on_era_start(0, 0);
-        Pallet::<Test>::on_era_start(1, 1);
+        start_era(0, 0);
+        start_era(1, 1);
         // account 1 invulnerable
         Invulnerables::<Test>::put(vec![1]);
         Pallet::<Test>::on_offence(
@@ -241,4 +205,9 @@ fn test_on_offence_does_not_work_for_invulnerables() {
 
         assert_eq!(Slashes::<Test>::get(slash_era), vec![]);
     });
+}
+
+fn start_era(era_index: EraIndex, session_index: SessionIndex) {
+    Pallet::<Test>::on_era_start(era_index, session_index);
+    crate::mock::MockEraIndexProvider::with_era(era_index);
 }
