@@ -16,7 +16,7 @@
 
 use {
     super::*,
-    crate::mock::{new_test_ext, ExternalValidatorInfo, RuntimeOrigin, Test},
+    crate::mock::{new_test_ext, ExternalValidatorSlashes, RuntimeOrigin, Test},
     frame_support::{assert_noop, assert_ok},
 };
 
@@ -24,7 +24,7 @@ use {
 fn cannot_inject_offence_if_era_info_is_not_there() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            ExternalValidatorInfo::force_inject_slash(
+            ExternalValidatorSlashes::force_inject_slash(
                 RuntimeOrigin::root(),
                 1,
                 1u64,
@@ -42,7 +42,7 @@ fn root_can_inject_manual_offence() {
             index: 1,
             start: Some(0u64),
         });
-        assert_ok!(ExternalValidatorInfo::force_inject_slash(
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
             1u64,
@@ -70,7 +70,7 @@ fn cannot_inject_future_era_offence() {
             start: Some(0u64),
         });
         assert_noop!(
-            ExternalValidatorInfo::force_inject_slash(
+            ExternalValidatorSlashes::force_inject_slash(
                 RuntimeOrigin::root(),
                 1,
                 1u64,
@@ -90,7 +90,7 @@ fn cannot_inject_era_offence_too_far_in_the_past() {
         });
         //Bonding period is 5, we cannot inject slash for era 4
         assert_noop!(
-            ExternalValidatorInfo::force_inject_slash(
+            ExternalValidatorSlashes::force_inject_slash(
                 RuntimeOrigin::root(),
                 1,
                 4u64,
@@ -108,13 +108,13 @@ fn root_can_cance_deferred_slash() {
             index: 1,
             start: Some(0u64),
         });
-        assert_ok!(ExternalValidatorInfo::force_inject_slash(
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
             1u64,
             Perbill::from_percent(75)
         ));
-        assert_ok!(ExternalValidatorInfo::cancel_deferred_slash(
+        assert_ok!(ExternalValidatorSlashes::cancel_deferred_slash(
             RuntimeOrigin::root(),
             0,
             vec![0]
@@ -131,7 +131,7 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
             index: 1,
             start: Some(0u64),
         });
-        assert_ok!(ExternalValidatorInfo::force_inject_slash(
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
             1u64,
@@ -144,8 +144,62 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
         });
 
         assert_noop!(
-            ExternalValidatorInfo::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
+            ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
             Error::<Test>::DeferPeriodIsOver
+        );
+    });
+}
+
+#[test]
+fn test_after_bonding_period_we_can_remove_slashes() {
+    new_test_ext().execute_with(|| {
+        Pallet::<Test>::start_era(0);
+        Pallet::<Test>::start_era(1);
+
+        // we are storing a tuple (era index, start_session_block)
+        assert_eq!(BondedEras::<Test>::get(), [(0,0), (1,1)]);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75)
+        ));
+
+        assert_eq!(
+            Slashes::<Test>::get(0),
+            vec![Slash {
+                validator: 1,
+                percentage: Perbill::from_percent(75),
+                confirmed: false,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
+
+        ActiveEra::<Test>::put(ActiveEraInfo {
+            index: 5,
+            start: Some(0u64),
+        });
+
+        // whenever we start the 6th era, we can remove everything from era 0
+        Pallet::<Test>::start_era(6);
+
+        assert_eq!(
+            Slashes::<Test>::get(0),
+            vec![]
+        );
+    });
+}
+
+#[test]
+fn test_on_offence_injects_offences() {
+    new_test_ext().execute_with(|| {
+        Pallet::<Test>::start_era(0);
+        Pallet::<Test>::start_era(1);
+        Pallet::<Test>::on_offence(
+            &[OffenceDetails { offender: (11, ()), reporters: vec![] }],
+            &[Perbill::from_percent(75)],
+            0
         );
     });
 }

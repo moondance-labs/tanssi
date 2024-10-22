@@ -9348,7 +9348,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-external-validator-info"
+name = "pallet-external-validator-slashes"
 version = "0.1.0"
 dependencies = [
  "bounded-collections 0.1.9",

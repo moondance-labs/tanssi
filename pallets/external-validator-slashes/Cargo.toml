@@ -1,7 +1,7 @@
 [package]
-name = "pallet-external-validator-info"
+name = "pallet-external-validator-slashes"
 authors = { workspace = true }
-description = "External validator info pallet"
+description = "External validator info slashes"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"

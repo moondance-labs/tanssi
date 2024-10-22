@@ -414,6 +414,7 @@ impl<T: Config> Pallet<T> {
                     .take_while(|&&(era_idx, _)| era_idx < first_kept)
                     .count();
 
+
                 // Kill slashing metadata.
                 for (pruned_era, _) in bonded.drain(..n_to_prune) {
                     #[allow(deprecated)]
