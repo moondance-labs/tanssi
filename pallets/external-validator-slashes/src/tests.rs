@@ -153,8 +153,8 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
 #[test]
 fn test_after_bonding_period_we_can_remove_slashes() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::start_era(0);
-        Pallet::<Test>::start_era(1);
+        Pallet::<Test>::on_era_start(0, 0);
+        Pallet::<Test>::on_era_start(1, 1);
 
         // we are storing a tuple (era index, start_session_block)
         assert_eq!(BondedEras::<Test>::get(), [(0, 0), (1, 1)]);
@@ -182,7 +182,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         });
 
         // whenever we start the 6th era, we can remove everything from era 0
-        Pallet::<Test>::start_era(6);
+        Pallet::<Test>::on_era_start(6, 6);
 
         assert_eq!(Slashes::<Test>::get(0), vec![]);
     });
@@ -191,8 +191,8 @@ fn test_after_bonding_period_we_can_remove_slashes() {
 #[test]
 fn test_on_offence_injects_offences() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::start_era(0);
-        Pallet::<Test>::start_era(1);
+        Pallet::<Test>::on_era_start(0, 0);
+        Pallet::<Test>::on_era_start(1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 offender: (1, ()),
@@ -222,8 +222,8 @@ fn test_on_offence_injects_offences() {
 #[test]
 fn test_on_offence_does_not_work_for_invulnerables() {
     new_test_ext().execute_with(|| {
-        Pallet::<Test>::start_era(0);
-        Pallet::<Test>::start_era(1);
+        Pallet::<Test>::on_era_start(0, 0);
+        Pallet::<Test>::on_era_start(1, 1);
         // account 1 invulnerable
         Invulnerables::<Test>::put(vec![1]);
         Pallet::<Test>::on_offence(

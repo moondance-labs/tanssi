@@ -44,6 +44,7 @@ use {
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
+    tp_traits::{EraIndexProvider, OnEraEnd, OnEraStart},
 };
 
 pub use pallet::*;
@@ -53,18 +54,6 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-
-/// Information regarding the active era (era in used in session).
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct ActiveEraInfo {
-    /// Index of era.
-    pub index: EraIndex,
-    /// Moment of start expressed as millisecond from `$UNIX_EPOCH`.
-    ///
-    /// Start can be none if start hasn't been set for the era yet,
-    /// Start is set on the first on_finalize of the era to guarantee usage of `Time`.
-    pub start: Option<u64>,
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -123,6 +112,8 @@ pub mod pallet {
 
         /// Interface for interacting with a session pallet.
         type SessionInterface: SessionInterface<Self::AccountId>;
+
+        type EraIndexProvider: EraIndexProvider;
     }
 
     #[pallet::error]
@@ -179,14 +170,6 @@ pub mod pallet {
     #[pallet::unbounded]
     pub type Invulnerables<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
-    /// The active era information, it holds index and start.
-    ///
-    /// The active era is the era being currently rewarded. Validator set of this era must be
-    /// equal to [`SessionInterface::validators`].
-    #[pallet::storage]
-    #[pallet::getter(fn active_era)]
-    pub type ActiveEra<T> = StorageValue<_, ActiveEraInfo>;
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -198,7 +181,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            let active_era = Self::active_era().ok_or(Error::<T>::ActiveEraNotSet)?.index;
+            let active_era = T::EraIndexProvider::active_era().index;
             ensure!(
                 era >= active_era.saturating_sub(T::SlashDeferDuration::get()),
                 Error::<T>::DeferPeriodIsOver
@@ -235,7 +218,7 @@ pub mod pallet {
             percentage: Perbill,
         ) -> DispatchResult {
             ensure_root(origin)?;
-            let active_era = Self::active_era().ok_or(Error::<T>::ActiveEraNotSet)?.index;
+            let active_era = T::EraIndexProvider::active_era().index;
             ensure!(era < active_era, Error::<T>::ProvidedFutureEra);
 
             let window_start = active_era.saturating_sub(T::BondingDuration::get());
@@ -289,15 +272,9 @@ where
         };
 
         let active_era = {
-            let active_era = Self::active_era();
+            let active_era = T::EraIndexProvider::active_era().index;
             add_db_reads_writes(1, 0);
-            if active_era.is_none() {
-                // This offence need not be re-submitted.
-                return consumed_weight;
-            }
             active_era
-                .expect("value checked not to be `None`; qed")
-                .index
         };
         let active_era_start_session_index = Self::eras_start_session_index(active_era)
             .unwrap_or_else(|| {
@@ -385,29 +362,15 @@ where
     }
 }
 
-impl<T: Config> Pallet<T> {
-    /// Start a new era. It does:
-    /// * Increment `active_era.index`,
-    /// * reset `active_era.start`,
-    /// * update `BondedEras` and apply slashes.
-    fn start_era(start_session: SessionIndex) {
-        let active_era = ActiveEra::<T>::mutate(|active_era| {
-            let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
-            *active_era = Some(ActiveEraInfo {
-                index: new_index,
-                // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
-                start: None,
-            });
-            new_index
-        });
-
+impl<T: Config> OnEraStart for Pallet<T> {
+    fn on_era_start(era_index: EraIndex, session_start: SessionIndex) {
         let bonding_duration = T::BondingDuration::get();
 
         BondedEras::<T>::mutate(|bonded| {
-            bonded.push((active_era, start_session));
+            bonded.push((era_index, session_start));
 
-            if active_era > bonding_duration {
-                let first_kept = active_era.defensive_saturating_sub(bonding_duration);
+            if era_index > bonding_duration {
+                let first_kept = era_index.defensive_saturating_sub(bonding_duration);
 
                 // Prune out everything that's from before the first-kept index.
                 let n_to_prune = bonded
@@ -429,11 +392,13 @@ impl<T: Config> Pallet<T> {
             }
         });
 
-        ErasStartSessionIndex::<T>::insert(&active_era, &start_session);
+        ErasStartSessionIndex::<T>::insert(&era_index, &session_start);
 
-        Self::confirm_unconfirmed_slashes(active_era);
+        Self::confirm_unconfirmed_slashes(era_index);
     }
+}
 
+impl<T: Config> Pallet<T> {
     /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
     fn confirm_unconfirmed_slashes(active_era: EraIndex) {
         let mut era_slashes = Slashes::<T>::take(&active_era);
