@@ -479,10 +479,20 @@ pub trait OnEraStart {
     fn on_era_start(_era_index: EraIndex, _session_start: u32) {}
 }
 
-impl OnEraStart for () {}
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl OnEraStart for Tuple {
+    fn on_era_start(era_index: EraIndex, session_start: u32) {
+        for_tuples!( #( Tuple::on_era_start(era_index, session_start); )* );
+    }
+}
 
 pub trait OnEraEnd {
     fn on_era_end(_era_index: EraIndex) {}
 }
 
-impl OnEraEnd for () {}
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl OnEraEnd for Tuple {
+    fn on_era_end(era_index: EraIndex) {
+        for_tuples!( #( Tuple::on_era_end(era_index); )* );
+    }
+}
