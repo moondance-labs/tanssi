@@ -1192,3 +1192,13 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         "profile should be correctly assigned"
     );
 }
+use milagro_bls::Keypair;
+pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
+    let mut keys = vec![];
+
+    for _i in 0..n {
+        let keypair = Keypair::random(&mut rand::thread_rng());
+        keys.push(keypair);
+    }
+    keys
+}

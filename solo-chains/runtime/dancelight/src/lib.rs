@@ -143,6 +143,8 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 // XCM configurations.
 pub mod xcm_config;
 
+pub mod bridge_to_ethereum_config;
+
 // Weights
 mod weights;
 
@@ -1579,9 +1581,10 @@ construct_runtime! {
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
         // MMR leaf construction must be after session in order to have a leaf's next_auth_set
-        // refer to block<N>. See issue polkadot-fellows/runtimes#160 for details.
+        // refer to block<N>.
         Mmr: pallet_mmr = 241,
         MmrLeaf: pallet_beefy_mmr = 242,
+        EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
 
@@ -1909,6 +1912,9 @@ mod benches {
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
+        // Bridges
+        [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
     );
 }
 

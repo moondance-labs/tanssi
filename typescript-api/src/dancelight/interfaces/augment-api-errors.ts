@@ -191,6 +191,44 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumBeaconClient: {
+            BlockBodyHashTreeRootFailed: AugmentedError<ApiType>;
+            BLSPreparePublicKeysFailed: AugmentedError<ApiType>;
+            BLSVerificationFailed: AugmentedError<ApiType>;
+            ExecutionHeaderSkippedBlock: AugmentedError<ApiType>;
+            ExecutionHeaderTooFarBehind: AugmentedError<ApiType>;
+            ExpectedFinalizedHeaderNotStored: AugmentedError<ApiType>;
+            ForkDataHashTreeRootFailed: AugmentedError<ApiType>;
+            Halted: AugmentedError<ApiType>;
+            HeaderHashTreeRootFailed: AugmentedError<ApiType>;
+            HeaderNotFinalized: AugmentedError<ApiType>;
+            InvalidAncestryMerkleProof: AugmentedError<ApiType>;
+            InvalidBlockRootsRootMerkleProof: AugmentedError<ApiType>;
+            InvalidExecutionHeaderProof: AugmentedError<ApiType>;
+            /**
+             * The gap between the finalized headers is larger than the sync committee period, rendering execution headers
+             * unprovable using ancestry proofs (blocks root size is the same as the sync committee period slots).
+             */
+            InvalidFinalizedHeaderGap: AugmentedError<ApiType>;
+            InvalidHeaderMerkleProof: AugmentedError<ApiType>;
+            InvalidSyncCommitteeMerkleProof: AugmentedError<ApiType>;
+            /**
+             * The given update is not in the expected period, or the given next sync committee does not match the next sync
+             * committee in storage.
+             */
+            InvalidSyncCommitteeUpdate: AugmentedError<ApiType>;
+            InvalidUpdateSlot: AugmentedError<ApiType>;
+            /** Attested header is older than latest finalized header. */
+            IrrelevantUpdate: AugmentedError<ApiType>;
+            NotBootstrapped: AugmentedError<ApiType>;
+            SigningRootHashTreeRootFailed: AugmentedError<ApiType>;
+            SkippedSyncCommitteePeriod: AugmentedError<ApiType>;
+            SyncCommitteeHashTreeRootFailed: AugmentedError<ApiType>;
+            SyncCommitteeParticipantsNotSupermajority: AugmentedError<ApiType>;
+            SyncCommitteeUpdateRequired: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         fellowshipCollective: {
             /** Account is already a member. */
             AlreadyMember: AugmentedError<ApiType>;
