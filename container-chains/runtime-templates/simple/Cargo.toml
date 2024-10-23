@@ -144,6 +144,7 @@ std = [
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-multisig/std",
+	"pallet-ocw-simple/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
 	"pallet-session/std",
@@ -184,7 +185,6 @@ std = [
 	"tanssi-runtime-common/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
-	"pallet-ocw-simple/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -252,6 +252,7 @@ try-runtime = [
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
+	"pallet-ocw-simple/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
@@ -266,5 +267,4 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"pallet-ocw-simple/try-runtime",
 ]
