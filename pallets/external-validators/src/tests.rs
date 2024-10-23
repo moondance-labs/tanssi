@@ -223,3 +223,51 @@ fn can_skip_external_validators() {
         assert_eq!(validators, Some(vec![1, 2]));
     });
 }
+
+#[test]
+fn duplicate_validators_are_deduplicated() {
+    new_test_ext().execute_with(|| {
+        initialize_to_block(1);
+        assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
+        assert_ok!(ExternalValidators::set_external_validators(vec![2]));
+
+        let validators = ExternalValidators::new_session(6);
+        assert_eq!(validators, Some(vec![1, 2]));
+    });
+}
+
+#[test]
+fn duplicate_validator_order_is_preserved() {
+    new_test_ext().execute_with(|| {
+        initialize_to_block(1);
+        // Whitelisted validators have priority, so their ordering should be respected
+        // Need to manually remove and add each whitelisted because there is no "set_whitelisted"
+        assert_ok!(ExternalValidators::remove_whitelisted(
+            RuntimeOrigin::signed(RootAccount::get()),
+            1
+        ));
+        assert_ok!(ExternalValidators::remove_whitelisted(
+            RuntimeOrigin::signed(RootAccount::get()),
+            2
+        ));
+        assert_ok!(ExternalValidators::add_whitelisted(
+            RuntimeOrigin::signed(RootAccount::get()),
+            3
+        ));
+        assert_ok!(ExternalValidators::add_whitelisted(
+            RuntimeOrigin::signed(RootAccount::get()),
+            1
+        ));
+        assert_ok!(ExternalValidators::add_whitelisted(
+            RuntimeOrigin::signed(RootAccount::get()),
+            2
+        ));
+        assert_eq!(ExternalValidators::whitelisted_validators(), vec![3, 1, 2]);
+        assert_ok!(ExternalValidators::set_external_validators(vec![
+            3, 2, 1, 4
+        ]));
+
+        let validators = ExternalValidators::new_session(6);
+        assert_eq!(validators, Some(vec![3, 1, 2, 4]));
+    });
+}

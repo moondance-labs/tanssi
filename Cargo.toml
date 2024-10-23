@@ -325,6 +325,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 
 # General (wasm)
 bounded-collections = { version = "0.1.8", default-features = false }
+finality-grandpa = { version = "0.16.2", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
 impls = "1.0.3"

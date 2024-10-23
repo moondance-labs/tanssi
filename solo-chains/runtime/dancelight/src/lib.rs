@@ -1211,8 +1211,8 @@ parameter_types! {
 impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
-    type MaxWhitelistedValidators = MaxInvulnerables;
-    type MaxExternalValidators = MaxInvulnerables;
+    type MaxWhitelistedValidators = MaxWhitelistedValidators;
+    type MaxExternalValidators = MaxExternalValidators;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
     type ValidatorRegistration = Session;
@@ -1260,6 +1260,8 @@ impl pallet_asset_rate::Config for Runtime {
 
 parameter_types! {
     pub const MaxInvulnerables: u32 = 100;
+    pub const MaxWhitelistedValidators: u32 = 100;
+    pub const MaxExternalValidators: u32 = 100;
 }
 
 impl pallet_invulnerables::Config for Runtime {
@@ -1623,7 +1625,6 @@ construct_runtime! {
         EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
-
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,

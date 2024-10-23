@@ -145,6 +145,7 @@ snowbridge-beacon-primitives = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
 
 [dev-dependencies]
+finality-grandpa = { features = ["derive-codec"], workspace = true, default-features = true }
 keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }

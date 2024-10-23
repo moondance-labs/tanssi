@@ -32,6 +32,7 @@ mod relay_configuration;
 mod relay_registrar;
 mod services_payment;
 mod session_keys;
+mod slashes;
 mod sudo;
 
 #[test]

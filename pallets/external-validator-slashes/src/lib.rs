@@ -134,11 +134,13 @@ pub mod pallet {
         StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn next_slash_id)]
     pub type NextSlashId<T: Config> = StorageValue<_, T::SlashId, ValueQuery>;
 
     /// All unapplied slashes that are queued for later.
     #[pallet::storage]
     #[pallet::unbounded]
+    #[pallet::getter(fn slashes)]
     pub type Slashes<T: Config> =
         StorageMap<_, Twox64Concat, EraIndex, Vec<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
 
@@ -408,14 +410,14 @@ impl<T: Config> Pallet<T> {
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
 pub struct Slash<AccountId, SlashId> {
     /// The stash ID of the offending validator.
-    validator: AccountId,
+    pub validator: AccountId,
     /// Reporters of the offence; bounty payout recipients.
-    reporters: Vec<AccountId>,
+    pub reporters: Vec<AccountId>,
     /// The amount of payout.
-    slash_id: SlashId,
-    percentage: Perbill,
+    pub slash_id: SlashId,
+    pub percentage: Perbill,
     // Whether the slash is confirmed or still needs to go through deferred period
-    confirmed: bool,
+    pub confirmed: bool,
 }
 
 /// Computes a slash of a validator and nominators. It returns an unapplied
