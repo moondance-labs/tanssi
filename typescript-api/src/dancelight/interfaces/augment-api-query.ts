@@ -665,8 +665,14 @@ declare module "@polkadot/api-base/types/storage" {
             /** The active era information, it holds index and start. */
             activeEra: AugmentedQuery<ApiType, () => Observable<Option<TpTraitsActiveEraInfo>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** Session index at the start of this era. Used to know when to start the next era. */
-            eraSessionStart: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Session index at the start of the _active_ era. Used to know when to start the next era. */
+            activeEraSessionStart: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current era information, it is either ActiveEra or ActiveEra + 1 if the new era validators have been
+             * queued.
+             */
+            currentEra: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
             /** Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true. */
             externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
