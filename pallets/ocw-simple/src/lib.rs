@@ -69,6 +69,7 @@ impl<T: Config> Pallet<T> {
     fn emit_offchain_event() {
         Self::deposit_event(Event::SimpleOffchainEvent);
     }
+    /*
     /// Fetch current price and return the result in cents.
     fn fetch_price(block_number: BlockNumberFor<T>) -> Result<u32, http::Error> {
         // We want to keep the offchain worker execution time reasonable, so we set a hard-coded
@@ -109,4 +110,5 @@ impl<T: Config> Pallet<T> {
         Self::deposit_event(Event::PriceFetched { block_number });
         Ok(response.code.into())
     }
+    */
 }
