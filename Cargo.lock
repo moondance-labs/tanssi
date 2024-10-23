@@ -15612,7 +15612,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-beacon-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#f1dfa7db9106b2a9d897fd901195cc8ebeca8922"
 dependencies = [
  "byte-slice-cast",
  "frame-support",
@@ -15634,7 +15634,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-core"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#f1dfa7db9106b2a9d897fd901195cc8ebeca8922"
 dependencies = [
  "ethabi-decode",
  "frame-support",
@@ -15657,7 +15657,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-ethereum"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#f1dfa7db9106b2a9d897fd901195cc8ebeca8922"
 dependencies = [
  "ethabi-decode",
  "ethbloom",
@@ -15692,7 +15692,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-pallet-ethereum-client"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#f1dfa7db9106b2a9d897fd901195cc8ebeca8922"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -15718,7 +15718,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-pallet-ethereum-client-fixtures"
 version = "0.17.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#28cdd1c8b6c59b1f72a934d04608bf8af82caa72"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#f1dfa7db9106b2a9d897fd901195cc8ebeca8922"
 dependencies = [
  "hex-literal 0.4.1",
  "snowbridge-beacon-primitives",
