@@ -42,7 +42,7 @@ pub mod pallet {
         /// Note that it's not guaranteed for offchain workers to run on EVERY block, there might
         /// be cases where some blocks are skipped, or for some the worker runs twice (re-orgs),
         /// so the code should be able to handle that.
-        fn offchain_worker(block_number: BlockNumberFor<T>) {
+        fn offchain_worker(_block_number: BlockNumberFor<T>) {
             log::info!("Entering off-chain worker.");
             // The entry point of your code called by offchain worker
             Self::emit_offchain_event();
