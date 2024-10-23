@@ -16,7 +16,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 use frame_system::pallet_prelude::BlockNumberFor;
-use sp_runtime::offchain::{http, Duration};
+// Remove comment to enable http requests
+// use sp_runtime::offchain::{http, Duration};
 
 pub use pallet::*;
 #[frame_support::pallet]
@@ -69,6 +70,8 @@ impl<T: Config> Pallet<T> {
     fn emit_offchain_event() {
         Self::deposit_event(Event::SimpleOffchainEvent);
     }
+
+    // Remove comment to enable http requests
     /*
     /// Fetch current price and return the result in cents.
     fn fetch_price(block_number: BlockNumberFor<T>) -> Result<u32, http::Error> {
