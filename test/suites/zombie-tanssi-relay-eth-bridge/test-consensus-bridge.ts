@@ -1,8 +1,8 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { spawn, execSync } from "node:child_process";
-import { exec } from "child_process";
+import { spawn, exec } from "node:child_process";
 import { signAndSendAndInclude } from "../../util/block.ts";
+import { ethers } from "ethers";
 
 function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
@@ -26,11 +26,9 @@ describeSuite({
     testCases: function ({ it, context }) {
         let relayApi: ApiPromise;
         let ethereumNodeChildProcess;
-        let getBeefyCheckpointProcess;
-        let deployContractsProcess;
-        let getContractInfoProcess;
         let relayerChildProcess;
         let alice;
+        let beefyClientDetails;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -47,65 +45,87 @@ describeSuite({
                 .signAndSend(alice);
             console.log("Transferred money to beacon relay", txHash.toHex());
 
-        }, 120000);
+            ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {shell: true, detached: true});
+            ethereumNodeChildProcess.stdout.setEncoding('utf-8');
+            ethereumNodeChildProcess.stdout.on('data', (chunk) => console.log(chunk));
+
+            const beefyCheckpointOutput = await execCommand("./scripts/bridge/generate-beefy-checkpoint.sh", {env: {
+                    RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
+                    ...process.env
+                }});
+            console.log(beefyCheckpointOutput);
+
+            // Waiting till ethreum node produces one block
+            console.log("Waiting till ethereum node produces one block");
+            await sleep(20000);
+
+            const deployOutput = await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh");
+            console.log(deployOutput);
+
+            console.log("================== Contracts deployed");
+
+            const contractInfoData = JSON.parse(<string>await execCommand("./scripts/bridge/generate-contract-info.sh"));
+            console.log("Beefy client address is:", contractInfoData.contracts.BeefyClient.address);
+            beefyClientDetails = contractInfoData.contracts.BeefyClient;
+
+            console.log("Got contract info data");
+
+            const initialBeaconUpdate = JSON.parse(<string>await execCommand("./scripts/bridge/setup-relayer.sh", {
+                env: {
+                    RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
+                    ...process.env
+                }
+            }));
+
+            // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
+            // Once that is done, we can start the relayer
+            await signAndSendAndInclude(relayApi.tx.sudo.sudo(relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate)), alice);
+
+
+            relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {shell: true, detached: true, env: {
+                RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
+                ...process.env
+            }});
+            relayerChildProcess.stdout.setEncoding('utf-8');
+            relayerChildProcess.stdout.on('data', (chunk) => console.log(chunk));
+            relayerChildProcess.stderr.setEncoding('utf-8');
+            relayerChildProcess.stderr.on('data', (chunk) => console.log(chunk));
+        }, 12000000);
 
         it({
             id: "T01",
-            title: "Blocks are being produced on tanssi-relay",
+            title: "Ethereum Blocks are being recognized on tanssi-relay",
             test: async function () {
-                ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {shell: true});
-                ethereumNodeChildProcess.stdout.setEncoding('utf-8');
-                ethereumNodeChildProcess.stdout.on('data', (chunk) => console.log(chunk));
-
-                const beefyCheckpointOutput = await execCommand("./scripts/bridge/generate-beefy-checkpoint.sh", {env: {
-                        RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
-                        ...process.env
-                }});
-                console.log(beefyCheckpointOutput);
-
-                // Waiting till ethreum node produces one block
-                console.log("Waiting till ethereum node produces one block");
+                await sleep(10000);
+                const firstFinalizedBlockRoot = (await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()).toJSON();
+                expect(firstFinalizedBlockRoot).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
                 await sleep(20000);
-
-                const deployOutput = await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", { shell: true });
-                console.log(deployOutput);
-
-                console.log("================== Contracts deployed");
-
-                const contractInfoData = JSON.parse(<string>await execCommand("./scripts/bridge/generate-contract-info.sh"));
-                console.log("Gateway proxy is:", contractInfoData.contracts.GatewayProxy.address);
-
-                console.log("Got contract info data");
-
-                const initialBeaconUpdate = JSON.parse(<string>await execCommand("./scripts/bridge/setup-relayer.sh", {
-                    shell: true, env: {
-                        RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
-                        ...process.env
-                    }
-                }));
-
-                // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
-                // Once that is done, we can start the relayer
-                await signAndSendAndInclude(relayApi.tx.sudo.sudo(relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate)), alice);
-
-
-                relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {shell: true, env: {
-                        RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
-                        ...process.env
-                }});
-                relayerChildProcess.stdout.setEncoding('utf-8');
-                relayerChildProcess.stdout.on('data', (chunk) => console.log(chunk));
-                relayerChildProcess.stderr.setEncoding('utf-8');
-                relayerChildProcess.stderr.on('data', (chunk) => console.log(chunk));
+                const secondFinalizedBlockRoot = (await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()).toJSON();
+                expect(secondFinalizedBlockRoot).to.not.equal(firstFinalizedBlockRoot);
             },
         });
 
         it({
-            id: "T01",
-            title: "Blocks are being produced on tanssi-relay",
+            id: "T02",
+            title: "Dancelight Blocks are being recognized on ethereum",
             test: async function () {
-                await sleep(1000000000);
+                const url = "ws://127.0.0.1:8546";
+                const customHttpProvider = new ethers.providers.WebSocketProvider(url);
+                console.log((await customHttpProvider.getNetwork()).chainId);
+                const beefyContract = new ethers.Contract(beefyClientDetails.address, beefyClientDetails.abi, customHttpProvider);
+                const currentBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
+                expect(currentBeefyBlock).to.greaterThan(0);
+                await sleep(10000);
+                const nextBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
+                expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },
+        });
+
+        afterAll(async () => {
+            console.log("Cleaning up");
+            ethereumNodeChildProcess.kill('SIGINT');
+            relayerChildProcess.kill('SIGINT');
+            await execCommand("./scripts/bridge/cleanup.sh olep");
         });
 
     },

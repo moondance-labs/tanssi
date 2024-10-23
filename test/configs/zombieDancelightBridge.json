@@ -6,7 +6,12 @@
     "relaychain": {
         "chain": "dancelight-local",
         "default_command": "../target/release/tanssi-relay",
-        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--enable-offchain-indexing true"],
+        "default_args": [
+            "--no-hardware-benchmarks",
+            "-lparachain=debug",
+            "--database=paritydb",
+            "--enable-offchain-indexing true"
+        ],
         "genesis": {
             "runtimeGenesis": {
                 "patch": {

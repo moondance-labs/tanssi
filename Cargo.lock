@@ -3221,6 +3221,7 @@ dependencies = [
  "dp-container-chain-genesis-data",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-remote-externalities",
  "frame-support",
  "frame-system",

@@ -43,6 +43,7 @@ start_geth() {
         --syncmode=full \
         --state.scheme=hash \
         >"$logs_dir/geth.log" 2>&1 &
+     echo "geth=$!" >> $artifacts_dir/daemons.pid
     popd
 }
 
@@ -85,6 +86,7 @@ start_lodestar() {
         --jwt-secret $assets_dir/jwtsecret \
         --chain.archiveStateEpochFrequency 1 \
         >"$logs_dir/lodestar.log" 2>&1 &
+    echo "lodestar=$!" >> $artifacts_dir/daemons.pid
     popd
 }
 
