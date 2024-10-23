@@ -1186,6 +1186,22 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
+use pallet_staking::SessionInterface;
+pub struct DancelightSessionInterface;
+impl SessionInterface<AccountId> for DancelightSessionInterface {
+    fn disable_validator(validator_index: u32) -> bool {
+        Session::disable_index(validator_index)
+    }
+
+    fn validators() -> Vec<AccountId> {
+        Session::validators()
+    }
+
+    fn prune_historical_up_to(up_to: SessionIndex) {
+        Historical::prune_up_to(up_to);
+    }
+}
+
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
     pub const SlashDeferDuration: EraIndex = 2;
@@ -1216,7 +1232,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type BondingDuration = BondingDuration;
     type SlashId = u32;
-    type SessionInterface = ();
+    type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
 }
 
