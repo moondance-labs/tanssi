@@ -16,9 +16,9 @@
 
 #![cfg(test)]
 
-use std::collections::HashMap;
 use crate::ExternalValidators;
 use frame_support::traits::fungible::Mutate;
+use std::collections::HashMap;
 use {crate::tests::common::*, frame_support::assert_ok, sp_std::vec};
 
 #[test]
@@ -68,11 +68,35 @@ fn validators_only_change_once_per_era() {
             // [0, 5] => Alice, Bob
             // [6, 11] => Alice, Bob, 0x0f
             // [12, ..] => Alice, Bob, 0x15
-            assert_eq!(session_validators[&5], vec![AccountId::from(ALICE), AccountId::from(BOB)]);
-            assert_eq!(session_validators[&6], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x0f; 32])]);
+            assert_eq!(
+                session_validators[&5],
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+            assert_eq!(
+                session_validators[&6],
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from([0x0f; 32])
+                ]
+            );
             // TODO: if compiling with fast-runtime, this line will fail because 1 era = 3 sessions, so instead of
             // validator 0x0f you will see 0x12
-            assert_eq!(session_validators[&11], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x0f; 32])]);
-            assert_eq!(session_validators[&12], vec![AccountId::from(ALICE), AccountId::from(BOB), AccountId::from([0x15; 32])]);
+            assert_eq!(
+                session_validators[&11],
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from([0x0f; 32])
+                ]
+            );
+            assert_eq!(
+                session_validators[&12],
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from([0x15; 32])
+                ]
+            );
         });
 }

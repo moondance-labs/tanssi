@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate as external_validator_info,
+    crate as external_validator_slashes,
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU64},
@@ -41,7 +41,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Session: pallet_session,
         Historical: pallet_session::historical,
-        ExternalValidatorSlashes: external_validator_info,
+        ExternalValidatorSlashes: external_validator_slashes,
     }
 );
 
@@ -172,7 +172,7 @@ parameter_types! {
     pub const BondingDuration: u32 = 5u32;
 }
 
-impl external_validator_info::Config for Test {
+impl external_validator_slashes::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = IdentityValidator;

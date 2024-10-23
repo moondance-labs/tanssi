@@ -30,6 +30,8 @@ use {
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
+    sp_std::vec,
+    sp_std::vec::Vec,
     tp_traits::{EraIndexProvider, OnEraEnd, OnEraStart},
 };
 

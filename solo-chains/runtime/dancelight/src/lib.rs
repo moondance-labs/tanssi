@@ -87,7 +87,7 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
+        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
@@ -1188,6 +1188,8 @@ impl paras_sudo_wrapper::Config for Runtime {}
 
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
+    pub const SlashDeferDuration: EraIndex = 2;
+    pub const BondDuration: EraIndex = 10;
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1200,11 +1202,22 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
-    type OnEraStart = ();
+    type OnEraStart = ExternalValidatorSlashes;
     type OnEraEnd = ();
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+impl pallet_external_validator_slashes::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type SlashDeferDuration = SlashDeferDuration;
+    type BondingDuration = BondingDuration;
+    type SlashId = u32;
+    type SessionInterface = ();
+    type EraIndexProvider = ExternalValidators;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1576,6 +1589,11 @@ construct_runtime! {
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
+        // External Ethereum
+        ExternalValidators: pallet_external_validators = 100,
+        ExternalValidatorSlashes: pallet_external_validator_slashes = 101,
+
+
         // Migration stuff
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
@@ -1590,7 +1608,6 @@ construct_runtime! {
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
 
-        ExternalValidators: pallet_external_validators = 253,
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,

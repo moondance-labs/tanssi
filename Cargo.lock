@@ -3248,6 +3248,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-grandpa",
  "pallet-identity",
