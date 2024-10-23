@@ -40,7 +40,8 @@ use {
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec::Vec,
     tp_traits::{
-        ActiveEraInfo, EraIndex, EraIndexProvider, OnEraEnd, OnEraStart, ValidatorProvider,
+        ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart,
+        ValidatorProvider,
     },
 };
 
@@ -158,13 +159,17 @@ pub mod pallet {
     #[pallet::storage]
     pub type SkipExternalValidators<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+    /// The current era information, it is either ActiveEra or ActiveEra + 1 if the new era validators have been queued.
+    #[pallet::storage]
+    pub type CurrentEra<T: Config> = StorageValue<_, EraIndex>;
+
     /// The active era information, it holds index and start.
     #[pallet::storage]
     pub type ActiveEra<T: Config> = StorageValue<_, ActiveEraInfo>;
 
-    /// Session index at the start of this era. Used to know when to start the next era.
+    /// Session index at the start of the *active* era. Used to know when to start the next era.
     #[pallet::storage]
-    pub type EraSessionStart<T: Config> = StorageValue<_, u32, ValueQuery>;
+    pub type ActiveEraSessionStart<T: Config> = StorageValue<_, u32, ValueQuery>;
 
     /// Mode of era forcing.
     #[pallet::storage]
@@ -376,30 +381,6 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Increase era. Returns new era index.
-        pub(crate) fn increase_era(new_session_index: SessionIndex) -> EraIndex {
-            // Increase era
-            let era_index = <ActiveEra<T>>::mutate(|q| {
-                if q.is_none() {
-                    *q = Some(ActiveEraInfo {
-                        index: 0,
-                        start: None,
-                    });
-                }
-
-                let q = q.as_mut().unwrap();
-                q.index += 1;
-
-                // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
-                q.start = None;
-
-                q.index
-            });
-            <EraSessionStart<T>>::put(new_session_index);
-
-            era_index
-        }
-
         /// Helper to set a new `ForceEra` mode.
         pub(crate) fn set_force_era(mode: Forcing) {
             log::info!("Setting force era mode {:?}.", mode);
@@ -411,10 +392,18 @@ pub mod pallet {
             <WhitelistedValidators<T>>::get().into()
         }
 
-        pub fn current_era() -> u32 {
+        pub fn active_era() -> EraIndex {
             <ActiveEra<T>>::get()
                 .map(|era_info| era_info.index)
                 .unwrap_or(0)
+        }
+
+        pub fn current_era() -> EraIndex {
+            <CurrentEra<T>>::get().unwrap_or(0)
+        }
+
+        pub fn active_era_session_start() -> u32 {
+            <ActiveEraSessionStart<T>>::get()
         }
 
         /// Returns validators for the next session. Whitelisted validators first, then external validators.
@@ -428,6 +417,29 @@ pub mod pallet {
             }
 
             remove_duplicates(validators)
+        }
+
+        /// Returns true if the provided session index should start a new era.
+        pub(crate) fn should_start_new_era(session: u32) -> bool {
+            if session <= 1 {
+                return false;
+            }
+
+            match <ForceEra<T>>::get() {
+                Forcing::NotForcing => {
+                    // If enough sessions have elapsed, start new era
+                    let start_session = <ActiveEraSessionStart<T>>::get();
+
+                    if session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Forcing::ForceNew => true,
+                Forcing::ForceNone => false,
+                Forcing::ForceAlways => true,
+            }
         }
     }
 
@@ -470,43 +482,21 @@ fn remove_duplicates<T: Ord + Clone>(input: Vec<T>) -> Vec<T> {
 
 impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
     fn new_session(session: SessionIndex) -> Option<Vec<T::ValidatorId>> {
-        if session <= 1 {
+        if !Self::should_start_new_era(session) {
+            // Return None to keep previous validators
             return None;
         }
 
-        let new_era = match <ForceEra<T>>::get() {
-            Forcing::NotForcing => {
-                // If enough sessions have elapsed, start new era
-                let start_session = <EraSessionStart<T>>::get();
-                let current_session = session;
-
-                if current_session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
-                    true
-                } else {
-                    false
-                }
+        // Increment current era
+        <CurrentEra<T>>::mutate(|era| {
+            if era.is_none() {
+                *era = Some(0);
             }
-            Forcing::ForceNew => {
-                // Only force once
-                <ForceEra<T>>::put(Forcing::NotForcing);
+            let era = era.as_mut().unwrap();
+            *era += 1;
+        });
 
-                true
-            }
-            Forcing::ForceNone => false,
-            Forcing::ForceAlways => true,
-        };
-
-        if !new_era {
-            // If not starting a new era, keep the previous validators
-            return None;
-        }
-
-        let new_era_index = Self::increase_era(session);
-
-        Self::deposit_event(Event::NewEra { era: new_era_index });
-
-        T::OnEraStart::on_era_start(new_era_index, session);
-
+        // Return new validators
         let validators: Vec<_> = Self::validators();
 
         frame_system::Pallet::<T>::register_extra_weight_unchecked(
@@ -518,38 +508,51 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
     }
 
     fn end_session(index: SessionIndex) {
-        // This function needs to predict whether new_session(index+1) will start a new era
+        // To know if this the end of an era, we need to check if the next session is the start of a new era
         let new_index = index.saturating_add(1);
-
-        if new_index <= 1 {
-            return;
-        }
-
-        let new_era = match <ForceEra<T>>::get() {
-            Forcing::NotForcing => {
-                // If enough sessions have elapsed, start new era
-                let start_session = <EraSessionStart<T>>::get();
-                let current_session = new_index;
-
-                if current_session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
-                    true
-                } else {
-                    false
-                }
-            }
-            Forcing::ForceNew => true,
-            Forcing::ForceNone => false,
-            Forcing::ForceAlways => true,
-        };
-
-        if !new_era {
+        if !Self::should_start_new_era(new_index) {
             return;
         }
 
         T::OnEraEnd::on_era_end(index);
     }
 
-    fn start_session(_start_index: SessionIndex) {}
+    fn start_session(session_index: SessionIndex) {
+        if !Self::should_start_new_era(session_index) {
+            return;
+        }
+
+        <ForceEra<T>>::mutate(|era| {
+            // If this era has been forced, reset forcing flag to only force once
+            if let Forcing::ForceNew = era {
+                *era = Forcing::NotForcing;
+            }
+        });
+        <ActiveEraSessionStart<T>>::put(session_index);
+
+        // ActiveEra = CurrentEra
+        // Increase era
+        let era_index = <ActiveEra<T>>::mutate(|q| {
+            if q.is_none() {
+                *q = Some(ActiveEraInfo {
+                    index: 0,
+                    start: None,
+                });
+            }
+
+            let q = q.as_mut().unwrap();
+            q.index += 1;
+
+            // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
+            q.start = None;
+
+            q.index
+        });
+
+        T::OnEraStart::on_era_start(era_index, session_index);
+
+        Self::deposit_event(Event::NewEra { era: era_index });
+    }
 }
 
 impl<T: Config> pallet_session::historical::SessionManager<T::ValidatorId, ()> for Pallet<T> {
@@ -579,6 +582,12 @@ impl<T: Config> EraIndexProvider for Pallet<T> {
 impl<T: Config> ValidatorProvider<T::ValidatorId> for Pallet<T> {
     fn validators() -> Vec<T::ValidatorId> {
         Self::validators()
+    }
+}
+
+impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
+    fn invulnerables() -> Vec<T::ValidatorId> {
+        Self::whitelisted_validators()
     }
 }
 
