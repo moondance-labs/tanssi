@@ -475,6 +475,10 @@ pub trait ValidatorProvider<ValidatorId> {
     fn validators() -> Vec<ValidatorId>;
 }
 
+pub trait InvulnerablesProvider<ValidatorId> {
+    fn invulnerables() -> Vec<ValidatorId>;
+}
+
 pub trait OnEraStart {
     fn on_era_start(_era_index: EraIndex, _session_start: u32) {}
 }
