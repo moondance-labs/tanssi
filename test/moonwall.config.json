@@ -617,6 +617,34 @@
             ]
         },
         {
+            "name": "zombie_simple_template_offchain",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie-offchain"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightSingleContainer.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
             "name": "zombie_frontier_template_upgrade",
             "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
             "runScripts": [
