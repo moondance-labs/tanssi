@@ -37,6 +37,7 @@ use {
     sp_runtime::traits::Get,
     sp_runtime::RuntimeDebug,
     sp_staking::SessionIndex,
+    sp_std::collections::btree_set::BTreeSet,
     sp_std::vec::Vec,
     tp_traits::{
         ActiveEraInfo, EraIndex, EraIndexProvider, OnEraEnd, OnEraStart, ValidatorProvider,
@@ -105,6 +106,7 @@ pub mod pallet {
         /// A stable ID for a validator.
         type ValidatorId: Member
             + Parameter
+            + Ord
             + MaybeSerializeDeserialize
             + MaxEncodedLen
             + TryFrom<Self::AccountId>;
@@ -409,10 +411,15 @@ pub mod pallet {
             <WhitelistedValidators<T>>::get().into()
         }
 
-        pub fn current_era() -> Option<u32> {
-            <ActiveEra<T>>::get().map(|era_info| era_info.index)
+        pub fn current_era() -> u32 {
+            <ActiveEra<T>>::get()
+                .map(|era_info| era_info.index)
+                .unwrap_or(0)
         }
 
+        /// Returns validators for the next session. Whitelisted validators first, then external validators.
+        /// The returned list is deduplicated, but the order is respected.
+        /// If `SkipExternalValidators` is true, this function will ignore external validators.
         pub fn validators() -> Vec<T::ValidatorId> {
             let mut validators: Vec<_> = WhitelistedValidators::<T>::get().into();
 
@@ -420,7 +427,7 @@ pub mod pallet {
                 validators.extend(ExternalValidators::<T>::get())
             }
 
-            validators
+            remove_duplicates(validators)
         }
     }
 
@@ -445,6 +452,20 @@ pub mod pallet {
             // `on_finalize` weight is tracked in `on_initialize`
         }
     }
+}
+
+/// Keeps only the first instance of each element in the input vec. Respects ordering of elements.
+fn remove_duplicates<T: Ord + Clone>(input: Vec<T>) -> Vec<T> {
+    let mut seen = BTreeSet::new();
+    let mut result = Vec::with_capacity(input.len());
+
+    for item in input {
+        if seen.insert(item.clone()) {
+            result.push(item);
+        }
+    }
+
+    result
 }
 
 impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
