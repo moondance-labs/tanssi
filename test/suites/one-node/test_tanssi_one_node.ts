@@ -100,6 +100,7 @@ describeSuite({
             id: "T05",
             title: "Check logs, collator failed to start",
             test: async function () {
+                // We registered an empty wasm as a parathread. Collator should fail to start, but never panic.
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
                 const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
@@ -107,7 +108,7 @@ describeSuite({
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
                     "[Orchestrator] This is a syncing container chain, using random ports",
-                    "[Orchestrator] Container chain sync mode: Full",
+                    "[Orchestrator] Container chain sync mode: Warp",
                     "[Orchestrator] Failed to start container chain 2000: Failed to get runtime version: Runtime missing from initial storage, could not read state version.",
                 ]);
             },
@@ -187,9 +188,9 @@ async function registerEmptyParathread(api, manager, paraId) {
             min: 1,
             max: 1,
         });
-        tx1 = api.tx.registrar.registerParathread(paraId, slotFreq, containerChainGenesisData);
+        tx1 = api.tx.registrar.registerParathread(paraId, slotFreq, containerChainGenesisData, null);
     } else {
-        tx1 = api.tx.registrar.registerParathread(paraId, containerChainGenesisData);
+        tx1 = api.tx.registrar.register(paraId, containerChainGenesisData, null);
     }
     txs.push(
         api.tx.utility.dispatchAs(
