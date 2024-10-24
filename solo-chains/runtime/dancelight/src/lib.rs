@@ -3077,7 +3077,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
