@@ -23,7 +23,7 @@ use {
         ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical, Offences,
         SlashDeferDuration,
     },
-    frame_support::assert_ok,
+    frame_support::{assert_noop, assert_ok},
     sp_core::H256,
     sp_std::vec,
 };
@@ -427,5 +427,63 @@ fn test_slashes_can_be_cleared_before_deferred_period_applies() {
             ));
             let slashes_after_cancel = ExternalValidatorSlashes::slashes(3);
             assert_eq!(slashes_after_cancel.len(), 0);
+        });
+}
+
+#[test]
+fn test_slashes_cannot_be_cancelled_after_defer_period() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                RuntimeOrigin::root(),
+                AccountId::from(ALICE)
+            ));
+            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
+                &AccountId::from(ALICE).to_string(),
+            );
+
+            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
+            // create the key ownership proof
+            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
+            let key_owner_proof = Historical::prove(key).unwrap();
+
+            // report the equivocation
+            assert_ok!(Babe::report_equivocation_unsigned(
+                RuntimeOrigin::none(),
+                Box::new(equivocation_proof),
+                key_owner_proof,
+            ));
+
+            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
+                .map(|offence| offence)
+                .collect();
+            assert_eq!(reports.len(), 1);
+            assert_eq!(ExternalValidators::current_era(), 0);
+
+            let slashes = ExternalValidatorSlashes::slashes(
+                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+            );
+            assert_eq!(slashes.len(), 1);
+            assert_eq!(slashes[0].validator, AccountId::from(ALICE));
+
+            // The first session in which the era 3 will be deferred is 18
+            // 3 sessions per era
+            // (3+2+1)*3
+            run_to_session(18);
+
+            // Now let's clean it up
+            assert_noop!(
+                ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![0]),
+                pallet_external_validator_slashes::Error::<crate::Runtime>::DeferPeriodIsOver
+            );
         });
 }
