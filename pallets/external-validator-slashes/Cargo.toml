@@ -1,0 +1,73 @@
+[package]
+name = "pallet-external-validator-slashes"
+authors = { workspace = true }
+description = "External validator info slashes"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+pallet-session = { workspace = true }
+pallet-staking = { workspace = true }
+
+scale-info = { workspace = true }
+serde = { workspace = true, features = [ "derive" ] }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+sp-staking = { workspace = true }
+tp-traits = { workspace = true }
+
+[dev-dependencies]
+bounded-collections = { workspace = true }
+hex-literal = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
+polkadot-primitives = { workspace = true }
+sp-externalities = { workspace = true }
+sp-io = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-version = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"bounded-collections/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"log/std",
+	"pallet-staking/std",
+	"parity-scale-codec/std",
+	"polkadot-parachain-primitives/std",
+	"polkadot-primitives/std",
+	"scale-info/std",
+	"serde/std",
+	"sp-core/std",
+	"sp-externalities/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-state-machine/std",
+	"sp-std/std",
+	"sp-version/std",
+	"tp-traits/std",
+]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
+]

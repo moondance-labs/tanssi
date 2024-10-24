@@ -19,6 +19,7 @@ pub mod pallet_asset_rate;
 pub mod pallet_author_noting;
 pub mod pallet_balances;
 pub mod pallet_conviction_voting;
+pub mod pallet_external_validator_slashes;
 pub mod pallet_external_validators;
 pub mod pallet_identity;
 pub mod pallet_message_queue;
