@@ -65,7 +65,7 @@ mod benchmarks {
         frame_system::Pallet::<T>::set_block_number(0u32.into());
 
         let collators = invulnerables::<T>(x, SEED);
-        let container_chains: Vec<_> = (0..y).map(ParaId::from).collect();
+        let container_chains: Vec<_> = (0..y).map(|i| ParaId::from(2000 + i)).collect();
         let session_index = 0u32.into();
         T::ContainerChains::set_session_container_chains(session_index, &container_chains);
         T::RemoveParaIdsWithNoCredits::make_valid_para_ids(&container_chains);
@@ -82,6 +82,7 @@ mod benchmarks {
             container_chains: BTreeMap::from_iter(old_container_chains),
         };
         <CollatorContainerChain<T>>::put(&old_assigned);
+
         // Do not use [0; 32] because that seed will not shuffle the list of collators
         // We use a different random seed every time to make sure that the event is included
         let random_seed = [x as u8; 32];
@@ -92,15 +93,15 @@ mod benchmarks {
             <Pallet<T>>::initializer_on_new_session(&session_index, collators);
         }
 
+        let new_assigned = <CollatorContainerChain<T>>::get();
+
         // Assignment changed
-        assert_ne!(<CollatorContainerChain::<T>>::get(), old_assigned);
+        assert_ne!(new_assigned, old_assigned);
+
         // New assignment is not empty
         // If more than one, at least one chain should have gotten collators
         if x > 1 {
-            assert_ne!(
-                <CollatorContainerChain::<T>>::get().container_chains.len(),
-                0
-            );
+            assert_ne!(new_assigned.container_chains.len(), 0);
         }
 
         // Worst case is `full_rotation: false` because it needs to check the previous assignment
