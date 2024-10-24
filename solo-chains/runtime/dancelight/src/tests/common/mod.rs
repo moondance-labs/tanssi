@@ -1202,17 +1202,16 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
 
 use babe_primitives::{AuthorityId as BabeAuthorityId, AuthorityPair as BabeAuthorityPair, Slot};
 use grandpa_primitives::{
-    AuthorityId as GrandpaAuthorityId, Equivocation, EquivocationProof, RoundNumber, SetId,
+    AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };
 use keyring::{Ed25519Keyring, Sr25519Keyring};
 use sp_core::H256;
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
-    vote1: (RoundNumber, H256, u64, &GrandpaAuthorityId),
-    vote2: (RoundNumber, H256, u64, &GrandpaAuthorityId),
-) -> EquivocationProof<H256, u64> {
-    let signed_prevote = |round, hash, number, authority_id: &GrandpaAuthorityId| {
-        let keyring = extract_grandpa_keyring(authority_id);
+    vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+    vote2: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+) -> EquivocationProof<H256, u32> {
+    let signed_prevote = |round, hash, number, authority_pair: &GrandpaAuthorityPair| {
         let prevote = finality_grandpa::Prevote {
             target_hash: hash,
             target_number: number,
@@ -1220,7 +1219,7 @@ pub fn generate_grandpa_equivocation_proof(
 
         let prevote_msg = finality_grandpa::Message::Prevote(prevote.clone());
         let payload = grandpa_primitives::localized_payload(round, set_id, &prevote_msg);
-        let signed = keyring.sign(&payload).into();
+        let signed = authority_pair.sign(&payload).into();
         (prevote, signed)
     };
 
@@ -1231,17 +1230,11 @@ pub fn generate_grandpa_equivocation_proof(
         set_id,
         Equivocation::Prevote(finality_grandpa::Equivocation {
             round_number: vote1.0,
-            identity: vote1.3.clone().into(),
+            identity: vote1.3.public(),
             first: (prevote1, signed1),
             second: (prevote2, signed2),
         }),
     )
-}
-
-pub fn extract_grandpa_keyring(id: &GrandpaAuthorityId) -> Ed25519Keyring {
-    let mut raw_public = [0; 32];
-    raw_public.copy_from_slice(id.as_ref());
-    Ed25519Keyring::from_raw_public(raw_public).unwrap()
 }
 
 pub fn extract_babe_keyring(id: &BabeAuthorityId) -> Sr25519Keyring {

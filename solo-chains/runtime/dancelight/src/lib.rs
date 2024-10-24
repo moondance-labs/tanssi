@@ -1205,7 +1205,6 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
     pub const SlashDeferDuration: EraIndex = 2;
-    pub const BondDuration: EraIndex = 10;
 }
 
 impl pallet_external_validators::Config for Runtime {

@@ -32,7 +32,7 @@ use {
     },
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, OnEraEnd, OnEraStart, InvulnerablesProvider},
+    tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart},
 };
 
 pub use pallet::*;
@@ -132,8 +132,7 @@ pub mod pallet {
     /// `[active_era - bounding_duration; active_era]`
     #[pallet::storage]
     #[pallet::unbounded]
-    pub(crate) type BondedEras<T: Config> =
-        StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
+    pub type BondedEras<T: Config> = StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn next_slash_id)]
