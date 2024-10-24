@@ -872,6 +872,8 @@ jobs:
               run: |
                 chmod uog+x target/release/container-chain-simple-node
                 chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/tanssi-relay-prepare-worker
                 cd test
                 pnpm install
                 pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
