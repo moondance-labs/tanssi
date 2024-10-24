@@ -6,7 +6,8 @@ set -e
 # Always run the commands from the "test" dir
 cd $(dirname $0)/..
 
-LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i") and (test("starlight";"i")|not)) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+
 ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$LATEST_RUNTIME_RELEASE"
 RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
 TYPE=$(echo $RESPONSE | jq -r '.object.type')
