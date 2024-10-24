@@ -43,6 +43,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -411,6 +414,19 @@ pub struct Slash<AccountId, SlashId> {
     pub percentage: Perbill,
     // Whether the slash is confirmed or still needs to go through deferred period
     pub confirmed: bool,
+}
+
+impl<AccountId, SlashId: One> Slash<AccountId, SlashId> {
+    /// Initializes the default object using the given `validator`.
+    pub fn default_from(validator: AccountId) -> Self {
+        Self {
+            validator,
+            reporters: vec![],
+            slash_id: One::one(),
+            percentage: Perbill::from_percent(50),
+            confirmed: false,
+        }
+    }
 }
 
 /// Computes a slash of a validator and nominators. It returns an unapplied

@@ -309,6 +309,7 @@ runtime-benchmarks = [
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
+	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",

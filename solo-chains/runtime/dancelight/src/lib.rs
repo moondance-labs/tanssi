@@ -1944,10 +1944,12 @@ mod benches {
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
         [pallet_external_validators, ExternalValidators]
+        [pallet_external_validator_slashes, ExternalValidatorSlashes]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
 
         // Bridges
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
