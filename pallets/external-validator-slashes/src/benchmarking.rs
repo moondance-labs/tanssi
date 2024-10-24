@@ -67,19 +67,13 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn force_inject_slash(s: Linear<1, MAX_SLASHES>) -> Result<(), BenchmarkError> {
-        let mut existing_slashes = Vec::new();
+    fn force_inject_slash() -> Result<(), BenchmarkError> {
         let era = T::EraIndexProvider::active_era().index;
         let dummy = || T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap();
-        for _ in 0..s - 1 {
-            existing_slashes.push(Slash::<T::AccountId, T::SlashId>::default_from(dummy()));
-        }
-        Slashes::<T>::insert(era, &existing_slashes);
-
         #[extrinsic_call]
         _(RawOrigin::Root, era, dummy(), Perbill::from_percent(50));
 
-        assert_eq!(Slashes::<T>::get(&era).len(), s as usize);
+        assert_eq!(Slashes::<T>::get(&era).len(), 1 as usize);
         Ok(())
     }
 

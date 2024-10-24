@@ -32,7 +32,7 @@ use {
     },
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart},
+    tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
 };
 
 pub use pallet::*;
@@ -45,10 +45,12 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    pub use crate::weights::WeightInfo;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -107,6 +109,9 @@ pub mod pallet {
         type EraIndexProvider: EraIndexProvider;
 
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
+
+        /// The weight information of this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
@@ -159,7 +164,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::cancel_deferred_slash(slash_indices.len() as u32))]
         pub fn cancel_deferred_slash(
             origin: OriginFor<T>,
             era: EraIndex,
@@ -196,7 +201,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::force_inject_slash())]
         pub fn force_inject_slash(
             origin: OriginFor<T>,
             era: EraIndex,
