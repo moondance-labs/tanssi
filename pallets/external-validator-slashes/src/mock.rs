@@ -29,7 +29,7 @@ use {
     },
     sp_staking::SessionIndex,
     sp_std::cell::RefCell,
-    tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider},
+    tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -163,8 +163,14 @@ impl pallet_session::SessionHandler<AccountId> for TestSessionHandler {
         _: &[(AccountId, Ks)],
     ) {
     }
-
     fn on_disabled(_: u32) {}
+}
+
+pub struct MockInvulnerableProvider;
+impl InvulnerablesProvider<u64> for MockInvulnerableProvider {
+    fn invulnerables() -> Vec<u64> {
+        vec![1, 2]
+    }
 }
 
 parameter_types! {
@@ -181,6 +187,7 @@ impl external_validator_slashes::Config for Test {
     type SlashId = u32;
     type SessionInterface = ();
     type EraIndexProvider = MockEraIndexProvider;
+    type InvulnerablesProvider = MockInvulnerableProvider;
 }
 
 pub struct FullIdentificationOf;

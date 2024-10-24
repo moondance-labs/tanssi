@@ -32,7 +32,7 @@ use {
     },
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, OnEraEnd, OnEraStart},
+    tp_traits::{EraIndexProvider, OnEraEnd, OnEraStart, InvulnerablesProvider},
 };
 
 pub use pallet::*;
@@ -102,6 +102,8 @@ pub mod pallet {
         type SessionInterface: SessionInterface<Self::AccountId>;
 
         type EraIndexProvider: EraIndexProvider;
+
+        type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
     }
 
     #[pallet::error]
@@ -151,14 +153,6 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn eras_start_session_index)]
     pub type ErasStartSessionIndex<T> = StorageMap<_, Twox64Concat, EraIndex, SessionIndex>;
-
-    /// Any validators that may never be slashed or forcibly kicked. It's a Vec since they're
-    /// easy to initialize and the performance hit is minimal (we expect no more than four
-    /// invulnerables) and restricted to testnets.
-    #[pallet::storage]
-    #[pallet::getter(fn invulnerables)]
-    #[pallet::unbounded]
-    pub type Invulnerables<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -293,7 +287,7 @@ where
 
         let slash_defer_duration = T::SlashDeferDuration::get();
 
-        let invulnerables = Self::invulnerables();
+        let invulnerables = T::InvulnerablesProvider::invulnerables();
         add_db_reads_writes(1, 0);
 
         let mut next_slash_id = NextSlashId::<T>::get();

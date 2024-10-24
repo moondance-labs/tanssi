@@ -159,7 +159,8 @@ fn test_on_offence_injects_offences() {
         start_era(1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
-                offender: (1, ()),
+                // 1 and 2 are invulnerables
+                offender: (3, ()),
                 reporters: vec![],
             }],
             &[Perbill::from_percent(75)],
@@ -173,7 +174,7 @@ fn test_on_offence_injects_offences() {
         assert_eq!(
             Slashes::<Test>::get(slash_era),
             vec![Slash {
-                validator: 1,
+                validator: 3,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
                 reporters: vec![],
@@ -189,7 +190,6 @@ fn test_on_offence_does_not_work_for_invulnerables() {
         start_era(0, 0);
         start_era(1, 1);
         // account 1 invulnerable
-        Invulnerables::<Test>::put(vec![1]);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 offender: (1, ()),

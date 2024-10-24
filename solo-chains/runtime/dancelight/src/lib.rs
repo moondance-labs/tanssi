@@ -1234,6 +1234,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SlashId = u32;
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
+    type InvulnerablesProvider = ExternalValidators;
 }
 
 impl pallet_sudo::Config for Runtime {
