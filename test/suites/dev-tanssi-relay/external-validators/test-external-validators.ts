@@ -23,18 +23,7 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
                 const bob = keyring.addFromUri("//Bob", { name: "Bob default" });
-                const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const validators = (await polkadotJs.query.session.validators()).toJSON();
-
-                console.log(validators);
-                // TODO: initial validator is not alice?
-                // - Expected
-                // + Received
-                //
-                //   Array [
-                // -   "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                // +   "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY",
-                //   ]
 
                 expect(validators).to.deep.equal([aliceStash.address]);
 
