@@ -21,9 +21,11 @@ use {crate::*, std::collections::HashSet};
 use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay};
 
 mod author_noting_tests;
+mod beefy;
 mod collator_assignment_tests;
 mod common;
 mod core_scheduling_tests;
+mod ethereum_client;
 mod inflation_rewards;
 mod integration_test;
 mod relay_configuration;
