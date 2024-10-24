@@ -871,6 +871,7 @@ jobs:
             - name: "Install and run upgrade test"
               run: |
                 chmod uog+x target/release/container-chain-simple-node
+                chmod uog+x target/release/tanssi-relay
                 cd test
                 pnpm install
                 pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade

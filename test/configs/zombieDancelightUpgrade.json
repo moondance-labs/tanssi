@@ -5,7 +5,7 @@
     },
     "relaychain": {
         "chain_spec_path": "specs/tanssi-relay.json",
-        "default_command": "tmp/tanssi-relay",
+        "default_command": "../target/release/tanssi-relay",
         "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
         "genesis": {
             "runtimeGenesis": {
