@@ -1200,11 +1200,10 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
-use babe_primitives::{AuthorityId as BabeAuthorityId, AuthorityPair as BabeAuthorityPair, Slot};
+use babe_primitives::{AuthorityPair as BabeAuthorityPair};
 use grandpa_primitives::{
     AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };
-use keyring::{Ed25519Keyring, Sr25519Keyring};
 use sp_core::H256;
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
@@ -1237,15 +1236,8 @@ pub fn generate_grandpa_equivocation_proof(
     )
 }
 
-pub fn extract_babe_keyring(id: &BabeAuthorityId) -> Sr25519Keyring {
-    let mut raw_public = [0; 32];
-    raw_public.copy_from_slice(id.as_ref());
-    Sr25519Keyring::from_raw_public(raw_public).unwrap()
-}
-
 /// Creates an equivocation at the current block, by generating two headers.
 pub fn generate_babe_equivocation_proof(
-    offender_authority_index: u32,
     offender_authority_pair: &BabeAuthorityPair,
 ) -> babe_primitives::EquivocationProof<crate::Header> {
     use babe_primitives::digests::CompatibleDigestItem;
@@ -1259,7 +1251,6 @@ pub fn generate_babe_equivocation_proof(
     let slot_proof = babe_predigest.expect("babe should be presesnt").slot();
 
     let make_headers = || {
-        let parent_hash = System::parent_hash();
         (
             HeaderFor::<Runtime>::new(
                 0,

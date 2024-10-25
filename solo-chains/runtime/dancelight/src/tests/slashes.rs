@@ -20,8 +20,7 @@ use sp_runtime::Perbill;
 use {
     crate::tests::common::*,
     crate::{
-        ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical, Offences,
-        SlashDeferDuration,
+        ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok},
     sp_core::H256,
@@ -41,22 +40,7 @@ fn invulnerables_cannot_be_slashed() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
-
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
-
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
                 .collect();
@@ -87,21 +71,8 @@ fn non_invulnerables_can_be_slashed_with_babe() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -137,27 +108,8 @@ fn non_invulnerables_can_be_slashed_with_grandpa() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_grandpa = get_pair_from_seed::<grandpa_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let set_id = Grandpa::current_set_id();
-
-            let equivocation_proof = generate_grandpa_equivocation_proof(
-                set_id,
-                (1, H256::random(), 1, &alice_grandpa),
-                (1, H256::random(), 1, &alice_grandpa),
-            );
-            // create the key ownership proof
-            let key = (grandpa_primitives::KEY_TYPE, alice_grandpa.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Grandpa::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_grandpa_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -199,21 +151,8 @@ fn test_slashing_percentage_applied_correctly() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -257,48 +196,10 @@ fn test_slashes_are_not_additive_in_percentage() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let babe_equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let babe_key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let babe_key_owner_proof = Historical::prove(babe_key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(babe_equivocation_proof),
-                babe_key_owner_proof,
-            ));
-
-            // report grandpa equivocation
-            let alice_grandpa = get_pair_from_seed::<grandpa_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
-
-            let set_id = Grandpa::current_set_id();
-
-            let grandpa_equivocation_proof = generate_grandpa_equivocation_proof(
-                set_id,
-                (1, H256::random(), 1, &alice_grandpa),
-                (1, H256::random(), 1, &alice_grandpa),
-            );
-            // create the key ownership proof
-            let grandpa_key = (grandpa_primitives::KEY_TYPE, alice_grandpa.public());
-            let grandpa_key_owner_proof = Historical::prove(grandpa_key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Grandpa::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(grandpa_equivocation_proof),
-                grandpa_key_owner_proof,
-            ));
+            inject_grandpa_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -338,21 +239,8 @@ fn test_slashes_are_cleaned_after_bonding_period() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -391,21 +279,8 @@ fn test_slashes_can_be_cleared_before_deferred_period_applies() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -447,21 +322,8 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                 RuntimeOrigin::root(),
                 AccountId::from(ALICE)
             ));
-            let alice_babe = get_pair_from_seed::<babe_primitives::AuthorityId>(
-                &AccountId::from(ALICE).to_string(),
-            );
 
-            let equivocation_proof = generate_babe_equivocation_proof(0, &alice_babe);
-            // create the key ownership proof
-            let key = (babe_primitives::KEY_TYPE, alice_babe.public());
-            let key_owner_proof = Historical::prove(key).unwrap();
-
-            // report the equivocation
-            assert_ok!(Babe::report_equivocation_unsigned(
-                RuntimeOrigin::none(),
-                Box::new(equivocation_proof),
-                key_owner_proof,
-            ));
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
 
             let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
                 .map(|offence| offence)
@@ -486,4 +348,42 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                 pallet_external_validator_slashes::Error::<crate::Runtime>::DeferPeriodIsOver
             );
         });
+}
+
+fn inject_babe_slash(seed: &str) {
+    let babe_key = get_pair_from_seed::<babe_primitives::AuthorityId>(seed);
+    let equivocation_proof = generate_babe_equivocation_proof(&babe_key);
+
+    // create the key ownership proof
+    let key = (babe_primitives::KEY_TYPE, babe_key.public());
+    let key_owner_proof = Historical::prove(key).unwrap();
+
+    // report the equivocation
+    assert_ok!(Babe::report_equivocation_unsigned(
+        RuntimeOrigin::none(),
+        Box::new(equivocation_proof),
+        key_owner_proof,
+    ));
+}
+
+fn inject_grandpa_slash(seed: &str) {
+    let grandpa_key = get_pair_from_seed::<grandpa_primitives::AuthorityId>(seed);
+
+    let set_id = Grandpa::current_set_id();
+
+    let equivocation_proof = generate_grandpa_equivocation_proof(
+        set_id,
+        (1, H256::random(), 1, &grandpa_key),
+        (1, H256::random(), 1, &grandpa_key),
+    );
+    // create the key ownership proof
+    let key = (grandpa_primitives::KEY_TYPE, grandpa_key.public());
+    let key_owner_proof = Historical::prove(key).unwrap();
+
+    // report the equivocation
+    assert_ok!(Grandpa::report_equivocation_unsigned(
+        RuntimeOrigin::none(),
+        Box::new(equivocation_proof),
+        key_owner_proof,
+    ));
 }
