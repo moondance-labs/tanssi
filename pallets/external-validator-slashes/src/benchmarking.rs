@@ -38,18 +38,34 @@ mod benchmarks {
     #[benchmark]
     fn cancel_deferred_slash(s: Linear<1, MAX_SLASHES>) -> Result<(), BenchmarkError> {
         let mut existing_slashes = Vec::new();
-        let era = EraIndex::one();
+        let era = T::EraIndexProvider::active_era().index;
         let dummy = || T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap();
         for _ in 0..MAX_SLASHES {
             existing_slashes.push(Slash::<T::AccountId, T::SlashId>::default_from(dummy()));
         }
-        Slashes::<T>::insert(era, &existing_slashes);
+        Slashes::<T>::insert(
+            era.saturating_add(T::SlashDeferDuration::get())
+                .saturating_add(One::one()),
+            &existing_slashes,
+        );
         let slash_indices: Vec<u32> = (0..s).collect();
 
         #[extrinsic_call]
-        _(RawOrigin::Root, era, slash_indices);
+        _(
+            RawOrigin::Root,
+            era.saturating_add(T::SlashDeferDuration::get())
+                .saturating_add(One::one()),
+            slash_indices,
+        );
 
-        assert_eq!(Slashes::<T>::get(&era).len(), (MAX_SLASHES - s) as usize);
+        assert_eq!(
+            Slashes::<T>::get(
+                &era.saturating_add(T::SlashDeferDuration::get())
+                    .saturating_add(One::one())
+            )
+            .len(),
+            (MAX_SLASHES - s) as usize
+        );
         Ok(())
     }
 
@@ -60,7 +76,14 @@ mod benchmarks {
         #[extrinsic_call]
         _(RawOrigin::Root, era, dummy(), Perbill::from_percent(50));
 
-        assert_eq!(Slashes::<T>::get(&era).len(), 1 as usize);
+        assert_eq!(
+            Slashes::<T>::get(
+                &era.saturating_add(T::SlashDeferDuration::get())
+                    .saturating_add(One::one())
+            )
+            .len(),
+            1 as usize
+        );
         Ok(())
     }
 

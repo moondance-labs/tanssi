@@ -20,7 +20,8 @@ use sp_runtime::Perbill;
 use {
     crate::tests::common::*,
     crate::{
-        ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical, SlashDeferDuration,
+        BondingDuration, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
+        SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok},
     sp_core::H256,
@@ -252,10 +253,17 @@ fn test_slashes_are_cleaned_after_bonding_period() {
                 ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
-            // The first session in which the era 3 will be pruned is 96
-            // 3 sessions per era, 28 days bonding period
-            // (28+3+1)*3
-            run_to_session(96);
+            // The first session in which the era 3 will be pruned is
+            // (28+3+1)*sessionsPerEra
+            let fist_session_era_3_pruned = (ExternalValidators::current_era()
+                + SlashDeferDuration::get()
+                + 1
+                + BondingDuration::get()
+                + 1)
+                * SessionsPerEra::get();
+
+            println!("first session era 3 pruned {:?}", fist_session_era_3_pruned);
+            run_to_session(fist_session_era_3_pruned);
 
             let slashes_after_bonding_period = ExternalValidatorSlashes::slashes(3);
             assert_eq!(slashes_after_bonding_period.len(), 0);
@@ -339,9 +347,15 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
 
             // The first session in which the era 3 will be deferred is 18
             // 3 sessions per era
-            // (3+2+1)*3
-            run_to_session(18);
+            // (externalValidators::current_era() + SlashDeferDuration::get() + 1)*SessionsPerEra
+            // formula is:
 
+            let first_deferred_session =
+                (ExternalValidators::current_era() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(first_deferred_session);
+
+            assert_eq!(ExternalValidators::current_era(), 3);
             // Now let's clean it up
             assert_noop!(
                 ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![0]),

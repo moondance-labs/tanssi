@@ -1200,7 +1200,7 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
-use babe_primitives::{AuthorityPair as BabeAuthorityPair};
+use babe_primitives::AuthorityPair as BabeAuthorityPair;
 use grandpa_primitives::{
     AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };

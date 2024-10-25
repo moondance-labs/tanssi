@@ -173,8 +173,11 @@ pub mod pallet {
             ensure_root(origin)?;
 
             let active_era = T::EraIndexProvider::active_era().index;
+
             ensure!(
-                era >= active_era.saturating_sub(T::SlashDeferDuration::get()),
+                era <= active_era
+                    .saturating_add(T::SlashDeferDuration::get().saturating_add(One::one()))
+                    && era > active_era,
                 Error::<T>::DeferPeriodIsOver
             );
 
@@ -185,6 +188,7 @@ pub mod pallet {
             );
 
             let mut era_slashes = Slashes::<T>::get(&era);
+
             let last_item = slash_indices[slash_indices.len() - 1];
             ensure!(
                 (last_item as usize) < era_slashes.len(),
@@ -210,7 +214,10 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             let active_era = T::EraIndexProvider::active_era().index;
+
             ensure!(era <= active_era, Error::<T>::ProvidedFutureEra);
+
+            let slash_defer_duration = T::SlashDeferDuration::get();
 
             let window_start = active_era.saturating_sub(T::BondingDuration::get());
             ensure!(era >= window_start, Error::<T>::ProvidedNonSlashableEra);
@@ -227,7 +234,11 @@ pub mod pallet {
             };
             let mut era_slashes = Slashes::<T>::get(&era);
             era_slashes.push(slash);
-            Slashes::<T>::insert(&era, &era_slashes);
+            Slashes::<T>::insert(
+                &era.saturating_add(slash_defer_duration)
+                    .saturating_add(One::one()),
+                &era_slashes,
+            );
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
             Ok(())
         }

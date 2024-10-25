@@ -31,7 +31,7 @@ fn root_can_inject_manual_offence() {
             Perbill::from_percent(75)
         ));
         assert_eq!(
-            Slashes::<Test>::get(0),
+            Slashes::<Test>::get(3),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -89,11 +89,11 @@ fn root_can_cance_deferred_slash() {
         ));
         assert_ok!(ExternalValidatorSlashes::cancel_deferred_slash(
             RuntimeOrigin::root(),
-            0,
+            3,
             vec![0]
         ));
 
-        assert_eq!(Slashes::<Test>::get(0), vec![]);
+        assert_eq!(Slashes::<Test>::get(3), vec![]);
     });
 }
 
@@ -133,7 +133,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         ));
 
         assert_eq!(
-            Slashes::<Test>::get(0),
+            Slashes::<Test>::get(3),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -143,12 +143,14 @@ fn test_after_bonding_period_we_can_remove_slashes() {
             }]
         );
 
-        start_era(5, 5);
+        Pallet::<Test>::on_era_start(3, 3);
 
-        // whenever we start the 6th era, we can remove everything from era 0
-        Pallet::<Test>::on_era_start(6, 6);
+        start_era(8, 8);
 
-        assert_eq!(Slashes::<Test>::get(0), vec![]);
+        // whenever we start the 6th era, we can remove everything from era 3
+        Pallet::<Test>::on_era_start(9, 9);
+
+        assert_eq!(Slashes::<Test>::get(3), vec![]);
     });
 }
 
