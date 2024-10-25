@@ -814,6 +814,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                         &RuntimeCall::DataPreservers(..)
                             | &RuntimeCall::Registrar(..)
                             | &RuntimeCall::ContainerRegistrar(..)
+                            | &RuntimeCall::Paras(..)
+                            | &RuntimeCall::ParasSudoWrapper(..)
                     )
                 }
                 _ => false,
