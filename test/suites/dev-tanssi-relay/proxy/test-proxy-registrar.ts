@@ -125,9 +125,7 @@ describeSuite({
                 const txAddsCode = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE)
-                    )
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE))
                 );
 
                 await context.createBlock([await txAddsCode.signAsync(delegateBob)]);
@@ -193,7 +191,9 @@ describeSuite({
                 const txCreateChannel = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.parasSudoWrapper.sudoEstablishHrmpChannel(FORCED_PARA_ID, reservedParaId, 1, 1))
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.parasSudoWrapper.sudoEstablishHrmpChannel(FORCED_PARA_ID, reservedParaId, 1, 1)
+                    )
                 );
                 await context.createBlock([await txCreateChannel.signAsync(delegateBob)]);
                 await jumpSessions(context, 1);
@@ -207,16 +207,13 @@ describeSuite({
             id: "E04",
             title: "Unauthorized account cannot sudo calls",
             test: async function () {
-
                 // Call adding validation code
                 const VALIDATION_CODE_NOT_INCLUDED = "0x4e6f7420676f6e6e61206d616b65206974";
 
                 const txAddsCode = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE_NOT_INCLUDED)
-                    )
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE_NOT_INCLUDED))
                 );
 
                 await context.createBlock([await txAddsCode.signAsync(charlie)]);
@@ -234,11 +231,13 @@ describeSuite({
                 const txUpgrade = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.parasSudoWrapper.sudoScheduleParathreadUpgrade(FORCED_PARA_ID))
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.parasSudoWrapper.sudoScheduleParathreadUpgrade(FORCED_PARA_ID)
+                    )
                 );
                 await context.createBlock([await txUpgrade.signAsync(charlie)]);
                 await jumpSessions(context, 1);
-                
+
                 const stillParathread = await polkadotJs.query.paras.paraLifecycles(FORCED_PARA_ID);
                 expect(stillParathread.toString()).eq("Parathread");
 
