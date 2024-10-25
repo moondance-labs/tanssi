@@ -17,13 +17,13 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 pallet-session = { workspace = true }
 pallet-staking = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 sp-staking = { workspace = true }
+sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -37,10 +37,14 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
+	"pallet-session/std",
 	"pallet-staking/std",
 	"parity-scale-codec/std",
+	"scale-info/std",
 	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
+	"sp-staking/std",
 	"sp-std/std",
 	"tp-traits/std",
 ]
@@ -59,5 +63,6 @@ try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"pallet-session/try-runtime",
+	"pallet-staking/try-runtime",
 	"sp-runtime/try-runtime",
 ]
