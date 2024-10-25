@@ -188,6 +188,7 @@ impl external_validator_slashes::Config for Test {
     type SessionInterface = ();
     type EraIndexProvider = MockEraIndexProvider;
     type InvulnerablesProvider = MockInvulnerableProvider;
+    type WeightInfo = ();
 }
 
 pub struct FullIdentificationOf;

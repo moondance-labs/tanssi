@@ -9368,27 +9368,19 @@ dependencies = [
 name = "pallet-external-validator-slashes"
 version = "0.1.0"
 dependencies = [
- "bounded-collections 0.1.9",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "hex-literal 0.3.4",
  "log",
  "pallet-session",
  "pallet-staking",
  "parity-scale-codec",
- "polkadot-parachain-primitives",
- "polkadot-primitives",
  "scale-info",
- "serde",
  "sp-core",
- "sp-externalities",
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-state-machine",
  "sp-std",
- "sp-version",
  "tp-traits",
 ]
 

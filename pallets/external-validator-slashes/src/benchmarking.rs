@@ -21,27 +21,14 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as ExternalValidatorSlashes;
 use {
-    frame_benchmarking::{account, v2::*, BenchmarkError},
-    frame_support::{
-        pallet_prelude::*,
-        traits::{tokens::fungible::Balanced, Currency, EnsureOrigin, Get},
-    },
-    frame_system::{EventRecord, RawOrigin},
-    pallet_session::{self as session, SessionManager},
-    sp_runtime::traits::{AtLeast32BitUnsigned, Convert, TrailingZeroInput},
+    frame_benchmarking::{v2::*, BenchmarkError},
+    frame_system::RawOrigin,
+    pallet_session::{self as session},
+    sp_runtime::traits::TrailingZeroInput,
     sp_std::prelude::*,
 };
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
-    let events = frame_system::Pallet::<T>::events();
-    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
-    // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
-}
-
 const MAX_SLASHES: u32 = 1000;
-const SEED: u32 = 0;
 
 #[allow(clippy::multiple_bound_locations)]
 #[benchmarks(where T: session::Config)]
