@@ -176,7 +176,7 @@ impl pallet_session::SessionHandler<u64> for TestSessionHandler {
 
 parameter_types! {
     pub const Offset: u64 = 0;
-    pub const Period: u64 = 10;
+    pub const Period: u64 = 5;
 }
 
 impl pallet_session::Config for Test {
@@ -239,13 +239,15 @@ pub fn run_to_session(n: u32) {
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
 
-    for x in (old_block_number + 1)..=n {
-        AllPalletsWithSystem::on_finalize(x);
+    for x in old_block_number..n {
+        ExternalValidators::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
 
         System::reset_events();
-        System::set_block_number(x);
+        System::set_block_number(x + 1);
         Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
 
-        AllPalletsWithSystem::on_initialize(x);
+        ExternalValidators::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
     }
 }

@@ -17,8 +17,8 @@ use pallet_session::SessionManager;
 use {
     crate::{
         mock::{
-            run_to_block, new_test_ext, ExternalValidators, RootAccount, RuntimeEvent,
-            RuntimeOrigin, System, Test,
+            new_test_ext, run_to_block, run_to_session, ExternalValidators, RootAccount,
+            RuntimeEvent, RuntimeOrigin, Session, System, Test,
         },
         Error,
     },
@@ -162,8 +162,9 @@ fn whitelisted_and_external_order() {
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![1, 2, 50, 51]));
+        run_to_session(6);
+        let validators = Session::validators();
+        assert_eq!(validators, vec![1, 2, 50, 51]);
     });
 }
 
