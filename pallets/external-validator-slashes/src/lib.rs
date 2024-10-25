@@ -355,6 +355,10 @@ where
 
 impl<T: Config> OnEraStart for Pallet<T> {
     fn on_era_start(era_index: EraIndex, session_start: SessionIndex) {
+        // This should be small, as slashes are limited by the num of validators
+        // let's put 1000 as a conservative measure
+        const REMOVE_LIMIT: u32 = 1000;
+
         let bonding_duration = T::BondingDuration::get();
 
         BondedEras::<T>::mutate(|bonded| {
@@ -371,10 +375,9 @@ impl<T: Config> OnEraStart for Pallet<T> {
 
                 // Kill slashing metadata.
                 for (pruned_era, _) in bonded.drain(..n_to_prune) {
-                    #[allow(deprecated)]
-                    ValidatorSlashInEra::<T>::remove_prefix(&pruned_era, None);
-                    #[allow(deprecated)]
+                    let _ = ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
                     Slashes::<T>::remove(&pruned_era);
+                    ErasStartSessionIndex::<T>::remove(&pruned_era);
                 }
 
                 if let Some(&(_, first_session)) = bonded.first() {
