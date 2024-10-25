@@ -413,6 +413,7 @@ try-runtime = [
 	"snowbridge-pallet-ethereum-client/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-external-validator-slashes/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
