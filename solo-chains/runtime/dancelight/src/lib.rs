@@ -1908,6 +1908,7 @@ mod benches {
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
+        [pallet_collator_assignment, TanssiCollatorAssignment]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
@@ -3088,7 +3089,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
