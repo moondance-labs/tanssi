@@ -17,6 +17,7 @@ describeSuite({
         let genesisData: any;
         const VALIDATION_CODE = "0x546865205761736d20436f6465";
         const GENESIS_HEAD = "0x6865616465722064617461";
+        const FORCED_PARA_ID = 5555;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -73,7 +74,6 @@ describeSuite({
             id: "E02",
             title: "Delegated account can sudo txs in paras_registrar",
             test: async function () {
-                const PARA_ID = 5555;
                 const txReserve = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
@@ -81,7 +81,7 @@ describeSuite({
                         polkadotJs.tx.registrar.forceRegister(
                             delegateBob.address,
                             50,
-                            PARA_ID,
+                            FORCED_PARA_ID,
                             GENESIS_HEAD,
                             VALIDATION_CODE
                         )
@@ -89,14 +89,14 @@ describeSuite({
                 );
                 await context.createBlock([await txReserve.signAsync(delegateBob)]);
 
-                const registrar_info = await polkadotJs.query.registrar.paras(PARA_ID);
+                const registrar_info = await polkadotJs.query.registrar.paras(FORCED_PARA_ID);
                 expect(registrar_info.toJSON()).not.toBeNull();
             },
         });
 
         it({
             id: "E03",
-            title: "Delegated account can sudo txs in data preservers, paras, and registrar",
+            title: "Delegated account can sudo txs in data preservers, paras, paraSudoWrapper, and registrar",
             test: async function () {
                 // A regular user registers a new avs
 
@@ -188,6 +188,18 @@ describeSuite({
                 });
 
                 expect(startCollatingEvent.length).eq(1);
+
+                // Proxy can call paraSudoWrapper
+                const txCreateChannel = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.parasSudoWrapper.sudoEstablishHrmpChannel(FORCED_PARA_ID, reservedParaId, 1, 1))
+                );
+                await context.createBlock([await txCreateChannel.signAsync(delegateBob)]);
+                await jumpSessions(context, 1);
+
+                const hrmpChannels = await polkadotJs.query.hrmp.hrmpChannels([FORCED_PARA_ID, reservedParaId]);
+                expect(hrmpChannels.toJSON()).not.toBeNull();
             },
         });
 
@@ -216,6 +228,19 @@ describeSuite({
                 });
 
                 expect(noCodeMatching.length).eq(0);
+
+                // Call upgrading a parathread
+
+                const txUpgrade = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.parasSudoWrapper.sudoScheduleParathreadUpgrade(FORCED_PARA_ID))
+                );
+                await context.createBlock([await txUpgrade.signAsync(charlie)]);
+                await jumpSessions(context, 1);
+                
+                const stillParathread = await polkadotJs.query.paras.paraLifecycles(FORCED_PARA_ID);
+                expect(stillParathread.toString()).eq("Parathread");
 
                 // Call registering a para
 
