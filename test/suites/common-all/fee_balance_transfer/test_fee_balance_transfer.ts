@@ -102,7 +102,7 @@ describeSuite({
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
-                    tx,
+                    tx.toU8a(),
                     signedTx.encodedLength
                 );
 
@@ -183,7 +183,7 @@ describeSuite({
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
-                    tx,
+                    tx.toU8a(),
                     signedTx.encodedLength
                 );
                 const currentfeeMultiplier = (await polkadotJs.query.transactionPayment.nextFeeMultiplier()).toBigInt();
