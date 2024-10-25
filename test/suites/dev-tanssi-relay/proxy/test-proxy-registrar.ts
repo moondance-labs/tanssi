@@ -96,7 +96,7 @@ describeSuite({
 
         it({
             id: "E03",
-            title: "Delegated account can sudo txs in data preservers and registrar",
+            title: "Delegated account can sudo txs in data preservers, paras, and registrar",
             test: async function () {
                 // A regular user registers a new avs
 
@@ -121,12 +121,16 @@ describeSuite({
 
                 await jumpSessions(context, 1);
 
-                // Accept validation code so that para is onboarded after 2 sessions
-                const txAddsCode = polkadotJs.tx.sudo.sudo(
-                    polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE)
+                // Proxy can add validation code
+                const txAddsCode = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE)
+                    )
                 );
-                await context.createBlock([await txAddsCode.signAsync(sudoAlice)]);
 
+                await context.createBlock([await txAddsCode.signAsync(delegateBob)]);
                 await jumpSessions(context, 2);
 
                 // Proxy creates a data preserver. "The URL" translates to 0x5468652055524c when scale encoded
@@ -191,7 +195,29 @@ describeSuite({
             id: "E04",
             title: "Unauthorized account cannot sudo calls",
             test: async function () {
-                // Calling registering a para
+
+                // Call adding validation code
+                const VALIDATION_CODE_NOT_INCLUDED = "0x4e6f7420676f6e6e61206d616b65206974";
+
+                const txAddsCode = polkadotJs.tx.proxy.proxy(
+                    sudoAlice.address,
+                    null,
+                    polkadotJs.tx.sudo.sudo(
+                        polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE_NOT_INCLUDED)
+                    )
+                );
+
+                await context.createBlock([await txAddsCode.signAsync(charlie)]);
+                await jumpSessions(context, 2);
+
+                const trustedCodes = await polkadotJs.query.paras.codeByHash.entries();
+                const noCodeMatching = trustedCodes.filter((code) => {
+                    return code[1].toString() == VALIDATION_CODE_NOT_INCLUDED;
+                });
+
+                expect(noCodeMatching.length).eq(0);
+
+                // Call registering a para
 
                 const PARA_ID = 5556;
                 const txReserve = polkadotJs.tx.proxy.proxy(
