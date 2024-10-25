@@ -17,7 +17,7 @@ use pallet_session::SessionManager;
 use {
     crate::{
         mock::{
-            initialize_to_block, new_test_ext, ExternalValidators, RootAccount, RuntimeEvent,
+            run_to_block, new_test_ext, ExternalValidators, RootAccount, RuntimeEvent,
             RuntimeOrigin, System, Test,
         },
         Error,
@@ -37,7 +37,7 @@ fn basic_setup_works() {
 #[test]
 fn add_whitelisted_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         let new = 3;
 
@@ -73,7 +73,7 @@ fn add_whitelisted_works() {
 #[test]
 fn add_whitelisted_does_not_work_if_not_registered() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         let new = 42;
 
@@ -114,7 +114,7 @@ fn validator_limit_works() {
 #[test]
 fn remove_whitelisted_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
 
         assert_ok!(ExternalValidators::add_whitelisted(
@@ -158,7 +158,7 @@ fn remove_whitelisted_works() {
 #[test]
 fn whitelisted_and_external_order() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
@@ -170,7 +170,7 @@ fn whitelisted_and_external_order() {
 #[test]
 fn new_session_returns_validators_every_era() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
@@ -198,7 +198,7 @@ fn new_session_returns_validators_every_era() {
 #[test]
 fn validator_provider_returns_all_validators() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
@@ -211,7 +211,7 @@ fn validator_provider_returns_all_validators() {
 #[test]
 fn can_skip_external_validators() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
         assert_ok!(ExternalValidators::skip_external_validators(
@@ -227,7 +227,7 @@ fn can_skip_external_validators() {
 #[test]
 fn duplicate_validators_are_deduplicated() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![2]));
 
@@ -239,7 +239,7 @@ fn duplicate_validators_are_deduplicated() {
 #[test]
 fn duplicate_validator_order_is_preserved() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         // Whitelisted validators have priority, so their ordering should be respected
         // Need to manually remove and add each whitelisted because there is no "set_whitelisted"
         assert_ok!(ExternalValidators::remove_whitelisted(

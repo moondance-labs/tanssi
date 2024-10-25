@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::ConstU64;
+use frame_support::traits::{ConstU64, OnFinalize, OnInitialize};
 use {
     super::*,
     crate as pallet_external_validators,
@@ -228,9 +228,24 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub fn initialize_to_block(n: u64) {
-    for i in System::block_number() + 1..=n {
-        System::set_block_number(i);
-        <AllPalletsWithSystem as frame_support::traits::OnInitialize<u64>>::on_initialize(i);
+pub const INIT_TIMESTAMP: u64 = 30_000;
+pub const BLOCK_TIME: u64 = 1000;
+
+pub fn run_to_session(n: u32) {
+    let block_number = Period::get() * u64::from(n);
+    run_to_block(block_number + 1);
+}
+
+pub fn run_to_block(n: u64) {
+    let old_block_number = System::block_number();
+
+    for x in (old_block_number + 1)..=n {
+        AllPalletsWithSystem::on_finalize(x);
+
+        System::reset_events();
+        System::set_block_number(x);
+        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+
+        AllPalletsWithSystem::on_initialize(x);
     }
 }
