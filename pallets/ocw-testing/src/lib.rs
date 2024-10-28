@@ -15,15 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use frame_system::pallet_prelude::BlockNumberFor;
-// Remove comment to enable http requests
-// use sp_runtime::offchain::{http, Duration};
 
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
+    use frame_system::ensure_root;
+    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
@@ -32,6 +31,9 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
     }
+
+    #[pallet::storage]
+    pub type OffchainWorkerTestEnabled<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -45,12 +47,25 @@ pub mod pallet {
         /// so the code should be able to handle that.
         fn offchain_worker(_block_number: BlockNumberFor<T>) {
             log::info!("Entering off-chain worker.");
-            // The entry point of your code called by offchain worker
+            // The entry point of your code called by off-chain worker
             Self::emit_offchain_event();
         }
     }
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        /// Switch on or off the offchain worker
+        ///
+        /// Only root (or specified authority account) should be able to switch
+        /// the off-chain worker on and off to avoid enabling it by default in production
+        #[pallet::call_index(0)]
+        #[pallet::weight({0})]
+        pub fn switch_offchain_worker(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let _ = ensure_root(origin)?;
+
+            OffchainWorkerTestEnabled::<T>::put(!OffchainWorkerTestEnabled::<T>::get());
+            Ok(().into())
+        }
+    }
 
     /// Events for the pallet.
     #[pallet::event]
@@ -62,8 +77,10 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-    /// Simple event emitter
+    /// Send simple unsigned transaction
     fn emit_offchain_event() {
-        Self::deposit_event(Event::SimpleOffchainEvent);
+        if OffchainWorkerTestEnabled::<T>::get() {
+            Self::deposit_event(Event::SimpleOffchainEvent);
+        }
     }
 }
