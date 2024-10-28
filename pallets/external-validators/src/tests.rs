@@ -163,6 +163,7 @@ fn whitelisted_and_external_order() {
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
         run_to_session(6);
+        // TODO: this returns vec![1, 2], why
         let validators = Session::validators();
         assert_eq!(validators, vec![1, 2, 50, 51]);
     });

@@ -240,6 +240,13 @@ pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
 
     for x in old_block_number..n {
+        if x == 0 {
+            // Initialize genesis block
+            // This should probably be in new_test_ext
+            ExternalValidators::on_initialize(System::block_number());
+            Session::on_initialize(System::block_number());
+            // TODO: maybe not needed, this doesn't fix any tests
+        }
         ExternalValidators::on_finalize(System::block_number());
         Session::on_finalize(System::block_number());
 
