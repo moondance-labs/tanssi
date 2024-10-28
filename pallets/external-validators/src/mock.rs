@@ -13,13 +13,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::{ConstU64, OnFinalize, OnInitialize};
 use {
     super::*,
     crate as pallet_external_validators,
     frame_support::{
-        ord_parameter_types, parameter_types,
-        traits::{ConstU32, ValidatorRegistration},
+        assert_ok, ord_parameter_types, parameter_types,
+        traits::{
+            fungible::Mutate, ConstU32, ConstU64, OnFinalize, OnInitialize, ValidatorRegistration,
+        },
     },
     frame_system::{self as system, EnsureSignedBy},
     pallet_balances::AccountData,
@@ -225,7 +226,25 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     .unwrap();
     session.assimilate_storage(&mut t).unwrap();
 
-    t.into()
+    let mut ext: sp_io::TestExternalities = t.into();
+
+    // Initialize accounts and keys for external validators
+    ext.execute_with(|| {
+        initialize_validators(vec![50, 51]);
+    });
+
+    ext
+}
+
+fn initialize_validators(validators: Vec<u64>) {
+    for x in validators {
+        assert_ok!(Balances::mint_into(&x, 10_000_000_000));
+        assert_ok!(Session::set_keys(
+            RuntimeOrigin::signed(x),
+            MockSessionKeys::from(UintAuthorityId(x)),
+            vec![]
+        ));
+    }
 }
 
 pub const INIT_TIMESTAMP: u64 = 30_000;
@@ -240,13 +259,6 @@ pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
 
     for x in old_block_number..n {
-        if x == 0 {
-            // Initialize genesis block
-            // This should probably be in new_test_ext
-            ExternalValidators::on_initialize(System::block_number());
-            Session::on_initialize(System::block_number());
-            // TODO: maybe not needed, this doesn't fix any tests
-        }
         ExternalValidators::on_finalize(System::block_number());
         Session::on_finalize(System::block_number());
 
