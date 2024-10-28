@@ -118,8 +118,6 @@ fc-storage = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 pallet-ethereum = { workspace = true }
-
-
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
