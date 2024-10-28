@@ -15,14 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
+use frame_system::ensure_root;
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
-    use frame_system::ensure_root;
-    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
+    use frame_system::pallet_prelude::*;
+
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
@@ -33,7 +33,19 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    pub type OffchainWorkerTestEnabled<T: Config> = StorageValue<_, bool, ValueQuery>;
+    pub type OffchainWorkerTestEnabled<T> = StorageValue<_, bool, ValueQuery>;
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub _phantom_data: PhantomData<T>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            <OffchainWorkerTestEnabled<T>>::put(&false);
+        }
+    }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
