@@ -1,7 +1,7 @@
 [package]
-name = "pallet-ocw-simple"
+name = "pallet-ocw-testing"
 authors = { workspace = true }
-description = "Simple Off-chain worker pallet used for testing"
+description = "Off-chain worker pallet used for testing"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"

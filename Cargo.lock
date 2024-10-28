@@ -2089,7 +2089,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-multisig",
- "pallet-ocw-simple",
+ "pallet-ocw-testing",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
@@ -9700,7 +9700,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-ocw-simple"
+name = "pallet-ocw-testing"
 version = "0.1.0"
 dependencies = [
  "frame-support",

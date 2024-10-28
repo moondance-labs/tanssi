@@ -659,7 +659,7 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
-impl pallet_ocw_simple::Config for Runtime {
+impl pallet_ocw_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
@@ -705,7 +705,7 @@ construct_runtime!(
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
-        OffchainWorker: pallet_ocw_simple::{Pallet,Call,Event<T>} = 120,
+        OffchainWorker: pallet_ocw_testing::{Pallet,Call,Event<T>} = 120,
     }
 );
 
