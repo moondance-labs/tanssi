@@ -469,6 +469,7 @@ pub type EraIndex = u32;
 
 pub trait EraIndexProvider {
     fn active_era() -> ActiveEraInfo;
+    fn era_to_session_start(era_index: EraIndex) -> Option<u32>;
 }
 
 pub trait ValidatorProvider<ValidatorId> {

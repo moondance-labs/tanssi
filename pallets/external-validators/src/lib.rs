@@ -662,6 +662,10 @@ impl<T: Config> EraIndexProvider for Pallet<T> {
             start: None,
         })
     }
+
+    fn era_to_session_start(era_index: EraIndex) -> Option<u32> {
+        <ErasStartSessionIndex<T>>::get(era_index)
+    }
 }
 
 impl<T: Config> ValidatorProvider<T::ValidatorId> for Pallet<T> {
