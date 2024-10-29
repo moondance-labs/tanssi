@@ -28,6 +28,7 @@ mod core_scheduling_tests;
 mod ethereum_client;
 mod inflation_rewards;
 mod integration_test;
+mod migrations_test;
 mod relay_configuration;
 mod relay_registrar;
 mod services_payment;
