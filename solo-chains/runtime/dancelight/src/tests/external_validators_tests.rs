@@ -39,6 +39,18 @@ fn assert_validators_do_not_change(
     }
 }
 
+fn active_era_session_start() -> u32 {
+    let active_era = pallet_external_validators::ActiveEra::<Runtime>::get()
+        .map(|x| x.index)
+        .unwrap_or(0);
+
+    pallet_external_validators::ErasStartSessionIndex::<Runtime>::get(active_era).unwrap()
+}
+
+fn active_era_index() -> u32 {
+    ExternalValidators::active_era().map(|x| x.index).unwrap()
+}
+
 #[test]
 fn whitelisted_validators_priority() {
     ExtBuilder::default()
@@ -342,9 +354,9 @@ fn default_era_changes() {
                 prev_validators = validators;
                 data.push((
                     session,
-                    ExternalValidators::current_era(),
-                    ExternalValidators::active_era(),
-                    ExternalValidators::active_era_session_start(),
+                    ExternalValidators::current_era().unwrap(),
+                    active_era_index(),
+                    active_era_session_start(),
                     validators_changed,
                 ));
             }
@@ -431,16 +443,16 @@ mod force_eras {
                 ));
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_new_era(root_origin()));
                 // Still era 1, until next session
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_eq!(Session::current_index(), 0);
 
                 run_to_session(1);
                 assert_eq!(Session::current_index(), 1);
                 // Era changes in session 1, but validators will change in session 2
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -449,7 +461,7 @@ mod force_eras {
 
                 run_to_session(2);
                 // Validators change now
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -466,7 +478,7 @@ mod force_eras {
                 // Validators will not change until `sessions_per_era` sessions later
                 // With sessions_per_era=6, era will change in session 7, validators will change in
                 // session 8, this is session 6
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -479,8 +491,8 @@ mod force_eras {
 
                 run_to_session(1 + sessions_per_era);
                 // This is session 7, new era but not new validators
-                assert_eq!(ExternalValidators::current_era(), 2);
-                assert_eq!(ExternalValidators::active_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
+                assert_eq!(active_era_index(), 1);
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -489,8 +501,8 @@ mod force_eras {
 
                 run_to_session(1 + sessions_per_era + 1);
                 // This is session 8, validators will change now
-                assert_eq!(ExternalValidators::current_era(), 2);
-                assert_eq!(ExternalValidators::active_era(), 2);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
+                assert_eq!(active_era_index(), 2);
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -536,11 +548,11 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will never change
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_no_eras(root_origin()));
 
                 run_to_session(sessions_per_era);
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -583,11 +595,11 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will change on every session
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_new_era_always(root_origin()));
 
                 run_to_session(2);
-                assert_eq!(ExternalValidators::current_era(), 2);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -600,7 +612,7 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![]).unwrap();
                 run_to_session(4);
-                assert_eq!(ExternalValidators::current_era(), 4);
+                assert_eq!(ExternalValidators::current_era(), Some(4));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,

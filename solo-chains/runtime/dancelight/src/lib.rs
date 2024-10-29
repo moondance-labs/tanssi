@@ -1199,6 +1199,7 @@ parameter_types! {
 impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
+    type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
     type MaxExternalValidators = MaxExternalValidators;
     type ValidatorId = AccountId;
