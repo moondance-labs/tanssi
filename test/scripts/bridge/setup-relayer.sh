@@ -27,9 +27,7 @@ config_relayer() {
 
     # Configure beacon relay
     local deneb_forked_epoch=132608
-    if [ "$eth_fast_mode" == "true" ]; then
-        deneb_forked_epoch=0
-    fi
+    deneb_forked_epoch=0
     jq \
         --arg beacon_endpoint_http $beacon_endpoint_http \
         --argjson deneb_forked_epoch $deneb_forked_epoch \
