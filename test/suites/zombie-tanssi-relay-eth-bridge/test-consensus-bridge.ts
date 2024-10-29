@@ -10,7 +10,7 @@ function execCommand(command: string, options?) {
             if (error) {
                 reject(error);
             } else {
-                resolve(stdout);
+                resolve({ stdout, stderr });
             }
         });
     });
@@ -65,18 +65,20 @@ describeSuite({
             console.log("Contracts deployed");
 
             const contractInfoData = JSON.parse(
-                <string>await execCommand("./scripts/bridge/generate-contract-info.sh")
+                <string>(await execCommand("./scripts/bridge/generate-contract-info.sh")).stdout
             );
             console.log("BeefyClient contract address is:", contractInfoData.contracts.BeefyClient.address);
             beefyClientDetails = contractInfoData.contracts.BeefyClient;
 
             const initialBeaconUpdate = JSON.parse(
-                <string>await execCommand("./scripts/bridge/setup-relayer.sh", {
-                    env: {
-                        RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
-                        ...process.env,
-                    },
-                })
+                <string>(
+                    await execCommand("./scripts/bridge/setup-relayer.sh", {
+                        env: {
+                            RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
+                            ...process.env,
+                        },
+                    })
+                ).stdout
             );
 
             // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
