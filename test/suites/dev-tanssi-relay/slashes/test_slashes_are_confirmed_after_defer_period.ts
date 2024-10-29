@@ -12,7 +12,7 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1301",
+    id: "DTR1304",
     title: "Babe offences should trigger a slash",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -29,7 +29,7 @@ describeSuite({
         });
         it({
             id: "E01",
-            title: "Babe offences do not trigger a slash against invulnerables",
+            title: "Babe offences trigger a slash+",
             test: async function () {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
@@ -126,6 +126,28 @@ describeSuite({
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
                 expect(expectedSlashes.length).to.be.eq(1);
                 expect(u8aToHex(expectedSlashes[0].validator)).to.be.eq(u8aToHex(aliceStash.addressRaw));
+                
+                // Put alice back to invulnerables 
+                const addAliceFromInvulnerables = await polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.externalValidators.addWhitelisted(aliceStash.address)
+                ).signAsync(alice)
+                await context.createBlock([addAliceFromInvulnerables]);
+
+                let sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
+
+                let currentIndex = await polkadotJs.query.session.currentIndex();
+
+                let targetSession = currentIndex*sessionsPerEra*(DeferPeriod +1);
+                while((await polkadotJs.query.session.currentIndex()).toNumber() < targetSession) {
+                    let currentIndex = await polkadotJs.query.session.currentIndex();
+                    await jumpToSession(context, currentIndex.toNumber()+1);
+                }
+                
+                // scheduled slashes
+                const expectedSlashesAfterDefer = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
+                expect(expectedSlashesAfterDefer.length).to.be.eq(1);
+                expect(expectedSlashesAfterDefer[0].confirmed.toHuman()6).to.be.true;
+
             },
         });
     },

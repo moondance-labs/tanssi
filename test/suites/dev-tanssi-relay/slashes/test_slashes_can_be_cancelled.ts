@@ -12,7 +12,7 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1301",
+    id: "DTR1303",
     title: "Babe offences should trigger a slash",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -29,7 +29,7 @@ describeSuite({
         });
         it({
             id: "E01",
-            title: "Babe offences do not trigger a slash against invulnerables",
+            title: "Babe offences trigger a slash+",
             test: async function () {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
@@ -126,6 +126,17 @@ describeSuite({
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
                 expect(expectedSlashes.length).to.be.eq(1);
                 expect(u8aToHex(expectedSlashes[0].validator)).to.be.eq(u8aToHex(aliceStash.addressRaw));
+
+                // Remove alice from invulnerables (just for the slash)
+                const cancelSlash = await polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.externalValidatorSlashes.cancelDeferredSlash(DeferPeriod +1, [0])
+                ).signAsync(alice)
+                await context.createBlock([cancelSlash]);
+
+                // alashes have dissapeared
+                const expectedSlashesAfterCancel = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
+                expect(expectedSlashesAfterCancel.length).to.be.eq(0);
+
             },
         });
     },
