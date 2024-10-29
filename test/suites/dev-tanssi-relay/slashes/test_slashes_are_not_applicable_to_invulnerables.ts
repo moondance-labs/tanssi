@@ -12,7 +12,7 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1301",
+    id: "DTR1302",
     title: "Babe offences should trigger a slash",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -33,12 +33,6 @@ describeSuite({
             test: async function () {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
-
-                // Remove alice from invulnerables (just for the slash)
-                const removeAliceFromInvulnerables = await polkadotJs.tx.sudo.sudo(
-                    polkadotJs.tx.externalValidators.removeWhitelisted(aliceStash.address)
-                ).signAsync(alice)
-                await context.createBlock([removeAliceFromInvulnerables]);
 
                 let baseHeader = await polkadotJs.rpc.chain.getHeader();
                 let baseHeader2 = await polkadotJs.rpc.chain.getHeader();
@@ -122,10 +116,9 @@ describeSuite({
                 // Slash item should be there
                 const DeferPeriod = 2;
 
-                // scheduled slashes
+                // Alice is an invulnerable, therefore she should not be slashed
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
-                expect(expectedSlashes.length).to.be.eq(1);
-                expect(u8aToHex(expectedSlashes[0].validator)).to.be.eq(u8aToHex(aliceStash.addressRaw));
+                expect(expectedSlashes.length).to.be.eq(0);
             },
         });
     },
