@@ -421,8 +421,9 @@ pub mod pallet {
 
         /// Returns true if the provided session index should start a new era.
         pub(crate) fn should_start_new_era(session: u32) -> bool {
-            if session <= 1 {
-                return false;
+            if session == 0 {
+                // Start first era
+                return true;
             }
 
             match <ForceEra<T>>::get() {
@@ -489,11 +490,7 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
 
         // Increment current era
         <CurrentEra<T>>::mutate(|era| {
-            if era.is_none() {
-                *era = Some(0);
-            }
-            let era = era.as_mut().unwrap();
-            *era += 1;
+            *era = Some(era.map(|x| x + 1).unwrap_or(0));
         });
 
         // Return new validators
@@ -533,20 +530,14 @@ impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
         // ActiveEra = CurrentEra
         // Increase era
         let era_index = <ActiveEra<T>>::mutate(|q| {
-            if q.is_none() {
-                *q = Some(ActiveEraInfo {
-                    index: 0,
-                    start: None,
-                });
-            }
+            let new_index = q.as_ref().map(|era| era.index + 1).unwrap_or(0);
 
-            let q = q.as_mut().unwrap();
-            q.index += 1;
+            *q = Some(ActiveEraInfo {
+                index: new_index,
+                start: None,
+            });
 
-            // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
-            q.start = None;
-
-            q.index
+            new_index
         });
 
         T::OnEraStart::on_era_start(era_index, session_index);

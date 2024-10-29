@@ -370,6 +370,28 @@ fn default_era_changes() {
         });
 }
 
+#[test]
+fn babe_session_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_session(2);
+
+            let session = Session::current_index();
+
+            // If pallet_external_validators returns empty validators, pallet_session will skip some
+            // sessions and the reported session will be 7 instead of 2
+            assert_eq!(session, 2);
+        });
+}
+
 mod force_eras {
     use super::*;
 
@@ -413,8 +435,10 @@ mod force_eras {
                 assert_ok!(ExternalValidators::force_new_era(root_origin()));
                 // Still era 1, until next session
                 assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(Session::current_index(), 0);
 
                 run_to_session(1);
+                assert_eq!(Session::current_index(), 1);
                 // Era changes in session 1, but validators will change in session 2
                 assert_eq!(ExternalValidators::current_era(), 1);
                 let validators = Session::validators();
