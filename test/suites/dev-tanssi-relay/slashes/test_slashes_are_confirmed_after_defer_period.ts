@@ -138,16 +138,13 @@ describeSuite({
                 let currentIndex = await polkadotJs.query.session.currentIndex();
 
                 let targetSession = currentIndex*sessionsPerEra*(DeferPeriod +1);
-                while((await polkadotJs.query.session.currentIndex()).toNumber() < targetSession) {
-                    let currentIndex = await polkadotJs.query.session.currentIndex();
-                    await jumpToSession(context, currentIndex.toNumber()+1);
-                }
+
+                await jumpToSession(context, targetSession);
                 
                 // scheduled slashes
                 const expectedSlashesAfterDefer = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod +1);
                 expect(expectedSlashesAfterDefer.length).to.be.eq(1);
-                expect(expectedSlashesAfterDefer[0].confirmed.toHuman()6).to.be.true;
-
+                expect(expectedSlashesAfterDefer[0].confirmed.toHuman()).to.be.true;
             },
         });
     },
