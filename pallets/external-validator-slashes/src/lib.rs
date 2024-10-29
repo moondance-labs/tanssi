@@ -153,14 +153,6 @@ pub mod pallet {
     pub type Slashes<T: Config> =
         StorageMap<_, Twox64Concat, EraIndex, Vec<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
 
-    /// The session index at which the era start for the last [`Config::HistoryDepth`] eras.
-    ///
-    /// Note: This tracks the starting session (i.e. session index when era start being active)
-    /// for the eras in `[CurrentEra - HISTORY_DEPTH, CurrentEra]`.
-    #[pallet::storage]
-    #[pallet::getter(fn eras_start_session_index)]
-    pub type ErasStartSessionIndex<T> = StorageMap<_, Twox64Concat, EraIndex, SessionIndex>;
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -278,7 +270,7 @@ where
             add_db_reads_writes(1, 0);
             active_era
         };
-        let active_era_start_session_index = Self::eras_start_session_index(active_era)
+        let active_era_start_session_index = T::EraIndexProvider::era_to_session_start(active_era)
             .unwrap_or_else(|| {
                 frame_support::print("Error: start_session_index must be set for current_era");
                 0
@@ -388,7 +380,6 @@ impl<T: Config> OnEraStart for Pallet<T> {
                 for (pruned_era, _) in bonded.drain(..n_to_prune) {
                     let _ = ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
                     Slashes::<T>::remove(&pruned_era);
-                    ErasStartSessionIndex::<T>::remove(&pruned_era);
                 }
 
                 if let Some(&(_, first_session)) = bonded.first() {
@@ -396,8 +387,6 @@ impl<T: Config> OnEraStart for Pallet<T> {
                 }
             }
         });
-
-        ErasStartSessionIndex::<T>::insert(&era_index, &session_start);
 
         Self::confirm_unconfirmed_slashes(era_index);
     }

@@ -39,6 +39,18 @@ fn assert_validators_do_not_change(
     }
 }
 
+fn active_era_session_start() -> u32 {
+    let active_era = pallet_external_validators::ActiveEra::<Runtime>::get()
+        .map(|x| x.index)
+        .unwrap_or(0);
+
+    pallet_external_validators::ErasStartSessionIndex::<Runtime>::get(active_era).unwrap()
+}
+
+fn active_era_index() -> u32 {
+    ExternalValidators::active_era().map(|x| x.index).unwrap()
+}
+
 #[test]
 fn whitelisted_validators_priority() {
     ExtBuilder::default()
@@ -281,49 +293,46 @@ fn no_duplicate_validators() {
         });
 }
 
-mod force_eras {
-    use super::*;
+#[test]
+fn default_era_changes() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
 
-    #[test]
-    fn default_era_changes() {
-        ExtBuilder::default()
-            .with_balances(vec![
-                // Alice gets 10k extra tokens for her mapping deposit
-                (AccountId::from(ALICE), 210_000 * UNIT),
-                (AccountId::from(BOB), 100_000 * UNIT),
-                (AccountId::from(CHARLIE), 100_000 * UNIT),
-                (AccountId::from(DAVE), 100_000 * UNIT),
-            ])
-            .build()
-            .execute_with(|| {
-                run_to_block(2);
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
 
-                // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
-                let sessions_per_era = SessionsPerEra::get();
+            if sessions_per_era != 6 {
+                log::error!("Ignoring test default_era_changes because it doesn't work with sessions_per_era={}. Compile without fast-runtime feature and try again.", sessions_per_era);
+                return;
+            }
 
-                if sessions_per_era != 6 {
-                    log::error!("Ignoring test default_era_changes because it doesn't work with sessions_per_era={}. Compile without fast-runtime feature and try again.", sessions_per_era);
-                    return;
-                }
+            let mut data = vec![];
+            let mut prev_validators = Session::validators();
 
-                let mut data = vec![];
-                let mut prev_validators = Session::validators();
+            for session in 1u32..=(sessions_per_era * 2 + 1) {
+                // For every session:
+                // * Create a new validator account, MockValidatorN, mint balance, and insert keys
+                // * Set this validator as the only "external validator"
+                // * Run to session start
+                // * Pallet session wants to know validators for the next session (session + 1), so:
+                // * If the next session is in the same era as the previous session: validators do not change
+                // * If the next session is in a new era: new validators will be set to [Alice, Bob, MockValidatorN]
+                // and stored as QueuedKeys in pallet session.
+                // So validators for session N will be [Alice, Bob, MockValidator(N-1)]
+                let mock_validator = AccountId::from([0x10 + session as u8; 32]);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
 
-                for session in 1u32..=(sessions_per_era * 2 + 1) {
-                    // For every session:
-                    // * Create a new validator account, MockValidatorN, mint balance, and insert keys
-                    // * Set this validator as the only "external validator"
-                    // * Run to session start
-                    // * Pallet session wants to know validators for the next session (session + 1), so:
-                    // * If the next session is in the same era as the previous session: validators do not change
-                    // * If the next session is in a new era: new validators will be set to [Alice, Bob, MockValidatorN]
-                    // and stored as QueuedKeys in pallet session.
-                    // So validators for session N will be [Alice, Bob, MockValidator(N-1)]
-                    let mock_validator = AccountId::from([0x10 + session as u8; 32]);
-                    let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
-
-                    assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
-                    assert_ok!(Session::set_keys(
+                assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
+                assert_ok!(Session::set_keys(
                         origin_of(mock_validator.clone()),
                         SessionKeys {
                             babe: mock_keys.babe.clone(),
@@ -337,41 +346,66 @@ mod force_eras {
                         vec![]
                     ));
 
-                    ExternalValidators::set_external_validators(vec![mock_validator]).unwrap();
+                ExternalValidators::set_external_validators(vec![mock_validator]).unwrap();
 
-                    run_to_session(session);
-                    let validators = Session::validators();
-                    let validators_changed = validators != prev_validators;
-                    prev_validators = validators;
-                    data.push((
-                        session,
-                        ExternalValidators::current_era(),
-                        ExternalValidators::active_era(),
-                        ExternalValidators::active_era_session_start(),
-                        validators_changed,
-                    ));
-                }
+                run_to_session(session);
+                let validators = Session::validators();
+                let validators_changed = validators != prev_validators;
+                prev_validators = validators;
+                data.push((
+                    session,
+                    ExternalValidators::current_era().unwrap(),
+                    active_era_index(),
+                    active_era_session_start(),
+                    validators_changed,
+                ));
+            }
 
-                // (session, current_era, active_era, active_era_session_start, new_validators)
-                let expected = vec![
-                    (1, 0, 0, 0, false),
-                    (2, 0, 0, 0, false),
-                    (3, 0, 0, 0, false),
-                    (4, 0, 0, 0, false),
-                    (5, 1, 0, 0, false),
-                    (6, 1, 1, 6, true),
-                    (7, 1, 1, 6, false),
-                    (8, 1, 1, 6, false),
-                    (9, 1, 1, 6, false),
-                    (10, 1, 1, 6, false),
-                    (11, 2, 1, 6, false),
-                    (12, 2, 2, 12, true),
-                    (13, 2, 2, 12, false),
-                ];
+            // (session, current_era, active_era, active_era_session_start, new_validators)
+            let expected = vec![
+                (1, 0, 0, 0, false),
+                (2, 0, 0, 0, false),
+                (3, 0, 0, 0, false),
+                (4, 0, 0, 0, false),
+                (5, 1, 0, 0, false),
+                (6, 1, 1, 6, true),
+                (7, 1, 1, 6, false),
+                (8, 1, 1, 6, false),
+                (9, 1, 1, 6, false),
+                (10, 1, 1, 6, false),
+                (11, 2, 1, 6, false),
+                (12, 2, 2, 12, true),
+                (13, 2, 2, 12, false),
+            ];
 
-                assert_eq!(data, expected);
-            });
-    }
+            assert_eq!(data, expected);
+        });
+}
+
+#[test]
+fn babe_session_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_session(2);
+
+            let session = Session::current_index();
+
+            // If pallet_external_validators returns empty validators, pallet_session will skip some
+            // sessions and the reported session will be 7 instead of 2
+            assert_eq!(session, 2);
+        });
+}
+
+mod force_eras {
+    use super::*;
 
     #[test]
     fn force_new_era() {
@@ -409,14 +443,16 @@ mod force_eras {
                 ));
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_new_era(root_origin()));
                 // Still era 1, until next session
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
+                assert_eq!(Session::current_index(), 0);
 
                 run_to_session(1);
+                assert_eq!(Session::current_index(), 1);
                 // Era changes in session 1, but validators will change in session 2
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -425,7 +461,7 @@ mod force_eras {
 
                 run_to_session(2);
                 // Validators change now
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -442,7 +478,7 @@ mod force_eras {
                 // Validators will not change until `sessions_per_era` sessions later
                 // With sessions_per_era=6, era will change in session 7, validators will change in
                 // session 8, this is session 6
-                assert_eq!(ExternalValidators::current_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(1));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -455,8 +491,8 @@ mod force_eras {
 
                 run_to_session(1 + sessions_per_era);
                 // This is session 7, new era but not new validators
-                assert_eq!(ExternalValidators::current_era(), 2);
-                assert_eq!(ExternalValidators::active_era(), 1);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
+                assert_eq!(active_era_index(), 1);
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -465,8 +501,8 @@ mod force_eras {
 
                 run_to_session(1 + sessions_per_era + 1);
                 // This is session 8, validators will change now
-                assert_eq!(ExternalValidators::current_era(), 2);
-                assert_eq!(ExternalValidators::active_era(), 2);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
+                assert_eq!(active_era_index(), 2);
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -512,11 +548,11 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will never change
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_no_eras(root_origin()));
 
                 run_to_session(sessions_per_era);
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -559,11 +595,11 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will change on every session
-                assert_eq!(ExternalValidators::current_era(), 0);
+                assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_new_era_always(root_origin()));
 
                 run_to_session(2);
-                assert_eq!(ExternalValidators::current_era(), 2);
+                assert_eq!(ExternalValidators::current_era(), Some(2));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,
@@ -576,7 +612,7 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![]).unwrap();
                 run_to_session(4);
-                assert_eq!(ExternalValidators::current_era(), 4);
+                assert_eq!(ExternalValidators::current_era(), Some(4));
                 let validators = Session::validators();
                 assert_eq!(
                     validators,

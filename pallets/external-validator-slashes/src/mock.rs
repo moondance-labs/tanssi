@@ -129,6 +129,9 @@ impl EraIndexProvider for MockEraIndexProvider {
             start: None,
         }
     }
+    fn era_to_session_start(era_index: EraIndex) -> Option<SessionIndex> {
+        Some(era_index.into())
+    }
 }
 
 impl pallet_session::Config for Test {

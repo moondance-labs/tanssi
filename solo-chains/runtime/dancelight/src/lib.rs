@@ -1122,12 +1122,18 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
+    // TODO: BondingDuration is set to 28 days on Polkadot,
+    // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
 impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
     type MaxAuthorities = MaxAuthorities;
+    // MaxNominators is used in case we need to slash validators and check how many
+    // nominators do they have as maximum.
+    // This value is part of the parameters that are then used for extrinsics
+    // weight computation.
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
     type OnNewValidatorSet = MmrLeaf;
@@ -1210,6 +1216,7 @@ parameter_types! {
 impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
+    type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
     type MaxExternalValidators = MaxExternalValidators;
     type ValidatorId = AccountId;
@@ -1545,6 +1552,10 @@ construct_runtime! {
         ServicesPayment: pallet_services_payment = 18,
         DataPreservers: pallet_data_preservers = 19,
 
+        // Validator stuff
+        ExternalValidators: pallet_external_validators = 20,
+        ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1607,11 +1618,6 @@ construct_runtime! {
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
-
-        // External Ethereum
-        ExternalValidators: pallet_external_validators = 100,
-        ExternalValidatorSlashes: pallet_external_validator_slashes = 101,
-
 
         // Migration stuff
         Migrations: pallet_migrations = 120,
@@ -1944,6 +1950,7 @@ mod benches {
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
+        [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         // XCM
@@ -3127,7 +3134,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {

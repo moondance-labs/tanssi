@@ -13,12 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use pallet_session::SessionManager;
 use {
     crate::{
         mock::{
-            initialize_to_block, new_test_ext, ExternalValidators, RootAccount, RuntimeEvent,
-            RuntimeOrigin, System, Test,
+            new_test_ext, run_to_block, run_to_session, ExternalValidators, HookCall, Mock,
+            RootAccount, RuntimeEvent, RuntimeOrigin, Session, System, Test,
         },
         Error,
     },
@@ -37,7 +36,7 @@ fn basic_setup_works() {
 #[test]
 fn add_whitelisted_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         let new = 3;
 
@@ -73,7 +72,7 @@ fn add_whitelisted_works() {
 #[test]
 fn add_whitelisted_does_not_work_if_not_registered() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         let new = 42;
 
@@ -114,7 +113,7 @@ fn validator_limit_works() {
 #[test]
 fn remove_whitelisted_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
 
         assert_ok!(ExternalValidators::add_whitelisted(
@@ -158,60 +157,34 @@ fn remove_whitelisted_works() {
 #[test]
 fn whitelisted_and_external_order() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![1, 2, 50, 51]));
-    });
-}
-
-#[test]
-fn new_session_returns_validators_every_era() {
-    new_test_ext().execute_with(|| {
-        initialize_to_block(1);
-        assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
-
-        // 1 era = 6 sessions
-        // Returns None until block 6, which is the start of era 1
-        for session in 2..=5 {
-            let validators = ExternalValidators::new_session(session);
-            assert_eq!(validators, None, "{}", session);
-        }
-
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![1, 2, 50, 51]));
-
-        // Returns None until block 12, which is the start of era 2
-        for session in 7..=11 {
-            let validators = ExternalValidators::new_session(session);
-            assert_eq!(validators, None, "{}", session);
-        }
-
-        let validators = ExternalValidators::new_session(12);
-        assert_eq!(validators, Some(vec![1, 2, 50, 51]));
+        run_to_session(6);
+        let validators = Session::validators();
+        assert_eq!(validators, vec![1, 2, 50, 51]);
     });
 }
 
 #[test]
 fn validator_provider_returns_all_validators() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
 
-        let validators_new_session = ExternalValidators::new_session(6);
+        run_to_session(6);
+        let validators_new_session = Session::validators();
         let validators_provider = <ExternalValidators as ValidatorProvider<u64>>::validators();
-        assert_eq!(validators_new_session, Some(validators_provider));
+        assert_eq!(validators_new_session, validators_provider);
     });
 }
 
 #[test]
 fn can_skip_external_validators() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
         assert_ok!(ExternalValidators::skip_external_validators(
@@ -219,27 +192,29 @@ fn can_skip_external_validators() {
             true
         ));
 
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![1, 2]));
+        run_to_session(6);
+        let validators = Session::validators();
+        assert_eq!(validators, vec![1, 2]);
     });
 }
 
 #[test]
 fn duplicate_validators_are_deduplicated() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
         assert_ok!(ExternalValidators::set_external_validators(vec![2]));
 
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![1, 2]));
+        run_to_session(6);
+        let validators = Session::validators();
+        assert_eq!(validators, vec![1, 2]);
     });
 }
 
 #[test]
 fn duplicate_validator_order_is_preserved() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         // Whitelisted validators have priority, so their ordering should be respected
         // Need to manually remove and add each whitelisted because there is no "set_whitelisted"
         assert_ok!(ExternalValidators::remove_whitelisted(
@@ -267,7 +242,28 @@ fn duplicate_validator_order_is_preserved() {
             3, 2, 1, 4
         ]));
 
-        let validators = ExternalValidators::new_session(6);
-        assert_eq!(validators, Some(vec![3, 1, 2, 4]));
+        run_to_session(6);
+        let validators = Session::validators();
+        assert_eq!(validators, vec![3, 1, 2, 4]);
+    });
+}
+
+#[test]
+fn era_hooks() {
+    new_test_ext().execute_with(|| {
+        run_to_session(14);
+
+        let expected_calls = vec![
+            HookCall::OnEraStart { era: 0, session: 0 },
+            HookCall::OnEraEnd { era: 0 },
+            HookCall::OnEraStart { era: 1, session: 6 },
+            HookCall::OnEraEnd { era: 1 },
+            HookCall::OnEraStart {
+                era: 2,
+                session: 12,
+            },
+        ];
+
+        assert_eq!(Mock::mock().called_hooks, expected_calls);
     });
 }

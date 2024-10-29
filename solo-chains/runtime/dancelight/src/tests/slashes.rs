@@ -46,10 +46,10 @@ fn invulnerables_cannot_be_slashed() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 0);
         });
@@ -79,10 +79,10 @@ fn non_invulnerables_can_be_slashed_with_babe() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
@@ -116,10 +116,10 @@ fn non_invulnerables_can_be_slashed_with_grandpa() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
@@ -159,10 +159,10 @@ fn test_slashing_percentage_applied_correctly() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
@@ -208,10 +208,10 @@ fn test_slashes_are_not_additive_in_percentage() {
 
             // we have 2 reports
             assert_eq!(reports.len(), 2);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
 
             // but a single slash
@@ -247,15 +247,15 @@ fn test_slashes_are_cleaned_after_bonding_period() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             // The first session in which the era 3 will be pruned is
             // (28+3+1)*sessionsPerEra
-            let fist_session_era_3_pruned = (ExternalValidators::current_era()
+            let fist_session_era_3_pruned = (ExternalValidators::current_era().unwrap()
                 + SlashDeferDuration::get()
                 + 1
                 + BondingDuration::get()
@@ -294,10 +294,10 @@ fn test_slashes_can_be_cleared_before_deferred_period_applies() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
@@ -337,25 +337,25 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                 .map(|offence| offence)
                 .collect();
             assert_eq!(reports.len(), 1);
-            assert_eq!(ExternalValidators::current_era(), 0);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
             let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era() + SlashDeferDuration::get() + 1,
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
             );
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
 
             // The first session in which the era 3 will be deferred is 18
             // 3 sessions per era
-            // (externalValidators::current_era() + SlashDeferDuration::get() + 1)*SessionsPerEra
+            // (externalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)*SessionsPerEra
             // formula is:
 
             let first_deferred_session =
-                (ExternalValidators::current_era() + SlashDeferDuration::get() + 1)
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
                     * SessionsPerEra::get();
             run_to_session(first_deferred_session);
 
-            assert_eq!(ExternalValidators::current_era(), 3);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 3);
             // Now let's clean it up
             assert_noop!(
                 ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![0]),

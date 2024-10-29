@@ -134,6 +134,18 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         externalValidators: {
+            /**
+             * Number of eras to keep in history.
+             *
+             * Following information is kept for eras in `[current_era - HistoryDepth, current_era]`: `ErasStartSessionIndex`
+             *
+             * Must be more than the number of eras delayed by session. I.e. active era must always be in history. I.e.
+             * `active_era > current_era - history_depth` must be guaranteed.
+             *
+             * If migrating an existing pallet from storage value to config value, this should be set to same value or greater
+             * as in storage.
+             */
+            historyDepth: u32 & AugmentedConst<ApiType>;
             /** Maximum number of external validators. */
             maxExternalValidators: u32 & AugmentedConst<ApiType>;
             /** Maximum number of whitelisted validators. */
