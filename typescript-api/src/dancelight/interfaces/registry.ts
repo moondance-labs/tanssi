@@ -38,6 +38,8 @@ import type {
     FinalityGrandpaEquivocationPrevote,
     FinalityGrandpaPrecommit,
     FinalityGrandpaPrevote,
+    FrameMetadataHashExtensionCheckMetadataHash,
+    FrameMetadataHashExtensionMode,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -488,6 +490,8 @@ declare module "@polkadot/types/types/registry" {
         FinalityGrandpaEquivocationPrevote: FinalityGrandpaEquivocationPrevote;
         FinalityGrandpaPrecommit: FinalityGrandpaPrecommit;
         FinalityGrandpaPrevote: FinalityGrandpaPrevote;
+        FrameMetadataHashExtensionCheckMetadataHash: FrameMetadataHashExtensionCheckMetadataHash;
+        FrameMetadataHashExtensionMode: FrameMetadataHashExtensionMode;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;

@@ -142,6 +142,7 @@ xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "
 
 frame-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 frame-executive = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
+frame-metadata-hash-extension = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 frame-support = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 frame-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 frame-system-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
