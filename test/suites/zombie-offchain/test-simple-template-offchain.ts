@@ -1,7 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getHeaderFromRelay } from "../../util/relayInterface.ts";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
 describeSuite({
     id: "ZOF-01",
     title: "Zombie Offchain Tests",
