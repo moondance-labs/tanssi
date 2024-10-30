@@ -97,32 +97,12 @@ impl<T: frame_system::Config> pallet_external_validators::WeightInfo for Substra
 	}
 	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
 	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	fn force_no_eras() -> Weight {
+	fn force_era() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 4_426_000 picoseconds.
 		Weight::from_parts(4_781_000, 0)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
-	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	fn force_new_era() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 4_475_000 picoseconds.
-		Weight::from_parts(4_785_000, 0)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
-	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	fn force_new_era_always() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 4_407_000 picoseconds.
-		Weight::from_parts(4_680_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ExternalValidators::ForceEra` (r:1 w:0)

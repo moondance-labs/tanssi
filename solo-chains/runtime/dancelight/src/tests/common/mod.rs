@@ -636,6 +636,7 @@ impl ExtBuilder {
         }
 
         pallet_external_validators::GenesisConfig::<Runtime> {
+            skip_external_validators: false,
             whitelisted_validators: self
                 .validators
                 .iter()

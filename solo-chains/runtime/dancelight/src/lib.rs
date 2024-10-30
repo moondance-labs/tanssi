@@ -79,7 +79,10 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, AccountId32},
+    sp_runtime::{
+        traits::{BlockNumberProvider, ConvertInto},
+        AccountId32,
+    },
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -1247,7 +1250,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]

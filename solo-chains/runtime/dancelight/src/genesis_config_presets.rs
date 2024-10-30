@@ -411,6 +411,7 @@ fn dancelight_testnet_genesis(
             ..Default::default()
         },
         "externalValidators": crate::ExternalValidatorsConfig {
+            skip_external_validators: false,
             whitelisted_validators: initial_authorities
                 .iter()
                 .map(|x| {

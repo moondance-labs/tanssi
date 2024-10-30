@@ -53,7 +53,7 @@ fn add_whitelisted_works() {
         // same element cannot be added more than once
         assert_noop!(
             ExternalValidators::add_whitelisted(RuntimeOrigin::signed(RootAccount::get()), new),
-            Error::<Test>::AlreadyInvulnerable
+            Error::<Test>::AlreadyWhitelisted
         );
 
         // new element is now part of the invulnerables list
@@ -101,7 +101,7 @@ fn validator_limit_works() {
                         RuntimeOrigin::signed(RootAccount::get()),
                         ii
                     ),
-                    Error::<Test>::TooManyInvulnerables
+                    Error::<Test>::TooManyWhitelisted
                 );
             }
         }
@@ -143,7 +143,7 @@ fn remove_whitelisted_works() {
         // cannot remove invulnerable not in the list
         assert_noop!(
             ExternalValidators::remove_whitelisted(RuntimeOrigin::signed(RootAccount::get()), 2),
-            Error::<Test>::NotInvulnerable
+            Error::<Test>::NotWhitelisted
         );
 
         // cannot remove without privilege
