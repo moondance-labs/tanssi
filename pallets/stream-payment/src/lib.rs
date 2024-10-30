@@ -475,15 +475,8 @@ pub mod pallet {
             initial_deposit: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
-            let opening_deposit = T::OpenStreamHoldAmount::get();
 
-            let _stream_id = Self::open_stream_returns_id(
-                origin,
-                target,
-                config,
-                initial_deposit,
-                opening_deposit,
-            )?;
+            let _stream_id = Self::open_stream_returns_id(origin, target, config, initial_deposit)?;
 
             Ok(().into())
         }
@@ -831,7 +824,6 @@ pub mod pallet {
             target: AccountIdOf<T>,
             config: StreamConfigOf<T>,
             initial_deposit: T::Balance,
-            opening_deposit: T::Balance,
         ) -> Result<T::StreamId, DispatchErrorWithPostInfo> {
             ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
 
@@ -843,6 +835,7 @@ pub mod pallet {
             NextStreamId::<T>::set(next_stream_id);
 
             // Hold opening deposit for the storage used by Stream
+            let opening_deposit = T::OpenStreamHoldAmount::get();
             if opening_deposit > 0u32.into() {
                 T::Currency::hold(&HoldReason::StreamOpened.into(), &origin, opening_deposit)?;
             }

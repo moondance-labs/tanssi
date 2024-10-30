@@ -79,12 +79,12 @@ use {
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
     polkadot_runtime_common::BlockHashCount,
-    scale_info::{prelude::format, TypeInfo},
+    scale_info::prelude::format,
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, H256},
+    sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -92,7 +92,7 @@ use {
             Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult, RuntimeDebug,
+        AccountId32, ApplyExtrinsicResult,
     },
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
@@ -223,7 +223,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 900,
+    spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -814,21 +814,25 @@ parameter_types! {
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentRequest {
     Free,
-    // TODO: Add Stream Payment (with config)
+    StreamPayment {
+        config: pallet_stream_payment::StreamConfigOf<Runtime>,
+    },
 }
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize)]
 pub enum PreserversAssignementPaymentExtra {
     Free,
-    // TODO: Add Stream Payment (with deposit)
+    StreamPayment { initial_deposit: Balance },
 }
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum PreserversAssignementPaymentWitness {
     Free,
-    // TODO: Add Stream Payment (with stream id)
+    StreamPayment {
+        stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
+    },
 }
 
 pub struct PreserversAssignementPayment;
@@ -842,8 +846,8 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     type AssignmentWitness = PreserversAssignementPaymentWitness;
 
     fn try_start_assignment(
-        _assigner: AccountId,
-        _provider: AccountId,
+        assigner: AccountId,
+        provider: AccountId,
         request: &Self::ProviderRequest,
         extra: Self::AssignerParameter,
     ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
@@ -851,17 +855,36 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
             (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
                 Self::AssignmentWitness::Free
             }
+            (
+                Self::ProviderRequest::StreamPayment { config },
+                Self::AssignerParameter::StreamPayment { initial_deposit },
+            ) => {
+                let stream_id = StreamPayment::open_stream_returns_id(
+                    assigner,
+                    provider,
+                    *config,
+                    initial_deposit,
+                )?;
+
+                Self::AssignmentWitness::StreamPayment { stream_id }
+            }
+            _ => Err(
+                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch,
+            )?,
         };
 
         Ok(witness)
     }
 
     fn try_stop_assignment(
-        _provider: AccountId,
+        provider: AccountId,
         witness: Self::AssignmentWitness,
     ) -> Result<(), DispatchErrorWithPostInfo> {
         match witness {
             Self::AssignmentWitness::Free => (),
+            Self::AssignmentWitness::StreamPayment { stream_id } => {
+                StreamPayment::close_stream(RuntimeOrigin::signed(provider), stream_id)?;
+            }
         }
 
         Ok(())
@@ -1357,7 +1380,8 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
 }
@@ -1445,7 +1469,8 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[apply(derive_storage_traits)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
@@ -2087,6 +2112,7 @@ impl_runtime_apis! {
             profile_id: DataPreserversProfileId,
         ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
             use pallet_data_preservers_runtime_api::Assignment;
+            use pallet_stream_payment::StreamPaymentStatus;
 
             let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
                 .and_then(|x| x.assignment) else
@@ -2096,7 +2122,19 @@ impl_runtime_apis! {
 
             match witness {
                 PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
-                // TODO: Add Stream Payment. Stalled stream should return Inactive.
+                PreserversAssignementPaymentWitness::StreamPayment { stream_id } => {
+                    // Error means no Stream exists with that ID or some issue occured when computing
+                    // the status. In that case we cannot consider the assignment as active.
+                    let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {
+                        return Assignment::Inactive(para_id);
+                    };
+
+                    if stalled {
+                        Assignment::Inactive(para_id)
+                    } else {
+                        Assignment::Active(para_id)
+                    }
+                },
             }
         }
     }

@@ -143,6 +143,8 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 // XCM configurations.
 pub mod xcm_config;
 
+pub mod bridge_to_ethereum_config;
+
 // Weights
 mod weights;
 
@@ -744,6 +746,7 @@ pub enum ProxyType {
     CancelProxy,
     Auction,
     OnDemandOrdering,
+    SudoRegistrar,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -804,6 +807,19 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::DataPreservers(..)
+                            | &RuntimeCall::Registrar(..)
+                            | &RuntimeCall::ContainerRegistrar(..)
+                            | &RuntimeCall::Paras(..)
+                            | &RuntimeCall::ParasSudoWrapper(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -1122,12 +1138,18 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
+    // TODO: BondingDuration is set to 28 days on Polkadot,
+    // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
 impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
     type MaxAuthorities = MaxAuthorities;
+    // MaxNominators is used in case we need to slash validators and check how many
+    // nominators do they have as maximum.
+    // This value is part of the parameters that are then used for extrinsics
+    // weight computation.
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
     type OnNewValidatorSet = MmrLeaf;
@@ -1573,9 +1595,10 @@ construct_runtime! {
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
         // MMR leaf construction must be after session in order to have a leaf's next_auth_set
-        // refer to block<N>. See issue polkadot-fellows/runtimes#160 for details.
+        // refer to block<N>.
         Mmr: pallet_mmr = 241,
         MmrLeaf: pallet_beefy_mmr = 242,
+        EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
 
@@ -1714,6 +1737,22 @@ where
     fn deregister_weight() -> Weight {
         RegistrarWeightInfo::deregister()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_head_data() -> Option<HeadData> {
+        let head_data = HeadData(vec![1; 10]);
+        Some(head_data)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_trusted_validation_code(code: Vec<u8>) {
+        Paras::add_trusted_validation_code(RuntimeOrigin::root(), code.into()).unwrap();
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn registrar_new_session(session: u32) {
+        benchmark_helpers::run_to_session(session)
+    }
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -1733,7 +1772,7 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 pub struct DancelightRegistrarHooks;
@@ -1882,10 +1921,15 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         // Tanssi
         [pallet_author_noting, AuthorNoting]
+        [pallet_registrar, ContainerRegistrar]
+        [pallet_collator_assignment, TanssiCollatorAssignment]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
+        // Bridges
+        [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
     );
 }
 
@@ -3059,7 +3103,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -3071,6 +3115,90 @@ impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmark_helpers {
+    use {
+        super::*,
+        babe_primitives::{
+            digests::{PreDigest, SecondaryPlainPreDigest},
+            BABE_ENGINE_ID,
+        },
+        frame_support::traits::Hooks,
+        sp_runtime::{Digest, DigestItem},
+    };
+
+    fn end_block() {
+        Babe::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
+        Grandpa::on_finalize(System::block_number());
+        TransactionPayment::on_finalize(System::block_number());
+        Initializer::on_finalize(System::block_number());
+        ContainerRegistrar::on_finalize(System::block_number());
+        TanssiCollatorAssignment::on_finalize(System::block_number());
+    }
+
+    pub fn insert_authorities_and_slot_digests(slot: u64) {
+        let pre_digest = Digest {
+            logs: vec![DigestItem::PreRuntime(
+                BABE_ENGINE_ID,
+                PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
+                    slot: slot.into(),
+                    authority_index: 0,
+                })
+                .encode(),
+            )],
+        };
+
+        System::reset_events();
+        System::initialize(
+            &(System::block_number() + 1),
+            &System::parent_hash(),
+            &pre_digest,
+        );
+    }
+
+    pub fn current_slot() -> u64 {
+        Babe::current_slot().into()
+    }
+
+    fn start_block() {
+        insert_authorities_and_slot_digests(current_slot() + 1);
+
+        // Initialize the new block
+        Babe::on_initialize(System::block_number());
+        ContainerRegistrar::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
+        Initializer::on_initialize(System::block_number());
+        TanssiCollatorAssignment::on_initialize(System::block_number());
+        InflationRewards::on_initialize(System::block_number());
+    }
+
+    pub fn session_to_block(n: u32) -> u32 {
+        // let block_number = flashbox_runtime::Period::get() * n;
+        let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
+
+        // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+        // so this is the first block of the new session that can actually be used
+        block_number + 1
+    }
+
+    pub fn run_to_block(n: u32) {
+        while System::block_number() < n {
+            run_block();
+        }
+    }
+
+    pub fn run_block() {
+        end_block();
+
+        start_block()
+    }
+
+    pub fn run_to_session(n: u32) {
+        run_to_block(session_to_block(n));
+    }
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

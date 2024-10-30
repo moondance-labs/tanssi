@@ -51,6 +51,10 @@
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
+            "runScripts": [
+                "download-ethereum-client-test-files.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c dancelight-dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
+            ],
             "multiThreads": true,
             "timeout": 240000,
             "reporters": ["basic"],
@@ -68,8 +72,9 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=dancelight-dev",
+                            "--chain=tmp/dancelight-dev-raw.json",
                             "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm",
                             "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
@@ -527,7 +532,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-zombienet"],
+            "testFileDir": ["suites/rt-upgrade-parachain-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "timeout": 600000,
             "foundation": {
@@ -574,6 +579,31 @@
                     "name": "parachain",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_dancelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-relay-zombienet"],
+            "runScripts": [
+                "download-latest-rt-binaries-starlight.sh",
+                "build-spec-dancelight-single.sh tmp"
+            ],
+
+            "timeout": 900000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightUpgrade.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
                 }
             ]
         },
@@ -727,6 +757,7 @@
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
                 "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
             ],
@@ -785,7 +816,7 @@
                 "type": "zombie",
                 "zombieSpec": {
                     "configPath": "./configs/zombieDataPreservers.json",
-                    "skipBlockCheck": ["DataPreserver"]
+                    "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
             "connections": [
@@ -805,19 +836,9 @@
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "DataPreserver-2000",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9950"]
-                },
-                {
                     "name": "Container2001",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9951"]
-                },
-                {
-                    "name": "DataPreserver-2001",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },

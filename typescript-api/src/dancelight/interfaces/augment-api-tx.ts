@@ -45,6 +45,9 @@ import type {
     PolkadotPrimitivesVstagingSchedulerParams,
     PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
+    SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
+    SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeCoreOperatingModeBasicOperatingMode,
     SpConsensusBabeDigestsNextConfigDescriptor,
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyForkVotingProof,
@@ -1218,6 +1221,55 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, PalletDataPreserversProfile]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        ethereumBeaconClient: {
+            /** Used for pallet initialization and light client resetting. Needs to be called by the root origin. */
+            forceCheckpoint: AugmentedSubmittable<
+                (
+                    update:
+                        | SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate
+                        | {
+                              header?: any;
+                              currentSyncCommittee?: any;
+                              currentSyncCommitteeBranch?: any;
+                              validatorsRoot?: any;
+                              blockRootsRoot?: any;
+                              blockRootsBranch?: any;
+                          }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate]
+            >;
+            /** Halt or resume all pallet operations. May only be called by root. */
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode: SnowbridgeCoreOperatingModeBasicOperatingMode | "Normal" | "Halted" | number | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOperatingModeBasicOperatingMode]
+            >;
+            /** Submits a new finalized beacon header update. The update may contain the next sync committee. */
+            submit: AugmentedSubmittable<
+                (
+                    update:
+                        | SnowbridgeBeaconPrimitivesUpdatesUpdate
+                        | {
+                              attestedHeader?: any;
+                              syncAggregate?: any;
+                              signatureSlot?: any;
+                              nextSyncCommitteeUpdate?: any;
+                              finalizedHeader?: any;
+                              finalityBranch?: any;
+                              blockRootsRoot?: any;
+                              blockRootsBranch?: any;
+                          }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeBeaconPrimitivesUpdatesUpdate]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2864,6 +2916,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -2931,6 +2984,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -2975,6 +3029,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -3017,6 +3072,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3067,6 +3123,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3166,6 +3223,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
