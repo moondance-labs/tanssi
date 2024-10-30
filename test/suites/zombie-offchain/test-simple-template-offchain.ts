@@ -35,8 +35,9 @@ describeSuite({
                 expect(blockNum).to.be.greaterThan(0);
                 await context.waitBlock(10, "Container2000");
 
-                let offchainWorkerStatus = await container2000Api.query.offchainWorker.offchainWorkerTestingEnabled();
-                expect(offchainWorkerStatus).to.be.equal(false);
+                const offchainWorkerTestingEnabledStatus =
+                    await container2000Api.query.offchainWorker.offchainWorkerTestingEnabled();
+                expect(offchainWorkerTestingEnabledStatus).to.be.equal(false);
 
                 const events = await container2000Api.query.system.events();
                 const offchainWorkerEvents = events.filter((a) => {
