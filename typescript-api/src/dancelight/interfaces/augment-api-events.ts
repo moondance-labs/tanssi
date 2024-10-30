@@ -8,7 +8,7 @@ import "@polkadot/api-base/types/events";
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
 import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
@@ -225,6 +225,16 @@ declare module "@polkadot/api-base/types/events" {
             WhitelistedValidatorAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** An Invulnerable was removed. */
             WhitelistedValidatorRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        externalValidatorSlashes: {
+            /** Removed author data */
+            SlashReported: AugmentedEvent<
+                ApiType,
+                [validator: AccountId32, fraction: Perbill, slashEra: u32],
+                { validator: AccountId32; fraction: Perbill; slashEra: u32 }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

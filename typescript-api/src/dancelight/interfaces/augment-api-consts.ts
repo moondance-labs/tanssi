@@ -155,6 +155,19 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        externalValidatorSlashes: {
+            /** Number of eras that staked funds must remain bonded for. */
+            bondingDuration: u32 & AugmentedConst<ApiType>;
+            /**
+             * Number of eras that slashes are deferred by, after computation.
+             *
+             * This should be less than the bonding duration. Set to 0 if slashes should be applied immediately, without
+             * opportunity for intervention.
+             */
+            slashDeferDuration: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         fellowshipReferenda: {
             /**
              * Quantization level for the referendum wakeup scheduler. A higher number will result in fewer storage
