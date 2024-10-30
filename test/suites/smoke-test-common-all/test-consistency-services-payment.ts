@@ -58,8 +58,6 @@ describeSuite({
                         // if currently assigned, then 2
                         let sessionRequirements: bigint;
 
-                        console.log("CONTAINER: ", container.toString());
-
                         if (
                             current.toJSON()["containerChains"][container.toString()] == null ||
                             current.toJSON()["containerChains"][container.toString()].length == 0
