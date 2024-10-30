@@ -1350,6 +1350,7 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         externalValidatorSlashes: {
+            /** Cancel a slash that was deferred for a later era */
             cancelDeferredSlash: AugmentedSubmittable<
                 (
                     era: u32 | AnyNumber | Uint8Array,

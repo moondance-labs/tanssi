@@ -706,6 +706,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             bondedEras: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, u32]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** A counter on the number of slashes we have performed */
             nextSlashId: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
             /** All unapplied slashes that are queued for later. */
             slashes: AugmentedQuery<

@@ -247,6 +247,7 @@ declare module "@polkadot/api-base/types/errors" {
             ActiveEraNotSet: AugmentedError<ApiType>;
             DeferPeriodIsOver: AugmentedError<ApiType>;
             EmptyTargets: AugmentedError<ApiType>;
+            ErrorComputingSlash: AugmentedError<ApiType>;
             InvalidSlashIndex: AugmentedError<ApiType>;
             NotSortedAndUnique: AugmentedError<ApiType>;
             ProvidedFutureEra: AugmentedError<ApiType>;

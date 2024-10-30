@@ -5045,6 +5045,7 @@ export default {
             "ProvidedNonSlashableEra",
             "ActiveEraNotSet",
             "DeferPeriodIsOver",
+            "ErrorComputingSlash",
         ],
     },
     /** Lookup582: sp_core::crypto::KeyTypeId */

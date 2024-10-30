@@ -6463,6 +6463,7 @@ declare module "@polkadot/types/lookup" {
         readonly isProvidedNonSlashableEra: boolean;
         readonly isActiveEraNotSet: boolean;
         readonly isDeferPeriodIsOver: boolean;
+        readonly isErrorComputingSlash: boolean;
         readonly type:
             | "EmptyTargets"
             | "InvalidSlashIndex"
@@ -6470,7 +6471,8 @@ declare module "@polkadot/types/lookup" {
             | "ProvidedFutureEra"
             | "ProvidedNonSlashableEra"
             | "ActiveEraNotSet"
-            | "DeferPeriodIsOver";
+            | "DeferPeriodIsOver"
+            | "ErrorComputingSlash";
     }
 
     /** @name SpCoreCryptoKeyTypeId (582) */
