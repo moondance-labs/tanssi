@@ -9386,6 +9386,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-external-validators-rewards"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-fast-unstake"
 version = "36.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
