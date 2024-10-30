@@ -170,7 +170,7 @@ fn test_on_offence_injects_offences() {
         );
         // current era (1) + defer period + 1
         let slash_era = 0
-            .saturating_add(crate::mock::DeferPeriod::get())
+            .saturating_add(crate::mock::DeferPeriodGetter::get())
             .saturating_add(One::one());
 
         assert_eq!(
@@ -202,10 +202,83 @@ fn test_on_offence_does_not_work_for_invulnerables() {
         );
         // current era (1) + defer period + 1
         let slash_era = 1
-            .saturating_add(crate::mock::DeferPeriod::get())
+            .saturating_add(crate::mock::DeferPeriodGetter::get())
             .saturating_add(One::one());
 
         assert_eq!(Slashes::<Test>::get(slash_era), vec![]);
+    });
+}
+
+#[test]
+fn defer_period_of_zero_confirms_immediately_slashes() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75)
+        ));
+        assert_eq!(
+            Slashes::<Test>::get(0),
+            vec![Slash {
+                validator: 1,
+                percentage: Perbill::from_percent(75),
+                confirmed: true,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
+    });
+}
+
+#[test]
+fn we_cannot_cancel_anything_with_defer_period_zero() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75)
+        ));
+        assert_noop!(
+            ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
+            Error::<Test>::DeferPeriodIsOver
+        );
+    });
+}
+
+#[test]
+fn test_on_offence_defer_period_0() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        Pallet::<Test>::on_offence(
+            &[OffenceDetails {
+                // 1 and 2 are invulnerables
+                offender: (3, ()),
+                reporters: vec![],
+            }],
+            &[Perbill::from_percent(75)],
+            0,
+        );
+
+        let slash_era = 0;
+
+        assert_eq!(
+            Slashes::<Test>::get(slash_era),
+            vec![Slash {
+                validator: 3,
+                percentage: Perbill::from_percent(75),
+                confirmed: true,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
     });
 }
 

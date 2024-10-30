@@ -76,8 +76,6 @@ pub mod pallet {
             + TryFrom<Self::AccountId>;
 
         /// A conversion from account ID to validator ID.
-        ///
-        /// Its cost must be at most one storage read.
         type ValidatorIdOf: Convert<Self::AccountId, Option<Self::ValidatorId>>;
 
         /// Number of eras that slashes are deferred by, after computation.
@@ -91,6 +89,7 @@ pub mod pallet {
         #[pallet::constant]
         type BondingDuration: Get<EraIndex>;
 
+        // SlashId type, used as a counter on the number of slashes
         type SlashId: Default
             + FullCodec
             + TypeInfo
@@ -106,8 +105,10 @@ pub mod pallet {
         /// Interface for interacting with a session pallet.
         type SessionInterface: SessionInterface<Self::AccountId>;
 
+        /// Era index provider, used to fetch the active era among other thins
         type EraIndexProvider: EraIndexProvider;
 
+        /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
 
         /// The weight information of this pallet.
@@ -123,6 +124,7 @@ pub mod pallet {
         ProvidedNonSlashableEra,
         ActiveEraNotSet,
         DeferPeriodIsOver,
+        ErrorComputingSlash,
     }
 
     #[pallet::pallet]
@@ -142,6 +144,7 @@ pub mod pallet {
     #[pallet::unbounded]
     pub type BondedEras<T: Config> = StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
 
+    /// A counter on the number of slashes we have performed
     #[pallet::storage]
     #[pallet::getter(fn next_slash_id)]
     pub type NextSlashId<T: Config> = StorageValue<_, T::SlashId, ValueQuery>;
@@ -155,6 +158,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        /// Cancel a slash that was deferred for a later era
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::cancel_deferred_slash(slash_indices.len() as u32))]
         pub fn cancel_deferred_slash(
@@ -166,6 +170,7 @@ pub mod pallet {
 
             let active_era = T::EraIndexProvider::active_era().index;
 
+            // We need to be in the defer period
             ensure!(
                 era <= active_era
                     .saturating_add(T::SlashDeferDuration::get().saturating_add(One::one()))
@@ -178,7 +183,7 @@ pub mod pallet {
                 is_sorted_and_unique(&slash_indices),
                 Error::<T>::NotSortedAndUnique
             );
-
+            // fetch slashes for the era in which we want to defer
             let mut era_slashes = Slashes::<T>::get(&era);
 
             let last_item = slash_indices[slash_indices.len() - 1];
@@ -192,6 +197,7 @@ pub mod pallet {
                 era_slashes.remove(index);
             }
 
+            // insert back slashes
             Slashes::<T>::insert(&era, &era_slashes);
             Ok(())
         }
@@ -211,26 +217,33 @@ pub mod pallet {
 
             let slash_defer_duration = T::SlashDeferDuration::get();
 
-            let window_start = active_era.saturating_sub(T::BondingDuration::get());
-            ensure!(era >= window_start, Error::<T>::ProvidedNonSlashableEra);
+            let _ = T::EraIndexProvider::era_to_session_start(era)
+                .ok_or(Error::<T>::ProvidedNonSlashableEra)?;
 
             let next_slash_id = NextSlashId::<T>::get();
 
-            let slash = Slash::<T::AccountId, T::SlashId> {
-                slash_id: next_slash_id,
-                reporters: vec![],
-                confirmed: false,
-
-                validator,
+            let slash = compute_slash::<T>(
                 percentage,
+                next_slash_id,
+                era,
+                validator,
+                slash_defer_duration,
+            )
+            .ok_or(Error::<T>::ErrorComputingSlash)?;
+
+            // If we defer duration is 0, we immediately apply and confirm
+            let era_to_consider = if slash_defer_duration == 0 {
+                era
+            } else {
+                era.saturating_add(slash_defer_duration)
+                    .saturating_add(One::one())
             };
-            let mut era_slashes = Slashes::<T>::get(&era);
+
+            let mut era_slashes = Slashes::<T>::get(&era_to_consider);
             era_slashes.push(slash);
-            Slashes::<T>::insert(
-                &era.saturating_add(slash_defer_duration)
-                    .saturating_add(One::one()),
-                &era_slashes,
-            );
+
+            Slashes::<T>::insert(era_to_consider, &era_slashes);
+
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
             Ok(())
         }
@@ -337,12 +350,17 @@ where
                     slash_era + slash_defer_duration + 1,
                 );
 
-                Slashes::<T>::mutate(
-                    slash_era
-                        .saturating_add(slash_defer_duration)
-                        .saturating_add(One::one()),
-                    move |for_later| for_later.push(slash),
-                );
+                // Cover slash defer duration equal to 0
+                if slash_defer_duration == 0 {
+                    Slashes::<T>::mutate(slash_era, move |for_now| for_now.push(slash));
+                } else {
+                    Slashes::<T>::mutate(
+                        slash_era
+                            .saturating_add(slash_defer_duration)
+                            .saturating_add(One::one()),
+                        move |for_later| for_later.push(slash),
+                    );
+                }
 
                 // Fix unwrap
                 next_slash_id = next_slash_id.saturating_add(One::one());

@@ -18,7 +18,7 @@ use {
     crate as external_validator_slashes,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64},
+        traits::{ConstU16, ConstU64, Get},
     },
     frame_system as system,
     sp_core::H256,
@@ -114,6 +114,7 @@ pub struct MockEraIndexProvider;
 
 thread_local! {
     pub static ERA_INDEX: RefCell<EraIndex> = const { RefCell::new(0) };
+    pub static DEFER_PERIOD: RefCell<EraIndex> = const { RefCell::new(2) };
 }
 
 impl MockEraIndexProvider {
@@ -130,7 +131,13 @@ impl EraIndexProvider for MockEraIndexProvider {
         }
     }
     fn era_to_session_start(era_index: EraIndex) -> Option<SessionIndex> {
-        Some(era_index.into())
+        let active_era = Self::active_era().index;
+        if era_index > active_era || era_index < active_era.saturating_sub(BondingDuration::get()) {
+            None
+        } else {
+            // Else we assume eras start at the same time as sessions
+            Some(era_index.into())
+        }
     }
 }
 
@@ -176,8 +183,20 @@ impl InvulnerablesProvider<u64> for MockInvulnerableProvider {
     }
 }
 
+pub struct DeferPeriodGetter;
+impl Get<EraIndex> for DeferPeriodGetter {
+    fn get() -> EraIndex {
+        DEFER_PERIOD.with(|q| (*q.borrow()).clone())
+    }
+}
+
+impl DeferPeriodGetter {
+    pub fn with_defer_period(defer_period: EraIndex) {
+        DEFER_PERIOD.with(|r| *r.borrow_mut() = defer_period);
+    }
+}
+
 parameter_types! {
-    pub const DeferPeriod: u32 = 2u32;
     pub const BondingDuration: u32 = 5u32;
 }
 
@@ -185,7 +204,7 @@ impl external_validator_slashes::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = IdentityValidator;
-    type SlashDeferDuration = DeferPeriod;
+    type SlashDeferDuration = DeferPeriodGetter;
     type BondingDuration = BondingDuration;
     type SlashId = u32;
     type SessionInterface = ();
