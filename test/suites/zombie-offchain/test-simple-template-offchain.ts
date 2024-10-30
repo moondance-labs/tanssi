@@ -1,8 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getHeaderFromRelay } from "../../util/relayInterface.ts";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import { signAndSendAndInclude } from "../../util/block.ts";
 describeSuite({
-    id: "ZOF-01",
+    id: "ZOF01",
     title: "Zombie Offchain Tests",
     foundationMethods: "zombie",
     testCases: function ({ it, context }) {
@@ -35,10 +36,6 @@ describeSuite({
                 expect(blockNum).to.be.greaterThan(0);
                 await context.waitBlock(10, "Container2000");
 
-                const offchainWorkerTestingEnabledStatus =
-                    await container2000Api.query.offchainWorker.offchainWorkerTestingEnabled();
-                expect(offchainWorkerTestingEnabledStatus).to.be.equal(false);
-
                 const events = await container2000Api.query.system.events();
                 const offchainWorkerEvents = events.filter((a) => {
                     return a.event.method == "SimpleOffchainEvent";
@@ -56,18 +53,26 @@ describeSuite({
 
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-
-                // Enable off-chain worker
                 const switchTx = container2000Api.tx.offchainWorker.switchOffchainWorker();
-                await container2000Api.tx.sudo.sudo(switchTx).signAndSend(alice);
 
-                await context.waitBlock(10, "Container2000");
+                // Enable off-chain worker test event emission
+                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(switchTx), alice);
+                await context.waitBlock(20, "Container2000");
 
                 const events = await container2000Api.query.system.events();
-                const offchainWorkerEvents = events.filter((a) => {
+                const offchainWorkerEvents1 = events.filter((a) => {
                     return a.event.method == "SimpleOffchainEvent";
                 });
-                expect(offchainWorkerEvents.length).to.be.equal(0);
+                expect(offchainWorkerEvents1.length).to.be.equal(0);
+
+                // Disable off-chain worker test event emission
+                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(switchTx), alice);
+                await context.waitBlock(40, "Container2000");
+
+                const offchainWorkerEvents2 = events.filter((a) => {
+                    return a.event.method == "SimpleOffchainEvent";
+                });
+                expect(offchainWorkerEvents2.length).to.be.equal(0);
             },
         });
     },

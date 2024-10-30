@@ -585,10 +585,7 @@
         {
             "name": "zombie_dancelight_upgrade",
             "testFileDir": ["suites/rt-upgrade-relay-zombienet"],
-            "runScripts": [
-                "download-latest-rt-binaries-starlight.sh",
-                "build-spec-dancelight-single.sh tmp"
-            ],
+            "runScripts": ["download-latest-rt-binaries-starlight.sh", "build-spec-dancelight-single.sh tmp"],
 
             "timeout": 900000,
             "foundation": {
