@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
 
 describeSuite({
-    id: "S03",
+    id: "S05",
     title: "Sample suite that runs on Dancebox and Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

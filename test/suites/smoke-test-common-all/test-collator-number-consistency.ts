@@ -3,7 +3,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S05",
+    id: "S02",
     title: "Test collator number consistency for parathreads and parachains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

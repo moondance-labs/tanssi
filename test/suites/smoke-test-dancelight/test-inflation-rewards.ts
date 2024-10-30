@@ -6,7 +6,7 @@ import { fetchIssuance, fetchRewardAuthorContainers } from "util/block";
 import { DANCELIGHT_BOND } from "util/constants";
 
 describeSuite({
-    id: "S28",
+    id: "S18",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
-    id: "S24",
+    id: "S03",
     title: "Check services payment consistency",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
