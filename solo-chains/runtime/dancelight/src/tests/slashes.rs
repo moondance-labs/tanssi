@@ -262,10 +262,14 @@ fn test_slashes_are_cleaned_after_bonding_period() {
                 + 1)
                 * SessionsPerEra::get();
 
-            println!("first session era 3 pruned {:?}", fist_session_era_3_pruned);
+            let first_era_deferred =
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            println!("first era deferred {:?}", first_era_deferred);
             run_to_session(fist_session_era_3_pruned);
 
-            let slashes_after_bonding_period = ExternalValidatorSlashes::slashes(3);
+            let slashes_after_bonding_period =
+                ExternalValidatorSlashes::slashes(first_era_deferred);
             assert_eq!(slashes_after_bonding_period.len(), 0);
         });
 }
@@ -296,19 +300,19 @@ fn test_slashes_can_be_cleared_before_deferred_period_applies() {
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
-            let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
-            );
+            let deferred_era =
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
 
             // Now let's clean it up
             assert_ok!(ExternalValidatorSlashes::cancel_deferred_slash(
                 RuntimeOrigin::root(),
-                3,
+                deferred_era,
                 vec![0]
             ));
-            let slashes_after_cancel = ExternalValidatorSlashes::slashes(3);
+            let slashes_after_cancel = ExternalValidatorSlashes::slashes(deferred_era);
             assert_eq!(slashes_after_cancel.len(), 0);
         });
 }
@@ -339,9 +343,10 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
-            let slashes = ExternalValidatorSlashes::slashes(
-                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
-            );
+            let deferred_era =
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
             assert_eq!(slashes.len(), 1);
             assert_eq!(slashes[0].validator, AccountId::from(ALICE));
 
@@ -355,10 +360,14 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                     * SessionsPerEra::get();
             run_to_session(first_deferred_session);
 
-            assert_eq!(ExternalValidators::current_era().unwrap(), 3);
+            assert_eq!(ExternalValidators::current_era().unwrap(), deferred_era);
             // Now let's clean it up
             assert_noop!(
-                ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![0]),
+                ExternalValidatorSlashes::cancel_deferred_slash(
+                    RuntimeOrigin::root(),
+                    deferred_era,
+                    vec![0]
+                ),
                 pallet_external_validator_slashes::Error::<crate::Runtime>::DeferPeriodIsOver
             );
         });
