@@ -47,6 +47,8 @@ describeSuite({
                     )
                 ).unwrap();
 
+                console.log(keyOwnershipProof)
+
                 const tx = polkadotJs.tx.sudo.sudoUncheckedWeight(
                     polkadotJs.tx.utility.dispatchAs(
                         {
@@ -64,8 +66,9 @@ describeSuite({
                 await context.createBlock(signedTx);
 
                 // Slash item should be there
-                const DeferPeriod = 2;
+                const DeferPeriod = await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration;
 
+                console.log(DeferPeriod)
                 // scheduled slashes
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
                 expect(expectedSlashes.length).to.be.eq(1);

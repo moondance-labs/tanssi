@@ -487,7 +487,7 @@ impl pallet_session::historical::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BondingDuration: sp_staking::EraIndex = runtime_common::prod_or_fast!(12, 5);
+    pub const BondingDuration: sp_staking::EraIndex = runtime_common::prod_or_fast!(28, 3);
 }
 
 parameter_types! {
@@ -1210,7 +1210,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(11, 4);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
 }
 
 impl pallet_external_validators::Config for Runtime {
