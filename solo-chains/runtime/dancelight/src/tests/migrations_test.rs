@@ -24,7 +24,7 @@ use tanssi_runtime_common::migrations::MigrateMMRLeafPallet;
 use xcm::v3::Weight;
 
 #[test]
-fn test_migration_config_full_rotation_period() {
+fn test_migration_mmr_leaf_pallet_renaming() {
     ExtBuilder::default().build().execute_with(|| {
         let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
         let old_pallet_name = MigrateMMRLeafPallet::<Runtime>::old_pallet_name();
