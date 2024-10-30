@@ -2612,7 +2612,16 @@ export default {
     },
     /** Lookup291: dancelight_runtime::ProxyType */
     DancelightRuntimeProxyType: {
-        _enum: ["Any", "NonTransfer", "Governance", "IdentityJudgement", "CancelProxy", "Auction", "OnDemandOrdering"],
+        _enum: [
+            "Any",
+            "NonTransfer",
+            "Governance",
+            "IdentityJudgement",
+            "CancelProxy",
+            "Auction",
+            "OnDemandOrdering",
+            "SudoRegistrar",
+        ],
     },
     /** Lookup292: pallet_multisig::pallet::Call<T> */
     PalletMultisigCall: {
@@ -6094,6 +6103,14 @@ export default {
     FrameSystemExtensionsCheckWeight: "Null",
     /** Lookup819: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup820: dancelight_runtime::Runtime */
+    /** Lookup820: frame_metadata_hash_extension::CheckMetadataHash<T> */
+    FrameMetadataHashExtensionCheckMetadataHash: {
+        mode: "FrameMetadataHashExtensionMode",
+    },
+    /** Lookup821: frame_metadata_hash_extension::Mode */
+    FrameMetadataHashExtensionMode: {
+        _enum: ["Disabled", "Enabled"],
+    },
+    /** Lookup822: dancelight_runtime::Runtime */
     DancelightRuntimeRuntime: "Null",
 };

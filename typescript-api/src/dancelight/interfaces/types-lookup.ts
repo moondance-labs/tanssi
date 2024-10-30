@@ -3193,6 +3193,7 @@ declare module "@polkadot/types/lookup" {
         readonly isCancelProxy: boolean;
         readonly isAuction: boolean;
         readonly isOnDemandOrdering: boolean;
+        readonly isSudoRegistrar: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -3200,7 +3201,8 @@ declare module "@polkadot/types/lookup" {
             | "IdentityJudgement"
             | "CancelProxy"
             | "Auction"
-            | "OnDemandOrdering";
+            | "OnDemandOrdering"
+            | "SudoRegistrar";
     }
 
     /** @name PalletMultisigCall (292) */
@@ -7897,6 +7899,18 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletTransactionPaymentChargeTransactionPayment (819) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name DancelightRuntimeRuntime (820) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (820) */
+    interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
+        readonly mode: FrameMetadataHashExtensionMode;
+    }
+
+    /** @name FrameMetadataHashExtensionMode (821) */
+    interface FrameMetadataHashExtensionMode extends Enum {
+        readonly isDisabled: boolean;
+        readonly isEnabled: boolean;
+        readonly type: "Disabled" | "Enabled";
+    }
+
+    /** @name DancelightRuntimeRuntime (822) */
     type DancelightRuntimeRuntime = Null;
 } // declare module
