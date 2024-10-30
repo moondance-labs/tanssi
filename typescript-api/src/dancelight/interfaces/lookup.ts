@@ -1174,9 +1174,9 @@ export default {
             remove_whitelisted: {
                 who: "AccountId32",
             },
-            force_no_eras: "Null",
-            force_new_era: "Null",
-            force_new_era_always: "Null",
+            force_era: {
+                mode: "PalletExternalValidatorsForcing",
+            },
         },
     },
     /** Lookup131: pallet_session::pallet::Call<T> */
@@ -4996,11 +4996,11 @@ export default {
     /** Lookup571: pallet_external_validators::pallet::Error<T> */
     PalletExternalValidatorsError: {
         _enum: [
-            "TooManyInvulnerables",
-            "AlreadyInvulnerable",
-            "NotInvulnerable",
+            "TooManyWhitelisted",
+            "AlreadyWhitelisted",
+            "NotWhitelisted",
             "NoKeysRegistered",
-            "UnableToDeriveCollatorId",
+            "UnableToDeriveValidatorId",
         ],
     },
     /** Lookup576: sp_core::crypto::KeyTypeId */

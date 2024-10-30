@@ -1511,16 +1511,11 @@ declare module "@polkadot/types/lookup" {
         readonly asRemoveWhitelisted: {
             readonly who: AccountId32;
         } & Struct;
-        readonly isForceNoEras: boolean;
-        readonly isForceNewEra: boolean;
-        readonly isForceNewEraAlways: boolean;
-        readonly type:
-            | "SkipExternalValidators"
-            | "AddWhitelisted"
-            | "RemoveWhitelisted"
-            | "ForceNoEras"
-            | "ForceNewEra"
-            | "ForceNewEraAlways";
+        readonly isForceEra: boolean;
+        readonly asForceEra: {
+            readonly mode: PalletExternalValidatorsForcing;
+        } & Struct;
+        readonly type: "SkipExternalValidators" | "AddWhitelisted" | "RemoveWhitelisted" | "ForceEra";
     }
 
     /** @name PalletSessionCall (131) */
@@ -6405,17 +6400,17 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletExternalValidatorsError (571) */
     interface PalletExternalValidatorsError extends Enum {
-        readonly isTooManyInvulnerables: boolean;
-        readonly isAlreadyInvulnerable: boolean;
-        readonly isNotInvulnerable: boolean;
+        readonly isTooManyWhitelisted: boolean;
+        readonly isAlreadyWhitelisted: boolean;
+        readonly isNotWhitelisted: boolean;
         readonly isNoKeysRegistered: boolean;
-        readonly isUnableToDeriveCollatorId: boolean;
+        readonly isUnableToDeriveValidatorId: boolean;
         readonly type:
-            | "TooManyInvulnerables"
-            | "AlreadyInvulnerable"
-            | "NotInvulnerable"
+            | "TooManyWhitelisted"
+            | "AlreadyWhitelisted"
+            | "NotWhitelisted"
             | "NoKeysRegistered"
-            | "UnableToDeriveCollatorId";
+            | "UnableToDeriveValidatorId";
     }
 
     /** @name SpCoreCryptoKeyTypeId (576) */
