@@ -68,9 +68,8 @@ describeSuite({
                 // Slash item should be there
                 const DeferPeriod = await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration;
 
-                console.log(DeferPeriod)
                 // scheduled slashes
-                const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
+                const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod.toNumber() + 1);
                 expect(expectedSlashes.length).to.be.eq(1);
                 expect(u8aToHex(expectedSlashes[0].validator)).to.be.eq(u8aToHex(aliceStash.addressRaw));
             },

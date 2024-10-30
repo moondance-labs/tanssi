@@ -64,7 +64,7 @@ describeSuite({
                 await context.createBlock(signedTx);
 
                 // Slash item should be there
-                const DeferPeriod = await polkadotJs.consts.externalValidatorSlashes.SlashDeferDuration;
+                const DeferPeriod = (await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration).toNumber();
 
                 // scheduled slashes
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
