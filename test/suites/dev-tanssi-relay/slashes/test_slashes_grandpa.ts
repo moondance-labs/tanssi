@@ -45,13 +45,14 @@ describeSuite({
                         u8aToHex(aliceGrandpaPair.publicKey)
                     )
                 ).unwrap();
+                const keyOwnershipProofHex = `0x${keyOwnershipProof.toHuman().toString().slice(8)}`;
 
                 const tx = polkadotJs.tx.sudo.sudoUncheckedWeight(
                     polkadotJs.tx.utility.dispatchAs(
                         {
                             system: { Signed: alice.address },
                         } as any,
-                        polkadotJs.tx.grandpa.reportEquivocation(doubleVotingProof, keyOwnershipProof)
+                        polkadotJs.tx.grandpa.reportEquivocation(doubleVotingProof, keyOwnershipProofHex)
                     ),
                     {
                         refTime: 1n,
