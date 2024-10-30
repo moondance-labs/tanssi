@@ -29,15 +29,17 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Offchain events are not emitted for simple container chain template",
+            title: "Offchain events are not emitted for simple container chain",
             test: async function () {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+
                 await context.waitBlock(6, "Container2000");
-                // Create our API with a default connection to the local node
-                const api = await ApiPromise.create();
-                const events = await api.query.system.events();
-                expect(events).to.be.empty;
+                const events = await container2000Api.query.system.events();
+                const offchainWorkerEvents = events.filter((a) => {
+                    return a.event.method == "SimpleOffchainEvent";
+                })
+                expect(offchainWorkerEvents.length).to.be.equal(0);
             },
         });
     },
