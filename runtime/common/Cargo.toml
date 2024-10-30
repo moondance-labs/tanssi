@@ -39,6 +39,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true }
+pallet-beefy-mmr = { workspace = true }
 
 # Cumulus
 cumulus-pallet-xcmp-queue = { workspace = true }
@@ -66,6 +67,7 @@ std = [
 	"frame-try-runtime?/std",
 	"log/std",
 	"pallet-balances/std",
+	"pallet-beefy-mmr/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
 	"pallet-external-validators/std",
@@ -112,6 +114,7 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-beefy-mmr/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
 	"pallet-external-validators/try-runtime",

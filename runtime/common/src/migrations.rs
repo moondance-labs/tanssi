@@ -36,6 +36,7 @@
 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
+use frame_support::migration::move_pallet;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -1075,19 +1076,55 @@ where
     }
 }
 
+pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
+
+impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
+    fn friendly_name(&self) -> &str {
+        "SM_MigrateMMRLeafPallet"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        let new_name =
+            <<T as frame_system::Config>::PalletInfo as frame_support::traits::PalletInfo>::name::<
+                pallet_beefy_mmr::Pallet<T>,
+            >()
+            .expect("pallet_beefy_mmr must be part of dancelight before this migration");
+        move_pallet(Self::old_pallet_name().as_bytes(), new_name.as_bytes());
+        available_weight
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+impl<T> MigrateMMRLeafPallet<T> {
+    pub fn old_pallet_name() -> &'static str {
+        "MMRLeaf"
+    }
+}
+
 pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
 where
+    Runtime: frame_system::Config,
     Runtime: pallet_external_validators::Config,
     Runtime: pallet_session::Config<
         ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
     >,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
+        let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
         let migrate_external_validators =
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_external_validators)]
+        vec![Box::new(migrate_mmr_leaf_pallet), Box::new(migrate_external_validators)]
     }
 }

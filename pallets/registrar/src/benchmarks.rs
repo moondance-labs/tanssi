@@ -54,8 +54,9 @@ fn create_funded_user<T: Config>(
 
 #[benchmarks]
 mod benchmarks {
-    use cumulus_primitives_core::relay_chain::MIN_CODE_SIZE;
-    use {super::*, parity_scale_codec::Encode};
+    use {
+        super::*, cumulus_primitives_core::relay_chain::MIN_CODE_SIZE, parity_scale_codec::Encode,
+    };
 
     fn new_genesis_data(storage: Vec<ContainerChainGenesisDataItem>) -> ContainerChainGenesisData {
         ContainerChainGenesisData {

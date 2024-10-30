@@ -29,6 +29,7 @@ mod ethereum_client;
 mod external_validators_tests;
 mod inflation_rewards;
 mod integration_test;
+mod migrations_test;
 mod relay_configuration;
 mod relay_registrar;
 mod services_payment;
