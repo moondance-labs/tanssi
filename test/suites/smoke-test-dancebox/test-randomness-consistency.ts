@@ -3,7 +3,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { fetchRandomnessEvent } from "util/block";
 describeSuite({
-    id: "S09",
+    id: "S12",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

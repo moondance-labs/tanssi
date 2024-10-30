@@ -3,7 +3,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S11",
+    id: "S09",
     title: "Test relay storage roots max number",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
