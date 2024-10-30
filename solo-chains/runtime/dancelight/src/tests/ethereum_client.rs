@@ -17,11 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::tests::common::*,
-    crate::EthereumBeaconClient,
+    crate::{tests::common::*, EthereumBeaconClient},
     frame_support::{assert_noop, assert_ok},
-    snowbridge_pallet_ethereum_client::functions::*,
-    snowbridge_pallet_ethereum_client::mock::*,
+    snowbridge_pallet_ethereum_client::{functions::*, mock::*},
     sp_core::H256,
     sp_std::vec,
 };
