@@ -96,10 +96,13 @@ pub mod pallet {
         /// the off-chain worker on and off to avoid enabling it by default in production
         #[pallet::call_index(0)]
         #[pallet::weight({0})]
-        pub fn switch_offchain_worker(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+        pub fn set_offchain_worker(
+            origin: OriginFor<T>,
+            is_testing_enabled: bool,
+        ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
-            OffchainWorkerTestEnabled::<T>::put(!OffchainWorkerTestEnabled::<T>::get());
+            OffchainWorkerTestEnabled::<T>::put(is_testing_enabled);
             Ok(().into())
         }
 

@@ -53,10 +53,10 @@ describeSuite({
 
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-                const switchTx = container2000Api.tx.offchainWorker.switchOffchainWorker();
+                const ocwOnTx = container2000Api.tx.offchainWorker.setOffchainWorker(true);
 
                 // Enable off-chain worker test event emission
-                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(switchTx), alice);
+                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(ocwOnTx), alice);
                 await context.waitBlock(20, "Container2000");
 
                 const events = await container2000Api.query.system.events();
@@ -66,7 +66,8 @@ describeSuite({
                 expect(offchainWorkerEvents1.length).to.be.equal(0);
 
                 // Disable off-chain worker test event emission
-                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(switchTx), alice);
+                const ocwOffTx = container2000Api.tx.offchainWorker.setOffchainWorker(false);
+                await signAndSendAndInclude(container2000Api.tx.sudo.sudo(ocwOffTx), alice);
                 await context.waitBlock(40, "Container2000");
 
                 const offchainWorkerEvents2 = events.filter((a) => {
