@@ -126,7 +126,7 @@ impl MockEraIndexProvider {
 impl EraIndexProvider for MockEraIndexProvider {
     fn active_era() -> ActiveEraInfo {
         ActiveEraInfo {
-            index: ERA_INDEX.with(|q| (*q.borrow()).clone()),
+            index: ERA_INDEX.with(|q| *q.borrow()),
             start: None,
         }
     }
