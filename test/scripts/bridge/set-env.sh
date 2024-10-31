@@ -118,6 +118,27 @@ cleanup() {
     mkdir "$ethereum_data_dir"
 }
 
+check_node_version() {
+  local expected_version=$1
+
+  if ! [ -x "$(command -v node)" ]; then
+      echo 'Error: NodeJS is not installed.'
+      exit 1
+  fi
+
+  node_version=$(node -v) # This does not seem to work in Git Bash on Windows.
+  # "node -v" outputs version in the format "v18.12.1"
+  node_version=${node_version:1} # Remove 'v' at the beginning
+  node_version=${node_version%\.*} # Remove trailing ".*".
+  node_version=${node_version%\.*} # Remove trailing ".*".
+  node_version=$(($node_version)) # Convert the NodeJS version number from a string to an integer.
+  if [ $node_version -lt "$expected_version" ]
+  then
+    echo "NodeJS version is lower than $expected_version (it is $node_version), Please update your node installation!"
+    exit 1
+  fi
+}
+
 check_tool() {
     if ! [ -x "$(command -v g++)" ]; then
         echo 'Error: g++ is not installed.'
@@ -158,6 +179,8 @@ check_tool() {
               exit 1
           fi
     fi
+
+    check_node_version 22
 }
 
 wait_contract_deployed() {
