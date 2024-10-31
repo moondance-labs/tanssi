@@ -4,8 +4,8 @@ import { getBlockTime } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S03",
-    title: "Sample suite that only runs on Dancebox chains",
+    id: "S01",
+    title: "Sample suite that runs on Dancebox and Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
@@ -16,7 +16,7 @@ describeSuite({
 
         it({
             id: "C01",
-            title: "Parachain blocks should be finalized",
+            title: "Blocks should be finalized",
             test: async function () {
                 const head = await api.rpc.chain.getFinalizedHead();
                 const block = await api.rpc.chain.getBlock(head);
