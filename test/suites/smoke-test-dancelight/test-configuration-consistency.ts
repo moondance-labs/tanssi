@@ -5,8 +5,8 @@ import { hasEnoughCredits } from "util/payment";
 import { u32, Vec } from "@polkadot/types-codec";
 
 describeSuite({
-    id: "S04",
-    title: "Sample suite that only runs on Dancebox chains",
+    id: "S17",
+    title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
@@ -22,62 +22,26 @@ describeSuite({
 
         it({
             id: "C01",
-            title: "Config orchestrator max collators parameters should be respected",
-            test: async function () {
-                const config = await api.query.configuration.activeConfig();
-                // get current session
-                const sessionIndex = (await api.query.session.currentIndex()).toNumber();
-                // get current authorities
-                const authorities = await api.query.authorityAssignment.collatorContainerChain(sessionIndex);
-
-                // We cannot exced max collators
-                expect(authorities.toJSON()["orchestratorChain"].length).to.be.lessThanOrEqual(
-                    config["maxOrchestratorCollators"].toNumber()
-                );
-            },
-        });
-
-        it({
-            id: "C02",
-            title: "Config orchestrator min collators parameters should be respected",
-            test: async function () {
-                const config = await api.query.configuration.activeConfig();
-                // get current session
-                const sessionIndex = (await api.query.session.currentIndex()).toNumber();
-                // get current authorities
-                const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
-
-                // If we have container chain collators, is because we at least assigned min to orchestrator
-                if (Object.keys(authorities["containerChains"]).length != 0) {
-                    expect(authorities["orchestratorChain"].length).to.be.greaterThanOrEqual(
-                        config["minOrchestratorCollators"].toNumber()
-                    );
-                }
-            },
-        });
-
-        it({
-            id: "C03",
-            title: "Config registered paras should be filled if more than min collators in orchestrator",
+            title: "Config for registered paras should be consistent",
             test: async function () {
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 const blockToCheck = Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
-                const config = await api.query.configuration.activeConfig();
+                const config = await api.query.collatorConfiguration.activeConfig();
                 // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
                 // get pending authorities
                 // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
                 const pendingAuthorityAssignment = (
-                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex + 1)
+                    await api.query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex + 1)
                 ).toJSON();
 
                 // get current authorities
                 // we need to know whether a chain is assigned currently
                 const currentAuthorityAssignment = (
-                    await api.query.authorityAssignment.collatorContainerChain(sessionIndex)
+                    await api.query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)
                 ).toJSON();
 
                 const currentAuthorities = await api.query.session.validators();
@@ -93,8 +57,8 @@ describeSuite({
                     let containersToCompareAgainst: Vec<u32>;
                     // If pending para ids for the session are empty we compare with registered para id, otherwise
                     // we compare with pending para ids.
-                    const liveContainers = await api.query.registrar.registeredParaIds();
-                    const pendingContainers = await api.query.registrar.pendingParaIds();
+                    const liveContainers = await api.query.containerRegistrar.registeredParaIds();
+                    const pendingContainers = await api.query.containerRegistrar.pendingParaIds();
 
                     if (pendingContainers.length == 0) {
                         containersToCompareAgainst = liveContainers;
