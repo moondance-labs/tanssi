@@ -1,9 +1,9 @@
-root_dir="$(realpath)"
+root_dir="$(realpath .)"
 
 scripts_root_dir="$root_dir/scripts/bridge"
 assets_dir="$scripts_root_dir/assets"
 
-artifacts_dir="$root_dir/artifacts"
+artifacts_dir="$root_dir/tmp/artifacts"
 mkdir -p $artifacts_dir
 
 logs_dir="$artifacts_dir/logs"

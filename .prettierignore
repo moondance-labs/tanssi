@@ -11,7 +11,7 @@
 test/tsconfig.json
 
 # Test data
-artifacts
+tmp
 
 # Spec/Wasm build directory
 **/build/
