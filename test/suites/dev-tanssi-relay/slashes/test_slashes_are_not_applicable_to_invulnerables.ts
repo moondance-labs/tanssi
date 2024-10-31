@@ -60,7 +60,9 @@ describeSuite({
                 const DeferPeriod = await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration;
 
                 // Alice is an invulnerable, therefore she should not be slashed
-                const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod.toNumber() + 1);
+                const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(
+                    DeferPeriod.toNumber() + 1
+                );
                 expect(expectedSlashes.length).to.be.eq(0);
             },
         });
