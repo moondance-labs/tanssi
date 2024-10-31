@@ -1125,6 +1125,9 @@ where
         let migrate_external_validators =
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_mmr_leaf_pallet), Box::new(migrate_external_validators)]
+        vec![
+            Box::new(migrate_mmr_leaf_pallet),
+            Box::new(migrate_external_validators),
+        ]
     }
 }
