@@ -62,9 +62,6 @@ pub mod pallet {
         sp_std::vec::Vec,
     };
 
-    /// The current storage version.
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
-
     /// A convertor from collators id. Since this pallet does not have stash/controller, this is
     /// just identity.
     pub struct IdentityCollator;
@@ -107,7 +104,6 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
     /// The invulnerable, permissioned collators. This list must be sorted.
