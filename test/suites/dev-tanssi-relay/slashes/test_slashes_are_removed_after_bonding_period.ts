@@ -65,7 +65,7 @@ describeSuite({
                 await context.createBlock(signedTx);
 
                 // Slash item should be there
-                const DeferPeriod = await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration;
+                const DeferPeriod = (await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration).toNumber();
 
                 // scheduled slashes
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
@@ -84,13 +84,13 @@ describeSuite({
                 const currentIndex = await polkadotJs.query.session.currentIndex();
 
                 const targetSession =
-                    currentIndex.toNumber() + sessionsPerEra * (DeferPeriod + 1) + sessionsPerEra * bondingPeriod;
+                    currentIndex.toNumber() + sessionsPerEra * (DeferPeriod + 1) + sessionsPerEra * (bondingPeriod + 1);
                 // TODO: check this
-                await jumpToSession(context, targetSession + 10);
+                await jumpToSession(context, targetSession);
 
                 // scheduled slashes
                 const expectedSlashesAfterDefer = await polkadotJs.query.externalValidatorSlashes.slashes(
-                    DeferPeriod.toNumber() + 1
+                    DeferPeriod + 1
                 );
                 expect(expectedSlashesAfterDefer.length).to.be.eq(0);
             },
