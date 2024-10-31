@@ -156,14 +156,15 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// A helper function to sign payload and send an unsigned transaction
     fn send_raw_unsigned_transaction(block_number: BlockNumberFor<T>) -> Result<(), &'static str> {
+        // Make sure offchain worker testing is enabled
+        let is_offchain_worker_enabled = OffchainWorkerTestEnabled::<T>::get();
+        if !is_offchain_worker_enabled {
+            return Err("Offchain worker is not enabled");
+        }
         // Make sure transaction can be sent
         let next_unsigned_at = NextUnsignedAt::<T>::get();
         if next_unsigned_at > block_number {
             return Err("Too early to send unsigned transaction");
-        }
-        let is_offchain_worker_enabled = OffchainWorkerTestEnabled::<T>::get();
-        if !is_offchain_worker_enabled {
-            return Err("Offchain worker is not enabled");
         }
 
         let call = Call::submit_event_unsigned { block_number };
@@ -175,6 +176,11 @@ impl<T: Config> Pallet<T> {
     }
 
     fn validate_transaction_parameters(block_number: &BlockNumberFor<T>) -> TransactionValidity {
+        // Make sure offchain worker testing is enabled
+        let is_offchain_worker_enabled = OffchainWorkerTestEnabled::<T>::get();
+        if !is_offchain_worker_enabled {
+            return InvalidTransaction::Call.into();
+        }
         // Now let's check if the transaction has any chance to succeed.
         let next_unsigned_at = NextUnsignedAt::<T>::get();
         if &next_unsigned_at > block_number {
