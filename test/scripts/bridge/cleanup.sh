@@ -24,8 +24,6 @@ elif [ $1 = "olep" ]; then
   rm -rf $output_dir
   rm -rf $ethereum_data_dir
 
-  lodestar=""
-  geth=""
   beacon_relay=""
   beefy_relay=""
 
@@ -33,10 +31,13 @@ elif [ $1 = "olep" ]; then
   source $artifacts_dir/daemons.pid 2> /dev/null || true
 
   # Using interrupt instead of kill signal for process to cleanup
-  kill -s INT $lodestar 2> /dev/null || true
-  kill -s INT $geth 2> /dev/null || true
   kill -s INT $beacon_relay 2> /dev/null || true
   kill -s INT $beefy_relay 2> /dev/null || true
+
+  # Brute force to remove other process spawned by lodestar and geth, if any
+  echo "Warning: Terminating any process containing lodestar or geth word in the full command line (executable + argument)"
+  pkill -f "lodestar"
+  pkill -f "geth"
 
   # Always remove this to prevent us for terminating any other process for which the PID was reused
   rm $artifacts_dir/daemons.pid 2> /dev/null || true

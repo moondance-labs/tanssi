@@ -3,7 +3,7 @@ root_dir="$(realpath .)"
 scripts_root_dir="$root_dir/scripts/bridge"
 assets_dir="$scripts_root_dir/assets"
 
-artifacts_dir="$root_dir/tmp/artifacts"
+artifacts_dir="$root_dir/tmp/bridge"
 mkdir -p $artifacts_dir
 
 logs_dir="$artifacts_dir/logs"

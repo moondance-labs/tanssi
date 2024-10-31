@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { spawn, exec } from "node:child_process";
-import { signAndSendAndInclude } from "../../util/block.ts";
+import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
 
 function execCommand(command: string, options?) {
@@ -104,14 +104,14 @@ describeSuite({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
             test: async function () {
-                await sleep(10000);
+                await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
                 ).toJSON();
                 expect(firstFinalizedBlockRoot).to.not.equal(
                     "0x0000000000000000000000000000000000000000000000000000000000000000"
                 );
-                await sleep(20000);
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
                 const secondFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
                 ).toJSON();
@@ -132,7 +132,7 @@ describeSuite({
                 );
                 const currentBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
                 expect(currentBeefyBlock).to.greaterThan(0);
-                await sleep(20000);
+                await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const nextBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },
