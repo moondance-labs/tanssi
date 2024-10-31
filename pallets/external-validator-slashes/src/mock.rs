@@ -136,7 +136,7 @@ impl EraIndexProvider for MockEraIndexProvider {
             None
         } else {
             // Else we assume eras start at the same time as sessions
-            Some(era_index.into())
+            Some(era_index)
         }
     }
 }
@@ -186,7 +186,7 @@ impl InvulnerablesProvider<u64> for MockInvulnerableProvider {
 pub struct DeferPeriodGetter;
 impl Get<EraIndex> for DeferPeriodGetter {
     fn get() -> EraIndex {
-        DEFER_PERIOD.with(|q| (*q.borrow()).clone())
+        DEFER_PERIOD.with(|q| (*q.borrow()))
     }
 }
 
@@ -216,7 +216,7 @@ impl external_validator_slashes::Config for Test {
 pub struct FullIdentificationOf;
 impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
     fn convert(_: AccountId) -> Option<()> {
-        Some(Default::default())
+        Some(())
     }
 }
 

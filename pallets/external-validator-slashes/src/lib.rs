@@ -324,7 +324,7 @@ where
             }
 
             let slash = compute_slash::<T>(
-                slash_fraction.clone(),
+                *slash_fraction,
                 next_slash_id,
                 slash_era,
                 stash.clone(),
