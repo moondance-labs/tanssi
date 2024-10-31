@@ -139,6 +139,53 @@ check_node_version() {
   fi
 }
 
+vercomp() {
+    if [[ $1 == $2 ]]
+    then
+        echo "Equal"
+        return
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if ((10#${ver1[i]:=0} > 10#${ver2[i]:=0}))
+        then
+            echo "Greater"
+            return
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            echo "Less"
+            return
+        fi
+    done
+}
+
+
+check_go_version() {
+  local expected_version=$1
+
+  if ! [ -x "$(command -v go)" ]; then
+        echo 'Error: Go is not installed.'
+        exit 1
+  fi
+
+  go_version=$(go version | { read _ _ v _; echo ${v#go}; })
+  op=$(vercomp "$go_version" "$1")
+
+  if [[ $op = "Less" ]]
+  then
+      echo "Go version is lower than $expected_version (it is $go_version), Please update your go installation!"
+      exit 1
+  fi
+}
+
 check_tool() {
     if ! [ -x "$(command -v g++)" ]; then
         echo 'Error: g++ is not installed.'
@@ -181,6 +228,7 @@ check_tool() {
     fi
 
     check_node_version 22
+    check_go_version 1.21.2
 }
 
 wait_contract_deployed() {
