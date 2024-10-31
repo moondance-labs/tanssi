@@ -10,6 +10,9 @@
 **/.yarn
 test/tsconfig.json
 
+# Test data
+artifacts
+
 # Spec/Wasm build directory
 **/build/
 

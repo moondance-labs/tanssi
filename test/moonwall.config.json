@@ -771,6 +771,27 @@
             ]
         },
         {
+            "name": "zombie_tanssi_relay_eth_bridge",
+            "timeout": 600000,
+            "envVars": ["RUST_BACKTRACE=1"],
+            "testFileDir": ["suites/zombie-tanssi-relay-eth-bridge"],
+            "runScripts": ["bridge-build-artifacts.sh"],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightBridge.json",
+                    "skipBlockCheck": ["Tanssi-relay"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                }
+            ]
+        },
+        {
             "name": "zombie_data_preservers",
             "testFileDir": ["suites/data-preservers"],
             "runScripts": [
