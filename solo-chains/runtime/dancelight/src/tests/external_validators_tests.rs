@@ -21,6 +21,7 @@ use {
         tests::common::*, ExternalValidators, MaxExternalValidators, SessionKeys, SessionsPerEra,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
+    pallet_external_validators::Forcing,
     std::{collections::HashMap, ops::RangeInclusive},
 };
 
@@ -444,7 +445,10 @@ mod force_eras {
 
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 assert_eq!(ExternalValidators::current_era(), Some(0));
-                assert_ok!(ExternalValidators::force_new_era(root_origin()));
+                assert_ok!(ExternalValidators::force_era(
+                    root_origin(),
+                    Forcing::ForceNew
+                ));
                 // Still era 1, until next session
                 assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_eq!(Session::current_index(), 0);
@@ -549,7 +553,10 @@ mod force_eras {
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will never change
                 assert_eq!(ExternalValidators::current_era(), Some(0));
-                assert_ok!(ExternalValidators::force_no_eras(root_origin()));
+                assert_ok!(ExternalValidators::force_era(
+                    root_origin(),
+                    Forcing::ForceNone
+                ));
 
                 run_to_session(sessions_per_era);
                 assert_eq!(ExternalValidators::current_era(), Some(0));
@@ -596,7 +603,10 @@ mod force_eras {
                 ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
                 // Validators will change on every session
                 assert_eq!(ExternalValidators::current_era(), Some(0));
-                assert_ok!(ExternalValidators::force_new_era_always(root_origin()));
+                assert_ok!(ExternalValidators::force_era(
+                    root_origin(),
+                    Forcing::ForceAlways
+                ));
 
                 run_to_session(2);
                 assert_eq!(ExternalValidators::current_era(), Some(2));

@@ -52,6 +52,7 @@ sp-version = { workspace = true }
 tx-pool-api = { workspace = true }
 
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
@@ -178,6 +179,7 @@ std = [
 	"dp-container-chain-genesis-data/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
+	"frame-metadata-hash-extension/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
 	"frame-system-rpc-runtime-api/std",

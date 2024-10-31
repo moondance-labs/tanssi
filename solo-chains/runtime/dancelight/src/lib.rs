@@ -79,7 +79,10 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, AccountId32},
+    sp_runtime::{
+        traits::{BlockNumberProvider, ConvertInto},
+        AccountId32,
+    },
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -186,7 +189,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 25,
+    transaction_version: 26,
     state_version: 1,
 };
 
@@ -629,6 +632,7 @@ where
             frame_system::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckWeight::<Runtime>::new(),
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            frame_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
         );
         let raw_payload = SignedPayload::new(call, extra)
             .map_err(|e| {
@@ -744,6 +748,7 @@ pub enum ProxyType {
     CancelProxy,
     Auction,
     OnDemandOrdering,
+    SudoRegistrar,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -804,6 +809,19 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::DataPreservers(..)
+                            | &RuntimeCall::Registrar(..)
+                            | &RuntimeCall::ContainerRegistrar(..)
+                            | &RuntimeCall::Paras(..)
+                            | &RuntimeCall::ParasSudoWrapper(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -1136,12 +1154,12 @@ impl pallet_beefy::Config for Runtime {
     // weight computation.
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
-    type OnNewValidatorSet = MmrLeaf;
+    type OnNewValidatorSet = BeefyMmrLeaf;
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
         pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-    type AncestryHelper = MmrLeaf;
+    type AncestryHelper = BeefyMmrLeaf;
 }
 
 /// MMR helper types.
@@ -1277,7 +1295,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -1628,7 +1646,7 @@ construct_runtime! {
         // MMR leaf construction must be after session in order to have a leaf's next_auth_set
         // refer to block<N>.
         Mmr: pallet_mmr = 241,
-        MmrLeaf: pallet_beefy_mmr = 242,
+        BeefyMmrLeaf: pallet_beefy_mmr = 242,
         EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
@@ -1661,6 +1679,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -2439,11 +2458,11 @@ sp_api::impl_runtime_apis! {
 
     impl pallet_beefy_mmr::BeefyMmrApi<Block, Hash> for RuntimeApi {
         fn authority_set_proof() -> beefy_primitives::mmr::BeefyAuthoritySet<Hash> {
-            MmrLeaf::authority_set_proof()
+            BeefyMmrLeaf::authority_set_proof()
         }
 
         fn next_authority_set_proof() -> beefy_primitives::mmr::BeefyNextAuthoritySet<Hash> {
-            MmrLeaf::next_authority_set_proof()
+            BeefyMmrLeaf::next_authority_set_proof()
         }
     }
 

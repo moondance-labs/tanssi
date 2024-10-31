@@ -408,6 +408,20 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        beefyMmrLeaf: {
+            /** Details of current BEEFY authority set. */
+            beefyAuthorities: AugmentedQuery<ApiType, () => Observable<SpConsensusBeefyMmrBeefyAuthoritySet>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Details of next BEEFY authority set.
+             *
+             * This storage entry is used as cache for calls to `update_beefy_next_authority_set`.
+             */
+            beefyNextAuthorities: AugmentedQuery<ApiType, () => Observable<SpConsensusBeefyMmrBeefyAuthoritySet>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         collatorConfiguration: {
             /** The active configuration for the current session. */
             activeConfig: AugmentedQuery<ApiType, () => Observable<PalletConfigurationHostConfiguration>, []> &
@@ -1225,20 +1239,6 @@ declare module "@polkadot/api-base/types/storage" {
             numberOfLeaves: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
             /** Latest MMR Root hash. */
             rootHash: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        mmrLeaf: {
-            /** Details of current BEEFY authority set. */
-            beefyAuthorities: AugmentedQuery<ApiType, () => Observable<SpConsensusBeefyMmrBeefyAuthoritySet>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * Details of next BEEFY authority set.
-             *
-             * This storage entry is used as cache for calls to `update_beefy_next_authority_set`.
-             */
-            beefyNextAuthorities: AugmentedQuery<ApiType, () => Observable<SpConsensusBeefyMmrBeefyAuthoritySet>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

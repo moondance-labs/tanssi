@@ -59,8 +59,8 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Balances, Beefy, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards, Initializer,
-    Mmr, MmrLeaf, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
+    Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
+    Initializer, Mmr, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
     TanssiCollatorAssignment, TransactionPayment,
 };
 
@@ -250,7 +250,7 @@ pub fn start_block() -> RunSummary {
 
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
-    MmrLeaf::on_initialize(System::block_number());
+    BeefyMmrLeaf::on_initialize(System::block_number());
 
     RunSummary {
         inflation: new_issuance - current_issuance,
@@ -270,7 +270,7 @@ pub fn end_block() {
     TanssiCollatorAssignment::on_finalize(System::block_number());
     Beefy::on_finalize(System::block_number());
     Mmr::on_finalize(System::block_number());
-    MmrLeaf::on_finalize(System::block_number());
+    BeefyMmrLeaf::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
@@ -636,6 +636,7 @@ impl ExtBuilder {
         }
 
         pallet_external_validators::GenesisConfig::<Runtime> {
+            skip_external_validators: false,
             whitelisted_validators: self
                 .validators
                 .iter()

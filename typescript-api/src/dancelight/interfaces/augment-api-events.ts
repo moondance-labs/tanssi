@@ -221,9 +221,9 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** A new era has started. */
             NewEra: AugmentedEvent<ApiType, [era: u32], { era: u32 }>;
-            /** A new Invulnerable was added. */
+            /** A new whitelisted validator was added. */
             WhitelistedValidatorAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
-            /** An Invulnerable was removed. */
+            /** A whitelisted validator was removed. */
             WhitelistedValidatorRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;

@@ -230,16 +230,16 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         externalValidators: {
-            /** Account is already an Invulnerable. */
-            AlreadyInvulnerable: AugmentedError<ApiType>;
+            /** Account is already whitelisted. */
+            AlreadyWhitelisted: AugmentedError<ApiType>;
             /** Account does not have keys registered */
             NoKeysRegistered: AugmentedError<ApiType>;
-            /** Account is not an Invulnerable. */
-            NotInvulnerable: AugmentedError<ApiType>;
-            /** There are too many Invulnerables. */
-            TooManyInvulnerables: AugmentedError<ApiType>;
-            /** Unable to derive collator id from account id */
-            UnableToDeriveCollatorId: AugmentedError<ApiType>;
+            /** Account is not whitelisted. */
+            NotWhitelisted: AugmentedError<ApiType>;
+            /** There are too many whitelisted validators. */
+            TooManyWhitelisted: AugmentedError<ApiType>;
+            /** Unable to derive validator id from account id */
+            UnableToDeriveValidatorId: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

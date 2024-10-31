@@ -25,7 +25,7 @@ use {
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
-        traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
+        traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
 };
@@ -117,7 +117,7 @@ impl Config for Test {
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
     type MaxInvulnerables = ConstU32<20>;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = IsRegistered;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -165,7 +165,7 @@ impl pallet_session::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = IdentityCollator;
+    type ValidatorIdOf = ConvertInto;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = Invulnerables;
