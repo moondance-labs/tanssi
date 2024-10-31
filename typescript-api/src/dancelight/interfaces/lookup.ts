@@ -6148,14 +6148,14 @@ export default {
     FrameSystemExtensionsCheckWeight: "Null",
     /** Lookup824: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup820: frame_metadata_hash_extension::CheckMetadataHash<T> */
+    /** Lookup825: frame_metadata_hash_extension::CheckMetadataHash<T> */
     FrameMetadataHashExtensionCheckMetadataHash: {
         mode: "FrameMetadataHashExtensionMode",
     },
-    /** Lookup821: frame_metadata_hash_extension::Mode */
+    /** Lookup826: frame_metadata_hash_extension::Mode */
     FrameMetadataHashExtensionMode: {
         _enum: ["Disabled", "Enabled"],
     },
-    /** Lookup822: dancelight_runtime::Runtime */
+    /** Lookup827: dancelight_runtime::Runtime */
     DancelightRuntimeRuntime: "Null",
 };

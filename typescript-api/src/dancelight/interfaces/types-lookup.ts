@@ -7956,18 +7956,18 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletTransactionPaymentChargeTransactionPayment (824) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name FrameMetadataHashExtensionCheckMetadataHash (820) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (825) */
     interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
         readonly mode: FrameMetadataHashExtensionMode;
     }
 
-    /** @name FrameMetadataHashExtensionMode (821) */
+    /** @name FrameMetadataHashExtensionMode (826) */
     interface FrameMetadataHashExtensionMode extends Enum {
         readonly isDisabled: boolean;
         readonly isEnabled: boolean;
         readonly type: "Disabled" | "Enabled";
     }
 
-    /** @name DancelightRuntimeRuntime (822) */
+    /** @name DancelightRuntimeRuntime (827) */
     type DancelightRuntimeRuntime = Null;
 } // declare module
