@@ -1199,6 +1199,7 @@ parameter_types! {
 impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
+    type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
     type MaxExternalValidators = MaxExternalValidators;
     type ValidatorId = AccountId;
@@ -1521,6 +1522,9 @@ construct_runtime! {
         ServicesPayment: pallet_services_payment = 18,
         DataPreservers: pallet_data_preservers = 19,
 
+        // Validator stuff
+        ExternalValidators: pallet_external_validators = 20,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1583,9 +1587,6 @@ construct_runtime! {
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
-
-        // Validator stuff
-        ExternalValidators: pallet_external_validators = 100,
 
         // Migration stuff
         Migrations: pallet_migrations = 120,

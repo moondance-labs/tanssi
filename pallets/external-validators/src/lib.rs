@@ -31,7 +31,8 @@
 
 pub use pallet::*;
 use {
-    frame_support::{dispatch::DispatchClass, pallet_prelude::Weight},
+    frame_support::pallet_prelude::Weight,
+    log::log,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_runtime::traits::Get,
@@ -95,6 +96,20 @@ pub mod pallet {
 
         /// Origin that can dictate updating parameters of this pallet.
         type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+        /// Number of eras to keep in history.
+        ///
+        /// Following information is kept for eras in `[current_era -
+        /// HistoryDepth, current_era]`: `ErasStartSessionIndex`
+        ///
+        /// Must be more than the number of eras delayed by session.
+        /// I.e. active era must always be in history. I.e. `active_era >
+        /// current_era - history_depth` must be guaranteed.
+        ///
+        /// If migrating an existing pallet from storage value to config value,
+        /// this should be set to same value or greater as in storage.
+        #[pallet::constant]
+        type HistoryDepth: Get<u32>;
 
         /// Maximum number of whitelisted validators.
         #[pallet::constant]
@@ -167,9 +182,12 @@ pub mod pallet {
     #[pallet::storage]
     pub type ActiveEra<T: Config> = StorageValue<_, ActiveEraInfo>;
 
-    /// Session index at the start of the *active* era. Used to know when to start the next era.
+    /// The session index at which the era start for the last [`Config::HistoryDepth`] eras.
+    ///
+    /// Note: This tracks the starting session (i.e. session index when era start being active)
+    /// for the eras in `[CurrentEra - HISTORY_DEPTH, CurrentEra]`.
     #[pallet::storage]
-    pub type ActiveEraSessionStart<T: Config> = StorageValue<_, u32, ValueQuery>;
+    pub type ErasStartSessionIndex<T> = StorageMap<_, Twox64Concat, EraIndex, SessionIndex>;
 
     /// Mode of era forcing.
     #[pallet::storage]
@@ -392,18 +410,16 @@ pub mod pallet {
             <WhitelistedValidators<T>>::get().into()
         }
 
-        pub fn active_era() -> EraIndex {
+        pub fn active_era() -> Option<ActiveEraInfo> {
             <ActiveEra<T>>::get()
-                .map(|era_info| era_info.index)
-                .unwrap_or(0)
         }
 
-        pub fn current_era() -> EraIndex {
-            <CurrentEra<T>>::get().unwrap_or(0)
+        pub fn current_era() -> Option<EraIndex> {
+            <CurrentEra<T>>::get()
         }
 
-        pub fn active_era_session_start() -> u32 {
-            <ActiveEraSessionStart<T>>::get()
+        pub fn eras_start_session_index(era: EraIndex) -> Option<u32> {
+            <ErasStartSessionIndex<T>>::get(era)
         }
 
         /// Returns validators for the next session. Whitelisted validators first, then external validators.
@@ -419,27 +435,148 @@ pub mod pallet {
             remove_duplicates(validators)
         }
 
-        /// Returns true if the provided session index should start a new era.
-        pub(crate) fn should_start_new_era(session: u32) -> bool {
-            if session <= 1 {
-                return false;
-            }
+        /// Plan a new session potentially trigger a new era.
+        pub(crate) fn new_session(session_index: SessionIndex) -> Option<Vec<T::ValidatorId>> {
+            if let Some(current_era) = Self::current_era() {
+                // Initial era has been set.
+                let current_era_start_session_index = Self::eras_start_session_index(current_era)
+                    .unwrap_or_else(|| {
+                        frame_support::print(
+                            "Error: start_session_index must be set for current_era",
+                        );
+                        0
+                    });
 
-            match <ForceEra<T>>::get() {
-                Forcing::NotForcing => {
-                    // If enough sessions have elapsed, start new era
-                    let start_session = <ActiveEraSessionStart<T>>::get();
+                let era_length = session_index.saturating_sub(current_era_start_session_index); // Must never happen.
 
-                    if session.saturating_sub(start_session) >= T::SessionsPerEra::get() {
-                        true
-                    } else {
-                        false
+                match ForceEra::<T>::get() {
+                    // Will be set to `NotForcing` again if a new era has been triggered.
+                    Forcing::ForceNew => (),
+                    // Short circuit to `try_trigger_new_era`.
+                    Forcing::ForceAlways => (),
+                    // Only go to `try_trigger_new_era` if deadline reached.
+                    Forcing::NotForcing if era_length >= T::SessionsPerEra::get() => (),
+                    _ => {
+                        // Either `Forcing::ForceNone`,
+                        // or `Forcing::NotForcing if era_length >= T::SessionsPerEra::get()`.
+                        return None;
                     }
                 }
-                Forcing::ForceNew => true,
-                Forcing::ForceNone => false,
-                Forcing::ForceAlways => true,
+
+                // New era.
+                let maybe_new_era_validators = Self::try_trigger_new_era(session_index);
+                if maybe_new_era_validators.is_some()
+                    && matches!(ForceEra::<T>::get(), Forcing::ForceNew)
+                {
+                    Self::set_force_era(Forcing::NotForcing);
+                }
+
+                maybe_new_era_validators
+            } else {
+                // Set initial era.
+                log!(log::Level::Debug, "Starting the first era.");
+                Self::try_trigger_new_era(session_index)
             }
+        }
+
+        /// Start a session potentially starting an era.
+        pub(crate) fn start_session(start_session: SessionIndex) {
+            let next_active_era = Self::active_era().map(|e| e.index + 1).unwrap_or(0);
+            // This is only `Some` when current era has already progressed to the next era, while the
+            // active era is one behind (i.e. in the *last session of the active era*, or *first session
+            // of the new current era*, depending on how you look at it).
+            if let Some(next_active_era_start_session_index) =
+                Self::eras_start_session_index(next_active_era)
+            {
+                if next_active_era_start_session_index == start_session {
+                    Self::start_era(start_session);
+                } else if next_active_era_start_session_index < start_session {
+                    // This arm should never happen, but better handle it than to stall the staking
+                    // pallet.
+                    frame_support::print("Warning: A session appears to have been skipped.");
+                    Self::start_era(start_session);
+                }
+            }
+        }
+
+        /// End a session potentially ending an era.
+        pub(crate) fn end_session(session_index: SessionIndex) {
+            if let Some(active_era) = Self::active_era() {
+                if let Some(next_active_era_start_session_index) =
+                    Self::eras_start_session_index(active_era.index + 1)
+                {
+                    if next_active_era_start_session_index == session_index + 1 {
+                        Self::end_era(active_era, session_index);
+                    }
+                }
+            }
+        }
+
+        /// Start a new era. It does:
+        /// * Increment `active_era.index`,
+        /// * reset `active_era.start`,
+        pub(crate) fn start_era(start_session: SessionIndex) {
+            let active_era = ActiveEra::<T>::mutate(|active_era| {
+                let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
+                *active_era = Some(ActiveEraInfo {
+                    index: new_index,
+                    // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
+                    start: None,
+                });
+                new_index
+            });
+            T::OnEraStart::on_era_start(active_era, start_session);
+        }
+
+        /// Compute payout for era.
+        pub(crate) fn end_era(active_era: ActiveEraInfo, _session_index: SessionIndex) {
+            // Note: active_era_start can be None if end era is called during genesis config.
+            if let Some(_active_era_start) = active_era.start {
+                // TODO: EraPaid event here
+            }
+            T::OnEraEnd::on_era_end(active_era.index);
+        }
+
+        /// Plan a new era.
+        ///
+        /// * Bump the current era storage (which holds the latest planned era).
+        /// * Store start session index for the new planned era.
+        /// * Clean old era information.
+        /// * Store staking information for the new planned era
+        ///
+        /// Returns the new validator set.
+        pub fn trigger_new_era(start_session_index: SessionIndex) -> Vec<T::ValidatorId> {
+            // Increment or set current era.
+            let new_planned_era = CurrentEra::<T>::mutate(|s| {
+                *s = Some(s.map(|s| s + 1).unwrap_or(0));
+                s.unwrap()
+            });
+            ErasStartSessionIndex::<T>::insert(&new_planned_era, &start_session_index);
+
+            // Clean old era information.
+            if let Some(old_era) = new_planned_era.checked_sub(T::HistoryDepth::get() + 1) {
+                Self::clear_era_information(old_era);
+            }
+
+            // Returns new validators
+            Self::validators()
+        }
+
+        /// Potentially plan a new era.
+        ///
+        /// Get election result from `T::ElectionProvider`.
+        /// In case election result has more than [`MinimumValidatorCount`] validator trigger a new era.
+        ///
+        /// In case a new era is planned, the new validator set is returned.
+        pub(crate) fn try_trigger_new_era(
+            start_session_index: SessionIndex,
+        ) -> Option<Vec<T::ValidatorId>> {
+            Some(Self::trigger_new_era(start_session_index))
+        }
+
+        /// Clear all era information for given era.
+        pub(crate) fn clear_era_information(era_index: EraIndex) {
+            ErasStartSessionIndex::<T>::remove(era_index);
         }
     }
 
@@ -481,77 +618,25 @@ fn remove_duplicates<T: Ord + Clone>(input: Vec<T>) -> Vec<T> {
 }
 
 impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
-    fn new_session(session: SessionIndex) -> Option<Vec<T::ValidatorId>> {
-        if !Self::should_start_new_era(session) {
-            // Return None to keep previous validators
-            return None;
-        }
-
-        // Increment current era
-        <CurrentEra<T>>::mutate(|era| {
-            if era.is_none() {
-                *era = Some(0);
-            }
-            let era = era.as_mut().unwrap();
-            *era += 1;
-        });
-
-        // Return new validators
-        let validators: Vec<_> = Self::validators();
-
-        frame_system::Pallet::<T>::register_extra_weight_unchecked(
-            T::WeightInfo::new_session(validators.len() as u32),
-            DispatchClass::Mandatory,
+    fn new_session(new_index: SessionIndex) -> Option<Vec<T::ValidatorId>> {
+        log!(log::Level::Trace, "planning new session {}", new_index);
+        Self::new_session(new_index)
+    }
+    fn new_session_genesis(new_index: SessionIndex) -> Option<Vec<T::ValidatorId>> {
+        log!(
+            log::Level::Trace,
+            "planning new session {} at genesis",
+            new_index
         );
-
-        Some(validators)
+        Self::new_session(new_index)
     }
-
-    fn end_session(index: SessionIndex) {
-        // To know if this the end of an era, we need to check if the next session is the start of a new era
-        let new_index = index.saturating_add(1);
-        if !Self::should_start_new_era(new_index) {
-            return;
-        }
-
-        T::OnEraEnd::on_era_end(index);
+    fn start_session(start_index: SessionIndex) {
+        log!(log::Level::Trace, "starting session {}", start_index);
+        Self::start_session(start_index)
     }
-
-    fn start_session(session_index: SessionIndex) {
-        if !Self::should_start_new_era(session_index) {
-            return;
-        }
-
-        <ForceEra<T>>::mutate(|era| {
-            // If this era has been forced, reset forcing flag to only force once
-            if let Forcing::ForceNew = era {
-                *era = Forcing::NotForcing;
-            }
-        });
-        <ActiveEraSessionStart<T>>::put(session_index);
-
-        // ActiveEra = CurrentEra
-        // Increase era
-        let era_index = <ActiveEra<T>>::mutate(|q| {
-            if q.is_none() {
-                *q = Some(ActiveEraInfo {
-                    index: 0,
-                    start: None,
-                });
-            }
-
-            let q = q.as_mut().unwrap();
-            q.index += 1;
-
-            // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
-            q.start = None;
-
-            q.index
-        });
-
-        T::OnEraStart::on_era_start(era_index, session_index);
-
-        Self::deposit_event(Event::NewEra { era: era_index });
+    fn end_session(end_index: SessionIndex) {
+        log!(log::Level::Trace, "ending session {}", end_index);
+        Self::end_session(end_index)
     }
 }
 
@@ -576,6 +661,10 @@ impl<T: Config> EraIndexProvider for Pallet<T> {
             index: 0,
             start: None,
         })
+    }
+
+    fn era_to_session_start(era_index: EraIndex) -> Option<u32> {
+        <ErasStartSessionIndex<T>>::get(era_index)
     }
 }
 

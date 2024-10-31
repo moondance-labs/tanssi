@@ -16,8 +16,8 @@
 use {
     crate::{
         mock::{
-            new_test_ext, run_to_block, run_to_session, ExternalValidators, RootAccount,
-            RuntimeEvent, RuntimeOrigin, Session, System, Test,
+            new_test_ext, run_to_block, run_to_session, ExternalValidators, HookCall, Mock,
+            RootAccount, RuntimeEvent, RuntimeOrigin, Session, System, Test,
         },
         Error,
     },
@@ -245,5 +245,25 @@ fn duplicate_validator_order_is_preserved() {
         run_to_session(6);
         let validators = Session::validators();
         assert_eq!(validators, vec![3, 1, 2, 4]);
+    });
+}
+
+#[test]
+fn era_hooks() {
+    new_test_ext().execute_with(|| {
+        run_to_session(14);
+
+        let expected_calls = vec![
+            HookCall::OnEraStart { era: 0, session: 0 },
+            HookCall::OnEraEnd { era: 0 },
+            HookCall::OnEraStart { era: 1, session: 6 },
+            HookCall::OnEraEnd { era: 1 },
+            HookCall::OnEraStart {
+                era: 2,
+                session: 12,
+            },
+        ];
+
+        assert_eq!(Mock::mock().called_hooks, expected_calls);
     });
 }

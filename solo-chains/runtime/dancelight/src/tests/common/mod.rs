@@ -635,19 +635,19 @@ impl ExtBuilder {
             non_authority_keys.extend(collator_keys)
         }
 
-        pallet_session::GenesisConfig::<Runtime> {
-            keys,
-            non_authority_keys,
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
         pallet_external_validators::GenesisConfig::<Runtime> {
             whitelisted_validators: self
                 .validators
                 .iter()
                 .map(|(account, _)| account.clone())
                 .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        pallet_session::GenesisConfig::<Runtime> {
+            keys,
+            non_authority_keys,
         }
         .assimilate_storage(&mut t)
         .unwrap();
