@@ -28,7 +28,6 @@ use {
 #[test]
 fn basic_setup_works() {
     new_test_ext().execute_with(|| {
-        // genesis should sort input
         assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);
     });
 }

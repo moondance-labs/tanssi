@@ -15,10 +15,12 @@
 
 use {
     super::*,
-    crate as invulnerables,
+    crate as pallet_external_validators,
     frame_support::{
-        ord_parameter_types, parameter_types,
-        traits::{ConstU32, ValidatorRegistration},
+        assert_ok, ord_parameter_types, parameter_types,
+        traits::{
+            fungible::Mutate, ConstU32, ConstU64, OnFinalize, OnInitialize, ValidatorRegistration,
+        },
     },
     frame_system::{self as system, EnsureSignedBy},
     pallet_balances::AccountData,
@@ -37,9 +39,11 @@ frame_support::construct_runtime!(
     pub enum Test
     {
         System: frame_system,
-        Invulnerables: invulnerables,
+        ExternalValidators: pallet_external_validators,
         Session: pallet_session,
         Balances: pallet_balances,
+        Timestamp: pallet_timestamp,
+        Mock: mock_data,
     }
 );
 
@@ -101,6 +105,13 @@ impl pallet_balances::Config for Test {
     type MaxFreezes = ConstU32<0>;
 }
 
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = ConstU64<5>;
+    type WeightInfo = ();
+}
+
 ord_parameter_types! {
     pub const RootAccount: u64 = 777;
 }
@@ -112,13 +123,23 @@ impl ValidatorRegistration<u64> for IsRegistered {
     }
 }
 
+parameter_types! {
+    pub const SessionsPerEra: SessionIndex = 6;
+}
+
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
-    type MaxInvulnerables = ConstU32<20>;
-    type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = ConvertInto;
-    type CollatorRegistration = IsRegistered;
+    type HistoryDepth = ConstU32<84>;
+    type MaxWhitelistedValidators = ConstU32<20>;
+    type MaxExternalValidators = ConstU32<20>;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = ConvertInto;
+    type ValidatorRegistration = IsRegistered;
+    type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
+    type OnEraStart = Mock;
+    type OnEraEnd = Mock;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
@@ -158,7 +179,7 @@ impl pallet_session::SessionHandler<u64> for TestSessionHandler {
 
 parameter_types! {
     pub const Offset: u64 = 0;
-    pub const Period: u64 = 10;
+    pub const Period: u64 = 5;
 }
 
 impl pallet_session::Config for Test {
@@ -168,17 +189,84 @@ impl pallet_session::Config for Test {
     type ValidatorIdOf = ConvertInto;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = Invulnerables;
+    type SessionManager = ExternalValidators;
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
+}
+
+// Pallet to provide some mock data, used to test
+#[frame_support::pallet]
+pub mod mock_data {
+    use {crate::mock::Mocks, frame_support::pallet_prelude::*};
+
+    #[pallet::config]
+    pub trait Config: frame_system::Config {}
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {}
+
+    #[pallet::pallet]
+    #[pallet::without_storage_info]
+    pub struct Pallet<T>(_);
+
+    #[pallet::storage]
+    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
+
+    impl<T: Config> Pallet<T> {
+        pub fn mock() -> Mocks {
+            Mock::<T>::get()
+        }
+        pub fn mutate<F, R>(f: F) -> R
+        where
+            F: FnOnce(&mut Mocks) -> R,
+        {
+            Mock::<T>::mutate(f)
+        }
+    }
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+pub enum HookCall {
+    OnEraStart { era: u32, session: u32 },
+    OnEraEnd { era: u32 },
+}
+
+impl mock_data::Config for Test {}
+
+#[derive(
+    Clone, Default, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo,
+)]
+pub struct Mocks {
+    pub called_hooks: Vec<HookCall>,
+}
+
+// We use the mock_data pallet to test hooks: we store a list of all the calls, and then check that
+// no eras are skipped.
+impl<T> OnEraStart for mock_data::Pallet<T> {
+    fn on_era_start(era_index: EraIndex, session_start: u32) {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::OnEraStart {
+                era: era_index,
+                session: session_start,
+            });
+        });
+    }
+}
+
+impl<T> OnEraEnd for mock_data::Pallet<T> {
+    fn on_era_end(era_index: EraIndex) {
+        Mock::mutate(|m| {
+            m.called_hooks.push(HookCall::OnEraEnd { era: era_index });
+        });
+    }
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();
-    let invulnerables = vec![1, 2];
+    let whitelisted_validators = vec![1, 2];
 
     let balances = vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)];
     let keys = balances
@@ -200,17 +288,55 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     pallet_balances::GenesisConfig::<Test> { balances }
         .assimilate_storage(&mut t)
         .unwrap();
-    invulnerables::GenesisConfig::<Test> { invulnerables }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_external_validators::GenesisConfig::<Test> {
+        skip_external_validators: false,
+        whitelisted_validators,
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     session.assimilate_storage(&mut t).unwrap();
 
-    t.into()
+    let mut ext: sp_io::TestExternalities = t.into();
+
+    // Initialize accounts and keys for external validators
+    ext.execute_with(|| {
+        initialize_validators(vec![50, 51]);
+    });
+
+    ext
 }
 
-pub fn initialize_to_block(n: u64) {
-    for i in System::block_number() + 1..=n {
-        System::set_block_number(i);
-        <AllPalletsWithSystem as frame_support::traits::OnInitialize<u64>>::on_initialize(i);
+fn initialize_validators(validators: Vec<u64>) {
+    for x in validators {
+        assert_ok!(Balances::mint_into(&x, 10_000_000_000));
+        assert_ok!(Session::set_keys(
+            RuntimeOrigin::signed(x),
+            MockSessionKeys::from(UintAuthorityId(x)),
+            vec![]
+        ));
+    }
+}
+
+pub const INIT_TIMESTAMP: u64 = 30_000;
+pub const BLOCK_TIME: u64 = 1000;
+
+pub fn run_to_session(n: u32) {
+    let block_number = Period::get() * u64::from(n);
+    run_to_block(block_number + 1);
+}
+
+pub fn run_to_block(n: u64) {
+    let old_block_number = System::block_number();
+
+    for x in old_block_number..n {
+        ExternalValidators::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
+
+        System::reset_events();
+        System::set_block_number(x + 1);
+        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+
+        ExternalValidators::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
     }
 }
