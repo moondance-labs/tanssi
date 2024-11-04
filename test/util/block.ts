@@ -1,4 +1,4 @@
-import { DevModeContext, expect } from "@moonwall/cli";
+import { DevModeContext, expect, ZombieContext } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
 
 import { ApiPromise } from "@polkadot/api";
@@ -345,4 +345,25 @@ export async function fetchStorageProofFromValidationData(polkadotJs) {
         relayProofBlockNumber,
         relayStorageProof,
     };
+}
+
+export async function isEventEmittedInTheNextBlocks(
+    context: ZombieContext,
+    api: ApiPromise,
+    blockCount: number,
+    chainName: string,
+    eventName: string
+) {
+    while (blockCount > 0) {
+        await context.waitBlock(1, chainName);
+        const currentBlockEvents = await api.query.system.events();
+        const filteredEvents = currentBlockEvents.filter((a) => {
+            return a.event.method == eventName;
+        });
+        if (filteredEvents.length > 0) {
+            return true;
+        }
+        blockCount--;
+    }
+    return false;
 }

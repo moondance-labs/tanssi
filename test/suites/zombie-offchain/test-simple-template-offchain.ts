@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getHeaderFromRelay } from "../../util/relayInterface.ts";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { signAndSendAndInclude } from "../../util/block.ts";
+import { signAndSendAndInclude, isEventEmittedInTheNextBlocks } from "../../util/block.ts";
 describeSuite({
     id: "ZOF01",
     title: "Zombie Offchain Tests",
@@ -9,6 +9,7 @@ describeSuite({
     testCases: function ({ it, context }) {
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
+        const baseBlockWaitingInterval: number = 10;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -34,13 +35,14 @@ describeSuite({
             test: async function () {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-                await context.waitBlock(10, "Container2000");
-
-                const events = await container2000Api.query.system.events();
-                const offchainWorkerEvents = events.filter((a) => {
-                    return a.event.method == "SimpleOffchainEvent";
-                });
-                expect(offchainWorkerEvents.length).to.be.equal(0);
+                const isOffchainEventEmitted = await isEventEmittedInTheNextBlocks(
+                    context,
+                    container2000Api,
+                    baseBlockWaitingInterval,
+                    "Container2000",
+                    "SimpleOffchainEvent"
+                );
+                expect(isOffchainEventEmitted).to.be.false;
             },
         });
 
@@ -57,23 +59,26 @@ describeSuite({
 
                 // Enable off-chain worker test event emission
                 await signAndSendAndInclude(container2000Api.tx.sudo.sudo(ocwOnTx), alice);
-                await context.waitBlock(20, "Container2000");
-
-                const events = await container2000Api.query.system.events();
-                const offchainWorkerEvents1 = events.filter((a) => {
-                    return a.event.method == "SimpleOffchainEvent";
-                });
-                expect(offchainWorkerEvents1.length).to.be.equal(0);
+                const isOffchainEventEmitted1 = await isEventEmittedInTheNextBlocks(
+                    context,
+                    container2000Api,
+                    baseBlockWaitingInterval,
+                    "Container2000",
+                    "SimpleOffchainEvent"
+                );
+                expect(isOffchainEventEmitted1).to.be.false;
 
                 // Disable off-chain worker test event emission
                 const ocwOffTx = container2000Api.tx.offchainWorker.setOffchainWorker(false);
                 await signAndSendAndInclude(container2000Api.tx.sudo.sudo(ocwOffTx), alice);
-                await context.waitBlock(40, "Container2000");
-
-                const offchainWorkerEvents2 = events.filter((a) => {
-                    return a.event.method == "SimpleOffchainEvent";
-                });
-                expect(offchainWorkerEvents2.length).to.be.equal(0);
+                const isOffchainEventEmitted2 = await isEventEmittedInTheNextBlocks(
+                    context,
+                    container2000Api,
+                    baseBlockWaitingInterval,
+                    "Container2000",
+                    "SimpleOffchainEvent"
+                );
+                expect(isOffchainEventEmitted2).to.be.false;
             },
         });
     },
