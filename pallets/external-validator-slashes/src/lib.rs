@@ -14,6 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+//! ExternalValidatorSlashes pallet.
+//!
+//! A pallet to store slashes based on offences committed by validators
+//! Slashes can be cancelled during the DeferPeriod through cancel_deferred_slash
+//! Slashes can also be forcedly injected via the force_inject_slash extrinsic
+//! Slashes for a particular era are removed after the bondingPeriod has elapsed
+//!
+//! ## OnOffence trait
+//!
+//! The pallet also implements the OnOffence trait that reacts to offences being injected by other pallets
+//! Invulnerables are not slashed and no slashing information is stored for them
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
@@ -117,13 +129,19 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
+        /// The era for which the slash wants to be cancelled has no slashes
         EmptyTargets,
+        /// No slash was found to be cancelled at the given index
         InvalidSlashIndex,
+        /// Slash indices to be cancelled are not sorted or unique
         NotSortedAndUnique,
+        /// Provided an era in the future
         ProvidedFutureEra,
+        /// Provided an era that is not slashable
         ProvidedNonSlashableEra,
-        ActiveEraNotSet,
+        /// The slash to be cancelled has already elapsed the DeferPeriod
         DeferPeriodIsOver,
+        /// There was an error computing the slash
         ErrorComputingSlash,
     }
 
