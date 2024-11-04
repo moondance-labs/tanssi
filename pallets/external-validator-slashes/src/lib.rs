@@ -413,17 +413,17 @@ impl<T: Config> OnEraStart for Pallet<T> {
 impl<T: Config> Pallet<T> {
     /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
     fn confirm_unconfirmed_slashes(active_era: EraIndex) {
-        let mut era_slashes = Slashes::<T>::take(&active_era);
-        log!(
-            log::Level::Debug,
-            "found {} slashes scheduled to be confirmed in era {:?}",
-            era_slashes.len(),
-            active_era,
-        );
-        for slash in &mut era_slashes {
-            slash.confirmed = true;
-        }
-        Slashes::<T>::insert(active_era, &era_slashes);
+        Slashes::<T>::mutate(&active_era, |era_slashes| {
+            log!(
+                log::Level::Debug,
+                "found {} slashes scheduled to be confirmed in era {:?}",
+                era_slashes.len(),
+                active_era,
+            );
+            for slash in era_slashes {
+                slash.confirmed = true;
+            }
+        });
     }
 }
 

@@ -88,7 +88,7 @@ parameter_types! {
 pub struct TestSessionManager;
 impl pallet_session::SessionManager<u64> for TestSessionManager {
     fn new_session(_new_index: SessionIndex) -> Option<Vec<u64>> {
-        Validators::mutate(|l| l.take())
+        Validators::get()
     }
     fn end_session(_: SessionIndex) {}
     fn start_session(_: SessionIndex) {}
