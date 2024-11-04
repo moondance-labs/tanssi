@@ -5052,7 +5052,6 @@ export default {
             "NotSortedAndUnique",
             "ProvidedFutureEra",
             "ProvidedNonSlashableEra",
-            "ActiveEraNotSet",
             "DeferPeriodIsOver",
             "ErrorComputingSlash",
         ],

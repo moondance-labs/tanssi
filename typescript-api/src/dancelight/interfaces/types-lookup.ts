@@ -6458,7 +6458,6 @@ declare module "@polkadot/types/lookup" {
         readonly isNotSortedAndUnique: boolean;
         readonly isProvidedFutureEra: boolean;
         readonly isProvidedNonSlashableEra: boolean;
-        readonly isActiveEraNotSet: boolean;
         readonly isDeferPeriodIsOver: boolean;
         readonly isErrorComputingSlash: boolean;
         readonly type:
@@ -6467,7 +6466,6 @@ declare module "@polkadot/types/lookup" {
             | "NotSortedAndUnique"
             | "ProvidedFutureEra"
             | "ProvidedNonSlashableEra"
-            | "ActiveEraNotSet"
             | "DeferPeriodIsOver"
             | "ErrorComputingSlash";
     }
