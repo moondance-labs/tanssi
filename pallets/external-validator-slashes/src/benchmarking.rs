@@ -82,7 +82,7 @@ mod benchmarks {
                     .saturating_add(One::one())
             )
             .len(),
-            1 as usize
+            1_usize
         );
         Ok(())
     }
