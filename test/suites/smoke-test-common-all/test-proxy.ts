@@ -6,7 +6,7 @@ import type { PalletProxyProxyDefinition } from "@polkadot/types/lookup";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S17",
+    id: "S04",
     title: "Verify account proxies created",
     foundationMethods: "read_only",
     testCases: ({ context, it, log }) => {
@@ -107,6 +107,9 @@ describeSuite({
                         expect(maxProxies).to.equal(32);
                         break;
                     case "flashbox":
+                        expect(maxProxies).to.equal(32);
+                        break;
+                    case "dancelight":
                         expect(maxProxies).to.equal(32);
                         break;
                 }

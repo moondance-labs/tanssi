@@ -243,18 +243,6 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
-        externalValidatorSlashes: {
-            ActiveEraNotSet: AugmentedError<ApiType>;
-            DeferPeriodIsOver: AugmentedError<ApiType>;
-            EmptyTargets: AugmentedError<ApiType>;
-            ErrorComputingSlash: AugmentedError<ApiType>;
-            InvalidSlashIndex: AugmentedError<ApiType>;
-            NotSortedAndUnique: AugmentedError<ApiType>;
-            ProvidedFutureEra: AugmentedError<ApiType>;
-            ProvidedNonSlashableEra: AugmentedError<ApiType>;
-            /** Generic error */
-            [key: string]: AugmentedError<ApiType>;
-        };
         fellowshipCollective: {
             /** Account is already a member. */
             AlreadyMember: AugmentedError<ApiType>;

@@ -398,7 +398,7 @@ pub mod pallet {
                     Forcing::NotForcing if era_length >= T::SessionsPerEra::get() => (),
                     _ => {
                         // Either `Forcing::ForceNone`,
-                        // or `Forcing::NotForcing if era_length >= T::SessionsPerEra::get()`.
+                        // or `Forcing::NotForcing if era_length < T::SessionsPerEra::get()`.
                         return None;
                     }
                 }
@@ -431,8 +431,7 @@ pub mod pallet {
                 if next_active_era_start_session_index == start_session {
                     Self::start_era(start_session);
                 } else if next_active_era_start_session_index < start_session {
-                    // This arm should never happen, but better handle it than to stall the staking
-                    // pallet.
+                    // This arm should never happen, but better handle it than to stall the pallet.
                     frame_support::print("Warning: A session appears to have been skipped.");
                     Self::start_era(start_session);
                 }
@@ -483,7 +482,6 @@ pub mod pallet {
         /// * Bump the current era storage (which holds the latest planned era).
         /// * Store start session index for the new planned era.
         /// * Clean old era information.
-        /// * Store staking information for the new planned era
         ///
         /// Returns the new validator set.
         pub fn trigger_new_era(start_session_index: SessionIndex) -> Vec<T::ValidatorId> {

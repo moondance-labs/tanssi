@@ -113,10 +113,6 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
-    PalletExternalValidatorSlashesCall,
-    PalletExternalValidatorSlashesError,
-    PalletExternalValidatorSlashesEvent,
-    PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsCall,
     PalletExternalValidatorsError,
     PalletExternalValidatorsEvent,
@@ -572,10 +568,6 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
-        PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
-        PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
-        PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
-        PalletExternalValidatorSlashesSlash: PalletExternalValidatorSlashesSlash;
         PalletExternalValidatorsCall: PalletExternalValidatorsCall;
         PalletExternalValidatorsError: PalletExternalValidatorsError;
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;

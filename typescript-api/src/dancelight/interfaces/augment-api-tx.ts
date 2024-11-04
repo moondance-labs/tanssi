@@ -1320,26 +1320,6 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
-        externalValidatorSlashes: {
-            /** Cancel a slash that was deferred for a later era */
-            cancelDeferredSlash: AugmentedSubmittable<
-                (
-                    era: u32 | AnyNumber | Uint8Array,
-                    slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]
-                ) => SubmittableExtrinsic<ApiType>,
-                [u32, Vec<u32>]
-            >;
-            forceInjectSlash: AugmentedSubmittable<
-                (
-                    era: u32 | AnyNumber | Uint8Array,
-                    validator: AccountId32 | string | Uint8Array,
-                    percentage: Perbill | AnyNumber | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u32, AccountId32, Perbill]
-            >;
-            /** Generic tx */
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
         fellowshipCollective: {
             /**
              * Introduce a new member.

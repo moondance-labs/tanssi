@@ -47,7 +47,6 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
-    PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsForcing,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
@@ -709,36 +708,6 @@ declare module "@polkadot/api-base/types/storage" {
             /** Fixed validators set by root/governance. Have priority over the external validators. */
             whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        externalValidatorSlashes: {
-            /**
-             * A mapping from still-bonded eras to the first session index of that era.
-             *
-             * Must contains information for eras for the range: `[active_era - bounding_duration; active_era]`
-             */
-            bondedEras: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, u32]>>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** A counter on the number of slashes we have performed */
-            nextSlashId: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
-            /** All unapplied slashes that are queued for later. */
-            slashes: AugmentedQuery<
-                ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<PalletExternalValidatorSlashesSlash>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /** All slashing events on validators, mapped by era to the highest slash proportion and slash value of the era. */
-            validatorSlashInEra: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: AccountId32 | string | Uint8Array
-                ) => Observable<Option<Perbill>>,
-                [u32, AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [u32, AccountId32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

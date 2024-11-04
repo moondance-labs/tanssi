@@ -228,16 +228,6 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
-        externalValidatorSlashes: {
-            /** Removed author data */
-            SlashReported: AugmentedEvent<
-                ApiType,
-                [validator: AccountId32, fraction: Perbill, slashEra: u32],
-                { validator: AccountId32; fraction: Perbill; slashEra: u32 }
-            >;
-            /** Generic event */
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         fellowshipCollective: {
             /** A member `who` has been added. */
             MemberAdded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
