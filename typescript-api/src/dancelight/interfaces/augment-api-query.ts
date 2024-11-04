@@ -47,6 +47,7 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
+    PalletExternalValidatorsForcing,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
     PalletIdentityAuthorityProperties,
@@ -120,6 +121,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Xcm,
+    TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     XcmVersionedAssetId,
@@ -670,6 +672,42 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, []>;
             validatorsRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        externalValidators: {
+            /** The active era information, it holds index and start. */
+            activeEra: AugmentedQuery<ApiType, () => Observable<Option<TpTraitsActiveEraInfo>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current era information, it is either ActiveEra or ActiveEra + 1 if the new era validators have been
+             * queued.
+             */
+            currentEra: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * The session index at which the era start for the last [`Config::HistoryDepth`] eras.
+             *
+             * Note: This tracks the starting session (i.e. session index when era start being active) for the eras in
+             * `[CurrentEra - HISTORY_DEPTH, CurrentEra]`.
+             */
+            erasStartSessionIndex: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true. */
+            externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Mode of era forcing. */
+            forceEra: AugmentedQuery<ApiType, () => Observable<PalletExternalValidatorsForcing>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Allow to disable external validators. */
+            skipExternalValidators: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Fixed validators set by root/governance. Have priority over the external validators. */
+            whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -2083,7 +2121,7 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         tanssiInvulnerables: {
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** The invulnerable, permissioned collators. */
             invulnerables: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
@@ -2132,16 +2170,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        validatorManager: {
-            /** Validators that should be added. */
-            validatorsToAdd: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** Validators that should be retired, because their Parachain was deregistered. */
-            validatorsToRetire: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

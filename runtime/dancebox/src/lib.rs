@@ -97,8 +97,8 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
-            IdentityLookup, Verify,
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
+            Hash as HashT, IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -726,7 +726,7 @@ impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = CollatorId;
     // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
+    type ValidatorIdOf = ConvertInto;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = CollatorsFromInvulnerablesAndThenFromStaking;
@@ -1123,7 +1123,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]

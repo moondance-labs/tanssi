@@ -229,6 +229,20 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        externalValidators: {
+            /** Account is already whitelisted. */
+            AlreadyWhitelisted: AugmentedError<ApiType>;
+            /** Account does not have keys registered */
+            NoKeysRegistered: AugmentedError<ApiType>;
+            /** Account is not whitelisted. */
+            NotWhitelisted: AugmentedError<ApiType>;
+            /** There are too many whitelisted validators. */
+            TooManyWhitelisted: AugmentedError<ApiType>;
+            /** Unable to derive validator id from account id */
+            UnableToDeriveValidatorId: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         fellowshipCollective: {
             /** Account is already a member. */
             AlreadyMember: AugmentedError<ApiType>;

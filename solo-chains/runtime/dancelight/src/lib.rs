@@ -79,7 +79,10 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, AccountId32},
+    sp_runtime::{
+        traits::{BlockNumberProvider, ConvertInto},
+        AccountId32,
+    },
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -162,7 +165,6 @@ use {
 mod tests;
 
 pub mod genesis_config_presets;
-mod validator_manager;
 
 impl_runtime_weights!(dancelight_runtime_constants);
 
@@ -469,7 +471,7 @@ impl pallet_session::Config for Runtime {
     type ValidatorIdOf = ValidatorIdOf;
     type ShouldEndSession = Babe;
     type NextSessionRotation = Babe;
-    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ValidatorManager>;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = ();
@@ -488,7 +490,6 @@ impl pallet_session::historical::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = 28;
 }
 
@@ -1210,14 +1211,25 @@ impl pallet_beefy_mmr::Config for Runtime {
 impl paras_sudo_wrapper::Config for Runtime {}
 
 parameter_types! {
-    pub const PermanentSlotLeasePeriodLength: u32 = 365;
-    pub const TemporarySlotLeasePeriodLength: u32 = 5;
-    pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
+    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
 }
 
-impl validator_manager::Config for Runtime {
+impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type PrivilegedOrigin = EnsureRoot<AccountId>;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type HistoryDepth = ConstU32<84>;
+    type MaxWhitelistedValidators = MaxWhitelistedValidators;
+    type MaxExternalValidators = MaxExternalValidators;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type ValidatorRegistration = Session;
+    type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
+    type OnEraStart = ();
+    type OnEraEnd = ();
+    type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1244,6 +1256,8 @@ impl pallet_asset_rate::Config for Runtime {
 
 parameter_types! {
     pub const MaxInvulnerables: u32 = 100;
+    pub const MaxWhitelistedValidators: u32 = 100;
+    pub const MaxExternalValidators: u32 = 100;
 }
 
 impl pallet_invulnerables::Config for Runtime {
@@ -1251,7 +1265,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -1526,6 +1540,9 @@ construct_runtime! {
         ServicesPayment: pallet_services_payment = 18,
         DataPreservers: pallet_data_preservers = 19,
 
+        // Validator stuff
+        ExternalValidators: pallet_external_validators = 20,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1602,9 +1619,6 @@ construct_runtime! {
         EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
-
-        // Validator Manager pallet.
-        ValidatorManager: validator_manager = 252,
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,
@@ -1925,6 +1939,7 @@ mod benches {
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
         [pallet_collator_assignment, TanssiCollatorAssignment]
+        [pallet_external_validators, ExternalValidators]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]

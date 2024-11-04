@@ -65,15 +65,6 @@ pub mod pallet {
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-    /// A convertor from collators id. Since this pallet does not have stash/controller, this is
-    /// just identity.
-    pub struct IdentityCollator;
-    impl<T> sp_runtime::traits::Convert<T, Option<T>> for IdentityCollator {
-        fn convert(t: T) -> Option<T> {
-            Some(t)
-        }
-    }
-
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -110,7 +101,7 @@ pub mod pallet {
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
-    /// The invulnerable, permissioned collators. This list must be sorted.
+    /// The invulnerable, permissioned collators.
     #[pallet::storage]
     pub type Invulnerables<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxInvulnerables>, ValueQuery>;
@@ -144,15 +135,10 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// New Invulnerables were set.
-        NewInvulnerables { invulnerables: Vec<T::CollatorId> },
         /// A new Invulnerable was added.
         InvulnerableAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
         InvulnerableRemoved { account_id: T::AccountId },
-        /// An account was unable to be added to the Invulnerables because they did not have keys
-        /// registered. Other Invulnerables may have been set.
-        InvalidInvulnerableSkipped { account_id: T::AccountId },
     }
 
     #[pallet::error]
@@ -211,8 +197,7 @@ pub mod pallet {
             Ok(Some(weight_used).into())
         }
 
-        /// Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must
-        /// be sorted.
+        /// Remove an account `who` from the list of `Invulnerables` collators.
         ///
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(2)]
