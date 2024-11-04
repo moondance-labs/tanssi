@@ -271,14 +271,8 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
-        let mut consumed_weight = Weight::from_parts(0, 0);
-        let mut add_db_reads_writes = |reads, writes| {
-            consumed_weight += T::DbWeight::get().reads_writes(reads, writes);
-        };
-
         let active_era = {
             let active_era = T::EraIndexProvider::active_era().index;
-            add_db_reads_writes(1, 0);
             active_era
         };
         let active_era_start_session_index = T::EraIndexProvider::era_to_session_start(active_era)
@@ -286,7 +280,6 @@ where
                 frame_support::print("Error: start_session_index must be set for current_era");
                 0
             });
-        add_db_reads_writes(1, 0);
 
         // Fast path for active-era report - most likely.
         // `slash_session` cannot be in a future active era. It must be in `active_era` or before.
@@ -294,22 +287,18 @@ where
             active_era
         } else {
             let eras = BondedEras::<T>::get();
-            add_db_reads_writes(1, 0);
 
             // Reverse because it's more likely to find reports from recent eras.
             match eras.iter().rev().find(|&(_, sesh)| sesh <= &slash_session) {
                 Some((slash_era, _)) => *slash_era,
                 // Before bonding period. defensive - should be filtered out.
-                None => return consumed_weight,
+                None => return Weight::default(),
             }
         };
-
-        add_db_reads_writes(1, 1);
 
         let slash_defer_duration = T::SlashDeferDuration::get();
 
         let invulnerables = T::InvulnerablesProvider::invulnerables();
-        add_db_reads_writes(1, 0);
 
         let mut next_slash_id = NextSlashId::<T>::get();
 
@@ -362,13 +351,10 @@ where
 
                 // Fix unwrap
                 next_slash_id = next_slash_id.saturating_add(One::one());
-                add_db_reads_writes(1, 1);
-            } else {
-                add_db_reads_writes(4 /* fetch_spans */, 5 /* kick_out_if_recent */)
             }
         }
         NextSlashId::<T>::put(next_slash_id);
-        consumed_weight
+        Weight::default()
     }
 }
 
