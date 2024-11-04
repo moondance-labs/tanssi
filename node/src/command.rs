@@ -372,10 +372,12 @@ pub fn run() -> Result<()> {
                     .as_ref()
                     .expect("base_path is always set");
                 let hwbench = (!cmd.no_hardware_benchmarks)
-                    .then_some(Some(containers_base_path).map(|database_path| {
-                        let _ = std::fs::create_dir_all(database_path);
-                        sc_sysinfo::gather_hwbench(Some(database_path))
-                    }))
+                    .then(|| {
+                        Some(containers_base_path).map(|database_path| {
+                            let _ = std::fs::create_dir_all(database_path);
+                            sc_sysinfo::gather_hwbench(Some(database_path))
+                        })
+                    })
                     .flatten();
 
                 let polkadot_cli = solochain::relay_chain_cli_new(
@@ -413,7 +415,7 @@ pub fn run() -> Result<()> {
             let collator_options = cli.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
-				let hwbench = (!cli.no_hardware_benchmarks).then_some(
+				let hwbench = (!cli.no_hardware_benchmarks).then(||
 					config.database.path().map(|database_path| {
 						let _ = std::fs::create_dir_all(database_path);
 						sc_sysinfo::gather_hwbench(Some(database_path))
