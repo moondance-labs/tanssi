@@ -1232,7 +1232,7 @@ pub fn generate_grandpa_equivocation_proof(
 
         let prevote_msg = finality_grandpa::Message::Prevote(prevote.clone());
         let payload = grandpa_primitives::localized_payload(round, set_id, &prevote_msg);
-        let signed = authority_pair.sign(&payload).into();
+        let signed = authority_pair.sign(&payload);
         (prevote, signed)
     };
 
@@ -1288,7 +1288,7 @@ pub fn generate_babe_equivocation_proof(
     let seal_header = |header: &mut crate::Header| {
         let prehash = header.hash();
         let seal = <DigestItem as CompatibleDigestItem>::babe_seal(
-            offender_authority_pair.sign(prehash.as_ref()).into(),
+            offender_authority_pair.sign(prehash.as_ref()),
         );
         header.digest_mut().push(seal);
     };

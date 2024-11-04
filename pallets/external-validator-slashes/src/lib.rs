@@ -105,7 +105,7 @@ pub mod pallet {
         /// Interface for interacting with a session pallet.
         type SessionInterface: SessionInterface<Self::AccountId>;
 
-        /// Era index provider, used to fetch the active era among other thins
+        /// Era index provider, used to fetch the active era among other things
         type EraIndexProvider: EraIndexProvider;
 
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
