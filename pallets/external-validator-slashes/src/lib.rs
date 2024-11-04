@@ -192,11 +192,10 @@ pub mod pallet {
                 Error::<T>::InvalidSlashIndex
             );
 
-            for (removed, index) in slash_indices.into_iter().enumerate() {
-                let index = (index as usize) - removed;
-                era_slashes.remove(index);
+            // Remove elements starting from the highest index to avoid shifting issues.
+            for index in slash_indices.into_iter().rev() {
+                era_slashes.remove(index as usize);
             }
-
             // insert back slashes
             Slashes::<T>::insert(&era, &era_slashes);
             Ok(())
@@ -239,10 +238,9 @@ pub mod pallet {
                     .saturating_add(One::one())
             };
 
-            let mut era_slashes = Slashes::<T>::get(&era_to_consider);
-            era_slashes.push(slash);
-
-            Slashes::<T>::insert(era_to_consider, &era_slashes);
+            Slashes::<T>::mutate(&era_to_consider, |era_slashes| {
+                era_slashes.push(slash);
+            });
 
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
             Ok(())
@@ -396,7 +394,14 @@ impl<T: Config> OnEraStart for Pallet<T> {
 
                 // Kill slashing metadata.
                 for (pruned_era, _) in bonded.drain(..n_to_prune) {
-                    let _ = ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
+                    let removal_result =
+                        ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
+                    if removal_result.maybe_cursor.is_some() {
+                        log::error!(
+                            "Not all validator slashes were remove for era {:?}",
+                            pruned_era
+                        );
+                    }
                     Slashes::<T>::remove(&pruned_era);
                 }
 
