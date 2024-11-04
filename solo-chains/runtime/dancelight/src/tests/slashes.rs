@@ -42,9 +42,7 @@ fn invulnerables_cannot_be_slashed() {
         .execute_with(|| {
             run_to_block(2);
             inject_babe_slash(&AccountId::from(ALICE).to_string());
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -75,9 +73,7 @@ fn non_invulnerables_can_be_slashed_with_babe() {
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -112,9 +108,7 @@ fn non_invulnerables_can_be_slashed_with_grandpa() {
 
             inject_grandpa_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -155,9 +149,7 @@ fn test_slashing_percentage_applied_correctly() {
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -202,9 +194,7 @@ fn test_slashes_are_not_additive_in_percentage() {
 
             inject_grandpa_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
 
             // we have 2 reports
             assert_eq!(reports.len(), 2);
@@ -243,9 +233,7 @@ fn test_slashes_are_cleaned_after_bonding_period() {
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -294,9 +282,7 @@ fn test_slashes_can_be_cleared_before_deferred_period_applies() {
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
@@ -337,9 +323,7 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
-            let reports: Vec<_> = pallet_offences::Reports::<crate::Runtime>::iter()
-                .map(|offence| offence)
-                .collect();
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
 
