@@ -38,6 +38,8 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type EraIndexProvider: EraIndexProvider;
+
+        type HistoryDepth: Get<EraIndex>;
     }
 
     #[pallet::pallet]
@@ -76,6 +78,16 @@ pub mod pallet {
                     era_rewards.total += points;
                 }
             })
+        }
+    }
+
+    impl<T: Config> tp_traits::OnEraStart for Pallet<T> {
+        fn on_era_start(era_index: EraIndex, _session_start: u32) {
+            let Some(era_index_to_delete) = era_index.checked_sub(T::HistoryDepth::get()) else {
+                return;
+            };
+
+            ErasRewardPoints::<T>::remove(era_index_to_delete);
         }
     }
 }
@@ -144,3 +156,4 @@ where
         Self::reward_only_active(session, validators, DISPUTE_STATEMENT_POINTS);
     }
 }
+

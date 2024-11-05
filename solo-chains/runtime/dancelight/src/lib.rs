@@ -1227,21 +1227,16 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
-    type OnEraStart = ();
+    type OnEraStart = (ExternalValidatorsRewards,);
     type OnEraEnd = ();
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
 
-parameter_types! {
-    pub CurrentEra: Option<pallet_external_validators_rewards::EraIndex> =
-        pallet_external_validators::ActiveEra::<Runtime>::get().map(|info| info.index);
-        // pub const CurrentEra: Option<pallet_external_validators_rewards::EraIndex> = None;
-}
-
 impl pallet_external_validators_rewards::Config for Runtime {
     type EraIndexProvider = ExternalValidators;
+    type HistoryDepth = ConstU32<64>;
 }
 
 impl pallet_sudo::Config for Runtime {
