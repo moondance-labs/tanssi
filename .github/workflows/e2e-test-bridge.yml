@@ -21,6 +21,10 @@ jobs:
               id: check_jq
               run: |
                 jq --version
+            - name: use direnv
+              uses: HatsuneMiku3939/direnv-action@v1
+              with:
+                direnvVersion: 2.32.1
             - name: Check direnv
               id: check_direnv
               run: |
