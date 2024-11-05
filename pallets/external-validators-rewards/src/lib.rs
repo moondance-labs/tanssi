@@ -27,7 +27,7 @@ use {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use {frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap};
+    use {frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider};
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -37,7 +37,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type CurrentEra: Get<Option<EraIndex>>;
+        type EraIndexProvider: EraIndexProvider;
     }
 
     #[pallet::pallet]
@@ -68,11 +68,9 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         pub fn reward_by_ids(points: impl IntoIterator<Item = (T::AccountId, RewardPoints)>) {
-            let Some(active_era) = T::CurrentEra::get() else {
-                return;
-            };
+            let active_era = T::EraIndexProvider::active_era();
 
-            ErasRewardPoints::<T>::mutate(active_era, |era_rewards| {
+            ErasRewardPoints::<T>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in points.into_iter() {
                     *era_rewards.individual.entry(validator).or_default() += points;
                     era_rewards.total += points;

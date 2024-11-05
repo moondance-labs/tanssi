@@ -23,14 +23,12 @@ use crate::Pallet as ExternalValidators;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
-        pallet_prelude::*,
-        traits::{tokens::fungible::Balanced, Currency, EnsureOrigin, Get},
+        traits::{Currency, EnsureOrigin, Get},
     },
     frame_system::{EventRecord, RawOrigin},
     pallet_session::{self as session, SessionManager},
-    sp_runtime::traits::{AtLeast32BitUnsigned, Convert},
+    sp_runtime::traits::{ Convert},
     sp_std::prelude::*,
-    tp_traits::DistributeRewards,
 };
 const SEED: u32 = 0;
 

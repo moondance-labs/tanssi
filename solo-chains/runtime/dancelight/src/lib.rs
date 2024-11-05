@@ -1241,7 +1241,7 @@ parameter_types! {
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
-    type CurrentEra = CurrentEra;
+    type EraIndexProvider = ExternalValidators;
 }
 
 impl pallet_sudo::Config for Runtime {
