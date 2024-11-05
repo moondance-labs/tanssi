@@ -1,10 +1,15 @@
 name: Bridge e2e test
 
 on:
+  workflow_run:
+    workflows: [release]
     pull_request:
+    branches: [master]
+    types: [completed]
 
 jobs:
     e2e-bridge-test:
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         runs-on: self-hosted
         steps:
             - name: Checkout
