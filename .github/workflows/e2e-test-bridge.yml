@@ -29,6 +29,8 @@ jobs:
               id: check_direnv
               run: |
                 direnv --version
+            - name: Set up Go
+              uses: actions/setup-go@v5
             - name: Run Mage
               uses: magefile/mage-action@v3
               with:
