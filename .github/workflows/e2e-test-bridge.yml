@@ -1,0 +1,17 @@
+name: Bridge e2e test
+
+on:
+    pull_request:
+
+jobs:
+    e2e-bridge-test:
+        runs-on: self-hosted
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup g++
+              id: setup g++
+              run: |
+                  g++ --version
+
+ 
