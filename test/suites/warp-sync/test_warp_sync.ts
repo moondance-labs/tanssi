@@ -273,6 +273,7 @@ describeSuite({
             test: async function () {
                 const logFilePath = getTmpZombiePath() + "/Collator2000-02.log";
                 await checkLogsNotExist(logFilePath, [
+                    "Entering off-chain worker.",
                     "Shutdown error",
                     "Timeout when waiting for paritydb lock",
                     "Error waiting for chain",
