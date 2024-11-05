@@ -59,6 +59,10 @@ jobs:
               uses: actions/setup-node@v4
               with:
                 node-version: 22.x
+            - name: Setup Yarn
+              uses: threeal/setup-yarn-action@v2.0.0
+              with:
+                cache: false
             - name: Check yarn
               id: check_yarn
               run: |
