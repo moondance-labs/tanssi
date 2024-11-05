@@ -33,7 +33,10 @@ jobs:
               uses: actions/setup-go@v5
               with:
                 go-version: '^1.22.0'
-              run: go version
+            - name: Check go
+              id: check_go
+              run: |
+                go --version
             - name: Run Mage
               uses: magefile/mage-action@v3
               with:
