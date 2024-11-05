@@ -3249,6 +3249,7 @@ dependencies = [
  "pallet-democracy",
  "pallet-elections-phragmen",
  "pallet-external-validators",
+ "pallet-external-validators-rewards",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",

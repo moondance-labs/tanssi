@@ -15,6 +15,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use pallet::*;
+
 use {
     frame_support::traits::{Defensive, ValidatorSet},
     polkadot_primitives::ValidatorIndex,

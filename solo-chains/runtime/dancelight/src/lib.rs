@@ -856,7 +856,8 @@ impl runtime_parachains::inclusion::RewardValidators for RewardValidators {
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
-    type RewardValidators = RewardValidators;
+    type RewardValidators =
+        pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
     type MessageQueue = MessageQueue;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
@@ -1078,7 +1079,8 @@ impl parachains_initializer::Config for Runtime {
 
 impl parachains_disputes::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RewardValidators = ();
+    type RewardValidators =
+        pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
     type SlashingHandler = parachains_slashing::SlashValidatorsForDisputes<ParasSlashing>;
     type WeightInfo = weights::runtime_parachains_disputes::SubstrateWeight<Runtime>;
 }
@@ -1212,6 +1214,16 @@ impl pallet_external_validators::Config for Runtime {
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+parameter_types! {
+    pub CurrentEra: Option<pallet_external_validators_rewards::EraIndex> =
+        pallet_external_validators::ActiveEra::<Runtime>::get().map(|info| info.index);
+        // pub const CurrentEra: Option<pallet_external_validators_rewards::EraIndex> = None;
+}
+
+impl pallet_external_validators_rewards::Config for Runtime {
+    type CurrentEra = CurrentEra;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1524,6 +1536,7 @@ construct_runtime! {
 
         // Validator stuff
         ExternalValidators: pallet_external_validators = 20,
+        ExternalValidatorsRewards: pallet_external_validators_rewards = 22,
 
         // Session management
         Session: pallet_session = 30,
