@@ -9,9 +9,13 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Setup g++
+            - name: Check g++
               id: setup_g_plusplus
               run: |
                 g++ --version
+            - name: Check protoc
+              id: check_proto_c
+              run: |
+                protoc --version
 
  
