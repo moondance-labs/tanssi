@@ -118,6 +118,11 @@ pub mod pallet {
             // This ensures that the function can only be called via unsigned transaction.
             ensure_none(origin)?;
 
+            ensure!(
+                OffchainWorkerTestEnabled::<T>::get(),
+                Error::<T>::OffchainWorkerNotEnabled,
+            );
+
             // Increment the block number at which we expect next unsigned transaction.
             let current_block = <frame_system::Pallet<T>>::block_number();
 
@@ -135,6 +140,11 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Simple offchain event
         SimpleOffchainEvent,
+    }
+
+    #[pallet::error]
+    pub enum Error<T> {
+        OffchainWorkerNotEnabled,
     }
 
     #[pallet::validate_unsigned]
