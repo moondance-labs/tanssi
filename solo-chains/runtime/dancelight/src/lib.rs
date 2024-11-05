@@ -27,6 +27,7 @@ use {
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    bridge_hub_common::AggregateMessageOrigin,
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
@@ -66,7 +67,7 @@ use {
         configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
-        inclusion::{self as parachains_inclusion, AggregateMessageOrigin, UmpQueueId},
+        inclusion::{self as parachains_inclusion, UmpQueueId},
         initializer as parachains_initializer, origin as parachains_origin,
         paras as parachains_paras, paras_inherent as parachains_paras_inherent,
         runtime_api_impl::{
@@ -1605,6 +1606,14 @@ construct_runtime! {
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
+
+        // Bridging stuff
+        // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/lib.rs#L560C1-L560C64
+        //EthereumInboundQueue: snowbridge_pallet_inbound_queue = 80,
+        EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
+        // TODO: already exists, at index 243
+        //EthereumBeaconClient: snowbridge_pallet_ethereum_client = 82,
+        EthereumSystem: snowbridge_pallet_system = 103,
 
         // Migration stuff
         Migrations: pallet_migrations = 120,

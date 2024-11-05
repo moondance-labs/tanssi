@@ -143,7 +143,10 @@ pallet-migrations = { workspace = true }
 
 # Bridges
 snowbridge-beacon-primitives = { workspace = true }
+snowbridge-core = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-pallet-system = { workspace = true }
 
 [dev-dependencies]
 keyring = { workspace = true }
@@ -285,6 +288,8 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-pallet-system/std"
 ]
 no_std = []
 
@@ -350,6 +355,8 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
+	"snowbridge-pallet-system/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -413,6 +420,8 @@ try-runtime = [
 	"snowbridge-pallet-ethereum-client/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"snowbridge-pallet-outbound-queue/try-runtime",
+	"snowbridge-pallet-system/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.

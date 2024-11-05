@@ -1200,6 +1200,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-hub-common"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "pallet-message-queue",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-core",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+]
+
+[[package]]
 name = "bridge-runtime-common"
 version = "0.17.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
@@ -3298,8 +3314,11 @@ dependencies = [
  "serde_json",
  "smallvec",
  "snowbridge-beacon-primitives",
+ "snowbridge-core",
  "snowbridge-milagro-bls",
  "snowbridge-pallet-ethereum-client",
+ "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-system",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -15714,6 +15733,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "snowbridge-outbound-queue-merkle-tree"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "snowbridge-pallet-ethereum-client"
 version = "0.9.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
@@ -15749,6 +15779,48 @@ dependencies = [
  "snowbridge-core",
  "sp-core",
  "sp-std",
+]
+
+[[package]]
+name = "snowbridge-pallet-outbound-queue"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
+dependencies = [
+ "bridge-hub-common",
+ "ethabi-decode",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "snowbridge-core",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "snowbridge-pallet-system"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407#6edb0087ca8161746b50377dbb0455a535931487"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-core",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
