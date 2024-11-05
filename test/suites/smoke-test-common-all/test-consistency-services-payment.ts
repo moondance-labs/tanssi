@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
-    id: "S09",
+    id: "S03",
     title: "Check services payment consistency",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -13,11 +13,12 @@ describeSuite({
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
         let blocksPerSession;
+        let chain;
 
         beforeAll(async () => {
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
-            const chain = api.consts.system.version.specName.toString();
+            chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain == "dancebox" ? 600n : 50n;
         });
 
@@ -34,11 +35,22 @@ describeSuite({
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
                 // If they have collators scheduled, they should have at least enough money to pay
-                let pending = await api.query.collatorAssignment.pendingCollatorContainerChain();
+                let pending =
+                    chain == "dancelight"
+                        ? await api.query.tanssiCollatorAssignment.pendingCollatorContainerChain()
+                        : await api.query.collatorAssignment.pendingCollatorContainerChain();
+
                 if (pending.isNone) {
-                    pending = await api.query.collatorAssignment.collatorContainerChain();
+                    pending =
+                        chain == "dancelight"
+                            ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
+                            : await api.query.collatorAssignment.collatorContainerChain();
                 }
-                const current = await api.query.collatorAssignment.collatorContainerChain();
+
+                const current =
+                    chain == "dancelight"
+                        ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
+                        : await api.query.collatorAssignment.collatorContainerChain();
 
                 if (pending["containerChains"] != undefined) {
                     for (const container of Object.keys(pending.toJSON()["containerChains"])) {

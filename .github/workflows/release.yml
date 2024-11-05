@@ -191,7 +191,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Formatting check"
               run: |
@@ -214,7 +214,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Linting check"
               run: |
@@ -419,7 +419,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate Local interfaces"
               run: |
@@ -452,7 +452,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate typescript api"
               run: |
@@ -487,7 +487,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate typescript api"
               run: |
@@ -517,7 +517,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -552,7 +552,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -587,7 +587,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -621,7 +621,7 @@ jobs:
           - name: "Setup Node"
             uses: actions/setup-node@v4
             with:
-                node-version: 20.x
+                node-version: 22.x
                 cache: "pnpm"
           - name: "Generate typescript api"
             run: |
@@ -683,7 +683,7 @@ jobs:
             version: 9
         - uses: actions/setup-node@v4
           with:
-            node-version: 20.x
+            node-version: 22.x
             cache: "pnpm"
         - name: Create local folders
           run: |
@@ -720,7 +720,7 @@ jobs:
             - name: Setup node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
 
             - name: Create local folders
@@ -803,7 +803,7 @@ jobs:
             - name: Setup node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
 
             - name: Create local folders
@@ -850,7 +850,7 @@ jobs:
             - name: Setup node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
 
             - name: Create local folders
