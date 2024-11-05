@@ -31,6 +31,9 @@ jobs:
                 direnv --version
             - name: Set up Go
               uses: actions/setup-go@v5
+              with:
+                go-version: '^1.22.0'
+              run: go version
             - name: Run Mage
               uses: magefile/mage-action@v3
               with:
