@@ -45,3 +45,9 @@ jobs:
               id: check_mage
               run: |
                 mage --version
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+            - name: Check forge
+              id: check_forge
+              run: |
+                forge --version
