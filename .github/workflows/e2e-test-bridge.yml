@@ -22,9 +22,9 @@ jobs:
               run: |
                 jq --version
             - name: use direnv
-              uses: HatsuneMiku3939/direnv-action@v1
+              uses: andreygubarev/setup-direnv@v1
               with:
-                direnvVersion: 2.25.2
+                version: '2.34.0'
             - name: Check direnv
               id: check_direnv
               run: |
