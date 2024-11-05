@@ -17,5 +17,13 @@ jobs:
               id: check_proto_c
               run: |
                 protoc --version
+            - name: Check jq
+              id: check_jq
+              run: |
+                jq --version
+            - name: Check direnv
+              id: check_direnv
+              run: |
+                direnv --version
 
  
