@@ -60,6 +60,7 @@ pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/r
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-data-preservers = { path = "pallets/data-preservers", default-features = false }
 pallet-data-preservers-runtime-api = { path = "pallets/data-preservers/runtime-api", default-features = false }
+pallet-external-validator-slashes = { path = "pallets/external-validator-slashes", default-features = false }
 pallet-external-validators = { path = "pallets/external-validators", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
@@ -325,6 +326,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 
 # General (wasm)
 bounded-collections = { version = "0.1.8", default-features = false }
+finality-grandpa = { version = "0.16.2", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
 impls = "1.0.3"
