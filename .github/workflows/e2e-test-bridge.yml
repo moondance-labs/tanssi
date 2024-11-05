@@ -36,7 +36,7 @@ jobs:
             - name: Check go
               id: check_go
               run: |
-                go --version
+                go version
             - name: Run Mage
               uses: magefile/mage-action@v3
               with:
