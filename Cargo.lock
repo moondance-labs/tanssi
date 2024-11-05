@@ -3219,6 +3219,7 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
+ "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
  "frame-metadata-hash-extension",
@@ -3249,6 +3250,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-grandpa",
  "pallet-identity",
@@ -9362,6 +9364,26 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "xcm-primitives",
+]
+
+[[package]]
+name = "pallet-external-validator-slashes"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "pallet-staking",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

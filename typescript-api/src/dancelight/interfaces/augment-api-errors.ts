@@ -243,6 +243,24 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        externalValidatorSlashes: {
+            /** The slash to be cancelled has already elapsed the DeferPeriod */
+            DeferPeriodIsOver: AugmentedError<ApiType>;
+            /** The era for which the slash wants to be cancelled has no slashes */
+            EmptyTargets: AugmentedError<ApiType>;
+            /** There was an error computing the slash */
+            ErrorComputingSlash: AugmentedError<ApiType>;
+            /** No slash was found to be cancelled at the given index */
+            InvalidSlashIndex: AugmentedError<ApiType>;
+            /** Slash indices to be cancelled are not sorted or unique */
+            NotSortedAndUnique: AugmentedError<ApiType>;
+            /** Provided an era in the future */
+            ProvidedFutureEra: AugmentedError<ApiType>;
+            /** Provided an era that is not slashable */
+            ProvidedNonSlashableEra: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         fellowshipCollective: {
             /** Account is already a member. */
             AlreadyMember: AugmentedError<ApiType>;
