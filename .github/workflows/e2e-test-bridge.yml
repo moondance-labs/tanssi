@@ -21,14 +21,6 @@ jobs:
               id: check_jq
               run: |
                 jq --version
-            - name: use direnv
-              uses: andreygubarev/setup-direnv@v1
-              with:
-                version: '2.34.0'
-            - name: Check direnv
-              id: check_direnv
-              run: |
-                direnv --version
             - name: Set up Go
               uses: actions/setup-go@v5
               with:
@@ -67,3 +59,7 @@ jobs:
               id: check_yarn
               run: |
                 yarn --version
+            - name: Check date
+              id: check_date
+              run: |
+                date --version
