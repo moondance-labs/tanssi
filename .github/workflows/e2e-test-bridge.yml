@@ -24,7 +24,7 @@ jobs:
             - name: use direnv
               uses: HatsuneMiku3939/direnv-action@v1
               with:
-                direnvVersion: 2.32.1
+                direnvVersion: 2.25.2
             - name: Check direnv
               id: check_direnv
               run: |
