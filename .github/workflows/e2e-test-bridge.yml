@@ -29,5 +29,11 @@ jobs:
               id: check_direnv
               run: |
                 direnv --version
-
- 
+            - name: Run Mage
+              uses: magefile/mage-action@v3
+              with:
+                install-only: true
+            - name: Check mage
+              id: check_mage
+              run: |
+                mage --version
