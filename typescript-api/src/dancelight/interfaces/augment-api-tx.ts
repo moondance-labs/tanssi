@@ -29,6 +29,7 @@ import type {
     PalletConvictionVotingConviction,
     PalletConvictionVotingVoteAccountVote,
     PalletDataPreserversProfile,
+    PalletExternalValidatorsForcing,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletMigrationsHistoricCleanupSelector,
@@ -1284,50 +1285,20 @@ declare module "@polkadot/api-base/types/submittable" {
                 (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [AccountId32]
             >;
-            /**
-             * Force there to be a new era at the end of the next session. After this, it will be reset to normal (non-forced)
-             * behaviour.
-             *
-             * The dispatch origin must be Root.
-             *
-             * # Warning
-             *
-             * The election process starts multiple blocks before the end of the era. If this is called just before a new era
-             * is triggered, the election process may not have enough blocks to get a result.
-             *
-             * ## Complexity
-             *
-             * - No arguments.
-             * - Weight: O(1)
-             */
-            forceNewEra: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /**
-             * Force there to be a new era at the end of sessions indefinitely.
-             *
-             * The dispatch origin must be Root.
-             *
-             * # Warning
-             *
-             * The election process starts multiple blocks before the end of the era. If this is called just before a new era
-             * is triggered, the election process may not have enough blocks to get a result.
-             */
-            forceNewEraAlways: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /**
-             * Force there to be no new eras indefinitely.
-             *
-             * The dispatch origin must be Root.
-             *
-             * # Warning
-             *
-             * The election process starts multiple blocks before the end of the era. Thus the election process may be ongoing
-             * when this is called. In this case the election will continue until the next era is triggered.
-             *
-             * ## Complexity
-             *
-             * - No arguments.
-             * - Weight: O(1)
-             */
-            forceNoEras: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /** Force when the next era will start. Possible values: next session, never, same as always. */
+            forceEra: AugmentedSubmittable<
+                (
+                    mode:
+                        | PalletExternalValidatorsForcing
+                        | "NotForcing"
+                        | "ForceNew"
+                        | "ForceNone"
+                        | "ForceAlways"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletExternalValidatorsForcing]
+            >;
             /**
              * Remove an account `who` from the list of `WhitelistedValidators` collators.
              *
@@ -2991,6 +2962,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -3058,6 +3030,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -3102,6 +3075,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -3144,6 +3118,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3194,6 +3169,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3293,6 +3269,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "CancelProxy"
                         | "Auction"
                         | "OnDemandOrdering"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array

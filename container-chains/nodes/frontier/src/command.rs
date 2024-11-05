@@ -313,7 +313,7 @@ pub fn run() -> Result<()> {
 
             runner.run_node_until_exit(|config| async move {
                 let relaychain_args = cli.relaychain_args();
-				let hwbench = (!cli.no_hardware_benchmarks).then_some(
+				let hwbench = (!cli.no_hardware_benchmarks).then(||
 					config.database.path().map(|database_path| {
 						let _ = std::fs::create_dir_all(database_path);
 						sc_sysinfo::gather_hwbench(Some(database_path))

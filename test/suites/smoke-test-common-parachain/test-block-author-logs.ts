@@ -20,7 +20,7 @@ type BlockFilteredRecord = {
 };
 
 describeSuite({
-    id: "S02",
+    id: "S07",
     title: `Authors in the last ${hours} should match the slot number provided`,
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {

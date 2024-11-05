@@ -21,11 +21,13 @@
 //! ## Terminology
 //!
 //! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
-//! - ExternalValidators: Validators set using storage proofs from another blockchain. Changing them triggers a
-//!     new era. Can be disabled by setting `SkipExternalValidators` to true.
+//! - ExternalValidators: Validators set using storage proofs from another blockchain. Can be disabled by setting
+//!     `SkipExternalValidators` to true.
 //!
-//! Validators only change once per era. By default the era changes after a fixed number of sessions, but that can
-//! be changed by root/governance to increase era on every session, or to never change.
+//! Validators only change once per era. By default the era changes after a fixed number of sessions, but new eras
+//! can be forced or disabled using a root extrinsic.
+//!
+//! The structure of this pallet and the concept of eras is inspired by `pallet_staking` from Polkadot.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -35,9 +37,11 @@ use {
     log::log,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
-    sp_runtime::{traits::Get, RuntimeDebug},
+    sp_runtime::traits::Get,
+    sp_runtime::RuntimeDebug,
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::collections::btree_set::BTreeSet,
+    sp_std::vec::Vec,
     tp_traits::{
         ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart,
         ValidatorProvider,
@@ -73,18 +77,6 @@ pub mod pallet {
         sp_runtime::{traits::Convert, SaturatedConversion},
         sp_std::vec::Vec,
     };
-
-    /// The current storage version.
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
-
-    /// A convertor from collators id. Since this pallet does not have stash/controller, this is
-    /// just identity.
-    pub struct IdentityCollator;
-    impl<T> sp_runtime::traits::Convert<T, Option<T>> for IdentityCollator {
-        fn convert(t: T) -> Option<T> {
-            Some(t)
-        }
-    }
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
@@ -155,7 +147,6 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
     /// Fixed validators set by root/governance. Have priority over the external validators.
@@ -194,6 +185,7 @@ pub mod pallet {
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
+        pub skip_external_validators: bool,
         pub whitelisted_validators: Vec<T::ValidatorId>,
     }
 
@@ -218,15 +210,16 @@ pub mod pallet {
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
             <WhitelistedValidators<T>>::put(bounded_validators);
+            <SkipExternalValidators<T>>::put(self.skip_external_validators);
         }
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// A new Invulnerable was added.
+        /// A new whitelisted validator was added.
         WhitelistedValidatorAdded { account_id: T::AccountId },
-        /// An Invulnerable was removed.
+        /// A whitelisted validator was removed.
         WhitelistedValidatorRemoved { account_id: T::AccountId },
         /// A new era has started.
         NewEra { era: EraIndex },
@@ -236,16 +229,16 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        /// There are too many Invulnerables.
-        TooManyInvulnerables,
-        /// Account is already an Invulnerable.
-        AlreadyInvulnerable,
-        /// Account is not an Invulnerable.
-        NotInvulnerable,
+        /// There are too many whitelisted validators.
+        TooManyWhitelisted,
+        /// Account is already whitelisted.
+        AlreadyWhitelisted,
+        /// Account is not whitelisted.
+        NotWhitelisted,
         /// Account does not have keys registered
         NoKeysRegistered,
-        /// Unable to derive collator id from account id
-        UnableToDeriveCollatorId,
+        /// Unable to derive validator id from account id
+        UnableToDeriveValidatorId,
     }
 
     #[pallet::call]
@@ -276,18 +269,18 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared collator ruin things for everyone.
-            let maybe_collator_id = T::ValidatorIdOf::convert(who.clone())
+            let maybe_validator_id = T::ValidatorIdOf::convert(who.clone())
                 .filter(T::ValidatorRegistration::is_registered);
 
-            let collator_id = maybe_collator_id.ok_or(Error::<T>::NoKeysRegistered)?;
+            let validator_id = maybe_validator_id.ok_or(Error::<T>::NoKeysRegistered)?;
 
-            <WhitelistedValidators<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                if invulnerables.contains(&collator_id) {
-                    Err(Error::<T>::AlreadyInvulnerable)?;
+            <WhitelistedValidators<T>>::try_mutate(|whitelisted| -> DispatchResult {
+                if whitelisted.contains(&validator_id) {
+                    Err(Error::<T>::AlreadyWhitelisted)?;
                 }
-                invulnerables
-                    .try_push(collator_id.clone())
-                    .map_err(|_| Error::<T>::TooManyInvulnerables)?;
+                whitelisted
+                    .try_push(validator_id.clone())
+                    .map_err(|_| Error::<T>::TooManyWhitelisted)?;
                 Ok(())
             })?;
 
@@ -311,15 +304,15 @@ pub mod pallet {
         pub fn remove_whitelisted(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
-            let collator_id = T::ValidatorIdOf::convert(who.clone())
-                .ok_or(Error::<T>::UnableToDeriveCollatorId)?;
+            let validator_id = T::ValidatorIdOf::convert(who.clone())
+                .ok_or(Error::<T>::UnableToDeriveValidatorId)?;
 
-            <WhitelistedValidators<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                let pos = invulnerables
+            <WhitelistedValidators<T>>::try_mutate(|whitelisted| -> DispatchResult {
+                let pos = whitelisted
                     .iter()
-                    .position(|x| x == &collator_id)
-                    .ok_or(Error::<T>::NotInvulnerable)?;
-                invulnerables.remove(pos);
+                    .position(|x| x == &validator_id)
+                    .ok_or(Error::<T>::NotWhitelisted)?;
+                whitelisted.remove(pos);
                 Ok(())
             })?;
 
@@ -327,63 +320,12 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Force there to be no new eras indefinitely.
-        ///
-        /// The dispatch origin must be Root.
-        ///
-        /// # Warning
-        ///
-        /// The election process starts multiple blocks before the end of the era.
-        /// Thus the election process may be ongoing when this is called. In this case the
-        /// election will continue until the next era is triggered.
-        ///
-        /// ## Complexity
-        /// - No arguments.
-        /// - Weight: O(1)
+        /// Force when the next era will start. Possible values: next session, never, same as always.
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::force_no_eras())]
-        pub fn force_no_eras(origin: OriginFor<T>) -> DispatchResult {
+        #[pallet::weight(T::WeightInfo::force_era())]
+        pub fn force_era(origin: OriginFor<T>, mode: Forcing) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
-            Self::set_force_era(Forcing::ForceNone);
-            Ok(())
-        }
-
-        /// Force there to be a new era at the end of the next session. After this, it will be
-        /// reset to normal (non-forced) behaviour.
-        ///
-        /// The dispatch origin must be Root.
-        ///
-        /// # Warning
-        ///
-        /// The election process starts multiple blocks before the end of the era.
-        /// If this is called just before a new era is triggered, the election process may not
-        /// have enough blocks to get a result.
-        ///
-        /// ## Complexity
-        /// - No arguments.
-        /// - Weight: O(1)
-        #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::force_new_era())]
-        pub fn force_new_era(origin: OriginFor<T>) -> DispatchResult {
-            T::UpdateOrigin::ensure_origin(origin)?;
-            Self::set_force_era(Forcing::ForceNew);
-            Ok(())
-        }
-
-        /// Force there to be a new era at the end of sessions indefinitely.
-        ///
-        /// The dispatch origin must be Root.
-        ///
-        /// # Warning
-        ///
-        /// The election process starts multiple blocks before the end of the era.
-        /// If this is called just before a new era is triggered, the election process may not
-        /// have enough blocks to get a result.
-        #[pallet::call_index(5)]
-        #[pallet::weight(T::WeightInfo::force_new_era_always())]
-        pub fn force_new_era_always(origin: OriginFor<T>) -> DispatchResult {
-            T::UpdateOrigin::ensure_origin(origin)?;
-            Self::set_force_era(Forcing::ForceAlways);
+            Self::set_force_era(mode);
             Ok(())
         }
     }
@@ -456,7 +398,7 @@ pub mod pallet {
                     Forcing::NotForcing if era_length >= T::SessionsPerEra::get() => (),
                     _ => {
                         // Either `Forcing::ForceNone`,
-                        // or `Forcing::NotForcing if era_length >= T::SessionsPerEra::get()`.
+                        // or `Forcing::NotForcing if era_length < T::SessionsPerEra::get()`.
                         return None;
                     }
                 }
@@ -489,8 +431,7 @@ pub mod pallet {
                 if next_active_era_start_session_index == start_session {
                     Self::start_era(start_session);
                 } else if next_active_era_start_session_index < start_session {
-                    // This arm should never happen, but better handle it than to stall the staking
-                    // pallet.
+                    // This arm should never happen, but better handle it than to stall the pallet.
                     frame_support::print("Warning: A session appears to have been skipped.");
                     Self::start_era(start_session);
                 }
@@ -513,6 +454,8 @@ pub mod pallet {
         /// Start a new era. It does:
         /// * Increment `active_era.index`,
         /// * reset `active_era.start`,
+        /// * emit `NewEra` event,
+        /// * call `OnEraStart` hook,
         pub(crate) fn start_era(start_session: SessionIndex) {
             let active_era = ActiveEra::<T>::mutate(|active_era| {
                 let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
@@ -523,15 +466,14 @@ pub mod pallet {
                 });
                 new_index
             });
+            Self::deposit_event(Event::NewEra { era: active_era });
             T::OnEraStart::on_era_start(active_era, start_session);
         }
 
-        /// Compute payout for era.
+        /// End era. It does:
+        /// * call `OnEraEnd` hook,
         pub(crate) fn end_era(active_era: ActiveEraInfo, _session_index: SessionIndex) {
-            // Note: active_era_start can be None if end era is called during genesis config.
-            if let Some(_active_era_start) = active_era.start {
-                // TODO: EraPaid event here
-            }
+            // Note: active_era.start can be None if end era is called during genesis config.
             T::OnEraEnd::on_era_end(active_era.index);
         }
 
@@ -540,7 +482,6 @@ pub mod pallet {
         /// * Bump the current era storage (which holds the latest planned era).
         /// * Store start session index for the new planned era.
         /// * Clean old era information.
-        /// * Store staking information for the new planned era
         ///
         /// Returns the new validator set.
         pub fn trigger_new_era(start_session_index: SessionIndex) -> Vec<T::ValidatorId> {
@@ -561,9 +502,6 @@ pub mod pallet {
         }
 
         /// Potentially plan a new era.
-        ///
-        /// Get election result from `T::ElectionProvider`.
-        /// In case election result has more than [`MinimumValidatorCount`] validator trigger a new era.
         ///
         /// In case a new era is planned, the new validator set is returned.
         pub(crate) fn try_trigger_new_era(
@@ -686,7 +624,7 @@ pub enum Forcing {
     /// Not forcing anything - just let whatever happen.
     #[default]
     NotForcing,
-    /// Force a new era, then reset to `NotForcing` as soon as it is done.
+    /// Force a new era on the next session start, then reset to `NotForcing` as soon as it is done.
     ForceNew,
     /// Avoid a new era indefinitely.
     ForceNone,

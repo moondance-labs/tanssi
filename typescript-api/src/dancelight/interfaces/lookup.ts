@@ -1174,9 +1174,9 @@ export default {
             remove_whitelisted: {
                 who: "AccountId32",
             },
-            force_no_eras: "Null",
-            force_new_era: "Null",
-            force_new_era_always: "Null",
+            force_era: {
+                mode: "PalletExternalValidatorsForcing",
+            },
         },
     },
     /** Lookup131: pallet_session::pallet::Call<T> */
@@ -2612,7 +2612,16 @@ export default {
     },
     /** Lookup291: dancelight_runtime::ProxyType */
     DancelightRuntimeProxyType: {
-        _enum: ["Any", "NonTransfer", "Governance", "IdentityJudgement", "CancelProxy", "Auction", "OnDemandOrdering"],
+        _enum: [
+            "Any",
+            "NonTransfer",
+            "Governance",
+            "IdentityJudgement",
+            "CancelProxy",
+            "Auction",
+            "OnDemandOrdering",
+            "SudoRegistrar",
+        ],
     },
     /** Lookup292: pallet_multisig::pallet::Call<T> */
     PalletMultisigCall: {
@@ -4996,11 +5005,11 @@ export default {
     /** Lookup571: pallet_external_validators::pallet::Error<T> */
     PalletExternalValidatorsError: {
         _enum: [
-            "TooManyInvulnerables",
-            "AlreadyInvulnerable",
-            "NotInvulnerable",
+            "TooManyWhitelisted",
+            "AlreadyWhitelisted",
+            "NotWhitelisted",
             "NoKeysRegistered",
-            "UnableToDeriveCollatorId",
+            "UnableToDeriveValidatorId",
         ],
     },
     /** Lookup576: sp_core::crypto::KeyTypeId */
@@ -6094,6 +6103,14 @@ export default {
     FrameSystemExtensionsCheckWeight: "Null",
     /** Lookup819: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup820: dancelight_runtime::Runtime */
+    /** Lookup820: frame_metadata_hash_extension::CheckMetadataHash<T> */
+    FrameMetadataHashExtensionCheckMetadataHash: {
+        mode: "FrameMetadataHashExtensionMode",
+    },
+    /** Lookup821: frame_metadata_hash_extension::Mode */
+    FrameMetadataHashExtensionMode: {
+        _enum: ["Disabled", "Enabled"],
+    },
+    /** Lookup822: dancelight_runtime::Runtime */
     DancelightRuntimeRuntime: "Null",
 };

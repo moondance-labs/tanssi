@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Benchmarking setup for pallet-invulnerables
+//! Benchmarking setup for pallet_external_validators
 
 use super::*;
 
 #[allow(unused)]
-use crate::Pallet as InvulnerablesPallet;
+use crate::Pallet as ExternalValidators;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
@@ -186,34 +186,12 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn force_no_eras() -> Result<(), BenchmarkError> {
+    fn force_era() -> Result<(), BenchmarkError> {
         let origin =
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 
         #[extrinsic_call]
-        _(origin as T::RuntimeOrigin);
-
-        Ok(())
-    }
-
-    #[benchmark]
-    fn force_new_era() -> Result<(), BenchmarkError> {
-        let origin =
-            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
-
-        #[extrinsic_call]
-        _(origin as T::RuntimeOrigin);
-
-        Ok(())
-    }
-
-    #[benchmark]
-    fn force_new_era_always() -> Result<(), BenchmarkError> {
-        let origin =
-            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
-
-        #[extrinsic_call]
-        _(origin as T::RuntimeOrigin);
+        _(origin as T::RuntimeOrigin, Forcing::ForceNew);
 
         Ok(())
     }
@@ -237,22 +215,22 @@ mod benchmarks {
             invulnerables.into_iter().unzip();
 
         for account in account_ids {
-            <InvulnerablesPallet<T>>::add_whitelisted(origin.clone(), account)
-                .expect("add invulnerable failed");
+            <ExternalValidators<T>>::add_whitelisted(origin.clone(), account)
+                .expect("add whitelisted failed");
         }
 
         let new_era_session = T::SessionsPerEra::get();
 
         #[block]
         {
-            <InvulnerablesPallet<T> as SessionManager<_>>::new_session(new_era_session);
+            <ExternalValidators<T> as SessionManager<_>>::new_session(new_era_session);
         }
 
         Ok(())
     }
 
     impl_benchmark_test_suite!(
-        InvulnerablesPallet,
+        ExternalValidators,
         crate::mock::new_test_ext(),
         crate::mock::Test,
     );

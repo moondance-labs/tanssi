@@ -27,7 +27,7 @@ use {
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
-        traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
+        traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
 };
@@ -134,7 +134,7 @@ impl Config for Test {
     type MaxWhitelistedValidators = ConstU32<20>;
     type MaxExternalValidators = ConstU32<20>;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
-    type ValidatorIdOf = IdentityCollator;
+    type ValidatorIdOf = ConvertInto;
     type ValidatorRegistration = IsRegistered;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
@@ -186,7 +186,7 @@ impl pallet_session::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = IdentityCollator;
+    type ValidatorIdOf = ConvertInto;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = ExternalValidators;
@@ -289,6 +289,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .assimilate_storage(&mut t)
         .unwrap();
     pallet_external_validators::GenesisConfig::<Test> {
+        skip_external_validators: false,
         whitelisted_validators,
     }
     .assimilate_storage(&mut t)

@@ -1511,16 +1511,11 @@ declare module "@polkadot/types/lookup" {
         readonly asRemoveWhitelisted: {
             readonly who: AccountId32;
         } & Struct;
-        readonly isForceNoEras: boolean;
-        readonly isForceNewEra: boolean;
-        readonly isForceNewEraAlways: boolean;
-        readonly type:
-            | "SkipExternalValidators"
-            | "AddWhitelisted"
-            | "RemoveWhitelisted"
-            | "ForceNoEras"
-            | "ForceNewEra"
-            | "ForceNewEraAlways";
+        readonly isForceEra: boolean;
+        readonly asForceEra: {
+            readonly mode: PalletExternalValidatorsForcing;
+        } & Struct;
+        readonly type: "SkipExternalValidators" | "AddWhitelisted" | "RemoveWhitelisted" | "ForceEra";
     }
 
     /** @name PalletSessionCall (131) */
@@ -3198,6 +3193,7 @@ declare module "@polkadot/types/lookup" {
         readonly isCancelProxy: boolean;
         readonly isAuction: boolean;
         readonly isOnDemandOrdering: boolean;
+        readonly isSudoRegistrar: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -3205,7 +3201,8 @@ declare module "@polkadot/types/lookup" {
             | "IdentityJudgement"
             | "CancelProxy"
             | "Auction"
-            | "OnDemandOrdering";
+            | "OnDemandOrdering"
+            | "SudoRegistrar";
     }
 
     /** @name PalletMultisigCall (292) */
@@ -6405,17 +6402,17 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletExternalValidatorsError (571) */
     interface PalletExternalValidatorsError extends Enum {
-        readonly isTooManyInvulnerables: boolean;
-        readonly isAlreadyInvulnerable: boolean;
-        readonly isNotInvulnerable: boolean;
+        readonly isTooManyWhitelisted: boolean;
+        readonly isAlreadyWhitelisted: boolean;
+        readonly isNotWhitelisted: boolean;
         readonly isNoKeysRegistered: boolean;
-        readonly isUnableToDeriveCollatorId: boolean;
+        readonly isUnableToDeriveValidatorId: boolean;
         readonly type:
-            | "TooManyInvulnerables"
-            | "AlreadyInvulnerable"
-            | "NotInvulnerable"
+            | "TooManyWhitelisted"
+            | "AlreadyWhitelisted"
+            | "NotWhitelisted"
             | "NoKeysRegistered"
-            | "UnableToDeriveCollatorId";
+            | "UnableToDeriveValidatorId";
     }
 
     /** @name SpCoreCryptoKeyTypeId (576) */
@@ -7902,6 +7899,18 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletTransactionPaymentChargeTransactionPayment (819) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name DancelightRuntimeRuntime (820) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (820) */
+    interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
+        readonly mode: FrameMetadataHashExtensionMode;
+    }
+
+    /** @name FrameMetadataHashExtensionMode (821) */
+    interface FrameMetadataHashExtensionMode extends Enum {
+        readonly isDisabled: boolean;
+        readonly isEnabled: boolean;
+        readonly type: "Disabled" | "Enabled";
+    }
+
+    /** @name DancelightRuntimeRuntime (822) */
     type DancelightRuntimeRuntime = Null;
 } // declare module

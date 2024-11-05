@@ -65,15 +65,6 @@ pub mod pallet {
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-    /// A convertor from collators id. Since this pallet does not have stash/controller, this is
-    /// just identity.
-    pub struct IdentityCollator;
-    impl<T> sp_runtime::traits::Convert<T, Option<T>> for IdentityCollator {
-        fn convert(t: T) -> Option<T> {
-            Some(t)
-        }
-    }
-
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {

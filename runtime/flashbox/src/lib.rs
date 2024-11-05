@@ -88,8 +88,8 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup,
-            Verify,
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
+            IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -223,7 +223,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 900,
+    spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -608,7 +608,7 @@ impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
+    type ValidatorIdOf = ConvertInto;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = CollatorsFromInvulnerables;
@@ -971,7 +971,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = CollatorId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
