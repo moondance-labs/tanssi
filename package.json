@@ -1,7 +1,0 @@
-{
-	"dependencies": {
-		"api-augment:0.400.0": "link:@tanssi/api-augment:0.400.0",
-		"api-augment:latest": "link:@tanssi/api-augment:latest"
-	},
-	"version": "0.0.0"
-}
