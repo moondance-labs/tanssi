@@ -19,9 +19,9 @@
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 use {
     crate::{
-        parameter_types, weights, Balance, Balances, EthereumOutboundQueue, EthereumSystem,
-        FixedU128, Keccak256, MessageQueue, Runtime, RuntimeEvent, TreasuryAccount, WeightToFee,
-        UNITS,
+        parameter_types, weights, AggregateMessageOrigin, Balance, Balances, EthereumOutboundQueue,
+        EthereumSystem, FixedU128, Keccak256, MessageQueue, Runtime, RuntimeEvent, TreasuryAccount,
+        WeightToFee, UNITS, GetAggregateMessageOrigin
     },
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
@@ -42,6 +42,8 @@ parameter_types! {
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Hashing = Keccak256;
+    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
     type MessageQueue = MessageQueue;
     type Decimals = ConstU8<12>;
     type MaxMessagePayloadSize = ConstU32<2048>;

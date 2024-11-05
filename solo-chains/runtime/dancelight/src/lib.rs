@@ -27,7 +27,6 @@ use {
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
-    bridge_hub_common::AggregateMessageOrigin,
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
@@ -78,6 +77,7 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
+    snowbridge_core::ChannelId,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
@@ -207,6 +207,48 @@ pub fn native_version() -> NativeVersion {
     NativeVersion {
         runtime_version: VERSION,
         can_author_with: Default::default(),
+    }
+}
+
+/// Aggregate message origin for the `MessageQueue` pallet.
+///
+/// Can be extended to serve further use-cases besides just UMP. Is stored in storage, so any change
+/// to existing values will require a migration.
+#[derive(Encode, Decode, Clone, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub enum AggregateMessageOrigin {
+    /// Inbound upward message.
+    #[codec(index = 0)]
+    Ump(UmpQueueId),
+
+    #[codec(index = 1)]
+    /// The message came from a snowbridge channel.
+    ///
+    /// This is used by Snowbridge inbound queue.
+    Snowbridge(ChannelId),
+}
+
+pub struct GetAggregateMessageOrigin;
+
+impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::Snowbridge(channel_id)
+    }
+}
+
+impl Convert<UmpQueueId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(queue_id: UmpQueueId) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::Ump(queue_id)
+    }
+}
+
+pub struct GetParaFromAggregateMessageOrigin;
+
+impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrigin {
+    fn convert(x: AggregateMessageOrigin) -> ParaId {
+        match x {
+            AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
+            AggregateMessageOrigin::Snowbridge(_channel_id) => todo!("what para id to return for snowbridge messages?"),
+        }
     }
 }
 
@@ -527,6 +569,7 @@ use frame_support::traits::Currency;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use runtime_parachains::configuration::HostConfiguration;
+use sp_runtime::traits::Convert;
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -876,6 +919,9 @@ impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
     type RewardValidators = RewardValidators;
+    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
+    type GetParaFromAggregateMessageOrigin = GetParaFromAggregateMessageOrigin;
     type MessageQueue = MessageQueue;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
@@ -916,14 +962,20 @@ impl ProcessMessage for MessageProcessor {
         meter: &mut WeightMeter,
         id: &mut [u8; 32],
     ) -> Result<bool, ProcessMessageError> {
-        let para = match origin {
-            AggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => para,
-        };
-        xcm_builder::ProcessXcmMessage::<
-            Junction,
-            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
-            RuntimeCall,
-        >::process_message(message, Junction::Parachain(para.into()), meter, id)
+        match origin {
+            AggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => {
+                xcm_builder::ProcessXcmMessage::<
+                    Junction,
+                    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+                    RuntimeCall,
+                >::process_message(
+                    message, Junction::Parachain(para.into()), meter, id
+                )
+            }
+            AggregateMessageOrigin::Snowbridge(_) => {
+                EthereumOutboundQueue::process_message(message, origin, meter, id)
+            }
+        }
     }
 }
 
