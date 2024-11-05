@@ -10,8 +10,8 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Setup g++
-              id: setup g++
+              id: setup_g_plusplus
               run: |
-                  g++ --version
+                g++ --version
 
  
