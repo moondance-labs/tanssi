@@ -71,6 +71,7 @@ pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }
+pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
@@ -149,6 +150,7 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 
 [dev-dependencies]
+finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
@@ -211,6 +213,7 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
+	"pallet-external-validator-slashes/std",
 	"pallet-external-validators/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
@@ -314,6 +317,7 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
+	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
@@ -383,6 +387,7 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
+	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
