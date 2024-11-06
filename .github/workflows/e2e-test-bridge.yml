@@ -90,7 +90,7 @@ jobs:
                 name: binaries
                 path: binaries
                 search_artifacts: true
-            - name: Upload runtimes
+            - name: Upload binaires
               uses: actions/upload-artifact@v4
               with:
                   name: binaries
