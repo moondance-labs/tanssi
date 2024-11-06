@@ -90,7 +90,7 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
+        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
@@ -490,7 +490,7 @@ impl pallet_session::historical::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BondingDuration: sp_staking::EraIndex = 28;
+    pub const BondingDuration: sp_staking::EraIndex = runtime_common::prod_or_fast!(28, 3);
 }
 
 parameter_types! {
@@ -568,7 +568,7 @@ impl pallet_treasury::Config for Runtime {
 impl pallet_offences::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
-    type OnOffenceHandler = ();
+    type OnOffenceHandler = ExternalValidatorSlashes;
 }
 
 impl pallet_authority_discovery::Config for Runtime {
@@ -1210,8 +1210,25 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
+use pallet_staking::SessionInterface;
+pub struct DancelightSessionInterface;
+impl SessionInterface<AccountId> for DancelightSessionInterface {
+    fn disable_validator(validator_index: u32) -> bool {
+        Session::disable_index(validator_index)
+    }
+
+    fn validators() -> Vec<AccountId> {
+        Session::validators()
+    }
+
+    fn prune_historical_up_to(up_to: SessionIndex) {
+        Historical::prune_up_to(up_to);
+    }
+}
+
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1225,11 +1242,24 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
-    type OnEraStart = ();
+    type OnEraStart = ExternalValidatorSlashes;
     type OnEraEnd = ();
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+impl pallet_external_validator_slashes::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type SlashDeferDuration = SlashDeferDuration;
+    type BondingDuration = BondingDuration;
+    type SlashId = u32;
+    type SessionInterface = DancelightSessionInterface;
+    type EraIndexProvider = ExternalValidators;
+    type InvulnerablesProvider = ExternalValidators;
+    type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1542,6 +1572,7 @@ construct_runtime! {
 
         // Validator stuff
         ExternalValidators: pallet_external_validators = 20,
+        ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
 
         // Session management
         Session: pallet_session = 30,
@@ -1940,10 +1971,12 @@ mod benches {
         [pallet_registrar, ContainerRegistrar]
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
+        [pallet_external_validator_slashes, ExternalValidatorSlashes]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
 
         // Bridges
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
