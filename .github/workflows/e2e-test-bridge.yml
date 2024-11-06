@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     branches: [girazoki-add-bridge-e2e-testing]
-    types: [completed]
+    types: [in_progress]
 
 jobs:
     e2e-bridge-test:
