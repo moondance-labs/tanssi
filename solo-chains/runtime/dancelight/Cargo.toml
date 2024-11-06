@@ -261,8 +261,11 @@ std = [
 	"serde_derive",
 	"serde_json/std",
 	"snowbridge-beacon-primitives/std",
+	"snowbridge-core/std",
 	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-pallet-ethereum-client/std",
+	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-pallet-system/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-arithmetic/std",
@@ -291,8 +294,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"snowbridge-pallet-outbound-queue/std",
-	"snowbridge-pallet-system/std"
 ]
 no_std = []
 
@@ -351,7 +352,10 @@ runtime-benchmarks = [
 	"primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
+	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-ethereum-client/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
+	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
@@ -359,8 +363,6 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
-	"snowbridge-pallet-system/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -423,10 +425,10 @@ try-runtime = [
 	"runtime-common/try-runtime",
 	"runtime-parachains/try-runtime",
 	"snowbridge-pallet-ethereum-client/try-runtime",
+	"snowbridge-pallet-outbound-queue/try-runtime",
+	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"snowbridge-pallet-outbound-queue/try-runtime",
-	"snowbridge-pallet-system/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.

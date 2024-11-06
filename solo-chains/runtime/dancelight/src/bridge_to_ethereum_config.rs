@@ -145,8 +145,10 @@ impl snowbridge_pallet_system::Config for Runtime {
     //type InboundDeliveryCost = EthereumInboundQueue;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 pub struct EthSystemBenchHelper;
 
+#[cfg(feature = "runtime-benchmarks")]
 impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for EthSystemBenchHelper {
     fn make_xcm_origin(location: Location) -> RuntimeOrigin {
         RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
