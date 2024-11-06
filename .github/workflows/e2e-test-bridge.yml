@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: 
-    - in_progress
+    - requested
 
 jobs:
     e2e-bridge-test:
