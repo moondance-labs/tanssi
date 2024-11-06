@@ -463,6 +463,7 @@ describeSuite({
                 for (const log of logs) {
                     const logFilePath = getTmpZombiePath() + log;
                     await checkLogsNotExist(logFilePath, [
+                        "Entering off-chain worker.",
                         "Shutdown error",
                         "Timeout when waiting for paritydb lock",
                         "Error waiting for chain",

@@ -418,6 +418,7 @@ describeSuite({
                         "Error waiting for chain",
                         "Failed to start container chain",
                         "Shutting down container chain service",
+                        "Entering off-chain worker.",
                     ]);
                 }
             },
