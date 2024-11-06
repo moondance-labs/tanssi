@@ -3,7 +3,6 @@ name: Bridge e2e test
 on:
   workflow_run:
     workflows: [CI]
-    pull_request:
     branches: [master]
     types: [completed]
 
@@ -67,10 +66,3 @@ jobs:
               id: check_date
               run: |
                 date --version
-            - name: Download build artifact from triggered workflow
-              uses: dawidd6/action-download-artifact@v2
-              with:
-                run_id: ${{ github.event.workflow_run.id }}
-                name: binaries
-                path: target/release
-                search_artifacts: true
