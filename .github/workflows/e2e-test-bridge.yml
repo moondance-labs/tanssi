@@ -3,8 +3,8 @@ name: Bridge e2e test
 on:
   workflow_run:
     workflows: [CI]
-    branches: [girazoki-add-bridge-e2e-testing]
-    types: [in_progress]
+    types: 
+    - in_progress
 
 jobs:
     e2e-bridge-test:
