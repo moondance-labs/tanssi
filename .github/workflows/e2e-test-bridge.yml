@@ -25,6 +25,8 @@ jobs:
                   fi
             - name: Checkout
               uses: actions/checkout@v4
+              with:
+                ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Check g++
               id: setup_g_plusplus
               run: |
@@ -88,3 +90,13 @@ jobs:
                 name: binaries
                 path: target/release
                 search_artifacts: true
+            - name: "Make executables"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+            - name: Run Zombienet Test zombie_tanssi_relay_eth_bridge
+              uses: ./.github/workflow-templates/zombienet-tests
+              with:
+                test_name: zombie_tanssi_relay_eth_bridge
