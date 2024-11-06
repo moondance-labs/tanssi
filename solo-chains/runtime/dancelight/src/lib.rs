@@ -227,6 +227,14 @@ pub enum AggregateMessageOrigin {
     Snowbridge(ChannelId),
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl From<u32> for AggregateMessageOrigin {
+    fn from(n: u32) -> Self {
+        // Some dummy for the benchmarks.
+        Self::Ump(UmpQueueId::Para(n.into()))
+    }
+}
+
 pub struct GetAggregateMessageOrigin;
 
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
@@ -247,7 +255,9 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     fn convert(x: AggregateMessageOrigin) -> ParaId {
         match x {
             AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            AggregateMessageOrigin::Snowbridge(_channel_id) => todo!("what para id to return for snowbridge messages?"),
+            AggregateMessageOrigin::Snowbridge(_channel_id) => {
+                todo!("what para id to return for snowbridge messages?")
+            }
         }
     }
 }

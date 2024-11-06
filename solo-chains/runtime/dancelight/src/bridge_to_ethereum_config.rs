@@ -17,16 +17,18 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
+
 use {
     crate::{
         parameter_types, weights, AggregateMessageOrigin, Balance, Balances, EthereumOutboundQueue,
-        EthereumSystem, FixedU128, Keccak256, MessageQueue, Runtime, RuntimeEvent, TreasuryAccount,
-        WeightToFee, UNITS, GetAggregateMessageOrigin
+        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime,
+        RuntimeEvent, RuntimeOrigin, TreasuryAccount, WeightToFee, UNITS,
     },
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, AllowSiblingsOnly, PricingParameters, Rewards},
     sp_core::{ConstU32, ConstU8},
+    xcm::latest::Location,
 };
 
 parameter_types! {
@@ -137,8 +139,16 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = ();
     //type WeightInfo = crate::weights::snowbridge_pallet_system::WeightInfo<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
-    type Helper = ();
+    type Helper = EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;
     type InboundDeliveryCost = ();
     //type InboundDeliveryCost = EthereumInboundQueue;
+}
+
+pub struct EthSystemBenchHelper;
+
+impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for EthSystemBenchHelper {
+    fn make_xcm_origin(location: Location) -> RuntimeOrigin {
+        RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
+    }
 }
