@@ -120,3 +120,5 @@ jobs:
               with:
                 sha: ${{ steps.sharef.outputs.sha }}
                 token: ${{ secrets.GITHUB_TOKEN }}
+                name: Bridge e2e test
+                conclusion: ${{ job.status }}
