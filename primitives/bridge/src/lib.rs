@@ -150,7 +150,7 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
 impl ValidateMessage for () {
     type Ticket = ();
 
-    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+    fn validate(_message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         Ok((
             (),
             Fee {
