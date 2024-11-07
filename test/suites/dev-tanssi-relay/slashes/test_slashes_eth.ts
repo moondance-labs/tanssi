@@ -2,10 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
-import { Keyring } from "@polkadot/keyring";
-import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "../../../util/block";
-import { generateBabeEquivocationProof } from "../../../util/slashes";
 
 describeSuite({
     id: "DTR1801",
@@ -14,14 +11,9 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let aliceBabePair: KeyringPair;
-        let aliceStash: KeyringPair;
         beforeAll(async () => {
-            const keyringBabe = new Keyring({ type: "sr25519" });
-            aliceBabePair = keyringBabe.addFromUri("//Alice");
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
-            aliceStash = keyringBabe.addFromUri("//Alice//stash");
         });
         it({
             id: "E01",
@@ -39,7 +31,7 @@ describeSuite({
 
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
-                const allLogs = (baseHeader.digest.logs.map((x) => x.toJSON()));
+                const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
                 const otherLogs = allLogs.filter((x) => x["other"]);
                 expect(otherLogs.length).to.be.equal(1);
                 const logHex = otherLogs[0]["other"];
