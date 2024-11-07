@@ -3,6 +3,9 @@ name: Manually run all zombienet tests
 on:
   workflow_dispatch:
     inputs:
+      sha:
+        description: full sha to the codebase
+        required: true
       test_name:
         description: "Name of the test suite to be run (e.g. zombie_flashbox, supports regex)"
         required: true
