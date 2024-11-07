@@ -100,7 +100,7 @@ jobs:
               with:
                 run_id: ${{ steps.retrieve-run-id.outputs.run_id }}
                 name: binaries
-                path: binaries
+                path: target/release
                 search_artifacts: true
             - name: "Make binaries executable"
               shell: bash
