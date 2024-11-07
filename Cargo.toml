@@ -94,9 +94,9 @@ tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
-
+ethabi = { version = "1.0.0", default-features = false, package = "ethabi-decode" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
+tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }

@@ -26,6 +26,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
+tp-bridge = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -49,7 +50,8 @@ std = [
 	"sp-staking/std",
 	"sp-std/std",
 	"tp-traits/std",
-	"snowbridge-core/std"
+	"snowbridge-core/std",
+	"tp-bridge/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -60,7 +62,8 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"snowbridge-core/runtime-benchmarks"
+	"snowbridge-core/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks"
 ]
 
 try-runtime = [

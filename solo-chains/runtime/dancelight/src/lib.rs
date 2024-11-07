@@ -262,7 +262,10 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
                     Some(x) => x.para_id,
                     None => {
                         // This should be unreachable, but return para id 0 if channel does not exist
-                        log::warn!("Got snowbridge message from channel that does not exist: {:?}", channel_id);
+                        log::warn!(
+                            "Got snowbridge message from channel that does not exist: {:?}",
+                            channel_id
+                        );
                         ParaId::from(0)
                     }
                 }
@@ -992,7 +995,9 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::Snowbridge(_) => {
-                EthereumOutboundQueue::process_message(message, origin, meter, id)
+                tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
             }
         }
     }
@@ -1331,6 +1336,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
+    type OutboundQueueConfig = Runtime;
     type OutboundQueue = EthereumOutboundQueue;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }

@@ -48,10 +48,8 @@ use {
     tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
 };
 
-use snowbridge_core::{
-    outbound::{AgentExecuteCommand, Command, Message, SendMessage},
-    AgentId, ChannelId, ParaId,
-};
+use snowbridge_core::{outbound::SendMessage, ChannelId};
+use tp_bridge::{Command, Message, OutboundQueueConfig};
 
 pub use pallet::*;
 
@@ -128,8 +126,11 @@ pub mod pallet {
 
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
-
-        type OutboundQueue: SendMessage<Balance = u128>;
+        type OutboundQueueConfig: OutboundQueueConfig;
+        type OutboundQueue: SendMessage<
+            Balance = u128,
+            Ticket = tp_bridge::Ticket<Self::OutboundQueueConfig>,
+        >;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -277,22 +278,26 @@ pub mod pallet {
         pub fn root_test_send_msg_to_eth(
             origin: OriginFor<T>,
             message_id: H256,
-            agent_id: H256,
+            payload: H256,
         ) -> DispatchResult {
             ensure_root(origin)?;
 
             // Example command, this should be something like "ReportSlashes"
-            let command = Command::CreateAgent { agent_id };
+            let command = Command::Test(payload.as_ref().to_vec());
 
             // Validate
             //let channel_id: ChannelId = ParaId::from(para_id).into();
             let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-            let outbound_message = Message { id: Some(message_id), channel_id, command };
+            let outbound_message = Message {
+                id: Some(message_id),
+                channel_id,
+                command,
+            };
 
             // validate the message
             // Ignore fee because for now only root can send messages
-            let (ticket, _fee) = T::OutboundQueue::validate(&outbound_message).map_err(|err| {
+            let (ticket, _fee) = outbound_message.validate().map_err(|err| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
                 Error::<T>::EmptyTargets
             })?;

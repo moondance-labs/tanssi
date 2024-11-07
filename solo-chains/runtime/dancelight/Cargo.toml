@@ -148,6 +148,8 @@ snowbridge-core = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
+ethabi = { workspace = true }
+tp-bridge = { workspace = true }
 
 [dev-dependencies]
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }

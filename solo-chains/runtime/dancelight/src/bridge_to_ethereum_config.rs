@@ -18,7 +18,6 @@
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 
-use frame_system::EnsureRoot;
 use {
     crate::{
         parameter_types, weights, AggregateMessageOrigin, Balance, Balances, EthereumOutboundQueue,
@@ -30,7 +29,6 @@ use {
     snowbridge_core::{gwei, meth, AllowSiblingsOnly, PricingParameters, Rewards},
     sp_core::{ConstU32, ConstU8},
 };
-use crate::AccountId;
 
 parameter_types! {
     pub Parameters: PricingParameters<u128> = PricingParameters {
