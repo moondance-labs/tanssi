@@ -90,11 +90,15 @@ jobs:
                 name: binaries
                 path: binaries
                 search_artifacts: true
-            - name: Upload binaires
-              uses: actions/upload-artifact@v4
-              with:
-                  name: binaries
-                  path: binaries
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/container-chain-simple-node
+                chmod uog+x target/release/container-chain-frontier-node
             - name: Run Zombienet Test zombie_tanssi_relay_eth_bridge
               uses: ./.github/workflow-templates/zombienet-tests
               with:
