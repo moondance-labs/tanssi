@@ -9,6 +9,7 @@ import type {
     BinaryHeapEnqueuedOrder,
     BinaryHeapReverseQueueIndex,
     BitvecOrderLsb0,
+    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeDynamicParamsPreimageBaseDeposit,
     DancelightRuntimeDynamicParamsPreimageByteDeposit,
     DancelightRuntimeDynamicParamsPreimageParameters,
@@ -298,7 +299,6 @@ import type {
     PolkadotRuntimeParachainsHrmpPalletCall,
     PolkadotRuntimeParachainsHrmpPalletError,
     PolkadotRuntimeParachainsHrmpPalletEvent,
-    PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
     PolkadotRuntimeParachainsInclusionCandidatePendingAvailability,
     PolkadotRuntimeParachainsInclusionPalletCall,
     PolkadotRuntimeParachainsInclusionPalletError,
@@ -340,11 +340,25 @@ import type {
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
     SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate,
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeCoreChannel,
+    SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
+    SnowbridgeCoreOutboundSendError,
+    SnowbridgeCoreOutboundV1Initializer,
+    SnowbridgeCoreOutboundV1OperatingMode,
+    SnowbridgeCorePricingPricingParameters,
+    SnowbridgeCorePricingRewards,
     SnowbridgeMilagroBlsKeysPublicKey,
     SnowbridgePalletEthereumClientCall,
     SnowbridgePalletEthereumClientError,
     SnowbridgePalletEthereumClientEvent,
+    SnowbridgePalletOutboundQueueCall,
+    SnowbridgePalletOutboundQueueCommittedMessage,
+    SnowbridgePalletOutboundQueueError,
+    SnowbridgePalletOutboundQueueEvent,
+    SnowbridgePalletSystemCall,
+    SnowbridgePalletSystemError,
+    SnowbridgePalletSystemEvent,
     SpArithmeticArithmeticError,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAllowedSlots,
@@ -468,6 +482,7 @@ declare module "@polkadot/types/types/registry" {
         BinaryHeapEnqueuedOrder: BinaryHeapEnqueuedOrder;
         BinaryHeapReverseQueueIndex: BinaryHeapReverseQueueIndex;
         BitvecOrderLsb0: BitvecOrderLsb0;
+        DancelightRuntimeAggregateMessageOrigin: DancelightRuntimeAggregateMessageOrigin;
         DancelightRuntimeDynamicParamsPreimageBaseDeposit: DancelightRuntimeDynamicParamsPreimageBaseDeposit;
         DancelightRuntimeDynamicParamsPreimageByteDeposit: DancelightRuntimeDynamicParamsPreimageByteDeposit;
         DancelightRuntimeDynamicParamsPreimageParameters: DancelightRuntimeDynamicParamsPreimageParameters;
@@ -757,7 +772,6 @@ declare module "@polkadot/types/types/registry" {
         PolkadotRuntimeParachainsHrmpPalletCall: PolkadotRuntimeParachainsHrmpPalletCall;
         PolkadotRuntimeParachainsHrmpPalletError: PolkadotRuntimeParachainsHrmpPalletError;
         PolkadotRuntimeParachainsHrmpPalletEvent: PolkadotRuntimeParachainsHrmpPalletEvent;
-        PolkadotRuntimeParachainsInclusionAggregateMessageOrigin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin;
         PolkadotRuntimeParachainsInclusionCandidatePendingAvailability: PolkadotRuntimeParachainsInclusionCandidatePendingAvailability;
         PolkadotRuntimeParachainsInclusionPalletCall: PolkadotRuntimeParachainsInclusionPalletCall;
         PolkadotRuntimeParachainsInclusionPalletError: PolkadotRuntimeParachainsInclusionPalletError;
@@ -799,11 +813,25 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate: SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate;
         SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate: SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate;
         SnowbridgeBeaconPrimitivesUpdatesUpdate: SnowbridgeBeaconPrimitivesUpdatesUpdate;
+        SnowbridgeCoreChannel: SnowbridgeCoreChannel;
+        SnowbridgeCoreChannelId: SnowbridgeCoreChannelId;
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
+        SnowbridgeCoreOutboundSendError: SnowbridgeCoreOutboundSendError;
+        SnowbridgeCoreOutboundV1Initializer: SnowbridgeCoreOutboundV1Initializer;
+        SnowbridgeCoreOutboundV1OperatingMode: SnowbridgeCoreOutboundV1OperatingMode;
+        SnowbridgeCorePricingPricingParameters: SnowbridgeCorePricingPricingParameters;
+        SnowbridgeCorePricingRewards: SnowbridgeCorePricingRewards;
         SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
         SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
         SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
         SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
+        SnowbridgePalletOutboundQueueCall: SnowbridgePalletOutboundQueueCall;
+        SnowbridgePalletOutboundQueueCommittedMessage: SnowbridgePalletOutboundQueueCommittedMessage;
+        SnowbridgePalletOutboundQueueError: SnowbridgePalletOutboundQueueError;
+        SnowbridgePalletOutboundQueueEvent: SnowbridgePalletOutboundQueueEvent;
+        SnowbridgePalletSystemCall: SnowbridgePalletSystemCall;
+        SnowbridgePalletSystemError: SnowbridgePalletSystemError;
+        SnowbridgePalletSystemEvent: SnowbridgePalletSystemEvent;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpAuthorityDiscoveryAppPublic: SpAuthorityDiscoveryAppPublic;
         SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
