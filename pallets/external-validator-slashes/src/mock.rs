@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use snowbridge_core::outbound::Fee;
+use snowbridge_core::outbound::SendError;
+use snowbridge_core::outbound::SendMessage;
+use snowbridge_core::outbound::SendMessageFeeProvider;
 use {
     crate as external_validator_slashes,
     frame_support::{
@@ -196,6 +200,57 @@ impl DeferPeriodGetter {
     }
 }
 
+pub struct MockOkOutboundQueue;
+impl SendMessage for MockOkOutboundQueue {
+    type Ticket = ();
+
+    fn validate(
+        _: &snowbridge_core::outbound::Message,
+    ) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
+        Ok((
+            (),
+            Fee {
+                local: 1,
+                remote: 1,
+            },
+        ))
+    }
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        Ok(H256::zero())
+    }
+}
+
+impl SendMessageFeeProvider for MockOkOutboundQueue {
+    type Balance = u128;
+
+    fn local_fee() -> Self::Balance {
+        1
+    }
+}
+pub struct MockErrOutboundQueue;
+impl SendMessage for MockErrOutboundQueue {
+    type Ticket = ();
+
+    fn validate(
+        _: &snowbridge_core::outbound::Message,
+    ) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
+        Err(SendError::MessageTooLarge)
+    }
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        Err(SendError::MessageTooLarge)
+    }
+}
+
+impl SendMessageFeeProvider for MockErrOutboundQueue {
+    type Balance = u128;
+
+    fn local_fee() -> Self::Balance {
+        1
+    }
+}
+
 parameter_types! {
     pub const BondingDuration: u32 = 5u32;
 }
@@ -210,6 +265,8 @@ impl external_validator_slashes::Config for Test {
     type SessionInterface = ();
     type EraIndexProvider = MockEraIndexProvider;
     type InvulnerablesProvider = MockInvulnerableProvider;
+    type ValidateMessage = ();
+    type OutboundQueue = MockOkOutboundQueue;
     type WeightInfo = ();
 }
 

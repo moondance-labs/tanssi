@@ -147,6 +147,20 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
     }
 }
 
+impl ValidateMessage for () {
+    type Ticket = ();
+
+    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+        Ok((
+            (),
+            Fee {
+                local: 1,
+                remote: 1,
+            },
+        ))
+    }
+}
+
 /// Message which is awaiting processing in the MessageQueue pallet
 #[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
