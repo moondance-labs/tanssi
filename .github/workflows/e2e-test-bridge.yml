@@ -23,6 +23,18 @@ jobs:
                   else
                     echo "run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
                   fi
+            - name: Recognize sha ref
+              id: sharef
+              run: |
+                if [ ${{ github.event_name }} == 'pull_request' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.pull_request.head.sha}})"
+                elif [ ${{ github.event_name }} == 'workflow_run' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.workflow_run.head_sha}})"
+                else
+                  echo "::set-output name=sha::$(echo $GITHUB_SHA)"
+                fi
             - name: Checkout
               uses: actions/checkout@v4
               with:
@@ -103,3 +115,8 @@ jobs:
               uses: ./.github/workflow-templates/zombienet-tests
               with:
                 test_name: zombie_tanssi_relay_eth_bridge
+            - name: Commit Action Status
+              uses: LouisBrunner/checks-action@v1.1.1
+              with:
+                sha: ${{ steps.sharef.outputs.sha }}
+                token: ${{ secrets.GITHUB_TOKEN }}
