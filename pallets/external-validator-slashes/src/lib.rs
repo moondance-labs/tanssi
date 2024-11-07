@@ -35,6 +35,7 @@ use {
     pallet_staking::SessionInterface,
     parity_scale_codec::FullCodec,
     parity_scale_codec::{Decode, Encode},
+    sp_core::H256,
     sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
     sp_runtime::DispatchResult,
     sp_runtime::Perbill,
@@ -45,6 +46,11 @@ use {
     sp_std::vec,
     sp_std::vec::Vec,
     tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
+};
+
+use snowbridge_core::{
+    outbound::{AgentExecuteCommand, Command, Message, SendMessage},
+    AgentId, ChannelId, ParaId,
 };
 
 pub use pallet::*;
@@ -122,6 +128,8 @@ pub mod pallet {
 
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
+
+        type OutboundQueue: SendMessage<Balance = u128>;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -261,6 +269,40 @@ pub mod pallet {
             });
 
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
+            Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::force_inject_slash())]
+        pub fn root_test_send_msg_to_eth(
+            origin: OriginFor<T>,
+            message_id: H256,
+            agent_id: H256,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            // Example command, this should be something like "ReportSlashes"
+            let command = Command::CreateAgent { agent_id };
+
+            // Validate
+            //let channel_id: ChannelId = ParaId::from(para_id).into();
+            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+            let outbound_message = Message { id: Some(message_id), channel_id, command };
+
+            // validate the message
+            // Ignore fee because for now only root can send messages
+            let (ticket, _fee) = T::OutboundQueue::validate(&outbound_message).map_err(|err| {
+                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                Error::<T>::EmptyTargets
+            })?;
+
+            // Deliver
+            T::OutboundQueue::deliver(ticket).map_err(|err| {
+                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                Error::<T>::EmptyTargets
+            })?;
+
             Ok(())
         }
     }

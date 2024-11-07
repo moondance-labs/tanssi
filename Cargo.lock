@@ -9397,6 +9397,7 @@ dependencies = [
  "pallet-staking",
  "parity-scale-codec",
  "scale-info",
+ "snowbridge-core",
  "sp-core",
  "sp-io",
  "sp-runtime",

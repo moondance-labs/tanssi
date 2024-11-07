@@ -249,14 +249,23 @@ impl Convert<UmpQueueId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
     }
 }
 
+/// This is used by [parachains_inclusion::Pallet::on_queue_changed]
 pub struct GetParaFromAggregateMessageOrigin;
 
 impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrigin {
     fn convert(x: AggregateMessageOrigin) -> ParaId {
         match x {
             AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            AggregateMessageOrigin::Snowbridge(_channel_id) => {
-                todo!("what para id to return for snowbridge messages?")
+            AggregateMessageOrigin::Snowbridge(channel_id) => {
+                // Read para id from EthereumSystem::channels storage map
+                match EthereumSystem::channels(channel_id) {
+                    Some(x) => x.para_id,
+                    None => {
+                        // This should be unreachable, but return para id 0 if channel does not exist
+                        log::warn!("Got snowbridge message from channel that does not exist: {:?}", channel_id);
+                        ParaId::from(0)
+                    }
+                }
             }
         }
     }
@@ -1322,6 +1331,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
+    type OutboundQueue = EthereumOutboundQueue;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
