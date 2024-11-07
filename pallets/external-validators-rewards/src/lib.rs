@@ -15,6 +15,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 pub use pallet::*;
 
 use {
@@ -27,7 +33,10 @@ use {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use {frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider};
+    use {
+        frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
+        tp_traits::EraIndexProvider,
+    };
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -39,6 +48,7 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         type EraIndexProvider: EraIndexProvider;
 
+        #[pallet::constant]
         type HistoryDepth: Get<EraIndex>;
     }
 
@@ -65,14 +75,14 @@ pub mod pallet {
     /// TODO: Docs
     #[pallet::storage]
     #[pallet::unbounded]
-    pub type ErasRewardPoints<T: Config> =
+    pub type RewardPointsForEra<T: Config> =
         StorageMap<_, Twox64Concat, EraIndex, EraRewardPoints<T::AccountId>, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
         pub fn reward_by_ids(points: impl IntoIterator<Item = (T::AccountId, RewardPoints)>) {
             let active_era = T::EraIndexProvider::active_era();
 
-            ErasRewardPoints::<T>::mutate(active_era.index, |era_rewards| {
+            RewardPointsForEra::<T>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in points.into_iter() {
                     *era_rewards.individual.entry(validator).or_default() += points;
                     era_rewards.total += points;
@@ -87,7 +97,7 @@ pub mod pallet {
                 return;
             };
 
-            ErasRewardPoints::<T>::remove(era_index_to_delete);
+            RewardPointsForEra::<T>::remove(era_index_to_delete);
         }
     }
 }
@@ -156,4 +166,3 @@ where
         Self::reward_only_active(session, validators, DISPUTE_STATEMENT_POINTS);
     }
 }
-
