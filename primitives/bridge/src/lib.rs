@@ -25,7 +25,6 @@ use snowbridge_core::outbound::Fee;
 use snowbridge_core::outbound::SendError;
 use snowbridge_core::ChannelId;
 pub use snowbridge_pallet_outbound_queue::send_message_impl::Ticket;
-pub use snowbridge_pallet_outbound_queue::Config as OutboundQueueConfig;
 use {
     core::marker::PhantomData,
     frame_support::{
@@ -86,11 +85,18 @@ pub struct Message {
     pub command: Command,
 }
 
-impl Message {
-    pub fn validate<T: snowbridge_pallet_outbound_queue::Config>(
-        &self,
-    ) -> Result<(Ticket<T>, Fee<u64>), SendError> {
-        let message = self;
+pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
+
+pub trait ValidateMessage {
+    type Ticket;
+
+    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
+}
+
+impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageValidator<T> {
+    type Ticket = Ticket<T>;
+
+    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         // The inner payload should not be too large
         let payload = message.command.abi_encode();
         ensure!(
@@ -175,8 +181,8 @@ impl From<VersionedQueuedMessage> for QueuedMessage {
     }
 }
 
-pub use custom_do_process_message::CustomProcessSnowbridgeMessage;
 pub use custom_do_process_message::ConstantGasMeter;
+pub use custom_do_process_message::CustomProcessSnowbridgeMessage;
 
 mod custom_do_process_message {
     use super::*;

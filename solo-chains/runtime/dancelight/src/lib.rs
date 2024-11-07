@@ -1336,7 +1336,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type OutboundQueueConfig = Runtime;
+    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = EthereumOutboundQueue;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }

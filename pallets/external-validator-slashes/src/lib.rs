@@ -49,7 +49,7 @@ use {
 };
 
 use snowbridge_core::{outbound::SendMessage, ChannelId};
-use tp_bridge::{Command, Message, OutboundQueueConfig};
+use tp_bridge::{Command, Message, ValidateMessage};
 
 pub use pallet::*;
 
@@ -126,10 +126,10 @@ pub mod pallet {
 
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
-        type OutboundQueueConfig: OutboundQueueConfig;
+        type ValidateMessage: ValidateMessage;
         type OutboundQueue: SendMessage<
             Balance = u128,
-            Ticket = tp_bridge::Ticket<Self::OutboundQueueConfig>,
+            Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 
         /// The weight information of this pallet.
@@ -297,7 +297,7 @@ pub mod pallet {
 
             // validate the message
             // Ignore fee because for now only root can send messages
-            let (ticket, _fee) = outbound_message.validate().map_err(|err| {
+            let (ticket, _fee) = T::ValidateMessage::validate(&outbound_message).map_err(|err| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
                 Error::<T>::EmptyTargets
             })?;
