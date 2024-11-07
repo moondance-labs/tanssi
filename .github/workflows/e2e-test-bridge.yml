@@ -37,8 +37,6 @@ jobs:
                 fi
             - name: Checkout
               uses: actions/checkout@v4
-              with:
-                ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Check g++
               id: setup_g_plusplus
               run: |
