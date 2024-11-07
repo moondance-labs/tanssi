@@ -2089,6 +2089,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-multisig",
+ "pallet-ocw-testing",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
@@ -3219,6 +3220,7 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
+ "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
  "frame-metadata-hash-extension",
@@ -3249,6 +3251,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-external-validators-rewards",
  "pallet-grandpa",
@@ -9366,6 +9369,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-external-validator-slashes"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "pallet-staking",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-external-validators"
 version = "0.1.0"
 dependencies = [
@@ -9758,6 +9781,21 @@ dependencies = [
  "pallet-nomination-pools",
  "parity-scale-codec",
  "sp-api",
+]
+
+[[package]]
+name = "pallet-ocw-testing"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

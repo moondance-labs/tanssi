@@ -1213,3 +1213,105 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     }
     keys
 }
+
+use babe_primitives::AuthorityPair as BabeAuthorityPair;
+use grandpa_primitives::{
+    AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+};
+use sp_core::H256;
+pub fn generate_grandpa_equivocation_proof(
+    set_id: SetId,
+    vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+    vote2: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+) -> EquivocationProof<H256, u32> {
+    let signed_prevote = |round, hash, number, authority_pair: &GrandpaAuthorityPair| {
+        let prevote = finality_grandpa::Prevote {
+            target_hash: hash,
+            target_number: number,
+        };
+
+        let prevote_msg = finality_grandpa::Message::Prevote(prevote.clone());
+        let payload = grandpa_primitives::localized_payload(round, set_id, &prevote_msg);
+        let signed = authority_pair.sign(&payload);
+        (prevote, signed)
+    };
+
+    let (prevote1, signed1) = signed_prevote(vote1.0, vote1.1, vote1.2, vote1.3);
+    let (prevote2, signed2) = signed_prevote(vote2.0, vote2.1, vote2.2, vote2.3);
+
+    EquivocationProof::new(
+        set_id,
+        Equivocation::Prevote(finality_grandpa::Equivocation {
+            round_number: vote1.0,
+            identity: vote1.3.public(),
+            first: (prevote1, signed1),
+            second: (prevote2, signed2),
+        }),
+    )
+}
+
+/// Creates an equivocation at the current block, by generating two headers.
+pub fn generate_babe_equivocation_proof(
+    offender_authority_pair: &BabeAuthorityPair,
+) -> babe_primitives::EquivocationProof<crate::Header> {
+    use babe_primitives::digests::CompatibleDigestItem;
+
+    let current_digest = System::digest();
+    let babe_predigest = current_digest
+        .clone()
+        .logs()
+        .iter()
+        .find_map(|log| log.as_babe_pre_digest());
+    let slot_proof = babe_predigest.expect("babe should be presesnt").slot();
+
+    let make_headers = || {
+        (
+            HeaderFor::<Runtime>::new(
+                0,
+                H256::default(),
+                H256::default(),
+                H256::default(),
+                current_digest.clone(),
+            ),
+            HeaderFor::<Runtime>::new(
+                1,
+                H256::default(),
+                H256::default(),
+                H256::default(),
+                current_digest.clone(),
+            ),
+        )
+    };
+
+    // sign the header prehash and sign it, adding it to the block as the seal
+    // digest item
+    let seal_header = |header: &mut crate::Header| {
+        let prehash = header.hash();
+        let seal = <DigestItem as CompatibleDigestItem>::babe_seal(
+            offender_authority_pair.sign(prehash.as_ref()),
+        );
+        header.digest_mut().push(seal);
+    };
+
+    // generate two headers at the current block
+    let (mut h1, mut h2) = make_headers();
+
+    seal_header(&mut h1);
+    seal_header(&mut h2);
+
+    babe_primitives::EquivocationProof {
+        slot: slot_proof,
+        offender: offender_authority_pair.public(),
+        first_header: h1,
+        second_header: h2,
+    }
+}
+
+use sp_core::Public;
+/// Helper function to generate a crypto pair from seed
+pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
+    let secret_uri = format!("//{}", seed);
+    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+
+    pair
+}
