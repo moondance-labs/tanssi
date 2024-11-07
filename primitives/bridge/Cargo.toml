@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 dp-chain-state-snapshot = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
+ethabi = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
@@ -19,13 +20,12 @@ macro_rules_attribute = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true }
-sp-core = { workspace = true }
-sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
-ethabi = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -36,24 +36,24 @@ std = [
 	"cumulus-primitives-core/std",
 	"dp-chain-state-snapshot/std",
 	"dp-container-chain-genesis-data/std",
+	"ethabi/std",
 	"frame-support/std",
+	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
+	"snowbridge-beacon-primitives/std",
+	"snowbridge-core/std",
+	"snowbridge-pallet-outbound-queue/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	"snowbridge-beacon-primitives/std",
-	"snowbridge-core/std",
-	"ethabi/std",
-	"frame-system/std",
-	"snowbridge-pallet-outbound-queue/std"
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"snowbridge-core/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"snowbridge-pallet-outbound-queue/runtime-benchmarks"
+	"snowbridge-core/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
 ]

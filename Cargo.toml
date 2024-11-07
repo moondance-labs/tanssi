@@ -83,6 +83,7 @@ flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 
 dancelight-runtime = { path = "solo-chains/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "solo-chains/runtime/dancelight/constants", default-features = false }
+ethabi = { package = "ethabi-decode", version = "1.0.0", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
@@ -94,7 +95,6 @@ tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
-ethabi = { version = "1.0.0", default-features = false, package = "ethabi-decode" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }

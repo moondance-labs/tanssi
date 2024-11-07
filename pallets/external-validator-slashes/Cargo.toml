@@ -44,14 +44,14 @@ std = [
 	"pallet-staking/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"snowbridge-core/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-staking/std",
 	"sp-std/std",
+	"tp-bridge/std",
 	"tp-traits/std",
-	"snowbridge-core/std",
-	"tp-bridge/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -59,11 +59,11 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"scale-info/std",
+	"snowbridge-core/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"snowbridge-core/runtime-benchmarks",
-	"tp-bridge/runtime-benchmarks"
 ]
 
 try-runtime = [
