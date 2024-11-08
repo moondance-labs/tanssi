@@ -148,6 +148,7 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
+pub mod symbiotic_message_processor;
 
 // Weights
 mod weights;
@@ -1740,6 +1741,7 @@ construct_runtime! {
         XcmPallet: pallet_xcm = 90,
 
         // Bridging stuff
+        EthereumInboundQueue: snowbridge_pallet_inbound_queue = 91,
         EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
         EthereumSystem: snowbridge_pallet_system = 103,
 

@@ -18,18 +18,33 @@
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 
+use crate::symbiotic_message_processor::SymbioticMessageProcessor;
+use crate::xcm_config::UniversalLocation;
+use frame_support::weights::ConstantMultiplier;
+use parity_scale_codec::Encode;
+use snowbridge_router_primitives::inbound::{
+    ConvertMessage, ConvertMessageError, VersionedXcmMessage,
+};
+use sp_core::{ConstU32, ConstU8};
+use sp_core::{H160, H256};
+use xcm::latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash};
 use {
     crate::{
-        parameter_types, weights, xcm_config::UniversalLocation, AggregateMessageOrigin, Balance,
-        Balances, EthereumOutboundQueue, EthereumSystem, FixedU128, GetAggregateMessageOrigin,
-        Keccak256, MessageQueue, Runtime, RuntimeEvent, TreasuryAccount, WeightToFee, UNITS,
+        parameter_types, weights, xcm_config, AccountId, AggregateMessageOrigin, Balance, Balances,
+        EthereumBeaconClient, EthereumInboundQueue, EthereumOutboundQueue, EthereumSystem,
+        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime, RuntimeEvent,
+        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, AllowSiblingsOnly, PricingParameters, Rewards},
-    sp_core::{ConstU32, ConstU8},
 };
+
+// Ethereum Bridge
+parameter_types! {
+    pub storage EthereumGatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
+}
 
 parameter_types! {
     pub Parameters: PricingParameters<u128> = PricingParameters {
@@ -140,8 +155,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;
-    type InboundDeliveryCost = ();
-    //type InboundDeliveryCost = EthereumInboundQueue;
+    type InboundDeliveryCost = EthereumInboundQueue;
     type UniversalLocation = UniversalLocation;
     type EthereumLocation = EthereumLocation;
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
@@ -158,4 +172,59 @@ mod benchmark_helper {
             RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
         }
     }
+
+    impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for () {
+        fn make_xcm_origin(location: Location) -> RuntimeOrigin {
+            RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
+        }
+    }
+}
+
+pub struct DoNothingRouter;
+impl SendXcm for DoNothingRouter {
+    type Ticket = Xcm<()>;
+
+    fn validate(
+        _dest: &mut Option<Location>,
+        xcm: &mut Option<Xcm<()>>,
+    ) -> SendResult<Self::Ticket> {
+        Ok((xcm.clone().unwrap(), Assets::new()))
+    }
+    fn deliver(xcm: Xcm<()>) -> Result<XcmHash, SendError> {
+        let hash = xcm.using_encoded(sp_io::hashing::blake2_256);
+        Ok(hash)
+    }
+}
+
+pub struct DoNothingConvertMessage;
+
+impl ConvertMessage for DoNothingConvertMessage {
+    type Balance = Balance;
+    type AccountId = AccountId;
+
+    fn convert(
+        _: H256,
+        _message: VersionedXcmMessage,
+    ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
+        Err(ConvertMessageError::UnsupportedVersion)
+    }
+}
+
+impl snowbridge_pallet_inbound_queue::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Verifier = EthereumBeaconClient;
+    type Token = Balances;
+    type XcmSender = DoNothingRouter;
+    type GatewayAddress = EthereumGatewayAddress;
+    type MessageConverter = DoNothingConvertMessage;
+    type ChannelLookup = EthereumSystem;
+    type PricingParameters = EthereumSystem;
+    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = Runtime;
+    type WeightToFee = WeightToFee;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type MaxMessageSize = ConstU32<2048>;
+    type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    type MessageProcessor = (SymbioticMessageProcessor<Runtime>,);
 }
