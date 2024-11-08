@@ -213,6 +213,7 @@ mod custom_do_process_message {
 
     /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
     /// [Command] enum.
+    /// In case of decode error, attempts to use the original [snowbridge_core::outbound::Command] enum.
     pub struct CustomProcessSnowbridgeMessage<T>(PhantomData<T>);
 
     impl<T> CustomProcessSnowbridgeMessage<T>
@@ -307,15 +308,29 @@ mod custom_do_process_message {
             message: &[u8],
             origin: Self::Origin,
             meter: &mut WeightMeter,
-            _id: &mut [u8; 32],
+            id: &mut [u8; 32],
         ) -> Result<bool, ProcessMessageError> {
             // TODO: this weight is from the pallet, should be very similar to the weight of
             // Self::do_process_message, but ideally we should benchmark this separately
+            let original_meter = meter.clone();
             let weight = T::WeightInfo::do_process_message();
             if meter.try_consume(weight).is_err() {
                 return Err(ProcessMessageError::Overweight(weight));
             }
-            Self::do_process_message(origin, message)
+
+            match Self::do_process_message(origin.clone(), message) {
+                Ok(x) => Ok(x),
+                Err(ProcessMessageError::Corrupt) => {
+                    // In case of decode error, this may be a command from the original pallet.
+                    // So attempt to use the original `process_message` impl.
+                    // Refund weight to avoid charging double for snowbridge messages, `process_message` will consume the weight again.
+                    *meter = original_meter;
+                    snowbridge_pallet_outbound_queue::Pallet::<T>::process_message(
+                        message, origin, meter, id,
+                    )
+                }
+                Err(e) => Err(e),
+            }
         }
     }
 
