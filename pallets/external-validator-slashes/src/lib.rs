@@ -48,7 +48,7 @@ use {
     tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
 };
 
-use snowbridge_core::{outbound::SendMessage, ChannelId};
+use snowbridge_core::ChannelId;
 use tp_bridge::{Command, Message, ValidateMessage};
 
 pub use pallet::*;
@@ -67,6 +67,7 @@ pub mod weights;
 pub mod pallet {
     use super::*;
     pub use crate::weights::WeightInfo;
+    use tp_bridge::DeliverMessage;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -127,8 +128,7 @@ pub mod pallet {
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
         type ValidateMessage: ValidateMessage;
-        type OutboundQueue: SendMessage<
-            Balance = u128,
+        type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 

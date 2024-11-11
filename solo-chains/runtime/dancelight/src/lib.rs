@@ -225,6 +225,12 @@ pub enum AggregateMessageOrigin {
     ///
     /// This is used by Snowbridge inbound queue.
     Snowbridge(ChannelId),
+
+    #[codec(index = 2)]
+    /// The message came from a snowbridge channel.
+    ///
+    /// This is used by Snowbridge inbound queue.
+    SnowbridgeTanssi(ChannelId),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -249,6 +255,14 @@ impl Convert<UmpQueueId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
     }
 }
 
+pub struct GetAggregateMessageOriginTanssi;
+
+impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::SnowbridgeTanssi(channel_id)
+    }
+}
+
 /// This is used by [parachains_inclusion::Pallet::on_queue_changed]
 pub struct GetParaFromAggregateMessageOrigin;
 
@@ -256,7 +270,8 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     fn convert(x: AggregateMessageOrigin) -> ParaId {
         match x {
             AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            AggregateMessageOrigin::Snowbridge(channel_id) => {
+            AggregateMessageOrigin::Snowbridge(channel_id)
+            | AggregateMessageOrigin::SnowbridgeTanssi(channel_id) => {
                 // Read para id from EthereumSystem::channels storage map
                 match EthereumSystem::channels(channel_id) {
                     Some(x) => x.para_id,
@@ -995,6 +1010,11 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::Snowbridge(_) => {
+                snowbridge_pallet_outbound_queue::Pallet::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
+            AggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
@@ -1337,7 +1357,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = EthereumOutboundQueue;
+    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 

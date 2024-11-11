@@ -25,6 +25,7 @@ use snowbridge_core::outbound::Fee;
 use snowbridge_core::outbound::SendError;
 use snowbridge_core::ChannelId;
 pub use snowbridge_pallet_outbound_queue::send_message_impl::Ticket;
+use sp_runtime::traits::Convert;
 use {
     core::marker::PhantomData,
     frame_support::{
@@ -195,6 +196,12 @@ impl From<VersionedQueuedMessage> for QueuedMessage {
     }
 }
 
+pub trait DeliverMessage {
+    type Ticket;
+
+    fn deliver(ticket: Self::Ticket) -> Result<H256, SendError>;
+}
+
 pub use custom_do_process_message::ConstantGasMeter;
 pub use custom_do_process_message::CustomProcessSnowbridgeMessage;
 
@@ -213,7 +220,6 @@ mod custom_do_process_message {
 
     /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
     /// [Command] enum.
-    /// In case of decode error, attempts to use the original [snowbridge_core::outbound::Command] enum.
     pub struct CustomProcessSnowbridgeMessage<T>(PhantomData<T>);
 
     impl<T> CustomProcessSnowbridgeMessage<T>
@@ -308,29 +314,16 @@ mod custom_do_process_message {
             message: &[u8],
             origin: Self::Origin,
             meter: &mut WeightMeter,
-            id: &mut [u8; 32],
+            _id: &mut [u8; 32],
         ) -> Result<bool, ProcessMessageError> {
             // TODO: this weight is from the pallet, should be very similar to the weight of
             // Self::do_process_message, but ideally we should benchmark this separately
-            let original_meter = meter.clone();
             let weight = T::WeightInfo::do_process_message();
             if meter.try_consume(weight).is_err() {
                 return Err(ProcessMessageError::Overweight(weight));
             }
 
-            match Self::do_process_message(origin.clone(), message) {
-                Ok(x) => Ok(x),
-                Err(ProcessMessageError::Corrupt) => {
-                    // In case of decode error, this may be a command from the original pallet.
-                    // So attempt to use the original `process_message` impl.
-                    // Refund weight to avoid charging double for snowbridge messages, `process_message` will consume the weight again.
-                    *meter = original_meter;
-                    snowbridge_pallet_outbound_queue::Pallet::<T>::process_message(
-                        message, origin, meter, id,
-                    )
-                }
-                Err(e) => Err(e),
-            }
+            Self::do_process_message(origin.clone(), message)
         }
     }
 
@@ -354,6 +347,59 @@ mod custom_do_process_message {
             match command {
                 Command::Test { .. } => 60_000,
             }
+        }
+    }
+}
+
+pub use custom_send_message::CustomSendMessage;
+
+mod custom_send_message {
+    use super::*;
+    use ethabi::H256;
+    use frame_support::traits::EnqueueMessage;
+    use snowbridge_core::outbound::SendError;
+    use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+    use sp_std::marker::PhantomData;
+
+    /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
+    /// origin.
+    pub struct CustomSendMessage<T, GetAggregateMessageOrigin>(
+        PhantomData<(T, GetAggregateMessageOrigin)>,
+    );
+
+    impl<T, GetAggregateMessageOrigin> DeliverMessage
+        for CustomSendMessage<T, GetAggregateMessageOrigin>
+    where
+        T: snowbridge_pallet_outbound_queue::Config,
+        GetAggregateMessageOrigin: Convert<
+            ChannelId,
+            <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin,
+        >,
+    {
+        type Ticket = Ticket<T>;
+
+        fn deliver(ticket: Self::Ticket) -> Result<H256, SendError> {
+            let origin = GetAggregateMessageOrigin::convert(ticket.channel_id);
+
+            if ticket.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
+                ensure!(
+                    !<snowbridge_pallet_outbound_queue::Pallet<T>>::operating_mode().is_halted(),
+                    SendError::Halted
+                );
+            }
+
+            let message = ticket.message.as_bounded_slice();
+
+            <T as snowbridge_pallet_outbound_queue::Config>::MessageQueue::enqueue_message(
+                message, origin,
+            );
+            snowbridge_pallet_outbound_queue::Pallet::<T>::deposit_event(
+                snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                    id: ticket.message_id,
+                },
+            );
+
+            Ok(ticket.message_id)
         }
     }
 }
