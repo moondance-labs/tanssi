@@ -46,12 +46,15 @@
         {
             "id": 2000,
             "chain": "dev",
+            "add_to_genesis": false,
+            "register_para": false,
+            "onboard_as_parachain": false,
             "collators": [
                 {
                     "name": "FullNode-2000",
                     "validator": false,
+                    "chain": "dev",
                     "command": "../target/release/container-chain-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
                     "p2p_port": 33049
                 }
