@@ -5,11 +5,36 @@ on:
     workflows: [CI]
     branches: [master]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run id from which artifacts are taken"
+        required: true
 
 jobs:
     e2e-bridge-test:
         runs-on: self-hosted
         steps:
+            - name: Retrieve run id
+              id: retrieve-run-id
+              run: |
+                  if [[ -n "${{ github.event_name == 'workflow_dispatch' }}" ]]; then
+                    echo "run_id=${{ github.event.inputs.run_id }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+                  fi
+            - name: Recognize sha ref
+              id: sharef
+              run: |
+                if [ ${{ github.event_name }} == 'pull_request' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.pull_request.head.sha}})"
+                elif [ ${{ github.event_name }} == 'workflow_run' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.workflow_run.head_sha}})"
+                else
+                  echo "::set-output name=sha::$(echo $GITHUB_SHA)"
+                fi
             - name: Checkout
               uses: actions/checkout@v4
             - name: Check g++
@@ -68,3 +93,30 @@ jobs:
               id: check_date
               run: |
                 date --version
+            - name: Download build artifact from triggered workflow
+              uses: dawidd6/action-download-artifact@v2
+              with:
+                run_id: ${{ steps.retrieve-run-id.outputs.run_id }}
+                name: binaries
+                path: target/release
+                search_artifacts: true
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/container-chain-simple-node
+                chmod uog+x target/release/container-chain-frontier-node
+            - name: Run Zombienet Test zombie_tanssi_relay_eth_bridge
+              uses: ./.github/workflow-templates/zombienet-tests
+              with:
+                test_name: zombie_tanssi_relay_eth_bridge
+            - name: Commit Action Status
+              uses: LouisBrunner/checks-action@v1.1.1
+              with:
+                sha: ${{ steps.sharef.outputs.sha }}
+                token: ${{ secrets.GITHUB_TOKEN }}
+                name: Bridge e2e test
+                conclusion: ${{ job.status }}
