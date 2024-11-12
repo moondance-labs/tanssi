@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! TODO: Crate docs
+//! This pallet keep tracks of the validators reward points.
+//! Storage will be cleared after a period of time.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -49,8 +50,10 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// How to fetch the current era info.
         type EraIndexProvider: EraIndexProvider;
 
+        /// For how many eras points are kept in storage.
         #[pallet::constant]
         type HistoryDepth: Get<EraIndex>;
     }
@@ -59,7 +62,7 @@ pub mod pallet {
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
-    /// TODO: Docs
+    /// Keep tracks of distributed points per validator and total.
     #[derive(RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
     pub struct EraRewardPoints<AccountId> {
         pub total: RewardPoints,
@@ -75,7 +78,7 @@ pub mod pallet {
         }
     }
 
-    /// TODO: Docs
+    /// Store reward points per era.
     #[pallet::storage]
     #[pallet::unbounded]
     pub type RewardPointsForEra<T: Config> =
