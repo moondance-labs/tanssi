@@ -864,18 +864,13 @@ impl parachains_session_info::Config for Runtime {
     type ValidatorSet = Historical;
 }
 
-/// Special `RewardValidators` that does nothing ;)
-pub struct RewardValidators;
-impl runtime_parachains::inclusion::RewardValidators for RewardValidators {
-    fn reward_backing(_: impl IntoIterator<Item = ValidatorIndex>) {}
-    fn reward_bitfields(_: impl IntoIterator<Item = ValidatorIndex>) {}
-}
+pub type RewardValidators =
+    pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
 
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
-    type RewardValidators =
-        pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
+    type RewardValidators = RewardValidators;
     type MessageQueue = MessageQueue;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
@@ -1097,8 +1092,7 @@ impl parachains_initializer::Config for Runtime {
 
 impl parachains_disputes::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RewardValidators =
-        pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
+    type RewardValidators = RewardValidators;
     type SlashingHandler = parachains_slashing::SlashValidatorsForDisputes<ParasSlashing>;
     type WeightInfo = weights::runtime_parachains_disputes::SubstrateWeight<Runtime>;
 }
@@ -1244,7 +1238,7 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
-    type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards,);
+    type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
     type OnEraEnd = ();
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
