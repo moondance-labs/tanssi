@@ -2596,6 +2596,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
@@ -2611,6 +2612,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array

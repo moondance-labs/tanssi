@@ -2341,6 +2341,7 @@ export default {
         _enum: {
             Ump: "PolkadotRuntimeParachainsInclusionUmpQueueId",
             Snowbridge: "SnowbridgeCoreChannelId",
+            SnowbridgeTanssi: "SnowbridgeCoreChannelId",
         },
     },
     /** Lookup243: polkadot_runtime_parachains::inclusion::UmpQueueId */
@@ -5188,6 +5189,8 @@ export default {
             "ProvidedNonSlashableEra",
             "DeferPeriodIsOver",
             "ErrorComputingSlash",
+            "EthereumValidateFail",
+            "EthereumDeliverFail",
         ],
     },
     /** Lookup595: sp_core::crypto::KeyTypeId */
