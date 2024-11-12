@@ -20,6 +20,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use ethabi::Token;
+use ethabi::U256;
 use frame_support::traits::Contains;
 use snowbridge_core::outbound::Fee;
 use snowbridge_core::outbound::SendError;
@@ -35,7 +36,7 @@ use {
     frame_system::unique,
     scale_info::TypeInfo,
     sp_core::H256,
-    sp_runtime::{app_crypto::sp_core, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, RuntimeDebug, Perbill},
     sp_std::vec::Vec,
 };
 
@@ -48,6 +49,10 @@ use sp_std::vec;
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub enum Command {
     Test(Vec<u8>),
+    ReportSlashes {
+        era_index: u32,
+        slashes: Vec<([u8; 32], u32)>
+    }
 }
 
 impl Command {
@@ -56,6 +61,7 @@ impl Command {
         match self {
             // Starting from 32 to keep compatibility with Snowbridge Command enum
             Command::Test { .. } => 32,
+            Command::ReportSlashes { .. } => 33,
         }
     }
 
@@ -64,6 +70,21 @@ impl Command {
         match self {
             Command::Test(payload) => {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
+            },
+            Command::ReportSlashes { era_index, slashes } => {
+                let era_index_token = Token::Uint(U256::from(*era_index));
+                let mut slashes_token = vec![];
+
+                for (account, slash_amount) in slashes.clone().into_iter() {
+                    let account_token = Token::FixedBytes(account.to_vec());
+                    let slash_amount_token = Token::Uint(U256::from(slash_amount));
+                    let account_slash_tuple = Token::Tuple(vec![account_token, slash_amount_token]);
+
+                    slashes_token.push(account_slash_tuple);
+                }
+
+                let slashes_final_token = Token::Tuple(slashes_token);
+                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_final_token])])
             }
         }
     }
@@ -346,6 +367,7 @@ mod custom_do_process_message {
         fn maximum_dispatch_gas_used_at_most(command: &Command) -> u64 {
             match command {
                 Command::Test { .. } => 60_000,
+                Command::ReportSlashes { .. } => 60_000,
             }
         }
     }
