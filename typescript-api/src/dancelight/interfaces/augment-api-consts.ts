@@ -168,6 +168,12 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        externalValidatorsRewards: {
+            /** For how many eras points are kept in storage. */
+            historyDepth: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         fellowshipReferenda: {
             /**
              * Quantization level for the referendum wakeup scheduler. A higher number will result in fewer storage

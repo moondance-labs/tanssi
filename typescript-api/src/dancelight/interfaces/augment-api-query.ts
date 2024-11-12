@@ -49,6 +49,7 @@ import type {
     PalletDataPreserversRegisteredProfile,
     PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsForcing,
+    PalletExternalValidatorsRewardsEraRewardPoints,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
     PalletIdentityAuthorityProperties,
@@ -739,6 +740,17 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32, AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [u32, AccountId32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        externalValidatorsRewards: {
+            /** Store reward points per era. */
+            rewardPointsForEra: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<PalletExternalValidatorsRewardsEraRewardPoints>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
