@@ -152,6 +152,10 @@ pub mod pallet {
         DeferPeriodIsOver,
         /// There was an error computing the slash
         ErrorComputingSlash,
+        /// Failed to validate the message that was going to be sent to Ethereum
+        EthereumValidateFail,
+        /// Failed to deliver the message to Ethereum
+        EthereumDeliverFail,
     }
 
     #[pallet::pallet]
@@ -286,7 +290,6 @@ pub mod pallet {
             let command = Command::Test(payload.as_ref().to_vec());
 
             // Validate
-            //let channel_id: ChannelId = ParaId::from(para_id).into();
             let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
             let outbound_message = Message {
@@ -297,15 +300,16 @@ pub mod pallet {
 
             // validate the message
             // Ignore fee because for now only root can send messages
-            let (ticket, _fee) = T::ValidateMessage::validate(&outbound_message).map_err(|err| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
-                Error::<T>::EmptyTargets
-            })?;
+            let (ticket, _fee) =
+                T::ValidateMessage::validate(&outbound_message).map_err(|err| {
+                    log::error!("root_test_send_msg_to_eth: validation of message failed. {err:?}");
+                    Error::<T>::EthereumValidateFail
+                })?;
 
             // Deliver
             T::OutboundQueue::deliver(ticket).map_err(|err| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
-                Error::<T>::EmptyTargets
+                log::error!("root_test_send_msg_to_eth: delivery of message failed. {err:?}");
+                Error::<T>::EthereumDeliverFail
             })?;
 
             Ok(())

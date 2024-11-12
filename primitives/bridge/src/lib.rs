@@ -47,6 +47,7 @@ use sp_std::vec;
 #[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub enum Command {
+    // TODO: add real commands here
     Test(Vec<u8>),
 }
 
@@ -233,8 +234,6 @@ mod custom_do_process_message {
         ) -> Result<bool, ProcessMessageError> {
             use ProcessMessageError::*;
 
-            // Yield if the maximum number of messages has been processed this block.
-            // This ensures that the weight of `on_finalize` has a known maximum bound.
             // Yield if the maximum number of messages has been processed this block.
             // This ensures that the weight of `on_finalize` has a known maximum bound.
             ensure!(

@@ -228,28 +228,6 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
         1
     }
 }
-pub struct MockErrOutboundQueue;
-impl SendMessage for MockErrOutboundQueue {
-    type Ticket = ();
-
-    fn validate(
-        _: &snowbridge_core::outbound::Message,
-    ) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
-        Err(SendError::MessageTooLarge)
-    }
-
-    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
-        Err(SendError::MessageTooLarge)
-    }
-}
-
-impl SendMessageFeeProvider for MockErrOutboundQueue {
-    type Balance = u128;
-
-    fn local_fee() -> Self::Balance {
-        1
-    }
-}
 
 parameter_types! {
     pub const BondingDuration: u32 = 5u32;

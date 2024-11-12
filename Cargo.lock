@@ -3235,7 +3235,6 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
- "ethabi-decode",
  "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
