@@ -14,9 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use snowbridge_core::outbound::Fee;
 use snowbridge_core::outbound::SendError;
-use snowbridge_core::outbound::SendMessage;
 use snowbridge_core::outbound::SendMessageFeeProvider;
 use {
     crate as external_validator_slashes,
@@ -201,20 +199,8 @@ impl DeferPeriodGetter {
 }
 
 pub struct MockOkOutboundQueue;
-impl SendMessage for MockOkOutboundQueue {
+impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
     type Ticket = ();
-
-    fn validate(
-        _: &snowbridge_core::outbound::Message,
-    ) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
-        Ok((
-            (),
-            Fee {
-                local: 1,
-                remote: 1,
-            },
-        ))
-    }
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
         Ok(H256::zero())
