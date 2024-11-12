@@ -22,22 +22,9 @@ runs:
         node-version: 22.x
         cache: "pnpm"
 
-    - name: "Download binaries"
-      uses: actions/download-artifact@v4
-      with:
-        name: binaries
-        path: target/release
-
     - name: "Run zombie test"
       shell: bash
       run: |
-        chmod uog+x target/release/tanssi-node
-        chmod uog+x target/release/tanssi-relay
-        chmod uog+x target/release/tanssi-relay-prepare-worker
-        chmod uog+x target/release/tanssi-relay-execute-worker
-        chmod uog+x target/release/container-chain-simple-node
-        chmod uog+x target/release/container-chain-frontier-node
-
         cd test
         pnpm install
 

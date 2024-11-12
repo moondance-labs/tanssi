@@ -4,14 +4,9 @@
         "provider": "native"
     },
     "relaychain": {
-        "chain": "dancelight-local",
+        "chain_spec_path": "specs/tanssi-relay.json",
         "default_command": "../target/release/tanssi-relay",
-        "default_args": [
-            "--no-hardware-benchmarks",
-            "-lparachain=debug",
-            "--database=paritydb",
-            "--enable-offchain-indexing true"
-        ],
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
         "genesis": {
             "runtimeGenesis": {
                 "patch": {
@@ -39,24 +34,42 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
             }
         ]
     },
     "parachains": [
         {
             "id": 2000,
-            "chain": "dev",
-            "add_to_genesis": false,
-            "register_para": false,
-            "onboard_as_parachain": false,
+            "chain_spec_path": "specs/single-container-template-container-2000.json",
             "collators": [
                 {
                     "name": "FullNode-2000",
                     "validator": false,
-                    "chain": "dev",
                     "command": "../target/release/container-chain-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
-                    "p2p_port": 33049
+                    "p2p_port": 33049,
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator-01",
+                    "command": "../target/release/tanssi-node solo-chain",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator-02",
+                    "command": "../target/release/tanssi-node solo-chain",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "prometheus_port": 33102
                 }
             ]
         }

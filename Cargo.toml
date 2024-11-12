@@ -65,6 +65,7 @@ pallet-external-validators = { path = "pallets/external-validators", default-fea
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
+pallet-ocw-testing = { path = "pallets/ocw-testing", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
