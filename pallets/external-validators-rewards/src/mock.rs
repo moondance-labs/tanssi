@@ -112,6 +112,8 @@ impl mock_data::Config for Test {}
 impl pallet_external_validators_rewards::Config for Test {
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
+    type BackingPoints = ConstU32<20>;
+    type DisputeStatementPoints = ConstU32<20>;
 }
 
 // Pallet to provide some mock data, used to test

@@ -28,7 +28,7 @@ mod tests;
 pub use pallet::*;
 
 use {
-    frame_support::traits::{Defensive, ValidatorSet},
+    frame_support::traits::{Defensive, Get, ValidatorSet},
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     sp_staking::SessionIndex,
@@ -56,6 +56,14 @@ pub mod pallet {
         /// For how many eras points are kept in storage.
         #[pallet::constant]
         type HistoryDepth: Get<EraIndex>;
+
+        /// The amount of era points given by backing a candidate that is included.
+        #[pallet::constant]
+        type BackingPoints: Get<u32>;
+
+        /// The amount of era points given by dispute voting on a candidate.
+        #[pallet::constant]
+        type DisputeStatementPoints: Get<u32>;
     }
 
     #[pallet::pallet]
@@ -108,11 +116,6 @@ pub mod pallet {
     }
 }
 
-/// The amount of era points given by backing a candidate that is included.
-pub const BACKING_POINTS: u32 = 20;
-/// The amount of era points given by dispute voting on a candidate.
-pub const DISPUTE_STATEMENT_POINTS: u32 = 20;
-
 /// Rewards validators for participating in parachains with era points in pallet-staking.
 pub struct RewardValidatorsWithEraPoints<C>(core::marker::PhantomData<C>);
 
@@ -154,7 +157,7 @@ where
 {
     fn reward_backing(indices: impl IntoIterator<Item = ValidatorIndex>) {
         let session_index = runtime_parachains::shared::CurrentSessionIndex::<C>::get();
-        Self::reward_only_active(session_index, indices, BACKING_POINTS);
+        Self::reward_only_active(session_index, indices, C::BackingPoints::get());
     }
 
     fn reward_bitfields(_validators: impl IntoIterator<Item = ValidatorIndex>) {}
@@ -169,6 +172,6 @@ where
         session: SessionIndex,
         validators: impl IntoIterator<Item = ValidatorIndex>,
     ) {
-        Self::reward_only_active(session, validators, DISPUTE_STATEMENT_POINTS);
+        Self::reward_only_active(session, validators, C::DisputeStatementPoints::get());
     }
 }

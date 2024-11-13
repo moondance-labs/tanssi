@@ -1248,6 +1248,8 @@ impl pallet_external_validators::Config for Runtime {
 impl pallet_external_validators_rewards::Config for Runtime {
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
+    type BackingPoints = ConstU32<20>;
+    type DisputeStatementPoints = ConstU32<20>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
