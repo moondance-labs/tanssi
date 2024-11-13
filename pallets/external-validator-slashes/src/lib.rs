@@ -36,7 +36,7 @@ use {
     parity_scale_codec::FullCodec,
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
-    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
+    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero, Hash},
     sp_runtime::DispatchResult,
     sp_runtime::Perbill,
     sp_staking::{
@@ -49,6 +49,7 @@ use {
 };
 
 use snowbridge_core::ChannelId;
+use snowbridge_outbound_queue_merkle_tree::merkle_root;
 use tp_bridge::{Command, Message, ValidateMessage};
 
 pub use pallet::*;
@@ -132,6 +133,8 @@ pub mod pallet {
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 
+        type Hashing: Hash<Output = H256>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -156,6 +159,60 @@ pub mod pallet {
 
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::zero();
+
+            let active_era = T::EraIndexProvider::active_era().index;
+            let era_slashes = Slashes::<T>::get(&active_era);
+
+            weight += T::DbWeight::get().reads(1);
+
+            let mut slash_info_to_merkelize: Vec<H256> = vec![];
+
+            for slash in era_slashes.into_iter() {
+                let encoded = (slash.validator, slash.percentage.deconstruct()).encode();
+                let hashed = <T as Config>::Hashing::hash(&encoded);
+                slash_info_to_merkelize.push(hashed);
+            }
+
+            let slashes_merkle_root = merkle_root::<<T as Config>::Hashing, _>(slash_info_to_merkelize.into_iter());
+
+            let command = Command::ReportSlashes {
+                era_index: active_era,
+                slashes_merkle_root
+            };
+
+            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+            let outbound_message = Message {
+                // TODO: which id to put here?
+                id: Some(H256::default()),
+                channel_id,
+                command,
+            };
+
+            // validate and deliver the message
+            // TODO: what to do with fee?
+            match T::ValidateMessage::validate(&outbound_message) {
+                Ok((ticket, fee)) => {
+                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                        log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                    }
+                }, 
+                Err(err) => {
+                    log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                }
+            }
+            
+            weight
+        }
+
+        fn on_finalize(_: BlockNumberFor<T>) {
+        }
+    }
 
     /// All slashing events on validators, mapped by era to the highest slash proportion
     /// and slash value of the era.

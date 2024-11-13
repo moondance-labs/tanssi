@@ -51,7 +51,8 @@ pub enum Command {
     Test(Vec<u8>),
     ReportSlashes {
         era_index: u32,
-        slashes: Vec<([u8; 32], u32)>
+        // merkle root of vec![(validatorId, slash)]
+        slashes_merkle_root: H256
     }
 }
 
@@ -71,20 +72,10 @@ impl Command {
             Command::Test(payload) => {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
             },
-            Command::ReportSlashes { era_index, slashes } => {
+            Command::ReportSlashes { era_index, slashes_merkle_root } => {
                 let era_index_token = Token::Uint(U256::from(*era_index));
-                let mut slashes_token = vec![];
-
-                for (account, slash_amount) in slashes.clone().into_iter() {
-                    let account_token = Token::FixedBytes(account.to_vec());
-                    let slash_amount_token = Token::Uint(U256::from(slash_amount));
-                    let account_slash_tuple = Token::Tuple(vec![account_token, slash_amount_token]);
-
-                    slashes_token.push(account_slash_tuple);
-                }
-
-                let slashes_final_token = Token::Tuple(slashes_token);
-                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_final_token])])
+                let slashes_mr_token = Token::FixedBytes(slashes_merkle_root.0.to_vec());
+                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_mr_token])])
             }
         }
     }

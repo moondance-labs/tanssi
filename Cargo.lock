@@ -9400,6 +9400,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "snowbridge-core",
+ "snowbridge-outbound-queue-merkle-tree",
  "sp-core",
  "sp-io",
  "sp-runtime",
