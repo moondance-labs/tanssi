@@ -87,6 +87,7 @@ pub mod pallet {
     }
 
     /// Store reward points per era.
+    /// Note: EraRewardPoints is actually bounded by the amount of validators.
     #[pallet::storage]
     #[pallet::unbounded]
     pub type RewardPointsForEra<T: Config> =
