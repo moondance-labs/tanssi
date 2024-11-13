@@ -25,7 +25,7 @@ describeSuite({
                 // 637164 -> actual block where next session (1062) will happen.
                 // 637200 -> computed block based on currentIndex * sessionLength (600 blocks).
                 // We have a small rounding diff of 36 blocks in all the cases.
-                const blockToCheck = sessionIndex * blocksPerSession - 36;
+                const blockToCheck = (sessionIndex * blocksPerSession) - 36;
 
                 const apiAtBeforeSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 5));
                 const beefyNextAuthorities = await apiAtBeforeSessionChange.query.beefy.nextAuthorities();
