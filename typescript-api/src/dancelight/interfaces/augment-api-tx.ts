@@ -1560,10 +1560,11 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             rootTestSendMsgToEth: AugmentedSubmittable<
                 (
-                    messageId: H256 | string | Uint8Array,
-                    payload: H256 | string | Uint8Array
+                    nonce: H256 | string | Uint8Array,
+                    numMsgs: u32 | AnyNumber | Uint8Array,
+                    msgSize: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [H256, H256]
+                [H256, u32, u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2596,6 +2597,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
@@ -2611,6 +2613,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array

@@ -275,6 +275,10 @@ declare module "@polkadot/api-base/types/errors" {
             EmptyTargets: AugmentedError<ApiType>;
             /** There was an error computing the slash */
             ErrorComputingSlash: AugmentedError<ApiType>;
+            /** Failed to deliver the message to Ethereum */
+            EthereumDeliverFail: AugmentedError<ApiType>;
+            /** Failed to validate the message that was going to be sent to Ethereum */
+            EthereumValidateFail: AugmentedError<ApiType>;
             /** No slash was found to be cancelled at the given index */
             InvalidSlashIndex: AugmentedError<ApiType>;
             /** Slash indices to be cancelled are not sorted or unique */

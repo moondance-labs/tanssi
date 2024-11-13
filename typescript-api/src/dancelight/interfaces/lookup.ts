@@ -1202,8 +1202,9 @@ export default {
                 percentage: "Perbill",
             },
             root_test_send_msg_to_eth: {
-                messageId: "H256",
-                payload: "H256",
+                nonce: "H256",
+                numMsgs: "u32",
+                msgSize: "u32",
             },
         },
     },
@@ -2341,6 +2342,7 @@ export default {
         _enum: {
             Ump: "PolkadotRuntimeParachainsInclusionUmpQueueId",
             Snowbridge: "SnowbridgeCoreChannelId",
+            SnowbridgeTanssi: "SnowbridgeCoreChannelId",
         },
     },
     /** Lookup243: polkadot_runtime_parachains::inclusion::UmpQueueId */
@@ -5188,6 +5190,8 @@ export default {
             "ProvidedNonSlashableEra",
             "DeferPeriodIsOver",
             "ErrorComputingSlash",
+            "EthereumValidateFail",
+            "EthereumDeliverFail",
         ],
     },
     /** Lookup595: sp_core::crypto::KeyTypeId */

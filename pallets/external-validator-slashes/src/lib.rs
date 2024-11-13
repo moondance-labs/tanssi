@@ -155,6 +155,10 @@ pub mod pallet {
         DeferPeriodIsOver,
         /// There was an error computing the slash
         ErrorComputingSlash,
+        /// Failed to validate the message that was going to be sent to Ethereum
+        EthereumValidateFail,
+        /// Failed to deliver the message to Ethereum
+        EthereumDeliverFail,
     }
 
     #[pallet::pallet]
@@ -334,36 +338,47 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_inject_slash())]
         pub fn root_test_send_msg_to_eth(
             origin: OriginFor<T>,
-            message_id: H256,
-            payload: H256,
+            nonce: H256,
+            num_msgs: u32,
+            msg_size: u32,
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            // Example command, this should be something like "ReportSlashes"
-            let command = Command::Test(payload.as_ref().to_vec());
+            for i in 0..num_msgs {
+                // Make sure each message has a different payload
+                let mut payload = sp_core::blake2_256((nonce, i).encode().as_ref()).to_vec();
+                // Extend with zeros until msg_size is reached
+                payload.resize(msg_size as usize, 0);
+                // Example command, this should be something like "ReportSlashes"
+                let command = Command::Test(payload);
 
-            // Validate
-            //let channel_id: ChannelId = ParaId::from(para_id).into();
-            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+                // Validate
+                let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-            let outbound_message = Message {
-                id: Some(message_id),
-                channel_id,
-                command,
-            };
+                let outbound_message = Message {
+                    id: None,
+                    channel_id,
+                    command,
+                };
 
-            // validate the message
-            // Ignore fee because for now only root can send messages
-            let (ticket, _fee) = T::ValidateMessage::validate(&outbound_message).map_err(|err| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
-                Error::<T>::EmptyTargets
-            })?;
+                // validate the message
+                // Ignore fee because for now only root can send messages
+                let (ticket, _fee) =
+                    T::ValidateMessage::validate(&outbound_message).map_err(|err| {
+                        log::error!(
+                            "root_test_send_msg_to_eth: validation of message {i} failed. {err:?}"
+                        );
+                        crate::pallet::Error::<T>::EthereumValidateFail
+                    })?;
 
-            // Deliver
-            T::OutboundQueue::deliver(ticket).map_err(|err| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
-                Error::<T>::EmptyTargets
-            })?;
+                // Deliver
+                T::OutboundQueue::deliver(ticket).map_err(|err| {
+                    log::error!(
+                        "root_test_send_msg_to_eth: delivery of message {i} failed. {err:?}"
+                    );
+                    crate::pallet::Error::<T>::EthereumDeliverFail
+                })?;
+            }
 
             Ok(())
         }

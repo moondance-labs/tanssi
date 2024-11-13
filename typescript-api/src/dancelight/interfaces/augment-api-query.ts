@@ -1246,6 +1246,7 @@ declare module "@polkadot/api-base/types/storage" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
@@ -1260,6 +1261,7 @@ declare module "@polkadot/api-base/types/storage" {
                         | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array

@@ -1545,8 +1545,9 @@ declare module "@polkadot/types/lookup" {
         } & Struct;
         readonly isRootTestSendMsgToEth: boolean;
         readonly asRootTestSendMsgToEth: {
-            readonly messageId: H256;
-            readonly payload: H256;
+            readonly nonce: H256;
+            readonly numMsgs: u32;
+            readonly msgSize: u32;
         } & Struct;
         readonly type: "CancelDeferredSlash" | "ForceInjectSlash" | "RootTestSendMsgToEth";
     }
@@ -2814,7 +2815,9 @@ declare module "@polkadot/types/lookup" {
         readonly asUmp: PolkadotRuntimeParachainsInclusionUmpQueueId;
         readonly isSnowbridge: boolean;
         readonly asSnowbridge: SnowbridgeCoreChannelId;
-        readonly type: "Ump" | "Snowbridge";
+        readonly isSnowbridgeTanssi: boolean;
+        readonly asSnowbridgeTanssi: SnowbridgeCoreChannelId;
+        readonly type: "Ump" | "Snowbridge" | "SnowbridgeTanssi";
     }
 
     /** @name PolkadotRuntimeParachainsInclusionUmpQueueId (243) */
@@ -6644,6 +6647,8 @@ declare module "@polkadot/types/lookup" {
         readonly isProvidedNonSlashableEra: boolean;
         readonly isDeferPeriodIsOver: boolean;
         readonly isErrorComputingSlash: boolean;
+        readonly isEthereumValidateFail: boolean;
+        readonly isEthereumDeliverFail: boolean;
         readonly type:
             | "EmptyTargets"
             | "InvalidSlashIndex"
@@ -6651,7 +6656,9 @@ declare module "@polkadot/types/lookup" {
             | "ProvidedFutureEra"
             | "ProvidedNonSlashableEra"
             | "DeferPeriodIsOver"
-            | "ErrorComputingSlash";
+            | "ErrorComputingSlash"
+            | "EthereumValidateFail"
+            | "EthereumDeliverFail";
     }
 
     /** @name SpCoreCryptoKeyTypeId (595) */
