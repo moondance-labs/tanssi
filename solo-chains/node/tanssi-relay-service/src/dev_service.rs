@@ -42,7 +42,7 @@ use {
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
-    polkadot_primitives::InherentData as ParachainsInherentData,
+    polkadot_primitives::{InherentData as ParachainsInherentData, runtime_api::ParachainHost},
     polkadot_rpc::{DenyUnsafe, RpcExtension},
     polkadot_service::{
         BlockT, Error, IdentifyVariant, NewFullParams, OverseerGen, SelectRelayChain,
@@ -54,12 +54,15 @@ use {
         run_manual_seal, EngineCommand, ManualSealParams,
     },
     sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
+    sc_keystore::{LocalKeystore, Keystore},
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
     service::{Configuration, KeystoreContainer, RpcHandlers, TaskManager},
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_babe::SlotDuration,
+    sp_core::ByteArray,
+    sp_keystore::KeystorePtr,
     std::{cmp::max, ops::Add, sync::Arc, time::Duration},
     telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
@@ -150,9 +153,10 @@ where
 
 /// We use EmptyParachainsInherentDataProvider to insert an empty parachain inherent in the block
 /// to satisfy runtime
-struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block>> {
+struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
     pub client: Arc<C>,
     pub parent: Hash,
+    pub keystore: KeystorePtr
 }
 
 /// Copied from polkadot service just so that this code retains same structure as
@@ -165,20 +169,60 @@ struct Basics {
     telemetry: Option<Telemetry>,
 }
 
-impl<C: HeaderBackend<Block>> EmptyParachainsInherentDataProvider<C> {
-    pub fn new(client: Arc<C>, parent: Hash) -> Self {
-        EmptyParachainsInherentDataProvider { client, parent }
+impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> EmptyParachainsInherentDataProvider<C> where 
+C::Api: ParachainHost<Block>
+{
+    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
+        EmptyParachainsInherentDataProvider { client, parent, keystore }
     }
 
     pub async fn create(
         client: Arc<C>,
         parent: Hash,
+        keystore: KeystorePtr
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
             Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
             Err(err) => return Err(InherentError::Blockchain(err)),
         };
+
+        // Strategy:
+        // we usually have 1 validator per core, and we usually run with --alice
+        // the idea is that at least alice will be assigned to one core
+        // if we find in the keystore the validator attached to a particular core,
+        // we generate a signature for the parachain assigned to that core
+        // To retrieve the validator keys, cal runtime api:
+
+        // this following piece of code predicts whether the validator is assigned to a particular 
+        // core where a candidate for a parachain needs to be created
+        let runtime_api = client.runtime_api();
+
+        let para_authorities = runtime_api.validators(parent).unwrap();
+        let claim_queue = runtime_api.claim_queue(parent).unwrap();
+        let (groups, rotation_info) = runtime_api.validator_groups(parent).unwrap();
+        let rotations_since_session_start =
+            (parent_header.number - rotation_info.session_start_block) / rotation_info.group_rotation_frequency;
+        
+        // Get all the available keys
+        let available_keys = keystore.keys(polkadot_primitives::PARACHAIN_KEY_TYPE_ID).unwrap();
+        
+        for (core, para) in claim_queue {
+            let group_assigned_to_core = core.0 + rotations_since_session_start % groups.len() as u32;
+            let indices_associated_to_core = groups.get(group_assigned_to_core as usize).unwrap();
+            for index in indices_associated_to_core {
+                let validator_keys_to_find = para_authorities.get(index.0 as usize).unwrap();
+                // Iterate keys until we find an eligible one, or run out of candidates.
+                for type_public_pair in &available_keys {
+                    if let Ok(validator) = polkadot_primitives::ValidatorId::from_slice(&type_public_pair) {
+                        if validator_keys_to_find == &validator {
+                            // Only in this case, we need to create a candidate
+                            log::info!("found public key");
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(ParachainsInherentData {
             bitfields: Vec::new(),
@@ -190,15 +234,17 @@ impl<C: HeaderBackend<Block>> EmptyParachainsInherentDataProvider<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HeaderBackend<Block>> sp_inherents::InherentDataProvider
+impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> sp_inherents::InherentDataProvider
     for EmptyParachainsInherentDataProvider<C>
+
+    where  C::Api: ParachainHost<Block>
 {
     async fn provide_inherent_data(
         &self,
         dst_inherent_data: &mut sp_inherents::InherentData,
     ) -> Result<(), sp_inherents::Error> {
         let inherent_data =
-            EmptyParachainsInherentDataProvider::create(self.client.clone(), self.parent)
+            EmptyParachainsInherentDataProvider::create(self.client.clone(), self.parent, self.keystore.clone())
                 .await
                 .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?;
 
@@ -403,6 +449,7 @@ fn new_full<
                 },
             )),
         };
+        let keystore_clone = keystore.clone();
 
         let babe_config = babe_link.config();
         let babe_consensus_provider = BabeConsensusDataProvider::new(
@@ -418,6 +465,7 @@ fn new_full<
         // Need to clone it and store here to avoid moving of `client`
         // variable in closure below.
         let client_clone = client.clone();
+
         task_manager.spawn_essential_handle().spawn_blocking(
             "authorship_task",
             Some("block-authoring"),
@@ -430,12 +478,13 @@ fn new_full<
                 select_chain,
                 create_inherent_data_providers: move |parent, ()| {
                     let client_clone = client_clone.clone();
-
+                    let keystore = keystore_clone.clone();
                     async move {
                         let parachain =
                             EmptyParachainsInherentDataProvider::new(
                                 client_clone.clone(),
                                 parent,
+                                keystore
                             );
 
                         let timestamp = get_next_timestamp(client_clone, slot_duration);
