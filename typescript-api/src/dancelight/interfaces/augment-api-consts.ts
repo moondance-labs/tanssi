@@ -169,6 +169,10 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         externalValidatorsRewards: {
+            /** The amount of era points given by backing a candidate that is included. */
+            backingPoints: u32 & AugmentedConst<ApiType>;
+            /** The amount of era points given by dispute voting on a candidate. */
+            disputeStatementPoints: u32 & AugmentedConst<ApiType>;
             /** For how many eras points are kept in storage. */
             historyDepth: u32 & AugmentedConst<ApiType>;
             /** Generic const */

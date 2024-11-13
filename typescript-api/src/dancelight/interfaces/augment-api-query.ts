@@ -744,7 +744,7 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         externalValidatorsRewards: {
-            /** Store reward points per era. */
+            /** Store reward points per era. Note: EraRewardPoints is actually bounded by the amount of validators. */
             rewardPointsForEra: AugmentedQuery<
                 ApiType,
                 (arg: u32 | AnyNumber | Uint8Array) => Observable<PalletExternalValidatorsRewardsEraRewardPoints>,
