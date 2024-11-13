@@ -197,7 +197,7 @@ pub mod pallet {
             // validate and deliver the message
             // TODO: what to do with fee?
             match T::ValidateMessage::validate(&outbound_message) {
-                Ok((ticket, fee)) => {
+                Ok((ticket, _fee)) => {
                     if let Err(err) = T::OutboundQueue::deliver(ticket) {
                         log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
                     }
@@ -206,7 +206,7 @@ pub mod pallet {
                     log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
                 }
             }
-            
+
             weight
         }
 
