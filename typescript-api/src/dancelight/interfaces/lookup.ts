@@ -1202,8 +1202,9 @@ export default {
                 percentage: "Perbill",
             },
             root_test_send_msg_to_eth: {
-                messageId: "H256",
-                payload: "H256",
+                nonce: "H256",
+                numMsgs: "u32",
+                msgSize: "u32",
             },
         },
     },

@@ -1545,8 +1545,9 @@ declare module "@polkadot/types/lookup" {
         } & Struct;
         readonly isRootTestSendMsgToEth: boolean;
         readonly asRootTestSendMsgToEth: {
-            readonly messageId: H256;
-            readonly payload: H256;
+            readonly nonce: H256;
+            readonly numMsgs: u32;
+            readonly msgSize: u32;
         } & Struct;
         readonly type: "CancelDeferredSlash" | "ForceInjectSlash" | "RootTestSendMsgToEth";
     }
