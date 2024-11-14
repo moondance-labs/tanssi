@@ -30,6 +30,8 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
+use crate::dev_rpcs::DevRpc;
+
 use {
     async_io::Timer,
     babe::{BabeBlockImport, BabeLink},
@@ -42,7 +44,7 @@ use {
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
-    polkadot_primitives::{InherentData as ParachainsInherentData, runtime_api::ParachainHost},
+    polkadot_primitives::{runtime_api::ParachainHost, InherentData as ParachainsInherentData},
     polkadot_rpc::{DenyUnsafe, RpcExtension},
     polkadot_service::{
         BlockT, Error, IdentifyVariant, NewFullParams, OverseerGen, SelectRelayChain,
@@ -54,7 +56,7 @@ use {
         run_manual_seal, EngineCommand, ManualSealParams,
     },
     sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
-    sc_keystore::{LocalKeystore, Keystore},
+    sc_keystore::{Keystore, LocalKeystore},
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
     service::{Configuration, KeystoreContainer, RpcHandlers, TaskManager},
     sp_api::ProvideRuntimeApi,
@@ -66,6 +68,10 @@ use {
     std::{cmp::max, ops::Add, sync::Arc, time::Duration},
     telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
+
+use crate::dev_rpcs::DevApiServer;
+
+const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
 pub type FullBackend = service::TFullBackend<Block>;
 
@@ -100,6 +106,8 @@ struct DevDeps<C, P> {
     pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    /// Channels for dev rpcs
+    pub dev_rpc_data: Option<flume::Sender<Vec<u8>>>,
 }
 
 fn create_dev_rpc_extension<C, P>(
@@ -109,6 +117,7 @@ fn create_dev_rpc_extension<C, P>(
         chain_spec,
         deny_unsafe,
         command_sink: maybe_command_sink,
+        dev_rpc_data: maybe_dev_rpc_data,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -148,25 +157,36 @@ where
         io.merge(ManualSeal::new(command_sink).into_rpc())?;
     }
 
+    if let Some(mock_para_inherent_channel) = maybe_dev_rpc_data {
+        io.merge(
+            DevRpc {
+                mock_para_inherent_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
+
     Ok(io)
 }
 
 /// We use EmptyParachainsInherentDataProvider to insert an empty parachain inherent in the block
 /// to satisfy runtime
-struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
+struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block>> {
     pub client: Arc<C>,
     pub parent: Hash,
-    pub keystore: KeystorePtr
 }
 
-use sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID};
-use sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic};
 use polkadot_primitives::BackedCandidate;
-use polkadot_primitives::OccupiedCoreAssumption;
-use sp_core::H256;
 use polkadot_primitives::CollatorPair;
+use polkadot_primitives::OccupiedCoreAssumption;
+use polkadot_primitives::{
+    CandidateCommitments, CandidateDescriptor, CommittedCandidateReceipt, CompactStatement,
+    EncodeAs, SigningContext, ValidityAttestation,
+};
+use sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID};
 use sp_core::Pair;
-use polkadot_primitives::{CommittedCandidateReceipt, CandidateDescriptor, CandidateCommitments, CompactStatement, EncodeAs, SigningContext, ValidityAttestation};
+use sp_core::H256;
+use sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic};
 /// Copied from polkadot service just so that this code retains same structure as
 /// polkadot_service crate.
 struct Basics {
@@ -177,17 +197,81 @@ struct Basics {
     telemetry: Option<Telemetry>,
 }
 
-impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> EmptyParachainsInherentDataProvider<C> where 
-C::Api: ParachainHost<Block>
-{
-    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
-        EmptyParachainsInherentDataProvider { client, parent, keystore }
+impl<C: HeaderBackend<Block>> EmptyParachainsInherentDataProvider<C> {
+    pub fn new(client: Arc<C>, parent: Hash) -> Self {
+        EmptyParachainsInherentDataProvider { client, parent }
     }
 
     pub async fn create(
         client: Arc<C>,
         parent: Hash,
-        keystore: KeystorePtr
+    ) -> Result<ParachainsInherentData, InherentError> {
+        let parent_header = match client.header(parent) {
+            Ok(Some(h)) => h,
+            Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
+            Err(err) => return Err(InherentError::Blockchain(err)),
+        };
+
+        Ok(ParachainsInherentData {
+            bitfields: Vec::new(),
+            backed_candidates: Vec::new(),
+            disputes: Vec::new(),
+            parent_header,
+        })
+    }
+}
+
+/// Creates new development full node with manual seal
+pub fn build_full<OverseerGenerator: OverseerGen>(
+    sealing: Sealing,
+    config: Configuration,
+    mut params: NewFullParams<OverseerGenerator>,
+) -> Result<NewFull, Error> {
+    let is_polkadot = config.chain_spec.is_polkadot();
+
+    params.overseer_message_channel_capacity_override = params
+        .overseer_message_channel_capacity_override
+        .map(move |capacity| {
+            if is_polkadot {
+                gum::warn!("Channel capacity should _never_ be tampered with on polkadot!");
+            }
+            capacity
+        });
+
+    match config.network.network_backend {
+        sc_network::config::NetworkBackendType::Libp2p => {
+            new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
+        }
+        sc_network::config::NetworkBackendType::Litep2p => {
+            new_full::<_, sc_network::Litep2pNetworkBackend>(sealing, config, params)
+        }
+    }
+}
+
+/// We use MockParachainsInherentDataProvider to insert an empty parachain inherent in the block
+/// to satisfy runtime
+struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
+    pub client: Arc<C>,
+    pub parent: Hash,
+    pub keystore: KeystorePtr,
+}
+
+impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
+where
+    C::Api: ParachainHost<Block>,
+{
+    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
+        MockParachainsInherentDataProvider {
+            client,
+            parent,
+            keystore,
+        }
+    }
+
+    pub async fn create(
+        client: Arc<C>,
+        parent: Hash,
+        keystore: KeystorePtr,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header_relay = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -195,7 +279,10 @@ C::Api: ParachainHost<Block>
             Err(err) => return Err(InherentError::Blockchain(err)),
         };
 
-        let parent_hash = client.hash(parent_header_relay.number.saturating_sub(1)).unwrap().unwrap();
+        let parent_hash = client
+            .hash(parent_header_relay.number.saturating_sub(1))
+            .unwrap()
+            .unwrap();
 
         let parent_header = match client.header(parent_hash) {
             Ok(Some(h)) => h,
@@ -209,23 +296,24 @@ C::Api: ParachainHost<Block>
         // we generate a signature for the parachain assigned to that core
         // To retrieve the validator keys, cal runtime api:
 
-        // this following piece of code predicts whether the validator is assigned to a particular 
+        // this following piece of code predicts whether the validator is assigned to a particular
         // core where a candidate for a parachain needs to be created
         let runtime_api = client.runtime_api();
 
         let para_authorities = runtime_api.validators(parent_hash).unwrap();
         let claim_queue = runtime_api.claim_queue(parent_hash).unwrap();
         let (groups, rotation_info) = runtime_api.validator_groups(parent_hash).unwrap();
-        let rotations_since_session_start =
-            (parent_header.number - rotation_info.session_start_block) / rotation_info.group_rotation_frequency;
-        
+        let rotations_since_session_start = (parent_header.number
+            - rotation_info.session_start_block)
+            / rotation_info.group_rotation_frequency;
+
         // Get all the available keys
-        let available_keys = keystore.keys(polkadot_primitives::PARACHAIN_KEY_TYPE_ID).unwrap();
-        
-        let slot_number = AuraInherentType::from(
-            u64::from(parent_header.number),
-        );
-        
+        let available_keys = keystore
+            .keys(polkadot_primitives::PARACHAIN_KEY_TYPE_ID)
+            .unwrap();
+
+        let slot_number = AuraInherentType::from(u64::from(parent_header.number));
+
         let parachain_mocked_header = sp_runtime::generic::Header::<u32, BlakeTwo256> {
             parent_hash: Default::default(),
             number: parent_header.number,
@@ -233,68 +321,76 @@ C::Api: ParachainHost<Block>
             extrinsics_root: Default::default(),
             digest: sp_runtime::generic::Digest {
                 logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
-            }
+            },
         };
         let availability_cores = runtime_api.availability_cores(parent_hash).unwrap();
         let session_idx = runtime_api.session_index_for_child(parent_hash).unwrap();
         let all_validators = runtime_api.validators(parent_hash).unwrap();
         let availability_bitvec = availability_bitvec(1, availability_cores.len());
 
-
         let signature_ctx = SigningContext {
             parent_hash: parent,
             session_index: session_idx,
         };
 
-        log::info!("availability bitvec is {:?}", availability_bitvec);
         // we generate the availability bitfield sigs
         let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = all_validators
-        .iter()
-        .enumerate()
-        .map(|(i, public)| {
-            keystore_sign(
-                &keystore,
-                availability_bitvec.clone(),
-                &signature_ctx,
-                ValidatorIndex(i as u32),
-                &public
-            ).unwrap().unwrap()
-        })
-        .collect();
-
-        log::info!("bitfields {:?}", bitfields);
+            .iter()
+            .enumerate()
+            .map(|(i, public)| {
+                keystore_sign(
+                    &keystore,
+                    availability_bitvec.clone(),
+                    &signature_ctx,
+                    ValidatorIndex(i as u32),
+                    &public,
+                )
+                .unwrap()
+                .unwrap()
+            })
+            .collect();
 
         let collator_pair = CollatorPair::generate().0;
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
         for (core, para) in claim_queue {
-            let group_assigned_to_core = core.0 + rotations_since_session_start % groups.len() as u32;
+            let group_assigned_to_core =
+                core.0 + rotations_since_session_start % groups.len() as u32;
             let indices_associated_to_core = groups.get(group_assigned_to_core as usize).unwrap();
             for index in indices_associated_to_core {
                 let validator_keys_to_find = para_authorities.get(index.0 as usize).unwrap();
                 // Iterate keys until we find an eligible one, or run out of candidates.
                 for type_public_pair in &available_keys {
-                    if let Ok(validator) = polkadot_primitives::ValidatorId::from_slice(&type_public_pair) {
+                    if let Ok(validator) =
+                        polkadot_primitives::ValidatorId::from_slice(&type_public_pair)
+                    {
                         if validator_keys_to_find == &validator {
-                            let persisted_validation_data =  runtime_api.persisted_validation_data(parent_hash, para[0], OccupiedCoreAssumption::Included).unwrap().unwrap();
-                            log::info!("parent_hash is {:?}", parent_hash);
-
-                            log::info!("validation data is {:?}", persisted_validation_data);
-                            log::info!("validation data encoded is  {:?}", persisted_validation_data.encode());
-                            log::info!("parent number is  is  {:?}", parent_header.number);
+                            let persisted_validation_data = runtime_api
+                                .persisted_validation_data(
+                                    parent_hash,
+                                    para[0],
+                                    OccupiedCoreAssumption::Included,
+                                )
+                                .unwrap()
+                                .unwrap();
 
                             let persisted_validation_data_hash = persisted_validation_data.hash();
-                            let validation_code_hash =  runtime_api.validation_code_hash(parent_hash, para[0], OccupiedCoreAssumption::Included).unwrap().unwrap();
+                            let validation_code_hash = runtime_api
+                                .validation_code_hash(
+                                    parent_hash,
+                                    para[0],
+                                    OccupiedCoreAssumption::Included,
+                                )
+                                .unwrap()
+                                .unwrap();
                             let pov_hash = Default::default();
-                            let payload =
-                                polkadot_primitives::collator_signature_payload(
-                                    &parent_hash,
-                                    &para[0],
-                                    &persisted_validation_data_hash,
-                                    &pov_hash,
-                                    &validation_code_hash,
-                                );
+                            let payload = polkadot_primitives::collator_signature_payload(
+                                &parent_hash,
+                                &para[0],
+                                &persisted_validation_data_hash,
+                                &pov_hash,
+                                &validation_code_hash,
+                            );
                             let collator_signature = collator_pair.sign(&payload);
-                            let prev_head = persisted_validation_data.parent_head;
                             let candidate = CommittedCandidateReceipt::<H256> {
                                 descriptor: CandidateDescriptor::<H256> {
                                     para_id: para[0],
@@ -324,15 +420,16 @@ C::Api: ParachainHost<Block>
                                 session_index: session_idx,
                             };
 
-                            log::info!("before sig");
-
                             let signature = keystore_sign(
                                 &keystore,
                                 payload,
                                 &signature_ctx,
                                 *index,
-                                &validator
-                            ).unwrap().unwrap().benchmark_signature();
+                                &validator,
+                            )
+                            .unwrap()
+                            .unwrap()
+                            .benchmark_signature();
 
                             log::info!("after sig");
 
@@ -344,20 +441,11 @@ C::Api: ParachainHost<Block>
                                 bitvec::bitvec![u8, bitvec::order::Lsb0; 1; indices_associated_to_core.len()],
                                 Some(core),
                             ));
-
-                           
-
-                            
-                            // Only in this case, we need to create a candidate
-                            log::info!("found public key");
-                            log::info!("validity_votes {:?}", validity_votes.clone());
                         }
                     }
                 }
             }
         }
-
-        log::info!("backed_cand {:?}", backed_cand);
 
         Ok(ParachainsInherentData {
             bitfields: bitfields,
@@ -370,20 +458,42 @@ C::Api: ParachainHost<Block>
 
 #[async_trait::async_trait]
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> sp_inherents::InherentDataProvider
-    for EmptyParachainsInherentDataProvider<C>
-
-    where  C::Api: ParachainHost<Block>
+    for MockParachainsInherentDataProvider<C>
+where
+    C::Api: ParachainHost<Block>,
+    C: AuxStore,
 {
     async fn provide_inherent_data(
         &self,
         dst_inherent_data: &mut sp_inherents::InherentData,
     ) -> Result<(), sp_inherents::Error> {
-        let inherent_data =
-            EmptyParachainsInherentDataProvider::create(self.client.clone(), self.parent, self.keystore.clone())
-                .await
-                .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?;
+        let maybe_para_selector = self
+            .client
+            .get_aux(PARA_INHERENT_SELECTOR_AUX_KEY)
+            .expect("Should be able to query aux storage; qed");
 
-        log::info!("inherent data {:?}", inherent_data);
+        let inherent_data = {
+            if let Some(aux) = maybe_para_selector {
+                if aux == true.encode() {
+                    MockParachainsInherentDataProvider::create(
+                        self.client.clone(),
+                        self.parent,
+                        self.keystore.clone(),
+                    )
+                    .await
+                    .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
+                } else {
+                    EmptyParachainsInherentDataProvider::create(self.client.clone(), self.parent)
+                        .await
+                        .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
+                }
+            } else {
+                EmptyParachainsInherentDataProvider::create(self.client.clone(), self.parent)
+                    .await
+                    .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
+            }
+        };
+
         dst_inherent_data.put_data(
             polkadot_primitives::PARACHAINS_INHERENT_IDENTIFIER,
             &inherent_data,
@@ -397,33 +507,6 @@ impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> sp_inherents::InherentD
     ) -> Option<Result<(), sp_inherents::Error>> {
         // Inherent isn't checked and can not return any error
         None
-    }
-}
-
-/// Creates new development full node with manual seal
-pub fn build_full<OverseerGenerator: OverseerGen>(
-    sealing: Sealing,
-    config: Configuration,
-    mut params: NewFullParams<OverseerGenerator>,
-) -> Result<NewFull, Error> {
-    let is_polkadot = config.chain_spec.is_polkadot();
-
-    params.overseer_message_channel_capacity_override = params
-        .overseer_message_channel_capacity_override
-        .map(move |capacity| {
-            if is_polkadot {
-                gum::warn!("Channel capacity should _never_ be tampered with on polkadot!");
-            }
-            capacity
-        });
-
-    match config.network.network_backend {
-        sc_network::config::NetworkBackendType::Libp2p => {
-            new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
-        }
-        sc_network::config::NetworkBackendType::Litep2p => {
-            new_full::<_, sc_network::Litep2pNetworkBackend>(sealing, config, params)
-        }
     }
 }
 
@@ -502,6 +585,10 @@ fn new_full<
 
     let net_config =
         sc_network::config::FullNetworkConfiguration::<_, _, Network>::new(&config.network);
+
+    // Create channels for mocked parachain candidates.
+    let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
+        flume::bounded::<Vec<u8>>(100);
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         service::build_network(service::BuildNetworkParams {
@@ -615,13 +702,29 @@ fn new_full<
                 create_inherent_data_providers: move |parent, ()| {
                     let client_clone = client_clone.clone();
                     let keystore = keystore_clone.clone();
+                    let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
                     async move {
-                        let parachain =
-                            EmptyParachainsInherentDataProvider::new(
-                                client_clone.clone(),
-                                parent,
-                                keystore
-                            );
+
+                        let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
+                        // here we only take the last one
+                        let para_inherent_decider_messages: Vec<Vec<u8>> = downward_mock_para_inherent_receiver.drain().collect();
+
+                        // If there is a value to be updated, we update it
+                        if let Some(value) = para_inherent_decider_messages.last() {
+                            client_clone
+                            .insert_aux(
+                                &[(PARA_INHERENT_SELECTOR_AUX_KEY, value.as_slice())],
+                                &[],
+                            )
+                            .expect("Should be able to write to aux storage; qed");
+
+                        }
+
+                        let parachain = MockParachainsInherentDataProvider::new(
+                            client_clone.clone(),
+                            parent,
+                            keystore
+                        );
 
                         let timestamp = get_next_timestamp(client_clone, slot_duration);
 
@@ -639,6 +742,13 @@ fn new_full<
         );
     }
 
+    // We dont need the flume receiver if we are not a validator
+    let dev_rpc_data = if role.clone().is_authority() {
+        Some(downward_mock_para_inherent_sender)
+    } else {
+        None
+    };
+
     let rpc_extensions_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
@@ -653,6 +763,7 @@ fn new_full<
                 chain_spec: chain_spec.cloned_box(),
                 deny_unsafe,
                 command_sink: command_sink.clone(),
+                dev_rpc_data: dev_rpc_data.clone(),
             };
 
             create_dev_rpc_extension(deps).map_err(Into::into)
@@ -816,7 +927,7 @@ fn new_partial_basics(
     })
 }
 
-use polkadot_primitives::{ValidatorIndex, ValidatorId, UncheckedSigned, AvailabilityBitfield};
+use polkadot_primitives::{AvailabilityBitfield, UncheckedSigned, ValidatorId, ValidatorIndex};
 use sp_keystore::Error as KeystoreError;
 fn keystore_sign<H: Encode, Payload: Encode>(
     keystore: &KeystorePtr,
@@ -824,18 +935,18 @@ fn keystore_sign<H: Encode, Payload: Encode>(
     context: &SigningContext<H>,
     validator_index: ValidatorIndex,
     key: &ValidatorId,
-) -> Result<Option<UncheckedSigned::<Payload>>, KeystoreError> {
+) -> Result<Option<UncheckedSigned<Payload>>, KeystoreError> {
     let data = payload_data(&payload, context);
-    let signature =
-        keystore.sr25519_sign(ValidatorId::ID, key.as_ref(), &data)?.map(|sig| UncheckedSigned::new(
-            payload,
-            validator_index,
-            sig.into(),
-        ));
+    let signature = keystore
+        .sr25519_sign(ValidatorId::ID, key.as_ref(), &data)?
+        .map(|sig| UncheckedSigned::new(payload, validator_index, sig.into()));
     Ok(signature)
 }
 
-fn payload_data<H: Encode, Payload: Encode>(payload: &Payload, context: &SigningContext<H>) -> Vec<u8> {
+fn payload_data<H: Encode, Payload: Encode>(
+    payload: &Payload,
+    context: &SigningContext<H>,
+) -> Vec<u8> {
     // equivalent to (`real_payload`, context).encode()
     let mut out = payload.encode_as();
     out.extend(context.encode());
@@ -843,16 +954,16 @@ fn payload_data<H: Encode, Payload: Encode>(payload: &Payload, context: &Signing
 }
 
 /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
-    /// that is concluding and `cores` is the total number of cores in the system.
-    fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
-        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
-        for i in 0..cores {
-            if i < used_cores {
-                bitfields.push(true);
-            } else {
-                bitfields.push(false)
-            }
+/// that is concluding and `cores` is the total number of cores in the system.
+fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
+    let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
+    for i in 0..cores {
+        if i < used_cores {
+            bitfields.push(true);
+        } else {
+            bitfields.push(false)
         }
-
-        bitfields.into()
     }
+
+    bitfields.into()
+}

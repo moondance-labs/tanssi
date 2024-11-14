@@ -17483,6 +17483,7 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-container-chain-genesis-data",
  "env_logger 0.11.3",
+ "flume 0.10.14",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-support",

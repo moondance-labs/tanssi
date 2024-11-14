@@ -82,6 +82,7 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 bitvec = { workspace = true, optional = true }
 codec = { workspace = true }
+flume = { workspace = true }
 futures = { workspace = true }
 gum = { workspace = true }
 hex-literal = { workspace = true }
