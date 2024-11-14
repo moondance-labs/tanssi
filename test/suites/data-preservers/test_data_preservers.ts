@@ -3,7 +3,7 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
-import {ethers, parseUnits, WebSocketProvider} from "ethers";
+import { ethers, parseUnits, WebSocketProvider } from "ethers";
 import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
