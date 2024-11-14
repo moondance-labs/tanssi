@@ -159,6 +159,14 @@ struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRunt
     pub keystore: KeystorePtr
 }
 
+use sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID};
+use sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic};
+use polkadot_primitives::BackedCandidate;
+use polkadot_primitives::OccupiedCoreAssumption;
+use sp_core::H256;
+use polkadot_primitives::CollatorPair;
+use sp_core::Pair;
+use polkadot_primitives::{CommittedCandidateReceipt, CandidateDescriptor, CandidateCommitments, CompactStatement, EncodeAs, SigningContext, ValidityAttestation};
 /// Copied from polkadot service just so that this code retains same structure as
 /// polkadot_service crate.
 struct Basics {
@@ -181,12 +189,19 @@ C::Api: ParachainHost<Block>
         parent: Hash,
         keystore: KeystorePtr
     ) -> Result<ParachainsInherentData, InherentError> {
-        let parent_header = match client.header(parent) {
+        let parent_header_relay = match client.header(parent) {
             Ok(Some(h)) => h,
             Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
             Err(err) => return Err(InherentError::Blockchain(err)),
         };
 
+        let parent_hash = client.hash(parent_header_relay.number.saturating_sub(1)).unwrap().unwrap();
+
+        let parent_header = match client.header(parent_hash) {
+            Ok(Some(h)) => h,
+            Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
+            Err(err) => return Err(InherentError::Blockchain(err)),
+        };
         // Strategy:
         // we usually have 1 validator per core, and we usually run with --alice
         // the idea is that at least alice will be assigned to one core
@@ -198,15 +213,59 @@ C::Api: ParachainHost<Block>
         // core where a candidate for a parachain needs to be created
         let runtime_api = client.runtime_api();
 
-        let para_authorities = runtime_api.validators(parent).unwrap();
-        let claim_queue = runtime_api.claim_queue(parent).unwrap();
-        let (groups, rotation_info) = runtime_api.validator_groups(parent).unwrap();
+        let para_authorities = runtime_api.validators(parent_hash).unwrap();
+        let claim_queue = runtime_api.claim_queue(parent_hash).unwrap();
+        let (groups, rotation_info) = runtime_api.validator_groups(parent_hash).unwrap();
         let rotations_since_session_start =
             (parent_header.number - rotation_info.session_start_block) / rotation_info.group_rotation_frequency;
         
         // Get all the available keys
         let available_keys = keystore.keys(polkadot_primitives::PARACHAIN_KEY_TYPE_ID).unwrap();
         
+        let slot_number = AuraInherentType::from(
+            u64::from(parent_header.number),
+        );
+        
+        let parachain_mocked_header = sp_runtime::generic::Header::<u32, BlakeTwo256> {
+            parent_hash: Default::default(),
+            number: parent_header.number,
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest {
+                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
+            }
+        };
+        let availability_cores = runtime_api.availability_cores(parent_hash).unwrap();
+        let session_idx = runtime_api.session_index_for_child(parent_hash).unwrap();
+        let all_validators = runtime_api.validators(parent_hash).unwrap();
+        let availability_bitvec = availability_bitvec(1, availability_cores.len());
+
+
+        let signature_ctx = SigningContext {
+            parent_hash: parent,
+            session_index: session_idx,
+        };
+
+        log::info!("availability bitvec is {:?}", availability_bitvec);
+        // we generate the availability bitfield sigs
+        let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = all_validators
+        .iter()
+        .enumerate()
+        .map(|(i, public)| {
+            keystore_sign(
+                &keystore,
+                availability_bitvec.clone(),
+                &signature_ctx,
+                ValidatorIndex(i as u32),
+                &public
+            ).unwrap().unwrap()
+        })
+        .collect();
+
+        log::info!("bitfields {:?}", bitfields);
+
+        let collator_pair = CollatorPair::generate().0;
+        let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
         for (core, para) in claim_queue {
             let group_assigned_to_core = core.0 + rotations_since_session_start % groups.len() as u32;
             let indices_associated_to_core = groups.get(group_assigned_to_core as usize).unwrap();
@@ -216,19 +275,95 @@ C::Api: ParachainHost<Block>
                 for type_public_pair in &available_keys {
                     if let Ok(validator) = polkadot_primitives::ValidatorId::from_slice(&type_public_pair) {
                         if validator_keys_to_find == &validator {
+                            let persisted_validation_data =  runtime_api.persisted_validation_data(parent_hash, para[0], OccupiedCoreAssumption::Included).unwrap().unwrap();
+                            log::info!("parent_hash is {:?}", parent_hash);
+
+                            log::info!("validation data is {:?}", persisted_validation_data);
+                            log::info!("validation data encoded is  {:?}", persisted_validation_data.encode());
+                            log::info!("parent number is  is  {:?}", parent_header.number);
+
+                            let persisted_validation_data_hash = persisted_validation_data.hash();
+                            let validation_code_hash =  runtime_api.validation_code_hash(parent_hash, para[0], OccupiedCoreAssumption::Included).unwrap().unwrap();
+                            let pov_hash = Default::default();
+                            let payload =
+                                polkadot_primitives::collator_signature_payload(
+                                    &parent_hash,
+                                    &para[0],
+                                    &persisted_validation_data_hash,
+                                    &pov_hash,
+                                    &validation_code_hash,
+                                );
+                            let collator_signature = collator_pair.sign(&payload);
+                            let prev_head = persisted_validation_data.parent_head;
+                            let candidate = CommittedCandidateReceipt::<H256> {
+                                descriptor: CandidateDescriptor::<H256> {
+                                    para_id: para[0],
+                                    relay_parent: parent_hash,
+                                    collator: collator_pair.public(),
+                                    persisted_validation_data_hash,
+                                    pov_hash,
+                                    erasure_root: Default::default(),
+                                    signature: collator_signature,
+                                    para_head: parachain_mocked_header.clone().hash(),
+                                    validation_code_hash,
+                                },
+                                commitments: CandidateCommitments::<u32> {
+                                    upward_messages: Default::default(),
+                                    horizontal_messages: Default::default(),
+                                    new_validation_code: None,
+                                    head_data: parachain_mocked_header.clone().encode().into(),
+                                    processed_downward_messages: 0,
+                                    hrmp_watermark: parent_header.number,
+                                },
+                            };
+                            let candidate_hash = candidate.hash();
+                            let payload = CompactStatement::Valid(candidate_hash);
+
+                            let signature_ctx = SigningContext {
+                                parent_hash: parent_hash,
+                                session_index: session_idx,
+                            };
+
+                            log::info!("before sig");
+
+                            let signature = keystore_sign(
+                                &keystore,
+                                payload,
+                                &signature_ctx,
+                                *index,
+                                &validator
+                            ).unwrap().unwrap().benchmark_signature();
+
+                            log::info!("after sig");
+
+                            let validity_votes = vec![ValidityAttestation::Explicit(signature)];
+
+                            backed_cand.push(BackedCandidate::<H256>::new(
+                                candidate,
+                                validity_votes.clone(),
+                                bitvec::bitvec![u8, bitvec::order::Lsb0; 1; indices_associated_to_core.len()],
+                                Some(core),
+                            ));
+
+                           
+
+                            
                             // Only in this case, we need to create a candidate
                             log::info!("found public key");
+                            log::info!("validity_votes {:?}", validity_votes.clone());
                         }
                     }
                 }
             }
         }
 
+        log::info!("backed_cand {:?}", backed_cand);
+
         Ok(ParachainsInherentData {
-            bitfields: Vec::new(),
-            backed_candidates: Vec::new(),
+            bitfields: bitfields,
+            backed_candidates: backed_cand,
             disputes: Vec::new(),
-            parent_header,
+            parent_header: parent_header_relay,
         })
     }
 }
@@ -248,6 +383,7 @@ impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> sp_inherents::InherentD
                 .await
                 .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?;
 
+        log::info!("inherent data {:?}", inherent_data);
         dst_inherent_data.put_data(
             polkadot_primitives::PARACHAINS_INHERENT_IDENTIFIER,
             &inherent_data,
@@ -679,3 +815,44 @@ fn new_partial_basics(
         telemetry,
     })
 }
+
+use polkadot_primitives::{ValidatorIndex, ValidatorId, UncheckedSigned, AvailabilityBitfield};
+use sp_keystore::Error as KeystoreError;
+fn keystore_sign<H: Encode, Payload: Encode>(
+    keystore: &KeystorePtr,
+    payload: Payload,
+    context: &SigningContext<H>,
+    validator_index: ValidatorIndex,
+    key: &ValidatorId,
+) -> Result<Option<UncheckedSigned::<Payload>>, KeystoreError> {
+    let data = payload_data(&payload, context);
+    let signature =
+        keystore.sr25519_sign(ValidatorId::ID, key.as_ref(), &data)?.map(|sig| UncheckedSigned::new(
+            payload,
+            validator_index,
+            sig.into(),
+        ));
+    Ok(signature)
+}
+
+fn payload_data<H: Encode, Payload: Encode>(payload: &Payload, context: &SigningContext<H>) -> Vec<u8> {
+    // equivalent to (`real_payload`, context).encode()
+    let mut out = payload.encode_as();
+    out.extend(context.encode());
+    out
+}
+
+/// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
+    /// that is concluding and `cores` is the total number of cores in the system.
+    fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
+        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
+        for i in 0..cores {
+            if i < used_cores {
+                bitfields.push(true);
+            } else {
+                bitfields.push(false)
+            }
+        }
+
+        bitfields.into()
+    }
