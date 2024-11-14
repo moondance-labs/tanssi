@@ -30,8 +30,10 @@ describeSuite({
                     return;
                 }
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
-                const blockToCheck = chain == "dancelight" ? (await api.query.babe.epochStart()).toJSON()[1]
-                    : Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
+                const blockToCheck =
+                    chain == "dancelight"
+                        ? (await api.query.babe.epochStart()).toJSON()[1]
+                        : Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
                 // If they have collators scheduled, they should have at least enough money to pay
