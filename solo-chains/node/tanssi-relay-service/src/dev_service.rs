@@ -279,10 +279,7 @@ where
             Err(err) => return Err(InherentError::Blockchain(err)),
         };
 
-        let parent_hash = client
-            .hash(parent_header_relay.number.saturating_sub(1))
-            .unwrap()
-            .unwrap();
+        let parent_hash = parent;
 
         let parent_header = match client.header(parent_hash) {
             Ok(Some(h)) => h,
@@ -364,7 +361,7 @@ where
                         polkadot_primitives::ValidatorId::from_slice(&type_public_pair)
                     {
                         if validator_keys_to_find == &validator {
-                            let persisted_validation_data = runtime_api
+                            let mut persisted_validation_data = runtime_api
                                 .persisted_validation_data(
                                     parent_hash,
                                     para[0],
@@ -372,6 +369,9 @@ where
                                 )
                                 .unwrap()
                                 .unwrap();
+
+                            // if we dont do this we have a backed candidate every 2 blocks
+                            persisted_validation_data.relay_parent_storage_root = parent_header.state_root;
 
                             let persisted_validation_data_hash = persisted_validation_data.hash();
                             let validation_code_hash = runtime_api
@@ -430,8 +430,6 @@ where
                             .unwrap()
                             .unwrap()
                             .benchmark_signature();
-
-                            log::info!("after sig");
 
                             let validity_votes = vec![ValidityAttestation::Explicit(signature)];
 
