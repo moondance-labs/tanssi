@@ -423,6 +423,15 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "T19",
+            title: "Check reward points for validators are distributed",
+            test: async function () {
+                const keys = await relayApi.query.externalValidatorsRewards.rewardPointsForEra.keys();
+                expect(keys.length).to.be.greaterThan(0);
+            },
+        });
     },
 });
 
