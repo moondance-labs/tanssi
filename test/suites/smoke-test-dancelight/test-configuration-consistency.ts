@@ -10,28 +10,24 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let blocksPerSession;
+        const blocksPerSession = 600n;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
 
         beforeAll(() => {
             api = context.polkadotJs();
-            const chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain == "dancebox" ? 600n : 50n;
         });
 
         it({
             id: "C01",
             title: "Config for registered paras should be consistent",
             test: async function () {
-                const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
-
-                const blockToCheck = Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
-                const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
-
-                const config = await api.query.collatorConfiguration.activeConfig();
-                // get current session
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
+                const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
+
+                const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
+                const config = await api.query.collatorConfiguration.activeConfig();
+
                 // get pending authorities
                 // the reason for getting pending is that the hasEnoughCredits check it's done over the pending ones
                 const pendingAuthorityAssignment = (

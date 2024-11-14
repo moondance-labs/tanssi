@@ -18,14 +18,7 @@ describeSuite({
             id: "C01",
             title: "Session change block should update BEEFY and MMR root digests properly",
             test: async function () {
-                const blocksPerSession = 600;
-                const sessionIndex = (await api.query.session.currentIndex()).toNumber();
-
-                // 636564 -> block in which session changed to 1061.
-                // 637164 -> actual block where next session (1062) will happen.
-                // 637200 -> computed block based on currentIndex * sessionLength (600 blocks).
-                // We have a small rounding diff of 36 blocks in all the cases.
-                const blockToCheck = (sessionIndex * blocksPerSession) - 36;
+                const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
 
                 const apiAtBeforeSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 5));
                 const beefyNextAuthorities = await apiAtBeforeSessionChange.query.beefy.nextAuthorities();
