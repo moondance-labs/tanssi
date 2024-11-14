@@ -36,7 +36,7 @@ describeSuite({
                 await context.createBlock();
                 // we create one more block to test we are persisting candidates every block
                 const parasHeadAfterTwoBlocks = await context.polkadotJs().query.paras.heads(2000);
-                expect(parasHeadAfterOneBlock).to.not.be.eq(parasHeadAfterTwoBlocks);
+                expect(parasHeadAfterOneBlock).to.not.be.eq(parasHeadAfterTwoBlocks);   
                 const header2000 = await getHeaderFromRelay(context.polkadotJs(), 2000);
                 expect(header2000.number.toBigInt()).to.be.equal(31n);
             },
