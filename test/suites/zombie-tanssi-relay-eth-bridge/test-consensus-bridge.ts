@@ -130,10 +130,13 @@ describeSuite({
                     beefyClientDetails.abi,
                     customHttpProvider
                 );
-                const currentBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
+                let block = await beefyContract.latestBeefyBlock()
+                console.log("LOLGGIN BLOCK")
+                console.log(block)
+                const currentBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(currentBeefyBlock).to.greaterThan(0);
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
-                const nextBeefyBlock = (await beefyContract.latestBeefyBlock()).toNumber();
+                const nextBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },
         });
