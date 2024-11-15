@@ -130,9 +130,6 @@ describeSuite({
                     beefyClientDetails.abi,
                     customHttpProvider
                 );
-                let block = await beefyContract.latestBeefyBlock()
-                console.log("LOLGGIN BLOCK")
-                console.log(block)
                 const currentBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(currentBeefyBlock).to.greaterThan(0);
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
