@@ -29,7 +29,7 @@ use {
     },
     dancebox_runtime::{
         opaque::{Block, Hash},
-        Runtime, RuntimeApi,
+        RuntimeApi,
     },
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
