@@ -631,3 +631,64 @@ mod force_eras {
             });
     }
 }
+
+#[test]
+fn external_validators_manual_reward_points() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            let mock_validator = AccountId::from([0x10; 32]);
+            let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+
+            assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
+            assert_ok!(Session::set_keys(
+                origin_of(mock_validator.clone()),
+                SessionKeys {
+                    babe: mock_keys.babe.clone(),
+                    grandpa: mock_keys.grandpa.clone(),
+                    para_validator: mock_keys.para_validator.clone(),
+                    para_assignment: mock_keys.para_assignment.clone(),
+                    authority_discovery: mock_keys.authority_discovery.clone(),
+                    beefy: mock_keys.beefy.clone(),
+                    nimbus: mock_keys.nimbus.clone(),
+                },
+                vec![]
+            ));
+
+            ExternalValidators::set_external_validators(vec![mock_validator.clone()]).unwrap();
+            assert_ok!(ExternalValidators::skip_external_validators(
+                root_origin(),
+                true
+            ));
+
+            run_to_session(sessions_per_era);
+            let validators = Session::validators();
+
+            // Only whitelisted validators get selected
+            assert_eq!(
+                validators,
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 0
+            );
+
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 1
+            );
+        });
+}

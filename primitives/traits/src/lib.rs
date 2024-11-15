@@ -453,7 +453,7 @@ impl<AccountId> MaybeSelfChainBlockAuthor<AccountId> for () {
 }
 
 /// Information regarding the active era (era in used in session).
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct ActiveEraInfo {
     /// Index of era.
     pub index: EraIndex,
