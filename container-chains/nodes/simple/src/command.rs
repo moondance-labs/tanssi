@@ -610,6 +610,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     phantom: PhantomData,
                 },
                 state: Default::default(),
+                // db cleanup task disabled here because it uses collator assignment to decide
+                // which folders to keep and this is not a collator, this is an rpc node
+                db_folder_cleanup_done: true,
                 collate_on_tanssi: Arc::new(|| {
                     panic!("Called collate_on_tanssi outside of Tanssi node")
                 }),

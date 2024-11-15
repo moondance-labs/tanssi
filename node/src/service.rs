@@ -462,6 +462,7 @@ async fn start_node_impl(
                 phantom: PhantomData,
             },
             state: Default::default(),
+            db_folder_cleanup_done: false,
             collate_on_tanssi,
             collation_cancellation_constructs: None,
         };
@@ -826,6 +827,7 @@ pub async fn start_solochain_node(
             phantom: PhantomData,
         },
         state: Default::default(),
+        db_folder_cleanup_done: false,
         collate_on_tanssi,
         collation_cancellation_constructs: None,
     };

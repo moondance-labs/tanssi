@@ -37,25 +37,6 @@
             }
         ]
     },
-    "parachains": [
-        {
-            "id": 2000,
-            "chain": "dev",
-            "add_to_genesis": false,
-            "register_para": false,
-            "onboard_as_parachain": false,
-            "collators": [
-                {
-                    "name": "FullNode-2000",
-                    "validator": false,
-                    "chain": "dev",
-                    "command": "../target/release/container-chain-simple-node",
-                    "ws_port": 9948,
-                    "p2p_port": 33051
-                }
-            ]
-        }
-    ],
     "types": {
         "Header": {
             "number": "u64",
