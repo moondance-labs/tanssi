@@ -124,7 +124,7 @@ describeSuite({
             title: "Dancelight Blocks are being recognized on ethereum",
             test: async function () {
                 const url = "ws://127.0.0.1:8546";
-                const customHttpProvider = new ethers.providers.WebSocketProvider(url);
+                const customHttpProvider = new ethers.WebSocketProvider(url);
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
