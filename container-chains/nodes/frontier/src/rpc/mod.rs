@@ -63,6 +63,9 @@ use {
     tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
 };
 
+type FullPool<Client> =
+    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<Client, Block>, Block>;
+
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
@@ -80,7 +83,7 @@ pub use eth::*;
 mod finality;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, BE> {
+pub struct FullDeps<C, P: ?Sized, A: ChainApi, BE> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -140,7 +143,7 @@ where
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block> + 'static + ?Sized,
 {
     use {
         fc_rpc::{
@@ -546,6 +549,12 @@ const _: () = {
             ));
 
             Ok(Box::new(move |deny_unsafe, subscription_task_executor| {
+                let basic_pool = transaction_pool
+                    .as_any()
+                    .downcast_ref::<FullPool<tc_service_container_chain::service::ParachainClient>>(
+                    )
+                    .unwrap();
+
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
                     client: client.clone(),
@@ -555,7 +564,7 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: transaction_pool.pool().clone(),
+                    graph: basic_pool.pool().clone(),
                     pool: transaction_pool.clone(),
                     max_past_logs,
                     fee_history_limit,

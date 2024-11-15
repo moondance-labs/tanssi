@@ -44,7 +44,7 @@ use {
 pub type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies
-pub struct FullDeps<C, P> {
+pub struct FullDeps<C, P: ?Sized> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -84,7 +84,7 @@ where
         + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
-    P: TransactionPool + Sync + Send + 'static,
+    P: TransactionPool<Block = Block> + Sync + Send + 'static + ?Sized,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
 
@@ -138,7 +138,7 @@ pub mod generate_rpc_builder {
 
     pub type SyncingService = sc_network_sync::SyncingService<Block>;
     pub type TransactionPool<RuntimeApi> =
-        sc_transaction_pool::FullPool<Block, ContainerChainClient<RuntimeApi>>;
+        sc_transaction_pool::TransactionPoolImpl<Block, ContainerChainClient<RuntimeApi>>;
     pub type CommandSink =
         futures::channel::mpsc::Sender<sc_consensus_manual_seal::EngineCommand<Hash>>;
     pub type XcmSenders = (flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>);

@@ -37,8 +37,8 @@ use {
     },
     sc_executor::{
         sp_wasm_interface::{ExtendedHostFunctions, HostFunctions},
-        HeapAllocStrategy, NativeExecutionDispatch, RuntimeVersionOf, WasmExecutor,
-        DEFAULT_HEAP_ALLOC_STRATEGY,
+        HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, RuntimeVersionOf,
+        WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
     },
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
@@ -60,83 +60,8 @@ use {
     sp_runtime::Percent,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::{str::FromStr, sync::Arc},
+    crate::service::*,
 };
-
-type FullBasicPool<T> = sc_transaction_pool::BasicPool<
-    sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
-    BlockOf<T>,
->;
-
-#[allow(deprecated)]
-use sc_executor::NativeElseWasmExecutor;
-use sp_api::StorageProof;
-
-tp_traits::alias!(
-    pub trait MinimalRuntimeApi<
-        Block: (cumulus_primitives_core::BlockT),
-        Client: (sp_api::CallApiAt<Block>),
-    > :
-        ConstructRuntimeApi<
-            Block,
-            Client,
-            RuntimeApi:
-                TaggedTransactionQueue<Block>
-                + BlockBuilder<Block> + OffchainWorkerApi<Block>
-                + sp_api::Metadata<Block>
-                + sp_session::SessionKeys<Block>,
-        > + Send + Sync + 'static
-);
-
-tp_traits::alias!(
-    pub trait MinimalCumulusRuntimeApi<
-        Block: (cumulus_primitives_core::BlockT),
-        Client: (sp_api::CallApiAt<Block>),
-    > :
-        MinimalRuntimeApi<Block, Client> +
-        ConstructRuntimeApi<
-            Block,
-            Client,
-            RuntimeApi:
-                cumulus_primitives_core::CollectCollationInfo<Block>,
-        >
-);
-
-/// Trait to configure the main types the builder rely on, bundled in a single
-/// type to reduce verbosity and the amount of type parameters.
-pub trait NodeBuilderConfig {
-    type Block;
-    type RuntimeApi;
-    type ParachainExecutor;
-
-    /// Create a new `NodeBuilder` using the types of this `Config`, along
-    /// with the parachain `Configuration` and an optional `HwBench`.
-    fn new_builder(
-        parachain_config: &Configuration,
-        hwbench: Option<sc_sysinfo::HwBench>,
-    ) -> Result<NodeBuilder<Self>, sc_service::Error>
-    where
-        Self: Sized,
-        BlockOf<Self>: cumulus_primitives_core::BlockT,
-        ExecutorOf<Self>:
-            Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
-        RuntimeApiOf<Self>: MinimalRuntimeApi<BlockOf<Self>, ClientOf<Self>>,
-        BlockHashOf<Self>: Unpin,
-    {
-        NodeBuilder::<Self>::new(parachain_config, hwbench)
-    }
-}
-
-pub type BlockOf<T> = <T as NodeBuilderConfig>::Block;
-pub type BlockHashOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Hash;
-pub type BlockHeaderOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Header;
-pub type RuntimeApiOf<T> = <T as NodeBuilderConfig>::RuntimeApi;
-pub type ExecutorOf<T> = <T as NodeBuilderConfig>::ParachainExecutor;
-pub type ClientOf<T> = TFullClient<BlockOf<T>, RuntimeApiOf<T>, ExecutorOf<T>>;
-pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
-pub type ConstructedRuntimeApiOf<T> =
-    <RuntimeApiOf<T> as ConstructRuntimeApi<BlockOf<T>, ClientOf<T>>>::RuntimeApi;
-pub type ImportQueueServiceOf<T> = Box<dyn ImportQueueService<BlockOf<T>>>;
-pub type ParachainConsensusOf<T> = Box<dyn ParachainConsensus<BlockOf<T>>>;
 
 // `Cumulus` and `TxHandler` are types that will change during the life of
 // a `NodeBuilder` because they are generated and consumed when calling
@@ -151,7 +76,7 @@ pub type ParachainConsensusOf<T> = Box<dyn ParachainConsensus<BlockOf<T>>>;
 // boilerplate of many impl block with duplicated trait bounds. 2 impl blocks
 // are still required since Rust can't infer the types in the `new` function
 // that doesn't take `self`.
-pub struct NodeBuilder<
+pub struct BasicPoolNodeBuilder<
     T: NodeBuilderConfig,
     // `(cumulus_client_service/sc_service)::build_network` returns many important systems,
     // but can only be called with an `import_queue` which can be different in
@@ -171,13 +96,14 @@ pub struct NodeBuilder<
 > where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
-    RuntimeApiOf<T>: MinimalRuntimeApi<BlockOf<T>, ClientOf<T>>,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
     pub client: Arc<ClientOf<T>>,
     pub backend: Arc<BackendOf<T>>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<sc_transaction_pool::TransactionPoolImpl<BlockOf<T>, ClientOf<T>>>,
+    pub transaction_pool: Arc<sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>, BlockOf<T>>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
@@ -189,59 +115,26 @@ pub struct NodeBuilder<
     pub import_queue_service: SImportQueueService,
 }
 
-pub struct Network<Block: cumulus_primitives_core::BlockT> {
-    pub network: Arc<dyn sc_network::service::traits::NetworkService>,
-    pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
-    pub start_network: NetworkStarter,
-    pub sync_service: Arc<SyncingService<Block>>,
-}
-
-/// Allows to create a parachain-defined executor from a `WasmExecutor`
-pub trait TanssiExecutorExt {
-    type HostFun: HostFunctions;
-    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self;
-}
-
-impl TanssiExecutorExt for WasmExecutor<ParachainHostFunctions> {
-    type HostFun = ParachainHostFunctions;
-
-    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
-        wasm_executor
-    }
-}
-
-#[allow(deprecated)]
-impl<D> TanssiExecutorExt for NativeElseWasmExecutor<D>
-where
-    D: NativeExecutionDispatch,
-{
-    type HostFun = ExtendedHostFunctions<sp_io::SubstrateHostFunctions, D::ExtendHostFunctions>;
-
-    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
-        #[allow(deprecated)]
-        NativeElseWasmExecutor::new_with_wasm_executor(wasm_executor)
-    }
-}
-
 // `new` function doesn't take self, and the Rust compiler cannot infer that
 // only one type T implements `TypeIdentity`. With thus need a separate impl
 // block with concrete types `()`.
-impl<T: NodeBuilderConfig> NodeBuilder<T>
+impl<T: NodeBuilderConfig> BuildNode for BasicPoolNodeBuilder<T>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>:
         Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
-    RuntimeApiOf<T>: MinimalRuntimeApi<BlockOf<T>, ClientOf<T>>,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
     BlockHashOf<T>: Unpin,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it only starts telemetry, and doesn't provide any
     /// network-dependent objects (as it requires an import queue, which usually
     /// is different for each node).
-    fn new(
+    fn new_node(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
-    ) -> Result<Self, sc_service::Error> {
+    ) -> Result<Self, sc_service::Error>  {
         // Refactor: old new_partial
 
         let telemetry = parachain_config
@@ -296,14 +189,13 @@ where
             telemetry
         });
 
-        let transaction_pool = sc_transaction_pool::Builder::new()
-            .with_options(parachain_config.transaction_pool.clone())
-            .build(
-                parachain_config.role.is_authority().into(),
-                parachain_config.prometheus_registry(),
-                task_manager.spawn_essential_handle(),
-                client.clone(),
-            );
+        let transaction_pool = sc_transaction_pool::BasicPool::new_full(
+            Default::default(),
+            parachain_config.role.is_authority().into(),
+            parachain_config.prometheus_registry(),
+            task_manager.spawn_essential_handle(),
+            client.clone()
+        );
 
         Ok(Self {
             client,
@@ -323,11 +215,14 @@ where
 }
 
 impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
-    NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
+    BasicPoolNodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
-    RuntimeApiOf<T>: MinimalCumulusRuntimeApi<BlockOf<T>, ClientOf<T>>,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>>
+        + BlockBuilder<BlockOf<T>>
+        + cumulus_primitives_core::CollectCollationInfo<BlockOf<T>>,
 {
     pub async fn build_relay_chain_interface(
         &mut self,
@@ -362,7 +257,7 @@ where
         import_queue: impl ImportQueue<BlockOf<T>> + 'static,
         relay_chain_interface: RCInterface,
     ) -> sc_service::error::Result<
-        NodeBuilder<
+        BasicPoolNodeBuilder<
             T,
             Network<BlockOf<T>>,
             TransactionsHandlerController<BlockHashOf<T>>,
@@ -411,7 +306,7 @@ where
             })
             .await?;
 
-        Ok(NodeBuilder {
+        Ok(BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -442,7 +337,7 @@ where
         parachain_config: &Configuration,
         import_queue: impl ImportQueue<BlockOf<T>> + 'static,
     ) -> sc_service::error::Result<
-        NodeBuilder<
+        BasicPoolNodeBuilder<
             T,
             Network<BlockOf<T>>,
             TransactionsHandlerController<BlockHashOf<T>>,
@@ -495,7 +390,7 @@ where
                 metrics,
             })?;
 
-        Ok(NodeBuilder {
+        Ok(BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -529,7 +424,7 @@ where
                 SubscriptionTaskExecutor,
             ) -> Result<RpcModule<TRpc>, sc_service::Error>,
         >,
-    ) -> sc_service::error::Result<NodeBuilder<T, Network<BlockOf<T>>, (), SImportQueueService>>
+    ) -> sc_service::error::Result<BasicPoolNodeBuilder<T, Network<BlockOf<T>>, (), SImportQueueService>>
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
         STxHandler: TypeIdentity<Type = TransactionsHandlerController<BlockHashOf<T>>>,
@@ -541,7 +436,7 @@ where
             + sp_api::Metadata<BlockOf<T>>
             + sp_session::SessionKeys<BlockOf<T>>,
     {
-        let NodeBuilder {
+        let BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -621,7 +516,7 @@ where
             }
         }
 
-        Ok(NodeBuilder {
+        Ok(BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -657,7 +552,7 @@ where
 
         let prometheus_registry = self.prometheus_registry.clone();
 
-        let mut env = sc_basic_authorship::ProposerFactory::with_proof_recording(
+        let mut env = sc_basic_authorship::ProposerFactory::new(
             self.task_manager.spawn_handle(),
             self.client.clone(),
             self.transaction_pool.clone(),
@@ -670,11 +565,6 @@ where
         if let Some(deadline) = soft_deadline {
             env.set_soft_deadline(deadline);
         }
-        let basic_pool = self
-            .transaction_pool
-            .as_any()
-            .downcast_ref::<FullBasicPool<T>>()
-            .unwrap();
 
         let commands_stream: Box<
             dyn Stream<Item = EngineCommand<BlockHashOf<T>>> + Send + Sync + Unpin,
@@ -682,7 +572,7 @@ where
             Sealing::Instant => {
                 Box::new(
                     // This bit cribbed from the implementation of instant seal.
-                    basic_pool
+                    self.transaction_pool
                         .pool()
                         .validated_pool()
                         .import_notification_stream()
@@ -734,13 +624,13 @@ where
         para_id: ParaId,
         relay_chain_interface: RCInterface,
         relay_chain_slot_duration: Duration,
-    ) -> sc_service::error::Result<NodeBuilder<T, SNetwork, STxHandler, ()>>
+    ) -> sc_service::error::Result<BasicPoolNodeBuilder<T, SNetwork, STxHandler, ()>>
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
         SImportQueueService: TypeIdentity<Type = ImportQueueServiceOf<T>>,
         RCInterface: RelayChainInterface + Clone + 'static,
     {
-        let NodeBuilder {
+        let BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -783,7 +673,7 @@ where
         #[allow(deprecated)]
         cumulus_client_service::start_full_node(params)?;
 
-        Ok(NodeBuilder {
+        Ok(BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -806,13 +696,13 @@ where
         relay_chain_slot_duration: Duration,
         parachain_consensus: ParachainConsensusOf<T>,
         collator_key: CollatorPair,
-    ) -> sc_service::error::Result<NodeBuilder<T, SNetwork, STxHandler, ()>>
+    ) -> sc_service::error::Result<BasicPoolNodeBuilder<T, SNetwork, STxHandler, ()>>
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
         SImportQueueService: TypeIdentity<Type = ImportQueueServiceOf<T>>,
         RCInterface: RelayChainInterface + Clone + 'static,
     {
-        let NodeBuilder {
+        let BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -859,7 +749,7 @@ where
         #[allow(deprecated)]
         cumulus_client_service::start_collator(params).await?;
 
-        Ok(NodeBuilder {
+        Ok(BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -878,13 +768,13 @@ where
     pub fn extract_import_queue_service(
         self,
     ) -> (
-        NodeBuilder<T, SNetwork, STxHandler, ()>,
+        BasicPoolNodeBuilder<T, SNetwork, STxHandler, ()>,
         SImportQueueService,
     )
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
     {
-        let NodeBuilder {
+        let BasicPoolNodeBuilder {
             client,
             backend,
             transaction_pool,
@@ -900,7 +790,7 @@ where
         } = self;
 
         (
-            NodeBuilder {
+            BasicPoolNodeBuilder {
                 client,
                 backend,
                 transaction_pool,
@@ -955,41 +845,4 @@ where
             parachain_consensus: parachain_consensus.clone(),
         }
     }
-}
-
-/// Block authoring scheme to be used by the dev service.
-#[derive(Debug, Copy, Clone)]
-pub enum Sealing {
-    /// Author a block immediately upon receiving a transaction into the transaction pool
-    Instant,
-    /// Author a block upon receiving an RPC command
-    Manual,
-    /// Author blocks at a regular interval specified in milliseconds
-    Interval(u64),
-}
-
-impl FromStr for Sealing {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "instant" => Self::Instant,
-            "manual" => Self::Manual,
-            s => {
-                let millis = s
-                    .parse::<u64>()
-                    .map_err(|_| "couldn't decode sealing param")?;
-                Self::Interval(millis)
-            }
-        })
-    }
-}
-
-pub struct ManualSealConfiguration<B, BI, SC, CIDP> {
-    pub sealing: Sealing,
-    pub block_import: BI,
-    pub soft_deadline: Option<Percent>,
-    pub select_chain: SC,
-    pub consensus_data_provider: Option<Box<dyn ConsensusDataProvider<B, Proof = StorageProof>>>,
-    pub create_inherent_data_providers: CIDP,
 }
