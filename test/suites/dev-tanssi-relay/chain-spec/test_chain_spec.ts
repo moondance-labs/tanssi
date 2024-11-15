@@ -19,9 +19,6 @@ describeSuite({
                 const specName = polkadotJs.consts.system.version.specName.toString();
                 expect(specName, "Relay API incorrect").to.toBe("dancelight");
 
-                const specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-                expect(specVersion, "Relay API incorrect").toBe(1_011_000);
-
                 const authoringVersion = polkadotJs.consts.system.version.authoringVersion.toNumber();
                 expect(authoringVersion, "Relay API incorrect").to.toBe(0);
 
@@ -32,7 +29,7 @@ describeSuite({
                 expect(implVersion, "Relay API incorrect").to.toBe(0);
 
                 const transactionVersion = polkadotJs.consts.system.version.transactionVersion.toNumber();
-                expect(transactionVersion, "Relay API incorrect").to.toBe(25);
+                expect(transactionVersion, "Relay API incorrect").to.toBe(26);
 
                 const stateVersion = polkadotJs.consts.system.version.stateVersion.toNumber();
                 expect(stateVersion, "Relay API incorrect").to.toBe(1);

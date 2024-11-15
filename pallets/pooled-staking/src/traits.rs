@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use parity_scale_codec::MaxEncodedLen;
 use {
     core::{fmt::Debug, marker::PhantomData},
     frame_system::pallet_prelude::BlockNumberFor,
-    parity_scale_codec::FullCodec,
+    parity_scale_codec::{FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_runtime::traits::{CheckedAdd, Get},
 };

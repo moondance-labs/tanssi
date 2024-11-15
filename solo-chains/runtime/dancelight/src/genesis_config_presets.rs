@@ -16,9 +16,6 @@
 
 //! Genesis configs presets for the Dancelight runtime
 
-use pallet_configuration::HostConfiguration;
-use sp_arithmetic::traits::Saturating;
-use sp_arithmetic::Perbill;
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
 use {
@@ -31,18 +28,23 @@ use {
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
+    pallet_configuration::HostConfiguration,
     primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
+    sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
         crypto::{key_types, KeyTypeId},
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::IdentifyAccount,
-    sp_std::vec,
-    sp_std::vec::Vec,
+    sp_std::{cmp::max, vec::Vec},
     tp_traits::ParaId,
 };
+
+// import macro, separate due to rustfmt thinking it's the module with the
+// same name ^^'
+use sp_std::vec;
 
 /// Helper function to generate a crypto pair from seed
 fn get_from_seed<TPublic: Public>(
@@ -315,8 +317,22 @@ fn dancelight_testnet_genesis(
             .max_parachain_cores_percentage
             .unwrap_or(Perbill::from_percent(50)),
     );
-    let num_cores =
-        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32);
+
+    // don't go below 4 cores
+    let num_cores = max(
+        para_ids.len() as u32 + core_percentage_for_pool_paras.mul_ceil(para_ids.len() as u32),
+        4,
+    );
+
+    // Initialize nextFreeParaId to a para id that is greater than all registered para ids.
+    // This is needed for Registrar::reserve.
+    let max_para_id = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| para_id)
+        .max();
+    let next_free_para_id = max_para_id
+        .map(|x| ParaId::from(u32::from(*x) + 1))
+        .unwrap_or(primitives::LOWEST_PUBLIC_ID);
 
     serde_json::json!({
         "balances": {
@@ -376,9 +392,9 @@ fn dancelight_testnet_genesis(
             },
         },
         "registrar": {
-            "nextFreeParaId": primitives::LOWEST_PUBLIC_ID,
+            "nextFreeParaId": next_free_para_id,
         },
-        "tanssiInvulnerables":  crate::TanssiInvulnerablesConfig {
+        "tanssiInvulnerables": crate::TanssiInvulnerablesConfig {
             invulnerables: invulnerable_accounts,
         },
         "containerRegistrar": crate::ContainerRegistrarConfig { para_ids, ..Default::default() },
@@ -393,7 +409,16 @@ fn dancelight_testnet_genesis(
         "collatorConfiguration": crate::CollatorConfigurationConfig {
             config: host_configuration,
             ..Default::default()
-        }
+        },
+        "externalValidators": crate::ExternalValidatorsConfig {
+            skip_external_validators: false,
+            whitelisted_validators: initial_authorities
+                .iter()
+                .map(|x| {
+                    x.stash.clone()
+                })
+                .collect::<Vec<_>>(),
+        },
     })
 }
 

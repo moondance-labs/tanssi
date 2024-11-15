@@ -57,6 +57,9 @@ pub enum Subcommand {
     #[command(subcommand)]
     Key(sc_cli::KeySubcommand),
 
+    /// Precompile the WASM runtime into native code
+    PrecompileWasm(sc_cli::PrecompileWasmCmd),
+
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
 }
@@ -176,6 +179,10 @@ pub struct RunCmd {
     /// TESTING ONLY: disable the version check between nodes and workers.
     #[arg(long, hide = true)]
     pub disable_worker_version_check: bool,
+
+    // Enable the development service
+    #[arg(long)]
+    pub dev_service: bool,
 }
 
 #[allow(missing_docs)]

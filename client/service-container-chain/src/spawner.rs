@@ -25,12 +25,17 @@ use {
     crate::{
         cli::ContainerChainCli,
         monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, ContainerChainClient, ParachainClient},
+        rpc::generate_rpc_builder::GenerateRpcBuilder,
+        service::{
+            start_node_impl_container, ContainerChainClient, MinimalContainerRuntimeApi,
+            ParachainClient,
+        },
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block as OpaqueBlock, Block},
     dc_orchestrator_chain_interface::{OrchestratorChainInterface, PHash},
+    frame_support::{CloneNoBound, DefaultNoBound},
     fs2::FileExt,
     futures::FutureExt,
     node_common::command::generate_genesis_block,
@@ -44,7 +49,9 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
+        any::Any,
         collections::{HashMap, HashSet},
+        marker::PhantomData,
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
         time::Instant,
@@ -70,12 +77,19 @@ const MAX_BLOCK_DIFF_FOR_FULL_SYNC: u32 = 30_000;
 
 /// Task that handles spawning a stopping container chains based on assignment.
 /// The main loop is [rx_loop](ContainerChainSpawner::rx_loop).
-pub struct ContainerChainSpawner {
+pub struct ContainerChainSpawner<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+> {
     /// Start container chain params
-    pub params: ContainerChainSpawnParams,
+    pub params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
 
     /// State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
+
+    /// Before the first assignment, there is a db cleanup process that removes folders of container
+    /// chains that we are no longer assigned to.
+    pub db_folder_cleanup_done: bool,
 
     /// Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi:
@@ -94,8 +108,11 @@ pub struct ContainerChainSpawner {
 /// This struct MUST NOT contain types (outside of `Option<CollationParams>`) obtained through
 /// running an embeded orchestrator node, as this will prevent spawning a container chain in a node
 /// connected to an orchestrator node through WebSocket.
-#[derive(Clone)]
-pub struct ContainerChainSpawnParams {
+#[derive(CloneNoBound)]
+pub struct ContainerChainSpawnParams<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+> {
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub container_chain_cli: ContainerChainCli,
     pub tokio_handle: tokio::runtime::Handle,
@@ -107,6 +124,9 @@ pub struct ContainerChainSpawnParams {
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
     pub data_preserver: bool,
+    pub generate_rpc_builder: TGenerateRpcBuilder,
+
+    pub phantom: PhantomData<RuntimeApi>,
 }
 
 /// Params specific to collation. This struct can contain types obtained through running an
@@ -123,7 +143,7 @@ pub struct CollationParams {
 }
 
 /// Mutable state for container chain spawner. Keeps track of running chains.
-#[derive(Default)]
+#[derive(DefaultNoBound)]
 pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
@@ -162,8 +182,11 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
-async fn try_spawn(
-    try_spawn_params: ContainerChainSpawnParams,
+async fn try_spawn<
+    RuntimeApi: MinimalContainerRuntimeApi,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+>(
+    try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
     container_chain_para_id: ParaId,
     start_collation: bool,
@@ -179,6 +202,7 @@ async fn try_spawn(
         spawn_handle,
         mut collation_params,
         data_preserver,
+        generate_rpc_builder,
         ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
@@ -338,6 +362,7 @@ async fn try_spawn(
                     sync_keystore.clone(),
                     container_chain_para_id,
                     collation_params.clone(),
+                    generate_rpc_builder.clone(),
                 )
                 .await?;
 
@@ -430,6 +455,7 @@ async fn try_spawn(
     let monitor_id;
     {
         let mut state = state.lock().expect("poison error");
+        let container_chain_client = container_chain_client as Arc<dyn Any + Sync + Send>;
 
         monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
             id: 0,
@@ -545,7 +571,11 @@ pub trait Spawner {
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) -> Option<PathBuf>;
 }
 
-impl Spawner for ContainerChainSpawner {
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
+{
     /// Access to the Orchestrator Chain Interface
     fn orchestrator_chain_interface(&self) -> Arc<dyn OrchestratorChainInterface> {
         self.params.orchestrator_chain_interface.clone()
@@ -625,7 +655,11 @@ impl Spawner for ContainerChainSpawner {
     }
 }
 
-impl ContainerChainSpawner {
+impl<
+        RuntimeApi: MinimalContainerRuntimeApi,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
+{
     /// Receive and process `CcSpawnMsg`s indefinitely
     pub async fn rx_loop(
         mut self,
@@ -662,6 +696,19 @@ impl ContainerChainSpawner {
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
     async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
+        if !self.db_folder_cleanup_done {
+            self.db_folder_cleanup_done = true;
+
+            // Disabled when running with --keep-db
+            let keep_db = self.params.container_chain_cli.base.keep_db;
+            if !keep_db {
+                let mut chains_to_keep = HashSet::new();
+                chains_to_keep.extend(current);
+                chains_to_keep.extend(next);
+                self.db_folder_cleanup(&chains_to_keep);
+            }
+        }
+
         let HandleUpdateAssignmentResult {
             chains_to_stop,
             chains_to_start,
@@ -735,6 +782,64 @@ impl ContainerChainSpawner {
             // implement this properly.
             let start_collation = Some(para_id) == current;
             self.spawn(para_id, start_collation).await;
+        }
+    }
+
+    fn db_folder_cleanup(&self, chains_to_keep: &HashSet<ParaId>) {
+        // "containers" folder
+        let mut base_path = self
+            .params
+            .container_chain_cli
+            .base
+            .base
+            .shared_params
+            .base_path
+            .as_ref()
+            .expect("base_path is always set")
+            .to_owned();
+
+        // "containers/chains"
+        base_path.push("chains");
+
+        // Inside chains folder we have container folders such as
+        // containers/chains/simple_container_2000/
+        // containers/chains/frontier_container_2001/
+        // But this is not the para id, it's the chain id which we have set to include the para id, but that's not mandatory.
+        // To get the para id we need to look for the paritydb folder:
+        // containers/chains/frontier_container_2001/paritydb/full-container-2001/
+        let mut chain_folders = sort_container_folders_by_para_id(&base_path);
+
+        // Keep chains that we are assigned to
+        for para_id in chains_to_keep {
+            chain_folders.remove(&Some(*para_id));
+        }
+
+        // Print nice log message when removing folders
+        if !chain_folders.is_empty() {
+            let chain_folders_fmt = chain_folders
+                .iter()
+                .flat_map(|(para_id, vec_paths)| {
+                    let para_id_fmt = if let Some(para_id) = para_id {
+                        para_id.to_string()
+                    } else {
+                        "None".to_string()
+                    };
+                    vec_paths
+                        .iter()
+                        .map(move |path| format!("\n{}: {}", para_id_fmt, path.display()))
+                })
+                .collect::<String>();
+            log::info!(
+                "db_folder_cleanup: removing container folders: (para_id, path):{}",
+                chain_folders_fmt
+            );
+        }
+
+        // Remove, ignoring errors
+        for (_para_id, folders) in chain_folders {
+            for folder in folders {
+                let _ = std::fs::remove_dir_all(&folder);
+            }
         }
     }
 }
@@ -883,12 +988,10 @@ async fn get_latest_container_block_number_from_orchestrator(
     container_chain_para_id: ParaId,
 ) -> Option<u32> {
     // Get the container chain's latest block from orchestrator chain and compare with client's one
-    let last_container_block_from_orchestrator = orchestrator_chain_interface
+    orchestrator_chain_interface
         .latest_block_number(orchestrator_block_hash, container_chain_para_id)
         .await
-        .unwrap_or_default();
-
-    last_container_block_from_orchestrator
+        .unwrap_or_default()
 }
 
 #[derive(Debug)]
@@ -910,8 +1013,8 @@ enum DbRemovalReason {
 /// Reasons may be:
 /// * High block diff: when the local db is outdated and it would take a long time to sync using full sync, we remove it to be able to use warp sync.
 /// * Genesis hash mismatch, when the chain was deregistered and a different chain with the same para id was registered.
-async fn db_needs_removal(
-    container_chain_client: &Arc<ContainerChainClient>,
+async fn db_needs_removal<RuntimeApi: MinimalContainerRuntimeApi>(
+    container_chain_client: &Arc<ContainerChainClient<RuntimeApi>>,
     orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
     container_chain_para_id: ParaId,
@@ -924,23 +1027,21 @@ async fn db_needs_removal(
         let last_container_block_temp = container_chain_client.chain_info().best_number;
         if last_container_block_temp == 0 {
             // Don't remove an empty database, as it may be in the process of a warp sync
-        } else {
-            if get_latest_container_block_number_from_orchestrator(
-                orchestrator_chain_interface,
-                orchestrator_block_hash,
-                container_chain_para_id,
-            )
-            .await
-            .unwrap_or(0)
-            .abs_diff(last_container_block_temp)
-                > MAX_BLOCK_DIFF_FOR_FULL_SYNC
-            {
-                // if the diff is big, delete db and restart using warp sync
-                return Ok(Some(DbRemovalReason::HighBlockDiff {
-                    best_block_number_db: last_container_block_temp,
-                    best_block_number_onchain: last_container_block_temp,
-                }));
-            }
+        } else if get_latest_container_block_number_from_orchestrator(
+            orchestrator_chain_interface,
+            orchestrator_block_hash,
+            container_chain_para_id,
+        )
+        .await
+        .unwrap_or(0)
+        .abs_diff(last_container_block_temp)
+            > MAX_BLOCK_DIFF_FOR_FULL_SYNC
+        {
+            // if the diff is big, delete db and restart using warp sync
+            return Ok(Some(DbRemovalReason::HighBlockDiff {
+                best_block_number_db: last_container_block_temp,
+                best_block_number_onchain: last_container_block_temp,
+            }));
         }
     }
 
@@ -1089,6 +1190,99 @@ fn check_paritydb_lock_held(db_path: &Path) -> Result<bool, std::io::Error> {
     let lock_held = lock_file.try_lock_exclusive().is_err();
 
     Ok(lock_held)
+}
+
+fn sort_container_folders_by_para_id(
+    chains_folder_path: &Path,
+) -> HashMap<Option<ParaId>, Vec<PathBuf>> {
+    let mut h = HashMap::new();
+
+    let entry_iter = std::fs::read_dir(chains_folder_path);
+    let entry_iter = match entry_iter {
+        Ok(x) => x,
+        Err(_e) => return h,
+    };
+
+    for entry in entry_iter {
+        let entry = match entry {
+            Ok(x) => x,
+            Err(_e) => continue,
+        };
+
+        let path = entry.path();
+        if path.is_dir() {
+            if let Ok(para_id) = process_container_folder_get_para_id(path.clone()) {
+                h.entry(para_id).or_default().push(path);
+            }
+        }
+    }
+
+    h
+}
+
+fn process_container_folder_get_para_id(path: PathBuf) -> std::io::Result<Option<ParaId>> {
+    // Build the path to the paritydb directory
+    let paritydb_path = path.join("paritydb");
+
+    // Check if the paritydb directory exists and is a directory
+    if !paritydb_path.is_dir() {
+        // If not, associate the path with `None` in the hashmap
+        return Ok(None);
+    }
+
+    // Read the entries in the paritydb directory
+    let entry_iter = std::fs::read_dir(&paritydb_path)?;
+
+    let mut para_id: Option<ParaId> = None;
+
+    // Iterate over each entry in the paritydb directory
+    for entry in entry_iter {
+        let entry = entry?;
+        let sub_path = entry.path();
+
+        // Only consider directories
+        if !sub_path.is_dir() {
+            continue;
+        }
+
+        let sub_path_file_name = match sub_path.file_name().and_then(|s| s.to_str()) {
+            Some(x) => x,
+            None => {
+                continue;
+            }
+        };
+
+        // That follow this pattern
+        if !sub_path_file_name.starts_with("full-container-") {
+            continue;
+        }
+
+        if let Some(id) = parse_para_id_from_folder_name(sub_path_file_name) {
+            if para_id.is_some() {
+                // If there is more than one folder with a para id, assume this folder is
+                // corrupted and ignore it, keep it for manual deletion
+                return Err(std::io::Error::new(std::io::ErrorKind::Other, ""));
+            }
+            para_id = Some(id);
+        }
+    }
+
+    Ok(para_id)
+}
+
+// Input:
+// full-container-2000
+// Output:
+// Some(2000)
+fn parse_para_id_from_folder_name(folder_name: &str) -> Option<ParaId> {
+    // Find last '-' in string
+    let idx = folder_name.rfind('-')?;
+    // +1 to skip the '-'
+    let id_str = &folder_name[idx + 1..];
+    // Try to parse as u32, in case of error return None
+    let id = id_str.parse::<u32>().ok()?;
+
+    Some(id.into())
 }
 
 #[cfg(test)]
@@ -1541,5 +1735,17 @@ mod tests {
                 "/tmp/zombienet/Collator2002-01/data/containers/chains/simple_container_2002"
             )
         )
+    }
+
+    #[test]
+    fn para_id_from_folder_name() {
+        assert_eq!(parse_para_id_from_folder_name(""), None,);
+        assert_eq!(parse_para_id_from_folder_name("full"), None,);
+        assert_eq!(parse_para_id_from_folder_name("full-container"), None,);
+        assert_eq!(parse_para_id_from_folder_name("full-container-"), None,);
+        assert_eq!(
+            parse_para_id_from_folder_name("full-container-2000"),
+            Some(ParaId::from(2000)),
+        );
     }
 }

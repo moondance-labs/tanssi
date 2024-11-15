@@ -191,7 +191,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Formatting check"
               run: |
@@ -214,7 +214,7 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Linting check"
               run: |
@@ -263,6 +263,7 @@ jobs:
                   cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm runtimes/;
             - name: Upload runtimes
               uses: actions/upload-artifact@v4
               with:
@@ -282,6 +283,89 @@ jobs:
               with:
                   name: binaries
                   path: binaries
+    check-wasm-size:
+      name: "Check WASM runtimes with Twiggy"
+      runs-on: ubuntu-latest
+      if: github.event_name == 'pull_request'
+      needs: ["set-tags", "build"]
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RUNTIMES_AS_STRING: 'dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime'
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        # With rustup's nice new toml format, we just need to run rustup show to install the toolchain
+        # https://github.com/actions-rs/toolchain/issues/126#issuecomment-782989659
+        - name: Setup Rust toolchain
+          run: |
+            rustup override unset
+            rustup show
+        - name: Download Twiggy
+          run: cargo install twiggy
+        - name: Lookup for latest target branch build
+          run: |
+            TARGET_BRANCH=${{ github.event.pull_request.base.ref }}
+            LATEST_TARGET_BRANCH_BUILD=$(gh run -R moondance-labs/tanssi list -w CI --limit=100 --json databaseId,url,headBranch,event,status,conclusion,createdAt --jq ".[] | select(.headBranch == \"$TARGET_BRANCH\" and .event == \"push\" and .status == \"completed\" and .conclusion == \"success\") | .databaseId" | head -n 1)
+            echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
+        - name: Download latest target branch build artifacts
+          run: |
+            gh run download $LATEST_TARGET_BRANCH_BUILD -n runtimes --dir runtimes-target-branch
+        - name: "Download branch built runtime"
+          uses: actions/download-artifact@v4
+          with:
+            name: runtimes
+            path: runtimes-current-branch
+        - name: Prepare file
+          run: |
+            # Create or truncate the file
+            echo "" > runtime_size_report.md
+            echo "### WASM runtime size check:" > runtime_size_report.md
+            echo "" >> runtime_size_report.md
+            echo "#### Compared to target branch" >> runtime_size_report.md
+            echo "" >> runtime_size_report.md
+        - name: Retrieve runtime diff
+          run: |
+            IFS="," read -a RUNTIMES_TO_COMPARE <<< ${{ env.RUNTIMES_AS_STRING }}
+            get_status_emoji() {
+              local size=$1
+              local diff=$2
+              if [ $size -gt 2400 ]; then
+                echo "🚨"
+              elif [ $diff -gt 0 ]; then
+                echo "⚠️"
+              else
+                echo "✅"
+              fi
+            }
+            for RUNTIME in ${RUNTIMES_TO_COMPARE[@]};
+            do
+              PREVIOUS=$(du -k runtimes-target-branch/* | awk -v myrun="$RUNTIME" '$0 ~ myrun {print $1}')
+              CURRENT=$(du -k runtimes-current-branch/* | awk -v myrun="$RUNTIME" '$0 ~ myrun {print $1}')
+              DIFF=$((CURRENT - PREVIOUS))
+              RUNTIME_NAME="${RUNTIME//_/ }"
+              STATUS=$(get_status_emoji $CURRENT $DIFF)
+              MSG="$RUNTIME_NAME: ${CURRENT} KB ($( [ $DIFF -eq 0 ] && echo "no changes" || echo "$( [ $DIFF -gt 0 ] && echo "+" )${DIFF} KB")) ${STATUS}"
+              echo "$MSG" >> runtime_size_report.md
+              echo "" >> runtime_size_report.md
+            done
+            echo "" >> runtime_size_report.md
+            cat runtime_size_report.md
+        - name: Find Comment
+          uses: peter-evans/find-comment@v3
+          id: fc
+          with:
+            issue-number: ${{ github.event.pull_request.number }}
+            comment-author: "github-actions[bot]"
+            body-includes: "WASM runtime size check"
+        - name: Create or update comment
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            comment-id: ${{ steps.fc.outputs.comment-id }}
+            issue-number: ${{ github.event.pull_request.number }}
+            body-path: runtime_size_report.md
+            edit-mode: replace
 
     rust-test:
         runs-on: self-hosted
@@ -335,11 +419,12 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate Local interfaces"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -367,11 +452,12 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -401,11 +487,12 @@ jobs:
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -430,7 +517,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -440,6 +527,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -464,7 +552,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -474,6 +562,7 @@ jobs:
             - name: "Generate typescript api"
               run: |
                   chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
@@ -498,7 +587,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
               uses: actions/download-artifact@v4
@@ -532,11 +621,12 @@ jobs:
           - name: "Setup Node"
             uses: actions/setup-node@v4
             with:
-                node-version: 20.x
+                node-version: 22.x
                 cache: "pnpm"
           - name: "Generate typescript api"
             run: |
                 chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
                 cd typescript-api
                 pnpm install
                 pnpm create-local-interfaces
@@ -561,6 +651,20 @@ jobs:
             uses: actions/checkout@v4
             with:
               ref: ${{ needs.set-tags.outputs.git_ref }}
+          - name: "Download binaries"
+            uses: actions/download-artifact@v4
+            with:
+              name: binaries
+              path: target/release
+          - name: "Make binaries executable"
+            shell: bash
+            run: |
+              chmod uog+x target/release/tanssi-node
+              chmod uog+x target/release/tanssi-relay
+              chmod uog+x target/release/tanssi-relay-prepare-worker
+              chmod uog+x target/release/tanssi-relay-execute-worker
+              chmod uog+x target/release/container-chain-simple-node
+              chmod uog+x target/release/container-chain-frontier-node
           - name: Run Zombienet Test ${{ matrix.test_name }}
             uses: ./.github/workflow-templates/zombienet-tests
             with:
@@ -578,6 +682,7 @@ jobs:
             { chain: "flashbox", runtime: "flashbox" },
             { chain: "dancebox", runtime: "dancebox" },
             { chain: "frontier_template", runtime: "container-chain-template-frontier" },
+            { chain: "stagelight", runtime: "dancelight" },
           ]
       env:
         GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
@@ -592,7 +697,7 @@ jobs:
             version: 9
         - uses: actions/setup-node@v4
           with:
-            node-version: 20.x
+            node-version: 22.x
             cache: "pnpm"
         - name: Create local folders
           run: |
@@ -608,7 +713,6 @@ jobs:
             cd test
             pnpm install
             pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
-
     zombienet-test-upgrade:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
@@ -630,7 +734,7 @@ jobs:
             - name: Setup node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
 
             - name: Create local folders
@@ -713,7 +817,7 @@ jobs:
             - name: Setup node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
                   cache: "pnpm"
 
             - name: Create local folders
@@ -737,13 +841,64 @@ jobs:
                 pnpm install
                 pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
 
+    zombienet-test-upgrade-starlight:
+        runs-on: self-hosted
+        needs: ["set-tags", "build"]
+        strategy:
+            fail-fast: false
+            matrix:
+                chains: [
+                  { chain: "dancelight", runtime: "dancelight" }
+                ]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+
+            - name: Pnpm
+              uses: pnpm/action-setup@v4.0.0
+              with:
+                  version: 9
+
+            - name: Setup node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22.x
+                  cache: "pnpm"
+
+            - name: Create local folders
+              run: |
+                mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+                mkdir -p test/tmp
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Download runtime"
+              uses: actions/download-artifact@v4
+              with:
+                name: runtimes
+                path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+
+            - name: "Install and run upgrade test"
+              run: |
+                chmod uog+x target/release/container-chain-simple-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+                cd test
+                pnpm install
+                pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
+
     docker-tanssi:
         runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         strategy:
             fail-fast: false
             matrix:
-                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template", "starlight"]
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout

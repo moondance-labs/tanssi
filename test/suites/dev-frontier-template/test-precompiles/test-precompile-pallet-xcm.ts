@@ -69,7 +69,7 @@ describeSuite({
                         args: [dest, beneficiary, assetLocationInfo, 0, weight],
                         functionName: "transferAssetsLocation",
                     }),
-                    gasLimit: 500_000n,
+                    gasLimit: 20_000_000n,
                 });
 
                 const result = await context.createBlock(rawTxn);
@@ -105,7 +105,7 @@ describeSuite({
                         args: [paraId, BALTATHAR_ADDRESS, assetAddressInfo, 0, weight],
                         functionName: "transferAssetsToPara20",
                     }),
-                    gasLimit: 500_000n,
+                    gasLimit: 20_000_000n,
                 });
 
                 const result = await context.createBlock(rawTxn);
@@ -142,7 +142,7 @@ describeSuite({
                         args: [paraId, beneficiaryAddress, assetAddressInfo, 0, weight],
                         functionName: "transferAssetsToPara32",
                     }),
-                    gasLimit: 500_000n,
+                    gasLimit: 20_000_000n,
                 });
 
                 const result = await context.createBlock(rawTxn);
@@ -178,7 +178,7 @@ describeSuite({
                         args: [beneficiaryAddress, assetAddressInfo, 0, weight],
                         functionName: "transferAssetsToRelay",
                     }),
-                    gasLimit: 500_000n,
+                    gasLimit: 20_000_000n,
                 });
 
                 const result = await context.createBlock(rawTxn);

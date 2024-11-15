@@ -28,8 +28,8 @@ use {
             },
             BOB,
         },
+        Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer,
     },
-    crate::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
     frame_support::assert_ok,
@@ -64,13 +64,11 @@ pub fn assert_relay_order_event_not_emitted() {
 
     let events = <Rococo as Chain>::events();
     for event in events {
-        match event {
-            RuntimeEvent::OnDemandAssignmentProvider(
-                parachains_assigner_on_demand::Event::OnDemandOrderPlaced { .. },
-            ) => {
-                panic!("Event should not have been emitted: {:?}", event);
-            }
-            _ => (),
+        if let RuntimeEvent::OnDemandAssignmentProvider(
+            parachains_assigner_on_demand::Event::OnDemandOrderPlaced { .. },
+        ) = event
+        {
+            panic!("Event should not have been emitted: {:?}", event);
         }
     }
 }
@@ -80,13 +78,11 @@ pub fn assert_xcm_notification_event_not_emitted() {
 
     let events = <Dancebox as Chain>::events();
     for event in events {
-        match event {
-            RuntimeEvent::XcmCoreBuyer(
-                pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult { .. },
-            ) => {
-                panic!("Event should not have been emitted: {:?}", event);
-            }
-            _ => (),
+        if let RuntimeEvent::XcmCoreBuyer(
+            pallet_xcm_core_buyer::Event::ReceivedBuyCoreXCMResult { .. },
+        ) = event
+        {
+            panic!("Event should not have been emitted: {:?}", event);
         }
     }
 }
@@ -96,16 +92,14 @@ pub fn find_query_id_for_para_id(para_id: ParaId) -> QueryId {
 
     let events = <Dancebox as Chain>::events();
     for event in events {
-        match event {
-            RuntimeEvent::XcmCoreBuyer(pallet_xcm_core_buyer::Event::BuyCoreXcmSent {
-                para_id: event_para_id,
-                transaction_status_query_id,
-            }) => {
-                if event_para_id == para_id {
-                    return transaction_status_query_id;
-                }
+        if let RuntimeEvent::XcmCoreBuyer(pallet_xcm_core_buyer::Event::BuyCoreXcmSent {
+            para_id: event_para_id,
+            transaction_status_query_id,
+        }) = event
+        {
+            if event_para_id == para_id {
+                return transaction_status_query_id;
             }
-            _ => (),
         }
     }
 
@@ -342,7 +336,7 @@ fn core_buyer_sign_collator_nonce(para_id: ParaId, id: nimbus_primitives::Nimbus
         signature,
     };
     XcmCoreBuyer::pre_dispatch(&pallet_xcm_core_buyer::Call::buy_core {
-        para_id: para_id,
+        para_id,
         proof: proof.clone(),
     })
     .expect("collator signature predispatch should go through");

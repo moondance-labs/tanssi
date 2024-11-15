@@ -36,7 +36,7 @@
 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
-use sp_runtime::Perbill;
+use frame_support::migration::move_pallet;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -54,6 +54,7 @@ use {
     pallet_migrations::{GetMigrations, Migration},
     pallet_registrar::HoldReason,
     sp_core::Get,
+    sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
 
@@ -896,6 +897,51 @@ where
     }
 }
 
+pub struct ExternalValidatorsInitialMigration<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for ExternalValidatorsInitialMigration<Runtime>
+where
+    Runtime: pallet_external_validators::Config,
+    Runtime: pallet_session::Config<
+        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+    >,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_ExternalValidatorsInitialMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use frame_support::pallet_prelude::*;
+
+        // Set initial WhitelistedValidators to current validators from pallet session
+        let session_keys = pallet_session::QueuedKeys::<Runtime>::get();
+        let session_validators = BoundedVec::truncate_from(
+            session_keys
+                .into_iter()
+                .map(|(validator, _keys)| validator)
+                .collect(),
+        );
+        pallet_external_validators::WhitelistedValidators::<Runtime>::put(session_validators);
+
+        // Kill storage of ValidatorManager pallet
+        let pallet_prefix: &[u8] = b"ValidatorManager";
+        let _ = clear_storage_prefix(pallet_prefix, b"", b"", None, None);
+
+        // One db read and one db write per element, plus the on-chain storage
+        Runtime::DbWeight::get().reads_writes(1, 1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1030,10 +1076,58 @@ where
     }
 }
 
+pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
+
+impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
+    fn friendly_name(&self) -> &str {
+        "SM_MigrateMMRLeafPallet"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        let new_name =
+            <<T as frame_system::Config>::PalletInfo as frame_support::traits::PalletInfo>::name::<
+                pallet_beefy_mmr::Pallet<T>,
+            >()
+            .expect("pallet_beefy_mmr must be part of dancelight before this migration");
+        move_pallet(Self::old_pallet_name().as_bytes(), new_name.as_bytes());
+        available_weight
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+impl<T> MigrateMMRLeafPallet<T> {
+    pub fn old_pallet_name() -> &'static str {
+        "MMRLeaf"
+    }
+}
+
 pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
 
-impl<Runtime> GetMigrations for DancelightMigrations<Runtime> {
+impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
+where
+    Runtime: frame_system::Config,
+    Runtime: pallet_external_validators::Config,
+    Runtime: pallet_session::Config<
+        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+    >,
+{
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        vec![]
+        let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
+        let migrate_external_validators =
+            ExternalValidatorsInitialMigration::<Runtime>(Default::default());
+
+        vec![
+            Box::new(migrate_mmr_leaf_pallet),
+            Box::new(migrate_external_validators),
+        ]
     }
 }

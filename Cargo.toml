@@ -29,20 +29,21 @@ correctness = { level = "deny", priority = 1 }
 suspicious = { level = "deny", priority = 1 }
 
 # Add some additional lints
-as_underscore = { level = "warn", priority = 1 }
-cast_lossless = { level = "warn", priority = 1 }
-cast_possible_wrap = { level = "warn", priority = 1 }
-cast_precision_loss = { level = "warn", priority = 1 }
-cast_sign_loss = { level = "warn", priority = 1 }
-debug_assert_with_mut_call = { level = "warn", priority = 1 }
-fn_to_numeric_cast_any = { level = "warn", priority = 1 }
-invalid_upcast_comparisons = { level = "warn", priority = 1 }
+as_underscore = { level = "warn", priority = 2 }
+cast_lossless = { level = "warn", priority = 2 }
+cast_possible_wrap = { level = "warn", priority = 2 }
+cast_precision_loss = { level = "warn", priority = 2 }
+cast_sign_loss = { level = "warn", priority = 2 }
+debug_assert_with_mut_call = { level = "warn", priority = 2 }
+fn_to_numeric_cast_any = { level = "warn", priority = 2 }
+invalid_upcast_comparisons = { level = "warn", priority = 2 }
 
 # Allow annoying lints and false positives
-erasing_op = { level = "allow", priority = 2 }
-identity_op = { level = "allow", priority = 2 }
-too-many-arguments = { level = "allow", priority = 2 }
-type_complexity = { level = "allow", priority = 2 }
+erasing_op = { level = "allow", priority = 3 }
+identity_op = { level = "allow", priority = 3 }
+manual_inspect = { level = "allow", priority = 3 }
+too-many-arguments = { level = "allow", priority = 3 }
+type_complexity = { level = "allow", priority = 3 }
 
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
@@ -59,9 +60,13 @@ pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/r
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-data-preservers = { path = "pallets/data-preservers", default-features = false }
 pallet-data-preservers-runtime-api = { path = "pallets/data-preservers/runtime-api", default-features = false }
+pallet-external-validator-slashes = { path = "pallets/external-validator-slashes", default-features = false }
+pallet-external-validators = { path = "pallets/external-validators", default-features = false }
+pallet-external-validators-rewards = { path = "pallets/external-validators-rewards", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
+pallet-ocw-testing = { path = "pallets/ocw-testing", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
@@ -140,6 +145,7 @@ xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "
 
 frame-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 frame-executive = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
+frame-metadata-hash-extension = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 frame-support = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 frame-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 frame-system-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
@@ -251,6 +257,12 @@ westend-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
 
+
+# Bridges (wasm)
+milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
+snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
+snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip", default-features = false }
+
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip" }
 polkadot-node-subsystem = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407-tx-pool-fix-wip" }
@@ -316,6 +328,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 
 # General (wasm)
 bounded-collections = { version = "0.1.8", default-features = false }
+finality-grandpa = { version = "0.16.2", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
 impls = "1.0.3"

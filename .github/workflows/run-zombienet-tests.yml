@@ -3,6 +3,9 @@ name: Manually run all zombienet tests
 on:
   workflow_dispatch:
     inputs:
+      sha:
+        description: full sha to the codebase
+        required: true
       test_name:
         description: "Name of the test suite to be run (e.g. zombie_flashbox, supports regex)"
         required: true
@@ -38,7 +41,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 22.x
           cache: "pnpm"
 
       - name: Get test names
@@ -137,6 +140,20 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
     steps:
+      - name: "Download binaries"
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: target/release
+      - name: "Make binaries executable"
+        shell: bash
+        run: |
+          chmod uog+x target/release/tanssi-node
+          chmod uog+x target/release/tanssi-relay
+          chmod uog+x target/release/tanssi-relay-prepare-worker
+          chmod uog+x target/release/tanssi-relay-execute-worker
+          chmod uog+x target/release/container-chain-simple-node
+          chmod uog+x target/release/container-chain-frontier-node
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:

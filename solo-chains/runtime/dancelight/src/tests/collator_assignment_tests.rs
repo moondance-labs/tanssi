@@ -16,20 +16,19 @@
 
 #![cfg(test)]
 
-use crate::{Configuration, GetCoreAllocationConfigurationImpl};
-use frame_support::dispatch::RawOrigin;
-use primitives::vstaging::SchedulerParams;
-use sp_core::Get;
 use {
     crate::{
         tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        ContainerRegistrar, Paras, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras, Registrar,
+        ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
-    frame_support::{assert_noop, assert_ok},
+    frame_support::{assert_noop, assert_ok, dispatch::RawOrigin},
     parity_scale_codec::Encode,
+    primitives::vstaging::SchedulerParams,
     runtime_common::paras_registrar,
     sp_consensus_aura::AURA_ENGINE_ID,
+    sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -662,9 +661,10 @@ fn test_authors_paras_inserted_a_posteriori() {
                 vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
             );
 
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -680,21 +680,22 @@ fn test_authors_paras_inserted_a_posteriori() {
             ));
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                block_credits_to_required_balance(1000, 1001.into())
+                2000.into(),
+                block_credits_to_required_balance(1000, 2000.into())
             ));
 
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1002.into(),
+                2001.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -702,22 +703,22 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Assignment should happen after 2 sessions
             run_to_session(6);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1002.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2001.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1002.into()
+                2001.into()
             ));
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1002.into(),
-                block_credits_to_required_balance(1000, 1002.into())
+                2001.into(),
+                block_credits_to_required_balance(1000, 2001.into())
             ));
 
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
         });
@@ -745,9 +746,10 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
         })
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -765,25 +767,25 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                block_credits_to_required_balance(1000, 1001.into())
+                2000.into(),
+                block_credits_to_required_balance(1000, 2000.into())
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
 
-            // Alice and Bob are now assigned to para 1001
+            // Alice and Bob are now assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
         });
@@ -811,9 +813,10 @@ fn test_collators_not_assigned_if_wasm_code_is_invalid() {
         })
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -828,14 +831,14 @@ fn test_collators_not_assigned_if_wasm_code_is_invalid() {
             run_to_session(4);
 
             // paraId should not have been onboarded after 2 sessions.
-            assert!(Paras::lifecycle(1001u32.into()).is_none());
+            assert!(Paras::lifecycle(2000u32.into()).is_none());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             // mark_valid_for_collating() should fail, as the paraId has not been onboarded yet,
             // due to its validation code is not trusted.
             assert_noop!(
-                ContainerRegistrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ContainerRegistrar::mark_valid_for_collating(root_origin(), 2000.into()),
                 paras_registrar::Error::<Runtime>::NotParathread
             );
 
@@ -859,9 +862,10 @@ fn test_paras_registered_but_zero_credits() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -879,25 +883,25 @@ fn test_paras_registered_but_zero_credits() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
 
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -915,9 +919,10 @@ fn test_paras_registered_but_not_enough_credits() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -935,44 +940,44 @@ fn test_paras_registered_but_not_enough_credits() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
             // Purchase 1 credit less that what is needed
-            let credits_1001 = crate::EpochDurationInBlocks::get() - 1;
+            let credits_2000 = crate::EpochDurationInBlocks::get() - 1;
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None);
 
             // Now purchase the missing block credit
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
-                credits_1001 + 1
+                2000.into(),
+                credits_2000 + 1
             ));
 
             run_to_session(8u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
         });
@@ -992,9 +997,10 @@ fn test_paras_registered_but_only_credits_for_1_session() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1012,47 +1018,47 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
             // Purchase only enough credits for 1 session
-            let credits_1001 = crate::EpochDurationInBlocks::get();
+            let credits_2000 = crate::EpochDurationInBlocks::get();
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
             // No credits are consumed if the container chain is not producing blocks
             run_block();
             let credits =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(2000))
                     .unwrap_or_default();
-            assert_eq!(credits, credits_1001);
+            assert_eq!(credits, credits_2000);
 
-            // Simulate block inclusion from container chain 1001
+            // Simulate block inclusion from container chain 2000
             let mut sproof = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let s = ParaHeaderSproofBuilderItem {
-                para_id: 1001.into(),
+                para_id: 2000.into(),
                 author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: 1,
@@ -1068,21 +1074,21 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             run_block();
             let credits =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(2000))
                     .unwrap_or_default();
-            assert_eq!(credits, credits_1001 - 1);
+            assert_eq!(credits, credits_2000 - 1);
 
             run_to_session(8u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
 
             // The container chain only produced one block, so it only consumed one block credit.
             // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
             let credits =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(2000))
                     .unwrap_or_default();
-            assert_eq!(credits, credits_1001 - 1);
+            assert_eq!(credits, credits_2000 - 1);
         });
 }
 
@@ -1105,22 +1111,22 @@ fn test_can_buy_credits_before_registering_para() {
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                block_credits_to_required_balance(u32::MAX, 1001.into())
+                2000.into(),
+                block_credits_to_required_balance(u32::MAX, 2000.into())
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
             // Now parachain tank should have this amount
-            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+            let balance_tank = System::account(ServicesPayment::parachain_tank(2000.into()))
                 .data
                 .free;
 
             assert_eq!(
                 balance_tank,
-                block_credits_to_required_balance(u32::MAX, 1001.into())
+                block_credits_to_required_balance(u32::MAX, 2000.into())
             );
 
-            let expected_cost = block_credits_to_required_balance(u32::MAX, 1001.into());
+            let expected_cost = block_credits_to_required_balance(u32::MAX, 2000.into());
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
@@ -1145,16 +1151,16 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 block_credits_to_required_balance(
                     crate::FreeBlockProductionCredits::get() - 1,
-                    1001.into()
+                    2000.into()
                 )
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
             // Now parachain tank should have this amount
-            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+            let balance_tank = System::account(ServicesPayment::parachain_tank(2000.into()))
                 .data
                 .free;
 
@@ -1162,20 +1168,21 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 balance_tank,
                 block_credits_to_required_balance(
                     crate::FreeBlockProductionCredits::get() - 1,
-                    1001.into()
+                    2000.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
                 crate::FreeBlockProductionCredits::get() - 1,
-                1001.into(),
+                2000.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1190,16 +1197,16 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
 
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
 
             // We received free credits, because we cannot have more than MaxCreditsStored
             let credits =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(1001))
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(ParaId::from(2000))
                     .unwrap_or_default();
             assert_eq!(credits, crate::FreeBlockProductionCredits::get());
         });
@@ -1219,9 +1226,10 @@ fn test_ed_plus_block_credit_session_purchase_works() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1238,42 +1246,42 @@ fn test_ed_plus_block_credit_session_purchase_works() {
 
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 1001.into())
+            let credits_2000 =
+                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 2000.into())
                     + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
-            // Simulate block inclusion from container chain 1001
+            // Simulate block inclusion from container chain 2000
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let s = ParaHeaderSproofBuilderItem {
-                para_id: 1001.into(),
+                para_id: 2000.into(),
                 author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: 1,
@@ -1292,9 +1300,9 @@ fn test_ed_plus_block_credit_session_purchase_works() {
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(7u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1312,9 +1320,10 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1333,34 +1342,34 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 1001.into())
+            let credits_2000 =
+                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 2000.into())
                     + crate::EXISTENTIAL_DEPOSIT
                     - 1;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             run_to_session(6u32);
-            // Alice and Bob should not be assigned to para 1001
+            // Alice and Bob should not be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1378,9 +1387,10 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1399,45 +1409,45 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
             // On reassignment the blocks credits needed should be enough for the current session and the next one
-            let credits_1001 = block_credits_to_required_balance(
+            let credits_2000 = block_credits_to_required_balance(
                 crate::EpochDurationInBlocks::get() * 2,
-                1001.into(),
+                2000.into(),
             ) + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
-            // Simulate block inclusion from container chain 1001
+            // Simulate block inclusion from container chain 2000
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let s = ParaHeaderSproofBuilderItem {
-                para_id: 1001.into(),
+                para_id: 2000.into(),
                 author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: 1,
@@ -1456,19 +1466,19 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
 
             // Session 3 should still be assigned
             run_to_session(7u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(8u32);
 
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1486,9 +1496,10 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1507,45 +1518,45 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
-            let credits_1001 = block_credits_to_required_balance(
+            let credits_2000 = block_credits_to_required_balance(
                 crate::EpochDurationInBlocks::get() * 2,
-                1001.into(),
+                2000.into(),
             ) + crate::EXISTENTIAL_DEPOSIT
                 - 1;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
-            // Simulate block inclusion from container chain 1001
+            // Simulate block inclusion from container chain 2000
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let s = ParaHeaderSproofBuilderItem {
-                para_id: 1001.into(),
+                para_id: 2000.into(),
                 author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: 1,
@@ -1564,9 +1575,9 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(7u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1584,9 +1595,10 @@ fn test_credits_with_purchase_can_be_combined() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1604,35 +1616,35 @@ fn test_credits_with_purchase_can_be_combined() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Set 1 session of free credits and purchase 1 session of credits
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 crate::EpochDurationInBlocks::get()
             ));
-            let credits_1001 =
-                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 1001.into())
+            let credits_2000 =
+                block_credits_to_required_balance(crate::EpochDurationInBlocks::get(), 2000.into())
                     + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
         });
@@ -1652,9 +1664,10 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1672,42 +1685,42 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_collator_assignment_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
-            let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
+            let credits_2000 = collator_assignment_credits_to_required_balance(1, 2000.into())
                 + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
-            // Simulate block inclusion from container chain 1001
+            // Simulate block inclusion from container chain 2000
             let mut sproof: ParaHeaderSproofBuilder = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let s = ParaHeaderSproofBuilderItem {
-                para_id: 1001.into(),
+                para_id: 2000.into(),
                 author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                     parent_hash: Default::default(),
                     number: 1,
@@ -1725,9 +1738,9 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(8u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1745,9 +1758,10 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1765,34 +1779,34 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_collator_assignment_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
-            let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
+            let credits_2000 = collator_assignment_credits_to_required_balance(1, 2000.into())
                 + crate::EXISTENTIAL_DEPOSIT
                 - 1;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should not be assigned to para 1001
+            // Alice and Bob should not be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -1810,9 +1824,10 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1826,28 +1841,28 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             ));
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
 
             // We assign one session to free credits
             assert_ok!(ServicesPayment::set_collator_assignment_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 1
             ));
             // We buy another session through the tank
-            let credits_1001 = collator_assignment_credits_to_required_balance(1, 1001.into())
+            let credits_2000 = collator_assignment_credits_to_required_balance(1, 2000.into())
                 + crate::EXISTENTIAL_DEPOSIT;
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
-                credits_1001
+                2000.into(),
+                credits_2000
             ));
 
             // Assignment should happen after 2 sessions
@@ -1855,10 +1870,10 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
         });
@@ -1878,9 +1893,10 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
         ])
         .build()
         .execute_with(|| {
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 get_genesis_data_with_validation_code().0,
                 Some(HeadData(vec![1u8, 1u8, 1u8]))
             ));
@@ -1896,36 +1912,36 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             ));
             run_to_session(4);
 
-            set_dummy_boot_node(origin_of(ALICE.into()), 1001.into());
+            set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
             assert_ok!(ContainerRegistrar::mark_valid_for_collating(
                 root_origin(),
-                1001.into()
+                2000.into()
             ));
 
             // We make all free credits 0
             assert_ok!(ServicesPayment::set_collator_assignment_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
-                1001.into(),
+                2000.into(),
                 0
             ));
 
             // We buy 2 sessions through tank
             let collator_assignation_credits =
-                collator_assignment_credits_to_required_balance(2, 1001.into());
+                collator_assignment_credits_to_required_balance(2, 2000.into());
             let block_production_credits = block_credits_to_required_balance(
                 crate::EpochDurationInBlocks::get() * 2,
-                1001.into(),
+                2000.into(),
             );
 
             // Fill the tank
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                1001.into(),
+                2000.into(),
                 collator_assignation_credits
                     + block_production_credits
                     + crate::EXISTENTIAL_DEPOSIT
@@ -1935,18 +1951,18 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
-            // Alice and Bob should be assigned to para 1001
+            // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
+                assignment.container_chains[&2000u32.into()],
                 vec![ALICE.into(), BOB.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(8u32);
-            // Nobody should be assigned to para 1001
+            // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
         });
 }
 
@@ -2458,10 +2474,10 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             // The first parachain has collator even without tip as it is highest priority without tip
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parachain_ids_without_tip
+                    [parachain_ids_without_tip
                         .first()
                         .expect("at least one parachain id is without tip")]
-                    .len(),
+                .len(),
                 2
             );
 
@@ -2477,7 +2493,7 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parathread_id in &parathread_ids_offering_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     1,
                 );
@@ -2486,7 +2502,7 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parathread_id in &parathread_ids_without_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     0
                 );
@@ -2646,17 +2662,17 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             // The first parathread has collator even without tip as it is highest priority without tip and we have one collator remaining
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parathread_ids_without_tip
+                    [parathread_ids_without_tip
                         .first()
                         .expect("at least one parathread id is without tip")]
-                    .len(),
+                .len(),
                 1
             );
 
             for parathread_id in &mut parathread_ids_without_tip.iter().skip(1) {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [&parathread_id]
+                        [parathread_id]
                         .len(),
                     0
                 );

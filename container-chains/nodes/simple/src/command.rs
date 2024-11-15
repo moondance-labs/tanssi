@@ -42,7 +42,7 @@ use {
     sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
-    std::{net::SocketAddr, sync::Arc},
+    std::{marker::PhantomData, net::SocketAddr, sync::Arc},
     tc_service_container_chain::{
         cli::ContainerChainCli,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
@@ -296,7 +296,7 @@ pub fn run() -> Result<()> {
             let collator_options = cli.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
-                let hwbench = (!cli.no_hardware_benchmarks).then_some(
+                let hwbench = (!cli.no_hardware_benchmarks).then(||
                     config.database.path().map(|database_path| {
                         let _ = std::fs::create_dir_all(database_path);
                         sc_sysinfo::gather_hwbench(Some(database_path))
@@ -602,8 +602,17 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     collation_params: None,
                     spawn_handle: task_manager.spawn_handle().clone(),
                     data_preserver: true,
+                    generate_rpc_builder:
+                        tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+                            container_chain_template_simple_runtime::RuntimeApi,
+                        >::new(),
+
+                    phantom: PhantomData,
                 },
                 state: Default::default(),
+                // db cleanup task disabled here because it uses collator assignment to decide
+                // which folders to keep and this is not a collator, this is an rpc node
+                db_folder_cleanup_done: true,
                 collate_on_tanssi: Arc::new(|| {
                     panic!("Called collate_on_tanssi outside of Tanssi node")
                 }),

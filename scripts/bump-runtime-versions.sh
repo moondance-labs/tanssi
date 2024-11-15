@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Example:
+# ./scripts/bump-runtime-versions.sh --client-version=0.9.0 --runtime-version=900
+
 # Exit on any error
 set -e
 
@@ -63,12 +66,15 @@ update_lib_rs() {
 update_cargo_toml "container-chains/nodes/frontier/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "container-chains/nodes/simple/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "node/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "solo-chains/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "solo-chains/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
 
 # Update lib.rs files
 update_lib_rs "container-chains/runtime-templates/frontier/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "container-chains/runtime-templates/simple/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "runtime/dancebox/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "runtime/flashbox/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "solo-chains/runtime/dancelight/src/lib.rs" "$RUNTIME_VERSION"
 
 echo "All files updated successfully. Updating Cargo.lock"
 

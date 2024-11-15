@@ -32,6 +32,7 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 pub mod weights;
 
+pub use sp_runtime::traits::Extrinsic as ExtrinsicT;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_primitives_core::AggregateMessageOrigin,
@@ -224,7 +225,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
-    spec_version: 900,
+    spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -659,6 +660,24 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as sp_runtime::traits::Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+    RuntimeCall: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
+impl pallet_ocw_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type UnsignedInterval = ConstU32<6>;
+}
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -701,6 +720,7 @@ construct_runtime!(
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
+        OffchainWorker: pallet_ocw_testing::{Pallet, Call, Storage, Event<T>, ValidateUnsigned} = 120,
     }
 );
 

@@ -21,7 +21,6 @@
 #![recursion_limit = "512"]
 
 // Fix compile error in impl_runtime_weights! macro
-use runtime_common as polkadot_runtime_common;
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -58,8 +57,8 @@ use {
         PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        impl_runtime_weights, impls::ToAuthor, paras_registrar, paras_sudo_wrapper,
-        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
+        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -80,7 +79,10 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{traits::BlockNumberProvider, AccountId32},
+    sp_runtime::{
+        traits::{BlockNumberProvider, ConvertInto},
+        AccountId32,
+    },
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -88,7 +90,7 @@ use {
         prelude::*,
     },
     tp_traits::{
-        apply, derive_storage_traits, GetHostConfiguration, GetSessionContainerChains,
+        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
     },
 };
@@ -144,16 +146,18 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 // XCM configurations.
 pub mod xcm_config;
 
+pub mod bridge_to_ethereum_config;
+
 // Weights
 mod weights;
 
 // Governance and configurations.
 pub mod governance;
-use pallet_collator_assignment::CoreAllocationConfiguration;
 use {
     governance::{
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
+    pallet_collator_assignment::CoreAllocationConfiguration,
     xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
@@ -161,7 +165,6 @@ use {
 mod tests;
 
 pub mod genesis_config_presets;
-mod validator_manager;
 
 impl_runtime_weights!(dancelight_runtime_constants);
 
@@ -183,10 +186,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancelight"),
     impl_name: create_runtime_str!("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1_011_000,
+    spec_version: 1000,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 25,
+    transaction_version: 26,
     state_version: 1,
 };
 
@@ -468,7 +471,7 @@ impl pallet_session::Config for Runtime {
     type ValidatorIdOf = ValidatorIdOf;
     type ShouldEndSession = Babe;
     type NextSessionRotation = Babe;
-    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ValidatorManager>;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = ();
@@ -487,8 +490,7 @@ impl pallet_session::historical::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: SessionIndex = 6;
-    pub const BondingDuration: sp_staking::EraIndex = 28;
+    pub const BondingDuration: sp_staking::EraIndex = runtime_common::prod_or_fast!(28, 3);
 }
 
 parameter_types! {
@@ -566,7 +568,7 @@ impl pallet_treasury::Config for Runtime {
 impl pallet_offences::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
-    type OnOffenceHandler = ();
+    type OnOffenceHandler = ExternalValidatorSlashes;
 }
 
 impl pallet_authority_discovery::Config for Runtime {
@@ -605,10 +607,12 @@ where
     )> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -628,6 +632,7 @@ where
             frame_system::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckWeight::<Runtime>::new(),
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            frame_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
         );
         let raw_payload = SignedPayload::new(call, extra)
             .map_err(|e| {
@@ -743,6 +748,7 @@ pub enum ProxyType {
     CancelProxy,
     Auction,
     OnDemandOrdering,
+    SudoRegistrar,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -803,6 +809,19 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Registrar { .. } | RuntimeCall::Multisig(..))
             }
             ProxyType::OnDemandOrdering => matches!(c, RuntimeCall::OnDemandAssignmentProvider(..)),
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::DataPreservers(..)
+                            | &RuntimeCall::Registrar(..)
+                            | &RuntimeCall::ContainerRegistrar(..)
+                            | &RuntimeCall::Paras(..)
+                            | &RuntimeCall::ParasSudoWrapper(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -845,12 +864,8 @@ impl parachains_session_info::Config for Runtime {
     type ValidatorSet = Historical;
 }
 
-/// Special `RewardValidators` that does nothing ;)
-pub struct RewardValidators;
-impl runtime_parachains::inclusion::RewardValidators for RewardValidators {
-    fn reward_backing(_: impl IntoIterator<Item = ValidatorIndex>) {}
-    fn reward_bitfields(_: impl IntoIterator<Item = ValidatorIndex>) {}
-}
+pub type RewardValidators =
+    pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
 
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1077,7 +1092,7 @@ impl parachains_initializer::Config for Runtime {
 
 impl parachains_disputes::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RewardValidators = ();
+    type RewardValidators = RewardValidators;
     type SlashingHandler = parachains_slashing::SlashValidatorsForDisputes<ParasSlashing>;
     type WeightInfo = weights::runtime_parachains_disputes::SubstrateWeight<Runtime>;
 }
@@ -1121,20 +1136,26 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
+    // TODO: BondingDuration is set to 28 days on Polkadot,
+    // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
 impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
     type MaxAuthorities = MaxAuthorities;
+    // MaxNominators is used in case we need to slash validators and check how many
+    // nominators do they have as maximum.
+    // This value is part of the parameters that are then used for extrinsics
+    // weight computation.
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
-    type OnNewValidatorSet = MmrLeaf;
+    type OnNewValidatorSet = BeefyMmrLeaf;
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
         pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-    type AncestryHelper = MmrLeaf;
+    type AncestryHelper = BeefyMmrLeaf;
 }
 
 /// MMR helper types.
@@ -1166,7 +1187,7 @@ impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
         let mut para_heads: Vec<(u32, Vec<u8>)> = parachains_paras::Parachains::<Runtime>::get()
             .into_iter()
             .filter_map(|id| {
-                parachains_paras::Heads::<Runtime>::get(&id).map(|head| (id.into(), head.0))
+                parachains_paras::Heads::<Runtime>::get(id).map(|head| (id.into(), head.0))
             })
             .collect();
         para_heads.sort();
@@ -1185,15 +1206,63 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-parameter_types! {
-    pub const PermanentSlotLeasePeriodLength: u32 = 365;
-    pub const TemporarySlotLeasePeriodLength: u32 = 5;
-    pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
+use pallet_staking::SessionInterface;
+pub struct DancelightSessionInterface;
+impl SessionInterface<AccountId> for DancelightSessionInterface {
+    fn disable_validator(validator_index: u32) -> bool {
+        Session::disable_index(validator_index)
+    }
+
+    fn validators() -> Vec<AccountId> {
+        Session::validators()
+    }
+
+    fn prune_historical_up_to(up_to: SessionIndex) {
+        Historical::prune_up_to(up_to);
+    }
 }
 
-impl validator_manager::Config for Runtime {
+parameter_types! {
+    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
+}
+
+impl pallet_external_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type PrivilegedOrigin = EnsureRoot<AccountId>;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type HistoryDepth = ConstU32<84>;
+    type MaxWhitelistedValidators = MaxWhitelistedValidators;
+    type MaxExternalValidators = MaxExternalValidators;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type ValidatorRegistration = Session;
+    type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
+    type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
+    type OnEraEnd = ();
+    type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
+}
+
+impl pallet_external_validators_rewards::Config for Runtime {
+    type EraIndexProvider = ExternalValidators;
+    type HistoryDepth = ConstU32<64>;
+    type BackingPoints = ConstU32<20>;
+    type DisputeStatementPoints = ConstU32<20>;
+}
+
+impl pallet_external_validator_slashes::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type SlashDeferDuration = SlashDeferDuration;
+    type BondingDuration = BondingDuration;
+    type SlashId = u32;
+    type SessionInterface = DancelightSessionInterface;
+    type EraIndexProvider = ExternalValidators;
+    type InvulnerablesProvider = ExternalValidators;
+    type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1220,6 +1289,8 @@ impl pallet_asset_rate::Config for Runtime {
 
 parameter_types! {
     pub const MaxInvulnerables: u32 = 100;
+    pub const MaxWhitelistedValidators: u32 = 100;
+    pub const MaxExternalValidators: u32 = 100;
 }
 
 impl pallet_invulnerables::Config for Runtime {
@@ -1227,7 +1298,7 @@ impl pallet_invulnerables::Config for Runtime {
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
-    type CollatorIdOf = pallet_invulnerables::IdentityCollator;
+    type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
@@ -1502,6 +1573,11 @@ construct_runtime! {
         ServicesPayment: pallet_services_payment = 18,
         DataPreservers: pallet_data_preservers = 19,
 
+        // Validator stuff
+        ExternalValidators: pallet_external_validators = 20,
+        ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
+        ExternalValidatorsRewards: pallet_external_validators_rewards = 22,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1572,14 +1648,12 @@ construct_runtime! {
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
         // MMR leaf construction must be after session in order to have a leaf's next_auth_set
-        // refer to block<N>. See issue polkadot-fellows/runtimes#160 for details.
+        // refer to block<N>.
         Mmr: pallet_mmr = 241,
-        MmrLeaf: pallet_beefy_mmr = 242,
+        BeefyMmrLeaf: pallet_beefy_mmr = 242,
+        EthereumBeaconClient: snowbridge_pallet_ethereum_client = 243,
 
         ParasSudoWrapper: paras_sudo_wrapper = 250,
-
-        // Validator Manager pallet.
-        ValidatorManager: validator_manager = 252,
 
         // Root testing pallet.
         RootTesting: pallet_root_testing = 249,
@@ -1609,6 +1683,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -1650,6 +1725,7 @@ where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
     Runtime: pallet_registrar::Config,
+    sp_runtime::AccountId32: From<AccountId>,
 {
     fn register(
         who: AccountId,
@@ -1665,7 +1741,7 @@ where
 
         // Check if the wasm code is present in storage
         let validation_code = match genesis_storage
-            .into_iter()
+            .iter()
             .find(|item| item.key == StorageWellKnownKeys::CODE)
         {
             Some(item) => ValidationCode(item.value.clone()),
@@ -1673,7 +1749,14 @@ where
         };
 
         // Try to register the parachain
-        RegistrarManager::register(who, id, genesis_head, validation_code)
+        // Using register extrinsic instead of `RegistrarInterface` trait because we want
+        // to check that the para id has been reserved.
+        Registrar::register(
+            RuntimeOrigin::signed(who.into()),
+            id,
+            genesis_head,
+            validation_code,
+        )
     }
 
     fn schedule_para_upgrade(id: ParaId) -> DispatchResult {
@@ -1705,6 +1788,22 @@ where
     fn deregister_weight() -> Weight {
         RegistrarWeightInfo::deregister()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_head_data() -> Option<HeadData> {
+        let head_data = HeadData(vec![1; 10]);
+        Some(head_data)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_trusted_validation_code(code: Vec<u8>) {
+        Paras::add_trusted_validation_code(RuntimeOrigin::root(), code.into()).unwrap();
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn registrar_new_session(session: u32) {
+        benchmark_helpers::run_to_session(session)
+    }
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -1722,10 +1821,9 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    // TODO: replace TestWeightInfo when we use proper weights on paras_registrar
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
-    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
 pub struct DancelightRegistrarHooks;
@@ -1737,9 +1835,6 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
     }
 
     fn para_deregistered(para_id: ParaId) -> Weight {
-        // Clear pallet_author_noting storage
-        // TODO: uncomment when pallets exists
-        /*
         if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
             log::warn!(
                 "Failed to kill_author_data after para id {} deregistered: {:?}",
@@ -1748,6 +1843,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
             );
         }
 
+        /*
         XcmCoreBuyer::para_deregistered(para_id);
         */
 
@@ -1831,7 +1927,7 @@ impl pallet_author_noting::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
-    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 frame_support::ord_parameter_types! {
@@ -1874,10 +1970,20 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
+        // Tanssi
+        [pallet_author_noting, AuthorNoting]
+        [pallet_registrar, ContainerRegistrar]
+        [pallet_collator_assignment, TanssiCollatorAssignment]
+        [pallet_external_validators, ExternalValidators]
+        [pallet_external_validator_slashes, ExternalValidatorSlashes]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
+
+        // Bridges
+        [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
     );
 }
 
@@ -2356,11 +2462,11 @@ sp_api::impl_runtime_apis! {
 
     impl pallet_beefy_mmr::BeefyMmrApi<Block, Hash> for RuntimeApi {
         fn authority_set_proof() -> beefy_primitives::mmr::BeefyAuthoritySet<Hash> {
-            MmrLeaf::authority_set_proof()
+            BeefyMmrLeaf::authority_set_proof()
         }
 
         fn next_authority_set_proof() -> beefy_primitives::mmr::BeefyNextAuthoritySet<Hash> {
-            MmrLeaf::next_authority_set_proof()
+            BeefyMmrLeaf::next_authority_set_proof()
         }
     }
 
@@ -3051,7 +3157,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
     type CoreAllocationConfiguration = GetCoreAllocationConfigurationImpl;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -3063,6 +3169,90 @@ impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<3>;
     type AuthorityId = nimbus_primitives::NimbusId;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmark_helpers {
+    use {
+        super::*,
+        babe_primitives::{
+            digests::{PreDigest, SecondaryPlainPreDigest},
+            BABE_ENGINE_ID,
+        },
+        frame_support::traits::Hooks,
+        sp_runtime::{Digest, DigestItem},
+    };
+
+    fn end_block() {
+        Babe::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
+        Grandpa::on_finalize(System::block_number());
+        TransactionPayment::on_finalize(System::block_number());
+        Initializer::on_finalize(System::block_number());
+        ContainerRegistrar::on_finalize(System::block_number());
+        TanssiCollatorAssignment::on_finalize(System::block_number());
+    }
+
+    pub fn insert_authorities_and_slot_digests(slot: u64) {
+        let pre_digest = Digest {
+            logs: vec![DigestItem::PreRuntime(
+                BABE_ENGINE_ID,
+                PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
+                    slot: slot.into(),
+                    authority_index: 0,
+                })
+                .encode(),
+            )],
+        };
+
+        System::reset_events();
+        System::initialize(
+            &(System::block_number() + 1),
+            &System::parent_hash(),
+            &pre_digest,
+        );
+    }
+
+    pub fn current_slot() -> u64 {
+        Babe::current_slot().into()
+    }
+
+    fn start_block() {
+        insert_authorities_and_slot_digests(current_slot() + 1);
+
+        // Initialize the new block
+        Babe::on_initialize(System::block_number());
+        ContainerRegistrar::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
+        Initializer::on_initialize(System::block_number());
+        TanssiCollatorAssignment::on_initialize(System::block_number());
+        InflationRewards::on_initialize(System::block_number());
+    }
+
+    pub fn session_to_block(n: u32) -> u32 {
+        // let block_number = flashbox_runtime::Period::get() * n;
+        let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
+
+        // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+        // so this is the first block of the new session that can actually be used
+        block_number + 1
+    }
+
+    pub fn run_to_block(n: u32) {
+        while System::block_number() < n {
+            run_block();
+        }
+    }
+
+    pub fn run_block() {
+        end_block();
+
+        start_block()
+    }
+
+    pub fn run_to_session(n: u32) {
+        run_to_block(session_to_block(n));
+    }
 }
 
 #[cfg(all(test, feature = "try-runtime"))]

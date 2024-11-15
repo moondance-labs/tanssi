@@ -152,7 +152,7 @@ async fn claim_slot_respects_min_slot_freq() {
 #[tokio::test]
 async fn collate_returns_correct_block() {
     let net = AuraTestNet::new(4);
-    let _ = sp_tracing::try_init_simple();
+    sp_tracing::try_init_simple();
 
     let keystore_path = tempfile::tempdir().expect("Creates keystore path");
     let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");

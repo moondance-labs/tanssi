@@ -154,7 +154,7 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-                const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(0);
+                const tx4 = paraApi.tx.configuration.setFullRotationPeriod(0);
 
                 const tx = paraApi.tx.sudo.sudo(
                     paraApi.tx.xcmCoreBuyer.setRelayXcmWeightConfig({

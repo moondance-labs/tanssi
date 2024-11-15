@@ -16,8 +16,12 @@
 
 pub mod frame_system;
 pub mod pallet_asset_rate;
+pub mod pallet_author_noting;
 pub mod pallet_balances;
+pub mod pallet_collator_assignment;
 pub mod pallet_conviction_voting;
+pub mod pallet_external_validator_slashes;
+pub mod pallet_external_validators;
 pub mod pallet_identity;
 pub mod pallet_message_queue;
 pub mod pallet_multisig;
@@ -26,6 +30,7 @@ pub mod pallet_preimage;
 pub mod pallet_proxy;
 pub mod pallet_ranked_collective;
 pub mod pallet_referenda;
+pub mod pallet_registrar;
 pub mod pallet_scheduler;
 pub mod pallet_services_payment;
 pub mod pallet_sudo;
@@ -43,3 +48,4 @@ pub mod runtime_parachains_inclusion;
 pub mod runtime_parachains_initializer;
 pub mod runtime_parachains_paras;
 pub mod runtime_parachains_paras_inherent;
+pub mod snowbridge_pallet_ethereum_client;

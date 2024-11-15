@@ -51,6 +51,10 @@
             "name": "dev_tanssi_relay",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
+            "runScripts": [
+                "download-ethereum-client-test-files.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c dancelight-dev -a='--mock-container-chain=2000 --mock-container-chain=2001'"
+            ],
             "multiThreads": true,
             "timeout": 240000,
             "reporters": ["basic"],
@@ -68,8 +72,9 @@
                             "--reserved-only",
                             "--alice",
                             "--tmp",
-                            "--chain=dancelight-dev",
+                            "--chain=tmp/dancelight-dev-raw.json",
                             "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm",
                             "--unsafe-force-node-key-generation"
                         ],
                         "disableDefaultEthProviders": true,
@@ -527,7 +532,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-zombienet"],
+            "testFileDir": ["suites/rt-upgrade-parachain-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "timeout": 600000,
             "foundation": {
@@ -578,6 +583,28 @@
             ]
         },
         {
+            "name": "zombie_dancelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-relay-zombienet"],
+            "runScripts": ["download-latest-rt-binaries-starlight.sh", "build-spec-dancelight-single.sh tmp"],
+
+            "timeout": 900000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightUpgrade.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                }
+            ]
+        },
+        {
             "name": "zombie_simple_template_upgrade_with_latest_releases",
             "testFileDir": ["suites/rt-upgrade-templates-zombienet"],
             "runScripts": [
@@ -611,6 +638,34 @@
                 },
                 {
                     "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_simple_template_offchain",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie-offchain"],
+            "runScripts": [
+                "build-spec-dancelight-single-container.sh",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightSingleContainer.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
                 }
@@ -699,6 +754,7 @@
             "testFileDir": ["suites/zombie-tanssi-relay"],
             "runScripts": [
                 "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
             ],
@@ -743,20 +799,42 @@
             ]
         },
         {
+            "name": "zombie_tanssi_relay_eth_bridge",
+            "timeout": 600000,
+            "envVars": ["RUST_BACKTRACE=1"],
+            "testFileDir": ["suites/zombie-tanssi-relay-eth-bridge"],
+            "runScripts": ["bridge-build-artifacts.sh"],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightBridge.json",
+                    "skipBlockCheck": ["Tanssi-relay"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                }
+            ]
+        },
+        {
             "name": "zombie_data_preservers",
             "testFileDir": ["suites/data-preservers"],
             "runScripts": [
-                "build-spec-single-container.sh",
+                "build-spec-data-preservers.sh",
                 "download-polkadot.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
             ],
             "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
                     "configPath": "./configs/zombieDataPreservers.json",
-                    "skipBlockCheck": ["DataPreserver"]
+                    "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
             "connections": [
@@ -776,15 +854,19 @@
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "DataPreserver",
+                    "name": "Container2001",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9950"]
+                    "endpoints": ["ws://127.0.0.1:9951"]
                 }
             ]
         },
         {
             "name": "dancebox_smoke",
-            "testFileDir": ["suites/smoke-test-dancebox", "suites/smoke-test-common"],
+            "testFileDir": [
+                "suites/smoke-test-dancebox",
+                "suites/smoke-test-common-parachain",
+                "suites/smoke-test-common-all"
+            ],
             "foundation": {
                 "type": "read_only"
             },
@@ -799,7 +881,11 @@
         },
         {
             "name": "stagenet_dancebox_smoke",
-            "testFileDir": ["suites/smoke-test-dancebox", "suites/smoke-test-common"],
+            "testFileDir": [
+                "suites/smoke-test-dancebox",
+                "suites/smoke-test-common-parachain",
+                "suites/smoke-test-common-all"
+            ],
             "foundation": {
                 "type": "read_only"
             },
@@ -814,7 +900,7 @@
         },
         {
             "name": "flashbox_smoke",
-            "testFileDir": ["suites/smoke-test-common"],
+            "testFileDir": ["suites/smoke-test-common-parachain", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -828,6 +914,21 @@
             ]
         },
         {
+            "name": "stagelight_dancelight_smoke",
+            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://stagelight.tanssi-dev.network"]
+                }
+            ]
+        },
+        {
             "name": "chopsticks_stagenet_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
@@ -837,7 +938,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-dancebox.yml"
+                        "configPath": "./configs/stagenet-dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -859,7 +961,8 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/dancebox.yml"
+                        "configPath": "./configs/dancebox.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },
@@ -881,7 +984,31 @@
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/stagenet-flashbox.yml"
+                        "configPath": "./configs/stagenet-flashbox.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_stagelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/stagelight.yml",
+                        "address": "127.0.0.1"
                     }
                 ]
             },

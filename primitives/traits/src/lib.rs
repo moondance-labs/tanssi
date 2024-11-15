@@ -37,12 +37,13 @@ use {
         pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
         BoundedVec,
     },
+    scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     sp_core::H256,
     sp_runtime::{
         app_crypto::sp_core,
         traits::{CheckedAdd, CheckedMul},
-        ArithmeticError, DispatchResult, Perbill,
+        ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
 };
@@ -403,6 +404,15 @@ pub trait RegistrarHandler<AccountId> {
     fn schedule_para_downgrade(id: ParaId) -> DispatchResult;
     fn deregister(id: ParaId);
     fn deregister_weight() -> Weight;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_head_data() -> Option<HeadData> {
+        None
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_trusted_validation_code(_code: Vec<u8>) {}
+    #[cfg(feature = "runtime-benchmarks")]
+    fn registrar_new_session(_session: u32) {}
 }
 
 impl<AccountId> RegistrarHandler<AccountId> for () {
@@ -439,5 +449,55 @@ pub trait MaybeSelfChainBlockAuthor<AccountId> {
 impl<AccountId> MaybeSelfChainBlockAuthor<AccountId> for () {
     fn get_block_author() -> Option<AccountId> {
         None
+    }
+}
+
+/// Information regarding the active era (era in used in session).
+#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct ActiveEraInfo {
+    /// Index of era.
+    pub index: EraIndex,
+    /// Moment of start expressed as millisecond from `$UNIX_EPOCH`.
+    ///
+    /// Start can be none if start hasn't been set for the era yet,
+    /// Start is set on the first on_finalize of the era to guarantee usage of `Time`.
+    pub start: Option<u64>,
+}
+
+/// Counter for the number of eras that have passed.
+pub type EraIndex = u32;
+
+pub trait EraIndexProvider {
+    fn active_era() -> ActiveEraInfo;
+    fn era_to_session_start(era_index: EraIndex) -> Option<u32>;
+}
+
+pub trait ValidatorProvider<ValidatorId> {
+    fn validators() -> Vec<ValidatorId>;
+}
+
+pub trait InvulnerablesProvider<ValidatorId> {
+    fn invulnerables() -> Vec<ValidatorId>;
+}
+
+pub trait OnEraStart {
+    fn on_era_start(_era_index: EraIndex, _session_start: u32) {}
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl OnEraStart for Tuple {
+    fn on_era_start(era_index: EraIndex, session_start: u32) {
+        for_tuples!( #( Tuple::on_era_start(era_index, session_start); )* );
+    }
+}
+
+pub trait OnEraEnd {
+    fn on_era_end(_era_index: EraIndex) {}
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl OnEraEnd for Tuple {
+    fn on_era_end(era_index: EraIndex) {
+        for_tuples!( #( Tuple::on_era_end(era_index); )* );
     }
 }

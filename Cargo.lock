@@ -1772,12 +1772,13 @@ checksum = "cd7e35aee659887cbfb97aaf227ac12cad1a9d7c71e55ff3376839ed4e282d08"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
  "clap 4.5.4",
+ "color-eyre",
  "container-chain-template-frontier-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -1788,6 +1789,8 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
+ "dc-orchestrator-chain-interface",
+ "dp-core",
  "fc-api",
  "fc-cli",
  "fc-consensus",
@@ -1801,6 +1804,7 @@ dependencies = [
  "fp-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "frame-support",
  "frame-system-rpc-runtime-api",
  "futures 0.3.30",
  "hex-literal 0.3.4",
@@ -1858,17 +1862,21 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
+ "tc-orchestrator-chain-rpc-interface",
+ "tc-service-container-chain",
+ "tp-traits",
  "url",
 ]
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
  "clap 4.5.4",
+ "color-eyre",
  "container-chain-template-simple-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -2081,6 +2089,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-multisig",
+ "pallet-ocw-testing",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
@@ -3211,8 +3220,10 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
+ "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-remote-externalities",
  "frame-support",
  "frame-system",
@@ -3240,6 +3251,9 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-external-validator-slashes",
+ "pallet-external-validators",
+ "pallet-external-validators-rewards",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -3280,13 +3294,18 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
+ "rand",
  "scale-info",
  "separator",
  "serde",
  "serde_derive",
  "serde_json",
  "smallvec",
+ "snowbridge-beacon-primitives",
+ "snowbridge-milagro-bls",
+ "snowbridge-pallet-ethereum-client",
  "sp-api",
+ "sp-application-crypto",
  "sp-arithmetic",
  "sp-authority-discovery",
  "sp-block-builder",
@@ -4018,6 +4037,16 @@ checksum = "a258e46cdc063eb8519c00b9fc845fc47bcfca4130e2f08e88665ceda8474245"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ethabi-decode"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09d398648d65820a727d6a81e58b962f874473396a047e4c30bafe3240953417"
+dependencies = [
+ "ethereum-types",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -8041,6 +8070,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
+ "tp-traits",
 ]
 
 [[package]]
@@ -9339,6 +9369,70 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-external-validator-slashes"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "pallet-staking",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
+name = "pallet-external-validators"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rand",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
+name = "pallet-external-validators-rewards"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-fast-unstake"
 version = "36.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
@@ -9687,6 +9781,21 @@ dependencies = [
  "pallet-nomination-pools",
  "parity-scale-codec",
  "sp-api",
+]
+
+[[package]]
+name = "pallet-ocw-testing"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -10497,6 +10606,12 @@ dependencies = [
  "serde",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "parity-bytes"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16b56e3a2420138bdb970f84dfb9c774aea80fa0e7371549eedec0d80c209c67"
 
 [[package]]
 name = "parity-db"
@@ -15115,6 +15230,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-big-array"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd31f59f6fe2b0c055371bb2f16d7f0aa7d8881676c04a55b1596d1a17cd10a4"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_bytes"
 version = "0.11.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15562,6 +15686,134 @@ dependencies = [
  "rustc_version",
  "sha2 0.10.8",
  "subtle 2.5.0",
+]
+
+[[package]]
+name = "snowbridge-amcl"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "460a9ed63cdf03c1b9847e8a12a5f5ba19c4efd5869e4a737e05be25d7c427e5"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+]
+
+[[package]]
+name = "snowbridge-beacon-primitives"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
+dependencies = [
+ "byte-slice-cast",
+ "frame-support",
+ "hex",
+ "parity-scale-codec",
+ "rlp",
+ "scale-info",
+ "serde",
+ "snowbridge-ethereum",
+ "snowbridge-milagro-bls",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "ssz_rs",
+ "ssz_rs_derive",
+]
+
+[[package]]
+name = "snowbridge-core"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
+dependencies = [
+ "ethabi-decode",
+ "frame-support",
+ "frame-system",
+ "hex-literal 0.4.1",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "scale-info",
+ "serde",
+ "snowbridge-beacon-primitives",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-builder",
+]
+
+[[package]]
+name = "snowbridge-ethereum"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
+dependencies = [
+ "ethabi-decode",
+ "ethbloom",
+ "ethereum-types",
+ "hex-literal 0.4.1",
+ "parity-bytes",
+ "parity-scale-codec",
+ "rlp",
+ "scale-info",
+ "serde",
+ "serde-big-array",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "snowbridge-milagro-bls"
+version = "1.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "026aa8638f690a53e3f7676024b9e913b1cab0111d1b7b92669d40a188f9d7e6"
+dependencies = [
+ "hex",
+ "lazy_static",
+ "parity-scale-codec",
+ "rand",
+ "scale-info",
+ "snowbridge-amcl",
+ "zeroize",
+]
+
+[[package]]
+name = "snowbridge-pallet-ethereum-client"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex-literal 0.4.1",
+ "log",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-ethereum",
+ "snowbridge-pallet-ethereum-client-fixtures",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "static_assertions",
+]
+
+[[package]]
+name = "snowbridge-pallet-ethereum-client-fixtures"
+version = "0.17.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2407-tx-pool-fix-wip#b8bc17cebec136b6f28fcb1900e54a10e4e85b14"
+dependencies = [
+ "hex-literal 0.4.1",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "sp-core",
+ "sp-std",
 ]
 
 [[package]]
@@ -16526,6 +16778,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "ssz_rs"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "057291e5631f280978fa9c8009390663ca4613359fc1318e36a8c24c392f6d1f"
+dependencies = [
+ "bitvec",
+ "num-bigint",
+ "sha2 0.9.9",
+ "ssz_rs_derive",
+]
+
+[[package]]
+name = "ssz_rs_derive"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f07d54c4d01a1713eb363b55ba51595da15f6f1211435b71466460da022aa140"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -17063,13 +17338,14 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
  "ccp-authorities-noting-inherent",
  "chrono",
  "clap 4.5.4",
+ "color-eyre",
  "cumulus-client-cli",
  "cumulus-client-collator",
  "cumulus-client-consensus-aura",
@@ -17163,7 +17439,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -17182,7 +17458,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "clap 4.5.4",
  "frame-benchmarking-cli",
@@ -17223,7 +17499,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.1.0"
+version = "0.10.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
@@ -17365,14 +17641,17 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "pallet-balances",
+ "pallet-beefy-mmr",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-external-validators",
  "pallet-foreign-asset-creator",
  "pallet-invulnerables",
  "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",
  "pallet-services-payment",
+ "pallet-session",
  "pallet-treasury",
  "pallet-xcm",
  "parity-scale-codec",
@@ -17503,6 +17782,7 @@ dependencies = [
 name = "tc-service-container-chain"
 version = "0.1.0"
 dependencies = [
+ "async-backing-primitives",
  "async-trait",
  "ccp-authorities-noting-inherent",
  "clap 4.5.4",
@@ -17519,6 +17799,7 @@ dependencies = [
  "dp-container-chain-genesis-data",
  "dp-slot-duration-runtime-api",
  "flume 0.10.14",
+ "frame-support",
  "fs2",
  "futures 0.3.30",
  "jsonrpsee",
@@ -17557,6 +17838,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
+ "sp-transaction-pool",
  "stream-payment-rpc",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -17565,6 +17847,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
+ "tp-traits",
  "url",
 ]
 
@@ -17748,9 +18031,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.34"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
  "itoa",
@@ -17769,9 +18052,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ba3a3ef41e6672a2f0f001392bb5dcd3ff0a9992d618ca761a11c3121547774"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
  "num-conv",
  "time-core",

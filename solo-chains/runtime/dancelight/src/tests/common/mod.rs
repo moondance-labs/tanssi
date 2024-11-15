@@ -22,6 +22,7 @@ use {
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
     },
+    beefy_primitives::{ecdsa_crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID},
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
@@ -58,9 +59,9 @@ use {
 
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Balances, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards, Initializer, Runtime,
-    RuntimeOrigin, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
-    TransactionPayment,
+    Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
+    Initializer, Mmr, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
+    TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -103,6 +104,10 @@ pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
         .container_chains
         .get(&para_id)
         .cloned()
+}
+
+pub fn get_beefy_digest(log: ConsensusLog<BeefyId>) -> DigestItem {
+    DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
 pub fn run_to_session(n: u32) {
@@ -243,6 +248,10 @@ pub fn start_block() -> RunSummary {
         set_paras_inherent(mock_inherent_data);
     }
 
+    Beefy::on_initialize(System::block_number());
+    Mmr::on_initialize(System::block_number());
+    BeefyMmrLeaf::on_initialize(System::block_number());
+
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
@@ -259,6 +268,9 @@ pub fn end_block() {
     Initializer::on_finalize(System::block_number());
     ContainerRegistrar::on_finalize(System::block_number());
     TanssiCollatorAssignment::on_finalize(System::block_number());
+    Beefy::on_finalize(System::block_number());
+    Mmr::on_finalize(System::block_number());
+    BeefyMmrLeaf::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
@@ -543,6 +555,7 @@ impl ExtBuilder {
         .unwrap();
 
         let mut keys: Vec<_> = Vec::new();
+        let mut non_authority_keys: Vec<_> = Vec::new();
         if !self.validators.is_empty() {
             let validator_keys: Vec<_> = self
                 .validators
@@ -619,12 +632,23 @@ impl ExtBuilder {
                     }
                 })
                 .collect();
-            keys.extend(collator_keys)
+            non_authority_keys.extend(collator_keys)
         }
+
+        pallet_external_validators::GenesisConfig::<Runtime> {
+            skip_external_validators: false,
+            whitelisted_validators: self
+                .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         pallet_session::GenesisConfig::<Runtime> {
             keys,
-            ..Default::default()
+            non_authority_keys,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -1057,7 +1081,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     pub(crate) fn group_validators(group_index: GroupIndex) -> Option<Vec<ValidatorIndex>> {
         runtime_parachains::scheduler::ValidatorGroups::<T>::get()
             .get(group_index.0 as usize)
-            .map(|g| g.clone())
+            .cloned()
     }
 
     pub fn heads_insert(para_id: &ParaId, head_data: HeadData) {
@@ -1094,7 +1118,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .iter()
             .enumerate()
             .map(|(i, public)| {
-                let unchecked_signed = UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
+                UncheckedSigned::<AvailabilityBitfield>::benchmark_sign(
                     public,
                     availability_bitvec.clone(),
                     &SigningContext {
@@ -1102,9 +1126,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         session_index: Session::current_index(),
                     },
                     ValidatorIndex(i as u32),
-                );
-
-                unchecked_signed
+                )
             })
             .collect();
 
@@ -1121,9 +1143,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     }
 }
 
-use frame_support::StorageHasher;
-use primitives::vstaging::SchedulerParams;
-use tp_traits::ParathreadParams;
+use {
+    frame_support::StorageHasher, primitives::vstaging::SchedulerParams,
+    tp_traits::ParathreadParams,
+};
 
 pub fn storage_map_final_key<H: frame_support::StorageHasher>(
     pallet_prefix: &str,
@@ -1179,4 +1202,116 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
         "profile should be correctly assigned"
     );
+}
+use milagro_bls::Keypair;
+pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
+    let mut keys = vec![];
+
+    for _i in 0..n {
+        let keypair = Keypair::random(&mut rand::thread_rng());
+        keys.push(keypair);
+    }
+    keys
+}
+
+use babe_primitives::AuthorityPair as BabeAuthorityPair;
+use grandpa_primitives::{
+    AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+};
+use sp_core::H256;
+pub fn generate_grandpa_equivocation_proof(
+    set_id: SetId,
+    vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+    vote2: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
+) -> EquivocationProof<H256, u32> {
+    let signed_prevote = |round, hash, number, authority_pair: &GrandpaAuthorityPair| {
+        let prevote = finality_grandpa::Prevote {
+            target_hash: hash,
+            target_number: number,
+        };
+
+        let prevote_msg = finality_grandpa::Message::Prevote(prevote.clone());
+        let payload = grandpa_primitives::localized_payload(round, set_id, &prevote_msg);
+        let signed = authority_pair.sign(&payload);
+        (prevote, signed)
+    };
+
+    let (prevote1, signed1) = signed_prevote(vote1.0, vote1.1, vote1.2, vote1.3);
+    let (prevote2, signed2) = signed_prevote(vote2.0, vote2.1, vote2.2, vote2.3);
+
+    EquivocationProof::new(
+        set_id,
+        Equivocation::Prevote(finality_grandpa::Equivocation {
+            round_number: vote1.0,
+            identity: vote1.3.public(),
+            first: (prevote1, signed1),
+            second: (prevote2, signed2),
+        }),
+    )
+}
+
+/// Creates an equivocation at the current block, by generating two headers.
+pub fn generate_babe_equivocation_proof(
+    offender_authority_pair: &BabeAuthorityPair,
+) -> babe_primitives::EquivocationProof<crate::Header> {
+    use babe_primitives::digests::CompatibleDigestItem;
+
+    let current_digest = System::digest();
+    let babe_predigest = current_digest
+        .clone()
+        .logs()
+        .iter()
+        .find_map(|log| log.as_babe_pre_digest());
+    let slot_proof = babe_predigest.expect("babe should be presesnt").slot();
+
+    let make_headers = || {
+        (
+            HeaderFor::<Runtime>::new(
+                0,
+                H256::default(),
+                H256::default(),
+                H256::default(),
+                current_digest.clone(),
+            ),
+            HeaderFor::<Runtime>::new(
+                1,
+                H256::default(),
+                H256::default(),
+                H256::default(),
+                current_digest.clone(),
+            ),
+        )
+    };
+
+    // sign the header prehash and sign it, adding it to the block as the seal
+    // digest item
+    let seal_header = |header: &mut crate::Header| {
+        let prehash = header.hash();
+        let seal = <DigestItem as CompatibleDigestItem>::babe_seal(
+            offender_authority_pair.sign(prehash.as_ref()),
+        );
+        header.digest_mut().push(seal);
+    };
+
+    // generate two headers at the current block
+    let (mut h1, mut h2) = make_headers();
+
+    seal_header(&mut h1);
+    seal_header(&mut h2);
+
+    babe_primitives::EquivocationProof {
+        slot: slot_proof,
+        offender: offender_authority_pair.public(),
+        first_header: h1,
+        second_header: h2,
+    }
+}
+
+use sp_core::Public;
+/// Helper function to generate a crypto pair from seed
+pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
+    let secret_uri = format!("//{}", seed);
+    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+
+    pair
 }

@@ -66,6 +66,21 @@ describeSuite({
         });
 
         it({
+            id: "T02",
+            title: "Set config params",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const tx1 = relayApi.tx.collatorConfiguration.setFullRotationPeriod(5);
+                const fillAmount = 990_000_000; // equal to 99% Perbill
+                const tx2 = relayApi.tx.collatorConfiguration.setMaxParachainCoresPercentage(fillAmount);
+                const txBatch = relayApi.tx.utility.batchAll([tx1, tx2]);
+                await signAndSendAndInclude(relayApi.tx.sudo.sudo(txBatch), alice);
+            },
+        });
+
+        it({
             id: "T03",
             timeout: 600000,
             title: "Test assignation did not change",
@@ -211,6 +226,7 @@ describeSuite({
                 const chainSpec2002 = JSON.parse(spec2002);
                 const genesisCode = chainSpec2002.genesis.raw.top["0x3a636f6465"];
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(relayApi, chainSpec2002);
+                const tx0 = relayApi.tx.registrar.reserve();
                 const tx1 = relayApi.tx.containerRegistrar.register(2002, containerChainGenesisData, headData2002);
                 const purchasedCredits = 100000n;
                 const requiredBalance = purchasedCredits * 1_000_000n;
@@ -232,6 +248,7 @@ describeSuite({
 
                 // Send the batch transaction: [register, purchaseCredits, createProfile, sudo(forceStartAssignment), sudo(addTrustedValidationCode)]
                 const txBatch = relayApi.tx.utility.batchAll([
+                    tx0,
                     tx1,
                     tx2,
                     profileTx,
@@ -401,8 +418,18 @@ describeSuite({
                         "Error waiting for chain",
                         "Failed to start container chain",
                         "Shutting down container chain service",
+                        "Entering off-chain worker.",
                     ]);
                 }
+            },
+        });
+
+        it({
+            id: "T19",
+            title: "Check reward points for validators are distributed",
+            test: async function () {
+                const keys = await relayApi.query.externalValidatorsRewards.rewardPointsForEra.keys();
+                expect(keys.length).to.be.greaterThan(0);
             },
         });
     },

@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::UNIT as DANCE,
     crate::{
         assert_expected_events,
         tests::common::xcm::{
@@ -27,6 +26,7 @@ use {
             },
             *,
         },
+        UNIT as DANCE,
     },
     container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
     frame_support::{

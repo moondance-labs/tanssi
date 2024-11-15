@@ -33,14 +33,22 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "validator": true
+            },
+            {
+                "name": "dave",
+                "validator": true
             }
         ]
     },
     "parachains": [
         {
             "id": 1000,
-            "chain_spec_path": "specs/single-container-tanssi-1000.json",
-            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-single-container.sh`",
+            "chain_spec_path": "specs/data-preservers-dancebox-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-data-preservers.sh`",
             "collators": [
                 {
                     "name": "FullNode-1000",
@@ -70,15 +78,46 @@
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
                 {
-                    "name": "Collator1000-03",
+                    "name": "Collator2001-01",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "Collator2001-02",
+                    "command": "../target/release/tanssi-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                },
+                {
+                    "name": "DataPreserver-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": [
+                        "--rpc-provider-profile-id=2",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9950"
+                    ],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "DataPreserver-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": [
+                        "--rpc-provider-profile-id=3",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
+                    ],
+                    "prometheus_port": 33103
                 }
             ]
         },
         {
             "id": 2000,
-            "chain_spec_path": "specs/single-container-template-container-2000.json",
+            "chain_spec_path": "specs/data-preservers-container-2000.json",
             "collators": [
                 {
                     "name": "FullNode-2000",
@@ -88,19 +127,21 @@
                     "ws_port": 9949,
                     "p2p_port": 33049,
                     "prometheus_port": 33102
-                },
+                }
+            ]
+        },
+        {
+            "id": 2001,
+            "chain_spec_path": "specs/data-preservers-container-2001.json",
+            "collators": [
                 {
-                    "name": "DataPreserver",
+                    "name": "FullNode-2001",
                     "validator": false,
-                    "command": "../target/release/container-chain-simple-node",
-                    "args": [
-                        "--rpc-provider-profile-id=0",
-                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9950"
-                    ],
-                    "prometheus_port": 33102
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "ws_port": 9951,
+                    "p2p_port": 33050,
+                    "prometheus_port": 33103
                 }
             ]
         }

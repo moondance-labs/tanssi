@@ -501,7 +501,7 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         invulnerables: {
-            /** The invulnerable, permissioned collators. This list must be sorted. */
+            /** The invulnerable, permissioned collators. */
             invulnerables: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
