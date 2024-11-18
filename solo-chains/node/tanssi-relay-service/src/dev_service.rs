@@ -371,7 +371,8 @@ where
                                 .unwrap();
 
                             // if we dont do this we have a backed candidate every 2 blocks
-                            persisted_validation_data.relay_parent_storage_root = parent_header.state_root;
+                            persisted_validation_data.relay_parent_storage_root =
+                                parent_header.state_root;
 
                             let persisted_validation_data_hash = persisted_validation_data.hash();
                             let validation_code_hash = runtime_api
