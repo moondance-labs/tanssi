@@ -1,7 +1,6 @@
 import { ApiPromise } from "@polkadot/api";
 import type { Header, ParaId, HeadData } from "@polkadot/types/interfaces";
-import { u8aToHex, u8aToU8a, isU8a, hexToU8a, compactToU8a, compactFromU8a, compactFromU8aLim } from "@polkadot/util";
-import { bool, u32, u8, Bytes } from "@polkadot/types-codec";
+import { Bytes } from "@polkadot/types-codec";
 import { TypeRegistry } from "@polkadot/types";
 
 export async function getHeaderFromRelay(relayApi: ApiPromise, paraId: ParaId): Promise<Header | null> {

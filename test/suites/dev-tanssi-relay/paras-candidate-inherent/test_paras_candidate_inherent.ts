@@ -1,10 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, customDevRpcRequest, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
-import { filterAndApply } from "@moonwall/util";
-import { EventRecord } from "@polkadot/types/interfaces";
-import { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import { jumpToSession } from "util/block";
 import { before } from "node:test";
 import { getHeaderFromRelay } from "util/relayInterface.ts";
 
