@@ -33,5 +33,35 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C02",
+            title: "all assigned profile have assignement witness corresponding to request and whished para id",
+            test: async function () {
+                const entries = await paraApi.query.dataPreservers.profiles.entries();
+
+                for (const [key, entry] of entries) {
+                    console.log(JSON.stringify(entry));
+
+                    if (entry.assignment == null) {
+                        continue;
+                    }
+
+                    const [para_id, witness] = entry.assignment;
+
+                    if (entry.profile.paraIds.whitelist != null) {
+                        expect(entry.profile.paraIds.whitelist.includes(para_id));
+                    } else if (entry.profile.paraIds.blacklist != null) {
+                        expect(!entry.profile.paraIds.blacklist.includes(para_id));
+                    }
+
+                    if (entry.profile.assignmentRequest == "Free") {
+                        expect(witness).to.be.eq("Free");
+                    } else if (entry.profile.assignmentRequest.streamPayment != null) {
+                        expect(witness.streamPayment).to.not.be.undefined();
+                    }
+                }
+            },
+        });
     },
 });
