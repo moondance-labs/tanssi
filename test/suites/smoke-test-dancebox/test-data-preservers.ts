@@ -1,5 +1,4 @@
 import "@tanssi/api-augment";
-import { ApiDecoration } from "@polkadot/api/types";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 
@@ -7,15 +6,11 @@ describeSuite({
     id: "S16",
     title: "Verify data preservers consistency",
     foundationMethods: "read_only",
-    testCases: ({ context, it, log }) => {
-        let atBlockNumber: number = 0;
-        let apiAt: ApiDecoration<"promise">;
+    testCases: ({ context, it }) => {
         let paraApi: ApiPromise;
 
         beforeAll(async function () {
             paraApi = context.polkadotJs("para");
-            atBlockNumber = (await paraApi.rpc.chain.getHeader()).number.toNumber();
-            apiAt = await paraApi.at(await paraApi.rpc.chain.getBlockHash(atBlockNumber));
         });
 
         it({
@@ -28,7 +23,7 @@ describeSuite({
 
                 const entries = await paraApi.query.dataPreservers.profiles.entries();
 
-                for (const [key, entry] of entries) {
+                for (const [, entry] of entries) {
                     expect(validDeposits.includes(entry.deposit));
                 }
             },
@@ -40,7 +35,7 @@ describeSuite({
             test: async function () {
                 const entries = await paraApi.query.dataPreservers.profiles.entries();
 
-                for (const [key, entry] of entries) {
+                for (const [, entry] of entries) {
                     console.log(JSON.stringify(entry));
 
                     if (entry.assignment == null) {
