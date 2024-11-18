@@ -17,7 +17,7 @@
 //! Development Polkadot service. Adapted from `polkadot_service` crate
 //! and removed un-necessary components which are not required in dev node.
 
-use codec::{Decode, Encode};
+use codec::Encode;
 use jsonrpsee::{
     core::RpcResult,
     proc_macros::rpc,

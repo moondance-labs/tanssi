@@ -56,7 +56,7 @@ use {
         run_manual_seal, EngineCommand, ManualSealParams,
     },
     sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
-    sc_keystore::{Keystore, LocalKeystore},
+    sc_keystore::Keystore,
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
     service::{Configuration, KeystoreContainer, RpcHandlers, TaskManager},
     sp_api::ProvideRuntimeApi,
@@ -171,10 +171,7 @@ where
 
 /// We use EmptyParachainsInherentDataProvider to insert an empty parachain inherent in the block
 /// to satisfy runtime
-struct EmptyParachainsInherentDataProvider<C: HeaderBackend<Block>> {
-    pub client: Arc<C>,
-    pub parent: Hash,
-}
+struct EmptyParachainsInherentDataProvider;
 
 use polkadot_primitives::BackedCandidate;
 use polkadot_primitives::CollatorPair;
@@ -197,12 +194,8 @@ struct Basics {
     telemetry: Option<Telemetry>,
 }
 
-impl<C: HeaderBackend<Block>> EmptyParachainsInherentDataProvider<C> {
-    pub fn new(client: Arc<C>, parent: Hash) -> Self {
-        EmptyParachainsInherentDataProvider { client, parent }
-    }
-
-    pub async fn create(
+impl EmptyParachainsInherentDataProvider {
+    pub async fn create<C: HeaderBackend<Block>>(
         client: Arc<C>,
         parent: Hash,
     ) -> Result<ParachainsInherentData, InherentError> {
