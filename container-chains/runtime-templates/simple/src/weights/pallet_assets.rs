@@ -183,6 +183,21 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn transfer_all() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `384`
+		//  Estimated: `6204`
+		// Minimum execution time: 49_215_000 picoseconds.
+		Weight::from_parts(50_711_000, 6204)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssets::Account` (r:2 w:2)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn transfer_keep_alive() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `384`
