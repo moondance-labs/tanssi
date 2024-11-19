@@ -972,11 +972,11 @@ fn payload_data<H: Encode, Payload: Encode>(
     out
 }
 
-/// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
-/// that is concluding and `cores` is the total number of cores in the system.
-fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
+/// Create an `AvailabilityBitfield` with size `total_cores`. The first `used_cores` set to true (occupied),
+/// and the remaining to false (available).
+fn availability_bitvec(used_cores: usize, total_cores: usize) -> AvailabilityBitfield {
     let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
-    for i in 0..cores {
+    for i in 0..total_cores {
         if i < used_cores {
             bitfields.push(true);
         } else {
