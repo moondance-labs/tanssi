@@ -137,8 +137,9 @@ jobs:
             - name: Find toml files with lints key not set
               run: ./.github/scripts/check_toml_lints.sh
 
+            # Do NOT add SKIP_WASM_BUILD=1 environment variable here as it skips wasm binary build which leads to some compilation bugs escaping clippy
             - name: Clippy
-              run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
+              run: cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
 
     cargo-toml-feature-propagation:
         runs-on: ubuntu-latest
