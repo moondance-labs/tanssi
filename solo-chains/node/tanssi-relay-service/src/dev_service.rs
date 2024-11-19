@@ -30,9 +30,8 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
-use crate::dev_rpcs::DevRpc;
-
 use {
+    crate::dev_rpcs::{DevApiServer, DevRpc},
     async_io::Timer,
     babe::{BabeBlockImport, BabeLink},
     codec::{Decode, Encode},
@@ -44,7 +43,12 @@ use {
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
-    polkadot_primitives::{runtime_api::ParachainHost, InherentData as ParachainsInherentData},
+    polkadot_primitives::{
+        runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptor,
+        CollatorPair, CommittedCandidateReceipt, CompactStatement, EncodeAs,
+        InherentData as ParachainsInherentData, OccupiedCoreAssumption, SigningContext,
+        ValidityAttestation,
+    },
     polkadot_rpc::{DenyUnsafe, RpcExtension},
     polkadot_service::{
         BlockT, Error, IdentifyVariant, NewFullParams, OverseerGen, SelectRelayChain,
@@ -62,15 +66,16 @@ use {
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{HeaderBackend, HeaderMetadata},
+    sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID},
     sp_consensus_babe::SlotDuration,
-    sp_core::ByteArray,
+    sp_core::{ByteArray, Pair, H256},
     sp_keystore::KeystorePtr,
+    sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic},
     std::{cmp::max, ops::Add, sync::Arc, time::Duration},
     telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
 
-use crate::dev_rpcs::DevApiServer;
-
+// We use this key to store whether we want the para inherent mocker to be active
 const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
 pub type FullBackend = service::TFullBackend<Block>;
@@ -173,17 +178,6 @@ where
 /// to satisfy runtime
 struct EmptyParachainsInherentDataProvider;
 
-use polkadot_primitives::BackedCandidate;
-use polkadot_primitives::CollatorPair;
-use polkadot_primitives::OccupiedCoreAssumption;
-use polkadot_primitives::{
-    CandidateCommitments, CandidateDescriptor, CommittedCandidateReceipt, CompactStatement,
-    EncodeAs, SigningContext, ValidityAttestation,
-};
-use sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID};
-use sp_core::Pair;
-use sp_core::H256;
-use sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic};
 /// Copied from polkadot service just so that this code retains same structure as
 /// polkadot_service crate.
 struct Basics {
@@ -241,8 +235,10 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
     }
 }
 
-/// We use MockParachainsInherentDataProvider to insert an empty parachain inherent in the block
-/// to satisfy runtime
+/// We use MockParachainsInherentDataProvider to insert an parachain inherent with mocked
+/// candidates
+/// We detect whether any of the keys in our keystore is assigned to a core and provide
+/// a mocked candidate in such core
 struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
     pub client: Arc<C>,
     pub parent: Hash,
@@ -266,19 +262,12 @@ where
         parent: Hash,
         keystore: KeystorePtr,
     ) -> Result<ParachainsInherentData, InherentError> {
-        let parent_header_relay = match client.header(parent) {
+        let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
             Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
             Err(err) => return Err(InherentError::Blockchain(err)),
         };
 
-        let parent_hash = parent;
-
-        let parent_header = match client.header(parent_hash) {
-            Ok(Some(h)) => h,
-            Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
-            Err(err) => return Err(InherentError::Blockchain(err)),
-        };
         // Strategy:
         // we usually have 1 validator per core, and we usually run with --alice
         // the idea is that at least alice will be assigned to one core
@@ -290,9 +279,9 @@ where
         // core where a candidate for a parachain needs to be created
         let runtime_api = client.runtime_api();
 
-        let para_authorities = runtime_api.validators(parent_hash).unwrap();
-        let claim_queue = runtime_api.claim_queue(parent_hash).unwrap();
-        let (groups, rotation_info) = runtime_api.validator_groups(parent_hash).unwrap();
+        let para_authorities = runtime_api.validators(parent).unwrap();
+        let claim_queue = runtime_api.claim_queue(parent).unwrap();
+        let (groups, rotation_info) = runtime_api.validator_groups(parent).unwrap();
         let rotations_since_session_start = (parent_header.number
             - rotation_info.session_start_block)
             / rotation_info.group_rotation_frequency;
@@ -313,9 +302,9 @@ where
                 logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
             },
         };
-        let availability_cores = runtime_api.availability_cores(parent_hash).unwrap();
-        let session_idx = runtime_api.session_index_for_child(parent_hash).unwrap();
-        let all_validators = runtime_api.validators(parent_hash).unwrap();
+        let availability_cores = runtime_api.availability_cores(parent).unwrap();
+        let session_idx = runtime_api.session_index_for_child(parent).unwrap();
+        let all_validators = runtime_api.validators(parent).unwrap();
         let availability_bitvec = availability_bitvec(1, availability_cores.len());
 
         let signature_ctx = SigningContext {
@@ -356,7 +345,7 @@ where
                         if validator_keys_to_find == &validator {
                             let mut persisted_validation_data = runtime_api
                                 .persisted_validation_data(
-                                    parent_hash,
+                                    parent,
                                     para[0],
                                     OccupiedCoreAssumption::Included,
                                 )
@@ -370,7 +359,7 @@ where
                             let persisted_validation_data_hash = persisted_validation_data.hash();
                             let validation_code_hash = runtime_api
                                 .validation_code_hash(
-                                    parent_hash,
+                                    parent,
                                     para[0],
                                     OccupiedCoreAssumption::Included,
                                 )
@@ -378,7 +367,7 @@ where
                                 .unwrap();
                             let pov_hash = Default::default();
                             let payload = polkadot_primitives::collator_signature_payload(
-                                &parent_hash,
+                                &parent,
                                 &para[0],
                                 &persisted_validation_data_hash,
                                 &pov_hash,
@@ -388,7 +377,7 @@ where
                             let candidate = CommittedCandidateReceipt::<H256> {
                                 descriptor: CandidateDescriptor::<H256> {
                                     para_id: para[0],
-                                    relay_parent: parent_hash,
+                                    relay_parent: parent,
                                     collator: collator_pair.public(),
                                     persisted_validation_data_hash,
                                     pov_hash,
@@ -410,7 +399,7 @@ where
                             let payload = CompactStatement::Valid(candidate_hash);
 
                             let signature_ctx = SigningContext {
-                                parent_hash: parent_hash,
+                                parent_hash: parent,
                                 session_index: session_idx,
                             };
 
@@ -443,7 +432,7 @@ where
             bitfields: bitfields,
             backed_candidates: backed_cand,
             disputes: Vec::new(),
-            parent_header: parent_header_relay,
+            parent_header,
         })
     }
 }
