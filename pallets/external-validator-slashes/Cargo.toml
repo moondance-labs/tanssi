@@ -53,7 +53,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
-	"scale-info/std",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
