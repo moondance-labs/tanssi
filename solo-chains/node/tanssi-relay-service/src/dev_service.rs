@@ -43,7 +43,7 @@ use {
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
     polkadot_primitives::InherentData as ParachainsInherentData,
-    polkadot_rpc::{DenyUnsafe, RpcExtension},
+    polkadot_rpc::RpcExtension,
     polkadot_service::{
         BlockT, Error, IdentifyVariant, NewFullParams, OverseerGen, SelectRelayChain,
     },
@@ -93,8 +93,6 @@ struct DevDeps<C, P> {
     pub pool: Arc<P>,
     /// A copy of the chain spec.
     pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
 }
@@ -104,7 +102,6 @@ fn create_dev_rpc_extension<C, P>(
         client,
         pool,
         chain_spec,
-        deny_unsafe,
         command_sink: maybe_command_sink,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
@@ -138,7 +135,7 @@ where
     let properties = chain_spec.properties();
 
     io.merge(ChainSpec::new(chain_name, genesis_hash, properties).into_rpc())?;
-    io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+    io.merge(System::new(client.clone(), pool.clone()).into_rpc())?;
     io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
     if let Some(command_sink) = maybe_command_sink {
@@ -318,8 +315,10 @@ fn new_full<
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
     );
 
-    let net_config =
-        sc_network::config::FullNetworkConfiguration::<_, _, Network>::new(&config.network);
+    let net_config = sc_network::config::FullNetworkConfiguration::<_, _, Network>::new(
+        &config.network,
+        prometheus_registry.clone(),
+    );
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         service::build_network(service::BuildNetworkParams {
@@ -330,7 +329,7 @@ fn new_full<
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync_params: None,
+            warp_sync_config: None,
             block_relay: None,
             metrics,
         })?;
@@ -459,14 +458,12 @@ fn new_full<
         let transaction_pool = transaction_pool.clone();
         let chain_spec = config.chain_spec.cloned_box();
 
-        move |deny_unsafe,
-              _subscription_executor: polkadot_rpc::SubscriptionTaskExecutor|
-              -> Result<RpcExtension, service::Error> {
+        move |_subscription_executor: polkadot_rpc::SubscriptionTaskExecutor|
+            -> Result<RpcExtension, service::Error> {
             let deps = DevDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 chain_spec: chain_spec.cloned_box(),
-                deny_unsafe,
                 command_sink: command_sink.clone(),
             };
 
@@ -587,18 +584,19 @@ fn new_partial_basics(
         .transpose()?;
 
     let heap_pages = config
+        .executor
         .default_heap_pages
         .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
             extra_pages: h as u32,
         });
 
     let mut wasm_builder = WasmExecutor::builder()
-        .with_execution_method(config.wasm_method)
+        .with_execution_method(config.executor.wasm_method)
         .with_onchain_heap_alloc_strategy(heap_pages)
         .with_offchain_heap_alloc_strategy(heap_pages)
-        .with_max_runtime_instances(config.max_runtime_instances)
-        .with_runtime_cache_size(config.runtime_cache_size);
-    if let Some(ref wasmtime_precompiled_path) = config.wasmtime_precompiled {
+        .with_max_runtime_instances(config.executor.max_runtime_instances)
+        .with_runtime_cache_size(config.executor.runtime_cache_size);
+    if let Some(ref wasmtime_precompiled_path) = config.executor.wasmtime_precompiled {
         wasm_builder = wasm_builder.with_wasmtime_precompiled_path(wasmtime_precompiled_path);
     }
     let executor = wasm_builder.build();
