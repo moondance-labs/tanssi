@@ -17,7 +17,7 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
-
+#[cfg(not(feature = "runtime-benchmarks"))]
 use crate::symbiotic_message_processor::SymbioticMessageProcessor;
 use crate::xcm_config::UniversalLocation;
 use frame_support::weights::ConstantMultiplier;
@@ -163,7 +163,15 @@ impl snowbridge_pallet_system::Config for Runtime {
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
-    use {crate::RuntimeOrigin, xcm::latest::Location};
+    use snowbridge_beacon_primitives::BeaconHeader;
+    use snowbridge_core::Channel;
+    use snowbridge_pallet_system::Channels;
+    use snowbridge_router_primitives::inbound::envelope::Envelope;
+    use snowbridge_router_primitives::inbound::MessageProcessor;
+    use sp_core::H256;
+    use {
+        crate::EthereumBeaconClient, crate::Runtime, crate::RuntimeOrigin, xcm::latest::Location,
+    };
 
     pub struct EthSystemBenchHelper;
 
@@ -176,6 +184,35 @@ mod benchmark_helper {
     impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for () {
         fn make_xcm_origin(location: Location) -> RuntimeOrigin {
             RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
+        }
+    }
+
+    impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
+        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
+            let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
+            let envelope: Envelope = Envelope::try_from(&submit_message.message.event_log).unwrap();
+
+            Channels::<Runtime>::set(
+                envelope.channel_id,
+                Some(Channel {
+                    agent_id: Default::default(),
+                    para_id: Default::default(),
+                }),
+            );
+
+            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+        }
+    }
+
+    pub struct DoNothingMessageProcessor;
+
+    impl MessageProcessor for DoNothingMessageProcessor {
+        fn can_process_message(_: &Channel, _: &Envelope) -> bool {
+            true
+        }
+
+        fn process_message(_: Channel, _: Envelope) -> Result<(), sp_runtime::DispatchError> {
+            Ok(())
         }
     }
 }
@@ -219,12 +256,15 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MessageConverter = DoNothingConvertMessage;
     type ChannelLookup = EthereumSystem;
     type PricingParameters = EthereumSystem;
-    type WeightInfo = ();
+    type WeightInfo = weights::snowbridge_pallet_inbound_queue::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
-    type Helper = Runtime;
+    type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (SymbioticMessageProcessor<Runtime>,);
+    #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
 }

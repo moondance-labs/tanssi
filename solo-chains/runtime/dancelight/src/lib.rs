@@ -2089,6 +2089,7 @@ mod benches {
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
         [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
         [snowbridge_pallet_system, EthereumSystem]
+        [snowbridge_pallet_inbound_queue, EthereumInboundQueue]
     );
 }
 
