@@ -279,20 +279,29 @@ where
         // core where a candidate for a parachain needs to be created
         let runtime_api = client.runtime_api();
 
-        let para_authorities = runtime_api.validators(parent).unwrap();
+        // we get all validators
+
+        // we get the current claim queue to know core availability
         let claim_queue = runtime_api.claim_queue(parent).unwrap();
+
+        // we get the validator groups
         let (groups, rotation_info) = runtime_api.validator_groups(parent).unwrap();
+
+        // we calculate rotation since start, which will define the core assignation
+        // to validators
         let rotations_since_session_start = (parent_header.number
             - rotation_info.session_start_block)
             / rotation_info.group_rotation_frequency;
 
-        // Get all the available keys
+        // Get all the available keys in the keystore
         let available_keys = keystore
             .keys(polkadot_primitives::PARACHAIN_KEY_TYPE_ID)
             .unwrap();
 
+        // create a slot number identical to the parent block num
         let slot_number = AuraInherentType::from(u64::from(parent_header.number));
 
+        // create a mocked header
         let parachain_mocked_header = sp_runtime::generic::Header::<u32, BlakeTwo256> {
             parent_hash: Default::default(),
             number: parent_header.number,
@@ -302,9 +311,17 @@ where
                 logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
             },
         };
+
+        // retrieve availability cores
         let availability_cores = runtime_api.availability_cores(parent).unwrap();
+
+        // retrieve current session_idx
         let session_idx = runtime_api.session_index_for_child(parent).unwrap();
+
+        // retrieve all validators
         let all_validators = runtime_api.validators(parent).unwrap();
+
+        // construct full availability bitvec
         let availability_bitvec = availability_bitvec(1, availability_cores.len());
 
         let signature_ctx = SigningContext {
@@ -313,6 +330,9 @@ where
         };
 
         // we generate the availability bitfield sigs
+        // TODO: here we assume all validator keys are able to sign with our keystore
+        // we need to make sure the key is there before we try to sign
+        // this is mostly to indicate that the erasure coding chunks where received by all val
         let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = all_validators
             .iter()
             .enumerate()
@@ -329,20 +349,28 @@ where
             })
             .collect();
 
+        // generate a random collator pair
         let collator_pair = CollatorPair::generate().0;
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
+
+        // iterate over every core|para pair
         for (core, para) in claim_queue {
+            // check which group is assigned to each core
             let group_assigned_to_core =
                 core.0 + rotations_since_session_start % groups.len() as u32;
+            // check validator indices associated to the core
             let indices_associated_to_core = groups.get(group_assigned_to_core as usize).unwrap();
             for index in indices_associated_to_core {
-                let validator_keys_to_find = para_authorities.get(index.0 as usize).unwrap();
+                // fetch validator keys
+                let validator_keys_to_find = all_validators.get(index.0 as usize).unwrap();
                 // Iterate keys until we find an eligible one, or run out of candidates.
                 for type_public_pair in &available_keys {
                     if let Ok(validator) =
                         polkadot_primitives::ValidatorId::from_slice(&type_public_pair)
                     {
+                        // if we find the validator in keystore, we try to create a backed cand
                         if validator_keys_to_find == &validator {
+                            // we work with the previous included data
                             let mut persisted_validation_data = runtime_api
                                 .persisted_validation_data(
                                     parent,
@@ -353,10 +381,12 @@ where
                                 .unwrap();
 
                             // if we dont do this we have a backed candidate every 2 blocks
+                            // TODO: figure out why
                             persisted_validation_data.relay_parent_storage_root =
                                 parent_header.state_root;
 
                             let persisted_validation_data_hash = persisted_validation_data.hash();
+                            // retrieve the validation code hash
                             let validation_code_hash = runtime_api
                                 .validation_code_hash(
                                     parent,
@@ -366,6 +396,7 @@ where
                                 .unwrap()
                                 .unwrap();
                             let pov_hash = Default::default();
+                            // generate a fake collator signature
                             let payload = polkadot_primitives::collator_signature_payload(
                                 &parent,
                                 &para[0],
@@ -374,6 +405,7 @@ where
                                 &validation_code_hash,
                             );
                             let collator_signature = collator_pair.sign(&payload);
+                            // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceipt::<H256> {
                                 descriptor: CandidateDescriptor::<H256> {
                                     para_id: para[0],
@@ -403,6 +435,7 @@ where
                                 session_index: session_idx,
                             };
 
+                            // sign the candidate with the validator key
                             let signature = keystore_sign(
                                 &keystore,
                                 payload,
@@ -414,8 +447,10 @@ where
                             .unwrap()
                             .benchmark_signature();
 
+                            // construct a validity vote
                             let validity_votes = vec![ValidityAttestation::Explicit(signature)];
 
+                            // push the candidate
                             backed_cand.push(BackedCandidate::<H256>::new(
                                 candidate,
                                 validity_votes.clone(),
@@ -448,6 +483,7 @@ where
         &self,
         dst_inherent_data: &mut sp_inherents::InherentData,
     ) -> Result<(), sp_inherents::Error> {
+        // fetch whether the para inherent selector has been set
         let maybe_para_selector = self
             .client
             .get_aux(PARA_INHERENT_SELECTOR_AUX_KEY)
@@ -455,6 +491,8 @@ where
 
         let inherent_data = {
             if let Some(aux) = maybe_para_selector {
+                // if it is true, the candidates need to be mocked
+                // else, we output the empty parachain inherent data provider
                 if aux == true.encode() {
                     MockParachainsInherentDataProvider::create(
                         self.client.clone(),
