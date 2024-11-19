@@ -54,6 +54,10 @@ describeSuite({
                         expect(witness).to.be.eq("Free");
                     } else if (entry.profile.assignmentRequest.streamPayment != null) {
                         expect(witness.streamPayment).to.not.be.undefined();
+                    } else {
+                        // Make test fail on unknown assignment modes.
+                        // This force use to update this test when we add new modes.
+                        expect.fail("unknown assignment mode");
                     }
                 }
             },
