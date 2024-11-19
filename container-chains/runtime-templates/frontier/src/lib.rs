@@ -69,8 +69,8 @@ use {
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
         Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
-        EnsureCreateOrigin, FeeCalculator, GasWeightMapping, IdentityAddressMapping,
-        OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
+        EnsureCreateOrigin, FeeCalculator, FrameSystemAccountProvider, GasWeightMapping,
+        IdentityAddressMapping, OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},
@@ -848,6 +848,7 @@ parameter_types! {
 
 impl_on_charge_evm_transaction!();
 impl pallet_evm::Config for Runtime {
+    type AccountProvider = FrameSystemAccountProvider<Runtime>;
     type FeeCalculator = BaseFee;
     type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
     type WeightPerGas = WeightPerGas;
@@ -883,7 +884,7 @@ parameter_types! {
 
 impl pallet_ethereum::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
+    type StateRoot = pallet_ethereum::IntermediateStateRoot<Self::Version>;
     type PostLogContent = PostBlockAndTxnHashes;
     type ExtraDataLength = ConstU32<30>;
 }
