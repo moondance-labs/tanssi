@@ -126,7 +126,7 @@ where
     }
 
     async fn import_block(
-        &mut self,
+        &self,
         params: sc_consensus::BlockImportParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         let res = self.inner.import_block(params).await?;
