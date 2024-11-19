@@ -52,8 +52,6 @@ pub struct FullDeps<C, P> {
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
@@ -85,12 +83,11 @@ where
     let FullDeps {
         client,
         pool,
-        deny_unsafe,
         command_sink,
         xcm_senders,
     } = deps;
 
-    module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+    module.merge(System::new(client.clone(), pool).into_rpc())?;
     module.merge(StreamPayment::<_, Block>::new(client.clone()).into_rpc())?;
     module.merge(ServicesPayment::<_, Block>::new(client).into_rpc())?;
 
