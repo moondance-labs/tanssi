@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use snowbridge_core::outbound::SendError;
-use snowbridge_core::outbound::SendMessageFeeProvider;
 use {
     crate as external_validator_slashes,
     frame_support::{
@@ -23,6 +21,7 @@ use {
         traits::{ConstU16, ConstU64, Get},
     },
     frame_system as system,
+    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
