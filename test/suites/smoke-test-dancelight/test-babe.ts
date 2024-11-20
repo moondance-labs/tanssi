@@ -90,12 +90,12 @@ describeSuite({
 
                 // Assert that authorities from log == authorities from pallet
                 const babeAuthoritiesFromPallet = await api.query.babe.authorities();
-                const asdas = api.registry.createType(
+                const babeConsensusLog = api.registry.createType(
                     "(u8, Vec<(SpConsensusBabeAppPublic, u64)>, [u8; 32])",
                     filteredDigests[0].asConsensus[1].toHex()
                 );
 
-                expect(asdas[1]).to.deep.equal(babeAuthoritiesFromPallet);
+                expect(babeConsensusLog[1]).to.deep.equal(babeAuthoritiesFromPallet);
 
                 // Get babe keys from pallet session
                 const sessionValidators = await api.query.session.validators();
