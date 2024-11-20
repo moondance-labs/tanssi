@@ -26,7 +26,6 @@ import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BinaryHeapEnqueuedOrder,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeRuntimeHoldReason,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
@@ -50,6 +49,7 @@ import type {
     PalletDataPreserversRegisteredProfile,
     PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsForcing,
+    PalletExternalValidatorsRewardsEraRewardPoints,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
     PalletIdentityAuthorityProperties,
@@ -96,6 +96,7 @@ import type {
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
     PolkadotRuntimeParachainsHrmpHrmpChannel,
     PolkadotRuntimeParachainsHrmpHrmpOpenChannelRequest,
+    PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
     PolkadotRuntimeParachainsInclusionCandidatePendingAvailability,
     PolkadotRuntimeParachainsInitializerBufferedSessionChange,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
@@ -107,11 +108,7 @@ import type {
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
     SnowbridgeBeaconPrimitivesCompactBeaconState,
     SnowbridgeBeaconPrimitivesSyncCommitteePrepared,
-    SnowbridgeCoreChannel,
-    SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
-    SnowbridgeCorePricingPricingParameters,
-    SnowbridgePalletOutboundQueueCommittedMessage,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -680,60 +677,6 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
-        ethereumOutboundQueue: {
-            /**
-             * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a merkle root during
-             * `on_finalize`. This storage value is killed in `on_initialize`, so should never go into block PoV.
-             */
-            messageLeaves: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * Messages to be committed in the current block. This storage value is killed in `on_initialize`, so should never
-             * go into block PoV.
-             *
-             * Is never read in the runtime, only by offchain message relayers.
-             *
-             * Inspired by the `frame_system::Pallet::Events` storage value
-             */
-            messages: AugmentedQuery<
-                ApiType,
-                () => Observable<Vec<SnowbridgePalletOutboundQueueCommittedMessage>>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /** The current nonce for each message origin */
-            nonce: AugmentedQuery<
-                ApiType,
-                (arg: SnowbridgeCoreChannelId | string | Uint8Array) => Observable<u64>,
-                [SnowbridgeCoreChannelId]
-            > &
-                QueryableStorageEntry<ApiType, [SnowbridgeCoreChannelId]>;
-            /** The current operating mode of the pallet. */
-            operatingMode: AugmentedQuery<
-                ApiType,
-                () => Observable<SnowbridgeCoreOperatingModeBasicOperatingMode>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        ethereumSystem: {
-            /** The set of registered agents */
-            agents: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Option<Null>>, [H256]> &
-                QueryableStorageEntry<ApiType, [H256]>;
-            /** The set of registered channels */
-            channels: AugmentedQuery<
-                ApiType,
-                (arg: SnowbridgeCoreChannelId | string | Uint8Array) => Observable<Option<SnowbridgeCoreChannel>>,
-                [SnowbridgeCoreChannelId]
-            > &
-                QueryableStorageEntry<ApiType, [SnowbridgeCoreChannelId]>;
-            pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
         externalValidators: {
             /** The active era information, it holds index and start. */
             activeEra: AugmentedQuery<ApiType, () => Observable<Option<TpTraitsActiveEraInfo>>, []> &
@@ -797,6 +740,17 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32, AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [u32, AccountId32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        externalValidatorsRewards: {
+            /** Store reward points per era. Note: EraRewardPoints is actually bounded by the amount of validators. */
+            rewardPointsForEra: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<PalletExternalValidatorsRewardsEraRewardPoints>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -1242,37 +1196,25 @@ declare module "@polkadot/api-base/types/storage" {
             bookStateFor: AugmentedQuery<
                 ApiType,
                 (
-                    arg:
-                        | DancelightRuntimeAggregateMessageOrigin
-                        | { Ump: any }
-                        | { Snowbridge: any }
-                        | { SnowbridgeTanssi: any }
-                        | string
-                        | Uint8Array
+                    arg: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin | { Ump: any } | string | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [DancelightRuntimeAggregateMessageOrigin]
+                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin]>;
             /** The map of page indices to pages. */
             pages: AugmentedQuery<
                 ApiType,
                 (
-                    arg1:
-                        | DancelightRuntimeAggregateMessageOrigin
-                        | { Ump: any }
-                        | { Snowbridge: any }
-                        | { SnowbridgeTanssi: any }
-                        | string
-                        | Uint8Array,
+                    arg1: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin | { Ump: any } | string | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32]>;
             /** The origin at which we should begin servicing. */
             serviceHead: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<DancelightRuntimeAggregateMessageOrigin>>,
+                () => Observable<Option<PolkadotRuntimeParachainsInclusionAggregateMessageOrigin>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
