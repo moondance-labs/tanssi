@@ -87,8 +87,6 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     pub pool: Arc<P>,
     /// Graph pool instance.
     pub graph: Arc<Pool<A>>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Network service
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// Chain syncing service
@@ -156,7 +154,6 @@ where
         client,
         pool,
         graph,
-        deny_unsafe,
         network,
         sync,
         filter_pool,
@@ -172,7 +169,7 @@ where
         xcm_senders,
     } = deps;
 
-    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool), deny_unsafe).into_rpc())?;
+    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool)).into_rpc())?;
 
     // TODO: are we supporting signing?
     let signers = Vec::new();
@@ -545,11 +542,10 @@ const _: () = {
                 prometheus_registry.clone(),
             ));
 
-            Ok(Box::new(move |deny_unsafe, subscription_task_executor| {
+            Ok(Box::new(move |subscription_task_executor| {
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
                     client: client.clone(),
-                    deny_unsafe,
                     filter_pool: filter_pool.clone(),
                     frontier_backend: match &*frontier_backend {
                         fc_db::Backend::KeyValue(b) => b.clone(),
