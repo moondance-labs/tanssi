@@ -36,8 +36,6 @@ describeSuite({
                 const entries = await paraApi.query.dataPreservers.profiles.entries();
 
                 for (const [, entry] of entries) {
-                    console.log(JSON.stringify(entry));
-
                     if (entry.assignment == null) {
                         continue;
                     }
@@ -62,5 +60,24 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C03",
+            title: "all profiles should have valid url",
+            test: async function () {
+                const entries = await paraApi.query.dataPreservers.profiles.entries();
+
+                for (const [, entry] of entries) {
+                    const profile = entry.unwrap().profile;
+                    expect(isValidEndpointUrl(profile.url.toHuman()), `Invalid URL {profile.url}`);
+                }
+            },
+        });
     },
 });
+
+function isValidEndpointUrl(string) {
+    const prefixes = ["/dns4/", "https://", "http://", "wss://", "ws://"];
+
+    return prefixes.some((prefix) => string.startsWith(prefix));
+}
