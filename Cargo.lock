@@ -1788,7 +1788,7 @@ checksum = "cd7e35aee659887cbfb97aaf227ac12cad1a9d7c71e55ff3376839ed4e282d08"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -1886,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -3269,6 +3269,7 @@ dependencies = [
  "pallet-elections-phragmen",
  "pallet-external-validator-slashes",
  "pallet-external-validators",
+ "pallet-external-validators-rewards",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -9423,6 +9424,28 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "rand",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
+name = "pallet-external-validators-rewards"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -17387,7 +17410,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -17488,7 +17511,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -17548,7 +17571,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",

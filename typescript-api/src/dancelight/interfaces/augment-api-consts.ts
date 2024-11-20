@@ -133,24 +133,6 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
-        ethereumOutboundQueue: {
-            /** Number of decimal places in native currency */
-            decimals: u8 & AugmentedConst<ApiType>;
-            /** Max bytes in a message payload */
-            maxMessagePayloadSize: u32 & AugmentedConst<ApiType>;
-            /** Max number of messages processed per block */
-            maxMessagesPerBlock: u32 & AugmentedConst<ApiType>;
-            /** Generic const */
-            [key: string]: Codec;
-        };
-        ethereumSystem: {
-            /** Cost of delivering a message from Ethereum */
-            inboundDeliveryCost: u128 & AugmentedConst<ApiType>;
-            /** TreasuryAccount to collect fees */
-            treasuryAccount: AccountId32 & AugmentedConst<ApiType>;
-            /** Generic const */
-            [key: string]: Codec;
-        };
         externalValidators: {
             /**
              * Number of eras to keep in history.
@@ -183,6 +165,16 @@ declare module "@polkadot/api-base/types/consts" {
              * opportunity for intervention.
              */
             slashDeferDuration: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        externalValidatorsRewards: {
+            /** The amount of era points given by backing a candidate that is included. */
+            backingPoints: u32 & AugmentedConst<ApiType>;
+            /** The amount of era points given by dispute voting on a candidate. */
+            disputeStatementPoints: u32 & AugmentedConst<ApiType>;
+            /** For how many eras points are kept in storage. */
+            historyDepth: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

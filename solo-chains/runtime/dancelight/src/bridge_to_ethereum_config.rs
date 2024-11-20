@@ -52,8 +52,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type GasMeter = snowbridge_core::outbound::ConstantGasMeter;
     type Balance = Balance;
     type WeightToFee = WeightToFee;
-    type WeightInfo = ();
-    //type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::WeightInfo<Runtime>;
+    type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
     type PricingParameters = EthereumSystem;
     type Channels = EthereumSystem;
 }
@@ -135,8 +134,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     type AgentIdOf = snowbridge_core::AgentIdOf;
     type TreasuryAccount = TreasuryAccount;
     type Token = Balances;
-    type WeightInfo = ();
-    //type WeightInfo = crate::weights::snowbridge_pallet_system::WeightInfo<Runtime>;
+    type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;

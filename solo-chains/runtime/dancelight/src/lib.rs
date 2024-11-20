@@ -187,7 +187,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancelight"),
     impl_name: create_runtime_str!("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1000,
+    spec_version: 1100,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -945,12 +945,8 @@ impl parachains_session_info::Config for Runtime {
     type ValidatorSet = Historical;
 }
 
-/// Special `RewardValidators` that does nothing ;)
-pub struct RewardValidators;
-impl runtime_parachains::inclusion::RewardValidators for RewardValidators {
-    fn reward_backing(_: impl IntoIterator<Item = ValidatorIndex>) {}
-    fn reward_bitfields(_: impl IntoIterator<Item = ValidatorIndex>) {}
-}
+pub type RewardValidators =
+    pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
 
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1193,7 +1189,7 @@ impl parachains_initializer::Config for Runtime {
 
 impl parachains_disputes::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RewardValidators = ();
+    type RewardValidators = RewardValidators;
     type SlashingHandler = parachains_slashing::SlashValidatorsForDisputes<ParasSlashing>;
     type WeightInfo = weights::runtime_parachains_disputes::SubstrateWeight<Runtime>;
 }
@@ -1339,11 +1335,18 @@ impl pallet_external_validators::Config for Runtime {
     type ValidatorRegistration = Session;
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
-    type OnEraStart = ExternalValidatorSlashes;
+    type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
     type OnEraEnd = ();
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+impl pallet_external_validators_rewards::Config for Runtime {
+    type EraIndexProvider = ExternalValidators;
+    type HistoryDepth = ConstU32<64>;
+    type BackingPoints = ConstU32<20>;
+    type DisputeStatementPoints = ConstU32<20>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
@@ -1673,6 +1676,7 @@ construct_runtime! {
         // Validator stuff
         ExternalValidators: pallet_external_validators = 20,
         ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
+        ExternalValidatorsRewards: pallet_external_validators_rewards = 22,
 
         // Session management
         Session: pallet_session = 30,
@@ -2084,10 +2088,10 @@ mod benches {
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
-
-
         // Bridges
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
+        [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
+        [snowbridge_pallet_system, EthereumSystem]
     );
 }
 

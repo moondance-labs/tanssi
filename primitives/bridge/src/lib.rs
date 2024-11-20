@@ -19,25 +19,28 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use ethabi::Token;
-use ethabi::U256;
-use frame_support::traits::Contains;
-use snowbridge_core::outbound::Fee;
-use snowbridge_core::outbound::SendError;
-use snowbridge_core::ChannelId;
-pub use snowbridge_pallet_outbound_queue::send_message_impl::Ticket;
-use sp_runtime::traits::Convert;
 use {
     core::marker::PhantomData,
+    ethabi::{Token, U256},
     frame_support::{
         ensure,
         pallet_prelude::{Decode, Encode, Get},
+        traits::Contains,
     },
     frame_system::unique,
     scale_info::TypeInfo,
+    snowbridge_core::{
+        outbound::{Fee, SendError},
+        ChannelId,
+    },
+    snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::H256,
-    sp_runtime::{app_crypto::sp_core, RuntimeDebug, Perbill},
+    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug, Perbill},
     sp_std::vec::Vec,
+};
+pub use {
+    custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
+    custom_send_message::CustomSendMessage,
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
@@ -215,21 +218,20 @@ pub trait DeliverMessage {
     fn deliver(ticket: Self::Ticket) -> Result<H256, SendError>;
 }
 
-pub use custom_do_process_message::ConstantGasMeter;
-pub use custom_do_process_message::CustomProcessSnowbridgeMessage;
-
 mod custom_do_process_message {
-    use super::*;
-    use frame_support::ensure;
-    use frame_support::traits::{Defensive, ProcessMessage, ProcessMessageError};
-    use frame_support::weights::WeightMeter;
-    use snowbridge_pallet_outbound_queue::MessageLeaves;
-    use snowbridge_pallet_outbound_queue::Messages;
-    use snowbridge_pallet_outbound_queue::Nonce;
-    use snowbridge_pallet_outbound_queue::WeightInfo;
-    use snowbridge_pallet_outbound_queue::{CommittedMessage, ProcessMessageOriginOf};
-    use sp_runtime::traits::Hash;
-    use sp_std::boxed::Box;
+    use {
+        super::*,
+        frame_support::{
+            ensure,
+            traits::{Defensive, ProcessMessage, ProcessMessageError},
+            weights::WeightMeter,
+        },
+        snowbridge_pallet_outbound_queue::{
+            CommittedMessage, MessageLeaves, Messages, Nonce, ProcessMessageOriginOf, WeightInfo,
+        },
+        sp_runtime::traits::Hash,
+        sp_std::boxed::Box,
+    };
 
     /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
     /// [Command] enum.
@@ -363,15 +365,14 @@ mod custom_do_process_message {
     }
 }
 
-pub use custom_send_message::CustomSendMessage;
-
 mod custom_send_message {
-    use super::*;
-    use ethabi::H256;
-    use frame_support::traits::EnqueueMessage;
-    use snowbridge_core::outbound::SendError;
-    use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
-    use sp_std::marker::PhantomData;
+    use {
+        super::*,
+        ethabi::H256,
+        frame_support::traits::EnqueueMessage,
+        snowbridge_core::{outbound::SendError, PRIMARY_GOVERNANCE_CHANNEL},
+        sp_std::marker::PhantomData,
+    };
 
     /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
     /// origin.
