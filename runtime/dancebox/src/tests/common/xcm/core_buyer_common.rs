@@ -36,9 +36,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     parity_scale_codec::Encode,
-    polkadot_runtime_parachains::{
-        assigner_on_demand as parachains_assigner_on_demand, configuration,
-    },
+    polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},
     staging_xcm::v3::QueryId,
