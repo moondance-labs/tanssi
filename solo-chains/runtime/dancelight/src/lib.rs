@@ -2041,57 +2041,58 @@ frame_support::ord_parameter_types! {
     pub const MigController: AccountId = AccountId::from(hex_literal::hex!("52bc71c1eca5353749542dfdf0af97bf764f9c2f44e860cd485f1cd86400f649"));
 }
 
-frame_benchmarking::define_benchmarks!(
-    // Polkadot
-    // NOTE: Make sure to prefix these with `runtime_common::` so
-    // the that path resolves correctly in the generated file.
-    [runtime_common::paras_registrar, Registrar]
-    [runtime_parachains::configuration, Configuration]
-    [runtime_parachains::hrmp, Hrmp]
-    [runtime_parachains::disputes, ParasDisputes]
-    [runtime_parachains::inclusion, ParaInclusion]
-    [runtime_parachains::initializer, Initializer]
-    [runtime_parachains::paras_inherent, ParaInherent]
-    [runtime_parachains::paras, Paras]
-    [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
-    // Substrate
-    [pallet_balances, Balances]
-    [frame_benchmarking::baseline, Baseline::<Runtime>]
-    [pallet_conviction_voting, ConvictionVoting]
-    [pallet_identity, Identity]
-    [pallet_message_queue, MessageQueue]
-    [pallet_multisig, Multisig]
-    [pallet_parameters, Parameters]
-    [pallet_preimage, Preimage]
-    [pallet_proxy, Proxy]
-    [pallet_ranked_collective, FellowshipCollective]
-    [pallet_referenda, Referenda]
-    [pallet_scheduler, Scheduler]
-    [pallet_sudo, Sudo]
-    [frame_system, SystemBench::<Runtime>]
-    [pallet_timestamp, Timestamp]
-    [pallet_treasury, Treasury]
-    [pallet_utility, Utility]
-    [pallet_asset_rate, AssetRate]
-    [pallet_whitelist, Whitelist]
-    [pallet_services_payment, ServicesPayment]
-    // Tanssi
-    [pallet_author_noting, AuthorNoting]
-    [pallet_registrar, ContainerRegistrar]
-    [pallet_collator_assignment, TanssiCollatorAssignment]
-    [pallet_external_validators, ExternalValidators]
-    [pallet_external_validator_slashes, ExternalValidatorSlashes]
-    // XCM
-    [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
-    [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
-    [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
-    // Bridges
-    [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
-    [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
-    [snowbridge_pallet_system, EthereumSystem]
-);
 #[cfg(feature = "runtime-benchmarks")]
-mod benches {}
+mod benches {
+    frame_benchmarking::define_benchmarks!(
+        // Polkadot
+        // NOTE: Make sure to prefix these with `runtime_common::` so
+        // the that path resolves correctly in the generated file.
+        [runtime_common::paras_registrar, Registrar]
+        [runtime_parachains::configuration, Configuration]
+        [runtime_parachains::hrmp, Hrmp]
+        [runtime_parachains::disputes, ParasDisputes]
+        [runtime_parachains::inclusion, ParaInclusion]
+        [runtime_parachains::initializer, Initializer]
+        [runtime_parachains::paras_inherent, ParaInherent]
+        [runtime_parachains::paras, Paras]
+        [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        // Substrate
+        [pallet_balances, Balances]
+        [frame_benchmarking::baseline, Baseline::<Runtime>]
+        [pallet_conviction_voting, ConvictionVoting]
+        [pallet_identity, Identity]
+        [pallet_message_queue, MessageQueue]
+        [pallet_multisig, Multisig]
+        [pallet_parameters, Parameters]
+        [pallet_preimage, Preimage]
+        [pallet_proxy, Proxy]
+        [pallet_ranked_collective, FellowshipCollective]
+        [pallet_referenda, Referenda]
+        [pallet_scheduler, Scheduler]
+        [pallet_sudo, Sudo]
+        [frame_system, SystemBench::<Runtime>]
+        [pallet_timestamp, Timestamp]
+        [pallet_treasury, Treasury]
+        [pallet_utility, Utility]
+        [pallet_asset_rate, AssetRate]
+        [pallet_whitelist, Whitelist]
+        [pallet_services_payment, ServicesPayment]
+        // Tanssi
+        [pallet_author_noting, AuthorNoting]
+        [pallet_registrar, ContainerRegistrar]
+        [pallet_collator_assignment, TanssiCollatorAssignment]
+        [pallet_external_validators, ExternalValidators]
+        [pallet_external_validator_slashes, ExternalValidatorSlashes]
+        // XCM
+        [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
+        [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        // Bridges
+        [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
+        [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
+        [snowbridge_pallet_system, EthereumSystem]
+    );
+}
 
 sp_api::impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
