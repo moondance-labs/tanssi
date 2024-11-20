@@ -278,7 +278,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::force_inject_slash())]
+        #[pallet::weight(T::WeightInfo::root_test_send_msg_to_eth())]
         pub fn root_test_send_msg_to_eth(
             origin: OriginFor<T>,
             nonce: H256,
