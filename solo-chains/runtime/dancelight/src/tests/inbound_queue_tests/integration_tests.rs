@@ -1,23 +1,31 @@
 use crate::symbiotic_message_processor::{Command, Payload, MAGIC_BYTES};
-use crate::tests::inbound_queue_tests::mock::{
-    mock_ext, AccountId, ExternalValidators as MockExternalValidators, InboundQueue,
-    Test as TestRuntime, MOCK_CHANNEL_ID,
-};
+use crate::tests::common::ExtBuilder;
+use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
 use alloy_sol_types::SolEvent;
 use frame_system::pallet_prelude::OriginFor;
 use keyring::AccountKeyring;
 use parity_scale_codec::Encode;
 use snowbridge_beacon_primitives::types::deneb;
 use snowbridge_beacon_primitives::{ExecutionProof, VersionedExecutionPayloadHeader};
-use snowbridge_core::inbound::{Log, Message, Proof};
+use snowbridge_core::{
+    inbound::{Log, Message, Proof},
+    Channel, ChannelId,
+};
 use snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted;
 use sp_core::H256;
 use sp_runtime::DispatchError;
 
+const MOCK_CHANNEL_ID: [u8; 32] = [0; 32];
+
 #[test]
 fn test_inbound_queue_message_passing() {
-    mock_ext().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         let current_nonce = 1;
+
+        snowbridge_pallet_system::Channels::<Runtime>::set(ChannelId::from(MOCK_CHANNEL_ID), Some(Channel {
+            agent_id: Default::default(),
+            para_id: Default::default()
+        }));
 
         let dummy_proof = Proof { receipt_proof: (vec![], vec![]), execution_proof: ExecutionProof {
             header: Default::default(),
@@ -51,16 +59,16 @@ fn test_inbound_queue_message_passing() {
             payload: vec![],
         };
 
-        assert_eq!(InboundQueue::submit(OriginFor::<TestRuntime>::signed(AccountId::new([0; 32])), Message {
+        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Message {
             event_log: Log {
-                address: <TestRuntime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event_with_empty_payload.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
                 data: event_with_empty_payload.encode_data(),
             },
             proof: dummy_proof.clone(),
         }), Err(DispatchError::Other("No handler for message found")));
 
-        assert_eq!(MockExternalValidators::validators(), MockExternalValidators::whitelisted_validators());
+        assert_eq!(ExternalValidators::validators(), ExternalValidators::whitelisted_validators());
 
         let payload_validators = vec![
             AccountKeyring::Charlie.to_account_id(),
@@ -70,7 +78,7 @@ fn test_inbound_queue_message_passing() {
 
         let payload = Payload {
             magic_bytes: MAGIC_BYTES,
-            message: crate::symbiotic_message_processor::Message::V1(Command::<TestRuntime>::ReceiveValidators {
+            message: crate::symbiotic_message_processor::Message::V1(Command::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone()
             }),
         };
@@ -82,9 +90,9 @@ fn test_inbound_queue_message_passing() {
             payload: payload.encode(),
         };
 
-        assert_eq!(InboundQueue::submit(OriginFor::<TestRuntime>::signed(AccountId::new([0; 32])), Message {
+        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Message {
             event_log: Log {
-                address: <TestRuntime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event_with_valid_payload.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
                 data: event_with_valid_payload.encode_data(),
             },
@@ -92,7 +100,7 @@ fn test_inbound_queue_message_passing() {
         }), Ok(()));
 
 
-        let expected_validators = [MockExternalValidators::whitelisted_validators(), payload_validators].concat();
-        assert_eq!(MockExternalValidators::validators(), expected_validators);
+        let expected_validators = [ExternalValidators::whitelisted_validators(), payload_validators].concat();
+        assert_eq!(ExternalValidators::validators(), expected_validators);
     });
 }

@@ -17,9 +17,11 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
+
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::symbiotic_message_processor::SymbioticMessageProcessor;
-use crate::xcm_config::UniversalLocation;
+#[cfg(not(test))]
+use crate::EthereumBeaconClient;
 use frame_support::weights::ConstantMultiplier;
 use parity_scale_codec::Encode;
 use snowbridge_router_primitives::inbound::{
@@ -30,10 +32,10 @@ use sp_core::{H160, H256};
 use xcm::latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash};
 use {
     crate::{
-        parameter_types, weights, xcm_config, AccountId, AggregateMessageOrigin, Balance, Balances,
-        EthereumBeaconClient, EthereumInboundQueue, EthereumOutboundQueue, EthereumSystem,
-        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime, RuntimeEvent,
-        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        parameter_types, weights, xcm_config, xcm_config::UniversalLocation, AccountId,
+        AggregateMessageOrigin, Balance, Balances, EthereumInboundQueue, EthereumOutboundQueue,
+        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime,
+        RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     pallet_xcm::EnsureXcm,
@@ -217,6 +219,19 @@ mod benchmark_helper {
     }
 }
 
+#[cfg(test)]
+mod test_helpers {
+    use snowbridge_core::inbound::{Log, Proof, VerificationError, Verifier};
+
+    pub struct MockVerifier;
+
+    impl Verifier for MockVerifier {
+        fn verify(_: &Log, _: &Proof) -> Result<(), VerificationError> {
+            Ok(())
+        }
+    }
+}
+
 pub struct DoNothingRouter;
 impl SendXcm for DoNothingRouter {
     type Ticket = Xcm<()>;
@@ -249,7 +264,10 @@ impl ConvertMessage for DoNothingConvertMessage {
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    #[cfg(not(test))]
     type Verifier = EthereumBeaconClient;
+    #[cfg(test)]
+    type Verifier = test_helpers::MockVerifier;
     type Token = Balances;
     type XcmSender = DoNothingRouter;
     type GatewayAddress = EthereumGatewayAddress;
