@@ -35,7 +35,7 @@ use {
     },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::H256,
-    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug, Perbill},
+    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
 };
 pub use {
@@ -53,10 +53,10 @@ use sp_std::vec;
 pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
-    ReportSlashes {
+    ReportRewards {
         era_index: u32,
-        // merkle root of vec![(validatorId, slash)]
-        slashes_merkle_root: H256
+        // merkle root of vec![(validatorId, rewardPoints)]
+        rewards_merkle_root: H256
     }
 }
 
@@ -66,7 +66,7 @@ impl Command {
         match self {
             // Starting from 32 to keep compatibility with Snowbridge Command enum
             Command::Test { .. } => 32,
-            Command::ReportSlashes { .. } => 33,
+            Command::ReportRewards { .. } => 33,
         }
     }
 
@@ -76,10 +76,10 @@ impl Command {
             Command::Test(payload) => {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
             },
-            Command::ReportSlashes { era_index, slashes_merkle_root } => {
+            Command::ReportRewards { era_index, rewards_merkle_root } => {
                 let era_index_token = Token::Uint(U256::from(*era_index));
-                let slashes_mr_token = Token::FixedBytes(slashes_merkle_root.0.to_vec());
-                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_mr_token])])
+                let rewards_mr_token = Token::FixedBytes(rewards_merkle_root.0.to_vec());
+                ethabi::encode(&[Token::Tuple(vec![era_index_token, rewards_mr_token])])
             }
         }
     }
@@ -359,7 +359,7 @@ mod custom_do_process_message {
         fn maximum_dispatch_gas_used_at_most(command: &Command) -> u64 {
             match command {
                 Command::Test { .. } => 60_000,
-                Command::ReportSlashes { .. } => 60_000,
+                Command::ReportRewards { .. } => 60_000,
             }
         }
     }

@@ -31,13 +31,21 @@ use {
     frame_support::traits::{Defensive, Get, ValidatorSet},
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
+    snowbridge_core::ChannelId,
+    snowbridge_outbound_queue_merkle_tree::merkle_root,
+    sp_core::H256,
+    sp_runtime::traits::Hash,
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
+    sp_std::vec,
+    sp_std::vec::Vec,
+    tp_bridge::{Command, Message, ValidateMessage, DeliverMessage},
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use {
+        super::*,
         frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
         tp_traits::EraIndexProvider,
     };
@@ -64,6 +72,14 @@ pub mod pallet {
         /// The amount of era points given by dispute voting on a candidate.
         #[pallet::constant]
         type DisputeStatementPoints: Get<u32>;
+
+        type Hashing: Hash<Output = H256>;
+
+        type ValidateMessage: ValidateMessage;
+
+        type OutboundQueue: DeliverMessage<
+            Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
+        >;
     }
 
     #[pallet::pallet]
@@ -113,6 +129,46 @@ pub mod pallet {
             };
 
             RewardPointsForEra::<T>::remove(era_index_to_delete);
+        }
+    }
+
+    impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
+        fn on_era_end(era_index: EraIndex) {
+            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let mut rewards_info_to_merkelize: Vec<H256> = vec![];
+
+            for (account_id, reward_points) in era_rewards.individual {
+                let encoded = (account_id, reward_points).encode();
+                let hashed = <T as Config>::Hashing::hash(&encoded);
+                rewards_info_to_merkelize.push(hashed);
+            }
+
+            let rewards_merkle_root = merkle_root::<<T as Config>::Hashing, _>(rewards_info_to_merkelize.into_iter());
+
+            let command = Command::ReportRewards {
+                era_index,
+                rewards_merkle_root
+            };
+
+            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+            let outbound_message = Message {
+                id: None,
+                channel_id,
+                command,
+            };
+
+            // Validate and deliver the message
+            match T::ValidateMessage::validate(&outbound_message) {
+                Ok((ticket, _fee)) => {
+                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                        log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                    }
+                }, 
+                Err(err) => {
+                    log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                }
+            }
         }
     }
 }

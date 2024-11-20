@@ -1347,6 +1347,9 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
+    type Hashing = Keccak256;
+    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
+    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
@@ -1361,7 +1364,6 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
-    type Hashing = Keccak256;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
