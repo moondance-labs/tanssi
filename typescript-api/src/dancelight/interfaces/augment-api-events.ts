@@ -6,10 +6,25 @@
 import "@polkadot/api-base/types/events";
 
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
-import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
-import type { ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
+    Bytes,
+    Null,
+    Option,
+    Result,
+    U256,
+    U8aFixed,
+    Vec,
+    bool,
+    u128,
+    u16,
+    u32,
+    u64,
+    u8,
+} from "@polkadot/types-codec";
+import type { ITuple } from "@polkadot/types-codec/types";
+import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
+import type {
+    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
@@ -27,8 +42,10 @@ import type {
     PolkadotPrimitivesV7CandidateReceipt,
     PolkadotRuntimeParachainsDisputesDisputeLocation,
     PolkadotRuntimeParachainsDisputesDisputeResult,
-    PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
+    SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
+    SnowbridgeCoreOutboundV1OperatingMode,
+    SnowbridgeCorePricingPricingParameters,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -209,6 +226,76 @@ declare module "@polkadot/api-base/types/events" {
                 { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
             >;
             SyncCommitteeUpdated: AugmentedEvent<ApiType, [period: u64], { period: u64 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumOutboundQueue: {
+            /**
+             * Message will be committed at the end of current block. From now on, to track the progress the message, use the
+             * `nonce` of `id`.
+             */
+            MessageAccepted: AugmentedEvent<ApiType, [id: H256, nonce: u64], { id: H256; nonce: u64 }>;
+            /** Message has been queued and will be processed in the future */
+            MessageQueued: AugmentedEvent<ApiType, [id: H256], { id: H256 }>;
+            /** Some messages have been committed */
+            MessagesCommitted: AugmentedEvent<ApiType, [root: H256, count: u64], { root: H256; count: u64 }>;
+            /** Set OperatingMode */
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumSystem: {
+            /** An CreateAgent message was sent to the Gateway */
+            CreateAgent: AugmentedEvent<
+                ApiType,
+                [location: StagingXcmV4Location, agentId: H256],
+                { location: StagingXcmV4Location; agentId: H256 }
+            >;
+            /** An CreateChannel message was sent to the Gateway */
+            CreateChannel: AugmentedEvent<
+                ApiType,
+                [channelId: SnowbridgeCoreChannelId, agentId: H256],
+                { channelId: SnowbridgeCoreChannelId; agentId: H256 }
+            >;
+            PricingParametersChanged: AugmentedEvent<
+                ApiType,
+                [params: SnowbridgeCorePricingPricingParameters],
+                { params: SnowbridgeCorePricingPricingParameters }
+            >;
+            /** An SetOperatingMode message was sent to the Gateway */
+            SetOperatingMode: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOutboundV1OperatingMode],
+                { mode: SnowbridgeCoreOutboundV1OperatingMode }
+            >;
+            /** A SetTokenTransferFees message was sent to the Gateway */
+            SetTokenTransferFees: AugmentedEvent<
+                ApiType,
+                [createAssetXcm: u128, transferAssetXcm: u128, registerToken: U256],
+                { createAssetXcm: u128; transferAssetXcm: u128; registerToken: U256 }
+            >;
+            /** An TransferNativeFromAgent message was sent to the Gateway */
+            TransferNativeFromAgent: AugmentedEvent<
+                ApiType,
+                [agentId: H256, recipient: H160, amount: u128],
+                { agentId: H256; recipient: H160; amount: u128 }
+            >;
+            /** An UpdateChannel message was sent to the Gateway */
+            UpdateChannel: AugmentedEvent<
+                ApiType,
+                [channelId: SnowbridgeCoreChannelId, mode: SnowbridgeCoreOutboundV1OperatingMode],
+                { channelId: SnowbridgeCoreChannelId; mode: SnowbridgeCoreOutboundV1OperatingMode }
+            >;
+            /** An Upgrade message was sent to the Gateway */
+            Upgrade: AugmentedEvent<
+                ApiType,
+                [implAddress: H160, implCodeHash: H256, initializerParamsHash: Option<H256>],
+                { implAddress: H160; implCodeHash: H256; initializerParamsHash: Option<H256> }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
@@ -520,37 +607,27 @@ declare module "@polkadot/api-base/types/events" {
             /** Message placed in overweight queue. */
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [
-                    id: U8aFixed,
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
-                    pageIndex: u32,
-                    messageIndex: u32,
-                ],
-                {
-                    id: U8aFixed;
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin;
-                    pageIndex: u32;
-                    messageIndex: u32;
-                }
+                [id: U8aFixed, origin: DancelightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
+                { id: U8aFixed; origin: DancelightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
             >;
             /** This page was reaped. */
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, index: u32],
-                { origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin; index: u32 }
+                [origin: DancelightRuntimeAggregateMessageOrigin, index: u32],
+                { origin: DancelightRuntimeAggregateMessageOrigin; index: u32 }
             >;
             /** Message is processed. */
             Processed: AugmentedEvent<
                 ApiType,
                 [
                     id: H256,
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
+                    origin: DancelightRuntimeAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin;
+                    origin: DancelightRuntimeAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -560,12 +637,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
+                    origin: DancelightRuntimeAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin;
+                    origin: DancelightRuntimeAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;

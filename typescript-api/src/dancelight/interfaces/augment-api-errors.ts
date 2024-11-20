@@ -229,6 +229,31 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumOutboundQueue: {
+            /** The pallet is halted */
+            Halted: AugmentedError<ApiType>;
+            /** Invalid Channel */
+            InvalidChannel: AugmentedError<ApiType>;
+            /** The message is too large */
+            MessageTooLarge: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        ethereumSystem: {
+            AgentAlreadyCreated: AugmentedError<ApiType>;
+            ChannelAlreadyCreated: AugmentedError<ApiType>;
+            InvalidLocation: AugmentedError<ApiType>;
+            InvalidPricingParameters: AugmentedError<ApiType>;
+            InvalidTokenTransferFees: AugmentedError<ApiType>;
+            InvalidUpgradeParameters: AugmentedError<ApiType>;
+            LocationConversionFailed: AugmentedError<ApiType>;
+            NoAgent: AugmentedError<ApiType>;
+            NoChannel: AugmentedError<ApiType>;
+            Send: AugmentedError<ApiType>;
+            UnsupportedLocationVersion: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         externalValidators: {
             /** Account is already whitelisted. */
             AlreadyWhitelisted: AugmentedError<ApiType>;
@@ -250,6 +275,10 @@ declare module "@polkadot/api-base/types/errors" {
             EmptyTargets: AugmentedError<ApiType>;
             /** There was an error computing the slash */
             ErrorComputingSlash: AugmentedError<ApiType>;
+            /** Failed to deliver the message to Ethereum */
+            EthereumDeliverFail: AugmentedError<ApiType>;
+            /** Failed to validate the message that was going to be sent to Ethereum */
+            EthereumValidateFail: AugmentedError<ApiType>;
             /** No slash was found to be cancelled at the given index */
             InvalidSlashIndex: AugmentedError<ApiType>;
             /** Slash indices to be cancelled are not sorted or unique */
