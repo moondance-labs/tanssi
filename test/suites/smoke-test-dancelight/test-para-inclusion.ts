@@ -16,6 +16,7 @@ type BlockFilteredRecord = {
     events: FrameSystemEventRecord[];
     logs;
     config;
+    paraInherent;
 };
 
 describeSuite({
@@ -25,6 +26,10 @@ describeSuite({
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let blockData: BlockFilteredRecord[];
+        // block hash to block number
+        const blockNumberMap: Map<string, number> = new Map();
+        // block hash to collators
+        const collatorsMap: Map<string, any> = new Map();
 
         beforeAll(async () => {
             api = context.polkadotJs();
@@ -37,13 +42,50 @@ describeSuite({
                 const signedBlock = await api.rpc.chain.getBlock(blockHash);
                 const apiAt = await api.at(blockHash);
                 const config = await apiAt.query.configuration.activeConfig();
+                const extrinsics = signedBlock.block.extrinsics;
+
+                const paraInherent = extrinsics.filter((ex) => {
+                    const {
+                        method: { method, section },
+                    } = ex;
+                    return section == "paraInherent" && method == "enter";
+                });
+
+                const {
+                    method: { args },
+                } = paraInherent[0];
+
+                const arg = args[0];
+
+                const backedCandidates = arg.backedCandidates;
+
+                for (const cand of backedCandidates) {
+                    const relayParent = cand.candidate.descriptor.relayParent.toHex();
+
+                    if (!blockNumberMap.has(relayParent)) {
+                        const apiAtP = await api.at(relayParent);
+                        const parentBlockNumber = await apiAtP.query.system.number();
+
+                        blockNumberMap.set(relayParent, parentBlockNumber.toNumber());
+                    }
+
+                    if (!collatorsMap.has(relayParent)) {
+                        const apiAtP = await api.at(relayParent);
+                        const collators = (
+                            await apiAtP.query.tanssiCollatorAssignment.collatorContainerChain()
+                        ).toJSON();
+
+                        collatorsMap.set(relayParent, collators);
+                    }
+                }
 
                 return {
                     blockNum: blockNum,
-                    extrinsics: signedBlock.block.extrinsics,
+                    extrinsics,
                     events: await apiAt.query.system.events(),
                     logs: signedBlock.block.header.digest.logs,
                     config,
+                    paraInherent,
                 };
             };
             const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
@@ -54,60 +96,51 @@ describeSuite({
             id: "C01",
             title: "Included paras valid",
             test: async function () {
-                await Promise.all(
-                    blockData.map(async ({ blockNum, extrinsics, config }) => {
-                        const paraInherent = extrinsics.filter((ex) => {
-                            const {
-                                method: { method, section },
-                            } = ex;
-                            return section == "paraInherent" && method == "enter";
-                        });
-                        expect(paraInherent.length).to.eq(1);
+                blockData.map(({ blockNum, config, paraInherent }) => {
+                    // Should have exactly 1 paraInherent
+                    expect(paraInherent.length, `Block #{blockNum}: missing paraInherent in block`).toBeGreaterThan(0);
+                    expect(paraInherent.length, `Block #{blockNum}: duplicate paraInherent in block`).toBeLessThan(2);
 
-                        const {
-                            method: { args },
-                        } = paraInherent[0];
-                        const arg = args[0];
+                    const {
+                        method: { args },
+                    } = paraInherent[0];
+                    const arg = args[0];
 
-                        const backedCandidates = arg.backedCandidates;
+                    const backedCandidates = arg.backedCandidates;
 
-                        const numBackedCandidates = backedCandidates.length;
+                    const numBackedCandidates = backedCandidates.length;
 
-                        // assert that numBackedCandidates <= numCores
-                        const numCores = config.schedulerParams.numCores.toNumber();
+                    // assert that numBackedCandidates <= numCores
+                    const numCores = config.schedulerParams.numCores.toNumber();
+                    expect(
+                        numBackedCandidates,
+                        `Block #${blockNum}: backed more candidates than cores available: ${numBackedCandidates} vs cores ${numCores}`
+                    ).to.be.lessThanOrEqual(numCores);
+
+                    // Assert that each backed candidate:
+                    // * has relayParent be at most allowedAncestryLen backwards
+                    // * had collators assigned to it at block "relayParent"
+                    const allowedAncestryLen = config.asyncBackingParams.allowedAncestryLen.toNumber();
+                    for (const cand of backedCandidates) {
+                        const paraId = cand.candidate.descriptor.paraId.toNumber();
+                        const relayParent = cand.candidate.descriptor.relayParent.toHex();
+
+                        const parentBlockNumber = blockNumberMap.get(relayParent);
+
+                        // allowedAncestryLen = 1 means that parent + 1 == current
+                        // with allowedAncestryLen = 2, parent + allowedAncestryLen >= current
                         expect(
-                            numBackedCandidates,
-                            `Block #${blockNum}: backed more candidates than cores available: ${numBackedCandidates} vs cores ${numCores}`
-                        ).to.be.lessThanOrEqual(numCores);
+                            parentBlockNumber + allowedAncestryLen,
+                            `Block #${blockNum}: backed candidate for para id ${paraId} has too old relayParent: ${parentBlockNumber} vs current ${blockNum}`
+                        ).to.be.greaterThanOrEqual(blockNum);
 
-                        // Assert that each backed candidate:
-                        // * has relayParent be at most allowedAncestryLen backwards
-                        // * had collators assigned to it at block "relayParent"
-                        const allowedAncestryLen = config.asyncBackingParams.allowedAncestryLen.toNumber();
-                        for (const cand of backedCandidates) {
-                            const paraId = cand.candidate.descriptor.paraId.toNumber();
-                            const relayParent = cand.candidate.descriptor.relayParent;
-
-                            const apiAt = await api.at(relayParent);
-                            const parentBlockNumber = await apiAt.query.system.number();
-
-                            // allowedAncestryLen = 1 means that parent + 1 == current
-                            // with allowedAncestryLen = 2, parent + allowedAncestryLen >= current
-                            expect(
-                                parentBlockNumber.toNumber() + allowedAncestryLen,
-                                `Block #${blockNum}: backed candidate has too old relayParent: ${parentBlockNumber} vs current ${blockNum}`
-                            ).to.be.greaterThanOrEqual(blockNum);
-
-                            const collators = (
-                                await apiAt.query.tanssiCollatorAssignment.collatorContainerChain()
-                            ).toJSON();
-                            expect(
-                                collators.containerChains[paraId],
-                                `Block #${blockNum}: Found backed candidate for para id ${paraId}, but that para id has no collators assigned. Collator assignment: ${collators}`
-                            ).toBeTruthy();
-                        }
-                    })
-                );
+                        const collators = collatorsMap.get(relayParent);
+                        expect(
+                            collators.containerChains[paraId],
+                            `Block #${blockNum}: Found backed candidate for para id ${paraId}, but that para id has no collators assigned. Collator assignment: ${collators}`
+                        ).toBeTruthy();
+                    }
+                });
             },
         });
     },
