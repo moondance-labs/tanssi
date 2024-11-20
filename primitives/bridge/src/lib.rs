@@ -21,6 +21,10 @@
 
 use {
     core::marker::PhantomData,
+    cumulus_primitives_core::{
+        relay_chain::{AccountId, Balance},
+        Assets, Location, SendResult, SendXcm, Xcm, XcmHash,
+    },
     ethabi::Token,
     frame_support::{
         ensure,
@@ -34,6 +38,10 @@ use {
         ChannelId,
     },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
+    snowbridge_router_primitives::inbound::{
+        ConvertMessage, ConvertMessageError, VersionedXcmMessage,
+    },
+    sp_core::hashing,
     sp_core::H256,
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
@@ -209,4 +217,36 @@ pub trait DeliverMessage {
     type Ticket;
 
     fn deliver(ticket: Self::Ticket) -> Result<H256, SendError>;
+}
+
+/// Dummy router for xcm messages coming from ethereum
+pub struct DoNothingRouter;
+impl SendXcm for DoNothingRouter {
+    type Ticket = Xcm<()>;
+
+    fn validate(
+        _dest: &mut Option<Location>,
+        xcm: &mut Option<Xcm<()>>,
+    ) -> SendResult<Self::Ticket> {
+        Ok((xcm.clone().unwrap(), Assets::new()))
+    }
+    fn deliver(xcm: Xcm<()>) -> Result<XcmHash, cumulus_primitives_core::SendError> {
+        let hash = xcm.using_encoded(hashing::blake2_256);
+        Ok(hash)
+    }
+}
+
+/// Dummy message converter to convert message to Xcm
+pub struct DoNothingConvertMessage;
+
+impl ConvertMessage for DoNothingConvertMessage {
+    type Balance = Balance;
+    type AccountId = AccountId;
+
+    fn convert(
+        _: H256,
+        _message: VersionedXcmMessage,
+    ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
+        Err(ConvertMessageError::UnsupportedVersion)
+    }
 }

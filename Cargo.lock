@@ -18784,6 +18784,7 @@ dependencies = [
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-router-primitives",
  "sp-core",
  "sp-runtime",
  "sp-std",
