@@ -115,8 +115,8 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, RelayStorageRootProvider,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
+        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm_runtime_apis::{
@@ -812,9 +812,9 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
     }
 }
 
-pub struct RemoveParaIdsWithNoCreditsImpl;
+pub struct ParaIdAssignmentHooksImpl;
 
-impl RemoveParaIdsWithNoCreditsImpl {
+impl ParaIdAssignmentHooksImpl {
     fn charge_para_ids_internal(
         blocks_per_session: tp_traits::BlockNumber,
         para_id: ParaId,
@@ -888,11 +888,8 @@ impl RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
-impl<AC> RemoveParaIdsWithNoCredits<BalanceOf<Runtime>, AC> for RemoveParaIdsWithNoCreditsImpl {
-    fn pre_assignment_remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
-        currently_assigned: &BTreeSet<ParaId>,
-    ) {
+impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooksImpl {
+    fn pre_assignment(para_ids: &mut Vec<ParaId>, currently_assigned: &BTreeSet<ParaId>) {
         let blocks_per_session = Period::get();
         para_ids.retain(|para_id| {
             with_transaction(|| {
@@ -909,7 +906,7 @@ impl<AC> RemoveParaIdsWithNoCredits<BalanceOf<Runtime>, AC> for RemoveParaIdsWit
         });
     }
 
-    fn post_assignment_remove_para_ids_with_no_credits(
+    fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
@@ -972,7 +969,7 @@ impl pallet_collator_assignment::Config for Runtime {
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
-    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;

@@ -33,8 +33,8 @@ use {
     },
     sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     tp_traits::{
-        CollatorAssignmentTip, ParaId, ParathreadParams, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, SessionContainerChains,
+        CollatorAssignmentTip, ParaId, ParaIdAssignmentHooks, ParathreadParams,
+        RemoveInvulnerables, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
@@ -335,7 +335,7 @@ impl pallet_collator_assignment::Config for Test {
         RotateCollatorsEveryNSessions<MockCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
-    type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
+    type ParaIdAssignmentHooks = MockParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;
     type ForceEmptyOrchestrator = ConstBool<false>;
     type Currency = ();
@@ -396,17 +396,14 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
 }
 
 /// Any ParaId >= 5000 will be considered to not have enough credits
-pub struct RemoveParaIdsAbove5000;
+pub struct MockParaIdAssignmentHooksImpl;
 
-impl<AC> RemoveParaIdsWithNoCredits<u32, AC> for RemoveParaIdsAbove5000 {
-    fn pre_assignment_remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
-        _old_assigned: &BTreeSet<ParaId>,
-    ) {
+impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
+    fn pre_assignment(para_ids: &mut Vec<ParaId>, _old_assigned: &BTreeSet<ParaId>) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
     }
 
-    fn post_assignment_remove_para_ids_with_no_credits(
+    fn post_assignment(
         _current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         _maybe_tip: &Option<u32>,
