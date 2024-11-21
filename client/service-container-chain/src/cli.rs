@@ -24,7 +24,7 @@ use {
     sc_network::config::MultiaddrWithPeerId,
     sc_service::BasePath,
     sp_runtime::Storage,
-    std::{collections::BTreeMap, net::SocketAddr},
+    std::collections::BTreeMap,
     url::Url,
 };
 

@@ -21,7 +21,7 @@
 
 #![warn(missing_docs)]
 
-pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
+pub use sc_rpc::SubscriptionTaskExecutor;
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},

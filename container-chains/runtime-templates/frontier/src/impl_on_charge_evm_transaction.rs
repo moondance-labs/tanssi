@@ -17,11 +17,6 @@
 #[macro_export]
 macro_rules! impl_on_charge_evm_transaction {
 	{} => {
-		type CurrencyAccountId<T> = <T as frame_system::Config>::AccountId;
-
-		type BalanceFor<T> =
-			<<T as pallet_evm::Config>::Currency as Inspect<CurrencyAccountId<T>>>::Balance;
-
 		pub struct OnChargeEVMTransaction<OU>(sp_std::marker::PhantomData<OU>);
 		impl<T, OU> OnChargeEVMTransactionT<T> for OnChargeEVMTransaction<OU>
 		where

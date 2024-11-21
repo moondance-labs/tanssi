@@ -32,7 +32,6 @@ use {
         rpc::{ManualSeal, ManualSealApiServer},
         EngineCommand,
     },
-    sc_rpc::DenyUnsafe,
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,

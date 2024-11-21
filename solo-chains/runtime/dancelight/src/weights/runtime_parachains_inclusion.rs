@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for SubstrateWeight<T> {
 	
-	fn enact_candidate(u: u32, h: u32, c: u32) -> Weight {
+	fn enact_candidate(_u: u32, _h: u32, _c: u32) -> Weight {
 		todo!()
 	}
 }

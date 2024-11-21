@@ -43,7 +43,7 @@ use {
     sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
-    std::{net::SocketAddr, sync::Arc},
+    std::sync::Arc,
     tc_service_container_chain::{
         cli::ContainerChainCli,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},

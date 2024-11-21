@@ -43,7 +43,6 @@ use {
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
-    sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor},
     sc_service::{
         Configuration, KeystoreContainer, NetworkStarter, SpawnTaskHandle, TFullBackend,
         TFullClient, TaskManager,

@@ -50,8 +50,8 @@ use {
         traits::{
             fungible::{Balanced, Credit, Inspect},
             tokens::ConversionToAssetBalance,
-            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT,
-            FindAuthor, Imbalance, InsideBoth, InstanceFilter, OnFinalize, OnUnbalanced,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, FindAuthor, InsideBoth,
+            InstanceFilter, OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -69,10 +69,9 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EVMFungibleAdapter, EnsureAddressNever,
-        EnsureAddressRoot, EnsureCreateOrigin, FeeCalculator, FrameSystemAccountProvider,
-        GasWeightMapping, IdentityAddressMapping,
-        OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
+        Account as EVMAccount, EVMFungibleAdapter, EnsureAddressNever, EnsureAddressRoot,
+        EnsureCreateOrigin, FeeCalculator, FrameSystemAccountProvider, GasWeightMapping,
+        IdentityAddressMapping, OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, Encode},

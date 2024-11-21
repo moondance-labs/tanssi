@@ -36,7 +36,7 @@ use {
     sc_service::config::{BasePath, PrometheusConfig},
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
-    std::{io::Write, net::SocketAddr},
+    std::io::Write,
     tc_service_container_chain::{chain_spec::RawChainSpec, cli::ContainerChainCli},
 };
 
