@@ -1,4 +1,20 @@
-use crate::symbiotic_message_processor::{Command, Payload, MAGIC_BYTES};
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+use tp_bridge::symbiotic_message_processor::{Message as SymbioticMessage, Command, Payload, MAGIC_BYTES};
 use crate::tests::common::ExtBuilder;
 use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
 use alloy_sol_types::SolEvent;
@@ -78,7 +94,7 @@ fn test_inbound_queue_message_passing() {
 
         let payload = Payload {
             magic_bytes: MAGIC_BYTES,
-            message: crate::symbiotic_message_processor::Message::V1(Command::<Runtime>::ReceiveValidators {
+            message: SymbioticMessage::V1(Command::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone()
             }),
         };

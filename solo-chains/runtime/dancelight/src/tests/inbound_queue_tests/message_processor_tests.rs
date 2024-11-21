@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::symbiotic_message_processor::{
+use tp_bridge::symbiotic_message_processor::{
     Command, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
 };
 use crate::tests::common::ExtBuilder;
