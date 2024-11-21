@@ -18778,6 +18778,7 @@ dependencies = [
  "frame-system",
  "impl-trait-for-tuples",
  "macro_rules_attribute",
+ "pallet-external-validators",
  "parity-scale-codec",
  "scale-info",
  "serde",

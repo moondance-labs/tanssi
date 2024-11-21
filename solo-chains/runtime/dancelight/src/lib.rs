@@ -148,7 +148,6 @@ use dancelight_runtime_constants::{currency::*, fee::*, time::*};
 pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
-pub mod symbiotic_message_processor;
 
 // Weights
 mod weights;

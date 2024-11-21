@@ -17,15 +17,14 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-use crate::symbiotic_message_processor::SymbioticMessageProcessor;
 #[cfg(not(test))]
 use crate::EthereumBeaconClient;
 use frame_support::weights::ConstantMultiplier;
 
 use sp_core::H160;
 use sp_core::{ConstU32, ConstU8};
+#[cfg(not(feature = "runtime-benchmarks"))]
+use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 use {
     crate::{
         parameter_types, weights, xcm_config, xcm_config::UniversalLocation,

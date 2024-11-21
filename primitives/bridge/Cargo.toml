@@ -17,6 +17,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 macro_rules_attribute = { workspace = true }
+pallet-external-validators = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true }
@@ -40,6 +41,7 @@ std = [
 	"ethabi/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-external-validators/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
@@ -55,6 +57,7 @@ runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"pallet-external-validators/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-router-primitives/runtime-benchmarks",

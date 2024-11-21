@@ -19,6 +19,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod symbiotic_message_processor;
+
 use {
     core::marker::PhantomData,
     cumulus_primitives_core::{
