@@ -919,6 +919,7 @@
             "foundation": {
                 "type": "read_only"
             },
+            "reporters": ["html"],
             "connections": [
                 {
                     "name": "para",
