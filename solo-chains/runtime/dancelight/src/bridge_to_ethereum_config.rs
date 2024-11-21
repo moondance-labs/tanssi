@@ -180,12 +180,6 @@ mod benchmark_helper {
         }
     }
 
-    impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for () {
-        fn make_xcm_origin(location: Location) -> RuntimeOrigin {
-            RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
-        }
-    }
-
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
         fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
             let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
