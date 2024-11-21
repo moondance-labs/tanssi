@@ -92,7 +92,7 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
+        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -522,6 +522,8 @@ parameter_types! {
 #[cfg(feature = "runtime-benchmarks")]
 pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::Currency;
 use frame_support::traits::{ExistenceRequirement, OnUnbalanced, WithdrawReasons};
 use pallet_services_payment::BalanceOf;
 #[cfg(feature = "runtime-benchmarks")]
@@ -3015,9 +3017,9 @@ impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRa
     }
 }
 
-pub struct RemoveParaIdsWithNoCreditsImpl;
+pub struct ParaIdAssignmentHooksImpl;
 
-impl RemoveParaIdsWithNoCreditsImpl {
+impl ParaIdAssignmentHooksImpl {
     fn charge_para_ids_internal(
         blocks_per_session: BlockNumber,
         para_id: ParaId,
@@ -3091,11 +3093,8 @@ impl RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
-impl<AC> RemoveParaIdsWithNoCredits<BalanceOf<Runtime>, AC> for RemoveParaIdsWithNoCreditsImpl {
-    fn pre_assignment_remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
-        currently_assigned: &BTreeSet<ParaId>,
-    ) {
+impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooksImpl {
+    fn pre_assignment(para_ids: &mut Vec<ParaId>, currently_assigned: &BTreeSet<ParaId>) {
         let blocks_per_session = EpochDurationInBlocks::get();
         para_ids.retain(|para_id| {
             with_transaction(|| {
@@ -3112,7 +3111,7 @@ impl<AC> RemoveParaIdsWithNoCredits<BalanceOf<Runtime>, AC> for RemoveParaIdsWit
         });
     }
 
-    fn post_assignment_remove_para_ids_with_no_credits(
+    fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
@@ -3226,7 +3225,7 @@ impl pallet_collator_assignment::Config for Runtime {
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = ();
-    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
