@@ -55,7 +55,7 @@ use {
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
         CollatorAssignmentTip, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        GetSessionContainerChains, ParaId, ParaIdAssignmentHooks, RemoveInvulnerables,
         ShouldRotateAllCollators, Slot,
     },
 };
@@ -105,10 +105,7 @@ pub mod pallet {
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
-        type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits<
-            BalanceOf<Self>,
-            Self::AccountId,
-        >;
+        type ParaIdAssignmentHooks: ParaIdAssignmentHooks<BalanceOf<Self>, Self::AccountId>;
         type Currency: Currency<Self::AccountId>;
         type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
         type ForceEmptyOrchestrator: Get<bool>;
@@ -311,16 +308,13 @@ pub mod pallet {
                 old_assigned.container_chains.keys().cloned().collect();
 
             // Remove the containerChains that do not have enough credits for block production
-            T::RemoveParaIdsWithNoCredits::pre_assignment_remove_para_ids_with_no_credits(
+            T::ParaIdAssignmentHooks::pre_assignment(
                 &mut container_chain_ids,
                 &old_assigned_para_ids,
             );
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
             // as parathreads because they will not be producing blocks on every slot.
-            T::RemoveParaIdsWithNoCredits::pre_assignment_remove_para_ids_with_no_credits(
-                &mut parathreads,
-                &old_assigned_para_ids,
-            );
+            T::ParaIdAssignmentHooks::pre_assignment(&mut parathreads, &old_assigned_para_ids);
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -469,7 +463,7 @@ pub mod pallet {
 
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
-            T::RemoveParaIdsWithNoCredits::post_assignment_remove_para_ids_with_no_credits(
+            T::ParaIdAssignmentHooks::post_assignment(
                 &old_assigned_para_ids,
                 &mut new_assigned.container_chains,
                 &maybe_tip,
