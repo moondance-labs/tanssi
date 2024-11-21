@@ -35,6 +35,7 @@
         "@polkadot/types-codec": "14.3.1",
         "@polkadot/util": "13.2.3",
         "@polkadot/util-crypto": "13.2.3",
+        "@polkadot/wasm-crypto": "^7.4.1",
         "@tanssi/api-augment": "workspace:*",
         "@types/debug": "4.1.12",
         "@types/node": "22.9.0",
