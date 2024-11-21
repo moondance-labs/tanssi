@@ -51,6 +51,9 @@ importers:
       '@polkadot/util-crypto':
         specifier: 13.2.3
         version: 13.2.3(@polkadot/util@13.2.3)
+      '@polkadot/wasm-crypto':
+        specifier: ^7.4.1
+        version: 7.4.1(@polkadot/util@13.2.3)(@polkadot/x-randomvalues@13.2.3(@polkadot/util@13.2.3)(@polkadot/wasm-util@7.4.1(@polkadot/util@13.2.3)))
       '@tanssi/api-augment':
         specifier: workspace:*
         version: link:../typescript-api
