@@ -290,7 +290,7 @@ fn new_full<
         ..
     }: NewFullParams<OverseerGenerator>,
 ) -> Result<NewFull, Error> {
-    let role = config.role.clone();
+    let role = config.role;
 
     let basics = new_partial_basics(&mut config, telemetry_worker_handle)?;
 
