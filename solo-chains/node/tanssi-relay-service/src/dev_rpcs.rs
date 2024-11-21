@@ -47,7 +47,6 @@ pub struct DevRpc {
 #[jsonrpsee::core::async_trait]
 impl DevApiServer for DevRpc {
     async fn enable_para_inherent_candidate(&self) -> RpcResult<()> {
-        log::info!("entering here");
         let mock_para_inherent_channel = self.mock_para_inherent_channel.clone();
         // Push the message to the shared channel where it will be queued up
         // to be injected in to an upcoming block.
@@ -56,7 +55,6 @@ impl DevApiServer for DevRpc {
             .await
             .map_err(|err| internal_err(err.to_string()))?;
 
-        log::info!("SENEDING ENABLE");
         Ok(())
     }
 
