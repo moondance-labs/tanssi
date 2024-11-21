@@ -55,7 +55,25 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for SubstrateWeight<T> {
 	
-	fn enact_candidate(_u: u32, _h: u32, _c: u32) -> Weight {
-		todo!()
+	fn enact_candidate(u: u32, h: u32, c: u32) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `33353 + c * (16114 ±0) + h * (75 ±0)`
+		//  Estimated: `36818 + c * (26467 ±0) + h * (2551 ±0)`
+		// Minimum execution time: 4_829_551_000 picoseconds.
+		Weight::from_parts(1_892_697_027, 0)
+			.saturating_add(Weight::from_parts(0, 36818))
+			// Standard Error: 793_993
+			.saturating_add(Weight::from_parts(126_698_671, 0).saturating_mul(u.into()))
+			// Standard Error: 793_993
+			.saturating_add(Weight::from_parts(144_116_038, 0).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(h.into())))
+			.saturating_add(T::DbWeight::get().reads((8_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(10))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(u.into())))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(h.into())))
+			.saturating_add(T::DbWeight::get().writes((7_u64).saturating_mul(c.into())))
+			.saturating_add(Weight::from_parts(0, 26467).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(0, 2551).saturating_mul(h.into()))
 	}
 }

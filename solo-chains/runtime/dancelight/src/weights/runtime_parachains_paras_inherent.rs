@@ -336,5 +336,14 @@ impl<T: frame_system::Config> runtime_parachains::paras_inherent::WeightInfo for
 			.saturating_add(T::DbWeight::get().writes(14_u64))
 	}
 
-	fn enter_empty() -> Weight { todo!() }
+	fn enter_empty() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `8967`
+		//  Estimated: `12432`
+		// Minimum execution time: 144_751_000 picoseconds.
+		Weight::from_parts(153_966_000, 0)
+			.saturating_add(Weight::from_parts(0, 12432))
+			.saturating_add(T::DbWeight::get().reads(15))
+			.saturating_add(T::DbWeight::get().writes(5))
+	}
 }
