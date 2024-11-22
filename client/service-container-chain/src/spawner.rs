@@ -182,9 +182,10 @@ pub enum CcSpawnMsg {
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
+#[sc_tracing::logging::prefix_logs_with(container_log_str(container_chain_para_id))]
 async fn try_spawn<
     RuntimeApi: MinimalContainerRuntimeApi,
-    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi> +'static,
 >(
     try_spawn_params: ContainerChainSpawnParams<RuntimeApi, TGenerateRpcBuilder>,
     state: Arc<Mutex<ContainerChainSpawnerState>>,
@@ -573,7 +574,7 @@ pub trait Spawner {
 
 impl<
         RuntimeApi: MinimalContainerRuntimeApi,
-        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi> +'static,
     > Spawner for ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
 {
     /// Access to the Orchestrator Chain Interface
@@ -588,6 +589,7 @@ impl<
     /// because the chain has not stopped yet, because `stop` does not wait for the chain to stop,
     /// so before calling `spawn` make sure to call `wait_for_paritydb_lock` before, like we do in
     /// `handle_update_assignment`.
+    #[sc_tracing::logging::prefix_logs_with(container_log_str(container_chain_para_id))]
     async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
         let try_spawn_params = self.params.clone();
         let state = self.state.clone();
@@ -657,7 +659,7 @@ impl<
 
 impl<
         RuntimeApi: MinimalContainerRuntimeApi,
-        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+        TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi> + 'static,
     > ContainerChainSpawner<RuntimeApi, TGenerateRpcBuilder>
 {
     /// Receive and process `CcSpawnMsg`s indefinitely
@@ -1748,4 +1750,11 @@ mod tests {
             Some(ParaId::from(2000)),
         );
     }
+}
+
+// Log string that will be shown for the container chain: `[Container-2000]`.
+// This needs to be a separate function because the `prefix_logs_with` macro
+// has trouble parsing expressions.
+fn container_log_str(para_id: ParaId) -> String {
+    format!("Container-{}", para_id)
 }
