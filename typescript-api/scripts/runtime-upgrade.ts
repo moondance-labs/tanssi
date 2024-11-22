@@ -38,6 +38,7 @@ async function main() {
             "--wasm-execution=interpreted-i-know-what-i-do",
             "--rpc-port=9933",
             "--unsafe-force-node-key-generation",
+            "--rpc-cors=all",
         ]);
 
         const onProcessExit = () => {
