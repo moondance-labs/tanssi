@@ -1399,7 +1399,7 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = <Self as frame_system::Config>::AccountId;
     type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -2079,6 +2079,7 @@ mod benches {
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
+        [pallet_invulnerables, TanssiInvulnerables]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]

@@ -28,7 +28,8 @@ use {
     },
     frame_system::{EventRecord, RawOrigin},
     pallet_session::{self as session, SessionManager},
-    sp_runtime::traits::AtLeast32BitUnsigned,
+    rand::{RngCore, SeedableRng},
+    sp_runtime::{codec, traits::AtLeast32BitUnsigned},
     sp_std::prelude::*,
     tp_traits::DistributeRewards,
 };
@@ -56,21 +57,22 @@ fn create_funded_user<T: Config + pallet_balances::Config>(
     user
 }
 
+struct InputFromRng<'a, T>(&'a mut T);
+impl<'a, T: RngCore> codec::Input for InputFromRng<'a, T> {
+    fn remaining_len(&mut self) -> Result<Option<usize>, codec::Error> {
+        Ok(None)
+    }
+
+    fn read(&mut self, into: &mut [u8]) -> Result<(), codec::Error> {
+        self.0.fill_bytes(into);
+        Ok(())
+    }
+}
+
 fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
-    use rand::{RngCore, SeedableRng};
+    let mut rng = rand::rngs::StdRng::seed_from_u64(u64::from(c));
 
-    let keys = {
-        let mut keys = [0u8; 128];
-
-        if c > 0 {
-            let mut rng = rand::rngs::StdRng::seed_from_u64(u64::from(c));
-            rng.fill_bytes(&mut keys);
-        }
-
-        keys
-    };
-
-    Decode::decode(&mut &keys[..]).unwrap()
+    Decode::decode(&mut InputFromRng(&mut rng)).unwrap()
 }
 
 fn invulnerable<T: Config + session::Config + pallet_balances::Config>(
