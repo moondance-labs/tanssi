@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use frame_support::__private::sp_tracing::tracing::Instrument;
 use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
@@ -238,7 +239,6 @@ pub fn import_queue(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Orchestrator")]
 async fn start_node_impl(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
@@ -675,6 +675,10 @@ pub async fn start_parachain_node(
         para_id,
         hwbench,
     )
+    .instrument(sc_tracing::tracing::info_span!(
+        sc_tracing::logging::PREFIX_LOG_SPAN,
+        name = "Orchestrator",
+    ))
     .await
 }
 
