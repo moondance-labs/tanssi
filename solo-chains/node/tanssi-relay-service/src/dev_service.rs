@@ -125,15 +125,6 @@ where
     };
 
     let mut io = RpcModule::new(());
-
-    let chain_name = chain_spec.name().to_string();
-    let genesis_hash = client
-        .hash(0)
-        .ok()
-        .flatten()
-        .expect("Genesis block exists; qed");
-    let properties = chain_spec.properties();
-
     io.merge(System::new(client.clone(), pool.clone()).into_rpc())?;
     io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
