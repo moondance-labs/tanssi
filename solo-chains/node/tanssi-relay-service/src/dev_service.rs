@@ -134,7 +134,6 @@ where
         .expect("Genesis block exists; qed");
     let properties = chain_spec.properties();
 
-    io.merge(ChainSpec::new(chain_name, genesis_hash, properties).into_rpc())?;
     io.merge(System::new(client.clone(), pool.clone()).into_rpc())?;
     io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
