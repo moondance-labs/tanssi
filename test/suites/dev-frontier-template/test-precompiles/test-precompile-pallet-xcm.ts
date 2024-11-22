@@ -66,7 +66,7 @@ describeSuite({
                     to: PRECOMPILE_PALLET_XCM_ADDRESS,
                     data: encodeFunctionData({
                         abi: xcmInterface,
-                        args: [dest, beneficiary, assetLocationInfo, 0, weight],
+                        args: [dest, beneficiary, assetLocationInfo, 0],
                         functionName: "transferAssetsLocation",
                     }),
                     gasLimit: 20_000_000n,
@@ -102,7 +102,7 @@ describeSuite({
                     to: PRECOMPILE_PALLET_XCM_ADDRESS,
                     data: encodeFunctionData({
                         abi: xcmInterface,
-                        args: [paraId, BALTATHAR_ADDRESS, assetAddressInfo, 0, weight],
+                        args: [paraId, BALTATHAR_ADDRESS, assetAddressInfo, 0],
                         functionName: "transferAssetsToPara20",
                     }),
                     gasLimit: 20_000_000n,
@@ -139,7 +139,7 @@ describeSuite({
                     to: PRECOMPILE_PALLET_XCM_ADDRESS,
                     data: encodeFunctionData({
                         abi: xcmInterface,
-                        args: [paraId, beneficiaryAddress, assetAddressInfo, 0, weight],
+                        args: [paraId, beneficiaryAddress, assetAddressInfo, 0],
                         functionName: "transferAssetsToPara32",
                     }),
                     gasLimit: 20_000_000n,
@@ -175,7 +175,7 @@ describeSuite({
                     to: PRECOMPILE_PALLET_XCM_ADDRESS,
                     data: encodeFunctionData({
                         abi: xcmInterface,
-                        args: [beneficiaryAddress, assetAddressInfo, 0, weight],
+                        args: [beneficiaryAddress, assetAddressInfo, 0],
                         functionName: "transferAssetsToRelay",
                     }),
                     gasLimit: 20_000_000n,
