@@ -2903,7 +2903,7 @@ declare module "@polkadot/types/lookup" {
     interface CumulusPalletParachainSystemUnincludedSegmentAncestor extends Struct {
         readonly usedBandwidth: CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth;
         readonly paraHeadHash: Option<H256>;
-        readonly consumedGoAheadSignal: Option<PolkadotPrimitivesV7UpgradeGoAhead>;
+        readonly consumedGoAheadSignal: Option<PolkadotPrimitivesV8UpgradeGoAhead>;
     }
 
     /** @name CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth (187) */
@@ -2919,8 +2919,8 @@ declare module "@polkadot/types/lookup" {
         readonly totalBytes: u32;
     }
 
-    /** @name PolkadotPrimitivesV7UpgradeGoAhead (194) */
-    interface PolkadotPrimitivesV7UpgradeGoAhead extends Enum {
+    /** @name PolkadotPrimitivesV8UpgradeGoAhead (194) */
+    interface PolkadotPrimitivesV8UpgradeGoAhead extends Enum {
         readonly isAbort: boolean;
         readonly isGoAhead: boolean;
         readonly type: "Abort" | "GoAhead";
@@ -2930,19 +2930,19 @@ declare module "@polkadot/types/lookup" {
     interface CumulusPalletParachainSystemUnincludedSegmentSegmentTracker extends Struct {
         readonly usedBandwidth: CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth;
         readonly hrmpWatermark: Option<u32>;
-        readonly consumedGoAheadSignal: Option<PolkadotPrimitivesV7UpgradeGoAhead>;
+        readonly consumedGoAheadSignal: Option<PolkadotPrimitivesV8UpgradeGoAhead>;
     }
 
-    /** @name PolkadotPrimitivesV7PersistedValidationData (196) */
-    interface PolkadotPrimitivesV7PersistedValidationData extends Struct {
+    /** @name PolkadotPrimitivesV8PersistedValidationData (196) */
+    interface PolkadotPrimitivesV8PersistedValidationData extends Struct {
         readonly parentHead: Bytes;
         readonly relayParentNumber: u32;
         readonly relayParentStorageRoot: H256;
         readonly maxPovSize: u32;
     }
 
-    /** @name PolkadotPrimitivesV7UpgradeRestriction (199) */
-    interface PolkadotPrimitivesV7UpgradeRestriction extends Enum {
+    /** @name PolkadotPrimitivesV8UpgradeRestriction (199) */
+    interface PolkadotPrimitivesV8UpgradeRestriction extends Enum {
         readonly isPresent: boolean;
         readonly type: "Present";
     }
@@ -2956,8 +2956,8 @@ declare module "@polkadot/types/lookup" {
     interface CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot extends Struct {
         readonly dmqMqcHead: H256;
         readonly relayDispatchQueueRemainingCapacity: CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity;
-        readonly ingressChannels: Vec<ITuple<[u32, PolkadotPrimitivesV7AbridgedHrmpChannel]>>;
-        readonly egressChannels: Vec<ITuple<[u32, PolkadotPrimitivesV7AbridgedHrmpChannel]>>;
+        readonly ingressChannels: Vec<ITuple<[u32, PolkadotPrimitivesV8AbridgedHrmpChannel]>>;
+        readonly egressChannels: Vec<ITuple<[u32, PolkadotPrimitivesV8AbridgedHrmpChannel]>>;
     }
 
     /** @name CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity (203) */
@@ -2966,8 +2966,8 @@ declare module "@polkadot/types/lookup" {
         readonly remainingSize: u32;
     }
 
-    /** @name PolkadotPrimitivesV7AbridgedHrmpChannel (206) */
-    interface PolkadotPrimitivesV7AbridgedHrmpChannel extends Struct {
+    /** @name PolkadotPrimitivesV8AbridgedHrmpChannel (206) */
+    interface PolkadotPrimitivesV8AbridgedHrmpChannel extends Struct {
         readonly maxCapacity: u32;
         readonly maxTotalSize: u32;
         readonly maxMessageSize: u32;
@@ -2976,8 +2976,8 @@ declare module "@polkadot/types/lookup" {
         readonly mqcHead: Option<H256>;
     }
 
-    /** @name PolkadotPrimitivesV7AbridgedHostConfiguration (207) */
-    interface PolkadotPrimitivesV7AbridgedHostConfiguration extends Struct {
+    /** @name PolkadotPrimitivesV8AbridgedHostConfiguration (207) */
+    interface PolkadotPrimitivesV8AbridgedHostConfiguration extends Struct {
         readonly maxCodeSize: u32;
         readonly maxHeadDataSize: u32;
         readonly maxUpwardQueueCount: u32;
@@ -2987,11 +2987,11 @@ declare module "@polkadot/types/lookup" {
         readonly hrmpMaxMessageNumPerCandidate: u32;
         readonly validationUpgradeCooldown: u32;
         readonly validationUpgradeDelay: u32;
-        readonly asyncBackingParams: PolkadotPrimitivesV7AsyncBackingAsyncBackingParams;
+        readonly asyncBackingParams: PolkadotPrimitivesV8AsyncBackingAsyncBackingParams;
     }
 
-    /** @name PolkadotPrimitivesV7AsyncBackingAsyncBackingParams (208) */
-    interface PolkadotPrimitivesV7AsyncBackingAsyncBackingParams extends Struct {
+    /** @name PolkadotPrimitivesV8AsyncBackingAsyncBackingParams (208) */
+    interface PolkadotPrimitivesV8AsyncBackingAsyncBackingParams extends Struct {
         readonly maxCandidateDepth: u32;
         readonly allowedAncestryLen: u32;
     }
@@ -3012,21 +3012,12 @@ declare module "@polkadot/types/lookup" {
         readonly asSudoSendUpwardMessage: {
             readonly message: Bytes;
         } & Struct;
-        readonly isAuthorizeUpgrade: boolean;
-        readonly asAuthorizeUpgrade: {
-            readonly codeHash: H256;
-            readonly checkVersion: bool;
-        } & Struct;
-        readonly isEnactAuthorizedUpgrade: boolean;
-        readonly asEnactAuthorizedUpgrade: {
-            readonly code: Bytes;
-        } & Struct;
-        readonly type: "SetValidationData" | "SudoSendUpwardMessage" | "AuthorizeUpgrade" | "EnactAuthorizedUpgrade";
+        readonly type: "SetValidationData" | "SudoSendUpwardMessage";
     }
 
     /** @name CumulusPrimitivesParachainInherentParachainInherentData (216) */
     interface CumulusPrimitivesParachainInherentParachainInherentData extends Struct {
-        readonly validationData: PolkadotPrimitivesV7PersistedValidationData;
+        readonly validationData: PolkadotPrimitivesV8PersistedValidationData;
         readonly relayChainState: SpTrieStorageProof;
         readonly downwardMessages: Vec<PolkadotCorePrimitivesInboundDownwardMessage>;
         readonly horizontalMessages: BTreeMap<u32, Vec<PolkadotCorePrimitivesInboundHrmpMessage>>;
@@ -5006,6 +4997,12 @@ declare module "@polkadot/types/lookup" {
             readonly id: u16;
             readonly who: MultiAddress;
         } & Struct;
+        readonly isTransferAll: boolean;
+        readonly asTransferAll: {
+            readonly id: u16;
+            readonly dest: MultiAddress;
+            readonly keepAlive: bool;
+        } & Struct;
         readonly type:
             | "Create"
             | "ForceCreate"
@@ -5038,7 +5035,8 @@ declare module "@polkadot/types/lookup" {
             | "SetMinBalance"
             | "TouchOther"
             | "RefundOther"
-            | "Block";
+            | "Block"
+            | "TransferAll";
     }
 
     /** @name PalletForeignAssetCreatorCall (377) */

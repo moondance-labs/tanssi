@@ -556,8 +556,6 @@ declare module "@polkadot/api-base/types/errors" {
             InvalidValidationCodeHash: AugmentedError<ApiType>;
             /** Output code is too large */
             NewCodeTooLarge: AugmentedError<ApiType>;
-            /** Collator did not sign PoV. */
-            NotCollatorSigned: AugmentedError<ApiType>;
             /**
              * The `para_head` hash in the candidate descriptor doesn't match the hash of the actual para head in the
              * commitments.
@@ -681,8 +679,6 @@ declare module "@polkadot/api-base/types/errors" {
         preimage: {
             /** Preimage has already been noted on-chain. */
             AlreadyNoted: AugmentedError<ApiType>;
-            /** No ticket with a cost was returned by [`Config::Consideration`] to store the preimage. */
-            NoCost: AugmentedError<ApiType>;
             /** The user is not authorized to perform this action. */
             NotAuthorized: AugmentedError<ApiType>;
             /** The preimage cannot be removed since it has not yet been noted. */
