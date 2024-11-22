@@ -18,7 +18,6 @@ describeSuite({
         const ADDRESS_ERC20 = "0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF000f";
         const ASSET_ID = 15n;
         const amountToSend = 100n;
-        const weight = { refTime: 5000000000, proofSize: 40000 };
 
         beforeAll(async () => {
             assetId = context.polkadotJs().createType("u16", ASSET_ID);

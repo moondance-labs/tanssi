@@ -49,7 +49,7 @@ use {
         InherentData as ParachainsInherentData, OccupiedCoreAssumption, SigningContext,
         ValidityAttestation,
     },
-    polkadot_rpc::{DenyUnsafe, RpcExtension},
+    polkadot_rpc::RpcExtension,
     polkadot_service::{
         BlockT, Error, IdentifyVariant, NewFullParams, OverseerGen, SelectRelayChain,
     },
