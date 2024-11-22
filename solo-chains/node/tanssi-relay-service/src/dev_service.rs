@@ -91,8 +91,6 @@ struct DevDeps<C, P> {
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
-    /// A copy of the chain spec.
-    pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
 }
@@ -101,7 +99,6 @@ fn create_dev_rpc_extension<C, P>(
     DevDeps {
         client,
         pool,
-        chain_spec,
         command_sink: maybe_command_sink,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
@@ -120,7 +117,6 @@ where
 {
     use {
         pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer},
-        sc_rpc_spec_v2::chain_spec::{ChainSpec, ChainSpecApiServer},
         substrate_frame_rpc_system::{System, SystemApiServer},
     };
 
@@ -446,14 +442,12 @@ fn new_full<
     let rpc_extensions_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
-        let chain_spec = config.chain_spec.cloned_box();
 
         move |_subscription_executor: polkadot_rpc::SubscriptionTaskExecutor|
             -> Result<RpcExtension, service::Error> {
             let deps = DevDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
-                chain_spec: chain_spec.cloned_box(),
                 command_sink: command_sink.clone(),
             };
 
