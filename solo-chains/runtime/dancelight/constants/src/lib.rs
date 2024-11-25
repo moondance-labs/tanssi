@@ -68,6 +68,20 @@ pub mod time {
     pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 }
 
+pub mod snowbridge {
+    use frame_support::parameter_types;
+    use staging_xcm::prelude::{Location, NetworkId};
+
+    parameter_types! {
+            /// Network and location for the Ethereum chain. On Stagelight, the Ethereum chain bridged
+            /// to is the Holesky Ethereum testnet, with chain ID 17000.
+            /// <https://chainlist.org/chain/17000>
+            /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
+            pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 17000 };
+            pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
+    }
+}
+
 /// Fee-related.
 pub mod fee {
     pub use sp_runtime::Perbill;
