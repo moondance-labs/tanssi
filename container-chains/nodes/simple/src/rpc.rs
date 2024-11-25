@@ -21,8 +21,6 @@
 
 #![warn(missing_docs)]
 
-pub use sc_rpc::DenyUnsafe;
-
 use {
     container_chain_template_simple_runtime::{opaque::Block, AccountId, Hash, Index as Nonce},
     cumulus_primitives_core::ParaId,
@@ -48,8 +46,6 @@ pub struct FullDeps<C, P> {
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
@@ -78,12 +74,11 @@ where
     let FullDeps {
         client,
         pool,
-        deny_unsafe,
         command_sink,
         xcm_senders,
     } = deps;
 
-    module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
+    module.merge(System::new(client, pool).into_rpc())?;
 
     // Manual seal
     if let Some(command_sink) = command_sink {

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_support::__private::sp_tracing::tracing::Instrument;
 use {
     crate::spawner::{wait_for_paritydb_lock, Spawner},
     dc_orchestrator_chain_interface::{
@@ -33,7 +34,6 @@ async fn try_fut<T, E>(fut: impl Future<Output = Result<T, E>>) -> Result<T, E> 
 
 /// Watch assignements by indefinitly listening to finalized block notifications and switching to
 /// the chain the profile is assigned to.
-#[sc_tracing::logging::prefix_logs_with("Data Preserver Assignment Watcher")]
 pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId) {
     use dc_orchestrator_chain_interface::DataPreserverAssignment as Assignment;
 
@@ -111,6 +111,10 @@ pub async fn task_watch_assignment(spawner: impl Spawner, profile_id: ProfileId)
 
         Ok(())
     })
+    .instrument(sc_tracing::tracing::info_span!(
+        sc_tracing::logging::PREFIX_LOG_SPAN,
+        name = "Data Preserver Assignment Watcher",
+    ))
     .await
     {
         log::error!("Error in data preservers assignement watching task: {e:?}");

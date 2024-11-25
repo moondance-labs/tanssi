@@ -26,7 +26,6 @@ import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BinaryHeapEnqueuedOrder,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeRuntimeHoldReason,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
@@ -81,24 +80,25 @@ import type {
     PolkadotCorePrimitivesInboundDownwardMessage,
     PolkadotCorePrimitivesInboundHrmpMessage,
     PolkadotParachainPrimitivesPrimitivesHrmpChannelId,
-    PolkadotPrimitivesV7AssignmentAppPublic,
-    PolkadotPrimitivesV7DisputeState,
-    PolkadotPrimitivesV7ExecutorParams,
-    PolkadotPrimitivesV7ScrapedOnChainVotes,
-    PolkadotPrimitivesV7SessionInfo,
-    PolkadotPrimitivesV7SlashingPendingSlashes,
-    PolkadotPrimitivesV7UpgradeGoAhead,
-    PolkadotPrimitivesV7UpgradeRestriction,
-    PolkadotPrimitivesV7ValidatorAppPublic,
+    PolkadotPrimitivesV8AssignmentAppPublic,
+    PolkadotPrimitivesV8DisputeState,
+    PolkadotPrimitivesV8ExecutorParams,
+    PolkadotPrimitivesV8ScrapedOnChainVotes,
+    PolkadotPrimitivesV8SessionInfo,
+    PolkadotPrimitivesV8SlashingPendingSlashes,
+    PolkadotPrimitivesV8UpgradeGoAhead,
+    PolkadotPrimitivesV8UpgradeRestriction,
+    PolkadotPrimitivesV8ValidatorAppPublic,
     PolkadotRuntimeCommonParasRegistrarParaInfo,
-    PolkadotRuntimeParachainsAssignerOnDemandTypesCoreAffinityCount,
-    PolkadotRuntimeParachainsAssignerOnDemandTypesEnqueuedOrder,
-    PolkadotRuntimeParachainsAssignerOnDemandTypesQueueStatusType,
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
     PolkadotRuntimeParachainsHrmpHrmpChannel,
     PolkadotRuntimeParachainsHrmpHrmpOpenChannelRequest,
+    PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
     PolkadotRuntimeParachainsInclusionCandidatePendingAvailability,
     PolkadotRuntimeParachainsInitializerBufferedSessionChange,
+    PolkadotRuntimeParachainsOnDemandTypesCoreAffinityCount,
+    PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder,
+    PolkadotRuntimeParachainsOnDemandTypesQueueStatusType,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     PolkadotRuntimeParachainsParasParaLifecycle,
     PolkadotRuntimeParachainsParasParaPastCodeMeta,
@@ -108,11 +108,7 @@ import type {
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
     SnowbridgeBeaconPrimitivesCompactBeaconState,
     SnowbridgeBeaconPrimitivesSyncCommitteePrepared,
-    SnowbridgeCoreChannel,
-    SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
-    SnowbridgeCorePricingPricingParameters,
-    SnowbridgePalletOutboundQueueCommittedMessage,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -663,6 +659,9 @@ declare module "@polkadot/api-base/types/storage" {
             /** Latest imported finalized block root */
             latestFinalizedBlockRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** The last period where the next sync committee was updated for free. */
+            latestSyncCommitteeUpdatePeriod: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Sync committee for next period */
             nextSyncCommittee: AugmentedQuery<
                 ApiType,
@@ -678,60 +677,6 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, []>;
             validatorsRoot: AugmentedQuery<ApiType, () => Observable<H256>, []> & QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        ethereumOutboundQueue: {
-            /**
-             * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a merkle root during
-             * `on_finalize`. This storage value is killed in `on_initialize`, so should never go into block PoV.
-             */
-            messageLeaves: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * Messages to be committed in the current block. This storage value is killed in `on_initialize`, so should never
-             * go into block PoV.
-             *
-             * Is never read in the runtime, only by offchain message relayers.
-             *
-             * Inspired by the `frame_system::Pallet::Events` storage value
-             */
-            messages: AugmentedQuery<
-                ApiType,
-                () => Observable<Vec<SnowbridgePalletOutboundQueueCommittedMessage>>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /** The current nonce for each message origin */
-            nonce: AugmentedQuery<
-                ApiType,
-                (arg: SnowbridgeCoreChannelId | string | Uint8Array) => Observable<u64>,
-                [SnowbridgeCoreChannelId]
-            > &
-                QueryableStorageEntry<ApiType, [SnowbridgeCoreChannelId]>;
-            /** The current operating mode of the pallet. */
-            operatingMode: AugmentedQuery<
-                ApiType,
-                () => Observable<SnowbridgeCoreOperatingModeBasicOperatingMode>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        ethereumSystem: {
-            /** The set of registered agents */
-            agents: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Option<Null>>, [H256]> &
-                QueryableStorageEntry<ApiType, [H256]>;
-            /** The set of registered channels */
-            channels: AugmentedQuery<
-                ApiType,
-                (arg: SnowbridgeCoreChannelId | string | Uint8Array) => Observable<Option<SnowbridgeCoreChannel>>,
-                [SnowbridgeCoreChannelId]
-            > &
-                QueryableStorageEntry<ApiType, [SnowbridgeCoreChannelId]>;
-            pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -1254,37 +1199,25 @@ declare module "@polkadot/api-base/types/storage" {
             bookStateFor: AugmentedQuery<
                 ApiType,
                 (
-                    arg:
-                        | DancelightRuntimeAggregateMessageOrigin
-                        | { Ump: any }
-                        | { Snowbridge: any }
-                        | { SnowbridgeTanssi: any }
-                        | string
-                        | Uint8Array
+                    arg: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin | { Ump: any } | string | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [DancelightRuntimeAggregateMessageOrigin]
+                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin]>;
             /** The map of page indices to pages. */
             pages: AugmentedQuery<
                 ApiType,
                 (
-                    arg1:
-                        | DancelightRuntimeAggregateMessageOrigin
-                        | { Ump: any }
-                        | { Snowbridge: any }
-                        | { SnowbridgeTanssi: any }
-                        | string
-                        | Uint8Array,
+                    arg1: PolkadotRuntimeParachainsInclusionAggregateMessageOrigin | { Ump: any } | string | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32]>;
             /** The origin at which we should begin servicing. */
             serviceHead: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<DancelightRuntimeAggregateMessageOrigin>>,
+                () => Observable<Option<PolkadotRuntimeParachainsInclusionAggregateMessageOrigin>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1386,7 +1319,7 @@ declare module "@polkadot/api-base/types/storage" {
             /** Priority queue for all orders which don't yet (or not any more) have any core affinity. */
             freeEntries: AugmentedQuery<
                 ApiType,
-                () => Observable<Vec<PolkadotRuntimeParachainsAssignerOnDemandTypesEnqueuedOrder>>,
+                () => Observable<Vec<PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1398,14 +1331,14 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<PolkadotRuntimeParachainsAssignerOnDemandTypesCoreAffinityCount>>,
+                ) => Observable<Option<PolkadotRuntimeParachainsOnDemandTypesCoreAffinityCount>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /** Overall status of queue (both free + affinity entries) */
             queueStatus: AugmentedQuery<
                 ApiType,
-                () => Observable<PolkadotRuntimeParachainsAssignerOnDemandTypesQueueStatusType>,
+                () => Observable<PolkadotRuntimeParachainsOnDemandTypesQueueStatusType>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1444,7 +1377,7 @@ declare module "@polkadot/api-base/types/storage" {
             /** Scraped on chain data for extracting resolved disputes as well as backing votes. */
             onChainVotes: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV7ScrapedOnChainVotes>>,
+                () => Observable<Option<PolkadotPrimitivesV8ScrapedOnChainVotes>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1642,7 +1575,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             upgradeGoAheadSignal: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV7UpgradeGoAhead>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV8UpgradeGoAhead>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -1659,7 +1592,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             upgradeRestrictionSignal: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV7UpgradeRestriction>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV8UpgradeRestriction>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -1731,7 +1664,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array
-                ) => Observable<Option<PolkadotPrimitivesV7DisputeState>>,
+                ) => Observable<Option<PolkadotPrimitivesV8DisputeState>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
@@ -1771,7 +1704,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             assignmentKeysUnsafe: AugmentedQuery<
                 ApiType,
-                () => Observable<Vec<PolkadotPrimitivesV7AssignmentAppPublic>>,
+                () => Observable<Vec<PolkadotPrimitivesV8AssignmentAppPublic>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1781,7 +1714,7 @@ declare module "@polkadot/api-base/types/storage" {
             /** Executor parameter set for a given session index */
             sessionExecutorParams: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV7ExecutorParams>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV8ExecutorParams>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -1792,7 +1725,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             sessions: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV7SessionInfo>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PolkadotPrimitivesV8SessionInfo>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -1809,7 +1742,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             activeValidatorKeys: AugmentedQuery<
                 ApiType,
-                () => Observable<Vec<PolkadotPrimitivesV7ValidatorAppPublic>>,
+                () => Observable<Vec<PolkadotPrimitivesV8ValidatorAppPublic>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1833,7 +1766,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array
-                ) => Observable<Option<PolkadotPrimitivesV7SlashingPendingSlashes>>,
+                ) => Observable<Option<PolkadotPrimitivesV8SlashingPendingSlashes>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;

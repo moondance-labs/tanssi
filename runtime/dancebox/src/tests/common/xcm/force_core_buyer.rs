@@ -23,7 +23,7 @@ use {
             *,
         },
     },
-    polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
+    polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand,
     staging_xcm::latest::{MaybeErrorCode, Response},
     tp_traits::ParaId,
     xcm_emulator::Chain,

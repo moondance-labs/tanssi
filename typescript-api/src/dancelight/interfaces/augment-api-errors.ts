@@ -229,31 +229,6 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
-        ethereumOutboundQueue: {
-            /** The pallet is halted */
-            Halted: AugmentedError<ApiType>;
-            /** Invalid Channel */
-            InvalidChannel: AugmentedError<ApiType>;
-            /** The message is too large */
-            MessageTooLarge: AugmentedError<ApiType>;
-            /** Generic error */
-            [key: string]: AugmentedError<ApiType>;
-        };
-        ethereumSystem: {
-            AgentAlreadyCreated: AugmentedError<ApiType>;
-            ChannelAlreadyCreated: AugmentedError<ApiType>;
-            InvalidLocation: AugmentedError<ApiType>;
-            InvalidPricingParameters: AugmentedError<ApiType>;
-            InvalidTokenTransferFees: AugmentedError<ApiType>;
-            InvalidUpgradeParameters: AugmentedError<ApiType>;
-            LocationConversionFailed: AugmentedError<ApiType>;
-            NoAgent: AugmentedError<ApiType>;
-            NoChannel: AugmentedError<ApiType>;
-            Send: AugmentedError<ApiType>;
-            UnsupportedLocationVersion: AugmentedError<ApiType>;
-            /** Generic error */
-            [key: string]: AugmentedError<ApiType>;
-        };
         externalValidators: {
             /** Account is already whitelisted. */
             AlreadyWhitelisted: AugmentedError<ApiType>;
@@ -275,10 +250,6 @@ declare module "@polkadot/api-base/types/errors" {
             EmptyTargets: AugmentedError<ApiType>;
             /** There was an error computing the slash */
             ErrorComputingSlash: AugmentedError<ApiType>;
-            /** Failed to deliver the message to Ethereum */
-            EthereumDeliverFail: AugmentedError<ApiType>;
-            /** Failed to validate the message that was going to be sent to Ethereum */
-            EthereumValidateFail: AugmentedError<ApiType>;
             /** No slash was found to be cancelled at the given index */
             InvalidSlashIndex: AugmentedError<ApiType>;
             /** Slash indices to be cancelled are not sorted or unique */
@@ -585,8 +556,6 @@ declare module "@polkadot/api-base/types/errors" {
             InvalidValidationCodeHash: AugmentedError<ApiType>;
             /** Output code is too large */
             NewCodeTooLarge: AugmentedError<ApiType>;
-            /** Collator did not sign PoV. */
-            NotCollatorSigned: AugmentedError<ApiType>;
             /**
              * The `para_head` hash in the candidate descriptor doesn't match the hash of the actual para head in the
              * commitments.
@@ -710,8 +679,6 @@ declare module "@polkadot/api-base/types/errors" {
         preimage: {
             /** Preimage has already been noted on-chain. */
             AlreadyNoted: AugmentedError<ApiType>;
-            /** No ticket with a cost was returned by [`Config::Consideration`] to store the preimage. */
-            NoCost: AugmentedError<ApiType>;
             /** The user is not authorized to perform this action. */
             NotAuthorized: AugmentedError<ApiType>;
             /** The preimage cannot be removed since it has not yet been noted. */

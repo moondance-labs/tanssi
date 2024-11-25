@@ -2027,7 +2027,7 @@ export default {
     CumulusPalletParachainSystemUnincludedSegmentAncestor: {
         usedBandwidth: "CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth",
         paraHeadHash: "Option<H256>",
-        consumedGoAheadSignal: "Option<PolkadotPrimitivesV7UpgradeGoAhead>",
+        consumedGoAheadSignal: "Option<PolkadotPrimitivesV8UpgradeGoAhead>",
     },
     /** Lookup187: cumulus_pallet_parachain_system::unincluded_segment::UsedBandwidth */
     CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth: {
@@ -2040,25 +2040,25 @@ export default {
         msgCount: "u32",
         totalBytes: "u32",
     },
-    /** Lookup194: polkadot_primitives::v7::UpgradeGoAhead */
-    PolkadotPrimitivesV7UpgradeGoAhead: {
+    /** Lookup194: polkadot_primitives::v8::UpgradeGoAhead */
+    PolkadotPrimitivesV8UpgradeGoAhead: {
         _enum: ["Abort", "GoAhead"],
     },
     /** Lookup195: cumulus_pallet_parachain_system::unincluded_segment::SegmentTracker<primitive_types::H256> */
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker: {
         usedBandwidth: "CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth",
         hrmpWatermark: "Option<u32>",
-        consumedGoAheadSignal: "Option<PolkadotPrimitivesV7UpgradeGoAhead>",
+        consumedGoAheadSignal: "Option<PolkadotPrimitivesV8UpgradeGoAhead>",
     },
-    /** Lookup196: polkadot_primitives::v7::PersistedValidationData<primitive_types::H256, N> */
-    PolkadotPrimitivesV7PersistedValidationData: {
+    /** Lookup196: polkadot_primitives::v8::PersistedValidationData<primitive_types::H256, N> */
+    PolkadotPrimitivesV8PersistedValidationData: {
         parentHead: "Bytes",
         relayParentNumber: "u32",
         relayParentStorageRoot: "H256",
         maxPovSize: "u32",
     },
-    /** Lookup199: polkadot_primitives::v7::UpgradeRestriction */
-    PolkadotPrimitivesV7UpgradeRestriction: {
+    /** Lookup199: polkadot_primitives::v8::UpgradeRestriction */
+    PolkadotPrimitivesV8UpgradeRestriction: {
         _enum: ["Present"],
     },
     /** Lookup200: sp_trie::storage_proof::StorageProof */
@@ -2070,16 +2070,16 @@ export default {
         dmqMqcHead: "H256",
         relayDispatchQueueRemainingCapacity:
             "CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity",
-        ingressChannels: "Vec<(u32,PolkadotPrimitivesV7AbridgedHrmpChannel)>",
-        egressChannels: "Vec<(u32,PolkadotPrimitivesV7AbridgedHrmpChannel)>",
+        ingressChannels: "Vec<(u32,PolkadotPrimitivesV8AbridgedHrmpChannel)>",
+        egressChannels: "Vec<(u32,PolkadotPrimitivesV8AbridgedHrmpChannel)>",
     },
     /** Lookup203: cumulus_pallet_parachain_system::relay_state_snapshot::RelayDispatchQueueRemainingCapacity */
     CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity: {
         remainingCount: "u32",
         remainingSize: "u32",
     },
-    /** Lookup206: polkadot_primitives::v7::AbridgedHrmpChannel */
-    PolkadotPrimitivesV7AbridgedHrmpChannel: {
+    /** Lookup206: polkadot_primitives::v8::AbridgedHrmpChannel */
+    PolkadotPrimitivesV8AbridgedHrmpChannel: {
         maxCapacity: "u32",
         maxTotalSize: "u32",
         maxMessageSize: "u32",
@@ -2087,8 +2087,8 @@ export default {
         totalSize: "u32",
         mqcHead: "Option<H256>",
     },
-    /** Lookup207: polkadot_primitives::v7::AbridgedHostConfiguration */
-    PolkadotPrimitivesV7AbridgedHostConfiguration: {
+    /** Lookup207: polkadot_primitives::v8::AbridgedHostConfiguration */
+    PolkadotPrimitivesV8AbridgedHostConfiguration: {
         maxCodeSize: "u32",
         maxHeadDataSize: "u32",
         maxUpwardQueueCount: "u32",
@@ -2098,10 +2098,10 @@ export default {
         hrmpMaxMessageNumPerCandidate: "u32",
         validationUpgradeCooldown: "u32",
         validationUpgradeDelay: "u32",
-        asyncBackingParams: "PolkadotPrimitivesV7AsyncBackingAsyncBackingParams",
+        asyncBackingParams: "PolkadotPrimitivesV8AsyncBackingAsyncBackingParams",
     },
-    /** Lookup208: polkadot_primitives::v7::async_backing::AsyncBackingParams */
-    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams: {
+    /** Lookup208: polkadot_primitives::v8::async_backing::AsyncBackingParams */
+    PolkadotPrimitivesV8AsyncBackingAsyncBackingParams: {
         maxCandidateDepth: "u32",
         allowedAncestryLen: "u32",
     },
@@ -2119,18 +2119,11 @@ export default {
             sudo_send_upward_message: {
                 message: "Bytes",
             },
-            authorize_upgrade: {
-                codeHash: "H256",
-                checkVersion: "bool",
-            },
-            enact_authorized_upgrade: {
-                code: "Bytes",
-            },
         },
     },
     /** Lookup216: cumulus_primitives_parachain_inherent::ParachainInherentData */
     CumulusPrimitivesParachainInherentParachainInherentData: {
-        validationData: "PolkadotPrimitivesV7PersistedValidationData",
+        validationData: "PolkadotPrimitivesV8PersistedValidationData",
         relayChainState: "SpTrieStorageProof",
         downwardMessages: "Vec<PolkadotCorePrimitivesInboundDownwardMessage>",
         horizontalMessages: "BTreeMap<u32, Vec<PolkadotCorePrimitivesInboundHrmpMessage>>",
@@ -3710,6 +3703,11 @@ export default {
             block: {
                 id: "u16",
                 who: "MultiAddress",
+            },
+            transfer_all: {
+                id: "u16",
+                dest: "MultiAddress",
+                keepAlive: "bool",
             },
         },
     },
