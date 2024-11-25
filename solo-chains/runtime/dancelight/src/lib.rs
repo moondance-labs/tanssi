@@ -220,16 +220,13 @@ pub enum AggregateMessageOrigin {
     #[codec(index = 0)]
     Ump(UmpQueueId),
 
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue`.
     #[codec(index = 1)]
-    /// The message came from a snowbridge channel.
-    ///
-    /// This is used by Snowbridge inbound queue.
     Snowbridge(ChannelId),
 
+    /// The message came from a snowbridge channel, and it's a custom message that only exists in Tanssi.
+    /// This will be processed by `CustomProcessSnowbridgeMessage`.
     #[codec(index = 2)]
-    /// The message came from a snowbridge channel.
-    ///
-    /// This is used by Snowbridge inbound queue.
     SnowbridgeTanssi(ChannelId),
 }
 
