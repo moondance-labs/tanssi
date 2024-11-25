@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::chain_spec::RawGenesisConfig,
     cumulus_client_cli::{CollatorOptions, RelayChainMode},
     dc_orchestrator_chain_interface::ContainerChainGenesisData,
     dp_container_chain_genesis_data::json::properties_to_map,
@@ -181,9 +180,6 @@ impl ContainerChainCli {
             relay_chain,
             para_id,
         };
-        let raw_genesis_config = RawGenesisConfig {
-            storage_raw: storage_raw.clone(),
-        };
 
         let chain_spec = crate::chain_spec::RawChainSpec::builder(
             // This code is not used, we override it in `set_storage` below
@@ -210,7 +206,7 @@ impl ContainerChainCli {
         let mut chain_spec = chain_spec.build();
 
         chain_spec.set_storage(Storage {
-            top: raw_genesis_config.storage_raw,
+            top: storage_raw,
             children_default: Default::default(),
         });
 

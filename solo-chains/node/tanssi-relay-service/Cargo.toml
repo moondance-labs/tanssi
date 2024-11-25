@@ -47,6 +47,7 @@ sp-api = { workspace = true }
 sp-authority-discovery = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
+sp-consensus-aura = { workspace = true }
 sp-consensus-babe = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
 sp-inherents = { workspace = true, features = [ "std" ] }
@@ -81,6 +82,7 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 bitvec = { workspace = true, optional = true }
 codec = { workspace = true }
+flume = { workspace = true }
 futures = { workspace = true }
 gum = { workspace = true }
 hex-literal = { workspace = true }

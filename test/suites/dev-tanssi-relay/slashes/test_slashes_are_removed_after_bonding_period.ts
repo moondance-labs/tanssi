@@ -78,8 +78,8 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([addAliceFromInvulnerables]);
 
-                const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
-                const bondingPeriod = await polkadotJs.consts.externalValidatorSlashes.bondingDuration;
+                const sessionsPerEra = (await polkadotJs.consts.externalValidators.sessionsPerEra).toNumber();
+                const bondingPeriod = (await polkadotJs.consts.externalValidatorSlashes.bondingDuration).toNumber();
 
                 const currentIndex = await polkadotJs.query.session.currentIndex();
 

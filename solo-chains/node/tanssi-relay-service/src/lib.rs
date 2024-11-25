@@ -17,3 +17,5 @@
 pub mod chain_spec;
 
 pub mod dev_service;
+
+pub mod dev_rpcs;
