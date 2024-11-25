@@ -143,11 +143,10 @@ pub async fn start_parachain_node(
         let client = node_builder.client.clone();
         let transaction_pool = node_builder.transaction_pool.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |_| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
-                deny_unsafe,
                 command_sink: None,
                 xcm_senders: None,
             };
@@ -310,11 +309,10 @@ pub async fn start_dev_node(
         let client = node_builder.client.clone();
         let transaction_pool = node_builder.transaction_pool.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |_| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
-                deny_unsafe,
                 command_sink: command_sink.clone(),
                 xcm_senders: xcm_senders.clone(),
             };

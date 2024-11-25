@@ -130,6 +130,8 @@ declare module "@polkadot/api-base/types/consts" {
         };
         ethereumBeaconClient: {
             forkVersions: SnowbridgeBeaconPrimitivesForkVersions & AugmentedConst<ApiType>;
+            /** Minimum gap between finalized headers for an update to be free. */
+            freeHeadersInterval: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

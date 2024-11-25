@@ -89,5 +89,7 @@ parameter_types! {
 impl snowbridge_pallet_ethereum_client::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ForkVersions = ChainForkVersions;
+
+    type FreeHeadersInterval = ();
     type WeightInfo = weights::snowbridge_pallet_ethereum_client::SubstrateWeight<Runtime>;
 }

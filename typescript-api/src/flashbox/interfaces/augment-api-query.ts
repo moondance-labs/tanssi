@@ -57,10 +57,10 @@ import type {
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
     PolkadotCorePrimitivesOutboundHrmpMessage,
-    PolkadotPrimitivesV7AbridgedHostConfiguration,
-    PolkadotPrimitivesV7PersistedValidationData,
-    PolkadotPrimitivesV7UpgradeGoAhead,
-    PolkadotPrimitivesV7UpgradeRestriction,
+    PolkadotPrimitivesV8AbridgedHostConfiguration,
+    PolkadotPrimitivesV8PersistedValidationData,
+    PolkadotPrimitivesV8UpgradeGoAhead,
+    PolkadotPrimitivesV8UpgradeRestriction,
     SpCoreCryptoKeyTypeId,
     SpRuntimeDigest,
     SpTrieStorageProof,
@@ -466,7 +466,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             hostConfiguration: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV7AbridgedHostConfiguration>>,
+                () => Observable<Option<PolkadotPrimitivesV8AbridgedHostConfiguration>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -590,7 +590,7 @@ declare module "@polkadot/api-base/types/storage" {
              * This storage item is a mirror of the corresponding value for the current parachain from the relay-chain. This
              * value is ephemeral which means it doesn't hit the storage. This value is set after the inherent.
              */
-            upgradeGoAhead: AugmentedQuery<ApiType, () => Observable<Option<PolkadotPrimitivesV7UpgradeGoAhead>>, []> &
+            upgradeGoAhead: AugmentedQuery<ApiType, () => Observable<Option<PolkadotPrimitivesV8UpgradeGoAhead>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * An option which indicates if the relay-chain restricts signalling a validation code upgrade. In other words, if
@@ -601,7 +601,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             upgradeRestrictionSignal: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV7UpgradeRestriction>>,
+                () => Observable<Option<PolkadotPrimitivesV8UpgradeRestriction>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -621,7 +621,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             validationData: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV7PersistedValidationData>>,
+                () => Observable<Option<PolkadotPrimitivesV8PersistedValidationData>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
