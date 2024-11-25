@@ -127,7 +127,11 @@ pub mod pallet {
 
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
+
+        /// Validate a message that will be sent to Ethereum.
         type ValidateMessage: ValidateMessage;
+
+        /// Send a message to Ethereum. Needs to be validated first.
         type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;

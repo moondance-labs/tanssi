@@ -23,6 +23,7 @@ pub mod pallet_conviction_voting;
 pub mod pallet_external_validator_slashes;
 pub mod pallet_external_validators;
 pub mod pallet_identity;
+pub mod pallet_invulnerables;
 pub mod pallet_message_queue;
 pub mod pallet_multisig;
 pub mod pallet_parameters;

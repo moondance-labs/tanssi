@@ -1411,7 +1411,7 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = <Self as frame_system::Config>::AccountId;
     type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -1753,11 +1753,7 @@ construct_runtime! {
         XcmPallet: pallet_xcm = 90,
 
         // Bridging stuff
-        // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/lib.rs#L560C1-L560C64
-        //EthereumInboundQueue: snowbridge_pallet_inbound_queue = 80,
         EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
-        // TODO: already exists, at index 243
-        //EthereumBeaconClient: snowbridge_pallet_ethereum_client = 82,
         EthereumSystem: snowbridge_pallet_system = 103,
 
         // Migration stuff
@@ -2095,6 +2091,7 @@ mod benches {
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
+        [pallet_invulnerables, TanssiInvulnerables]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
