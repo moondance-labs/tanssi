@@ -1336,10 +1336,18 @@ impl pallet_external_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
-    type OnEraEnd = ();
+    // reminder to add on_initialize weight
+    type OnEraEnd = ExternalValidatorsRewards;
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
+    }
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
@@ -1347,6 +1355,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
+    type TimestampProvider = TimestampProvider;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;

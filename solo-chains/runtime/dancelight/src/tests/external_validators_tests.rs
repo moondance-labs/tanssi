@@ -18,11 +18,10 @@
 
 use {
     crate::{
-        tests::common::*, ExternalValidators, MaxExternalValidators, SessionKeys, SessionsPerEra,
-    },
-    frame_support::{assert_ok, traits::fungible::Mutate},
-    pallet_external_validators::Forcing,
-    std::{collections::HashMap, ops::RangeInclusive},
+        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators, RuntimeEvent, SessionKeys, SessionsPerEra, System
+    }, frame_support::{assert_ok, traits::fungible::Mutate}, pallet_external_validators::Forcing, parity_scale_codec::Encode,
+    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL}, 
+    sp_core::H256, sp_io::hashing::twox_64, std::{collections::HashMap, ops::RangeInclusive}, tp_traits::OnEraEnd
 };
 
 fn assert_validators_do_not_change(
@@ -690,5 +689,54 @@ fn external_validators_manual_reward_points() {
                 pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
                     == 1
             );
+        });
+}
+
+#[test]
+fn external_validators_rewards_sends_message_on_era_end() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
+
+            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
+            let mut combined_channel_id_key = Vec::new();
+            let hashed_key = twox_64(&channel_id);
+
+            combined_channel_id_key.extend_from_slice(&hashed_key);
+            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
+
+            let mut full_storage_key = Vec::new();
+            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(b"EthereumSystem", b"Channels"));
+            full_storage_key.extend_from_slice(&combined_channel_id_key);
+
+            let channel = Channel {
+                agent_id: H256::default(),
+                para_id: 1000u32.into()
+            };
+
+            frame_support::storage::unhashed::put(&full_storage_key, &channel);
+            
+            // This will call on_era_end for era 0
+            run_to_session(sessions_per_era);
+
+            let outbound_msg_queue_event = System::events()
+				.iter()
+				.filter(|r| match r.event {
+					RuntimeEvent::EthereumOutboundQueue(snowbridge_pallet_outbound_queue::Event::MessageQueued { .. }) => true,
+					_ => false,
+				})
+				.count();
+
+			assert_eq!(outbound_msg_queue_event, 1, "MessageQueued event should be emitted");
         });
 }

@@ -73,6 +73,8 @@ pub mod pallet {
         #[pallet::constant]
         type DisputeStatementPoints: Get<u32>;
 
+        type TimestampProvider: Get<u64>;
+
         type Hashing: Hash<Output = H256>;
 
         type ValidateMessage: ValidateMessage;
@@ -135,6 +137,7 @@ pub mod pallet {
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
             let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let total_points: u128 = era_rewards.total as u128;
             let mut rewards_info_to_merkelize: Vec<H256> = vec![];
 
             for (account_id, reward_points) in era_rewards.individual {
@@ -146,7 +149,10 @@ pub mod pallet {
             let rewards_merkle_root = merkle_root::<<T as Config>::Hashing, _>(rewards_info_to_merkelize.into_iter());
 
             let command = Command::ReportRewards {
+                timestamp: T::TimestampProvider::get(),
                 era_index,
+                total_points,
+                tokens_inflated: 0u128,
                 rewards_merkle_root
             };
 

@@ -54,7 +54,14 @@ pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
     ReportRewards {
+        // block timestamp
+        timestamp: u64,
+        // index of the era we are sending info
         era_index: u32,
+        // total_points for the era 
+        total_points: u128,
+        // new tokens inflated during the era
+        tokens_inflated: u128,
         // merkle root of vec![(validatorId, rewardPoints)]
         rewards_merkle_root: H256
     }
@@ -76,10 +83,13 @@ impl Command {
             Command::Test(payload) => {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
             },
-            Command::ReportRewards { era_index, rewards_merkle_root } => {
+            Command::ReportRewards { timestamp, era_index, total_points, tokens_inflated, rewards_merkle_root } => {
+                let timestamp_token = Token::Uint(U256::from(*timestamp));
                 let era_index_token = Token::Uint(U256::from(*era_index));
+                let total_points_token = Token::Uint(U256::from(*total_points));
+                let tokens_inflated_token = Token::Uint(U256::from(*tokens_inflated));
                 let rewards_mr_token = Token::FixedBytes(rewards_merkle_root.0.to_vec());
-                ethabi::encode(&[Token::Tuple(vec![era_index_token, rewards_mr_token])])
+                ethabi::encode(&[Token::Tuple(vec![timestamp_token, era_index_token, total_points_token, tokens_inflated_token, rewards_mr_token])])
             }
         }
     }
