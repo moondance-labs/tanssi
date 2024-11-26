@@ -67,11 +67,6 @@ use sc_transaction_pool_api::TransactionPool;
 use sp_api::StorageProof;
 use sp_core::traits::SpawnNamed;
 
-type FullBasicPool<T> = sc_transaction_pool::BasicPool<
-    sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
-    BlockOf<T>,
->;
-
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<
         Block: (cumulus_primitives_core::BlockT),

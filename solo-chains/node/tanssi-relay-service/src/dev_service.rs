@@ -648,16 +648,14 @@ fn new_full<
             Sealing::Instant => {
                 Box::new(
                     // This bit cribbed from the implementation of instant seal.
-                    transaction_pool
-                        .pool()
-                        .validated_pool()
-                        .import_notification_stream()
-                        .map(|_| EngineCommand::SealNewBlock {
+                    transaction_pool.import_notification_stream().map(|_| {
+                        EngineCommand::SealNewBlock {
                             create_empty: false,
                             finalize: false,
                             parent_hash: None,
                             sender: None,
-                        }),
+                        }
+                    }),
                 )
             }
             Sealing::Manual => {
@@ -814,7 +812,7 @@ fn new_partial<ChainSelection>(
         FullBackend,
         ChainSelection,
         sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        sc_transaction_pool::TransactionPoolHandle<Block, FullClient>,
         (
             BabeBlockImport<Block, FullClient, Arc<FullClient>>,
             BabeLink<Block>,
@@ -827,13 +825,14 @@ fn new_partial<ChainSelection>(
 where
     ChainSelection: 'static + SelectChain<Block>,
 {
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
+    let transaction_pool = sc_transaction_pool::Builder::new(
         task_manager.spawn_essential_handle(),
         client.clone(),
-    );
+        config.role.is_authority().into(),
+    )
+    .with_options(config.transaction_pool.clone())
+    .with_prometheus(config.prometheus_registry())
+    .build();
 
     // Create babe block import queue; this is required to have correct epoch data
     // available for manual seal to produce block
@@ -856,7 +855,7 @@ where
         keystore_container,
         select_chain,
         import_queue,
-        transaction_pool,
+        transaction_pool: transaction_pool.into(),
         other: (babe_block_import, babe_link, slot_duration, telemetry),
     })
 }
