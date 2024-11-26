@@ -17,12 +17,6 @@ interface XCM {
         bytes[] interior;
     }
 
-    // Support for Weights V2
-    struct Weight {
-        uint64 refTime;
-        uint64 proofSize;
-    }
-
     // A way to represent fungible assets in XCM using Location format
     struct AssetLocationInfo {
         Location location;
@@ -41,14 +35,11 @@ interface XCM {
     /// @param beneficiary The actual account that will receive the tokens on dest.
     /// @param assets The combination (array) of assets to send.
     /// @param feeAssetItem The index of the asset that will be used to pay for fees.
-    /// @param weight The weight to be used for the whole XCM operation.
-    /// (uint64::MAX in refTime means Unlimited weight) 
     function transferAssetsLocation(
         Location memory dest,
         Location memory beneficiary,
         AssetLocationInfo[] memory assets,
-        uint32 feeAssetItem,
-        Weight memory weight
+        uint32 feeAssetItem
     ) external;
 
     /// @dev Function to send assets via XCM to a 20 byte-like parachain 
@@ -58,14 +49,11 @@ interface XCM {
     /// @param beneficiary The actual account that will receive the tokens on paraId destination.
     /// @param assets The combination (array) of assets to send.
     /// @param feeAssetItem The index of the asset that will be used to pay for fees.
-    /// @param weight The weight to be used for the whole XCM operation.
-    /// (uint64::MAX in refTime means Unlimited weight)
     function transferAssetsToPara20(
         uint32 paraId,
         address beneficiary,
         AssetAddressInfo[] memory assets,
-        uint32 feeAssetItem,
-        Weight memory weight
+        uint32 feeAssetItem
     ) external;
 
     /// @dev Function to send assets via XCM to a 32 byte-like parachain 
@@ -75,14 +63,11 @@ interface XCM {
     /// @param beneficiary The actual account that will receive the tokens on paraId destination.
     /// @param assets The combination (array) of assets to send.
     /// @param feeAssetItem The index of the asset that will be used to pay for fees.
-    /// @param weight The weight to be used for the whole XCM operation.
-    /// (uint64::MAX in refTime means Unlimited weight)
     function transferAssetsToPara32(
         uint32 paraId,
         bytes32 beneficiary,
         AssetAddressInfo[] memory assets,
-        uint32 feeAssetItem,
-        Weight memory weight
+        uint32 feeAssetItem
     ) external;
 
     /// @dev Function to send assets via XCM to the relay chain 
@@ -91,12 +76,9 @@ interface XCM {
     /// @param beneficiary The actual account that will receive the tokens on the relay chain.
     /// @param assets The combination (array) of assets to send.
     /// @param feeAssetItem The index of the asset that will be used to pay for fees.
-    /// @param weight The weight to be used for the whole XCM operation.
-    /// (uint64::MAX in refTime means Unlimited weight)
     function transferAssetsToRelay(
         bytes32 beneficiary,
         AssetAddressInfo[] memory assets,
-        uint32 feeAssetItem,
-        Weight memory weight
+        uint32 feeAssetItem
     ) external;
 }

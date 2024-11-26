@@ -43,7 +43,6 @@ use {
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
-    sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor},
     sc_service::{
         Configuration, KeystoreContainer, NetworkStarter, SpawnTaskHandle, TFullBackend,
         TFullClient, TaskManager,
@@ -65,6 +64,7 @@ use {
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
 use sp_api::StorageProof;
+use sp_core::traits::SpawnNamed;
 
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<
@@ -250,6 +250,7 @@ where
 
         let heap_pages =
             parachain_config
+                .executor
                 .default_heap_pages
                 .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
                     extra_pages: h as u32,
@@ -260,12 +261,13 @@ where
         // to change once we start having runtime_cache_sizes, or
         // run nodes with the maximum for this value
         let mut wasm_builder = WasmExecutor::builder()
-            .with_execution_method(parachain_config.wasm_method)
+            .with_execution_method(parachain_config.executor.wasm_method)
             .with_onchain_heap_alloc_strategy(heap_pages)
             .with_offchain_heap_alloc_strategy(heap_pages)
-            .with_max_runtime_instances(parachain_config.max_runtime_instances)
-            .with_runtime_cache_size(parachain_config.runtime_cache_size);
-        if let Some(ref wasmtime_precompiled_path) = parachain_config.wasmtime_precompiled {
+            .with_max_runtime_instances(parachain_config.executor.max_runtime_instances)
+            .with_runtime_cache_size(parachain_config.executor.runtime_cache_size);
+        if let Some(ref wasmtime_precompiled_path) = parachain_config.executor.wasmtime_precompiled
+        {
             wasm_builder = wasm_builder.with_wasmtime_precompiled_path(wasmtime_precompiled_path);
         }
 
@@ -383,7 +385,10 @@ where
             import_queue_service: _,
         } = self;
 
-        let net_config = FullNetworkConfiguration::<_, _, Net>::new(&parachain_config.network);
+        let net_config = FullNetworkConfiguration::<_, _, Net>::new(
+            &parachain_config.network,
+            prometheus_registry.clone(),
+        );
 
         let import_queue_service = import_queue.service();
         let spawn_handle = task_manager.spawn_handle();
@@ -461,7 +466,10 @@ where
             import_queue_service: _,
         } = self;
 
-        let net_config = FullNetworkConfiguration::<_, _, Net>::new(&parachain_config.network);
+        let net_config = FullNetworkConfiguration::<_, _, Net>::new(
+            &parachain_config.network,
+            prometheus_registry.clone(),
+        );
 
         let metrics = Net::register_notification_metrics(
             parachain_config
@@ -479,7 +487,7 @@ where
                 transaction_pool: transaction_pool.clone(),
                 spawn_handle: task_manager.spawn_handle(),
                 import_queue,
-                warp_sync_params: None,
+                warp_sync_config: None,
                 block_announce_validator_builder: None,
                 net_config,
                 block_relay: None,
@@ -515,10 +523,7 @@ where
         self,
         parachain_config: Configuration,
         rpc_builder: Box<
-            dyn Fn(
-                DenyUnsafe,
-                SubscriptionTaskExecutor,
-            ) -> Result<RpcModule<TRpc>, sc_service::Error>,
+            dyn Fn(Arc<(dyn SpawnNamed + 'static)>) -> Result<RpcModule<TRpc>, sc_service::Error>,
         >,
     ) -> sc_service::error::Result<NodeBuilder<T, Network<BlockOf<T>>, (), SImportQueueService>>
     where
@@ -594,7 +599,7 @@ where
             // in there and swapping out the requirements for your own are probably a good idea. The
             // requirements for a para-chain are dictated by its relay-chain.
             if collator {
-                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench) {
+                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench, false) {
                     log::warn!(
                         "⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
                         err

@@ -23,13 +23,15 @@ use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
-    cumulus_primitives_core::relay_chain::{ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID},
+    cumulus_primitives_core::relay_chain::{
+        SchedulerParams, ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID,
+    },
     dancelight_runtime_constants::currency::UNITS as STAR,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
-    primitives::{vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId},
+    primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{

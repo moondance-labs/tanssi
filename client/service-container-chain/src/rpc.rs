@@ -32,7 +32,6 @@ use {
         rpc::{ManualSeal, ManualSealApiServer},
         EngineCommand,
     },
-    sc_rpc::DenyUnsafe,
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
@@ -49,8 +48,6 @@ pub struct FullDeps<C, P> {
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
@@ -92,12 +89,11 @@ where
     let FullDeps {
         client,
         pool,
-        deny_unsafe,
         command_sink,
         xcm_senders,
     } = deps;
 
-    module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+    module.merge(System::new(client.clone(), pool).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(
@@ -144,10 +140,7 @@ pub mod generate_rpc_builder {
     pub type XcmSenders = (flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>);
     pub type Network = dyn sc_network::service::traits::NetworkService;
     pub type CompleteRpcBuilder = Box<
-        dyn Fn(
-            sc_rpc::DenyUnsafe,
-            sc_rpc::SubscriptionTaskExecutor,
-        ) -> Result<jsonrpsee::RpcModule<()>, ServiceError>,
+        dyn Fn(sc_rpc::SubscriptionTaskExecutor) -> Result<jsonrpsee::RpcModule<()>, ServiceError>,
     >;
 
     pub struct GenerateRpcBuilderParams<'a, RuntimeApi: MinimalContainerRuntimeApi> {
@@ -205,11 +198,10 @@ mod impl_generate_rpc_builder {
             let client = client.clone();
             let transaction_pool = transaction_pool.clone();
 
-            Ok(Box::new(move |deny_unsafe, _| {
+            Ok(Box::new(move |_| {
                 let deps = FullDeps {
                     client: client.clone(),
                     pool: transaction_pool.clone(),
-                    deny_unsafe,
                     command_sink: command_sink.clone(),
                     xcm_senders: xcm_senders.clone(),
                 };

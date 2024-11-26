@@ -130,6 +130,26 @@ declare module "@polkadot/api-base/types/consts" {
         };
         ethereumBeaconClient: {
             forkVersions: SnowbridgeBeaconPrimitivesForkVersions & AugmentedConst<ApiType>;
+            /** Minimum gap between finalized headers for an update to be free. */
+            freeHeadersInterval: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        ethereumOutboundQueue: {
+            /** Number of decimal places in native currency */
+            decimals: u8 & AugmentedConst<ApiType>;
+            /** Max bytes in a message payload */
+            maxMessagePayloadSize: u32 & AugmentedConst<ApiType>;
+            /** Max number of messages processed per block */
+            maxMessagesPerBlock: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        ethereumSystem: {
+            /** Cost of delivering a message from Ethereum */
+            inboundDeliveryCost: u128 & AugmentedConst<ApiType>;
+            /** TreasuryAccount to collect fees */
+            treasuryAccount: AccountId32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

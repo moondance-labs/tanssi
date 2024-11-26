@@ -21,6 +21,7 @@ use {
         traits::{ConstU16, ConstU64, Get},
     },
     frame_system as system,
+    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
@@ -196,6 +197,23 @@ impl DeferPeriodGetter {
     }
 }
 
+pub struct MockOkOutboundQueue;
+impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
+    type Ticket = ();
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        Ok(H256::zero())
+    }
+}
+
+impl SendMessageFeeProvider for MockOkOutboundQueue {
+    type Balance = u128;
+
+    fn local_fee() -> Self::Balance {
+        1
+    }
+}
+
 parameter_types! {
     pub const BondingDuration: u32 = 5u32;
 }
@@ -210,6 +228,8 @@ impl external_validator_slashes::Config for Test {
     type SessionInterface = ();
     type EraIndexProvider = MockEraIndexProvider;
     type InvulnerablesProvider = MockInvulnerableProvider;
+    type ValidateMessage = ();
+    type OutboundQueue = MockOkOutboundQueue;
     type WeightInfo = ();
 }
 

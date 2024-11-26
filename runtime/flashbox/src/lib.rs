@@ -436,7 +436,7 @@ where
     pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
 {
     // this seems to be called for substrate-based transactions
-    fn on_unbalanceds<B>(
+    fn on_unbalanceds(
         mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
     ) {
         if let Some(fees) = fees_then_tips.next() {
