@@ -23,7 +23,7 @@ use {
     sc_network::config::MultiaddrWithPeerId,
     sc_service::BasePath,
     sp_runtime::Storage,
-    std::{collections::BTreeMap, net::SocketAddr},
+    std::collections::BTreeMap,
     url::Url,
 };
 
@@ -147,7 +147,7 @@ impl ContainerChainCli {
             base.base
                 .import_params
                 .wasmtime_precompiled
-                .clone_from(&para_config.wasmtime_precompiled);
+                .clone_from(&para_config.executor.wasmtime_precompiled);
         }
 
         // Set container base path to the same value as orchestrator base_path.
@@ -325,7 +325,10 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
         self.shared_params().base_path()
     }
 
-    fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<SocketAddr>> {
+    fn rpc_addr(
+        &self,
+        default_listen_port: u16,
+    ) -> sc_cli::Result<Option<Vec<sc_cli::RpcEndpoint>>> {
         self.base.base.rpc_addr(default_listen_port)
     }
 
@@ -344,10 +347,9 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
         _support_url: &String,
         _impl_version: &String,
         _logger_hook: F,
-        _config: &sc_service::Configuration,
     ) -> sc_cli::Result<()>
     where
-        F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
+        F: FnOnce(&mut sc_cli::LoggerBuilder),
     {
         unreachable!("PolkadotCli is never initialized; qed");
     }

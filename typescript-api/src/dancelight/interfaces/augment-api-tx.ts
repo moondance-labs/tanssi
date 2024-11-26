@@ -12,10 +12,25 @@ import type {
     SubmittableExtrinsicFunction,
 } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type { Bytes, Compact, Null, Option, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
-import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
+    Bytes,
+    Compact,
+    Null,
+    Option,
+    U256,
+    U8aFixed,
+    Vec,
+    bool,
+    u128,
+    u16,
+    u32,
+    u64,
+    u8,
+} from "@polkadot/types-codec";
+import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
+import type { AccountId32, Call, H160, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
+import type {
+    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeOriginCaller,
     DancelightRuntimePreserversAssignmentPaymentExtra,
     DancelightRuntimePreserversAssignmentPaymentWitness,
@@ -36,19 +51,23 @@ import type {
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
     PolkadotParachainPrimitivesPrimitivesHrmpChannelId,
-    PolkadotPrimitivesV7ApprovalVotingParams,
-    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV7ExecutorParams,
-    PolkadotPrimitivesV7InherentData,
-    PolkadotPrimitivesV7PvfCheckStatement,
-    PolkadotPrimitivesV7SlashingDisputeProof,
-    PolkadotPrimitivesV7ValidatorAppSignature,
-    PolkadotPrimitivesVstagingSchedulerParams,
-    PolkadotRuntimeParachainsInclusionAggregateMessageOrigin,
+    PolkadotPrimitivesV8ApprovalVotingParams,
+    PolkadotPrimitivesV8AsyncBackingAsyncBackingParams,
+    PolkadotPrimitivesV8ExecutorParams,
+    PolkadotPrimitivesV8InherentData,
+    PolkadotPrimitivesV8PvfCheckStatement,
+    PolkadotPrimitivesV8SchedulerParams,
+    PolkadotPrimitivesV8SlashingDisputeProof,
+    PolkadotPrimitivesV8ValidatorAppSignature,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeCoreAssetMetadata,
+    SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
+    SnowbridgeCoreOutboundV1Initializer,
+    SnowbridgeCoreOutboundV1OperatingMode,
+    SnowbridgeCorePricingPricingParameters,
     SpConsensusBabeDigestsNextConfigDescriptor,
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyForkVotingProof,
@@ -549,23 +568,23 @@ declare module "@polkadot/api-base/types/submittable" {
             setApprovalVotingParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesV7ApprovalVotingParams
+                        | PolkadotPrimitivesV8ApprovalVotingParams
                         | { maxApprovalCoalesceCount?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7ApprovalVotingParams]
+                [PolkadotPrimitivesV8ApprovalVotingParams]
             >;
             /** Set the asynchronous backing parameters. */
             setAsyncBackingParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesV7AsyncBackingAsyncBackingParams
+                        | PolkadotPrimitivesV8AsyncBackingAsyncBackingParams
                         | { maxCandidateDepth?: any; allowedAncestryLen?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7AsyncBackingAsyncBackingParams]
+                [PolkadotPrimitivesV8AsyncBackingAsyncBackingParams]
             >;
             /** Setting this to true will disable consistency checks for the configuration setters. Use with caution. */
             setBypassConsistencyCheck: AugmentedSubmittable<
@@ -599,8 +618,8 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** Set PVF executor parameters. */
             setExecutorParams: AugmentedSubmittable<
-                (updated: PolkadotPrimitivesV7ExecutorParams) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7ExecutorParams]
+                (updated: PolkadotPrimitivesV8ExecutorParams) => SubmittableExtrinsic<ApiType>,
+                [PolkadotPrimitivesV8ExecutorParams]
             >;
             /** Set the parachain validator-group rotation frequency */
             setGroupRotationFrequency: AugmentedSubmittable<
@@ -788,7 +807,7 @@ declare module "@polkadot/api-base/types/submittable" {
             setSchedulerParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesVstagingSchedulerParams
+                        | PolkadotPrimitivesV8SchedulerParams
                         | {
                               groupRotationFrequency?: any;
                               parasAvailabilityPeriod?: any;
@@ -805,7 +824,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesVstagingSchedulerParams]
+                [PolkadotPrimitivesV8SchedulerParams]
             >;
             /** Set the scheduling lookahead, in expected number of blocks at peak throughput. */
             setSchedulingLookahead: AugmentedSubmittable<
@@ -1275,6 +1294,229 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumOutboundQueue: {
+            /** Halt or resume all pallet operations. May only be called by root. */
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode: SnowbridgeCoreOperatingModeBasicOperatingMode | "Normal" | "Halted" | number | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOperatingModeBasicOperatingMode]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        ethereumSystem: {
+            /**
+             * Sends a command to the Gateway contract to instantiate a new agent contract representing `origin`.
+             *
+             * Fee required: Yes
+             *
+             * - `origin`: Must be `Location` of a sibling parachain
+             */
+            createAgent: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Sends a message to the Gateway contract to create a new channel representing `origin`
+             *
+             * Fee required: Yes
+             *
+             * This extrinsic is permissionless, so a fee is charged to prevent spamming and pay for execution costs on the
+             * remote side.
+             *
+             * The message is sent over the bridge on BridgeHub's own channel to the Gateway.
+             *
+             * - `origin`: Must be `Location`
+             * - `mode`: Initial operating mode of the channel
+             */
+            createChannel: AugmentedSubmittable<
+                (
+                    mode:
+                        | SnowbridgeCoreOutboundV1OperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOutboundV1OperatingMode]
+            >;
+            /**
+             * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
+             *
+             * Privileged. Can only be called by root.
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `location`: Location used to resolve the agent
+             * - `recipient`: Recipient of funds
+             * - `amount`: Amount to transfer
+             */
+            forceTransferNativeFromAgent: AugmentedSubmittable<
+                (
+                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, H160, u128]
+            >;
+            /**
+             * Sends a message to the Gateway contract to update an arbitrary channel
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `channel_id`: ID of channel
+             * - `mode`: Initial operating mode of the channel
+             * - `outbound_fee`: Fee charged to users for sending outbound messages to Polkadot
+             */
+            forceUpdateChannel: AugmentedSubmittable<
+                (
+                    channelId: SnowbridgeCoreChannelId | string | Uint8Array,
+                    mode:
+                        | SnowbridgeCoreOutboundV1OperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreChannelId, SnowbridgeCoreOutboundV1OperatingMode]
+            >;
+            /**
+             * Registers a Polkadot-native token as a wrapped ERC20 token on Ethereum. Privileged. Can only be called by root.
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `location`: Location of the asset (relative to this chain)
+             * - `metadata`: Metadata to include in the instantiated ERC20 contract on Ethereum
+             */
+            registerToken: AugmentedSubmittable<
+                (
+                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array,
+                    metadata:
+                        | SnowbridgeCoreAssetMetadata
+                        | { name?: any; symbol?: any; decimals?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, SnowbridgeCoreAssetMetadata]
+            >;
+            /**
+             * Sends a message to the Gateway contract to change its operating mode
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be `Location`
+             */
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode:
+                        | SnowbridgeCoreOutboundV1OperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOutboundV1OperatingMode]
+            >;
+            /**
+             * Set pricing parameters on both sides of the bridge
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             */
+            setPricingParameters: AugmentedSubmittable<
+                (
+                    params:
+                        | SnowbridgeCorePricingPricingParameters
+                        | { exchangeRate?: any; rewards?: any; feePerGas?: any; multiplier?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCorePricingPricingParameters]
+            >;
+            /**
+             * Sends a message to the Gateway contract to update fee related parameters for token transfers.
+             *
+             * Privileged. Can only be called by root.
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `create_asset_xcm`: The XCM execution cost for creating a new asset class on AssetHub, in DOT
+             * - `transfer_asset_xcm`: The XCM execution cost for performing a reserve transfer on AssetHub, in DOT
+             * - `register_token`: The Ether fee for registering a new token, to discourage spamming
+             */
+            setTokenTransferFees: AugmentedSubmittable<
+                (
+                    createAssetXcm: u128 | AnyNumber | Uint8Array,
+                    transferAssetXcm: u128 | AnyNumber | Uint8Array,
+                    registerToken: U256 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, u128, U256]
+            >;
+            /**
+             * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
+             *
+             * A partial fee will be charged for local processing only.
+             *
+             * - `origin`: Must be `Location`
+             */
+            transferNativeFromAgent: AugmentedSubmittable<
+                (
+                    recipient: H160 | string | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [H160, u128]
+            >;
+            /**
+             * Sends a message to the Gateway contract to update a channel configuration
+             *
+             * The origin must already have a channel initialized, as this message is sent over it.
+             *
+             * A partial fee will be charged for local processing only.
+             *
+             * - `origin`: Must be `Location`
+             * - `mode`: Initial operating mode of the channel
+             */
+            updateChannel: AugmentedSubmittable<
+                (
+                    mode:
+                        | SnowbridgeCoreOutboundV1OperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOutboundV1OperatingMode]
+            >;
+            /**
+             * Sends command to the Gateway contract to upgrade itself with a new implementation contract
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be `Root`.
+             * - `impl_address`: The address of the implementation contract.
+             * - `impl_code_hash`: The codehash of the implementation contract.
+             * - `initializer`: Optionally call an initializer on the implementation contract.
+             */
+            upgrade: AugmentedSubmittable<
+                (
+                    implAddress: H160 | string | Uint8Array,
+                    implCodeHash: H256 | string | Uint8Array,
+                    initializer:
+                        | Option<SnowbridgeCoreOutboundV1Initializer>
+                        | null
+                        | Uint8Array
+                        | SnowbridgeCoreOutboundV1Initializer
+                        | { params?: any; maximumRequiredGas?: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [H160, H256, Option<SnowbridgeCoreOutboundV1Initializer>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         externalValidators: {
             /**
              * Add a new account `who` to the list of `WhitelistedValidators`.
@@ -1336,6 +1578,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     percentage: Perbill | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, AccountId32, Perbill]
+            >;
+            rootTestSendMsgToEth: AugmentedSubmittable<
+                (
+                    nonce: H256 | string | Uint8Array,
+                    numMsgs: u32 | AnyNumber | Uint8Array,
+                    msgSize: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [H256, u32, u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2164,7 +2414,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `max_fee`: The maximum fee that may be paid. This should just be auto-populated as:
              *
              * ```nocompile
-             * Self::registrars().get(reg_index).unwrap().fee;
+             * Registrars::<T>::get().get(reg_index).unwrap().fee
              * ```
              *
              * Emits `JudgementRequested` if successful.
@@ -2365,27 +2615,31 @@ declare module "@polkadot/api-base/types/submittable" {
             executeOverweight: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | PolkadotRuntimeParachainsInclusionAggregateMessageOrigin
+                        | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
+                        | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
                     index: u32 | AnyNumber | Uint8Array,
                     weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+                [DancelightRuntimeAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
             >;
             /** Remove a page which has no more messages remaining to be processed or is stale. */
             reapPage: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | PolkadotRuntimeParachainsInclusionAggregateMessageOrigin
+                        | DancelightRuntimeAggregateMessageOrigin
                         | { Ump: any }
+                        | { Snowbridge: any }
+                        | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotRuntimeParachainsInclusionAggregateMessageOrigin, u32]
+                [DancelightRuntimeAggregateMessageOrigin, u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2681,12 +2935,12 @@ declare module "@polkadot/api-base/types/submittable" {
             enter: AugmentedSubmittable<
                 (
                     data:
-                        | PolkadotPrimitivesV7InherentData
+                        | PolkadotPrimitivesV8InherentData
                         | { bitfields?: any; backedCandidates?: any; disputes?: any; parentHeader?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7InherentData]
+                [PolkadotPrimitivesV8InherentData]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -2783,13 +3037,13 @@ declare module "@polkadot/api-base/types/submittable" {
             includePvfCheckStatement: AugmentedSubmittable<
                 (
                     stmt:
-                        | PolkadotPrimitivesV7PvfCheckStatement
+                        | PolkadotPrimitivesV8PvfCheckStatement
                         | { accept?: any; subject?: any; sessionIndex?: any; validatorIndex?: any }
                         | string
                         | Uint8Array,
-                    signature: PolkadotPrimitivesV7ValidatorAppSignature | string | Uint8Array
+                    signature: PolkadotPrimitivesV8ValidatorAppSignature | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7PvfCheckStatement, PolkadotPrimitivesV7ValidatorAppSignature]
+                [PolkadotPrimitivesV8PvfCheckStatement, PolkadotPrimitivesV8ValidatorAppSignature]
             >;
             /**
              * Remove the validation code from the storage iff the reference count is 0.
@@ -2817,7 +3071,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reportDisputeLostUnsigned: AugmentedSubmittable<
                 (
                     disputeProof:
-                        | PolkadotPrimitivesV7SlashingDisputeProof
+                        | PolkadotPrimitivesV8SlashingDisputeProof
                         | { timeSlot?: any; kind?: any; validatorIndex?: any; validatorId?: any }
                         | string
                         | Uint8Array,
@@ -2827,7 +3081,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7SlashingDisputeProof, SpSessionMembershipProof]
+                [PolkadotPrimitivesV8SlashingDisputeProof, SpSessionMembershipProof]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

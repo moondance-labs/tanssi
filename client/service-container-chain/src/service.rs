@@ -44,6 +44,7 @@ use {
         Configuration, ImportQueue, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::TelemetryHandle,
+    sc_tracing::tracing::Instrument,
     sc_transaction_pool::FullPool,
     sp_api::ProvideRuntimeApi,
     sp_consensus::EnableProofRecording,
@@ -126,7 +127,7 @@ where
     }
 
     async fn import_block(
-        &mut self,
+        &self,
         params: sc_consensus::BlockImportParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         let res = self.inner.import_block(params).await?;
@@ -172,8 +173,7 @@ tp_traits::alias!(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-pub async fn start_node_impl_container<
+pub fn start_node_impl_container<
     RuntimeApi: MinimalContainerRuntimeApi,
     TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
 >(
@@ -184,109 +184,116 @@ pub async fn start_node_impl_container<
     para_id: ParaId,
     collation_params: Option<crate::spawner::CollationParams>,
     generate_rpc_builder: TGenerateRpcBuilder,
-) -> sc_service::error::Result<(
-    TaskManager,
-    Arc<ContainerChainClient<RuntimeApi>>,
-    Arc<ParachainBackend>,
-)> {
-    let parachain_config = prepare_node_config(parachain_config);
+) -> impl std::future::Future<
+    Output = sc_service::error::Result<(
+        TaskManager,
+        Arc<ContainerChainClient<RuntimeApi>>,
+        Arc<ParachainBackend>,
+    )>,
+> {
+    async move {
+        let parachain_config = prepare_node_config(parachain_config);
 
-    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
+        // Create a `NodeBuilder` which helps setup parachain nodes common systems.
+        let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
 
-    let (block_import, import_queue) =
-        container_chain_import_queue(&parachain_config, &node_builder);
-    let import_queue_service = import_queue.service();
+        let (block_import, import_queue) =
+            container_chain_import_queue(&parachain_config, &node_builder);
+        let import_queue_service = import_queue.service();
 
-    log::info!("are we collators? {:?}", collation_params.is_some());
-    let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
-            &parachain_config,
+        let node_builder = node_builder
+            .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+                &parachain_config,
+                para_id,
+                import_queue,
+                relay_chain_interface.clone(),
+            )
+            .await?;
+
+        let force_authoring = parachain_config.force_authoring;
+
+        let prometheus_registry = parachain_config.prometheus_registry().cloned();
+
+        let rpc_builder = generate_rpc_builder.generate(GenerateRpcBuilderParams {
+            task_manager: &node_builder.task_manager,
+            container_chain_config: &parachain_config,
+            client: node_builder.client.clone(),
+            backend: node_builder.backend.clone(),
+            sync_service: node_builder.network.sync_service.clone(),
+            transaction_pool: node_builder.transaction_pool.clone(),
+            prometheus_registry: node_builder.prometheus_registry.clone(),
+            command_sink: None,
+            xcm_senders: None,
+            network: node_builder.network.network.clone(),
+        })?;
+
+        let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
+
+        let announce_block = {
+            let sync_service = node_builder.network.sync_service.clone();
+            Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+        };
+
+        let relay_chain_slot_duration = Duration::from_secs(6);
+
+        let overseer_handle = relay_chain_interface
+            .overseer_handle()
+            .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+        let (mut node_builder, _) = node_builder.extract_import_queue_service();
+
+        start_relay_chain_tasks(StartRelayChainTasksParams {
+            client: node_builder.client.clone(),
+            announce_block: announce_block.clone(),
             para_id,
-            import_queue,
-            relay_chain_interface.clone(),
-        )
-        .await?;
-
-    let force_authoring = parachain_config.force_authoring;
-    let prometheus_registry = parachain_config.prometheus_registry().cloned();
-
-    let rpc_builder = generate_rpc_builder.generate(GenerateRpcBuilderParams {
-        task_manager: &node_builder.task_manager,
-        container_chain_config: &parachain_config,
-        client: node_builder.client.clone(),
-        backend: node_builder.backend.clone(),
-        sync_service: node_builder.network.sync_service.clone(),
-        transaction_pool: node_builder.transaction_pool.clone(),
-        prometheus_registry: node_builder.prometheus_registry.clone(),
-        command_sink: None,
-        xcm_senders: None,
-        network: node_builder.network.network.clone(),
-    })?;
-
-    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
-
-    let announce_block = {
-        let sync_service = node_builder.network.sync_service.clone();
-        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-    };
-
-    let relay_chain_slot_duration = Duration::from_secs(6);
-
-    let overseer_handle = relay_chain_interface
-        .overseer_handle()
-        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let (mut node_builder, _) = node_builder.extract_import_queue_service();
-
-    start_relay_chain_tasks(StartRelayChainTasksParams {
-        client: node_builder.client.clone(),
-        announce_block: announce_block.clone(),
-        para_id,
-        relay_chain_interface: relay_chain_interface.clone(),
-        task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if collation_params.is_some() {
-            DARecoveryProfile::Collator
-        } else {
-            DARecoveryProfile::FullNode
-        },
-        import_queue: import_queue_service,
-        relay_chain_slot_duration,
-        recovery_handle: Box::new(overseer_handle.clone()),
-        sync_service: node_builder.network.sync_service.clone(),
-    })?;
-
-    if let Some(collation_params) = collation_params {
-        let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
-        let node_client = node_builder.client.clone();
-        let node_backend = node_builder.backend.clone();
-
-        start_consensus_container(
-            node_client.clone(),
-            node_backend.clone(),
-            collation_params,
-            block_import.clone(),
-            prometheus_registry.clone(),
-            node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
-            node_spawn_handle.clone(),
-            relay_chain_interface.clone(),
-            orchestrator_chain_interface.clone(),
-            node_builder.transaction_pool.clone(),
-            node_builder.network.sync_service.clone(),
-            keystore.clone(),
-            force_authoring,
+            relay_chain_interface: relay_chain_interface.clone(),
+            task_manager: &mut node_builder.task_manager,
+            da_recovery_profile: if collation_params.is_some() {
+                DARecoveryProfile::Collator
+            } else {
+                DARecoveryProfile::FullNode
+            },
+            import_queue: import_queue_service,
             relay_chain_slot_duration,
-            para_id,
-            overseer_handle.clone(),
-            announce_block.clone(),
-        );
+            recovery_handle: Box::new(overseer_handle.clone()),
+            sync_service: node_builder.network.sync_service.clone(),
+        })?;
+
+        if let Some(collation_params) = collation_params {
+            let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
+            let node_client = node_builder.client.clone();
+            let node_backend = node_builder.backend.clone();
+
+            start_consensus_container(
+                node_client.clone(),
+                node_backend.clone(),
+                collation_params,
+                block_import.clone(),
+                prometheus_registry.clone(),
+                node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
+                node_spawn_handle.clone(),
+                relay_chain_interface.clone(),
+                orchestrator_chain_interface.clone(),
+                node_builder.transaction_pool.clone(),
+                node_builder.network.sync_service.clone(),
+                keystore.clone(),
+                force_authoring,
+                relay_chain_slot_duration,
+                para_id,
+                overseer_handle.clone(),
+                announce_block.clone(),
+            );
+        }
+
+        node_builder.network.start_network.start_network();
+        Ok((
+            node_builder.task_manager,
+            node_builder.client,
+            node_builder.backend,
+        ))
     }
-
-    node_builder.network.start_network.start_network();
-
-    Ok((
-        node_builder.task_manager,
-        node_builder.client,
-        node_builder.backend,
+    .instrument(sc_tracing::tracing::info_span!(
+        sc_tracing::logging::PREFIX_LOG_SPAN,
+        name = container_log_str(para_id),
     ))
 }
 
@@ -317,7 +324,6 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
     (block_import, import_queue)
 }
 
-#[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
     client: Arc<ContainerChainClient<RuntimeApi>>,
     backend: Arc<FullBackend>,

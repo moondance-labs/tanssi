@@ -245,11 +245,10 @@ async fn start_node_impl(
         let block_data_cache = block_data_cache;
         let frontier_backend = frontier_backend.clone();
 
-        Box::new(move |deny_unsafe, subscription_task_executor| {
+        Box::new(move |subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
-                deny_unsafe,
                 filter_pool: filter_pool.clone(),
                 frontier_backend: match &*frontier_backend {
                     fc_db::Backend::KeyValue(b) => b.clone(),
@@ -497,11 +496,10 @@ pub async fn start_dev_node(
         let overrides = overrides;
         let block_data_cache = block_data_cache;
 
-        Box::new(move |deny_unsafe, subscription_task_executor| {
+        Box::new(move |subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
-                deny_unsafe,
                 filter_pool: filter_pool.clone(),
                 frontier_backend: match &*frontier_backend {
                     fc_db::Backend::KeyValue(b) => b.clone(),

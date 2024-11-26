@@ -18,7 +18,6 @@ use {
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
     emulated_integration_tests_common::build_genesis_storage,
-    polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId,
@@ -44,6 +43,29 @@ where
     AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+}
+
+/// Helper function to generate stash, controller and session key from seed
+pub fn get_authority_keys_from_seed_no_beefy(
+    seed: &str,
+) -> (
+    AccountId,
+    AccountId,
+    BabeId,
+    GrandpaId,
+    ValidatorId,
+    AssignmentId,
+    AuthorityDiscoveryId,
+) {
+    (
+        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
+        get_account_id_from_seed::<sr25519::Public>(seed),
+        get_from_seed::<BabeId>(seed),
+        get_from_seed::<GrandpaId>(seed),
+        get_from_seed::<ValidatorId>(seed),
+        get_from_seed::<AssignmentId>(seed),
+        get_from_seed::<AuthorityDiscoveryId>(seed),
+    )
 }
 
 pub mod accounts {
@@ -174,7 +196,7 @@ pub mod westend {
                             x.0.clone(),
                             x.1.clone(),
                             STASH,
-                            westend_runtime::StakerStatus::Validator,
+                            polkadot_runtime_common::StakerStatus::Validator,
                         )
                     })
                     .collect(),

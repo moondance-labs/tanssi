@@ -221,12 +221,12 @@ import type {
     PolkadotCorePrimitivesInboundDownwardMessage,
     PolkadotCorePrimitivesInboundHrmpMessage,
     PolkadotCorePrimitivesOutboundHrmpMessage,
-    PolkadotPrimitivesV7AbridgedHostConfiguration,
-    PolkadotPrimitivesV7AbridgedHrmpChannel,
-    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV7PersistedValidationData,
-    PolkadotPrimitivesV7UpgradeGoAhead,
-    PolkadotPrimitivesV7UpgradeRestriction,
+    PolkadotPrimitivesV8AbridgedHostConfiguration,
+    PolkadotPrimitivesV8AbridgedHrmpChannel,
+    PolkadotPrimitivesV8AsyncBackingAsyncBackingParams,
+    PolkadotPrimitivesV8PersistedValidationData,
+    PolkadotPrimitivesV8UpgradeGoAhead,
+    PolkadotPrimitivesV8UpgradeRestriction,
     SpArithmeticArithmeticError,
     SpCoreCryptoKeyTypeId,
     SpCoreVoid,
@@ -534,12 +534,12 @@ declare module "@polkadot/types/types/registry" {
         PolkadotCorePrimitivesInboundDownwardMessage: PolkadotCorePrimitivesInboundDownwardMessage;
         PolkadotCorePrimitivesInboundHrmpMessage: PolkadotCorePrimitivesInboundHrmpMessage;
         PolkadotCorePrimitivesOutboundHrmpMessage: PolkadotCorePrimitivesOutboundHrmpMessage;
-        PolkadotPrimitivesV7AbridgedHostConfiguration: PolkadotPrimitivesV7AbridgedHostConfiguration;
-        PolkadotPrimitivesV7AbridgedHrmpChannel: PolkadotPrimitivesV7AbridgedHrmpChannel;
-        PolkadotPrimitivesV7AsyncBackingAsyncBackingParams: PolkadotPrimitivesV7AsyncBackingAsyncBackingParams;
-        PolkadotPrimitivesV7PersistedValidationData: PolkadotPrimitivesV7PersistedValidationData;
-        PolkadotPrimitivesV7UpgradeGoAhead: PolkadotPrimitivesV7UpgradeGoAhead;
-        PolkadotPrimitivesV7UpgradeRestriction: PolkadotPrimitivesV7UpgradeRestriction;
+        PolkadotPrimitivesV8AbridgedHostConfiguration: PolkadotPrimitivesV8AbridgedHostConfiguration;
+        PolkadotPrimitivesV8AbridgedHrmpChannel: PolkadotPrimitivesV8AbridgedHrmpChannel;
+        PolkadotPrimitivesV8AsyncBackingAsyncBackingParams: PolkadotPrimitivesV8AsyncBackingAsyncBackingParams;
+        PolkadotPrimitivesV8PersistedValidationData: PolkadotPrimitivesV8PersistedValidationData;
+        PolkadotPrimitivesV8UpgradeGoAhead: PolkadotPrimitivesV8UpgradeGoAhead;
+        PolkadotPrimitivesV8UpgradeRestriction: PolkadotPrimitivesV8UpgradeRestriction;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
         SpCoreVoid: SpCoreVoid;

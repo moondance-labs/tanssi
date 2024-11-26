@@ -35,6 +35,7 @@ use {
     pallet_staking::SessionInterface,
     parity_scale_codec::FullCodec,
     parity_scale_codec::{Decode, Encode},
+    sp_core::H256,
     sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
     sp_runtime::DispatchResult,
     sp_runtime::Perbill,
@@ -46,6 +47,9 @@ use {
     sp_std::vec::Vec,
     tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
 };
+
+use snowbridge_core::ChannelId;
+use tp_bridge::{Command, Message, ValidateMessage};
 
 pub use pallet::*;
 
@@ -63,6 +67,7 @@ pub mod weights;
 pub mod pallet {
     use super::*;
     pub use crate::weights::WeightInfo;
+    use tp_bridge::DeliverMessage;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -123,6 +128,14 @@ pub mod pallet {
         /// Invulnerable provider, used to get the invulnerables to know when not to slash
         type InvulnerablesProvider: InvulnerablesProvider<Self::ValidatorId>;
 
+        /// Validate a message that will be sent to Ethereum.
+        type ValidateMessage: ValidateMessage;
+
+        /// Send a message to Ethereum. Needs to be validated first.
+        type OutboundQueue: DeliverMessage<
+            Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
+        >;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -143,6 +156,10 @@ pub mod pallet {
         DeferPeriodIsOver,
         /// There was an error computing the slash
         ErrorComputingSlash,
+        /// Failed to validate the message that was going to be sent to Ethereum
+        EthereumValidateFail,
+        /// Failed to deliver the message to Ethereum
+        EthereumDeliverFail,
     }
 
     #[pallet::pallet]
@@ -261,6 +278,55 @@ pub mod pallet {
             });
 
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
+            Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::root_test_send_msg_to_eth())]
+        pub fn root_test_send_msg_to_eth(
+            origin: OriginFor<T>,
+            nonce: H256,
+            num_msgs: u32,
+            msg_size: u32,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            for i in 0..num_msgs {
+                // Make sure each message has a different payload
+                let mut payload = sp_core::blake2_256((nonce, i).encode().as_ref()).to_vec();
+                // Extend with zeros until msg_size is reached
+                payload.resize(msg_size as usize, 0);
+                // Example command, this should be something like "ReportSlashes"
+                let command = Command::Test(payload);
+
+                // Validate
+                let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+                let outbound_message = Message {
+                    id: None,
+                    channel_id,
+                    command,
+                };
+
+                // validate the message
+                // Ignore fee because for now only root can send messages
+                let (ticket, _fee) =
+                    T::ValidateMessage::validate(&outbound_message).map_err(|err| {
+                        log::error!(
+                            "root_test_send_msg_to_eth: validation of message {i} failed. {err:?}"
+                        );
+                        crate::pallet::Error::<T>::EthereumValidateFail
+                    })?;
+
+                // Deliver
+                T::OutboundQueue::deliver(ticket).map_err(|err| {
+                    log::error!(
+                        "root_test_send_msg_to_eth: delivery of message {i} failed. {err:?}"
+                    );
+                    crate::pallet::Error::<T>::EthereumDeliverFail
+                })?;
+            }
+
             Ok(())
         }
     }

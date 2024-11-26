@@ -21,7 +21,7 @@ use {
         tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Registrar, Session,
     },
     cumulus_primitives_core::relay_chain::{
-        vstaging::SchedulerParams, AsyncBackingParams, CoreIndex, HeadData,
+        AsyncBackingParams, CoreIndex, HeadData, SchedulerParams,
     },
     dancelight_runtime_constants::time::EpochDurationInBlocks,
     frame_support::assert_ok,
