@@ -138,6 +138,41 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
     }
 }
 
+pub trait Parse {
+    /// Returns the "chain" location part. It could be parent, sibling
+    /// parachain, or child parachain.
+    fn chain_part(&self) -> Option<Location>;
+    /// Returns "non-chain" location part.
+    fn non_chain_part(&self) -> Option<Location>;
+}
+
+impl Parse for Location {
+    fn chain_part(&self) -> Option<Location> {
+        match (self.parents, self.first_interior()) {
+            // sibling parachain
+            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
+            // parent
+            (1, _) => Some(Location::parent()),
+            // children parachain
+            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
+            _ => None,
+        }
+    }
+
+    fn non_chain_part(&self) -> Option<Location> {
+        let mut junctions = self.interior().clone();
+        while matches!(junctions.first(), Some(Parachain(_))) {
+            let _ = junctions.take_first();
+        }
+
+        if junctions != Here {
+            Some(Location::new(0, junctions))
+        } else {
+            None
+        }
+    }
+}
+
 parameter_types! {
     pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
