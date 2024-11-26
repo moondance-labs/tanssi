@@ -53,7 +53,7 @@ describeSuite({
             title: "Should succeed calling runtime api",
             test: async function () {
 
-                await polkadotJs.call.externalValidatorsRewardsApi.generate_rewards_merkle_root(0);
+                await polkadotJs.call.externalValidatorsRewardsApi.generate_rewards_merkle_proof(0);
 
             },
         });

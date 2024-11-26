@@ -9462,6 +9462,7 @@ name = "pallet-external-validators-rewards-runtime-api"
 version = "0.1.0"
 dependencies = [
  "parity-scale-codec",
+ "snowbridge-outbound-queue-merkle-tree",
  "sp-api",
  "sp-core",
 ]

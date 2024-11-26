@@ -33,21 +33,20 @@ use {
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     snowbridge_core::ChannelId,
-    snowbridge_outbound_queue_merkle_tree::merkle_root,
+    snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
-    sp_runtime::{DigestItem, traits::Hash},
+    sp_runtime::traits::Hash,
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_bridge::{Command, Message, ValidateMessage, DeliverMessage},
+    tp_bridge::{Command, DeliverMessage, Message, ValidateMessage},
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use {
-        super::*,
-        frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
+        super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
         tp_traits::EraIndexProvider,
     };
 
@@ -123,6 +122,63 @@ pub mod pallet {
                 }
             })
         }
+
+        pub fn generate_era_rewards_utils(
+            era_index: EraIndex,
+            maybe_account_id_check: Option<T::AccountId>,
+        ) -> Option<(H256, Vec<H256>, Option<u64>, u128)> {
+            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let total_points: u128 = era_rewards.total as u128;
+            let mut leaves = Vec::with_capacity(era_rewards.individual.len());
+            let mut leaf_index = None;
+
+            for (index, (account_id, reward_points)) in era_rewards.individual.iter().enumerate() {
+                let encoded = (account_id, reward_points).encode();
+                let hashed = <T as Config>::Hashing::hash(&encoded);
+                leaves.push(hashed);
+
+                if let Some(ref check_account_id) = maybe_account_id_check {
+                    if account_id == check_account_id {
+                        leaf_index = Some(index as u64);
+                    }
+                }
+            }
+
+            // If a specific account is checked but not found, return None
+            if maybe_account_id_check.is_some() && leaf_index.is_none() {
+                log::error!(
+                    target: "ext_validators_rewards",
+                    "AccountId {:?} not found for era {:?}!",
+                    maybe_account_id_check,
+                    era_index
+                );
+                return None;
+            }
+
+            let rewards_merkle_root =
+                merkle_root::<<T as Config>::Hashing, _>(leaves.iter().cloned());
+            Some((rewards_merkle_root, leaves, leaf_index, total_points))
+        }
+
+        pub fn generate_rewards_merkle_proof(
+            account_id: T::AccountId,
+            era_index: EraIndex,
+        ) -> Option<MerkleProof> {
+            let (_, leaves, leaf_index, _) =
+                Self::generate_era_rewards_utils(era_index, Some(account_id))?;
+            leaf_index
+                .map(|index| merkle_proof::<<T as Config>::Hashing, _>(leaves.into_iter(), index))
+        }
+
+        pub fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool {
+            verify_proof::<<T as Config>::Hashing, _, _>(
+                &merkle_proof.root,
+                merkle_proof.proof,
+                merkle_proof.number_of_leaves,
+                merkle_proof.leaf_index,
+                merkle_proof.leaf,
+            )
+        }
     }
 
     impl<T: Config> tp_traits::OnEraStart for Pallet<T> {
@@ -137,44 +193,36 @@ pub mod pallet {
 
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
-            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
-            let total_points: u128 = era_rewards.total as u128;
-            let mut rewards_info_to_merkelize: Vec<H256> = vec![];
+            if let Some((rewards_merkle_root, _, _, total_points)) =
+                Self::generate_era_rewards_utils(era_index, None)
+            {
+                let command = Command::ReportRewards {
+                    timestamp: T::TimestampProvider::get(),
+                    era_index,
+                    total_points,
+                    // TODO: manage this in a proper way.
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root,
+                };
 
-            for (account_id, reward_points) in era_rewards.individual {
-                let encoded = (account_id, reward_points).encode();
-                let hashed = <T as Config>::Hashing::hash(&encoded);
-                rewards_info_to_merkelize.push(hashed);
-            }
+                let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-            let rewards_merkle_root = merkle_root::<<T as Config>::Hashing, _>(rewards_info_to_merkelize.into_iter());
+                let outbound_message = Message {
+                    id: None,
+                    channel_id,
+                    command,
+                };
 
-            let command = Command::ReportRewards {
-                timestamp: T::TimestampProvider::get(),
-                era_index,
-                total_points,
-                // TODO: manage this in a proper way.
-                tokens_inflated: 0u128,
-                rewards_merkle_root
-            };
-
-            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
-
-            let outbound_message = Message {
-                id: None,
-                channel_id,
-                command,
-            };
-
-            // Validate and deliver the message
-            match T::ValidateMessage::validate(&outbound_message) {
-                Ok((ticket, _fee)) => {
-                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                        log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                // Validate and deliver the message
+                match T::ValidateMessage::validate(&outbound_message) {
+                    Ok((ticket, _fee)) => {
+                        if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                        }
                     }
-                }, 
-                Err(err) => {
-                    log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                    Err(err) => {
+                        log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                    }
                 }
             }
         }

@@ -78,6 +78,7 @@ use {
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     snowbridge_core::ChannelId,
+    snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
@@ -2706,13 +2707,16 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_external_validators_rewards_runtime_api::ExternalValidatorsRewardsApi<Block, EraIndex> for Runtime 
+    impl pallet_external_validators_rewards_runtime_api::ExternalValidatorsRewardsApi<Block, AccountId, EraIndex> for Runtime
         where
-        EraIndex: parity_scale_codec::Codec, 
+        EraIndex: parity_scale_codec::Codec,
     {
-        fn generate_rewards_merkle_proof(era_index: EraIndex) -> H256 {
-            //ExternalValidatorsRewards::get_rewards_merkle_root_and_total_points(era_index).0
-            H256::default()
+        fn generate_rewards_merkle_proof(account_id: AccountId, era_index: EraIndex) -> Option<MerkleProof> {
+            ExternalValidatorsRewards::generate_rewards_merkle_proof(account_id, era_index)
+        }
+
+        fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool {
+            ExternalValidatorsRewards::verify_rewards_merkle_proof(merkle_proof)
         }
     }
 

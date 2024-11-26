@@ -18,11 +18,15 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use snowbridge_outbound_queue_merkle_tree::MerkleProof;
+
 sp_api::decl_runtime_apis! {
-    pub trait ExternalValidatorsRewardsApi<EraIndex>
+    pub trait ExternalValidatorsRewardsApi<AccountId, EraIndex>
     where
+        AccountId: parity_scale_codec::Codec,
         EraIndex: parity_scale_codec::Codec,
     {
-        fn generate_rewards_merkle_proof(era_index: EraIndex) -> sp_core::H256;
+        fn generate_rewards_merkle_proof(account_id: AccountId, era_index: EraIndex) -> Option<MerkleProof>;
+        fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool;
     }
 }
