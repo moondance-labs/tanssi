@@ -85,6 +85,7 @@ flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 
 dancelight-runtime = { path = "solo-chains/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "solo-chains/runtime/dancelight/constants", default-features = false }
+ethabi = { package = "ethabi-decode", version = "1.0.0", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
@@ -96,9 +97,8 @@ tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
-
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
+tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
@@ -261,7 +261,10 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 # Bridges (wasm)
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409", default-features = false }
+snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409", default-features = false }
 snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409", default-features = false }
+snowbridge-pallet-outbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409", default-features = false }
+snowbridge-pallet-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2409" }
