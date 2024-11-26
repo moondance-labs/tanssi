@@ -63,8 +63,14 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sc_transaction_pool_api::TransactionPool;
 use sp_api::StorageProof;
 use sp_core::traits::SpawnNamed;
+
+type FullBasicPool<T> = sc_transaction_pool::BasicPool<
+    sc_transaction_pool::FullChainApi<ClientOf<T>, BlockOf<T>>,
+    BlockOf<T>,
+>;
 
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<
@@ -115,6 +121,7 @@ pub trait NodeBuilderConfig {
         ExecutorOf<Self>:
             Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
         RuntimeApiOf<Self>: MinimalRuntimeApi<BlockOf<Self>, ClientOf<Self>>,
+        BlockHashOf<Self>: Unpin,
     {
         NodeBuilder::<Self>::new(parachain_config, hwbench)
     }
@@ -171,7 +178,7 @@ pub struct NodeBuilder<
     pub backend: Arc<BackendOf<T>>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<sc_transaction_pool::FullPool<BlockOf<T>, ClientOf<T>>>,
+    pub transaction_pool: Arc<sc_transaction_pool::TransactionPoolHandle<BlockOf<T>, ClientOf<T>>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
@@ -226,6 +233,7 @@ where
     ExecutorOf<T>:
         Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
     RuntimeApiOf<T>: MinimalRuntimeApi<BlockOf<T>, ClientOf<T>>,
+    BlockHashOf<T>: Unpin,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it only starts telemetry, and doesn't provide any
@@ -291,18 +299,19 @@ where
             telemetry
         });
 
-        let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-            parachain_config.transaction_pool.clone(),
-            parachain_config.role.is_authority().into(),
-            parachain_config.prometheus_registry(),
+        let transaction_pool = sc_transaction_pool::Builder::new(
             task_manager.spawn_essential_handle(),
             client.clone(),
-        );
+            parachain_config.role.is_authority().into(),
+        )
+        .with_options(parachain_config.transaction_pool.clone())
+        .with_prometheus(parachain_config.prometheus_registry())
+        .build();
 
         Ok(Self {
             client,
             backend,
-            transaction_pool,
+            transaction_pool: transaction_pool.into(),
             telemetry,
             telemetry_worker_handle,
             task_manager,
@@ -673,16 +682,14 @@ where
             Sealing::Instant => {
                 Box::new(
                     // This bit cribbed from the implementation of instant seal.
-                    self.transaction_pool
-                        .pool()
-                        .validated_pool()
-                        .import_notification_stream()
-                        .map(|_| EngineCommand::SealNewBlock {
+                    self.transaction_pool.import_notification_stream().map(|_| {
+                        EngineCommand::SealNewBlock {
                             create_empty: false,
                             finalize: false,
                             parent_hash: None,
                             sender: None,
-                        }),
+                        }
+                    }),
                 )
             }
             Sealing::Manual => {
