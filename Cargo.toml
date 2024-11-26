@@ -63,6 +63,7 @@ pallet-data-preservers-runtime-api = { path = "pallets/data-preservers/runtime-a
 pallet-external-validator-slashes = { path = "pallets/external-validator-slashes", default-features = false }
 pallet-external-validators = { path = "pallets/external-validators", default-features = false }
 pallet-external-validators-rewards = { path = "pallets/external-validators-rewards", default-features = false }
+pallet-external-validators-rewards-runtime-api = { path = "pallets/external-validators-rewards/runtime-api", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
@@ -259,6 +260,7 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 
 
 # Bridges (wasm)
+bridge-hub-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }
 snowbridge-outbound-queue-merkle-tree = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2407", default-features = false }

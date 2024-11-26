@@ -60,7 +60,7 @@ pub enum Command {
     ReportRewards {
         // block timestamp
         timestamp: u64,
-        // index of the era we are sending info
+        // index of the era we are sending info of
         era_index: u32,
         // total_points for the era 
         total_points: u128,

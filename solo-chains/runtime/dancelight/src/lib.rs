@@ -2671,6 +2671,16 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_external_validators_rewards_runtime_api::ExternalValidatorsRewardsApi<Block, EraIndex> for Runtime 
+        where
+        EraIndex: parity_scale_codec::Codec, 
+    {
+        fn generate_rewards_merkle_proof(era_index: EraIndex) -> H256 {
+            //ExternalValidatorsRewards::get_rewards_merkle_root_and_total_points(era_index).0
+            H256::default()
+        }
+    }
+
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {

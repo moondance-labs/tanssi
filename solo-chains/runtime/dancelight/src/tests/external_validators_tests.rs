@@ -694,8 +694,6 @@ fn external_validators_manual_reward_points() {
 
 #[test]
 fn external_validators_rewards_sends_message_on_era_end() {
-    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
-
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),

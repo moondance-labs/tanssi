@@ -3270,6 +3270,7 @@ dependencies = [
  "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-external-validators-rewards",
+ "pallet-external-validators-rewards-runtime-api",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -9456,6 +9457,15 @@ dependencies = [
  "sp-std",
  "tp-bridge",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-external-validators-rewards-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-core",
 ]
 
 [[package]]

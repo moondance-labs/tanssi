@@ -29,12 +29,13 @@ pub use pallet::*;
 
 use {
     frame_support::traits::{Defensive, Get, ValidatorSet},
+    parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     snowbridge_core::ChannelId,
     snowbridge_outbound_queue_merkle_tree::merkle_root,
     sp_core::H256,
-    sp_runtime::traits::Hash,
+    sp_runtime::{DigestItem, traits::Hash},
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
@@ -152,6 +153,7 @@ pub mod pallet {
                 timestamp: T::TimestampProvider::get(),
                 era_index,
                 total_points,
+                // TODO: manage this in a proper way.
                 tokens_inflated: 0u128,
                 rewards_merkle_root
             };
