@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use frame_support::__private::sp_tracing::tracing::Instrument;
 use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
@@ -238,7 +239,6 @@ pub fn import_queue(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Orchestrator")]
 async fn start_node_impl(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
@@ -281,11 +281,10 @@ async fn start_node_impl(
         let client = node_builder.client.clone();
         let transaction_pool = node_builder.transaction_pool.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |_| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
-                deny_unsafe,
                 command_sink: None,
                 xcm_senders: None,
             };
@@ -676,6 +675,10 @@ pub async fn start_parachain_node(
         para_id,
         hwbench,
     )
+    .instrument(sc_tracing::tracing::info_span!(
+        sc_tracing::logging::PREFIX_LOG_SPAN,
+        name = "Orchestrator",
+    ))
     .await
 }
 
@@ -1002,11 +1005,10 @@ pub fn start_dev_node(
         let client = node_builder.client.clone();
         let transaction_pool = node_builder.transaction_pool.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |_| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
-                deny_unsafe,
                 command_sink: command_sink.clone(),
                 xcm_senders: xcm_senders.clone(),
             };

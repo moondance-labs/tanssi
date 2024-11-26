@@ -34,12 +34,13 @@ import type {
     FrameSupportPreimagesBounded,
     FrameSupportTokensMiscBalanceStatus,
     PalletConvictionVotingTally,
+    PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
     PalletMultisigTimepoint,
     PalletRankedCollectiveTally,
     PalletRankedCollectiveVoteRecord,
     PolkadotParachainPrimitivesPrimitivesHrmpChannelId,
-    PolkadotPrimitivesV7CandidateReceipt,
+    PolkadotPrimitivesV8CandidateReceipt,
     PolkadotRuntimeParachainsDisputesDisputeLocation,
     PolkadotRuntimeParachainsDisputesDisputeResult,
     SnowbridgeCoreChannelId,
@@ -191,6 +192,18 @@ declare module "@polkadot/api-base/types/events" {
             Delegated: AugmentedEvent<ApiType, [AccountId32, AccountId32]>;
             /** An [account] has cancelled a previous delegation operation. */
             Undelegated: AugmentedEvent<ApiType, [AccountId32]>;
+            /** An account that has voted */
+            Voted: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, vote: PalletConvictionVotingVoteAccountVote],
+                { who: AccountId32; vote: PalletConvictionVotingVoteAccountVote }
+            >;
+            /** A vote that been removed */
+            VoteRemoved: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, vote: PalletConvictionVotingVoteAccountVote],
+                { who: AccountId32; vote: PalletConvictionVotingVoteAccountVote }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
@@ -265,6 +278,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [params: SnowbridgeCorePricingPricingParameters],
                 { params: SnowbridgeCorePricingPricingParameters }
+            >;
+            /** Register Polkadot-native token as a wrapped ERC20 token on Ethereum */
+            RegisterToken: AugmentedEvent<
+                ApiType,
+                [location: XcmVersionedLocation, foreignTokenId: H256],
+                { location: XcmVersionedLocation; foreignTokenId: H256 }
             >;
             /** An SetOperatingMode message was sent to the Gateway */
             SetOperatingMode: AugmentedEvent<
@@ -795,11 +814,11 @@ declare module "@polkadot/api-base/types/events" {
         };
         paraInclusion: {
             /** A candidate was backed. `[candidate, head_data]` */
-            CandidateBacked: AugmentedEvent<ApiType, [PolkadotPrimitivesV7CandidateReceipt, Bytes, u32, u32]>;
+            CandidateBacked: AugmentedEvent<ApiType, [PolkadotPrimitivesV8CandidateReceipt, Bytes, u32, u32]>;
             /** A candidate was included. `[candidate, head_data]` */
-            CandidateIncluded: AugmentedEvent<ApiType, [PolkadotPrimitivesV7CandidateReceipt, Bytes, u32, u32]>;
+            CandidateIncluded: AugmentedEvent<ApiType, [PolkadotPrimitivesV8CandidateReceipt, Bytes, u32, u32]>;
             /** A candidate timed out. `[candidate, head_data]` */
-            CandidateTimedOut: AugmentedEvent<ApiType, [PolkadotPrimitivesV7CandidateReceipt, Bytes, u32]>;
+            CandidateTimedOut: AugmentedEvent<ApiType, [PolkadotPrimitivesV8CandidateReceipt, Bytes, u32]>;
             /** Some upward messages have been received and will be processed. */
             UpwardMessagesReceived: AugmentedEvent<ApiType, [from: u32, count: u32], { from: u32; count: u32 }>;
             /** Generic event */

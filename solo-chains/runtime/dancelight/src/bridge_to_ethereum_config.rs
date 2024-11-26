@@ -20,10 +20,11 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 
 use {
     crate::{
-        parameter_types, weights, AggregateMessageOrigin, Balance, Balances, EthereumOutboundQueue,
-        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime,
-        RuntimeEvent, TreasuryAccount, WeightToFee, UNITS,
+        parameter_types, weights, xcm_config::UniversalLocation, AggregateMessageOrigin, Balance,
+        Balances, EthereumOutboundQueue, EthereumSystem, FixedU128, GetAggregateMessageOrigin,
+        Keccak256, MessageQueue, Runtime, RuntimeEvent, TreasuryAccount, WeightToFee, UNITS,
     },
+    dancelight_runtime_constants::snowbridge::EthereumLocation,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, AllowSiblingsOnly, PricingParameters, Rewards},
@@ -124,6 +125,8 @@ parameter_types! {
 impl snowbridge_pallet_ethereum_client::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ForkVersions = ChainForkVersions;
+
+    type FreeHeadersInterval = ();
     type WeightInfo = weights::snowbridge_pallet_ethereum_client::SubstrateWeight<Runtime>;
 }
 
@@ -134,12 +137,14 @@ impl snowbridge_pallet_system::Config for Runtime {
     type AgentIdOf = snowbridge_core::AgentIdOf;
     type TreasuryAccount = TreasuryAccount;
     type Token = Balances;
-    type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;
     type InboundDeliveryCost = ();
     //type InboundDeliveryCost = EthereumInboundQueue;
+    type UniversalLocation = UniversalLocation;
+    type EthereumLocation = EthereumLocation;
+    type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

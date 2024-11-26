@@ -51,17 +51,18 @@ import type {
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
     PolkadotParachainPrimitivesPrimitivesHrmpChannelId,
-    PolkadotPrimitivesV7ApprovalVotingParams,
-    PolkadotPrimitivesV7AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV7ExecutorParams,
-    PolkadotPrimitivesV7InherentData,
-    PolkadotPrimitivesV7PvfCheckStatement,
-    PolkadotPrimitivesV7SlashingDisputeProof,
-    PolkadotPrimitivesV7ValidatorAppSignature,
-    PolkadotPrimitivesVstagingSchedulerParams,
+    PolkadotPrimitivesV8ApprovalVotingParams,
+    PolkadotPrimitivesV8AsyncBackingAsyncBackingParams,
+    PolkadotPrimitivesV8ExecutorParams,
+    PolkadotPrimitivesV8InherentData,
+    PolkadotPrimitivesV8PvfCheckStatement,
+    PolkadotPrimitivesV8SchedulerParams,
+    PolkadotPrimitivesV8SlashingDisputeProof,
+    PolkadotPrimitivesV8ValidatorAppSignature,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeCoreAssetMetadata,
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCoreOutboundV1Initializer,
@@ -567,23 +568,23 @@ declare module "@polkadot/api-base/types/submittable" {
             setApprovalVotingParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesV7ApprovalVotingParams
+                        | PolkadotPrimitivesV8ApprovalVotingParams
                         | { maxApprovalCoalesceCount?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7ApprovalVotingParams]
+                [PolkadotPrimitivesV8ApprovalVotingParams]
             >;
             /** Set the asynchronous backing parameters. */
             setAsyncBackingParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesV7AsyncBackingAsyncBackingParams
+                        | PolkadotPrimitivesV8AsyncBackingAsyncBackingParams
                         | { maxCandidateDepth?: any; allowedAncestryLen?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7AsyncBackingAsyncBackingParams]
+                [PolkadotPrimitivesV8AsyncBackingAsyncBackingParams]
             >;
             /** Setting this to true will disable consistency checks for the configuration setters. Use with caution. */
             setBypassConsistencyCheck: AugmentedSubmittable<
@@ -617,8 +618,8 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** Set PVF executor parameters. */
             setExecutorParams: AugmentedSubmittable<
-                (updated: PolkadotPrimitivesV7ExecutorParams) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7ExecutorParams]
+                (updated: PolkadotPrimitivesV8ExecutorParams) => SubmittableExtrinsic<ApiType>,
+                [PolkadotPrimitivesV8ExecutorParams]
             >;
             /** Set the parachain validator-group rotation frequency */
             setGroupRotationFrequency: AugmentedSubmittable<
@@ -806,7 +807,7 @@ declare module "@polkadot/api-base/types/submittable" {
             setSchedulerParams: AugmentedSubmittable<
                 (
                     updated:
-                        | PolkadotPrimitivesVstagingSchedulerParams
+                        | PolkadotPrimitivesV8SchedulerParams
                         | {
                               groupRotationFrequency?: any;
                               parasAvailabilityPeriod?: any;
@@ -823,7 +824,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesVstagingSchedulerParams]
+                [PolkadotPrimitivesV8SchedulerParams]
             >;
             /** Set the scheduling lookahead, in expected number of blocks at peak throughput. */
             setSchedulingLookahead: AugmentedSubmittable<
@@ -1378,6 +1379,26 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [SnowbridgeCoreChannelId, SnowbridgeCoreOutboundV1OperatingMode]
+            >;
+            /**
+             * Registers a Polkadot-native token as a wrapped ERC20 token on Ethereum. Privileged. Can only be called by root.
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `location`: Location of the asset (relative to this chain)
+             * - `metadata`: Metadata to include in the instantiated ERC20 contract on Ethereum
+             */
+            registerToken: AugmentedSubmittable<
+                (
+                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array,
+                    metadata:
+                        | SnowbridgeCoreAssetMetadata
+                        | { name?: any; symbol?: any; decimals?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, SnowbridgeCoreAssetMetadata]
             >;
             /**
              * Sends a message to the Gateway contract to change its operating mode
@@ -2393,7 +2414,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `max_fee`: The maximum fee that may be paid. This should just be auto-populated as:
              *
              * ```nocompile
-             * Self::registrars().get(reg_index).unwrap().fee;
+             * Registrars::<T>::get().get(reg_index).unwrap().fee
              * ```
              *
              * Emits `JudgementRequested` if successful.
@@ -2914,12 +2935,12 @@ declare module "@polkadot/api-base/types/submittable" {
             enter: AugmentedSubmittable<
                 (
                     data:
-                        | PolkadotPrimitivesV7InherentData
+                        | PolkadotPrimitivesV8InherentData
                         | { bitfields?: any; backedCandidates?: any; disputes?: any; parentHeader?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7InherentData]
+                [PolkadotPrimitivesV8InherentData]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -3016,13 +3037,13 @@ declare module "@polkadot/api-base/types/submittable" {
             includePvfCheckStatement: AugmentedSubmittable<
                 (
                     stmt:
-                        | PolkadotPrimitivesV7PvfCheckStatement
+                        | PolkadotPrimitivesV8PvfCheckStatement
                         | { accept?: any; subject?: any; sessionIndex?: any; validatorIndex?: any }
                         | string
                         | Uint8Array,
-                    signature: PolkadotPrimitivesV7ValidatorAppSignature | string | Uint8Array
+                    signature: PolkadotPrimitivesV8ValidatorAppSignature | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7PvfCheckStatement, PolkadotPrimitivesV7ValidatorAppSignature]
+                [PolkadotPrimitivesV8PvfCheckStatement, PolkadotPrimitivesV8ValidatorAppSignature]
             >;
             /**
              * Remove the validation code from the storage iff the reference count is 0.
@@ -3050,7 +3071,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reportDisputeLostUnsigned: AugmentedSubmittable<
                 (
                     disputeProof:
-                        | PolkadotPrimitivesV7SlashingDisputeProof
+                        | PolkadotPrimitivesV8SlashingDisputeProof
                         | { timeSlot?: any; kind?: any; validatorIndex?: any; validatorId?: any }
                         | string
                         | Uint8Array,
@@ -3060,7 +3081,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV7SlashingDisputeProof, SpSessionMembershipProof]
+                [PolkadotPrimitivesV8SlashingDisputeProof, SpSessionMembershipProof]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

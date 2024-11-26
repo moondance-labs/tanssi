@@ -62,13 +62,13 @@ use {
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
-        assigner_on_demand as parachains_assigner_on_demand,
         configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
         inclusion::{self as parachains_inclusion, UmpQueueId},
-        initializer as parachains_initializer, origin as parachains_origin,
-        paras as parachains_paras, paras_inherent as parachains_paras_inherent,
+        initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
+        origin as parachains_origin, paras as parachains_paras,
+        paras_inherent as parachains_paras_inherent,
         runtime_api_impl::{
             v10 as parachains_runtime_api_impl, vstaging as vstaging_parachains_runtime_api_impl,
         },
@@ -120,9 +120,9 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Extrinsic as ExtrinsicT,
-            Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify,
-            Zero,
+            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert,
+            Extrinsic as ExtrinsicT, Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys,
+            SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
@@ -220,16 +220,13 @@ pub enum AggregateMessageOrigin {
     #[codec(index = 0)]
     Ump(UmpQueueId),
 
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue`.
     #[codec(index = 1)]
-    /// The message came from a snowbridge channel.
-    ///
-    /// This is used by Snowbridge inbound queue.
     Snowbridge(ChannelId),
 
+    /// The message came from a snowbridge channel, and it's a custom message that only exists in Tanssi.
+    /// This will be processed by `CustomProcessSnowbridgeMessage`.
     #[codec(index = 2)]
-    /// The message came from a snowbridge channel.
-    ///
-    /// This is used by Snowbridge inbound queue.
     SnowbridgeTanssi(ChannelId),
 }
 
@@ -558,7 +555,7 @@ impl pallet_session::Config for Runtime {
 }
 
 pub struct FullIdentificationOf;
-impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
+impl Convert<AccountId, Option<()>> for FullIdentificationOf {
     fn convert(_: AccountId) -> Option<()> {
         Some(())
     }
@@ -606,7 +603,6 @@ use frame_support::traits::Currency;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use runtime_parachains::configuration::HostConfiguration;
-use sp_runtime::traits::Convert;
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -1272,6 +1268,8 @@ impl pallet_mmr::Config for Runtime {
     type WeightInfo = ();
     type LeafData = pallet_beefy_mmr::Pallet<Runtime>;
     type BlockHashProvider = pallet_mmr::DefaultBlockHashProvider<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -1299,6 +1297,7 @@ impl pallet_beefy_mmr::Config for Runtime {
     type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
     type LeafExtra = H256;
     type BeefyDataProvider = ParaHeadsRootProvider;
+    type WeightInfo = ();
 }
 
 impl paras_sudo_wrapper::Config for Runtime {}
@@ -2366,7 +2365,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(4)]
+    #[api_version(5)]
     impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
         fn beefy_genesis() -> Option<BlockNumber> {
             pallet_beefy::GenesisBlock::<Runtime>::get()
@@ -2392,6 +2391,31 @@ sp_api::impl_runtime_apis! {
             )
         }
 
+        fn submit_report_fork_voting_unsigned_extrinsic(
+            equivocation_proof:
+                beefy_primitives::ForkVotingProof<
+                    <Block as BlockT>::Header,
+                    BeefyId,
+                    sp_runtime::OpaqueValue
+                >,
+            key_owner_proof: beefy_primitives::OpaqueKeyOwnershipProof,
+        ) -> Option<()> {
+            Beefy::submit_unsigned_fork_voting_report(
+                equivocation_proof.try_into()?,
+                key_owner_proof.decode()?,
+            )
+        }
+
+        fn submit_report_future_block_voting_unsigned_extrinsic(
+            equivocation_proof: beefy_primitives::FutureBlockVotingProof<BlockNumber, BeefyId>,
+            key_owner_proof: beefy_primitives::OpaqueKeyOwnershipProof,
+        ) -> Option<()> {
+            Beefy::submit_unsigned_future_block_voting_report(
+                equivocation_proof,
+                key_owner_proof.decode()?,
+            )
+        }
+
         fn generate_key_ownership_proof(
             _set_id: beefy_primitives::ValidatorSetId,
             authority_id: BeefyId,
@@ -2399,6 +2423,17 @@ sp_api::impl_runtime_apis! {
             Historical::prove((beefy_primitives::KEY_TYPE, authority_id))
                 .map(|p| p.encode())
                 .map(beefy_primitives::OpaqueKeyOwnershipProof::new)
+        }
+
+        fn generate_ancestry_proof(
+            prev_block_number: BlockNumber,
+            best_known_block_number: Option<BlockNumber>,
+        ) -> Option<sp_runtime::OpaqueValue> {
+            use beefy_primitives::AncestryHelper;
+
+            BeefyMmrLeaf::generate_proof(prev_block_number, best_known_block_number)
+                .map(|p| p.encode())
+                .map(sp_runtime::OpaqueValue::new)
         }
     }
 

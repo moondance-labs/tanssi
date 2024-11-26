@@ -35,9 +35,7 @@ pub enum OnDemandAssignmentProviderCall {
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*, polkadot_runtime_parachains::assigner_on_demand as parachains_assigner_on_demand,
-    };
+    use {super::*, polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand};
 
     #[test]
     fn encode_place_order_allow_death() {

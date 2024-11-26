@@ -231,3 +231,4 @@ pub trait DeliverMessage {
 
     fn deliver(ticket: Self::Ticket) -> Result<H256, SendError>;
 }
+

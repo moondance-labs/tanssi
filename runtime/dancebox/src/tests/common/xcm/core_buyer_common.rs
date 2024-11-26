@@ -36,9 +36,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     parity_scale_codec::Encode,
-    polkadot_runtime_parachains::{
-        assigner_on_demand as parachains_assigner_on_demand, configuration,
-    },
+    polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},
     staging_xcm::v3::QueryId,
@@ -52,10 +50,10 @@ pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPO
 pub const BUY_EXECUTION_COST: u128 = crate::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND: u128 = 3334777;
+pub const BUY_EXECUTION_REFUND: u128 = 3076488;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 1001467;
+pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 743178;
 
 pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 

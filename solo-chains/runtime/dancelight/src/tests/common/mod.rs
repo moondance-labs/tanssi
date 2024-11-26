@@ -1144,7 +1144,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 }
 
 use {
-    frame_support::StorageHasher, primitives::vstaging::SchedulerParams,
+    cumulus_primitives_core::relay_chain::SchedulerParams, frame_support::StorageHasher,
     tp_traits::ParathreadParams,
 };
 
