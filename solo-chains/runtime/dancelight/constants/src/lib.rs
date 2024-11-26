@@ -78,7 +78,7 @@ pub mod snowbridge {
             /// <https://chainlist.org/chain/17000>
             /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
             pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 17000 };
-            pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
+            pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
     }
 }
 

@@ -60,7 +60,7 @@
                     "name": "FullNode-2000",
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "ws_port": 9949,
                     "p2p_port": 33049,
                     "prometheus_port": 33102
@@ -68,37 +68,37 @@
                 {
                     "name": "Collator-01",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "Collator-02",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "Collator-03",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "Collator-04",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "Collator-05",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "Collator-06",
                     "command": "../target/release/tanssi-node solo-chain",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-l debug"],
                     "prometheus_port": 33102
                 }
             ]
