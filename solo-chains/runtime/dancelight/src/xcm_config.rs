@@ -160,17 +160,6 @@ parameter_types! {
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }
-pub type TrustedTeleporters = (
-    xcm_builder::Case<StarForTick>,
-    xcm_builder::Case<StarForTrick>,
-    xcm_builder::Case<StarForTrack>,
-    xcm_builder::Case<StarForAssetHub>,
-    xcm_builder::Case<StarForContracts>,
-    xcm_builder::Case<StarForEncointer>,
-    xcm_builder::Case<StarForBridgeHub>,
-    xcm_builder::Case<StarForPeople>,
-    xcm_builder::Case<StarForBroker>,
-);
 
 pub struct OnlyParachains;
 impl Contains<Location> for OnlyParachains {
@@ -218,7 +207,7 @@ impl xcm_executor::Config for XcmConfig {
     type AssetTransactor = LocalAssetTransactor;
     type OriginConverter = LocalOriginConverter;
     type IsReserve = NativeAssetReserve;
-    type IsTeleporter = TrustedTeleporters;
+    type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
     type Weigher = XcmWeigher;
