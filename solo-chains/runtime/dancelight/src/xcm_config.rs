@@ -116,6 +116,27 @@ pub type XcmRouter = WithUniqueTopic<
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
 >;
 
+pub struct NativeAssetReserve;
+impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let reserve = if asset.id.0.parents == 0
+            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
+        {
+            Some(Location::here())
+        } else {
+            asset.id.0.chain_part()
+        };
+
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 parameter_types! {
     pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
@@ -196,7 +217,7 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = LocalAssetTransactor;
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = ();
+    type IsReserve = NativeAssetReserve;
     type IsTeleporter = TrustedTeleporters;
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
