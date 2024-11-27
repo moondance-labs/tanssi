@@ -1198,6 +1198,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-hub-common"
+version = "0.10.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "pallet-message-queue",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-core",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+]
+
+[[package]]
 name = "bridge-runtime-common"
 version = "0.18.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
@@ -3288,8 +3305,11 @@ dependencies = [
  "serde_json",
  "smallvec",
  "snowbridge-beacon-primitives",
+ "snowbridge-core",
  "snowbridge-milagro-bls",
  "snowbridge-pallet-ethereum-client",
+ "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-system",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -3327,6 +3347,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tp-author-noting-inherent",
+ "tp-bridge",
  "tp-traits",
  "xcm-runtime-apis",
 ]
@@ -3342,6 +3363,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-weights",
+ "staging-xcm",
  "staging-xcm-builder",
 ]
 
@@ -9376,11 +9398,13 @@ dependencies = [
  "pallet-staking",
  "parity-scale-codec",
  "scale-info",
+ "snowbridge-core",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "tp-bridge",
  "tp-traits",
 ]
 
@@ -15804,6 +15828,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "snowbridge-outbound-queue-merkle-tree"
+version = "0.9.1"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "snowbridge-pallet-ethereum-client"
 version = "0.10.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
@@ -15839,6 +15874,48 @@ dependencies = [
  "snowbridge-core",
  "sp-core",
  "sp-std",
+]
+
+[[package]]
+name = "snowbridge-pallet-outbound-queue"
+version = "0.10.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
+dependencies = [
+ "bridge-hub-common",
+ "ethabi-decode",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "snowbridge-core",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "snowbridge-pallet-system"
+version = "0.10.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#08a6dc954f62440e6d1d3bb430d18b7a20c03a1c"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-core",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
@@ -18352,6 +18429,29 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "test-relay-sproof-builder",
+]
+
+[[package]]
+name = "tp-bridge"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
+ "dp-container-chain-genesis-data",
+ "ethabi-decode",
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "macro_rules_attribute",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-pallet-outbound-queue",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
