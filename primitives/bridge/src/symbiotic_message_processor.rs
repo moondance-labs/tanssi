@@ -29,6 +29,7 @@ use sp_std::vec::Vec;
 /// indeed send a message intended for this processor.
 pub const MAGIC_BYTES: [u8; 4] = [112, 21, 0, 56];
 
+/// Payload is the whole data we expect to receive from the relayer
 #[derive(Encode, Decode)]
 pub struct Payload<T>
 where
@@ -38,6 +39,7 @@ where
     pub message: Message<T>,
 }
 
+/// Actual message inside the payload
 #[derive(Encode, Decode)]
 pub enum Message<T>
 where
@@ -46,6 +48,7 @@ where
     V1(InboundCommand<T>),
 }
 
+/// Command to be executed by this message processor
 #[derive(Encode, Decode)]
 pub enum InboundCommand<T>
 where
