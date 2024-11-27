@@ -237,7 +237,15 @@ describeSuite({
             title: "Wait 2 sessions",
             timeout: 300000,
             test: async function () {
-                // This needs to wait until registrar.paraLifecycle is "parathread"
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+            },
+        });
+
+        it({
+            id: "T12c",
+            title: "Wait 2 sessions more",
+            timeout: 300000,
+            test: async function () {
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
             },
         });
