@@ -224,6 +224,14 @@ pub mod pallet {
                         log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
                     }
                 }
+            } else {
+                // Unreachable, this should never happen as we are sending
+                // None as the second param in Self::generate_era_rewards_utils.
+                log::error!(
+                    target: "ext_validators_rewards",
+                    "Outbound message not sent for era {:?}!",
+                    era_index
+                );
             }
         }
     }
