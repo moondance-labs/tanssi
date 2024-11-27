@@ -73,8 +73,10 @@ runtime-benchmarks = [
 	"pallet-timestamp/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
+	"snowbridge-core/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
 
