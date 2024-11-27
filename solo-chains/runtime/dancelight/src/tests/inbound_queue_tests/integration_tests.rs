@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_bridge::symbiotic_message_processor::{Message as SymbioticMessage, Command, Payload, MAGIC_BYTES};
 use crate::tests::common::ExtBuilder;
 use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
 use alloy_sol_types::SolEvent;
@@ -30,6 +29,9 @@ use snowbridge_core::{
 use snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted;
 use sp_core::H256;
 use sp_runtime::DispatchError;
+use tp_bridge::symbiotic_message_processor::{
+    InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+};
 
 const MOCK_CHANNEL_ID: [u8; 32] = [0; 32];
 
@@ -94,7 +96,7 @@ fn test_inbound_queue_message_passing() {
 
         let payload = Payload {
             magic_bytes: MAGIC_BYTES,
-            message: SymbioticMessage::V1(Command::<Runtime>::ReceiveValidators {
+            message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone()
             }),
         };

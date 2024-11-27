@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_bridge::symbiotic_message_processor::{
-    Command, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
-};
 use crate::tests::common::ExtBuilder;
 use crate::{ExternalValidators, Runtime};
 use frame_support::pallet_prelude::*;
@@ -26,6 +23,9 @@ use snowbridge_router_primitives::inbound::envelope::Envelope;
 use snowbridge_router_primitives::inbound::MessageProcessor;
 use sp_core::{H160, H256};
 use sp_runtime::DispatchError;
+use tp_bridge::symbiotic_message_processor::{
+    InboundCommand, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
+};
 
 #[test]
 fn test_symbiotic_message_processor() {
@@ -55,12 +55,14 @@ fn test_symbiotic_message_processor() {
                 default_channel.clone(),
                 envelope_with_invalid_payload
             ),
-            Err(DispatchError::Other("unable to parse the payload"))
+            Err(DispatchError::Other("unable to parse the envelope payload"))
         );
 
         let payload_with_incorrect_magic_bytes = Payload {
             magic_bytes: [1, 2, 3, 4],
-            message: Message::V1(Command::<Runtime>::ReceiveValidators { validators: vec![] }),
+            message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
+                validators: vec![],
+            }),
         };
         let envelope = Envelope {
             channel_id: H256::default().into(),
@@ -88,7 +90,7 @@ fn test_symbiotic_message_processor() {
 
         let payload_with_correct_magic_bytes = Payload {
             magic_bytes: MAGIC_BYTES,
-            message: Message::V1(Command::<Runtime>::ReceiveValidators {
+            message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone(),
             }),
         };

@@ -43,11 +43,11 @@ pub enum Message<T>
 where
     T: pallet_external_validators::Config,
 {
-    V1(Command<T>),
+    V1(InboundCommand<T>),
 }
 
 #[derive(Encode, Decode)]
-pub enum Command<T>
+pub enum InboundCommand<T>
 where
     T: pallet_external_validators::Config,
 {
@@ -76,11 +76,11 @@ where
         let message = if let Ok(payload) = decode_result {
             payload.message
         } else {
-            return Err(DispatchError::Other("unable to parse the payload"));
+            return Err(DispatchError::Other("unable to parse the envelope payload"));
         };
 
         match message {
-            Message::V1(Command::ReceiveValidators { validators }) => {
+            Message::V1(InboundCommand::ReceiveValidators { validators }) => {
                 pallet_external_validators::Pallet::<T>::set_external_validators(validators)?;
                 Ok(())
             }
