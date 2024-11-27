@@ -783,6 +783,37 @@ impl<
             let start_collation = Some(para_id) == current;
             self.spawn(para_id, start_collation).await;
         }
+
+        if current.is_none() {
+
+            /*
+            use polkadot_node_primitives::CollationGenerationConfig;
+            use polkadot_node_subsystem::messages::CollationGenerationMessage;
+
+            let relay_chain_interface = self.params.relay_chain_interface.clone();
+            let mut overseer_handle = relay_chain_interface
+                .overseer_handle()
+                .map_err(|e| sc_service::Error::Application(Box::new(e))).unwrap();
+            let config = CollationGenerationConfig {
+
+            };
+
+            overseer_handle
+                .send_msg(CollationGenerationMessage::Reinitialize(config), "StartCollator")
+                .await;
+             */
+            use polkadot_node_subsystem::messages::CollatorProtocolMessage;
+
+            let relay_chain_interface = self.params.relay_chain_interface.clone();
+            let mut overseer_handle = relay_chain_interface
+                .overseer_handle()
+                .map_err(|e| sc_service::Error::Application(Box::new(e))).unwrap();
+
+            // CollateOn para id 0 because message does not allow to set it to None
+            overseer_handle
+                .send_msg(CollatorProtocolMessage::CollateOn(None), "StartCollator")
+                .await;
+        }
     }
 
     fn db_folder_cleanup(&self, chains_to_keep: &HashSet<ParaId>) {

@@ -71,6 +71,8 @@ sp-runtime = { workspace = true, features = [ "std" ] }
 sp-timestamp = { workspace = true, features = [ "std" ] }
 
 # Polkadot
+polkadot-node-primitives = { workspace = true }
+polkadot-node-subsystem = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Cumulus
