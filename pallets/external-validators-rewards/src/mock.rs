@@ -142,7 +142,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type TimestampProvider = TimestampProvider;
     type Hashing = Keccak256;
     type ValidateMessage = ();
-    type OutboundQueue = MockOkOutboundQueue; 
+    type OutboundQueue = MockOkOutboundQueue;
 }
 
 // Pallet to provide some mock data, used to test
