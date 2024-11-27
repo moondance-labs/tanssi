@@ -231,14 +231,13 @@ async fn start_node_impl(
         node_builder.prometheus_registry.clone(),
     ));
 
-    let graph = Arc::new(
-        sc_transaction_pool::BasicPool::new_full(
-            Default::default(),
-            false.into(),
-            node_builder.prometheus_registry.clone().as_ref(),
-            node_builder.task_manager.spawn_essential_handle(),
-            node_builder.client.clone(),
-        ));
+    let graph = Arc::new(sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
+        false.into(),
+        node_builder.prometheus_registry.clone().as_ref(),
+        node_builder.task_manager.spawn_essential_handle(),
+        node_builder.client.clone(),
+    ));
 
     let rpc_builder = {
         let client = node_builder.client.clone();
@@ -492,14 +491,13 @@ pub async fn start_dev_node(
         node_builder.prometheus_registry.clone(),
     ));
 
-    let graph = Arc::new(
-        sc_transaction_pool::BasicPool::new_full(
-            Default::default(),
-            false.into(),
-            node_builder.prometheus_registry.clone().as_ref(),
-            node_builder.task_manager.spawn_essential_handle(),
-            node_builder.client.clone(),
-        ));
+    let graph = Arc::new(sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
+        false.into(),
+        node_builder.prometheus_registry.clone().as_ref(),
+        node_builder.task_manager.spawn_essential_handle(),
+        node_builder.client.clone(),
+    ));
 
     let rpc_builder = {
         let client = node_builder.client.clone();
