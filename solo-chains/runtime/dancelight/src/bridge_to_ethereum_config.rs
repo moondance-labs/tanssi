@@ -229,8 +229,10 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(test)]
     type Verifier = test_helpers::MockVerifier;
     type Token = Balances;
+    // TODO: Revisit this when we enable xcmp messages
     type XcmSender = DoNothingRouter;
     type GatewayAddress = EthereumGatewayAddress;
+    // TODO: Revisit this when we enable xcmp messages
     type MessageConverter = DoNothingConvertMessage;
     type ChannelLookup = EthereumSystem;
     type PricingParameters = EthereumSystem;
@@ -239,6 +241,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
