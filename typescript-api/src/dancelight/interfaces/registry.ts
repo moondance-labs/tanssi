@@ -328,9 +328,13 @@ import type {
     SnowbridgeAmclBls381Big,
     SnowbridgeAmclBls381Ecp,
     SnowbridgeAmclBls381Fp,
+    SnowbridgeBeaconPrimitivesAncestryProof,
     SnowbridgeBeaconPrimitivesBeaconHeader,
     SnowbridgeBeaconPrimitivesBlsBlsError,
     SnowbridgeBeaconPrimitivesCompactBeaconState,
+    SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader,
+    SnowbridgeBeaconPrimitivesExecutionPayloadHeader,
+    SnowbridgeBeaconPrimitivesExecutionProof,
     SnowbridgeBeaconPrimitivesFork,
     SnowbridgeBeaconPrimitivesForkVersions,
     SnowbridgeBeaconPrimitivesPublicKey,
@@ -341,9 +345,14 @@ import type {
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
     SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate,
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
+    SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader,
     SnowbridgeCoreAssetMetadata,
     SnowbridgeCoreChannel,
     SnowbridgeCoreChannelId,
+    SnowbridgeCoreInboundLog,
+    SnowbridgeCoreInboundMessage,
+    SnowbridgeCoreInboundProof,
+    SnowbridgeCoreInboundVerificationError,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCoreOutboundSendError,
     SnowbridgeCoreOutboundV1Initializer,
@@ -354,6 +363,10 @@ import type {
     SnowbridgePalletEthereumClientCall,
     SnowbridgePalletEthereumClientError,
     SnowbridgePalletEthereumClientEvent,
+    SnowbridgePalletInboundQueueCall,
+    SnowbridgePalletInboundQueueError,
+    SnowbridgePalletInboundQueueEvent,
+    SnowbridgePalletInboundQueueSendError,
     SnowbridgePalletOutboundQueueCall,
     SnowbridgePalletOutboundQueueCommittedMessage,
     SnowbridgePalletOutboundQueueError,
@@ -361,6 +374,7 @@ import type {
     SnowbridgePalletSystemCall,
     SnowbridgePalletSystemError,
     SnowbridgePalletSystemEvent,
+    SnowbridgeRouterPrimitivesInboundConvertMessageError,
     SpArithmeticArithmeticError,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAllowedSlots,
@@ -803,9 +817,13 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeAmclBls381Big: SnowbridgeAmclBls381Big;
         SnowbridgeAmclBls381Ecp: SnowbridgeAmclBls381Ecp;
         SnowbridgeAmclBls381Fp: SnowbridgeAmclBls381Fp;
+        SnowbridgeBeaconPrimitivesAncestryProof: SnowbridgeBeaconPrimitivesAncestryProof;
         SnowbridgeBeaconPrimitivesBeaconHeader: SnowbridgeBeaconPrimitivesBeaconHeader;
         SnowbridgeBeaconPrimitivesBlsBlsError: SnowbridgeBeaconPrimitivesBlsBlsError;
         SnowbridgeBeaconPrimitivesCompactBeaconState: SnowbridgeBeaconPrimitivesCompactBeaconState;
+        SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader: SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader;
+        SnowbridgeBeaconPrimitivesExecutionPayloadHeader: SnowbridgeBeaconPrimitivesExecutionPayloadHeader;
+        SnowbridgeBeaconPrimitivesExecutionProof: SnowbridgeBeaconPrimitivesExecutionProof;
         SnowbridgeBeaconPrimitivesFork: SnowbridgeBeaconPrimitivesFork;
         SnowbridgeBeaconPrimitivesForkVersions: SnowbridgeBeaconPrimitivesForkVersions;
         SnowbridgeBeaconPrimitivesPublicKey: SnowbridgeBeaconPrimitivesPublicKey;
@@ -816,9 +834,14 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate: SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate;
         SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate: SnowbridgeBeaconPrimitivesUpdatesNextSyncCommitteeUpdate;
         SnowbridgeBeaconPrimitivesUpdatesUpdate: SnowbridgeBeaconPrimitivesUpdatesUpdate;
+        SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader: SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader;
         SnowbridgeCoreAssetMetadata: SnowbridgeCoreAssetMetadata;
         SnowbridgeCoreChannel: SnowbridgeCoreChannel;
         SnowbridgeCoreChannelId: SnowbridgeCoreChannelId;
+        SnowbridgeCoreInboundLog: SnowbridgeCoreInboundLog;
+        SnowbridgeCoreInboundMessage: SnowbridgeCoreInboundMessage;
+        SnowbridgeCoreInboundProof: SnowbridgeCoreInboundProof;
+        SnowbridgeCoreInboundVerificationError: SnowbridgeCoreInboundVerificationError;
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
         SnowbridgeCoreOutboundSendError: SnowbridgeCoreOutboundSendError;
         SnowbridgeCoreOutboundV1Initializer: SnowbridgeCoreOutboundV1Initializer;
@@ -829,6 +852,10 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
         SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
         SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
+        SnowbridgePalletInboundQueueCall: SnowbridgePalletInboundQueueCall;
+        SnowbridgePalletInboundQueueError: SnowbridgePalletInboundQueueError;
+        SnowbridgePalletInboundQueueEvent: SnowbridgePalletInboundQueueEvent;
+        SnowbridgePalletInboundQueueSendError: SnowbridgePalletInboundQueueSendError;
         SnowbridgePalletOutboundQueueCall: SnowbridgePalletOutboundQueueCall;
         SnowbridgePalletOutboundQueueCommittedMessage: SnowbridgePalletOutboundQueueCommittedMessage;
         SnowbridgePalletOutboundQueueError: SnowbridgePalletOutboundQueueError;
@@ -836,6 +863,7 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletSystemCall: SnowbridgePalletSystemCall;
         SnowbridgePalletSystemError: SnowbridgePalletSystemError;
         SnowbridgePalletSystemEvent: SnowbridgePalletSystemEvent;
+        SnowbridgeRouterPrimitivesInboundConvertMessageError: SnowbridgeRouterPrimitivesInboundConvertMessageError;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpAuthorityDiscoveryAppPublic: SpAuthorityDiscoveryAppPublic;
         SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
