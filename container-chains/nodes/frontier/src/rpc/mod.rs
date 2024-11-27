@@ -542,6 +542,14 @@ const _: () = {
                 prometheus_registry.clone(),
             ));
 
+            let graph = Arc::new(sc_transaction_pool::BasicPool::new_full(
+                Default::default(),
+                false.into(),
+                prometheus_registry.clone().as_ref(),
+                task_manager.spawn_essential_handle(),
+                client.clone(),
+            ));
+
             Ok(Box::new(move |subscription_task_executor| {
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
@@ -551,7 +559,7 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: transaction_pool.pool().clone(),
+                    graph: graph.pool().clone(),
                     pool: transaction_pool.clone(),
                     max_past_logs,
                     fee_history_limit,
