@@ -55,6 +55,7 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn cancel_deferred_slash(s: u32, ) -> Weight;
 	fn force_inject_slash() -> Weight;
+	fn root_test_send_msg_to_eth() -> Weight;
 }
 
 /// Weights for pallet_external_validator_slashes using the Substrate node and recommended hardware.
@@ -91,6 +92,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+
+	fn root_test_send_msg_to_eth() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `322`
+		//  Estimated: `3601`
+		// Minimum execution time: 994_654_000 picoseconds.
+		Weight::from_parts(1_015_195_000, 3601)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -125,5 +136,15 @@ impl WeightInfo for () {
 		Weight::from_parts(7_402_000, 3616)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+
+	fn root_test_send_msg_to_eth() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `322`
+		//  Estimated: `3601`
+		// Minimum execution time: 994_654_000 picoseconds.
+		Weight::from_parts(1_015_195_000, 3601)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
 	}
 }
