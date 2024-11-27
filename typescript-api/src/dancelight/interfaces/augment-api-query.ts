@@ -685,6 +685,24 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        ethereumInboundQueue: {
+            /** The current nonce for each channel */
+            nonce: AugmentedQuery<
+                ApiType,
+                (arg: SnowbridgeCoreChannelId | string | Uint8Array) => Observable<u64>,
+                [SnowbridgeCoreChannelId]
+            > &
+                QueryableStorageEntry<ApiType, [SnowbridgeCoreChannelId]>;
+            /** The current operating mode of the pallet. */
+            operatingMode: AugmentedQuery<
+                ApiType,
+                () => Observable<SnowbridgeCoreOperatingModeBasicOperatingMode>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a merkle root during
