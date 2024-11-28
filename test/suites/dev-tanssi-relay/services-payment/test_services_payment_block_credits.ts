@@ -89,9 +89,10 @@ describeSuite({
                     credits2
                 );
 
-                expect(credits1 - credits2, "container chain 2000 created a block without burning any credits").to.be.eq(
-                    containerBlockNum2 - containerBlockNum1
-                );
+                expect(
+                    credits1 - credits2,
+                    "container chain 2000 created a block without burning any credits"
+                ).to.be.eq(containerBlockNum2 - containerBlockNum1);
             },
         });
 
