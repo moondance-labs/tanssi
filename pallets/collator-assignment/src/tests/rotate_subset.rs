@@ -14,21 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::{assignment::Assignment, tests::Test};
 use sp_runtime::Perbill;
 use tp_traits::FullRotationMode;
-use {
-    crate::{
-        assignment::{Assignment, AssignmentError},
-        tests::Test,
-    },
-    rand::{seq::SliceRandom, SeedableRng},
-    rand_chacha::ChaCha20Rng,
-    sp_std::collections::btree_map::BTreeMap,
-};
-
-fn no_shuffle() -> Option<fn(&mut Vec<u64>)> {
-    None
-}
 
 #[test]
 fn rotate_subset_keep_50_percent() {
@@ -142,5 +130,27 @@ fn rotate_subset_empty_collators() {
 
     // Calling this with None does not panic
     Assignment::<Test>::rotate_subset(None, full_rotation_mode, max_collators, Some(&mut shuffle));
+    assert_eq!(shuffle_count, 0);
+}
+
+#[test]
+fn rotate_subset_keep_more_than_max() {
+    // Trying to keep more collators than the max keeps all of them and does not panic
+    let mut collators = vec![1, 2, 3, 4, 5];
+    let mut shuffle_count = 0;
+
+    let mut shuffle = |_collators: &mut Vec<u64>| {
+        shuffle_count += 1;
+    };
+
+    let full_rotation_mode = FullRotationMode::KeepCollators { keep: 200 };
+    let max_collators = 5;
+    Assignment::<Test>::rotate_subset(
+        Some(&mut collators),
+        full_rotation_mode.clone(),
+        max_collators,
+        Some(&mut shuffle),
+    );
+    assert_eq!(collators.len(), 5);
     assert_eq!(shuffle_count, 0);
 }

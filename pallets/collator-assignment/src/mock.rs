@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use dp_collator_assignment::AssignedCollators;
+use std::ops::Range;
 use tp_traits::FullRotationModes;
 use {
     crate::{
@@ -467,4 +469,89 @@ pub fn silence_logs<F: FnOnce() -> R, R>(f: F) -> R {
     let no_logging_subscriber = FmtSubscriber::builder().finish().with(no_logging_layer);
 
     tracing::subscriber::with_default(no_logging_subscriber, f)
+}
+
+pub fn collect_assignment_history<F>(
+    end_block: u64,
+    mut update_fn: F,
+) -> BTreeMap<u32, AssignedCollators<u64>>
+where
+    F: FnMut(u64),
+{
+    let mut assignment_history = BTreeMap::new();
+
+    let start_block = System::block_number();
+
+    for n in start_block..end_block {
+        let block_number = System::block_number();
+
+        update_fn(block_number);
+
+        let session_len = 5;
+        let session_index = (block_number / session_len) as u32;
+        assignment_history.insert(session_index, CollatorContainerChain::<Test>::get());
+
+        run_to_block(n);
+    }
+
+    assignment_history
+}
+
+/// Given an assignment history (map of session => AssignedCollators), computes the maximum number
+/// of collators that rotate from one session to the next one.
+///
+/// Examples:
+/// * If collators never rotate, this will return 0
+/// * If all collators always rotate, this will return the number of collators
+///
+/// Because of randomness, if is possible that the returned value if lower than expected, e.g. we
+/// expect all collators to rotate but not all of them do.
+pub fn compute_max_rotation<F>(
+    assignment_history: &BTreeMap<u32, AssignedCollators<u64>>,
+    extract_collators_fn: F,
+) -> usize
+where
+    F: Fn(&AssignedCollators<u64>) -> BTreeMap<u32, BTreeSet<u64>>,
+{
+    let mut max_rotation = 0;
+    let mut prev_assignments: BTreeMap<u32, BTreeSet<u64>> = BTreeMap::new();
+
+    if let Some(first_assignment) = assignment_history.values().next() {
+        prev_assignments = extract_collators_fn(first_assignment);
+    }
+
+    for assignment in assignment_history.values().skip(1) {
+        let current_assignments = extract_collators_fn(assignment);
+
+        for (chain_id, current_collators) in &current_assignments {
+            let empty_btreeset = BTreeSet::new();
+            let prev_collators = prev_assignments.get(chain_id).unwrap_or(&empty_btreeset);
+            let new_collators = current_collators.difference(prev_collators).count();
+            max_rotation = max_rotation.max(new_collators);
+        }
+
+        prev_assignments = current_assignments;
+    }
+
+    max_rotation
+}
+
+/// Get the collator assignment for all parachains or all parathreads.
+/// Use range 2000..3000 for parachains and 3000..4000 for parathreads.
+pub fn extract_assignments_in_range(
+    assignment: &AssignedCollators<u64>,
+    range: Range<u32>,
+) -> BTreeMap<u32, BTreeSet<u64>> {
+    assignment
+        .container_chains
+        .iter()
+        .filter_map(|(chain_id, collators)| {
+            let id = u32::from(*chain_id);
+            if range.contains(&id) {
+                Some((id, collators.iter().cloned().collect()))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
