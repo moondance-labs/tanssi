@@ -6,7 +6,7 @@ import { jumpToSession, jumpSessions } from "util/block";
 import { paraIdTank } from "util/payment";
 
 describeSuite({
-    id: "DTR1701",
+    id: "DTR0902",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -87,6 +87,10 @@ describeSuite({
                 );
                 expect(credits1, "container chain 2000 created a block without burning any credits").toBeGreaterThan(
                     credits2
+                );
+
+                expect(credits1 - credits2, "container chain 2000 created a block without burning any credits").to.be.eq(
+                    containerBlockNum2 - containerBlockNum1
                 );
             },
         });
