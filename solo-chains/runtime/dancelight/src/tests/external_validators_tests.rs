@@ -18,8 +18,8 @@
 
 use {
     crate::{
-        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
-        MaxExternalValidators, RuntimeEvent, SessionKeys, SessionsPerEra, System,
+        tests::common::*, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators,
+        RuntimeEvent, SessionKeys, SessionsPerEra, System,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
@@ -28,7 +28,6 @@ use {
     sp_core::H256,
     sp_io::hashing::twox_64,
     std::{collections::HashMap, ops::RangeInclusive},
-    tp_traits::OnEraEnd,
 };
 
 fn assert_validators_do_not_change(
@@ -813,12 +812,30 @@ fn external_validators_rewards_merkle_proofs() {
             assert!(is_alice_merkle_proof_valid);
             assert!(is_bob_merkle_proof_valid);
 
+            // Let's check invalid proofs now.
             let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
                 AccountId::from(CHARLIE),
                 1u32,
             );
 
+            let alice_invalid_merkle_proof =
+                ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                    AccountId::from(ALICE),
+                    0u32,
+                );
+
+            let bob_invalid_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(BOB),
+                2u32,
+            );
+
             // Charlie is not present in the validator set, so no merkle proof for him.
             assert!(charlie_merkle_proof.is_none());
+
+            // Alice wasn't rewarded for era 0.
+            assert!(alice_invalid_merkle_proof.is_none());
+
+            // Proof for a future era should also be invalid.
+            assert!(bob_invalid_merkle_proof.is_none());
         });
 }
