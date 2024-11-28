@@ -1484,10 +1484,10 @@ fn rotate_subset_uses_correct_config() {
         });
         assert_eq!(max_parachain_rotate, 0);
 
-        // Check: at least one collator always stays assigned in parathreads
+        // Check: at most one collator will rotate out of each parathread, never all 2
         let max_parathread_rotate = compute_max_rotation(&assignment_history, |assignment| {
             extract_assignments_in_range(assignment, 3000..4000)
         });
-        assert_eq!(max_parathread_rotate, 0);
+        assert_eq!(max_parathread_rotate, 1);
     });
 }
