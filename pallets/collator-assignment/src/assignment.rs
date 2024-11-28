@@ -90,10 +90,8 @@ where
             &collators_set,
         );
 
-        // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
-        // TODO: verify interaction of prioritize_invulnerables and rotate_subset
-        Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
-
+        // Remove some previously assigned collators to allow new collators to take their place.
+        // Based on full_rotation_mode. In regular sessions this is FullRotationMode::KeepAll, a no-op.
         for chain in chains.iter() {
             let mode = if chain.para_id == orchestrator_chain.para_id {
                 full_rotation_mode.orchestrator.clone()
@@ -106,6 +104,10 @@ where
             let collators = old_assigned.get_mut(&chain.para_id);
             Self::rotate_subset(collators, mode, chain.max_collators, shuffle.as_mut());
         }
+
+        // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
+        // TODO: verify interaction of prioritize_invulnerables and rotate_subset
+        Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
 
         let new_assigned_chains =
             Self::assign_full(collators, chains_with_collators, old_assigned, shuffle)?;
@@ -144,13 +146,10 @@ where
     ) where
         TShuffle: FnMut(&mut Vec<T::AccountId>),
     {
-        if collators.is_none() {
-            return;
-        }
-        let collators = collators.unwrap();
-        if collators.is_empty() {
-            return;
-        }
+        let collators = match collators {
+            Some(x) => x,
+            None => return,
+        };
 
         let num_to_keep = match full_rotation_mode {
             FullRotationMode::RotateAll => 0,
@@ -162,6 +161,7 @@ where
         };
 
         if num_to_keep == 0 {
+            // Remove all
             collators.clear();
             return;
         }

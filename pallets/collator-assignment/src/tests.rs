@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
+use sp_runtime::Perbill;
+use std::collections::BTreeSet;
+use tp_traits::{FullRotationMode, FullRotationModes};
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
@@ -22,6 +27,7 @@ use {
 
 mod assign_full;
 mod prioritize_invulnerables;
+mod rotate_subset;
 mod select_chains;
 mod with_core_config;
 
@@ -1426,5 +1432,135 @@ fn assign_collators_truncates_before_shuffling() {
             assigned_collators(),
             BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001), (5, 1000),])
         );
+    });
+}
+
+#[test]
+fn rotate_subset_uses_correct_config() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+            // Add randomness to test shuffle
+            m.random_seed = [1; 32];
+            // Rotate every session
+            m.full_rotation_period = Some(1);
+            m.full_rotation_mode = FullRotationModes {
+                orchestrator: FullRotationMode::RotateAll,
+                parachain: FullRotationMode::KeepCollators { keep: 2 },
+                parathread: FullRotationMode::KeepPerbill {
+                    keep: Perbill::from_percent(50),
+                },
+            };
+
+            // 10 collators but we only need 9, so 1 collator will not be assigned
+            m.collators = (1..50).collect();
+            m.container_chains = (2001..2010).collect();
+            m.parathreads = (3001..3010).collect();
+        });
+        assert_eq!(assigned_collators(), initial_collators(),);
+        run_to_block(11);
+
+        let mut assignment_history = BTreeMap::new();
+
+        for n in 11..50 {
+            MockData::mutate(|m| {
+                // Change randomness on every block
+                m.random_seed = [n as u8; 32];
+            });
+
+            let block_number = System::block_number();
+            let session_len = 5;
+            let session_index = (block_number / session_len) as u32;
+            assignment_history.insert(session_index, CollatorContainerChain::<Test>::get());
+
+            run_to_block(n);
+        }
+
+        // Check: there is at least one session in which all orchestrator collators rotate
+        let mut max_orchestrator_rotate = 0;
+        let mut prev_orchestrator_assignment: BTreeSet<u64> = assignment_history
+            .values()
+            .next()
+            .unwrap()
+            .orchestrator_chain
+            .iter()
+            .cloned()
+            .collect();
+
+        for assignment in assignment_history.values().skip(1) {
+            let new_orchestrator_assignment: BTreeSet<u64> =
+                assignment.orchestrator_chain.iter().cloned().collect();
+
+            let new_collators_count = new_orchestrator_assignment
+                .difference(&prev_orchestrator_assignment)
+                .count();
+            max_orchestrator_rotate = std::cmp::max(max_orchestrator_rotate, new_collators_count);
+            prev_orchestrator_assignment = new_orchestrator_assignment;
+        }
+
+        // If we are lucky, at some point all 5 orchestrator collators will have rotated
+        assert_eq!(max_orchestrator_rotate, 5);
+
+        // Check: parachain collators never rotate
+        let initial_para_assignment: BTreeMap<_, _> = assignment_history
+            .values()
+            .next()
+            .unwrap()
+            .container_chains
+            .iter()
+            .filter(|x| (2000u32..3000).contains(&u32::from(*x.0)))
+            .collect();
+
+        for assignment in assignment_history.values().skip(1) {
+            let para_assignment: BTreeMap<_, _> = assignment
+                .container_chains
+                .iter()
+                .filter(|x| (2000u32..3000).contains(&u32::from(*x.0)))
+                .collect();
+            assert_eq!(para_assignment, initial_para_assignment);
+        }
+
+        // Check: 1 collator always stays assigned in parathreads
+        let mut prev_para_assignment: BTreeMap<_, _> = assignment_history
+            .values()
+            .next()
+            .unwrap()
+            .container_chains
+            .iter()
+            .filter(|x| (3000u32..4000).contains(&u32::from(*x.0)))
+            .collect();
+
+        for assignment in assignment_history.values().skip(1) {
+            let para_assignment: BTreeMap<_, _> = assignment
+                .container_chains
+                .iter()
+                .filter(|x| (3000u32..4000).contains(&u32::from(*x.0)))
+                .collect();
+
+            // Number of parathreads matches
+            assert_eq!(para_assignment.len(), prev_para_assignment.len());
+            // For each parathread, there is at least 1 collator from the previous assignment
+            for (para_id, collators) in para_assignment.iter() {
+                let x1: BTreeSet<_> = prev_para_assignment
+                    .get(para_id)
+                    .unwrap()
+                    .iter()
+                    .copied()
+                    .collect();
+                let x2: BTreeSet<_> = collators.iter().copied().collect();
+
+                let new_collators_count = x2.difference(&x1).count();
+
+                // Cannot check == 1 because of randomness: a collator can rotate into the same chain it was just removed from
+                assert!(new_collators_count <= 1);
+            }
+
+            prev_para_assignment = para_assignment;
+        }
     });
 }

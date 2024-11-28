@@ -402,53 +402,43 @@ pub mod pallet {
 
             // We assign new collators
             // we use the config scheduled at the target_session_index
-            let new_assigned =
-                if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
-                    log::debug!(
-                        "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
-                        current_session_index.encode(),
-                        random_seed
-                    );
+            let full_rotation =
+                T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index);
+            if full_rotation {
+                log::debug!(
+                    "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
+                    current_session_index.encode(),
+                    random_seed
+                );
+            } else {
+                log::debug!(
+                    "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
+                    current_session_index.encode(),
+                    random_seed
+                );
+            }
 
-                    Self::deposit_event(Event::NewPendingAssignment {
-                        random_seed,
-                        full_rotation: true,
-                        target_session: target_session_index,
-                    });
+            Self::deposit_event(Event::NewPendingAssignment {
+                random_seed,
+                full_rotation,
+                target_session: target_session_index,
+            });
 
-                    let full_rotation_mode =
-                        T::HostConfiguration::full_rotation_mode(target_session_index);
+            let full_rotation_mode = if full_rotation {
+                T::HostConfiguration::full_rotation_mode(target_session_index)
+            } else {
+                // On sessions where there is no rotation, we try to keep all collators assigned to the same chains
+                FullRotationModes::keep_all()
+            };
 
-                    Assignment::<T>::assign_collators_always_keep_old(
-                        collators,
-                        orchestrator_chain,
-                        chains,
-                        old_assigned.clone(),
-                        shuffle_collators,
-                        full_rotation_mode,
-                    )
-                } else {
-                    log::debug!(
-                        "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
-                        current_session_index.encode(),
-                        random_seed
-                    );
-
-                    Self::deposit_event(Event::NewPendingAssignment {
-                        random_seed,
-                        full_rotation: false,
-                        target_session: target_session_index,
-                    });
-
-                    Assignment::<T>::assign_collators_always_keep_old(
-                        collators,
-                        orchestrator_chain,
-                        chains,
-                        old_assigned.clone(),
-                        shuffle_collators,
-                        FullRotationModes::keep_all(),
-                    )
-                };
+            let new_assigned = Assignment::<T>::assign_collators_always_keep_old(
+                collators,
+                orchestrator_chain,
+                chains,
+                old_assigned.clone(),
+                shuffle_collators,
+                full_rotation_mode,
+            );
 
             let mut new_assigned = match new_assigned {
                 Ok(x) => x,

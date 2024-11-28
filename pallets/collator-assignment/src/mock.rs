@@ -151,6 +151,7 @@ pub struct Mocks {
     pub chains_that_are_tipping: Vec<ParaId>,
     // None means 5
     pub full_rotation_period: Option<u32>,
+    pub full_rotation_mode: FullRotationModes,
     pub apply_tip: bool,
     pub assignment_hook_errors: bool,
 }
@@ -171,6 +172,7 @@ impl Default for Mocks {
             random_seed: Default::default(),
             chains_that_are_tipping: vec![1003.into(), 1004.into()],
             full_rotation_period: Default::default(),
+            full_rotation_mode: Default::default(),
             apply_tip: Default::default(),
             assignment_hook_errors: Default::default(),
         }
@@ -217,7 +219,7 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
     }
 
     fn full_rotation_mode(_session_index: u32) -> FullRotationModes {
-        Default::default()
+        MockData::mock().full_rotation_mode
     }
 
     #[cfg(feature = "runtime-benchmarks")]
