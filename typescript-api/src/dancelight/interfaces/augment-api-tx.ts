@@ -64,6 +64,7 @@ import type {
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
     SnowbridgeCoreAssetMetadata,
     SnowbridgeCoreChannelId,
+    SnowbridgeCoreInboundMessage,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCoreOutboundV1Initializer,
     SnowbridgeCoreOutboundV1OperatingMode,
@@ -1290,6 +1291,24 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [SnowbridgeBeaconPrimitivesUpdatesUpdate]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        ethereumInboundQueue: {
+            /** Halt or resume all pallet operations. May only be called by root. */
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode: SnowbridgeCoreOperatingModeBasicOperatingMode | "Normal" | "Halted" | number | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOperatingModeBasicOperatingMode]
+            >;
+            /** Submit an inbound message originating from the Gateway contract on Ethereum */
+            submit: AugmentedSubmittable<
+                (
+                    message: SnowbridgeCoreInboundMessage | { eventLog?: any; proof?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreInboundMessage]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

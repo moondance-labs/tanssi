@@ -242,6 +242,22 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        ethereumInboundQueue: {
+            /** A message was received from Ethereum */
+            MessageReceived: AugmentedEvent<
+                ApiType,
+                [channelId: SnowbridgeCoreChannelId, nonce: u64, messageId: U8aFixed, feeBurned: u128],
+                { channelId: SnowbridgeCoreChannelId; nonce: u64; messageId: U8aFixed; feeBurned: u128 }
+            >;
+            /** Set OperatingMode */
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Message will be committed at the end of current block. From now on, to track the progress the message, use the
