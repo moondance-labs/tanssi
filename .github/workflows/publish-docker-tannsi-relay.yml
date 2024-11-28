@@ -33,8 +33,16 @@ jobs:
           mkdir -p build
           VERSION="${{ github.event.inputs.tag }}"
           wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}" -O build/${{ matrix.image.file_name }}
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker" -O build/${{ matrix.image.file_name }}-execute-worker
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker" -O build/${{ matrix.image.file_name }}-prepare-worker
+
           wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-skylake" -O build/${{ matrix.image.file_name }}-skylake
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker-skylake" -O build/${{ matrix.image.file_name }}-execute-worker-skylake
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker-skylake" -O build/${{ matrix.image.file_name }}-prepare-worker-skylake
+
           wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-znver3" -O build/${{ matrix.image.file_name }}-znver3
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker-skylake" -O build/${{ matrix.image.file_name }}-execute-worker-znver3
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker-skylake" -O build/${{ matrix.image.file_name }}-prepare-worker-znver3
 
       - name: push to docker
         run: |
