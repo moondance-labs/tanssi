@@ -25,7 +25,7 @@ use {
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
-    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
 mod test_sproof {
@@ -136,6 +136,14 @@ benchmarks! {
         let author: T::AccountId = account("account id", 0u32, 0u32);
         assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author, u64::from(block_number).into()));
     }: _(RawOrigin::Root, para_id)
+
+    on_container_author_noted {
+        let para_id = 1000.into();
+        let block_number = 1;
+        let author: T::AccountId = account("account id", 0u32, 0u32);
+
+        T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
+    }: { T::AuthorNotingHook::on_container_author_noted(&author, block_number, para_id )}
 
     impl_benchmark_test_suite!(
         Pallet,

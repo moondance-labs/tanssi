@@ -298,4 +298,23 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         }
         total_weight
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(a: &T::AccountId, b: BlockNumber, p: ParaId) {
+        // arbitrary amount to perform rewarding
+        // we mint twice as much to the rewards account to make it possible
+        let reward_amount = 1_000_000_000u32;
+        let mint = reward_amount * 2;
+
+        T::Currency::resolve(
+            &T::PendingRewardsAccount::get(),
+            T::Currency::issue(BalanceOf::<T>::from(mint)),
+        )
+        .expect("to mint tokens");
+
+        ChainsToReward::<T>::put(ChainsToRewardValue {
+            para_ids: sp_std::vec![p].try_into().expect("to be in bound"),
+            rewards_per_chain: BalanceOf::<T>::from(reward_amount),
+        });
+    }
 }

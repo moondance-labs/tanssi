@@ -545,6 +545,12 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
         T::WeightInfo::on_container_author_noted()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(a: &T::AccountId, b: BlockNumber, p: ParaId) {
+        // nothing to prepare, `burn_block_production_free_credit_for_para` will return Err and make
+        // the branch above execute
+    }
 }
 
 impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
