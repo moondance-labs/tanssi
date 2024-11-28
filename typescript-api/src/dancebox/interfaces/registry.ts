@@ -264,6 +264,8 @@ import type {
     StagingXcmV4Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpTraitsContainerChainBlockInfo,
+    TpTraitsFullRotationMode,
+    TpTraitsFullRotationModes,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     TpXcmCoreBuyerBuyCoreCollatorProof,
@@ -577,6 +579,8 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
+        TpTraitsFullRotationMode: TpTraitsFullRotationMode;
+        TpTraitsFullRotationModes: TpTraitsFullRotationModes;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         TpXcmCoreBuyerBuyCoreCollatorProof: TpXcmCoreBuyerBuyCoreCollatorProof;

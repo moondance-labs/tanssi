@@ -441,6 +441,8 @@ import type {
     StagingXcmV4Xcm,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
+    TpTraitsFullRotationMode,
+    TpTraitsFullRotationModes,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     XcmDoubleEncoded,
@@ -930,6 +932,8 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
+        TpTraitsFullRotationMode: TpTraitsFullRotationMode;
+        TpTraitsFullRotationModes: TpTraitsFullRotationModes;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         XcmDoubleEncoded: XcmDoubleEncoded;
