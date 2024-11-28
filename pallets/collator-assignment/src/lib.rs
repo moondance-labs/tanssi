@@ -54,7 +54,7 @@ use {
     },
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentHook, CollatorAssignmentTip, GetContainerChainAuthor,
+        CollatorAssignmentHook, CollatorAssignmentTip, FullRotationModes, GetContainerChainAuthor,
         GetHostConfiguration, GetSessionContainerChains, ParaId, RemoveInvulnerables,
         RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
@@ -338,6 +338,7 @@ pub mod pallet {
                     para_id: T::SelfParaId::get(),
                     min_collators: 0u32,
                     max_collators: 0u32,
+                    parathread: false,
                 }
             } else {
                 ChainNumCollators {
@@ -348,6 +349,7 @@ pub mod pallet {
                     max_collators: T::HostConfiguration::max_collators_for_orchestrator(
                         target_session_index,
                     ),
+                    parathread: false,
                 }
             };
 
@@ -364,6 +366,7 @@ pub mod pallet {
                     para_id: *para_id,
                     min_collators: collators_per_container,
                     max_collators: collators_per_container,
+                    parathread: false,
                 });
             }
             for para_id in &parathreads {
@@ -371,6 +374,7 @@ pub mod pallet {
                     para_id: *para_id,
                     min_collators: collators_per_parathread,
                     max_collators: collators_per_parathread,
+                    parathread: true,
                 });
             }
 
@@ -412,11 +416,16 @@ pub mod pallet {
                         target_session: target_session_index,
                     });
 
-                    Assignment::<T>::assign_collators_rotate_all(
+                    let full_rotation_mode =
+                        T::HostConfiguration::full_rotation_mode(target_session_index);
+
+                    Assignment::<T>::assign_collators_always_keep_old(
                         collators,
                         orchestrator_chain,
                         chains,
+                        old_assigned.clone(),
                         shuffle_collators,
+                        full_rotation_mode,
                     )
                 } else {
                     log::debug!(
@@ -437,6 +446,7 @@ pub mod pallet {
                         chains,
                         old_assigned.clone(),
                         shuffle_collators,
+                        FullRotationModes::keep_all(),
                     )
                 };
 

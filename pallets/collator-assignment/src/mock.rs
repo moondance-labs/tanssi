@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use tp_traits::FullRotationModes;
 use {
     crate::{
         self as pallet_collator_assignment, pallet::CollatorContainerChain,
@@ -213,6 +214,10 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
 
     fn max_parachain_cores_percentage(_session_index: u32) -> Option<Perbill> {
         None
+    }
+
+    fn full_rotation_mode(_session_index: u32) -> FullRotationModes {
+        Default::default()
     }
 
     #[cfg(feature = "runtime-benchmarks")]

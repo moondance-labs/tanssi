@@ -231,6 +231,7 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn collators_per_parathread(session_index: SessionIndex) -> u32;
     fn target_container_chain_fullness(session_index: SessionIndex) -> Perbill;
     fn max_parachain_cores_percentage(session_index: SessionIndex) -> Option<Perbill>;
+    fn full_rotation_mode(session_index: SessionIndex) -> FullRotationModes;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_host_configuration(_session_index: SessionIndex) {}
 }
@@ -499,5 +500,59 @@ pub trait OnEraEnd {
 impl OnEraEnd for Tuple {
     fn on_era_end(era_index: EraIndex) {
         for_tuples!( #( Tuple::on_era_end(era_index); )* );
+    }
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
+pub enum FullRotationMode {
+    #[default]
+    RotateAll,
+    KeepAll,
+    KeepCollators {
+        keep: u32,
+    },
+    KeepPerbill {
+        keep: Perbill,
+    },
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
+pub struct FullRotationModes {
+    pub orchestrator: FullRotationMode,
+    pub parachain: FullRotationMode,
+    pub parathread: FullRotationMode,
+}
+
+impl FullRotationModes {
+    pub fn keep_all() -> Self {
+        Self {
+            orchestrator: FullRotationMode::KeepAll,
+            parachain: FullRotationMode::KeepAll,
+            parathread: FullRotationMode::KeepAll,
+        }
     }
 }
