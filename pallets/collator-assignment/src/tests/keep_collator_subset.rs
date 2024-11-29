@@ -15,7 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::assignment::Assignment, sp_runtime::Perbill, tests::Test, tp_traits::FullRotationMode,
+    crate::{assignment::Assignment, tests::Test},
+    sp_runtime::Perbill,
+    tp_traits::FullRotationMode,
 };
 
 #[test]
