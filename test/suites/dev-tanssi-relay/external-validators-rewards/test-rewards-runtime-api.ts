@@ -36,7 +36,8 @@ describeSuite({
                 const isValidProofAlice = await polkadotJs.call.externalValidatorsRewardsApi.verifyRewardsMerkleProof(
                     aliceMerkleProof.toJSON()
                 );
-                expect(isValidProofAlice).to.be.true;
+
+                expect(isValidProofAlice.toJSON()).to.be.eq(true);
             },
         });
     },
