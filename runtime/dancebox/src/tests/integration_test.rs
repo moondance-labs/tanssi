@@ -60,8 +60,9 @@ use {
     },
     std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
-        MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
+        migrate_configuration_add_full_rotation_mode, ForeignAssetCreatorMigration,
+        HostConfigurationV3, MigrateServicesPaymentAddCollatorAssignmentCredits,
+        RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
@@ -3956,7 +3957,7 @@ fn test_migration_config_add_full_rotation_mode() {
             .encode(),
         );
 
-        let migration = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migration = migrate_configuration_add_full_rotation_mode::<Runtime>();
         migration.migrate(Default::default());
 
         let expected_active = pallet_configuration::HostConfiguration {

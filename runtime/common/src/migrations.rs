@@ -34,6 +34,7 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
+use crate::migrations::generic_migrations::{GenericMigrateConfiguration, MigrateStructToLatest};
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 use frame_support::migration::move_pallet;
@@ -49,7 +50,7 @@ use {
         weights::Weight,
         Blake2_128Concat, BoundedVec, StoragePrefixedMap,
     },
-    pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
+    pallet_configuration::HostConfiguration,
     pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::{GetMigrations, Migration},
     pallet_registrar::HoldReason,
@@ -57,6 +58,8 @@ use {
     sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
+
+mod generic_migrations;
 
 #[derive(
     Default,
@@ -67,6 +70,7 @@ use {
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
 )]
+
 pub struct HostConfigurationV3 {
     pub max_collators: u32,
     pub min_orchestrator_collators: u32,
@@ -79,93 +83,43 @@ pub struct HostConfigurationV3 {
     pub max_parachain_cores_percentage: Option<Perbill>,
 }
 
-pub struct MigrateConfigurationAddFullRotationMode<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateConfigurationAddFullRotationMode<T>
-where
-    T: pallet_configuration::Config,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_MigrateConfigurationAddFullRotationMode"
-    }
+// TODO: derive this impl using a macro
+impl MigrateStructToLatest<HostConfiguration> for HostConfigurationV3 {
+    fn expand_with_default_values(self, default_config: &HostConfiguration) -> HostConfiguration {
+        #[deny(unused)]
+        let Self {
+            max_collators,
+            min_orchestrator_collators,
+            max_orchestrator_collators,
+            collators_per_container,
+            full_rotation_period,
+            collators_per_parathread,
+            parathreads_per_collator,
+            target_container_chain_fullness,
+            max_parachain_cores_percentage,
+        } = self;
 
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        let default_config = HostConfiguration::default();
-
-        // Modify active config
-        let old_config: HostConfigurationV3 = frame_support::storage::unhashed::get(
-            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
-        )
-        .expect("configuration.activeConfig should have value");
-        let new_config = HostConfiguration {
-            max_collators: old_config.max_collators,
-            min_orchestrator_collators: old_config.min_orchestrator_collators,
-            max_orchestrator_collators: old_config.max_orchestrator_collators,
-            collators_per_container: old_config.collators_per_container,
-            full_rotation_period: old_config.full_rotation_period,
-            collators_per_parathread: old_config.collators_per_parathread,
-            parathreads_per_collator: old_config.parathreads_per_collator,
-            target_container_chain_fullness: old_config.target_container_chain_fullness,
-            max_parachain_cores_percentage: old_config.max_parachain_cores_percentage,
+        HostConfiguration {
+            max_collators,
+            min_orchestrator_collators,
+            max_orchestrator_collators,
+            collators_per_container,
+            full_rotation_period,
+            collators_per_parathread,
+            parathreads_per_collator,
+            target_container_chain_fullness,
+            max_parachain_cores_percentage,
             full_rotation_mode: default_config.full_rotation_mode.clone(),
-        };
-        frame_support::storage::unhashed::put(
-            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
-            &new_config,
-        );
-
-        // Modify pending configs, if any
-        let old_pending_configs: Vec<(u32, HostConfigurationV3)> =
-            frame_support::storage::unhashed::get(
-                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
-            )
-            .unwrap_or_default();
-        let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
-
-        for (session_index, old_config) in old_pending_configs {
-            let new_config = HostConfiguration {
-                max_collators: old_config.max_collators,
-                min_orchestrator_collators: old_config.min_orchestrator_collators,
-                max_orchestrator_collators: old_config.max_orchestrator_collators,
-                collators_per_container: old_config.collators_per_container,
-                full_rotation_period: old_config.full_rotation_period,
-                collators_per_parathread: old_config.collators_per_parathread,
-                parathreads_per_collator: old_config.parathreads_per_collator,
-                target_container_chain_fullness: old_config.target_container_chain_fullness,
-                max_parachain_cores_percentage: old_config.max_parachain_cores_percentage,
-                full_rotation_mode: default_config.full_rotation_mode.clone(),
-            };
-            new_pending_configs.push((session_index, new_config));
         }
-
-        if !new_pending_configs.is_empty() {
-            frame_support::storage::unhashed::put(
-                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
-                &new_pending_configs,
-            );
-        }
-
-        <T as pallet_configuration::Config>::WeightInfo::set_config_with_u32()
     }
+}
 
-    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        Ok(vec![])
-    }
-
-    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(
-        &self,
-        _number_of_invulnerables: Vec<u8>,
-    ) -> Result<(), sp_runtime::DispatchError> {
-        let new_config = pallet_configuration::Pallet::<T>::config();
-        let default_config = HostConfiguration::default();
-        assert_eq!(
-            new_config.max_parachain_cores_percentage,
-            default_config.max_parachain_cores_percentage
-        );
-        Ok(())
+pub fn migrate_configuration_add_full_rotation_mode<T>(
+) -> GenericMigrateConfiguration<T, HostConfigurationV3> {
+    GenericMigrateConfiguration {
+        name: "TM_MigrateConfigurationAddFullRotationMode",
+        default: Default::default(),
+        phantom: Default::default(),
     }
 }
 
@@ -846,7 +800,7 @@ where
         //    DataPreserversAssignmentsMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_config_full_rotation_mode = migrate_configuration_add_full_rotation_mode::<Runtime>();
 
         vec![
             // Applied in runtime 400
@@ -917,7 +871,7 @@ where
         //let foreign_asset_creator_migration =
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_config_full_rotation_mode = migrate_configuration_add_full_rotation_mode::<Runtime>();
 
         vec![
             // Applied in runtime 200
@@ -1001,7 +955,7 @@ where
         let migrate_external_validators =
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode =
-            MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+            migrate_configuration_add_full_rotation_mode::<Runtime>();
 
         vec![
             Box::new(migrate_mmr_leaf_pallet),

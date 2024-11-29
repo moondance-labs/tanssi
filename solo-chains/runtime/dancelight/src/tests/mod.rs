@@ -21,7 +21,7 @@ use {crate::*, std::collections::HashSet};
 
 use crate::tests::common::ExtBuilder;
 use tanssi_runtime_common::migrations::{
-    HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
+    migrate_configuration_add_full_rotation_mode, HostConfigurationV3,
 };
 use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay};
 
@@ -134,7 +134,7 @@ fn test_migration_config_add_full_rotation_mode() {
             .encode(),
         );
 
-        let migration = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migration = migrate_configuration_add_full_rotation_mode::<Runtime>();
         migration.migrate(Default::default());
 
         let expected_active = pallet_configuration::HostConfiguration {
