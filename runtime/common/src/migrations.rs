@@ -89,16 +89,13 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
         let default_config = HostConfiguration::default();
 
         // Modify active config
-        let old_config: HostConfigurationV3 =
-            frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
-                .expect("configuration.activeConfig should have value");
+        let old_config: HostConfigurationV3 = frame_support::storage::unhashed::get(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .expect("configuration.activeConfig should have value");
         let new_config = HostConfiguration {
             max_collators: old_config.max_collators,
             min_orchestrator_collators: old_config.min_orchestrator_collators,
@@ -111,12 +108,17 @@ where
             max_parachain_cores_percentage: old_config.max_parachain_cores_percentage,
             full_rotation_mode: default_config.full_rotation_mode.clone(),
         };
-        frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
+        frame_support::storage::unhashed::put(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+            &new_config,
+        );
 
         // Modify pending configs, if any
         let old_pending_configs: Vec<(u32, HostConfigurationV3)> =
-            frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
-                .unwrap_or_default();
+            frame_support::storage::unhashed::get(
+                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
+            )
+            .unwrap_or_default();
         let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
 
         for (session_index, old_config) in old_pending_configs {
@@ -137,7 +139,7 @@ where
 
         if !new_pending_configs.is_empty() {
             frame_support::storage::unhashed::put(
-                CONFIGURATION_PENDING_CONFIGS_KEY,
+                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
                 &new_pending_configs,
             );
         }

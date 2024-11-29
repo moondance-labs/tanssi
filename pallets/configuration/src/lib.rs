@@ -199,7 +199,7 @@ pub mod pallet {
 
     /// The active configuration for the current session.
     #[pallet::storage]
-    pub(crate) type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
+    pub type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
 
     /// Pending configuration changes.
     ///
@@ -213,7 +213,7 @@ pub mod pallet {
     // since it can have at most 2 items anyway. But the upstream pallet doesn't do that so low
     // priority.
     #[pallet::unbounded]
-    pub(crate) type PendingConfigs<T: Config> =
+    pub type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
     /// If this is set, then the configuration setters will bypass the consistency checks. This
