@@ -756,7 +756,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelight-zombie-tanssi-relay-unneeded-para.json",
+                    "configPath": "./configs/zombieDancelight.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },

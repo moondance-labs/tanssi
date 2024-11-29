@@ -4,7 +4,6 @@ import { customWeb3Request, generateKeyringPair, MIN_GAS_PRICE } from "@moonwall
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import fs from "fs/promises";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { Signer } from "ethers";
 
@@ -212,13 +211,9 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 const tx = relayApi.tx.utility.batchAll([
-                    relayApi.tx.sudo.sudo(
-                        relayApi.tx.servicesPayment.setBlockProductionCredits(2000, 0)
-                    ),
-                    relayApi.tx.sudo.sudo(
-                        relayApi.tx.servicesPayment.setBlockProductionCredits(2001, 0)
-                    ),
-                ])
+                    relayApi.tx.sudo.sudo(relayApi.tx.servicesPayment.setBlockProductionCredits(2000, 0)),
+                    relayApi.tx.sudo.sudo(relayApi.tx.servicesPayment.setBlockProductionCredits(2001, 0)),
+                ]);
 
                 const { blockHash } = await signAndSendAndInclude(tx, alice);
 
@@ -263,7 +258,6 @@ describeSuite({
                 const emptyCollators = {};
 
                 expect(containerChainCollators).to.deep.equal(emptyCollators);
-
             },
         });
 
@@ -274,7 +268,6 @@ describeSuite({
                 // Need to do this manually: check relay chain logs.
                 // Some validators should have this message:
                 // 2024-11-27 15:04:30.423 DEBUG tokio-runtime-worker parachain::collator-protocol: Declared as collator for unneeded para. Current assignments: {} peer_id=PeerId("12D3KooWPJT4QoqgwDWJzHZHDL8iCgkjKzswTwWGcYHHfEjBEerv") collator_id=Public(8e6e0feedba7494a19662e3178bc66b6801716ee4c12e304c78fde02cc96941c (14DkVhzA...)) para_id=Id(2001)
-
                 // If the bug is fixed this should happen for around 3 seconds at most.
                 // If it happens every second and doesn't stop, it means the bug is still present.
             },
@@ -286,17 +279,10 @@ describeSuite({
             test: async function () {
                 // This test will always fail as per comment above, even if the issue is fixed it can still happen right when collators get de-assigned
 
-                const logs = [
-                    "/alice.log",
-                    "/bob.log",
-                    "/charlie.log",
-                    "/dave.log",
-                ];
+                const logs = ["/alice.log", "/bob.log", "/charlie.log", "/dave.log"];
                 for (const log of logs) {
                     const logFilePath = getTmpZombiePath() + log;
-                    await checkLogsNotExist(logFilePath, [
-                        "Declared as collator for unneeded para.",
-                    ]);
+                    await checkLogsNotExist(logFilePath, ["Declared as collator for unneeded para."]);
                 }
             },
         });
