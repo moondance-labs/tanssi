@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{assignment::Assignment, tests::Test};
-use sp_runtime::Perbill;
-use tp_traits::FullRotationMode;
+use {
+    crate::assignment::Assignment, sp_runtime::Perbill, tests::Test, tp_traits::FullRotationMode,
+};
 
 #[test]
-fn rotate_subset_keep_50_percent() {
+fn keep_subset_keep_50_percent() {
     let mut collators = vec![1, 2, 3, 4, 5];
     let mut shuffle_count = 0;
 
@@ -31,7 +31,7 @@ fn rotate_subset_keep_50_percent() {
         keep: Perbill::from_percent(50),
     };
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode,
         max_collators,
@@ -44,7 +44,7 @@ fn rotate_subset_keep_50_percent() {
 }
 
 #[test]
-fn rotate_subset_keep_2_collators() {
+fn keep_subset_keep_2_collators() {
     let mut collators = vec![1, 2, 3, 4, 5];
     let mut shuffle_count = 0;
 
@@ -54,7 +54,7 @@ fn rotate_subset_keep_2_collators() {
 
     let full_rotation_mode = FullRotationMode::KeepCollators { keep: 2 };
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode,
         max_collators,
@@ -66,7 +66,7 @@ fn rotate_subset_keep_2_collators() {
 }
 
 #[test]
-fn rotate_subset_rotate_all() {
+fn keep_subset_rotate_all() {
     let mut collators = vec![1, 2, 3, 4, 5];
     let mut shuffle_count = 0;
 
@@ -76,7 +76,7 @@ fn rotate_subset_rotate_all() {
 
     let full_rotation_mode = FullRotationMode::RotateAll;
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode,
         max_collators,
@@ -88,7 +88,7 @@ fn rotate_subset_rotate_all() {
 }
 
 #[test]
-fn rotate_subset_keep_all() {
+fn keep_subset_keep_all() {
     let mut collators = vec![1, 2, 3, 4, 5];
     let mut shuffle_count = 0;
 
@@ -98,7 +98,7 @@ fn rotate_subset_keep_all() {
 
     let full_rotation_mode = FullRotationMode::KeepAll;
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode,
         max_collators,
@@ -110,7 +110,7 @@ fn rotate_subset_keep_all() {
 }
 
 #[test]
-fn rotate_subset_empty_collators() {
+fn keep_subset_empty_collators() {
     let mut collators = vec![];
     let mut shuffle_count = 0;
 
@@ -120,7 +120,7 @@ fn rotate_subset_empty_collators() {
 
     let full_rotation_mode = FullRotationMode::KeepCollators { keep: 2 };
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode.clone(),
         max_collators,
@@ -129,12 +129,17 @@ fn rotate_subset_empty_collators() {
     assert_eq!(collators.len(), 0);
 
     // Calling this with None does not panic
-    Assignment::<Test>::rotate_subset(None, full_rotation_mode, max_collators, Some(&mut shuffle));
+    Assignment::<Test>::keep_collator_subset(
+        None,
+        full_rotation_mode,
+        max_collators,
+        Some(&mut shuffle),
+    );
     assert_eq!(shuffle_count, 0);
 }
 
 #[test]
-fn rotate_subset_keep_more_than_max() {
+fn keep_subset_keep_more_than_max() {
     // Trying to keep more collators than the max keeps all of them and does not panic
     let mut collators = vec![1, 2, 3, 4, 5];
     let mut shuffle_count = 0;
@@ -145,7 +150,7 @@ fn rotate_subset_keep_more_than_max() {
 
     let full_rotation_mode = FullRotationMode::KeepCollators { keep: 200 };
     let max_collators = 5;
-    Assignment::<Test>::rotate_subset(
+    Assignment::<Test>::keep_collator_subset(
         Some(&mut collators),
         full_rotation_mode.clone(),
         max_collators,

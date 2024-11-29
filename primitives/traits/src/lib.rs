@@ -503,6 +503,7 @@ impl OnEraEnd for Tuple {
     }
 }
 
+/// Strategy to use when rotating collators. Default: rotate all of them. Allows to rotate only a random subset.
 #[derive(
     Clone,
     Debug,
@@ -520,14 +521,18 @@ pub enum FullRotationMode {
     #[default]
     RotateAll,
     KeepAll,
+    /// Keep this many collators
     KeepCollators {
         keep: u32,
     },
+    /// Keep a ratio of collators wrt to max collators.
+    /// If max collators changes, the number of collators kept also changes.
     KeepPerbill {
         keep: Perbill,
     },
 }
 
+/// Allow to set a different [FullRotationMode] for each kind of chain. Default: rotate all.
 #[derive(
     Clone,
     Debug,
@@ -548,6 +553,7 @@ pub struct FullRotationModes {
 }
 
 impl FullRotationModes {
+    /// Keep all collators assigned to their current chain if possible. This is equivalent to disabling rotation.
     pub fn keep_all() -> Self {
         Self {
             orchestrator: FullRotationMode::KeepAll,

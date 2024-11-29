@@ -14,14 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use dp_collator_assignment::AssignedCollators;
-use std::ops::Range;
-use tp_traits::FullRotationModes;
 use {
     crate::{
         self as pallet_collator_assignment, pallet::CollatorContainerChain,
         CoreAllocationConfiguration, GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
     },
+    dp_collator_assignment::AssignedCollators,
     frame_support::{
         parameter_types,
         traits::{ConstBool, ConstU16, ConstU64, Hooks},
@@ -34,9 +32,12 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
-    sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        ops::Range,
+    },
     tp_traits::{
-        CollatorAssignmentHook, CollatorAssignmentTip, ParaId, ParathreadParams,
+        CollatorAssignmentHook, CollatorAssignmentTip, FullRotationModes, ParaId, ParathreadParams,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, SessionContainerChains,
     },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},

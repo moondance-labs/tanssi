@@ -24,13 +24,14 @@ use {
         mem,
         vec::Vec,
     },
-    tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
+    tp_traits::{
+        FullRotationMode, FullRotationModes, ParaId, RemoveInvulnerables as RemoveInvulnerablesT,
+    },
 };
 
 // Separate import of `sp_std::vec!` macro, which cause issues with rustfmt if grouped
 // with `sp_std::vec::Vec`.
 use sp_std::vec;
-use tp_traits::{FullRotationMode, FullRotationModes};
 
 /// Helper methods to implement collator assignment algorithm
 pub struct Assignment<T>(PhantomData<T>);
@@ -102,11 +103,12 @@ where
             };
 
             let collators = old_assigned.get_mut(&chain.para_id);
-            Self::rotate_subset(collators, mode, chain.max_collators, shuffle.as_mut());
+            Self::keep_collator_subset(collators, mode, chain.max_collators, shuffle.as_mut());
         }
 
         // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
-        // TODO: verify interaction of prioritize_invulnerables and rotate_subset
+        // Invulnerables can be unassigned by `keep_collator_subset`, but here we will assign other
+        // invulnerables again. The downside is that the new invulnerables can be different.
         Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
 
         let new_assigned_chains =
@@ -138,7 +140,7 @@ where
     }
 
     /// Keep a subset of collators instead of rotating all of them.
-    pub fn rotate_subset<TShuffle>(
+    pub fn keep_collator_subset<TShuffle>(
         collators: Option<&mut Vec<T::AccountId>>,
         full_rotation_mode: FullRotationMode,
         max_collators: u32,

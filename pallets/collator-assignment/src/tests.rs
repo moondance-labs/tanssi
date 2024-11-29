@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_runtime::Perbill;
-use tp_traits::{FullRotationMode, FullRotationModes};
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
+    sp_runtime::Perbill,
     std::collections::BTreeMap,
+    tp_traits::{FullRotationMode, FullRotationModes},
 };
 
 mod assign_full;
+mod keep_collator_subset;
 mod prioritize_invulnerables;
-mod rotate_subset;
 mod select_chains;
 mod with_core_config;
 
@@ -1433,7 +1433,7 @@ fn assign_collators_truncates_before_shuffling() {
 }
 
 #[test]
-fn rotate_subset_uses_correct_config() {
+fn keep_subset_uses_correct_config() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
