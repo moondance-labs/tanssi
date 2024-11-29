@@ -82,6 +82,9 @@ pub mod pallet {
         #[pallet::constant]
         type DisputeStatementPoints: Get<u32>;
 
+        /// Provider to know how may tokens were inflated (added) in a specific era.
+        type EraInflationProvider: Get<u128>;
+
         /// Provider to retrieve the current block timestamp.
         type TimestampProvider: Get<u64>;
 
@@ -223,8 +226,7 @@ pub mod pallet {
                     timestamp: T::TimestampProvider::get(),
                     era_index,
                     total_points: utils.total_points,
-                    // TODO: manage this in a proper way.
-                    tokens_inflated: 0u128,
+                    tokens_inflated: T::EraInflationProvider::get(),
                     rewards_merkle_root: utils.rewards_merkle_root,
                 };
 
