@@ -500,7 +500,6 @@ const _: () = {
                 prometheus_registry,
                 sync_service,
                 task_manager,
-                transaction_pool,
                 ..
             }: GenerateRpcBuilderParams<RuntimeApi>,
         ) -> Result<CompleteRpcBuilder, ServiceError> {
@@ -542,9 +541,9 @@ const _: () = {
                 prometheus_registry.clone(),
             ));
 
-            let graph = Arc::new(sc_transaction_pool::BasicPool::new_full(
+            let basic_pool = Arc::new(sc_transaction_pool::BasicPool::new_full(
                 Default::default(),
-                false.into(),
+                container_chain_config.role.is_authority().into(),
                 prometheus_registry.clone().as_ref(),
                 task_manager.spawn_essential_handle(),
                 client.clone(),
@@ -559,8 +558,8 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: graph.pool().clone(),
-                    pool: transaction_pool.clone(),
+                    graph: basic_pool.pool().clone(),
+                    pool: basic_pool.clone(),
                     max_past_logs,
                     fee_history_limit,
                     fee_history_cache: fee_history_cache.clone(),
