@@ -43,6 +43,15 @@ use {
     tp_bridge::{Command, DeliverMessage, Message, ValidateMessage},
 };
 
+/// Utils needed to generate/verify merkle roots/proofs inside this pallet.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct EraRewardsUtils {
+    pub rewards_merkle_root: H256,
+    pub leaves: Vec<H256>,
+    pub leaf_index: Option<u64>,
+    pub total_points: u128,
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use {
@@ -73,12 +82,16 @@ pub mod pallet {
         #[pallet::constant]
         type DisputeStatementPoints: Get<u32>;
 
+        /// Provider to retrieve the current block timestamp.
         type TimestampProvider: Get<u64>;
 
+        /// Hashing tool used to generate/verify merkle roots and proofs.
         type Hashing: Hash<Output = H256>;
 
+        /// Validate a message that will be sent to Ethereum.
         type ValidateMessage: ValidateMessage;
 
+        /// Send a message to Ethereum. Needs to be validated first.
         type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
@@ -123,10 +136,16 @@ pub mod pallet {
             })
         }
 
+        // Helper function used to generate the following utils:
+        //  - rewards_merkle_root: merkle root corresponding [(validatorId, rewardPoints)]
+        //      for the era_index specified.
+        //  - leaves: that were used to generate the previous merkle root.
+        //  - leaf_index: index of the validatorId's leaf in the previous leaves array (if any).
+        //  - total_points: number of total points of the era_index specified.
         pub fn generate_era_rewards_utils(
             era_index: EraIndex,
             maybe_account_id_check: Option<T::AccountId>,
-        ) -> Option<(H256, Vec<H256>, Option<u64>, u128)> {
+        ) -> Option<EraRewardsUtils> {
             let era_rewards = RewardPointsForEra::<T>::get(&era_index);
             let total_points: u128 = era_rewards.total as u128;
             let mut leaves = Vec::with_capacity(era_rewards.individual.len());
@@ -157,17 +176,23 @@ pub mod pallet {
 
             let rewards_merkle_root =
                 merkle_root::<<T as Config>::Hashing, _>(leaves.iter().cloned());
-            Some((rewards_merkle_root, leaves, leaf_index, total_points))
+
+            Some(EraRewardsUtils {
+                rewards_merkle_root,
+                leaves,
+                leaf_index,
+                total_points,
+            })
         }
 
         pub fn generate_rewards_merkle_proof(
             account_id: T::AccountId,
             era_index: EraIndex,
         ) -> Option<MerkleProof> {
-            let (_, leaves, leaf_index, _) =
-                Self::generate_era_rewards_utils(era_index, Some(account_id))?;
-            leaf_index
-                .map(|index| merkle_proof::<<T as Config>::Hashing, _>(leaves.into_iter(), index))
+            let utils = Self::generate_era_rewards_utils(era_index, Some(account_id))?;
+            utils.leaf_index.map(|index| {
+                merkle_proof::<<T as Config>::Hashing, _>(utils.leaves.into_iter(), index)
+            })
         }
 
         pub fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool {
@@ -193,16 +218,14 @@ pub mod pallet {
 
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
-            if let Some((rewards_merkle_root, _, _, total_points)) =
-                Self::generate_era_rewards_utils(era_index, None)
-            {
+            if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
                 let command = Command::ReportRewards {
                     timestamp: T::TimestampProvider::get(),
                     era_index,
-                    total_points,
+                    total_points: utils.total_points,
                     // TODO: manage this in a proper way.
                     tokens_inflated: 0u128,
-                    rewards_merkle_root,
+                    rewards_merkle_root: utils.rewards_merkle_root,
                 };
 
                 let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
