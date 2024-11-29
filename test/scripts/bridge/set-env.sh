@@ -21,7 +21,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_dir="$relayer_root_dir/relayer"
 relay_bin="$relay_dir/build/snowbridge-relay"
 
-RELAYER_TAG="relayer-v1.0.30" # we will need to investigate if this is right
+RELAYER_TAG="demo-v1.0.30-tanssi" # TODO: Demo tag please change
 GETH_TAG="v1.14.11" # We will need to investigate if this is right
 LODESTAR_TAG="v1.19.0"
 
