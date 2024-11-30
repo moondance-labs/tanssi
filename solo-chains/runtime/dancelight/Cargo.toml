@@ -158,6 +158,9 @@ tp-bridge = { workspace = true }
 
 [dev-dependencies]
 alloy-sol-types = { workspace = true, default-features = true }
+container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
+container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
+emulated-integration-tests-common = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
@@ -170,6 +173,12 @@ sp-trie = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
+sc-consensus-grandpa = { workspace = true }
+rococo-runtime = { workspace = true }
+rococo-runtime-constants = { workspace = true }
+westend-runtime = { workspace = true }
+westend-runtime-constants = { workspace = true }
+xcm-emulator = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -183,6 +192,8 @@ std = [
 	"binary-merkle-tree/std",
 	"bitvec/std",
 	"block-builder-api/std",
+	"container-chain-template-frontier-runtime/std",
+	"container-chain-template-simple-runtime/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"dancelight-runtime-constants/std",
@@ -265,6 +276,8 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"primitives/std",
 	"rand/std",
+	"rococo-runtime/std",
+	"rococo-runtime-constants/std",
 	"runtime-common/std",
 	"runtime-parachains/std",
 	"scale-info/std",
@@ -309,10 +322,14 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"westend-runtime/std",
+	"westend-runtime-constants/std",
 ]
 no_std = []
 
 runtime-benchmarks = [
+	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
@@ -368,6 +385,7 @@ runtime-benchmarks = [
 	"pallet-xcm/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"primitives/runtime-benchmarks",
+	"rococo-runtime/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
@@ -386,8 +404,11 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"westend-runtime/runtime-benchmarks",
 ]
 try-runtime = [
+	"container-chain-template-frontier-runtime/try-runtime",
+	"container-chain-template-simple-runtime/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
@@ -447,6 +468,7 @@ try-runtime = [
 	"pallet-utility/try-runtime",
 	"pallet-whitelist/try-runtime",
 	"pallet-xcm/try-runtime",
+	"rococo-runtime/try-runtime",
 	"runtime-common/try-runtime",
 	"runtime-parachains/try-runtime",
 	"snowbridge-pallet-ethereum-client/try-runtime",
@@ -455,6 +477,7 @@ try-runtime = [
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"westend-runtime/try-runtime",
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.

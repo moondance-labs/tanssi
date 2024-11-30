@@ -57,6 +57,8 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
+mod xcm;
+
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
     Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
