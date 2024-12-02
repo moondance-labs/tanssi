@@ -30,7 +30,7 @@ fn keep_subset_keep_50_percent() {
     };
 
     let full_rotation_mode = FullRotationMode::KeepPerbill {
-        keep: Perbill::from_percent(50),
+        percentage: Perbill::from_percent(50),
     };
     let max_collators = 5;
     Assignment::<Test>::keep_collator_subset(

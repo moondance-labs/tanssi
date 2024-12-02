@@ -528,7 +528,7 @@ pub enum FullRotationMode {
     /// Keep a ratio of collators wrt to max collators.
     /// If max collators changes, the number of collators kept also changes.
     KeepPerbill {
-        keep: Perbill,
+        percentage: Perbill,
     },
 }
 

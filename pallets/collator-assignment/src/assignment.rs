@@ -159,7 +159,7 @@ where
                 return;
             }
             FullRotationMode::KeepCollators { keep } => keep,
-            FullRotationMode::KeepPerbill { keep } => keep * max_collators,
+            FullRotationMode::KeepPerbill { percentage: keep } => keep * max_collators,
         };
 
         if num_to_keep == 0 {
@@ -527,9 +527,12 @@ pub enum AssignmentError {
 /// This can be a container chain, a parathread, or the orchestrator chain.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ChainNumCollators {
+    /// Para id.
     pub para_id: ParaId,
+    /// Min collators.
     pub min_collators: u32,
-    // This will only be filled if all the other min have been reached
+    /// Max collators. This will only be filled if all the other chains have reached min_collators
     pub max_collators: u32,
+    /// True if this a parathread. False means parachain or orchestrator.
     pub parathread: bool,
 }

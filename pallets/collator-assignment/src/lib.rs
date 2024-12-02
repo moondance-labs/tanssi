@@ -122,6 +122,7 @@ pub mod pallet {
             random_seed: [u8; 32],
             full_rotation: bool,
             target_session: T::SessionIndex,
+            full_rotation_mode: FullRotationModes,
         },
     }
 
@@ -418,18 +419,19 @@ pub mod pallet {
                 );
             }
 
-            Self::deposit_event(Event::NewPendingAssignment {
-                random_seed,
-                full_rotation,
-                target_session: target_session_index,
-            });
-
             let full_rotation_mode = if full_rotation {
                 T::HostConfiguration::full_rotation_mode(target_session_index)
             } else {
                 // On sessions where there is no rotation, we try to keep all collators assigned to the same chains
                 FullRotationModes::keep_all()
             };
+
+            Self::deposit_event(Event::NewPendingAssignment {
+                random_seed,
+                full_rotation,
+                target_session: target_session_index,
+                full_rotation_mode: full_rotation_mode.clone(),
+            });
 
             let new_assigned = Assignment::<T>::assign_collators_always_keep_old(
                 collators,

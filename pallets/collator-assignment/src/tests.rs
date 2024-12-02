@@ -1081,6 +1081,7 @@ fn rotation_events() {
                 random_seed: [0; 32],
                 full_rotation: false,
                 target_session: 1,
+                full_rotation_mode: FullRotationModes::keep_all(),
             }
             .into(),
         );
@@ -1094,6 +1095,7 @@ fn rotation_events() {
                             random_seed: [0; 32],
                             full_rotation: false,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::keep_all(),
                         }
                         .into(),
                     );
@@ -1125,6 +1127,7 @@ fn rotation_events() {
                             random_seed: [1; 32],
                             full_rotation: false,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::keep_all(),
                         }
                         .into(),
                     );
@@ -1135,6 +1138,7 @@ fn rotation_events() {
                             random_seed: [1; 32],
                             full_rotation: true,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::default(),
                         }
                         .into(),
                     );
@@ -1450,7 +1454,7 @@ fn keep_subset_uses_correct_config() {
                 orchestrator: FullRotationMode::RotateAll,
                 parachain: FullRotationMode::KeepCollators { keep: 2 },
                 parathread: FullRotationMode::KeepPerbill {
-                    keep: Perbill::from_percent(50),
+                    percentage: Perbill::from_percent(50),
                 },
             };
 
