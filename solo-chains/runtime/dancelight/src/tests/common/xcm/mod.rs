@@ -15,3 +15,5 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
+mod expected_event_checker;
+mod mocknets;
