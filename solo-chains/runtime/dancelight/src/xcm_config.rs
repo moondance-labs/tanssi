@@ -44,10 +44,10 @@ use {
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
         ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
         FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-        IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
-        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
-        WithUniqueTopic, XcmFeeManagerFromComponents,
+        IsConcrete, MintLocation, OriginToPluralityVoice, ParentIsPreset, SendXcmFeeToAccount,
+        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -137,6 +137,23 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
         false
     }
 }
+
+/// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
+/// when determining ownership of accounts for asset transacting and when attempting to use XCM
+/// `Transact` in order to determine the dispatch Origin.
+pub type LocationToAccountId = (
+    // The parent (Relay-chain) origin converts to the default `AccountId`.
+    ParentIsPreset<AccountId>,
+    // Sibling parachain origins convert to AccountId via the `ParaId::into`.
+    SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
+    // If we receive a Location of type AccountKey20, just generate a native account
+    AccountId32Aliases<RelayNetwork, AccountId>,
+    // Generate remote accounts according to polkadot standards
+    xcm_builder::HashedDescription<
+        AccountId,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
+    >,
+);
 
 pub trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
