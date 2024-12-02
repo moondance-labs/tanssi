@@ -554,7 +554,6 @@
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
-
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
@@ -586,7 +585,6 @@
             "name": "zombie_dancelight_upgrade",
             "testFileDir": ["suites/rt-upgrade-relay-zombienet"],
             "runScripts": ["download-latest-rt-binaries-starlight.sh", "build-spec-dancelight-single.sh tmp"],
-
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
@@ -615,7 +613,6 @@
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
-
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
@@ -681,7 +678,6 @@
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
-
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
@@ -720,7 +716,6 @@
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
-
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
@@ -1079,6 +1074,56 @@
                     "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_unneeded_para",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie-tanssi-relay-unneeded-para"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombieDancelightUnneededPara.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
         }
