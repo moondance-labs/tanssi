@@ -154,6 +154,18 @@ pub mod pallet {
             let mut leaves = Vec::with_capacity(era_rewards.individual.len());
             let mut leaf_index = None;
 
+            if let Some(account) = &maybe_account_id_check {
+                if !era_rewards.individual.contains_key(account) {
+                    log::error!(
+                        target: "ext_validators_rewards",
+                        "AccountId {:?} not found for era {:?}!",
+                        account,
+                        era_index
+                    );
+                    return None;
+                }
+            }
+
             for (index, (account_id, reward_points)) in era_rewards.individual.iter().enumerate() {
                 let encoded = (account_id, reward_points).encode();
                 let hashed = <T as Config>::Hashing::hash(&encoded);
@@ -164,17 +176,6 @@ pub mod pallet {
                         leaf_index = Some(index as u64);
                     }
                 }
-            }
-
-            // If a specific account is checked but not found, return None
-            if maybe_account_id_check.is_some() && leaf_index.is_none() {
-                log::error!(
-                    target: "ext_validators_rewards",
-                    "AccountId {:?} not found for era {:?}!",
-                    maybe_account_id_check,
-                    era_index
-                );
-                return None;
             }
 
             let rewards_merkle_root =
