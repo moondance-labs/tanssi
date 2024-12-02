@@ -166,6 +166,9 @@ keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
+rococo-runtime = { workspace = true }
+rococo-runtime-constants = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }
@@ -173,9 +176,6 @@ sp-trie = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
-sc-consensus-grandpa = { workspace = true }
-rococo-runtime = { workspace = true }
-rococo-runtime-constants = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
@@ -276,8 +276,8 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"primitives/std",
 	"rand/std",
-	"rococo-runtime/std",
 	"rococo-runtime-constants/std",
+	"rococo-runtime/std",
 	"runtime-common/std",
 	"runtime-parachains/std",
 	"scale-info/std",
@@ -318,12 +318,12 @@ std = [
 	"tp-bridge/std",
 	"tp-traits/std",
 	"tx-pool-api/std",
+	"westend-runtime-constants/std",
+	"westend-runtime/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"westend-runtime/std",
-	"westend-runtime-constants/std",
 ]
 no_std = []
 
@@ -401,10 +401,10 @@ runtime-benchmarks = [
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"westend-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"westend-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
