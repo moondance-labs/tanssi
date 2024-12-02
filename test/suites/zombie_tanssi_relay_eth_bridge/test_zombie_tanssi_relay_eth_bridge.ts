@@ -172,8 +172,12 @@ describeSuite({
 
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
-                const rawValidators = ["0x1234567890123456789012345678901234567890123456789012345678901234"];
-                
+                const rawValidators = [
+                    "0x1234567890123456789012345678901234567890123456789012345678901234",
+                    "0x7894567890123456789012345678901234567890123456789012345678901234",
+                    "0x4564567890123456789012345678901234567890123456789012345678901234",
+                ];
+
                 try {
                     const tx = await gatewayContract.sendOperatorsData(rawValidators, 1);
                     await tx.wait();
@@ -185,7 +189,7 @@ describeSuite({
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
 
                 const externalValidators = await relayApi.query.externalValidators.externalValidators();
-                expect(externalValidators).to.not.eq(externalValidatorsBefore);
+                expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
 
                 const externalValidatorsHex = externalValidators.toJSON().map((x) => {
                     return u8aToHex(decodeAddress(x));
