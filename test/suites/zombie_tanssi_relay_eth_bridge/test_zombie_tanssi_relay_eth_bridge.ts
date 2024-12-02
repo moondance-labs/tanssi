@@ -182,7 +182,7 @@ describeSuite({
                     const tx = await gatewayContract.sendOperatorsData(rawValidators, 1);
                     await tx.wait();
                 } catch (error) {
-                    throw new Error(`Failed to create vault: ${error.message}`, error.code);
+                    throw new Error(`Failed to send operator data: ${error.message}`, error.code);
                 }
 
                 // wait some time for the data to be relayed
