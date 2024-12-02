@@ -16145,7 +16145,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-pallet-inbound-queue"
 version = "0.10.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#3f3fb03a22eb3d4725bfb85792006675fa6ebbb7"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#f3d164a5c20fba26d080731643b6d1a8380fbdf7"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -16173,7 +16173,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-pallet-inbound-queue-fixtures"
 version = "0.18.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#3f3fb03a22eb3d4725bfb85792006675fa6ebbb7"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#f3d164a5c20fba26d080731643b6d1a8380fbdf7"
 dependencies = [
  "hex-literal 0.4.1",
  "snowbridge-beacon-primitives",
@@ -16227,7 +16227,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-router-primitives"
 version = "0.16.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#3f3fb03a22eb3d4725bfb85792006675fa6ebbb7"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2409#f3d164a5c20fba26d080731643b6d1a8380fbdf7"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
