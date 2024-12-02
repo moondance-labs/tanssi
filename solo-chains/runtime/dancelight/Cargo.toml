@@ -326,8 +326,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"westend-runtime/std",
-	"westend-runtime-constants/std",
 ]
 no_std = []
 
@@ -409,7 +407,6 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"westend-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
