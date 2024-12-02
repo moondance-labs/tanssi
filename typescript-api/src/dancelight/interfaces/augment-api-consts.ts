@@ -8,7 +8,7 @@ import "@polkadot/api-base/types/consts";
 import type { ApiTypes, AugmentedConst } from "@polkadot/api-base/types";
 import type { Option, Vec, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { Codec, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, H160, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
 import type {
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
@@ -132,6 +132,11 @@ declare module "@polkadot/api-base/types/consts" {
             forkVersions: SnowbridgeBeaconPrimitivesForkVersions & AugmentedConst<ApiType>;
             /** Minimum gap between finalized headers for an update to be free. */
             freeHeadersInterval: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        ethereumInboundQueue: {
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

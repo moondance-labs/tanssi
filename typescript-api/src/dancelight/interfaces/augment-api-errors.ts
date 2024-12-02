@@ -229,6 +229,32 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumInboundQueue: {
+            /** Message conversion error */
+            ConvertMessage: AugmentedError<ApiType>;
+            /** Pallet is halted */
+            Halted: AugmentedError<ApiType>;
+            /** Cannot convert location */
+            InvalidAccountConversion: AugmentedError<ApiType>;
+            /** Message channel is invalid */
+            InvalidChannel: AugmentedError<ApiType>;
+            /** Message has an invalid envelope. */
+            InvalidEnvelope: AugmentedError<ApiType>;
+            /** Message came from an invalid outbound channel on the Ethereum side. */
+            InvalidGateway: AugmentedError<ApiType>;
+            /** Message has an unexpected nonce. */
+            InvalidNonce: AugmentedError<ApiType>;
+            /** Message has an invalid payload. */
+            InvalidPayload: AugmentedError<ApiType>;
+            /** The max nonce for the type has been reached */
+            MaxNonceReached: AugmentedError<ApiType>;
+            /** XCMP send failure */
+            Send: AugmentedError<ApiType>;
+            /** Message verification error, */
+            Verification: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         ethereumOutboundQueue: {
             /** The pallet is halted */
             Halted: AugmentedError<ApiType>;
