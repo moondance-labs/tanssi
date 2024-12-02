@@ -3,6 +3,8 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { spawn, exec } from "node:child_process";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { u8aToHex } from "@polkadot/util";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -168,16 +170,28 @@ describeSuite({
             test: async function () {
                 const gatewayContract = new ethers.Contract(gatewayProxyAddress, gatewayDetails.abi, ethereumWallet);
 
-                /** Example. Please remove it after the test is done
+                const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
+
+                const rawValidators = ["0x1234567890123456789012345678901234567890123456789012345678901234"];
+                
                 try {
-                    const tx = await gatewayContract.sendOperatorsData(["0x1234567890123456789012345678901234567890123456789012345678901234"], 1);
+                    const tx = await gatewayContract.sendOperatorsData(rawValidators, 1);
                     await tx.wait();
                 } catch (error) {
                     throw new Error(`Failed to create vault: ${error.message}`, error.code);
                 }
 
-                await sleep(100000000);
-                */
+                // wait some time for the data to be relayed
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+
+                const externalValidators = await relayApi.query.externalValidators.externalValidators();
+                expect(externalValidators).to.not.eq(externalValidatorsBefore);
+
+                const externalValidatorsHex = externalValidators.toJSON().map((x) => {
+                    return u8aToHex(decodeAddress(x));
+                });
+
+                expect(externalValidatorsHex).to.deep.eq(rawValidators);
             },
         });
 
