@@ -762,7 +762,6 @@ pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
-pub const RANDOM: [u8; 32] = [3u8; 32];
 
 fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
     let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
