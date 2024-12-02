@@ -200,7 +200,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieFlashbox.json",
+                    "configPath": "./configs/zombie_flashbox.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },
@@ -256,7 +256,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssi.json",
+                    "configPath": "./configs/zombie_tanssi.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },
@@ -311,7 +311,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiKeepDb.json"
+                    "configPath": "./configs/zombie_tanssi_keep_db.json"
                 }
             },
             "connections": [
@@ -345,7 +345,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiMetrics.json"
+                    "configPath": "./configs/zombie_tanssi_metrics.json"
                 }
             },
             "connections": [
@@ -378,7 +378,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiOneNode.json",
+                    "configPath": "./configs/zombie_tanssi_one_node.json",
                     "skipBlockCheck": ["Container2000", "Container2001"]
                 }
             },
@@ -409,7 +409,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiParathreads.json",
+                    "configPath": "./configs/zombie_tanssi_parathreads.json",
                     "skipBlockCheck": ["Container2000", "Container2001"]
                 }
             },
@@ -460,7 +460,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiRotation.json"
+                    "configPath": "./configs/zombie_tanssi_rotation.json"
                 }
             },
             "connections": [
@@ -509,7 +509,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssiWarpSync.json"
+                    "configPath": "./configs/zombie_tanssi_warp_sync.json"
                 }
             },
             "connections": [
@@ -539,7 +539,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDanceboxUpgrade.json",
+                    "configPath": "./configs/zombie_dancebox_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             }
@@ -559,7 +559,7 @@
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTemplateUpgradeSimple.json",
+                    "configPath": "./configs/zombie_simple_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -590,7 +590,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelightUpgrade.json",
+                    "configPath": "./configs/zombie_dancelight_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -618,7 +618,7 @@
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTemplateUpgradeSimple.json",
+                    "configPath": "./configs/zombie_simple_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -651,7 +651,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelightSingleContainer.json",
+                    "configPath": "./configs/zombie_simple_template_offchain.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -683,7 +683,7 @@
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTemplateUpgradeFrontier.json",
+                    "configPath": "./configs/zombie_frontier_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -721,7 +721,7 @@
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTemplateUpgradeFrontier.json",
+                    "configPath": "./configs/zombie_frontier_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -756,7 +756,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelight.json",
+                    "configPath": "./configs/zombie_tanssi_relay.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },
@@ -802,7 +802,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelightBridge.json",
+                    "configPath": "./configs/zombie_tanssi_relay_eth_bridge.json",
                     "skipBlockCheck": ["Tanssi-relay"]
                 }
             },
@@ -828,7 +828,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDataPreservers.json",
+                    "configPath": "./configs/zombie_data_preservers.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
@@ -1090,7 +1090,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieDancelightUnneededPara.json",
+                    "configPath": "./configs/zombie_tanssi_relay_unneeded_para.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },
