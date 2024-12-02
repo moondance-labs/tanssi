@@ -33,6 +33,6 @@
     "schedule": {
         "id": null,
         "totalRelayerCount": 1,
-        "sleepInterval": 20
+        "sleepInterval": 1
     }
 }
