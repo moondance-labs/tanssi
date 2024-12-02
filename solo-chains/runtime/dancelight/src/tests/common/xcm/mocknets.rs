@@ -17,60 +17,28 @@ pub use sp_core::Get;
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
-        frontier_template, rococo, simple_template, westend,
+        frontier_template, simple_template,
     },
     crate::tests::common::ExtBuilder,
-    emulated_integration_tests_common::{
-        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
-    },
+    dancelight_runtime_constants::currency::UNITS as UNIT,
+    emulated_integration_tests_common::xcm_emulator::decl_test_parachains,
     frame_support::parameter_types,
     xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain},
 };
 
 decl_test_relay_chains! {
     #[api_version(11)]
-    pub struct Westend {
-        genesis = westend::genesis(),
-        on_init = (),
-        runtime = westend_runtime,
-        core = {
-            SovereignAccountOf: westend_runtime::xcm_config::LocationConverter,
-        },
-        pallets = {
-            System: westend_runtime::System,
-            Balances: westend_runtime::Balances,
-            XcmPallet: westend_runtime::XcmPallet,
-            Sudo: westend_runtime::Sudo,
-        }
-    },
-    #[api_version(11)]
-    pub struct Rococo {
-        genesis = rococo::genesis(),
-        on_init = (),
-        runtime = rococo_runtime,
-        core = {
-            SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter,
-        },
-        pallets = {
-            System: rococo_runtime::System,
-            Session: rococo_runtime::Session,
-            Configuration: rococo_runtime::Configuration,
-            Balances: rococo_runtime::Balances,
-            Registrar: rococo_runtime::Registrar,
-            ParasSudoWrapper: rococo_runtime::ParasSudoWrapper,
-            OnDemandAssignmentProvider: rococo_runtime::OnDemandAssignmentProvider,
-            XcmPallet: rococo_runtime::XcmPallet,
-            Sudo: rococo_runtime::Sudo,
-        }
-    },
-    #[api_version(11)]
     pub struct Dancelight {
         genesis = ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (crate::AccountId::from(crate::tests::common::ALICE), 210_000 * dancelight_runtime_constants::currency::UNITS),
-            (crate::AccountId::from(crate::tests::common::BOB), 100_000 * dancelight_runtime_constants::currency::UNITS),
+            (crate::AccountId::from(crate::tests::common::ALICE), 210_000 * UNIT),
+            (crate::AccountId::from(crate::tests::common::BOB), 100_000 * UNIT),
         ])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration {
+            max_downward_message_size: 1024 * 1024,
+            ..Default::default()
+        })
         .with_safe_xcm_version(3)
         .build_storage(),
         on_init = (),
@@ -93,7 +61,8 @@ decl_test_relay_chains! {
 }
 
 decl_test_parachains! {
-    pub struct FrontierTemplate {
+    // Dancelight parachains
+    pub struct FrontierTemplateDancelight {
         genesis = frontier_template::genesis(),
         on_init = (),
         runtime = container_chain_template_frontier_runtime,
@@ -113,47 +82,7 @@ decl_test_parachains! {
             ForeignAssetsCreator: container_chain_template_frontier_runtime::ForeignAssetsCreator,
         }
     },
-    pub struct SimpleTemplate {
-        genesis = simple_template::genesis(),
-        on_init = (),
-        runtime = container_chain_template_simple_runtime,
-        core = {
-            XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
-            LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
-            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-        },
-        pallets = {
-            System: container_chain_template_simple_runtime::System,
-            Balances: container_chain_template_simple_runtime::Balances,
-            ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
-            PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
-            ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
-            AssetRate:  container_chain_template_simple_runtime::AssetRate,
-            ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
-        }
-    },
-    pub struct FrontierTemplateRococo {
-        genesis = frontier_template::genesis(),
-        on_init = (),
-        runtime = container_chain_template_frontier_runtime,
-        core = {
-            XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
-            LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
-            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-        },
-        pallets = {
-            System: container_chain_template_frontier_runtime::System,
-            Balances: container_chain_template_frontier_runtime::Balances,
-            ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
-            PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
-            ForeignAssets:  container_chain_template_frontier_runtime::ForeignAssets,
-            AssetRate:  container_chain_template_frontier_runtime::AssetRate,
-            ForeignAssetsCreator: container_chain_template_frontier_runtime::ForeignAssetsCreator,
-        }
-    },
-    pub struct SimpleTemplateRococo {
+    pub struct SimpleTemplateDancelight {
         genesis = simple_template::genesis(),
         on_init = (),
         runtime = container_chain_template_simple_runtime,
@@ -175,50 +104,25 @@ decl_test_parachains! {
     }
 }
 
-impl_assert_events_helpers_for_parachain!(FrontierTemplate);
-impl_assert_events_helpers_for_parachain!(SimpleTemplate);
-
 decl_test_networks! {
-    pub struct WestendMockNet {
-        relay_chain = Westend,
+    pub struct DancelightMockNet {
+        relay_chain = Dancelight,
         parachains = vec![
-            FrontierTemplate,
-            SimpleTemplate,
-        ],
-        bridge = ()
-    },
-    pub struct RococoMockNet {
-        relay_chain = Rococo,
-        parachains = vec![
-            FrontierTemplateRococo,
-            SimpleTemplateRococo,
+            FrontierTemplateDancelight,
+            SimpleTemplateDancelight,
         ],
         bridge = ()
     }
 }
 
 parameter_types! {
-    // Westend
-    pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(ALICE);
-    pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(BOB);
-    pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(RANDOM);
-
-    // Rococo
-    pub RococoSender: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(ALICE);
-    pub RococoReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(BOB);
-    pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
-
     // Dancelight
     pub DancelightSender: crate::AccountId = crate::AccountId::from(crate::tests::common::ALICE);
     pub DancelightReceiver: crate::AccountId = crate::AccountId::from(crate::tests::common::BOB);
-    pub DancelightEmptyReceiver: crate::AccountId = crate::AccountId::from(crate::tests::common::RANDOM);
+    pub DancelightEmptyReceiver: crate::AccountId = DancelightRelay::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(ALICE);
-    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(BOB);
-    pub SimpleTemplateEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(RANDOM);
-
-    pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
-    pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[1];
-    pub EthereumEmptyReceiver: container_chain_template_frontier_runtime::AccountId = [1u8; 20].into();
+    pub SimpleTemplateDancelightSender: container_chain_template_simple_runtime::AccountId = SimpleTemplateDancelightPara::account_id_of(ALICE);
+    pub SimpleTemplateDancelightReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplateDancelightPara::account_id_of(BOB);
+    pub SimpleTemplateDancelightEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplateDancelightPara::account_id_of(RANDOM);
 }
