@@ -500,6 +500,7 @@ const _: () = {
                 prometheus_registry,
                 sync_service,
                 task_manager,
+                transaction_pool,
                 ..
             }: GenerateRpcBuilderParams<RuntimeApi>,
         ) -> Result<CompleteRpcBuilder, ServiceError> {
@@ -541,15 +542,14 @@ const _: () = {
                 prometheus_registry.clone(),
             ));
 
-            let basic_pool = Arc::new(sc_transaction_pool::BasicPool::new_full(
-                Default::default(),
-                container_chain_config.role.is_authority().into(),
-                prometheus_registry.clone().as_ref(),
-                task_manager.spawn_essential_handle(),
-                client.clone(),
-            ));
-
             Ok(Box::new(move |subscription_task_executor| {
+                let graph_pool = transaction_pool.0
+                        .as_any()
+                        .downcast_ref::<sc_transaction_pool::BasicPool<
+                            sc_transaction_pool::FullChainApi<tc_service_container_chain::service::ParachainClient, Block>
+                            , Block
+                        >>()
+                        .expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
                     client: client.clone(),
@@ -558,8 +558,8 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: basic_pool.pool().clone(),
-                    pool: basic_pool.clone(),
+                    graph: graph_pool.pool().clone(),
+                    pool: transaction_pool.clone(),
                     max_past_logs,
                     fee_history_limit,
                     fee_history_cache: fee_history_cache.clone(),

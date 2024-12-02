@@ -231,16 +231,9 @@ async fn start_node_impl(
         node_builder.prometheus_registry.clone(),
     ));
 
-    let basic_pool = Arc::new(sc_transaction_pool::BasicPool::new_full(
-        Default::default(),
-        parachain_config.role.is_authority().into(),
-        node_builder.prometheus_registry.clone().as_ref(),
-        node_builder.task_manager.spawn_essential_handle(),
-        node_builder.client.clone(),
-    ));
-
     let rpc_builder = {
         let client = node_builder.client.clone();
+        let pool = node_builder.transaction_pool.clone();
         let pubsub_notification_sinks = pubsub_notification_sinks;
         let network = node_builder.network.network.clone();
         let sync = node_builder.network.sync_service.clone();
@@ -253,6 +246,12 @@ async fn start_node_impl(
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |subscription_task_executor| {
+            let graph_pool = pool.0.as_any()
+                .downcast_ref::<sc_transaction_pool::BasicPool<
+                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
+                    , Block
+                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
+
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -261,8 +260,8 @@ async fn start_node_impl(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: basic_pool.pool().clone(),
-                pool: basic_pool.clone(),
+                graph: graph_pool.pool().clone(),
+                pool: pool.clone(),
                 max_past_logs,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
@@ -490,16 +489,9 @@ pub async fn start_dev_node(
         node_builder.prometheus_registry.clone(),
     ));
 
-    let basic_pool = Arc::new(sc_transaction_pool::BasicPool::new_full(
-        Default::default(),
-        parachain_config.role.is_authority().into(),
-        node_builder.prometheus_registry.clone().as_ref(),
-        node_builder.task_manager.spawn_essential_handle(),
-        node_builder.client.clone(),
-    ));
-
     let rpc_builder = {
         let client = node_builder.client.clone();
+        let pool = node_builder.transaction_pool.clone();
         let pubsub_notification_sinks = pubsub_notification_sinks;
         let network = node_builder.network.network.clone();
         let sync = node_builder.network.sync_service.clone();
@@ -511,6 +503,11 @@ pub async fn start_dev_node(
         let block_data_cache = block_data_cache;
 
         Box::new(move |subscription_task_executor| {
+            let graph_pool= pool.0.as_any()
+                .downcast_ref::<sc_transaction_pool::BasicPool<
+                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
+                    , Block
+                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -519,8 +516,8 @@ pub async fn start_dev_node(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: basic_pool.pool().clone(),
-                pool: basic_pool.clone(),
+                graph: graph_pool.pool().clone(),
+                pool: pool.clone(),
                 max_past_logs,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
