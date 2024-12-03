@@ -1695,13 +1695,21 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use crate::genesis_config_presets::get_authority_keys_from_seed;
         use sp_core::crypto::UncheckedFrom;
+
         if eligible {
-            let account_slice: &[u8; 32] = a.as_ref();
+            let authority_keys = get_authority_keys_from_seed(&a.to_string(), None);
             let _ = Session::set_keys(
                 RuntimeOrigin::signed(a.clone()),
                 SessionKeys {
-                    nimbus: NimbusId::unchecked_from(*account_slice),
+                    grandpa: authority_keys.grandpa,
+                    babe: authority_keys.babe,
+                    para_validator: authority_keys.para_validator,
+                    para_assignment: authority_keys.para_assignment,
+                    authority_discovery: authority_keys.authority_discovery,
+                    beefy: authority_keys.beefy,
+                    nimbus: authority_keys.nimbus,
                 },
                 vec![],
             );
