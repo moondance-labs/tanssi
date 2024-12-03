@@ -27,6 +27,7 @@ pub mod pallet_invulnerables;
 pub mod pallet_message_queue;
 pub mod pallet_multisig;
 pub mod pallet_parameters;
+pub mod pallet_pooled_staking;
 pub mod pallet_preimage;
 pub mod pallet_proxy;
 pub mod pallet_ranked_collective;
