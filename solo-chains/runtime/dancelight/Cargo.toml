@@ -306,6 +306,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"pallet-pooled-staking/std"
 ]
 no_std = []
 
@@ -382,6 +383,7 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-pooled-staking/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -450,6 +452,7 @@ try-runtime = [
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-pooled-staking/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
