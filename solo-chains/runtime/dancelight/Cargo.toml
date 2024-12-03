@@ -236,6 +236,7 @@ std = [
 	"pallet-multisig/std",
 	"pallet-offences/std",
 	"pallet-parameters/std",
+	"pallet-pooled-staking/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
 	"pallet-ranked-collective/std",
@@ -306,7 +307,6 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
-	"pallet-pooled-staking/std"
 ]
 no_std = []
 
@@ -347,6 +347,7 @@ runtime-benchmarks = [
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-offences/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
+	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-ranked-collective/runtime-benchmarks",
@@ -383,7 +384,6 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-pooled-staking/runtime-benchmarks"
 ]
 try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
@@ -426,6 +426,7 @@ try-runtime = [
 	"pallet-multisig/try-runtime",
 	"pallet-offences/try-runtime",
 	"pallet-parameters/try-runtime",
+	"pallet-pooled-staking/try-runtime",
 	"pallet-preimage/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-ranked-collective/try-runtime",
@@ -452,7 +453,6 @@ try-runtime = [
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"pallet-pooled-staking/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
