@@ -60,8 +60,6 @@ benchmarks! {
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
-
-
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
             for para_id in 1..x {
@@ -73,8 +71,8 @@ benchmarks! {
                 let num_each_container_chain = 2;
                 T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
                 sproof_builder.num_items += 1;
-            }
 
+            }
             let (root, proof) = sproof_builder.into_state_root_and_proof();
             T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
                 state_root: root,
@@ -84,6 +82,13 @@ benchmarks! {
             let arg = tp_author_noting_inherent::OwnParachainInherentData {
                 relay_storage_proof: proof,
             };
+
+            for para_id in 1..x {
+                let para_id = para_id.into();
+                let author: T::AccountId = account("account id", 0u32, 0u32);
+
+                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
+            }
 
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
@@ -113,6 +118,8 @@ benchmarks! {
 
                 let head_data = HeadData(header.encode());
                 frame_support::storage::unhashed::put(&key, &head_data);
+
+                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
             }
             let arg = ();
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()

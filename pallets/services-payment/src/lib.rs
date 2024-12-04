@@ -526,6 +526,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     ) -> Weight {
         if Pallet::<T>::burn_block_production_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+
             match T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
                 amount_to_charge,
@@ -547,9 +548,20 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn prepare_worst_case_for_bench(a: &T::AccountId, b: BlockNumber, p: ParaId) {
-        // nothing to prepare, `burn_block_production_free_credit_for_para` will return Err and make
-        // the branch above execute
+    fn prepare_worst_case_for_bench(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) {
+        let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+        // mint large amount (bigger than ED) to ensure withdraw will not fail.
+        let mint = BalanceOf::<T>::from(2_000_000_000u32) + amount_to_charge;
+
+        // mint twice more to not have ED issues
+        T::Currency::resolve_creating(
+            &Self::parachain_tank(para_id),
+            T::Currency::issue(mint),
+        );
     }
 }
 

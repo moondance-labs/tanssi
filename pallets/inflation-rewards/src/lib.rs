@@ -300,7 +300,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn prepare_worst_case_for_bench(a: &T::AccountId, b: BlockNumber, p: ParaId) {
+    fn prepare_worst_case_for_bench(_a: &T::AccountId, _b: BlockNumber, para_id: ParaId) {
         // arbitrary amount to perform rewarding
         // we mint twice as much to the rewards account to make it possible
         let reward_amount = 1_000_000_000u32;
@@ -313,7 +313,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         .expect("to mint tokens");
 
         ChainsToReward::<T>::put(ChainsToRewardValue {
-            para_ids: sp_std::vec![p].try_into().expect("to be in bound"),
+            para_ids: sp_std::vec![para_id].try_into().expect("to be in bound"),
             rewards_per_chain: BalanceOf::<T>::from(reward_amount),
         });
     }
