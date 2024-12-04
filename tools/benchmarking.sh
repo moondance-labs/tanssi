@@ -74,6 +74,7 @@ function choose_and_bench {
 function bench {
     OUTPUT="${OUTPUT_PATH}/${1}.rs"
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
+    touch "$OUTPUT"
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
