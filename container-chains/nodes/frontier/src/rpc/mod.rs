@@ -24,9 +24,12 @@
 pub use sc_rpc::SubscriptionTaskExecutor;
 
 use {
-    container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
+    container_chain_template_frontier_runtime::{
+        opaque::Block, AccountId, Hash, Index, RuntimeApi,
+    },
     core::marker::PhantomData,
     cumulus_client_parachain_inherent::ParachainInherentData,
+    cumulus_client_service::ParachainHostFunctions,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
@@ -43,8 +46,9 @@ use {
         AuxStore, BlockOf, StorageProvider,
     },
     sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
+    sc_executor::WasmExecutor,
     sc_network_sync::SyncingService,
-    sc_service::TaskManager,
+    sc_service::{TFullClient, TaskManager},
     sc_transaction_pool::{ChainApi, Pool},
     sc_transaction_pool_api::TransactionPool,
     sp_api::{CallApiAt, ProvideRuntimeApi},
@@ -62,6 +66,12 @@ use {
     },
     tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
 };
+
+type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
+type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
+
+type FullPool<Client> =
+    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<Client, Block>, Block>;
 
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
@@ -545,10 +555,7 @@ const _: () = {
             Ok(Box::new(move |subscription_task_executor| {
                 let graph_pool = transaction_pool.0
                         .as_any()
-                        .downcast_ref::<sc_transaction_pool::BasicPool<
-                            sc_transaction_pool::FullChainApi<tc_service_container_chain::service::ParachainClient, Block>
-                            , Block
-                        >>()
+                        .downcast_ref::<FullPool<ParachainClient>>()
                         .expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
