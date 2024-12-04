@@ -558,10 +558,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         let mint = BalanceOf::<T>::from(2_000_000_000u32) + amount_to_charge;
 
         // mint twice more to not have ED issues
-        T::Currency::resolve_creating(
-            &Self::parachain_tank(para_id),
-            T::Currency::issue(mint),
-        );
+        T::Currency::resolve_creating(&Self::parachain_tank(para_id), T::Currency::issue(mint));
     }
 }
 
