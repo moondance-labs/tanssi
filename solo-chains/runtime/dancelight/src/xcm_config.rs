@@ -43,10 +43,10 @@ use {
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
         ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
         FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-        IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
-        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
-        WithUniqueTopic, XcmFeeManagerFromComponents,
+        IsConcrete, MintLocation, OriginToPluralityVoice, ParentIsPreset, SendXcmFeeToAccount,
+        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -116,6 +116,79 @@ pub type XcmRouter = WithUniqueTopic<
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
 >;
 
+pub struct NativeAssetReserve;
+impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let reserve = if asset.id.0.parents == 0
+            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
+        {
+            Some(Location::here())
+        } else {
+            asset.id.0.chain_part()
+        };
+
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+/// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
+/// when determining ownership of accounts for asset transacting and when attempting to use XCM
+/// `Transact` in order to determine the dispatch Origin.
+pub type LocationToAccountId = (
+    // The parent (Relay-chain) origin converts to the default `AccountId`.
+    ParentIsPreset<AccountId>,
+    // Sibling parachain origins convert to AccountId via the `ParaId::into`.
+    SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
+    // If we receive a Location of type AccountKey20, just generate a native account
+    AccountId32Aliases<RelayNetwork, AccountId>,
+    // Generate remote accounts according to polkadot standards
+    xcm_builder::HashedDescription<
+        AccountId,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
+    >,
+);
+
+pub trait Parse {
+    /// Returns the "chain" location part. It could be parent, sibling
+    /// parachain, or child parachain.
+    fn chain_part(&self) -> Option<Location>;
+    /// Returns "non-chain" location part.
+    fn non_chain_part(&self) -> Option<Location>;
+}
+
+impl Parse for Location {
+    fn chain_part(&self) -> Option<Location> {
+        match (self.parents, self.first_interior()) {
+            // sibling parachain
+            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
+            // parent
+            (1, _) => Some(Location::parent()),
+            // children parachain
+            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
+            _ => None,
+        }
+    }
+
+    fn non_chain_part(&self) -> Option<Location> {
+        let mut junctions = self.interior().clone();
+        while matches!(junctions.first(), Some(Parachain(_))) {
+            let _ = junctions.take_first();
+        }
+
+        if junctions != Here {
+            Some(Location::new(0, junctions))
+        } else {
+            None
+        }
+    }
+}
+
 parameter_types! {
     pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
@@ -136,20 +209,10 @@ parameter_types! {
     pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
     pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
     pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
+    pub const RelayNetwork: NetworkId = NetworkId::Westend;
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }
-pub type TrustedTeleporters = (
-    xcm_builder::Case<StarForTick>,
-    xcm_builder::Case<StarForTrick>,
-    xcm_builder::Case<StarForTrack>,
-    xcm_builder::Case<StarForAssetHub>,
-    xcm_builder::Case<StarForContracts>,
-    xcm_builder::Case<StarForEncointer>,
-    xcm_builder::Case<StarForBridgeHub>,
-    xcm_builder::Case<StarForPeople>,
-    xcm_builder::Case<StarForBroker>,
-);
 
 pub struct OnlyParachains;
 impl Contains<Location> for OnlyParachains {
@@ -187,7 +250,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
-pub type WaivedLocations = (SystemParachains, Equals<RootLocation>, LocalPlurality);
+pub type WaivedLocations = Equals<RootLocation>;
 pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
@@ -196,8 +259,8 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = LocalAssetTransactor;
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = ();
-    type IsTeleporter = TrustedTeleporters;
+    type IsReserve = NativeAssetReserve;
+    type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
     type Weigher = XcmWeigher;
