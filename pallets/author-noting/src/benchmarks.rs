@@ -56,13 +56,13 @@ mod test_sproof {
 benchmarks! {
     set_latest_author_data {
         // Depend on the number of parachains registered
-        let x in 1..100;
+        let x in 0..100;
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-            for para_id in 1..x {
+            for para_id in 0..x {
                 let para_id = para_id.into();
                 container_chains.push(para_id);
                 // Mock assigned authors for this para id
@@ -83,7 +83,7 @@ benchmarks! {
                 relay_storage_proof: proof,
             };
 
-            for para_id in 1..x {
+            for para_id in 0..x {
                 let para_id = para_id.into();
                 let author: T::AccountId = account("account id", 0u32, 0u32);
 
@@ -93,7 +93,7 @@ benchmarks! {
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
 
-            for para_id in 1..x {
+            for para_id in 0..x {
                 let slot: crate::InherentType = 13u64.into();
                 let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
