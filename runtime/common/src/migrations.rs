@@ -34,13 +34,10 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-#[cfg(feature = "try-runtime")]
-use frame_support::ensure;
-use frame_support::migration::move_pallet;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
-        migration::{clear_storage_prefix, storage_key_iter},
+        migration::{clear_storage_prefix, move_pallet, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         traits::{
             fungible::MutateHold, OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency,
@@ -53,11 +50,12 @@ use {
     pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::{GetMigrations, Migration},
     pallet_registrar::HoldReason,
-    parity_scale_codec::DecodeAll,
     sp_core::Get,
     sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
+#[cfg(feature = "try-runtime")]
+use {frame_support::ensure, parity_scale_codec::DecodeAll};
 
 #[derive(
     Default,
