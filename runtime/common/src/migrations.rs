@@ -53,6 +53,7 @@ use {
     pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::{GetMigrations, Migration},
     pallet_registrar::HoldReason,
+    parity_scale_codec::DecodeAll,
     sp_core::Get,
     sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
@@ -150,6 +151,18 @@ where
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        let old_config_bytes = frame_support::storage::unhashed::get_raw(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .unwrap();
+        let old_config: Result<HostConfigurationV3, _> =
+            DecodeAll::decode_all(&mut old_config_bytes.as_ref());
+        let new_config: Result<HostConfiguration, _> =
+            DecodeAll::decode_all(&mut old_config_bytes.as_ref());
+
+        assert!(old_config.is_ok());
+        assert!(new_config.is_err());
+
         Ok(vec![])
     }
 
@@ -162,8 +175,8 @@ where
         let new_config = pallet_configuration::Pallet::<T>::config();
         let default_config = HostConfiguration::default();
         assert_eq!(
-            new_config.max_parachain_cores_percentage,
-            default_config.max_parachain_cores_percentage
+            new_config.full_rotation_mode,
+            default_config.full_rotation_mode
         );
         Ok(())
     }
