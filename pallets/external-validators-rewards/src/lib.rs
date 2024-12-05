@@ -28,6 +28,8 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
 pub use pallet::*;
 
 use {
@@ -57,6 +59,7 @@ pub struct EraRewardsUtils {
 
 #[frame_support::pallet]
 pub mod pallet {
+    pub use crate::weights::WeightInfo;
     use {
         super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
         tp_traits::EraIndexProvider,
@@ -101,6 +104,9 @@ pub mod pallet {
         type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
+
+        /// The weight information of this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::pallet]
@@ -253,6 +259,11 @@ pub mod pallet {
                         log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
                     }
                 }
+
+                frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                    T::WeightInfo::on_era_end(),
+                    DispatchClass::Mandatory,
+                );
             } else {
                 // Unreachable, this should never happen as we are sending
                 // None as the second param in Self::generate_era_rewards_utils.

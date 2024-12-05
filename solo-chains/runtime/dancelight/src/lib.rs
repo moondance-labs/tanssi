@@ -1369,6 +1369,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
@@ -2101,6 +2102,7 @@ mod benches {
         [pallet_registrar, ContainerRegistrar]
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
+        [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
         // XCM

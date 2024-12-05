@@ -151,6 +151,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type Hashing = Keccak256;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
+    type WeightInfo = ();
 }
 
 // Pallet to provide some mock data, used to test

@@ -22,9 +22,7 @@ use super::*;
 use crate::Pallet as ExternalValidatorsRewards;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
-    frame_support::traits::{Currency, EnsureOrigin, Get},
-    frame_system::{EventRecord, RawOrigin},
-    sp_runtime::{codec, traits::Convert},
+    frame_support::traits::{Currency, Get},
     sp_std::prelude::*,
     tp_traits::OnEraEnd,
 };
@@ -52,11 +50,7 @@ mod benchmarks {
 
     // worst case for the end of an era.
     #[benchmark]
-    fn on_era_end(//r: Linear<1, { 1000 }>,
-    ) -> Result<(), BenchmarkError> {
-        // start fresh
-        //RewardPointsForEra::<T>::remove_prefix(&[], None);
-
+    fn on_era_end() -> Result<(), BenchmarkError> {
         frame_system::Pallet::<T>::set_block_number(0u32.into());
 
         let mut era_reward_points = EraRewardPoints::default();
