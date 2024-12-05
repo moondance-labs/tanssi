@@ -13,6 +13,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+use asset_hub_westend_emulated_chain::AssetHubWestend;
+use bridge_hub_rococo_emulated_chain::BridgeHubRococo;
+use bridge_hub_westend_emulated_chain::BridgeHubWestend;
 pub use sp_core::Get;
 use {
     super::constants::{
@@ -267,6 +270,8 @@ decl_test_networks! {
     pub struct WestendMockNet {
         relay_chain = Westend,
         parachains = vec![
+            AssetHubWestend,
+            BridgeHubWestend,
             Dancebox,
             FrontierTemplate,
             SimpleTemplate,
@@ -276,6 +281,7 @@ decl_test_networks! {
     pub struct RococoMockNet {
         relay_chain = Rococo,
         parachains = vec![
+            BridgeHubRococo,
             DanceboxRococo,
             FrontierTemplateRococo,
             SimpleTemplateRococo,
@@ -295,6 +301,7 @@ parameter_types! {
     pub RococoReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(BOB);
     pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
 
+
     // Dancebox
     pub DanceboxSender: crate::AccountId = crate::AccountId::from(crate::tests::common::ALICE);
     pub DanceboxReceiver: crate::AccountId = crate::AccountId::from(crate::tests::common::BOB);
@@ -308,4 +315,12 @@ parameter_types! {
     pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
     pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[1];
     pub EthereumEmptyReceiver: container_chain_template_frontier_runtime::AccountId = [1u8; 20].into();
+}
+
+use xcm_emulator::decl_test_sender_receiver_accounts_parameter_types;
+
+decl_test_sender_receiver_accounts_parameter_types! {
+    BridgeHubRococoPara { sender: ALICE, receiver: BOB },
+    BridgeHubWestendPara { sender: ALICE, receiver: BOB },
+    AssetHubWestendPara { sender: ALICE, receiver: BOB }
 }

@@ -152,6 +152,16 @@ tp-xcm-core-buyer = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
+bridge-hub-rococo-emulated-chain = { workspace = true }
+bridge-hub-westend-emulated-chain = { workspace = true }
+bridge-hub-westend-runtime = { workspace = true }
+
+asset-hub-westend-emulated-chain = { workspace = true }
+
+snowbridge-core = { workspace = true }
+snowbridge-pallet-system = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-router-primitives = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
