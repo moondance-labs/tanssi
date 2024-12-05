@@ -246,6 +246,12 @@ async fn start_node_impl(
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |subscription_task_executor| {
+            let graph_pool = pool.0.as_any()
+                .downcast_ref::<sc_transaction_pool::BasicPool<
+                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
+                    , Block
+                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
+
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -254,7 +260,7 @@ async fn start_node_impl(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: pool.pool().clone(),
+                graph: graph_pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
                 fee_history_limit,
@@ -497,6 +503,11 @@ pub async fn start_dev_node(
         let block_data_cache = block_data_cache;
 
         Box::new(move |subscription_task_executor| {
+            let graph_pool= pool.0.as_any()
+                .downcast_ref::<sc_transaction_pool::BasicPool<
+                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
+                    , Block
+                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -505,7 +516,7 @@ pub async fn start_dev_node(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: pool.pool().clone(),
+                graph: graph_pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
                 fee_history_limit,

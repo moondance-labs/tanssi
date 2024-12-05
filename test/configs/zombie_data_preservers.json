@@ -47,61 +47,112 @@
     "parachains": [
         {
             "id": 1000,
-            "chain_spec_path": "specs/tanssi-1000.json",
-            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec.sh`",
+            "chain_spec_path": "specs/data-preservers-dancebox-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-data-preservers.sh`",
             "collators": [
                 {
                     "name": "FullNode-1000",
                     "validator": false,
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ],
                     "ws_port": 9948
                 },
                 {
                     "name": "Collator1000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
                     "name": "Collator1000-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
                     "name": "Collator2000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
                     "name": "Collator2000-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
                     "name": "Collator2001-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
                     "name": "Collator2001-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": [
+                        "--no-hardware-benchmarks",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--pool-type=fork-aware"
+                    ]
                 },
                 {
-                    "name": "Collator2002-01",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "name": "DataPreserver-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": [
+                        "--rpc-provider-profile-id=2",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9950"
+                    ],
+                    "prometheus_port": 33102
                 },
                 {
-                    "name": "Collator2002-02",
-                    "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "name": "DataPreserver-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": [
+                        "--rpc-provider-profile-id=3",
+                        "--orchestrator-endpoints=ws://127.0.0.1:9948/",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
+                    ],
+                    "prometheus_port": 33103
                 }
             ]
         },
         {
             "id": 2000,
-            "chain_spec_path": "specs/template-container-2000.json",
+            "chain_spec_path": "specs/data-preservers-container-2000.json",
             "collators": [
                 {
                     "name": "FullNode-2000",
@@ -109,35 +160,23 @@
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9949,
-                    "p2p_port": 33049
+                    "p2p_port": 33049,
+                    "prometheus_port": 33102
                 }
             ]
         },
         {
             "id": 2001,
-            "chain_spec_path": "specs/template-container-2001.json",
+            "chain_spec_path": "specs/data-preservers-container-2001.json",
             "collators": [
                 {
                     "name": "FullNode-2001",
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9950,
-                    "p2p_port": 33050
-                }
-            ]
-        },
-        {
-            "id": 2002,
-            "chain_spec_path": "specs/template-container-2002.json",
-            "collators": [
-                {
-                    "name": "FullNode-2002",
-                    "validator": false,
-                    "command": "../target/release/container-chain-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "ws_port": 9951,
-                    "p2p_port": 33051
+                    "p2p_port": 33050,
+                    "prometheus_port": 33103
                 }
             ]
         }

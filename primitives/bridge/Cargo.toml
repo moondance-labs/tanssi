@@ -17,12 +17,14 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 macro_rules_attribute = { workspace = true }
+pallet-external-validators = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-router-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
@@ -39,12 +41,14 @@ std = [
 	"ethabi/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-external-validators/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
 	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-router-primitives/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
@@ -53,7 +57,9 @@ runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"pallet-external-validators/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
+	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
