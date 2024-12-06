@@ -1336,7 +1336,6 @@ impl pallet_external_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
-    // reminder to add on_initialize weight
     type OnEraEnd = ExternalValidatorsRewards;
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
