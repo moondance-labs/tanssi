@@ -74,6 +74,7 @@ pallet-elections-phragmen = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-external-validators-rewards = { workspace = true }
+pallet-external-validators-rewards-runtime-api = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-initializer = { workspace = true }
@@ -220,6 +221,7 @@ std = [
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
 	"pallet-external-validator-slashes/std",
+	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
 	"pallet-external-validators/std",
 	"pallet-grandpa/std",

@@ -22,6 +22,7 @@ pub mod pallet_collator_assignment;
 pub mod pallet_conviction_voting;
 pub mod pallet_external_validator_slashes;
 pub mod pallet_external_validators;
+pub mod pallet_external_validators_rewards;
 pub mod pallet_identity;
 pub mod pallet_invulnerables;
 pub mod pallet_message_queue;
