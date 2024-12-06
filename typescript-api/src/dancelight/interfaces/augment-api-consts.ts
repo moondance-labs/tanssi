@@ -364,6 +364,39 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        pooledStaking: {
+            /**
+             * All eligible candidates are stored in a sorted list that is modified each time delegations changes. It is safer
+             * to bound this list, in which case eligible candidate could fall out of this list if they have less stake than
+             * the top `EligibleCandidatesBufferSize` eligible candidates. One of this top candidates leaving will then not
+             * bring the dropped candidate in the list. An extrinsic is available to manually bring back such dropped
+             * candidate.
+             */
+            eligibleCandidatesBufferSize: u32 & AugmentedConst<ApiType>;
+            /**
+             * When creating the first Shares for a candidate the supply can arbitrary. Picking a value too high is a barrier
+             * of entry for staking, which will increase overtime as the value of each share will increase due to auto
+             * compounding.
+             */
+            initialAutoCompoundingShareValue: u128 & AugmentedConst<ApiType>;
+            /**
+             * When creating the first Shares for a candidate the supply can be arbitrary. Picking a value too low will make
+             * an higher supply, which means each share will get less rewards, and rewards calculations will have more
+             * impactful rounding errors. Picking a value too high is a barrier of entry for staking.
+             */
+            initialManualClaimShareValue: u128 & AugmentedConst<ApiType>;
+            /**
+             * Minimum amount of stake a Candidate must delegate (stake) towards itself. Not reaching this minimum prevents
+             * from being elected.
+             */
+            minimumSelfDelegation: u128 & AugmentedConst<ApiType>;
+            /** Part of the rewards that will be sent exclusively to the collator. */
+            rewardsCollatorCommission: Perbill & AugmentedConst<ApiType>;
+            /** Account holding Currency of all delegators. */
+            stakingAccount: AccountId32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         proxy: {
             /**
              * The base amount of currency needed to reserve for creating an announcement.
