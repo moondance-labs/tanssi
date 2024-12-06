@@ -60,8 +60,7 @@ use {
     },
     std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, HostConfigurationV2,
-        MigrateConfigurationAddParachainPercentage, MigrateConfigurationParathreads,
+        ForeignAssetCreatorMigration, HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -3898,7 +3897,7 @@ fn test_reward_to_invulnerable_with_key_change() {
 }
 
 #[test]
-fn test_migration_config_add_parachain_percentage() {
+fn test_migration_config_add_full_rotation_mode() {
     ExtBuilder::default().build().execute_with(|| {
         const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
@@ -3908,7 +3907,7 @@ fn test_migration_config_add_parachain_percentage() {
         // Modify active config
         frame_support::storage::unhashed::put_raw(
             CONFIGURATION_ACTIVE_CONFIG_KEY,
-            &HostConfigurationV2 {
+            &HostConfigurationV3 {
                 max_collators: 5,
                 min_orchestrator_collators: 2,
                 max_orchestrator_collators: 1,
@@ -3917,6 +3916,7 @@ fn test_migration_config_add_parachain_percentage() {
                 collators_per_parathread: 2,
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(45),
+                max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
             }
             .encode(),
         );
@@ -3926,7 +3926,7 @@ fn test_migration_config_add_parachain_percentage() {
             &vec![
                 (
                     1234u32,
-                    HostConfigurationV2 {
+                    HostConfigurationV3 {
                         max_collators: 1,
                         min_orchestrator_collators: 4,
                         max_orchestrator_collators: 45,
@@ -3935,11 +3935,12 @@ fn test_migration_config_add_parachain_percentage() {
                         collators_per_parathread: 1,
                         parathreads_per_collator: 1,
                         target_container_chain_fullness: Perbill::from_percent(65),
+                        max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
                     },
                 ),
                 (
                     5678u32,
-                    HostConfigurationV2 {
+                    HostConfigurationV3 {
                         max_collators: 1,
                         min_orchestrator_collators: 4,
                         max_orchestrator_collators: 45,
@@ -3948,13 +3949,14 @@ fn test_migration_config_add_parachain_percentage() {
                         collators_per_parathread: 1,
                         parathreads_per_collator: 1,
                         target_container_chain_fullness: Perbill::from_percent(65),
+                        max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
                     },
                 ),
             ]
             .encode(),
         );
 
-        let migration = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        let migration = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         migration.migrate(Default::default());
 
         let expected_active = pallet_configuration::HostConfiguration {
@@ -3966,6 +3968,7 @@ fn test_migration_config_add_parachain_percentage() {
             collators_per_parathread: 2,
             parathreads_per_collator: 1,
             target_container_chain_fullness: Perbill::from_percent(45),
+            max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
             ..Default::default()
         };
         assert_eq!(Configuration::config(), expected_active);
@@ -3982,6 +3985,7 @@ fn test_migration_config_add_parachain_percentage() {
                     collators_per_parathread: 1,
                     parathreads_per_collator: 1,
                     target_container_chain_fullness: Perbill::from_percent(65),
+                    max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
                     ..Default::default()
                 },
             ),
@@ -3996,68 +4000,13 @@ fn test_migration_config_add_parachain_percentage() {
                     collators_per_parathread: 1,
                     parathreads_per_collator: 1,
                     target_container_chain_fullness: Perbill::from_percent(65),
+                    max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
                     ..Default::default()
                 },
             ),
         ];
         assert_eq!(Configuration::pending_configs(), expected_pending);
     });
-}
-
-#[test]
-fn test_migration_config_full_rotation_period() {
-    ExtBuilder::default()
-        .build()
-        .execute_with(|| {
-            const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-            const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
-
-            // Modify active config
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_ACTIVE_CONFIG_KEY, &hex_literal::hex!("6300000002000000050000000200000000000000"));
-            // Modify pending configs
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_PENDING_CONFIGS_KEY, &hex_literal::hex!("08b10800006300000002000000050000000200000000000000b20800006400000002000000050000000200000000000000"));
-
-            let migration = MigrateConfigurationParathreads::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-
-            let expected_active = pallet_configuration::HostConfiguration {
-                max_collators: 99,
-                min_orchestrator_collators: 2,
-                max_orchestrator_collators: 5,
-                collators_per_container: 2,
-                full_rotation_period: 0,
-                ..Default::default()
-            };
-            assert_eq!(Configuration::config(), expected_active);
-
-            let expected_pending = vec![
-                (
-                    2225,
-                    pallet_configuration::HostConfiguration {
-                        max_collators: 99,
-                        min_orchestrator_collators: 2,
-                        max_orchestrator_collators: 5,
-                        collators_per_container: 2,
-                        full_rotation_period: 0,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    2226,
-                    pallet_configuration::HostConfiguration {
-                        max_collators: 100,
-                        min_orchestrator_collators: 2,
-                        max_orchestrator_collators: 5,
-                        collators_per_container: 2,
-                        full_rotation_period: 0,
-                        ..Default::default()
-                    },
-                ),
-            ];
-            assert_eq!(Configuration::pending_configs(), expected_pending);
-        });
 }
 
 #[test]
