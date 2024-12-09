@@ -878,11 +878,17 @@ where
             //Box::new(migrate_boot_nodes),
             // Applied in runtime 400
             //Box::new(migrate_config_parathread_params),
+            // Applied in runtime 500
             //Box::new(migrate_add_collator_assignment_credits),
+            // Applied in runtime 700
             //Box::new(migrate_registrar_pending_verification),
+            // Applied in runtime 700
             //Box::new(migrate_registrar_manager),
+            // Applied in runtime 700
             //Box::new(migrate_data_preservers_assignments),
+            // Applied in runtime 800
             //Box::new(migrate_registrar_reserves),
+            // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
         ]
@@ -959,16 +965,26 @@ where
             //Box::new(migrate_hold_reason_runtime_enum),
             // Applied in runtime 400
             //Box::new(migrate_boot_nodes),
+            // Applied in runtime 500
             //Box::new(migrate_config_parathread_params),
+            // Applied in runtime 500
             //Box::new(migrate_add_collator_assignment_credits),
+            // Applied in runtime 500
             //Box::new(migrate_xcmp_queue_v4),
+            // Applied in runtime 700
             //Box::new(migrate_registrar_pending_verification),
+            // Applied in runtime 700
             //Box::new(migrate_registrar_manager),
+            // Applied in runtime 700
             //Box::new(migrate_pallet_xcm_v4),
+            // Applied in runtime 700
             //Box::new(foreign_asset_creator_migration),
+            // Applied in runtime 700
             //Box::new(migrate_data_preservers_assignments),
+            // Applied in runtime 800
             //Box::new(migrate_registrar_reserves),
-            //Box::new(migrate_config_max_parachain_percentage)
+            // Applied in runtime 900
+            //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
         ]
     }
