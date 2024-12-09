@@ -170,6 +170,18 @@ where
         &self,
         _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
+        let new_config_bytes = frame_support::storage::unhashed::get_raw(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .unwrap();
+        let old_config: Result<HostConfigurationV3, _> =
+            DecodeAll::decode_all(&mut new_config_bytes.as_ref());
+        let new_config: Result<HostConfiguration, _> =
+            DecodeAll::decode_all(&mut new_config_bytes.as_ref());
+
+        assert!(old_config.is_err());
+        assert!(new_config.is_ok());
+
         let new_config = pallet_configuration::Pallet::<T>::config();
         let default_config = HostConfiguration::default();
         assert_eq!(
