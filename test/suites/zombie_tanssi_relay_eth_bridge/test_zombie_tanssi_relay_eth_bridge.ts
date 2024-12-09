@@ -33,7 +33,11 @@ describeSuite({
         let beefyClientDetails;
         let gatewayProxyAddress;
         let gatewayDetails;
+
         let ethereumWallet;
+
+        let operatorAccount;
+        let operatorNimbusKey;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -45,6 +49,12 @@ describeSuite({
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
             const beaconRelay = keyring.addFromUri("//BeaconRelay", { name: "Beacon relay default" });
             const executionRelay = keyring.addFromUri("//ExecutionRelay", { name: "Execution relay default" });
+
+            // Operator keys
+            operatorAccount = keyring.addFromUri("//" + "Bob", { name: "COLLATOR" + " ACCOUNT" });
+            operatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
+
+            await relayApi.tx.session.setKeys(u8aToHex(operatorNimbusKey), []).signAndSend(operatorAccount);
 
             const fundingTxHash = await relayApi.tx.utility
                 .batch([
@@ -173,7 +183,7 @@ describeSuite({
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const rawValidators = [
-                    "0x1234567890123456789012345678901234567890123456789012345678901234",
+                    u8aToHex(operatorAccount.addressRaw),
                     "0x7894567890123456789012345678901234567890123456789012345678901234",
                     "0x4564567890123456789012345678901234567890123456789012345678901234",
                 ];
@@ -186,7 +196,21 @@ describeSuite({
                 }
 
                 // wait some time for the data to be relayed
-                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        try {
+                            const externalValidators = await relayApi.query.externalValidators.externalValidators();
+                            expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
 
                 const externalValidators = await relayApi.query.externalValidators.externalValidators();
                 expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
@@ -196,6 +220,9 @@ describeSuite({
                 });
 
                 expect(externalValidatorsHex).to.deep.eq(rawValidators);
+
+                const sessionValidators = await relayApi.query.session.validators();
+                expect(sessionValidators.includes(operatorNimbusKey));
             },
         });
 
