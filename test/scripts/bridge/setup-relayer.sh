@@ -40,6 +40,24 @@ config_relayer() {
     | .source.beacon.datastore.location = $data_store_dir
     ' \
         $assets_dir/beacon-relay.json >$output_dir/beacon-relay.json
+
+
+    # Configure execution relay for starlight
+    jq \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg k1 "$(address_for GatewayProxy)" \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        --arg channelID $PRIMARY_GOVERNANCE_CHANNEL_ID \
+        --arg data_store_dir $data_store_dir \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .source.beacon.datastore.location = $data_store_dir
+    | .sink.parachain.endpoint = $relay_chain_endpoint
+    | .schedule.id = 0
+    ' \
+        $assets_dir/execution-relay.json >$output_dir/execution-relay.json
 }
 
 write_beacon_checkpoint() {

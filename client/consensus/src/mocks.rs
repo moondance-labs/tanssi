@@ -885,7 +885,7 @@ impl CollatorLookaheadTestBuilder {
         impl Future<Output = ()> + Send + 'static,
         oneshot::Receiver<()>,
         Arc<TestClient>,
-        Arc<sc_transaction_pool::FullPool<Block, TestClient>>,
+        Arc<sc_transaction_pool::TransactionPoolHandle<Block, TestClient>>,
         CancellationToken,
     ) {
         // Creation of keystore
@@ -917,12 +917,8 @@ impl CollatorLookaheadTestBuilder {
 
         // Create the txpool for orchestrator, which should serve to test parathread buy core injection
         let spawner = sp_core::testing::TaskExecutor::new();
-        let orchestrator_tx_pool = sc_transaction_pool::BasicPool::new_full(
-            Default::default(),
-            true.into(),
-            None,
-            spawner.clone(),
-            client.clone(),
+        let orchestrator_tx_pool = Arc::new(
+            sc_transaction_pool::Builder::new(spawner.clone(), client.clone(), true.into()).build(),
         );
 
         // Create the mocked runtime api, which will return whether we have a core scheduled

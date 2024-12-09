@@ -65,7 +65,7 @@ use {
     sc_network_sync::SyncingService,
     sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
-    sc_transaction_pool::FullPool,
+    sc_transaction_pool::TransactionPoolHandle,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_consensus_slots::Slot,
@@ -516,7 +516,7 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
-    orchestrator_tx_pool: Arc<FullPool<Block, ParachainClient>>,
+    orchestrator_tx_pool: Arc<TransactionPoolHandle<Block, ParachainClient>>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");

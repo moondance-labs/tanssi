@@ -21,7 +21,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_dir="$relayer_root_dir/relayer"
 relay_bin="$relay_dir/build/snowbridge-relay"
 
-RELAYER_TAG="relayer-v1.0.30" # we will need to investigate if this is right
+RELAYER_TAG="demo-v1.0.30-tanssi" # TODO: Demo tag please change
 GETH_TAG="v1.14.11" # We will need to investigate if this is right
 LODESTAR_TAG="v1.19.0"
 
@@ -96,9 +96,17 @@ export EXCHANGE_RATE="${EXCHANGE_RATE:-2500000000000000}"
 export DELIVERY_COST="${DELIVERY_COST:-10000000000}"
 export FEE_MULTIPLIER="${FEE_MULTIPLIER:-1000000000000000000}"
 
-
 ## Vault
 export BRIDGE_HUB_INITIAL_DEPOSIT="${ETH_BRIDGE_HUB_INITIAL_DEPOSIT:-10000000000000000000}"
+
+## Message passing
+export PRIMARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
+# Execution relay account (//ExecutionRelay 5CFNWKMFPsw5Cs2Teo6Pvg7rWyjKiFfqPZs8U4MZXzMYFwXL in testnet)
+execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c58a043da95c8bf177659fc587643e71e7ed1534666177730196f}"
+# Funded ethereum key
+ethereum_key="0x5e002a1af63fd31f1c25258f3082dc889762664cb8f218d86da85dff8b07b342"
+# Above key's address
+ethereum_address="90A987B944Cb1dCcE5564e5FDeCD7a54D3de27Fe"
 
 
 address_for() {

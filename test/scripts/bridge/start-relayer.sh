@@ -42,6 +42,20 @@ start_relayer() {
         done
     ) &
      echo "beacon_relay=$!" >> $artifacts_dir/daemons.pid
+
+    # Launch execution relay
+    (
+          : >$output_dir/execution-relay.log
+          while :; do
+              echo "Starting execution relay at $(date)"
+              "${relay_bin}" run execution \
+                --config $output_dir/execution-relay.json \
+                --substrate.private-key "//ExecutionRelay" \
+                >>"$logs_dir"/execution-relay.log 2>&1 || true
+            sleep 20
+        done
+    ) &
+    echo "execution_relay=$!" >> $artifacts_dir/daemons.pid
 }
 
 echo "start relayers only!"
