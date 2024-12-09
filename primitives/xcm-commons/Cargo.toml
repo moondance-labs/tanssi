@@ -1,0 +1,20 @@
+[package]
+name = "tp-xcm-commons"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+staging-xcm = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = [
+	"std",
+]
+std = [
+    "staging-xcm/std",
+]
