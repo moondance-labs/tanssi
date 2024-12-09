@@ -134,19 +134,12 @@ impl Get<u64> for TimestampProvider {
     }
 }
 
-pub struct EraInflationProvider;
-impl Get<u128> for EraInflationProvider {
-    fn get() -> u128 {
-        0u128
-    }
-}
-
 impl pallet_external_validators_rewards::Config for Test {
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
-    type EraInflationProvider = EraInflationProvider;
+    type EraInflationProvider = ();
     type TimestampProvider = TimestampProvider;
     type Hashing = Keccak256;
     type ValidateMessage = ();

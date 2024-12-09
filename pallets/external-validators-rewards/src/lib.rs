@@ -252,11 +252,11 @@ pub mod pallet {
                 match T::ValidateMessage::validate(&outbound_message) {
                     Ok((ticket, _fee)) => {
                         if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue delivery of message failed. {err:?}");
+                            log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
                         }
                     }
                     Err(err) => {
-                        log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+                        log::error!(target: "ext_validators_rewards", "OutboundQueue validation of message failed. {err:?}");
                     }
                 }
 
