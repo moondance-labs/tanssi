@@ -10,4 +10,6 @@ pnpm generateContracts "$output_dir/contracts.json" > /dev/null
 popd > /dev/null
 
 # Output the file so that invoker can read it
-cat "$output_dir/contracts.json"
+contract_output=$(cat "$output_dir/contracts.json")
+
+echo "{ \"data\": $contract_output, \"ethereum_key\": \"$ethereum_key\" }"
