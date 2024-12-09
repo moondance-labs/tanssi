@@ -3,6 +3,11 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { spawn, exec } from "node:child_process";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { u8aToHex } from "@polkadot/util";
+
+// Change this if we change the storage parameter in runtime
+const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
 function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
@@ -26,6 +31,9 @@ describeSuite({
         let relayerChildProcess;
         let alice;
         let beefyClientDetails;
+        let gatewayProxyAddress;
+        let gatewayDetails;
+        let ethereumWallet;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -36,11 +44,15 @@ describeSuite({
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
             const beaconRelay = keyring.addFromUri("//BeaconRelay", { name: "Beacon relay default" });
+            const executionRelay = keyring.addFromUri("//ExecutionRelay", { name: "Execution relay default" });
 
-            const txHash = await relayApi.tx.balances
-                .transferAllowDeath(beaconRelay.address, 1_000_000_000_000)
+            const fundingTxHash = await relayApi.tx.utility
+                .batch([
+                    relayApi.tx.balances.transferAllowDeath(beaconRelay.address, 1_000_000_000_000),
+                    relayApi.tx.balances.transferAllowDeath(executionRelay.address, 1_000_000_000_000),
+                ])
                 .signAndSend(alice);
-            console.log("Transferred money to beacon relay", txHash.toHex());
+            console.log("Transferred money to relayers", fundingTxHash.toHex());
 
             ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {
                 shell: true,
@@ -67,8 +79,22 @@ describeSuite({
             const contractInfoData = JSON.parse(
                 <string>(await execCommand("./scripts/bridge/generate-contract-info.sh")).stdout
             );
-            console.log("BeefyClient contract address is:", contractInfoData.contracts.BeefyClient.address);
-            beefyClientDetails = contractInfoData.contracts.BeefyClient;
+
+            console.log("BeefyClient contract address is:", contractInfoData.data.contracts.BeefyClient.address);
+            beefyClientDetails = contractInfoData.data.contracts.BeefyClient;
+
+            console.log("Gateway contract proxy address is:", contractInfoData.data.contracts.GatewayProxy.address);
+            gatewayProxyAddress = contractInfoData.data.contracts.GatewayProxy.address;
+            gatewayDetails = contractInfoData.data.contracts.Gateway;
+
+            console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
+            const setGatewayAddressTxHash = await relayApi.tx.sudo
+                .sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]]))
+                .signAndSend(alice);
+            console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.toHex());
+
+            const customHttpProvider = new ethers.WebSocketProvider("ws://127.0.0.1:8546");
+            ethereumWallet = new ethers.Wallet(contractInfoData.ethereum_key, customHttpProvider);
 
             const initialBeaconUpdate = JSON.parse(
                 <string>(
@@ -135,6 +161,41 @@ describeSuite({
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const nextBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
+            },
+        });
+
+        it({
+            id: "T03",
+            title: "Message can be passed from ethereum to Starlight",
+            test: async function () {
+                const gatewayContract = new ethers.Contract(gatewayProxyAddress, gatewayDetails.abi, ethereumWallet);
+
+                const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
+
+                const rawValidators = [
+                    "0x1234567890123456789012345678901234567890123456789012345678901234",
+                    "0x7894567890123456789012345678901234567890123456789012345678901234",
+                    "0x4564567890123456789012345678901234567890123456789012345678901234",
+                ];
+
+                try {
+                    const tx = await gatewayContract.sendOperatorsData(rawValidators, 1);
+                    await tx.wait();
+                } catch (error) {
+                    throw new Error(`Failed to send operator data: ${error.message}`, error.code);
+                }
+
+                // wait some time for the data to be relayed
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+
+                const externalValidators = await relayApi.query.externalValidators.externalValidators();
+                expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
+
+                const externalValidatorsHex = externalValidators.toJSON().map((x) => {
+                    return u8aToHex(decodeAddress(x));
+                });
+
+                expect(externalValidatorsHex).to.deep.eq(rawValidators);
             },
         });
 
