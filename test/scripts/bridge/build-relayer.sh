@@ -15,7 +15,7 @@ if [ -d "$relayer_root_dir" ];
 then
   echo "Relayer seems to be already setup. Skipping git fetch"
 else
-  git clone https://github.com/Snowfork/snowbridge $relayer_root_dir
+  git clone https://github.com/moondance-labs/snowbridge $relayer_root_dir
   pushd $relayer_root_dir
   git fetch && git checkout $RELAYER_TAG
   popd
