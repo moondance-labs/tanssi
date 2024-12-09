@@ -1651,11 +1651,11 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<G>(PhantomData<G>);
+pub struct SessionTimer<Delay>(PhantomData<Delay>);
 
-impl<G> Timer for SessionTimer<G>
+impl<Delay> Timer for SessionTimer<Delay>
 where
-    G: Get<u32>,
+    Delay: Get<u32>,
 {
     type Instant = u32;
 
@@ -1664,7 +1664,7 @@ where
     }
 
     fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = G::get();
+        let delay = Delay::get();
         let Some(end) = instant.checked_add(delay) else {
             return false;
         };
@@ -1673,7 +1673,7 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn elapsed_instant() -> Self::Instant {
-        let delay = G::get();
+        let delay = Delay::get();
         Self::now()
             .checked_add(delay)
             .expect("overflow when computing valid elapsed instant")
