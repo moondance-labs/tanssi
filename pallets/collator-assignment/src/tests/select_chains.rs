@@ -27,16 +27,19 @@ fn select_chains_not_enough_to_reach_min_container() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 10,
             max_collators: 10,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 10,
             max_collators: 10,
+            parathread: false,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(10, &container_chains);
@@ -50,6 +53,7 @@ fn select_chains_not_enough_to_reach_min_orchestrator() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     }];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(1, &container_chains);
     assert_eq!(new_assigned, vec![(1000.into(), 1),]);
@@ -64,16 +68,19 @@ fn select_chains_not_enough_for_all_min() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 2,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 2,
+            parathread: false,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(5, &container_chains);
@@ -89,16 +96,19 @@ fn select_chains_not_enough_for_all_max() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(7, &container_chains);
@@ -131,16 +141,19 @@ fn select_chains_more_than_max() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(20, &container_chains);
@@ -159,16 +172,19 @@ fn select_chains_not_enough_to_reach_min_container_but_enough_for_parathread() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 2,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 3000.into(),
             min_collators: 1,
             max_collators: 1,
+            parathread: true,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(3, &container_chains);
@@ -183,16 +199,19 @@ fn select_chains_solochain() {
             para_id: 1000.into(),
             min_collators: 0,
             max_collators: 0,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
     ];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(5, &container_chains);
@@ -209,6 +228,7 @@ fn select_chains_solochain_zero_collators() {
         para_id: 1000.into(),
         min_collators: 0,
         max_collators: 0,
+        parathread: false,
     }];
     let new_assigned = Assignment::<Test>::select_chains_with_collators(0, &container_chains);
     assert_eq!(new_assigned, vec![(1000.into(), 0)]);

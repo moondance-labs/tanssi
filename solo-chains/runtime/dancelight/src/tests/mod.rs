@@ -16,9 +16,10 @@
 
 //! Tests for the Dancelight Runtime Configuration
 
-use {crate::*, std::collections::HashSet};
-
-use {frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay};
+use {
+    crate::*, frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay,
+    std::collections::HashSet,
+};
 
 mod author_noting_tests;
 mod beefy;
