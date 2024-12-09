@@ -54,9 +54,9 @@ use {
     },
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentHook, CollatorAssignmentTip, GetContainerChainAuthor,
-        GetHostConfiguration, GetSessionContainerChains, ParaId, RemoveInvulnerables,
-        RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
+        CollatorAssignmentTip, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, ParaId, ParaIdAssignmentHooks, RemoveInvulnerables,
+        ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -105,8 +105,7 @@ pub mod pallet {
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
-        type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
-        type CollatorAssignmentHook: CollatorAssignmentHook<BalanceOf<Self>>;
+        type ParaIdAssignmentHooks: ParaIdAssignmentHooks<BalanceOf<Self>, Self::AccountId>;
         type Currency: Currency<Self::AccountId>;
         type CollatorAssignmentTip: CollatorAssignmentTip<BalanceOf<Self>>;
         type ForceEmptyOrchestrator: Get<bool>;
@@ -309,16 +308,13 @@ pub mod pallet {
                 old_assigned.container_chains.keys().cloned().collect();
 
             // Remove the containerChains that do not have enough credits for block production
-            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
+            T::ParaIdAssignmentHooks::pre_assignment(
                 &mut container_chain_ids,
                 &old_assigned_para_ids,
             );
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
             // as parathreads because they will not be producing blocks on every slot.
-            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
-                &mut parathreads,
-                &old_assigned_para_ids,
-            );
+            T::ParaIdAssignmentHooks::pre_assignment(&mut parathreads, &old_assigned_para_ids);
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -467,51 +463,11 @@ pub mod pallet {
 
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
-            for para_id in &container_chain_ids {
-                if !new_assigned
-                    .container_chains
-                    .get(para_id)
-                    .unwrap_or(&vec![])
-                    .is_empty()
-                {
-                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
-                        *para_id,
-                        maybe_tip.as_ref(),
-                        false,
-                    ) {
-                        // On error remove para from assignment
-                        log::warn!(
-                            "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
-                            u32::from(*para_id),
-                            e
-                        );
-                        new_assigned.container_chains.remove(para_id);
-                    }
-                }
-            }
-
-            for para_id in &parathreads {
-                if !new_assigned
-                    .container_chains
-                    .get(para_id)
-                    .unwrap_or(&vec![])
-                    .is_empty()
-                {
-                    if let Err(e) = T::CollatorAssignmentHook::on_collators_assigned(
-                        *para_id,
-                        maybe_tip.as_ref(),
-                        true,
-                    ) {
-                        // On error remove para from assignment
-                        log::warn!(
-                            "CollatorAssignmentHook error! Removing para {} from assignment: {:?}",
-                            u32::from(*para_id),
-                            e
-                        );
-                        new_assigned.container_chains.remove(para_id);
-                    }
-                }
-            }
+            T::ParaIdAssignmentHooks::post_assignment(
+                &old_assigned_para_ids,
+                &mut new_assigned.container_chains,
+                &maybe_tip,
+            );
 
             Self::store_collator_fullness(
                 &new_assigned,

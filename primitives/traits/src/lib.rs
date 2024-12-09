@@ -45,7 +45,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, vec::Vec},
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
@@ -272,24 +272,30 @@ impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
 
 /// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
 /// in pallet_services_payment
-pub trait RemoveParaIdsWithNoCredits {
+pub trait ParaIdAssignmentHooks<B, AC> {
     /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
     /// will be the first one to get collators.
-    fn remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
-        currently_assigned: &BTreeSet<ParaId>,
-    );
+    fn pre_assignment(para_ids: &mut Vec<ParaId>, old_assigned: &BTreeSet<ParaId>);
+    fn post_assignment(
+        current_assigned: &BTreeSet<ParaId>,
+        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        maybe_tip: &Option<B>,
+    ) -> Weight;
 
     /// Make those para ids valid by giving them enough credits, for benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
     fn make_valid_para_ids(para_ids: &[ParaId]);
 }
 
-impl RemoveParaIdsWithNoCredits for () {
-    fn remove_para_ids_with_no_credits(
-        _para_ids: &mut Vec<ParaId>,
-        _currently_assigned: &BTreeSet<ParaId>,
-    ) {
+impl<B, AC> ParaIdAssignmentHooks<B, AC> for () {
+    fn pre_assignment(_para_ids: &mut Vec<ParaId>, _currently_assigned: &BTreeSet<ParaId>) {}
+
+    fn post_assignment(
+        _current_assigned: &BTreeSet<ParaId>,
+        _new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        _maybe_tip: &Option<B>,
+    ) -> Weight {
+        Default::default()
     }
 
     #[cfg(feature = "runtime-benchmarks")]
