@@ -3351,6 +3351,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
+ "tp-xcm-commons",
  "tp-xcm-core-buyer",
  "westend-runtime",
  "westend-runtime-constants",
@@ -3508,6 +3509,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-bridge",
  "tp-traits",
+ "tp-xcm-commons",
  "westend-runtime",
  "westend-runtime-constants",
  "xcm-emulator",
@@ -18845,6 +18847,13 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tp-xcm-commons"
+version = "0.1.0"
+dependencies = [
+ "staging-xcm",
 ]
 
 [[package]]

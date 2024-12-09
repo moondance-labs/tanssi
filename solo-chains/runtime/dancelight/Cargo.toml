@@ -129,6 +129,7 @@ dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
+tp-xcm-commons = { workspace = true }
 
 pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
@@ -317,6 +318,7 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-bridge/std",
 	"tp-traits/std",
+	"tp-xcm-commons/std",
 	"tx-pool-api/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
