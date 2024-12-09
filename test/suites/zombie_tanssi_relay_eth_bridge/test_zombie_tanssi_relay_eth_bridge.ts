@@ -196,7 +196,21 @@ describeSuite({
                 }
 
                 // wait some time for the data to be relayed
-                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        try {
+                            const externalValidators = await relayApi.query.externalValidators.externalValidators();
+                            expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
 
                 const externalValidators = await relayApi.query.externalValidators.externalValidators();
                 expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
