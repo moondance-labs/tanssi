@@ -3418,6 +3418,7 @@ dependencies = [
  "pallet-multisig",
  "pallet-offences",
  "pallet-parameters",
+ "pallet-pooled-staking",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-ranked-collective",
