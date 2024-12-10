@@ -151,6 +151,7 @@ impl ConstantGasMeter {
     fn maximum_dispatch_gas_used_at_most(command: &Command) -> u64 {
         match command {
             Command::Test { .. } => 60_000,
+            // TODO: revisit gas cost
             Command::ReportRewards { .. } => 60_000,
         }
     }
