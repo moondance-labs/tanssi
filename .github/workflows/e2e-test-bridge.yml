@@ -3,7 +3,7 @@ name: Bridge e2e test
 on:
   workflow_run:
     workflows: [CI]
-    branches: [girazoki-bridge-test]
+    branches: [master]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -98,7 +98,7 @@ jobs:
               run: |
                 echo ${{ steps.retrieve-run-id.outputs.run_id }}
             - name: Download build artifact from triggered workflow
-              uses: dawidd6/action-download-artifact@v2
+              uses: dawidd6/action-download-artifact@v7
               with:
                 run_id: ${{ steps.retrieve-run-id.outputs.run_id }}
                 name: binaries
