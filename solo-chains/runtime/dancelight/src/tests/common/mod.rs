@@ -57,6 +57,8 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
+mod xcm;
+
 pub use crate::{
     genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
     Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
@@ -329,6 +331,7 @@ pub struct ExtBuilder {
     own_para_id: Option<ParaId>,
     next_free_para_id: ParaId,
     keystore: Option<KeystorePtr>,
+    safe_xcm_version: Option<u32>,
 }
 
 impl Default for ExtBuilder {
@@ -358,6 +361,7 @@ impl Default for ExtBuilder {
             own_para_id: Default::default(),
             next_free_para_id: Default::default(),
             keystore: None,
+            safe_xcm_version: Default::default(),
         }
     }
 }
@@ -425,6 +429,11 @@ impl ExtBuilder {
     // Maybe change to with_collators_config?
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
+        self
+    }
+
+    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
+        self.safe_xcm_version = Some(safe_xcm_version);
         self
     }
 
@@ -548,6 +557,13 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        pallet_xcm::GenesisConfig::<Runtime> {
+            safe_xcm_version: self.safe_xcm_version,
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         runtime_parachains::configuration::GenesisConfig::<Runtime> {
             config: self.relay_config,
         }
@@ -656,6 +672,13 @@ impl ExtBuilder {
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
             .unwrap();
+
+        if self.safe_xcm_version.is_some() {
+            // Disable run_block checks in XCM tests, because the XCM emulator runs on_initialize and
+            // on_finalize automatically
+            t.top.insert(b"__mock_is_xcm_test".to_vec(), b"1".to_vec());
+        }
+
         t
     }
 
