@@ -96,7 +96,7 @@ jobs:
             - name: Check output
               id: check_output
               run: |
-                echo ${{ steps.retrieve-run-id.outputs.run_id }}
+                echo ${{ steps.retrieve-run-id.outputs.run_sha }}
             - name: Download build artifact from triggered workflow
               uses: dawidd6/action-download-artifact@v7
               with:
