@@ -50,7 +50,6 @@ use {
         WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
-    tp_xcm_commons::Parse,
 };
 
 parameter_types! {
