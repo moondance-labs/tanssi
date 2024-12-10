@@ -63,7 +63,7 @@ use {
     },
     staging_xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,
-    tp_xcm_commons::Parse,
+    tp_xcm_commons::NativeAssetReserve,
 };
 
 parameter_types! {
@@ -391,28 +391,6 @@ pub type AssetRateAsMultiplier =
         AssetRate,
         ForeignAssetsInstance,
     >;
-
-// TODO: this should probably move to somewhere in the polkadot-sdk repo
-pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if asset.id.0.parents == 0
-            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
-        {
-            Some(Location::here())
-        } else {
-            asset.id.0.chain_part()
-        };
-
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
-        }
-        false
-    }
-}
 
 parameter_types! {
     pub MessageQueueServiceWeight: Weight = Perbill::from_percent(25) * RuntimeBlockWeights::get().max_block;
