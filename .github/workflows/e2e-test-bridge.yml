@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       run_sha:
-        description: "Run id from which artifacts are taken"
+        description: "Sha commit from which artifacts are taken"
         required: true
 
 jobs:
