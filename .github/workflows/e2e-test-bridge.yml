@@ -3,7 +3,7 @@ name: Bridge e2e test
 on:
   workflow_run:
     workflows: [CI]
-    branches: [master]
+    branches: [girazoki-bridge-test]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -99,7 +99,6 @@ jobs:
                 run_id: ${{ steps.retrieve-run-id.outputs.run_id }}
                 name: binaries
                 path: target/release
-                search_artifacts: true
             - name: "Make binaries executable"
               shell: bash
               run: |
