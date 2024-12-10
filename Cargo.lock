@@ -18852,6 +18852,8 @@ dependencies = [
 name = "tp-xcm-commons"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
+ "log",
  "staging-xcm",
 ]
 

@@ -37,7 +37,7 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    tp_xcm_commons::Parse,
+    tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
@@ -116,27 +116,6 @@ pub type XcmRouter = WithUniqueTopic<
     // Only one router so far - use DMP to communicate with child parachains.
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
 >;
-
-pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if asset.id.0.parents == 0
-            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
-        {
-            Some(Location::here())
-        } else {
-            asset.id.0.chain_part()
-        };
-
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
-        }
-        false
-    }
-}
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
