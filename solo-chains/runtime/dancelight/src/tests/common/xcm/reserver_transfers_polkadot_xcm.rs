@@ -81,7 +81,7 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: Here.into(),
+                    interior: Here,
                 },
                 dancelight_token_asset_id,
                 SimpleTemplateEmptyReceiver::get(),
