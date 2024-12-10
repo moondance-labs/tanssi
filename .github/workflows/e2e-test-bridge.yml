@@ -93,6 +93,10 @@ jobs:
               id: check_date
               run: |
                 date --version
+            - name: Check output
+              id: check_output
+              run: |
+                echo ${{ steps.retrieve-run-id.outputs.run_id }}
             - name: Download build artifact from triggered workflow
               uses: dawidd6/action-download-artifact@v2
               with:
