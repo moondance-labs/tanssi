@@ -110,6 +110,7 @@ mod benchmarks {
                 random_seed,
                 full_rotation: false,
                 target_session: T::SessionIndex::from(1u32),
+                full_rotation_mode: FullRotationModes::keep_all(),
             }
             .into(),
         );
