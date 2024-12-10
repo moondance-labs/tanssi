@@ -37,6 +37,7 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
+    tp_xcm_commons::Parse,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
@@ -49,7 +50,6 @@ use {
         WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
-    tp_xcm_commons::Parse,
 };
 
 parameter_types! {
