@@ -78,6 +78,7 @@ use {
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     snowbridge_core::ChannelId,
+    snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
@@ -555,7 +556,7 @@ impl pallet_session::Config for Runtime {
 }
 
 pub struct FullIdentificationOf;
-impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
+impl Convert<AccountId, Option<()>> for FullIdentificationOf {
     fn convert(_: AccountId) -> Option<()> {
         Some(())
     }
@@ -1335,10 +1336,17 @@ impl pallet_external_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
-    type OnEraEnd = ();
+    type OnEraEnd = ExternalValidatorsRewards;
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
+    }
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
@@ -1346,6 +1354,14 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
+    // TODO: add a proper way to retrieve the inflated tokens.
+    // Will likely be through InflationRewards.
+    type EraInflationProvider = ();
+    type TimestampProvider = TimestampProvider;
+    type Hashing = Keccak256;
+    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
+    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
@@ -2078,6 +2094,7 @@ mod benches {
         [pallet_registrar, ContainerRegistrar]
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
+        [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
         // XCM
@@ -2693,6 +2710,19 @@ sp_api::impl_runtime_apis! {
 
         fn latest_author(para_id: ParaId) -> Option<AccountId> {
             AuthorNoting::latest_author(para_id).map(|info| info.author)
+        }
+    }
+
+    impl pallet_external_validators_rewards_runtime_api::ExternalValidatorsRewardsApi<Block, AccountId, EraIndex> for Runtime
+        where
+        EraIndex: parity_scale_codec::Codec,
+    {
+        fn generate_rewards_merkle_proof(account_id: AccountId, era_index: EraIndex) -> Option<MerkleProof> {
+            ExternalValidatorsRewards::generate_rewards_merkle_proof(account_id, era_index)
+        }
+
+        fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool {
+            ExternalValidatorsRewards::verify_rewards_merkle_proof(merkle_proof)
         }
     }
 
