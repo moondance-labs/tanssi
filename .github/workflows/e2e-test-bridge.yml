@@ -101,6 +101,7 @@ jobs:
               uses: dawidd6/action-download-artifact@v7
               with:
                 commit: ${{ steps.retrieve-run-id.outputs.run_sha }}
+                workflow: release.yml
                 name: binaries
                 path: target/release
                 allow_forks: true
