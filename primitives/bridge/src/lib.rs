@@ -27,7 +27,7 @@ use {
         relay_chain::{AccountId, Balance},
         Assets, Location, SendResult, SendXcm, Xcm, XcmHash,
     },
-    ethabi::Token,
+    ethabi::{Token, U256},
     frame_support::{
         ensure,
         pallet_prelude::{Decode, Encode, Get},
@@ -67,6 +67,18 @@ mod custom_send_message;
 pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
+    ReportRewards {
+        // block timestamp
+        timestamp: u64,
+        // index of the era we are sending info of
+        era_index: u32,
+        // total_points for the era
+        total_points: u128,
+        // new tokens inflated during the era
+        tokens_inflated: u128,
+        // merkle root of vec![(validatorId, rewardPoints)]
+        rewards_merkle_root: H256,
+    },
 }
 
 impl Command {
@@ -75,6 +87,7 @@ impl Command {
         match self {
             // Starting from 32 to keep compatibility with Snowbridge Command enum
             Command::Test { .. } => 32,
+            Command::ReportRewards { .. } => 33,
         }
     }
 
@@ -83,6 +96,26 @@ impl Command {
         match self {
             Command::Test(payload) => {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
+            }
+            Command::ReportRewards {
+                timestamp,
+                era_index,
+                total_points,
+                tokens_inflated,
+                rewards_merkle_root,
+            } => {
+                let timestamp_token = Token::Uint(U256::from(*timestamp));
+                let era_index_token = Token::Uint(U256::from(*era_index));
+                let total_points_token = Token::Uint(U256::from(*total_points));
+                let tokens_inflated_token = Token::Uint(U256::from(*tokens_inflated));
+                let rewards_mr_token = Token::FixedBytes(rewards_merkle_root.0.to_vec());
+                ethabi::encode(&[Token::Tuple(vec![
+                    timestamp_token,
+                    era_index_token,
+                    total_points_token,
+                    tokens_inflated_token,
+                    rewards_mr_token,
+                ])])
             }
         }
     }

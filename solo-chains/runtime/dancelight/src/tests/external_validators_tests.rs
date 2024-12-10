@@ -18,10 +18,15 @@
 
 use {
     crate::{
-        tests::common::*, ExternalValidators, MaxExternalValidators, SessionKeys, SessionsPerEra,
+        tests::common::*, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators,
+        RuntimeEvent, SessionKeys, SessionsPerEra, System,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
+    parity_scale_codec::Encode,
+    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
+    sp_core::H256,
+    sp_io::hashing::twox_64,
     std::{collections::HashMap, ops::RangeInclusive},
 };
 
@@ -690,5 +695,147 @@ fn external_validators_manual_reward_points() {
                 pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
                     == 1
             );
+        });
+}
+
+#[test]
+fn external_validators_rewards_sends_message_on_era_end() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
+
+            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
+            let mut combined_channel_id_key = Vec::new();
+            let hashed_key = twox_64(&channel_id);
+
+            combined_channel_id_key.extend_from_slice(&hashed_key);
+            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
+
+            let mut full_storage_key = Vec::new();
+            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(
+                b"EthereumSystem",
+                b"Channels",
+            ));
+            full_storage_key.extend_from_slice(&combined_channel_id_key);
+
+            let channel = Channel {
+                agent_id: H256::default(),
+                para_id: 1000u32.into(),
+            };
+
+            frame_support::storage::unhashed::put(&full_storage_key, &channel);
+
+            // This will call on_era_end for era 0
+            run_to_session(sessions_per_era);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+        });
+}
+
+#[test]
+fn external_validators_rewards_merkle_proofs() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            assert_ok!(ExternalValidators::skip_external_validators(
+                root_origin(),
+                true
+            ));
+
+            run_to_session(sessions_per_era);
+            let validators = Session::validators();
+
+            // Only whitelisted validators get selected
+            assert_eq!(
+                validators,
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 0
+            );
+
+            // Reward Alice and Bob in era 1
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 1
+            );
+
+            let alice_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(ALICE),
+                1u32,
+            );
+            let is_alice_merkle_proof_valid =
+                ExternalValidatorsRewards::verify_rewards_merkle_proof(alice_merkle_proof.unwrap());
+
+            let bob_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(BOB),
+                1u32,
+            );
+            let is_bob_merkle_proof_valid =
+                ExternalValidatorsRewards::verify_rewards_merkle_proof(bob_merkle_proof.unwrap());
+
+            assert!(is_alice_merkle_proof_valid);
+            assert!(is_bob_merkle_proof_valid);
+
+            // Let's check invalid proofs now.
+            let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(CHARLIE),
+                1u32,
+            );
+
+            let alice_invalid_merkle_proof =
+                ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                    AccountId::from(ALICE),
+                    0u32,
+                );
+
+            let bob_invalid_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(BOB),
+                2u32,
+            );
+
+            // Charlie is not present in the validator set, so no merkle proof for him.
+            assert!(charlie_merkle_proof.is_none());
+
+            // Alice wasn't rewarded for era 0.
+            assert!(alice_invalid_merkle_proof.is_none());
+
+            // Proof for a future era should also be invalid.
+            assert!(bob_invalid_merkle_proof.is_none());
         });
 }
