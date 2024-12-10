@@ -103,6 +103,7 @@ jobs:
                 run_id: ${{ steps.retrieve-run-id.outputs.run_id }}
                 name: binaries
                 path: target/release
+                allow_forks: true
             - name: "Make binaries executable"
               shell: bash
               run: |
