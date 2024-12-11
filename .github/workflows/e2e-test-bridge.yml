@@ -104,7 +104,7 @@ jobs:
                 workflow: release.yml
                 name: binaries
                 path: target/release
-                allow_forks: true
+                allow_forks: false
             - name: "Make binaries executable"
               shell: bash
               run: |
