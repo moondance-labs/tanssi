@@ -21,7 +21,7 @@
 //! DATE: 2024-12-11, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
 //! HOSTNAME: `pop-os`, CPU: `12th Gen Intel(R) Core(TM) i7-1260P`
-//! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
+//! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("flashbox_dev"), DB CACHE: 1024
 
 // Executed Command:
 // ./target/release/tanssi-node
@@ -33,7 +33,7 @@
 // pallet_author_noting
 // --extrinsic
 // *
-// --chain=dev
+// --chain=flashbox_dev
 // --steps
 // 50
 // --repeat
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// tmp/dancebox_weights/pallet_author_noting.rs
+// tmp/flashbox_weights/pallet_author_noting.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -65,7 +65,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `AuthorNoting::DidSetContainerAuthorData` (r:1 w:1)
 	/// Proof: `AuthorNoting::DidSetContainerAuthorData` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)
-	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: Some(402), added: 897, mode: `MaxEncodedLen`)
+	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: Some(802), added: 1297, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `ParachainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Digest` (r:1 w:0)
@@ -75,30 +75,26 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `AuthorNoting::LatestAuthor` (r:100 w:100)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
 	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(418), added: 913, mode: `MaxEncodedLen`)
+	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(818), added: 1313, mode: `MaxEncodedLen`)
 	/// Storage: `ServicesPayment::BlockProductionCredits` (r:100 w:0)
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:103 w:102)
+	/// Storage: `System::Account` (r:101 w:101)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// Storage: `PooledStaking::Pools` (r:2 w:0)
-	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
-	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:100)
-	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
 	/// The range of component `x` is `[1, 100]`.
 	fn set_latest_author_data(x: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1015 + x * (208 ±0)`
-		//  Estimated: `8799 + x * (2603 ±0)`
-		// Minimum execution time: 122_225_000 picoseconds.
-		Weight::from_parts(123_639_000, 8799)
-			// Standard Error: 128_105
-			.saturating_add(Weight::from_parts(36_913_982, 0).saturating_mul(x.into()))
-			.saturating_add(T::DbWeight::get().reads(12_u64))
+		//  Measured:  `854 + x * (208 ±0)`
+		//  Estimated: `7887 + x * (2603 ±0)`
+		// Minimum execution time: 83_801_000 picoseconds.
+		Weight::from_parts(85_905_000, 7887)
+			// Standard Error: 173_939
+			.saturating_add(Weight::from_parts(38_237_286, 0).saturating_mul(x.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(x.into())))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
-			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(x.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(x.into())))
 			.saturating_add(Weight::from_parts(0, 2603).saturating_mul(x.into()))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
@@ -107,8 +103,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_776_000 picoseconds.
-		Weight::from_parts(6_057_000, 0)
+		// Minimum execution time: 6_026_000 picoseconds.
+		Weight::from_parts(6_250_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
@@ -117,30 +113,26 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_542_000 picoseconds.
-		Weight::from_parts(5_844_000, 0)
+		// Minimum execution time: 5_454_000 picoseconds.
+		Weight::from_parts(5_660_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(418), added: 913, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:4 w:3)
+	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(818), added: 1313, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// Storage: `PooledStaking::Pools` (r:2 w:0)
-	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
 	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:0)
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:1)
-	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
 	fn on_container_author_noted() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `881`
-		//  Estimated: `11402`
-		// Minimum execution time: 92_792_000 picoseconds.
-		Weight::from_parts(99_983_000, 11402)
-			.saturating_add(T::DbWeight::get().reads(9_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
+		//  Measured:  `647`
+		//  Estimated: `7887`
+		// Minimum execution time: 51_807_000 picoseconds.
+		Weight::from_parts(53_926_000, 7887)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
 
@@ -149,7 +141,7 @@ impl WeightInfo for () {
 	/// Storage: `AuthorNoting::DidSetContainerAuthorData` (r:1 w:1)
 	/// Proof: `AuthorNoting::DidSetContainerAuthorData` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)
-	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: Some(402), added: 897, mode: `MaxEncodedLen`)
+	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: Some(802), added: 1297, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `ParachainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Digest` (r:1 w:0)
@@ -159,30 +151,26 @@ impl WeightInfo for () {
 	/// Storage: `AuthorNoting::LatestAuthor` (r:100 w:100)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
 	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(418), added: 913, mode: `MaxEncodedLen`)
+	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(818), added: 1313, mode: `MaxEncodedLen`)
 	/// Storage: `ServicesPayment::BlockProductionCredits` (r:100 w:0)
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:103 w:102)
+	/// Storage: `System::Account` (r:101 w:101)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// Storage: `PooledStaking::Pools` (r:2 w:0)
-	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
-	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:100)
-	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
 	/// The range of component `x` is `[1, 100]`.
 	fn set_latest_author_data(x: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1015 + x * (208 ±0)`
-		//  Estimated: `8799 + x * (2603 ±0)`
-		// Minimum execution time: 122_225_000 picoseconds.
-		Weight::from_parts(123_639_000, 8799)
-			// Standard Error: 128_105
-			.saturating_add(Weight::from_parts(36_913_982, 0).saturating_mul(x.into()))
-			.saturating_add(RocksDbWeight::get().reads(12_u64))
+		//  Measured:  `854 + x * (208 ±0)`
+		//  Estimated: `7887 + x * (2603 ±0)`
+		// Minimum execution time: 83_801_000 picoseconds.
+		Weight::from_parts(85_905_000, 7887)
+			// Standard Error: 173_939
+			.saturating_add(Weight::from_parts(38_237_286, 0).saturating_mul(x.into()))
+			.saturating_add(RocksDbWeight::get().reads(8_u64))
 			.saturating_add(RocksDbWeight::get().reads((3_u64).saturating_mul(x.into())))
-			.saturating_add(RocksDbWeight::get().writes(4_u64))
-			.saturating_add(RocksDbWeight::get().writes((3_u64).saturating_mul(x.into())))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(x.into())))
 			.saturating_add(Weight::from_parts(0, 2603).saturating_mul(x.into()))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
@@ -191,8 +179,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_776_000 picoseconds.
-		Weight::from_parts(6_057_000, 0)
+		// Minimum execution time: 6_026_000 picoseconds.
+		Weight::from_parts(6_250_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
@@ -201,29 +189,25 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_542_000 picoseconds.
-		Weight::from_parts(5_844_000, 0)
+		// Minimum execution time: 5_454_000 picoseconds.
+		Weight::from_parts(5_660_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(418), added: 913, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:4 w:3)
+	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(818), added: 1313, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// Storage: `PooledStaking::Pools` (r:2 w:0)
-	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
 	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:0)
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:1)
-	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
 	fn on_container_author_noted() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `881`
-		//  Estimated: `11402`
-		// Minimum execution time: 92_792_000 picoseconds.
-		Weight::from_parts(99_983_000, 11402)
-			.saturating_add(RocksDbWeight::get().reads(9_u64))
-			.saturating_add(RocksDbWeight::get().writes(5_u64))
+		//  Measured:  `647`
+		//  Estimated: `7887`
+		// Minimum execution time: 51_807_000 picoseconds.
+		Weight::from_parts(53_926_000, 7887)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

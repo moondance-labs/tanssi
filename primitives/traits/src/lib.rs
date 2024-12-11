@@ -99,6 +99,9 @@ pub trait AuthorNotingHook<AccountId> {
         block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(author: &AccountId, block_number: BlockNumber, para_id: ParaId);
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
@@ -107,6 +110,11 @@ impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
         let mut weight: Weight = Default::default();
         for_tuples!( #( weight.saturating_accrue(Tuple::on_container_author_noted(a, b, p)); )* );
         weight
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(a: &AccountId, b: BlockNumber, p: ParaId) {
+        for_tuples!( #( Tuple::prepare_worst_case_for_bench(a, b, p); )* );
     }
 }
 

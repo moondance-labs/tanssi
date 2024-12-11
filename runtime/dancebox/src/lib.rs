@@ -1172,10 +1172,6 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = Registrar;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
-    #[cfg(feature = "runtime-benchmarks")]
-    type AuthorNotingHook = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
