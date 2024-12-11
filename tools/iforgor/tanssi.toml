@@ -98,6 +98,19 @@ name = "[Tanssi] Run dancebox benchmarks"
 only_in_dir = "**/tanssi"
 script = """
 export OUTPUT_PATH="tmp/dancebox_weights"
+export TEMPLATE_PATH="benchmarking/frame-weight-runtime-template.hbs"
+
+./tools/benchmarking.sh $1 "*"
+"""
+args = ["Which pallet to bench (* for all)"]
+
+[[entries]]
+name = "[Tanssi] Run flashbox benchmarks"
+only_in_dir = "**/tanssi"
+script = """
+export TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs
+export CHAIN=flashbox_dev
+export OUTPUT_PATH=tmp/flashbox_weights
 
 ./tools/benchmarking.sh $1 "*"
 """
