@@ -66,28 +66,19 @@ impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeig
 	/// Proof: `TanssiCollatorAssignment::CollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `AuthorNoting::LatestAuthor` (r:99 w:99)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(418), added: 913, mode: `MaxEncodedLen`)
-	/// Storage: `ServicesPayment::BlockProductionCredits` (r:99 w:0)
-	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:100 w:100)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `TanssiInvulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `TanssiInvulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `x` is `[1, 100]`.
 	fn set_latest_author_data(x: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `498 + x * (339 ±0)`
-		//  Estimated: `7522 + x * (2687 ±3)`
-		// Minimum execution time: 7_505_000 picoseconds.
-		Weight::from_parts(7_854_000, 7522)
-			// Standard Error: 107_155
-			.saturating_add(Weight::from_parts(34_593_494, 0).saturating_mul(x.into()))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(x.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(x.into())))
-			.saturating_add(Weight::from_parts(0, 2687).saturating_mul(x.into()))
+		//  Measured:  `301 + x * (206 ±0)`
+		//  Estimated: `6858 + x * (2561 ±0)`
+		// Minimum execution time: 8_841_000 picoseconds.
+		Weight::from_parts(8_961_000, 6858)
+			// Standard Error: 156_576
+			.saturating_add(Weight::from_parts(21_144_399, 0).saturating_mul(x.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(x.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(x.into())))
+			.saturating_add(Weight::from_parts(0, 2561).saturating_mul(x.into()))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)

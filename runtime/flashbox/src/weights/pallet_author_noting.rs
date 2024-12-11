@@ -57,7 +57,7 @@ impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeig
 	/// Storage: `AuthorNoting::DidSetContainerAuthorData` (r:1 w:1)
 	/// Proof: `AuthorNoting::DidSetContainerAuthorData` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)
-	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: Some(802), added: 1297, mode: `MaxEncodedLen`)
+	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `ParachainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `ParachainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Digest` (r:1 w:0)
@@ -66,28 +66,20 @@ impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeig
 	/// Proof: `CollatorAssignment::CollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `AuthorNoting::LatestAuthor` (r:100 w:100)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `InflationRewards::ChainsToReward` (r:1 w:1)
-	/// Proof: `InflationRewards::ChainsToReward` (`max_values`: Some(1), `max_size`: Some(818), added: 1313, mode: `MaxEncodedLen`)
-	/// Storage: `ServicesPayment::BlockProductionCredits` (r:100 w:0)
-	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:101 w:101)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
-	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
-	/// The range of component `x` is `[1, 100]`.
+	/// The range of component `x` is `[0, 100]`.
 	fn set_latest_author_data(x: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `854 + x * (208 ±0)`
-		//  Estimated: `7887 + x * (2603 ±0)`
-		// Minimum execution time: 83_801_000 picoseconds.
-		Weight::from_parts(85_905_000, 7887)
-			// Standard Error: 173_939
-			.saturating_add(Weight::from_parts(38_237_286, 0).saturating_mul(x.into()))
-			.saturating_add(T::DbWeight::get().reads(8_u64))
-			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(x.into())))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(x.into())))
-			.saturating_add(Weight::from_parts(0, 2603).saturating_mul(x.into()))
+		//  Measured:  `393 + x * (73 ±0)`
+		//  Estimated: `1878 + x * (2539 ±0)`
+		// Minimum execution time: 9_515_000 picoseconds.
+		Weight::from_parts(9_708_000, 1878)
+			// Standard Error: 152_038
+			.saturating_add(Weight::from_parts(23_061_887, 0).saturating_mul(x.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(x.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(x.into())))
+			.saturating_add(Weight::from_parts(0, 2539).saturating_mul(x.into()))
 	}
 	/// Storage: `AuthorNoting::LatestAuthor` (r:0 w:1)
 	/// Proof: `AuthorNoting::LatestAuthor` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
