@@ -20,9 +20,10 @@ use {
         traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
+    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup},
+        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256},
         BuildStorage,
     },
 };
@@ -109,11 +110,41 @@ impl pallet_timestamp::Config for Test {
 
 impl mock_data::Config for Test {}
 
+pub struct MockOkOutboundQueue;
+impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
+    type Ticket = ();
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        Ok(H256::zero())
+    }
+}
+
+impl SendMessageFeeProvider for MockOkOutboundQueue {
+    type Balance = u128;
+
+    fn local_fee() -> Self::Balance {
+        1
+    }
+}
+
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
+    }
+}
+
 impl pallet_external_validators_rewards::Config for Test {
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
+    type EraInflationProvider = ();
+    type TimestampProvider = TimestampProvider;
+    type Hashing = Keccak256;
+    type ValidateMessage = ();
+    type OutboundQueue = MockOkOutboundQueue;
+    type WeightInfo = ();
 }
 
 // Pallet to provide some mock data, used to test

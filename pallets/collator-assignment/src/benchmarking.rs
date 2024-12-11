@@ -68,7 +68,7 @@ mod benchmarks {
         let container_chains: Vec<_> = (0..y).map(|i| ParaId::from(2000 + i)).collect();
         let session_index = 0u32.into();
         T::ContainerChains::set_session_container_chains(session_index, &container_chains);
-        T::RemoveParaIdsWithNoCredits::make_valid_para_ids(&container_chains);
+        T::ParaIdAssignmentHooks::make_valid_para_ids(&container_chains);
         T::HostConfiguration::set_host_configuration(session_index);
 
         // Assign random collators to test worst case: when collators need to be checked against existing collators
