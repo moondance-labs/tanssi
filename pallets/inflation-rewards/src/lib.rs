@@ -284,7 +284,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                         }
                     }
                     Err(e) => {
-                        log::debug!("Fail to distribute rewards: {:?}", e)
+                        log::error!("Fail to distribute rewards: {:?}", e)
                     }
                 }
                 // we remove the para id from container-chains to reward

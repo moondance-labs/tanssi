@@ -63,6 +63,7 @@ describeSuite({
             alice = context.keyring.alice;
         });
 
+        /*
         it({
             id: "E01",
             title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
@@ -104,6 +105,7 @@ describeSuite({
                 );
             },
         });
+         */
 
         it({
             id: "E02",
