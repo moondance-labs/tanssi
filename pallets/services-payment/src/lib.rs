@@ -422,6 +422,27 @@ pub mod pallet {
             });
         }
 
+        pub fn charge_tip(para_id: &ParaId, tip: &BalanceOf<T>) -> Result<(), DispatchError> {
+            // Only charge the tip to the paras that had a max tip set
+            // (aka were willing to tip for being assigned a collator)
+            if MaxTip::<T>::get(para_id).is_some() {
+                let tip_imbalance = T::Currency::withdraw(
+                    &Self::parachain_tank(*para_id),
+                    *tip,
+                    WithdrawReasons::TIP,
+                    ExistenceRequirement::KeepAlive,
+                )?;
+
+                Self::deposit_event(Event::<T>::CollatorAssignmentTipCollected {
+                    para_id: *para_id,
+                    payer: Self::parachain_tank(*para_id),
+                    tip: *tip,
+                });
+                T::OnChargeForCollatorAssignmentTip::on_unbalanced(tip_imbalance);
+            }
+            Ok(())
+        }
+
         pub fn free_block_production_credits(para_id: ParaId) -> Option<BlockNumberFor<T>> {
             BlockProductionCredits::<T>::get(para_id)
         }
