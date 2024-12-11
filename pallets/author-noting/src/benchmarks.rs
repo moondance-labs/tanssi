@@ -56,12 +56,14 @@ mod test_sproof {
 benchmarks! {
     set_latest_author_data {
         // Depend on the number of parachains registered
-        let x in 0..100;
+        let x in 1..100;
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
+            // RELAY MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
+            // Must start at 0 in Relay mode (why?)
             for para_id in 0..x {
                 let para_id = para_id.into();
                 container_chains.push(para_id);
@@ -92,8 +94,10 @@ benchmarks! {
 
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
+            // PARA MODE
 
-            for para_id in 0..x {
+            // Must start at 1 in Para mode (why?)
+            for para_id in 1..x {
                 let slot: crate::InherentType = 13u64.into();
                 let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
