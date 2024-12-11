@@ -731,6 +731,24 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        pooledStaking: {
+            CandidateTransferingOwnSharesForbidden: AugmentedError<ApiType>;
+            DisabledFeature: AugmentedError<ApiType>;
+            InconsistentState: AugmentedError<ApiType>;
+            InvalidPalletSetting: AugmentedError<ApiType>;
+            MathOverflow: AugmentedError<ApiType>;
+            MathUnderflow: AugmentedError<ApiType>;
+            NoOneIsStaking: AugmentedError<ApiType>;
+            NotEnoughShares: AugmentedError<ApiType>;
+            RequestCannotBeExecuted: AugmentedError<ApiType>;
+            RewardsMustBeNonZero: AugmentedError<ApiType>;
+            StakeMustBeNonZero: AugmentedError<ApiType>;
+            SwapResultsInZeroShares: AugmentedError<ApiType>;
+            TryingToLeaveTooSoon: AugmentedError<ApiType>;
+            UnsufficientSharesForTransfer: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         preimage: {
             /** Preimage has already been noted on-chain. */
             AlreadyNoted: AugmentedError<ApiType>;

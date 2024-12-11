@@ -602,7 +602,9 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
-use frame_support::traits::{ExistenceRequirement, OnUnbalanced, WithdrawReasons};
+use frame_support::traits::{
+    ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
+};
 use pallet_services_payment::BalanceOf;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
@@ -1307,7 +1309,9 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
+use pallet_pooled_staking::traits::{IsCandidateEligible, Timer};
 use pallet_staking::SessionInterface;
+
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {
     fn disable_validator(validator_index: u32) -> bool {
@@ -1654,8 +1658,104 @@ impl pallet_inflation_rewards::Config for Runtime {
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
-    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
     type RewardsPortion = RewardsPortion;
+}
+
+parameter_types! {
+    pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
+    pub const InitialManualClaimShareValue: u128 = MILLIUNITS;
+    pub const InitialAutoCompoundingShareValue: u128 = MILLIUNITS;
+    pub const MinimumSelfDelegation: u128 = 10_000 * UNITS;
+    pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
+    // Need to wait 2 sessions before being able to join or leave staking pools
+    pub const StakingSessionDelay: u32 = 2;
+}
+
+pub struct SessionTimer<Delay>(PhantomData<Delay>);
+
+impl<Delay> Timer for SessionTimer<Delay>
+where
+    Delay: Get<u32>,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+        Session::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = Delay::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = Delay::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            Session::rotate_session();
+        }
+    }
+}
+
+pub struct CandidateHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+    fn is_candidate_eligible(a: &AccountId) -> bool {
+        <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use crate::genesis_config_presets::get_authority_keys_from_seed;
+
+        if eligible {
+            let a_u8: &[u8] = a.as_ref();
+            let seed = sp_runtime::format!("{:?}", a_u8);
+            let authority_keys = get_authority_keys_from_seed(&seed, None);
+            let _ = Session::set_keys(
+                RuntimeOrigin::signed(a.clone()),
+                SessionKeys {
+                    grandpa: authority_keys.grandpa,
+                    babe: authority_keys.babe,
+                    para_validator: authority_keys.para_validator,
+                    para_assignment: authority_keys.para_assignment,
+                    authority_discovery: authority_keys.authority_discovery,
+                    beefy: authority_keys.beefy,
+                    nimbus: authority_keys.nimbus,
+                },
+                vec![],
+            );
+        } else {
+            let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
+        }
+    }
+}
+
+impl pallet_pooled_staking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type Balance = Balance;
+    type StakingAccount = StakingAccount;
+    type InitialManualClaimShareValue = InitialManualClaimShareValue;
+    type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
+    type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RewardsCollatorCommission = RewardsCollatorCommission;
+    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
 construct_runtime! {
@@ -1703,6 +1803,7 @@ construct_runtime! {
 
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
+        PooledStaking: pallet_pooled_staking = 34,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -2101,6 +2202,7 @@ mod benches {
         [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
+        [pallet_pooled_staking, PooledStaking]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
@@ -3041,8 +3143,27 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         ContainerRegistrar::initializer_on_new_session(&session_index);
 
         let invulnerables = TanssiInvulnerables::invulnerables().to_vec();
-
-        let next_collators = invulnerables;
+        let candidates_staking =
+            pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+        // Max number of collators is set in pallet_configuration
+        let target_session_index = session_index.saturating_add(1);
+        let max_collators = <CollatorConfiguration as GetHostConfiguration<u32>>::max_collators(
+            target_session_index,
+        );
+        let next_collators: Vec<_> = invulnerables
+            .iter()
+            .cloned()
+            .chain(candidates_staking.into_iter().filter_map(|elig| {
+                let cand = elig.candidate;
+                if invulnerables.contains(&cand) {
+                    // If a candidate is both in pallet_invulnerables and pallet_staking, do not count it twice
+                    None
+                } else {
+                    Some(cand)
+                }
+            }))
+            .take(max_collators as usize)
+            .collect();
 
         // Queue next session keys.
         let queued_amalgamated = next_collators
