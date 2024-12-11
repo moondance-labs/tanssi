@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import {describeSuite, expect, beforeAll, DevModeContext, customDevRpcRequest} from "@moonwall/cli";
+import { describeSuite, expect, beforeAll, DevModeContext, customDevRpcRequest } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 import { Header, ParaId, HeadData, Digest, DigestItem } from "@polkadot/types/interfaces";
 import {
-    fetchIssuance, fetchRewardAuthorContainers,
+    fetchIssuance,
+    fetchRewardAuthorContainers,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
@@ -147,7 +148,12 @@ describeSuite({
             title: "Alice should receive rewards through staking now",
             test: async function () {
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
-                console.log("Assignment at block ", (await polkadotJs.query.system.number()).toJSON(), ": ", assignment);
+                console.log(
+                    "Assignment at block ",
+                    (await polkadotJs.query.system.number()).toJSON(),
+                    ": ",
+                    assignment
+                );
 
                 // Find alice in list of collators
                 let paraId = null;
@@ -186,6 +192,9 @@ describeSuite({
                 const rewards = await fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
                 const reward = rewards[0];
+
+                expect(reward.accountId.toString(), "Alice was not the rewarded collator").toBe(accountToReward);
+
                 const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
                 const stakingRewardedDelegators = await filterRewardStakingDelegators(
                     events,
@@ -251,7 +260,12 @@ describeSuite({
                 ).toBigInt();
 
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
-                console.log("Assignment at block ", (await polkadotJs.query.system.number()).toJSON(), ": ", assignment);
+                console.log(
+                    "Assignment at block ",
+                    (await polkadotJs.query.system.number()).toJSON(),
+                    ": ",
+                    assignment
+                );
                 // Find alice in list of collators
                 let paraId = null;
                 let slotOffset = 0;

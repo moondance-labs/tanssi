@@ -91,7 +91,7 @@ describeSuite({
 
                 // Block 21: candidates that joined pallet_pooled_staking in session 0 are now eligible candidates
                 const collators21 = await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain();
-                console.log(collators21.toJSON())
+                console.log(collators21.toJSON());
                 expect(collators21.toJSON().containerChains[2000].length).to.equal(2);
                 expect(collators21.toJSON().containerChains[2001].length).to.equal(2);
                 //expect(collators21.toJSON()).to.deep.equal([...initialCollators.toJSON(), randomAccount.address]);
