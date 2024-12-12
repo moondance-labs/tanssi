@@ -20,6 +20,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
@@ -78,6 +79,7 @@ use {
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     snowbridge_core::ChannelId,
+    snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
@@ -92,7 +94,7 @@ use {
     },
     tp_traits::{
         apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        RegistrarHandler, RemoveParaIdsWithNoCredits, Slot, SlotFrequency,
+        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -555,7 +557,7 @@ impl pallet_session::Config for Runtime {
 }
 
 pub struct FullIdentificationOf;
-impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf {
+impl Convert<AccountId, Option<()>> for FullIdentificationOf {
     fn convert(_: AccountId) -> Option<()> {
         Some(())
     }
@@ -600,9 +602,12 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+use frame_support::traits::{ExistenceRequirement, OnUnbalanced, WithdrawReasons};
+use pallet_services_payment::BalanceOf;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use runtime_parachains::configuration::HostConfiguration;
+use sp_runtime::{DispatchError, TransactionOutcome};
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -1335,10 +1340,17 @@ impl pallet_external_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
-    type OnEraEnd = ();
+    type OnEraEnd = ExternalValidatorsRewards;
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
+}
+
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
+    }
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
@@ -1346,6 +1358,14 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
+    // TODO: add a proper way to retrieve the inflated tokens.
+    // Will likely be through InflationRewards.
+    type EraInflationProvider = ();
+    type TimestampProvider = TimestampProvider;
+    type Hashing = Keccak256;
+    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
+    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
@@ -2074,6 +2094,7 @@ mod benches {
         [pallet_registrar, ContainerRegistrar]
         [pallet_collator_assignment, TanssiCollatorAssignment]
         [pallet_external_validators, ExternalValidators]
+        [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
         // XCM
@@ -2692,6 +2713,19 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_external_validators_rewards_runtime_api::ExternalValidatorsRewardsApi<Block, AccountId, EraIndex> for Runtime
+        where
+        EraIndex: parity_scale_codec::Codec,
+    {
+        fn generate_rewards_merkle_proof(account_id: AccountId, era_index: EraIndex) -> Option<MerkleProof> {
+            ExternalValidatorsRewards::generate_rewards_merkle_proof(account_id, era_index)
+        }
+
+        fn verify_rewards_merkle_proof(merkle_proof: MerkleProof) -> bool {
+            ExternalValidatorsRewards::verify_rewards_merkle_proof(merkle_proof)
+        }
+    }
+
     impl dp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
@@ -3150,56 +3184,126 @@ impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRa
     }
 }
 
-pub struct RemoveParaIdsWithNoCreditsImpl;
+pub struct ParaIdAssignmentHooksImpl;
 
-impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
-    fn remove_para_ids_with_no_credits(
-        para_ids: &mut Vec<ParaId>,
+impl ParaIdAssignmentHooksImpl {
+    fn charge_para_ids_internal(
+        blocks_per_session: BlockNumber,
+        para_id: ParaId,
         currently_assigned: &BTreeSet<ParaId>,
-    ) {
-        let blocks_per_session = EpochDurationInBlocks::get();
+        maybe_tip: &Option<BalanceOf<Runtime>>,
+    ) -> Result<Weight, DispatchError> {
+        use frame_support::traits::Currency;
+        type ServicePaymentCurrency = <Runtime as pallet_services_payment::Config>::Currency;
 
-        para_ids.retain(|para_id| {
-            // If the para has been assigned collators for this session it must have enough block credits
-            // for the current and the next session.
-            let block_credits_needed = if currently_assigned.contains(para_id) {
-                blocks_per_session * 2
+        // Check if the container chain has enough credits for a session assignments
+        let maybe_assignment_imbalance =
+            if  pallet_services_payment::Pallet::<Runtime>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+                let (amount_to_charge, _weight) =
+                    <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+                Some(<ServicePaymentCurrency as Currency<AccountId>>::withdraw(
+                    &pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id),
+                    amount_to_charge,
+                    WithdrawReasons::FEE,
+                    ExistenceRequirement::KeepAlive,
+                )?)
             } else {
-                blocks_per_session
+                None
             };
 
-            // Check if the container chain has enough credits for producing blocks
-            let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
-                .unwrap_or_default();
-
-            // Check if the container chain has enough credits for a session assignments
-            let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
-                .unwrap_or_default();
-
-            // If para's max tip is set it should have enough to pay for one assignment with tip
-            let max_tip = pallet_services_payment::MaxTip::<Runtime>::get(para_id).unwrap_or_default() ;
-
-            // Return if we can survive with free credits
-            if free_block_credits >= block_credits_needed && free_session_credits >= 1 {
-                // Max tip should always be checked, as it can be withdrawn even if free credits were used
-                return Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), max_tip).into_result(true).is_ok()
+        if let Some(tip) = maybe_tip {
+            if let Err(e) = pallet_services_payment::Pallet::<Runtime>::charge_tip(&para_id, tip) {
+                // Return assignment imbalance to tank on error
+                if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+                    <Runtime as pallet_services_payment::Config>::Currency::resolve_creating(
+                        &pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id),
+                        assignment_imbalance,
+                    );
+                }
+                return Err(e);
             }
+        }
 
-            let remaining_block_credits = block_credits_needed.saturating_sub(free_block_credits);
-            let remaining_session_credits = 1u32.saturating_sub(free_session_credits);
+        if let Some(assignment_imbalance) = maybe_assignment_imbalance {
+            <Runtime as pallet_services_payment::Config>::OnChargeForCollatorAssignment::on_unbalanced(assignment_imbalance);
+        }
 
-            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
-            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
-            // let's check if we can withdraw
-            let remaining_block_credits_to_pay = u128::from(remaining_block_credits).saturating_mul(block_production_costs);
-            let remaining_session_credits_to_pay = u128::from(remaining_session_credits).saturating_mul(collator_assignment_costs);
+        // If the para has been assigned collators for this session it must have enough block credits
+        // for the current and the next session.
+        let block_credits_needed = if currently_assigned.contains(&para_id) {
+            blocks_per_session * 2
+        } else {
+            blocks_per_session
+        };
+        // Check if the container chain has enough credits for producing blocks
+        let free_block_credits =
+            pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+        let remaining_block_credits = block_credits_needed.saturating_sub(free_block_credits);
+        let (block_production_costs, _) =
+            <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(
+                &para_id,
+            );
+        // Check if we can withdraw
+        let remaining_block_credits_to_pay =
+            u128::from(remaining_block_credits).saturating_mul(block_production_costs);
+        let remaining_to_pay = remaining_block_credits_to_pay;
+        // This should take into account whether we tank goes below ED
+        // The true refers to keepAlive
+        Balances::can_withdraw(
+            &pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id),
+            remaining_to_pay,
+        )
+        .into_result(true)?;
+        // TODO: Have proper weight
+        Ok(Weight::zero())
+    }
+}
 
-            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay).saturating_add(max_tip);
-
-            // This should take into account whether we tank goes below ED
-            // The true refers to keepAlive
-            Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
+impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooksImpl {
+    fn pre_assignment(para_ids: &mut Vec<ParaId>, currently_assigned: &BTreeSet<ParaId>) {
+        let blocks_per_session = EpochDurationInBlocks::get();
+        para_ids.retain(|para_id| {
+            with_transaction(|| {
+                let max_tip =
+                    pallet_services_payment::MaxTip::<Runtime>::get(para_id).unwrap_or_default();
+                TransactionOutcome::Rollback(Self::charge_para_ids_internal(
+                    blocks_per_session,
+                    *para_id,
+                    currently_assigned,
+                    &Some(max_tip),
+                ))
+            })
+            .is_ok()
         });
+    }
+
+    fn post_assignment(
+        current_assigned: &BTreeSet<ParaId>,
+        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        maybe_tip: &Option<BalanceOf<Runtime>>,
+    ) -> Weight {
+        let blocks_per_session = EpochDurationInBlocks::get();
+        let mut total_weight = Weight::zero();
+        new_assigned.retain(|&para_id, collators| {
+            // Short-circuit in case collators are empty
+            if collators.is_empty() {
+                return true;
+            }
+            with_storage_layer(|| {
+                Self::charge_para_ids_internal(
+                    blocks_per_session,
+                    para_id,
+                    current_assigned,
+                    maybe_tip,
+                )
+            })
+            .inspect(|weight| {
+                total_weight += *weight;
+            })
+            .is_ok()
+        });
+        total_weight
     }
 
     /// Make those para ids valid by giving them enough credits, for benchmarking.
@@ -3288,8 +3392,7 @@ impl pallet_collator_assignment::Config for Runtime {
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = ();
-    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
-    type CollatorAssignmentHook = ServicesPayment;
+    type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<true>;
