@@ -204,6 +204,9 @@
                     "skipBlockCheck": ["Container2002"]
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -260,6 +263,9 @@
                     "skipBlockCheck": ["Container2002"]
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -314,6 +320,9 @@
                     "configPath": "./configs/zombie_tanssi_keep_db.json"
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -347,6 +356,9 @@
                 "zombieSpec": {
                     "configPath": "./configs/zombie_tanssi_metrics.json"
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -382,6 +394,9 @@
                     "skipBlockCheck": ["Container2000", "Container2001"]
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -412,6 +427,9 @@
                     "configPath": "./configs/zombie_tanssi_parathreads.json",
                     "skipBlockCheck": ["Container2000", "Container2001"]
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -463,6 +481,9 @@
                     "configPath": "./configs/zombie_tanssi_rotation.json"
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -511,6 +532,9 @@
                 "zombieSpec": {
                     "configPath": "./configs/zombie_tanssi_warp_sync.json"
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -563,6 +587,9 @@
                     "disableDefaultEthProviders": true
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -594,6 +621,9 @@
                     "disableDefaultEthProviders": true
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "parachain",
@@ -621,6 +651,9 @@
                     "configPath": "./configs/zombie_simple_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -655,6 +688,9 @@
                     "disableDefaultEthProviders": true
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Tanssi-relay",
@@ -686,6 +722,9 @@
                     "configPath": "./configs/zombie_frontier_template_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -725,6 +764,9 @@
                     "disableDefaultEthProviders": true
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Relay",
@@ -759,6 +801,9 @@
                     "configPath": "./configs/zombie_tanssi_relay.json",
                     "skipBlockCheck": ["Container2002"]
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -806,6 +851,9 @@
                     "skipBlockCheck": ["Tanssi-relay"]
                 }
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
                     "name": "Tanssi-relay",
@@ -831,6 +879,9 @@
                     "configPath": "./configs/zombie_data_preservers.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
@@ -1093,6 +1144,9 @@
                     "configPath": "./configs/zombie_tanssi_relay_unneeded_para.json",
                     "skipBlockCheck": ["Container2002"]
                 }
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
