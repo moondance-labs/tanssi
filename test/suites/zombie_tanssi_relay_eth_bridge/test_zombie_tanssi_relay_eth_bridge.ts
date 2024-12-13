@@ -27,6 +27,7 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: function ({ it, context }) {
         let relayApi: ApiPromise;
+        let relayCharlieApi: ApiPromise;
         let ethereumNodeChildProcess;
         let relayerChildProcess;
         let alice;
@@ -44,6 +45,9 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
+
+            relayCharlieApi = context.polkadotJs("Tanssi-charlie");
+
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -51,10 +55,10 @@ describeSuite({
             const executionRelay = keyring.addFromUri("//ExecutionRelay", { name: "Execution relay default" });
 
             // Operator keys
-            operatorAccount = keyring.addFromUri("//" + "Bob", { name: "COLLATOR" + " ACCOUNT" });
-            operatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
-
-            await relayApi.tx.session.setKeys(u8aToHex(operatorNimbusKey), []).signAndSend(operatorAccount);
+            operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
+            operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
+            console.log(`operatorNimbusKey: ${operatorNimbusKey}`);
+            await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
             const fundingTxHash = await relayApi.tx.utility
                 .batch([
@@ -182,6 +186,9 @@ describeSuite({
 
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
+                const sessionValidatorsBefore = await relayApi.query.session.validators();
+                expect(!sessionValidatorsBefore.includes(operatorNimbusKey));
+
                 const rawValidators = [
                     u8aToHex(operatorAccount.addressRaw),
                     "0x7894567890123456789012345678901234567890123456789012345678901234",
@@ -223,6 +230,22 @@ describeSuite({
 
                 const sessionValidators = await relayApi.query.session.validators();
                 expect(sessionValidators.includes(operatorNimbusKey));
+            },
+        });
+
+        it({
+            id: "T04",
+            title: "Operator produces blocks",
+            test: async function () {
+                for(let i = 0; i < 20; ++i) {
+                    const author = await relayApi.query.authorship.author();
+                    console.log(`author: ${author.toJSON()}`);
+                    if (author == operatorAccount.address) {
+                        return;
+                    }
+                }
+
+                expect.fail("operator didn't produce a block");
             },
         });
 

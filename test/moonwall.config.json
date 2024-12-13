@@ -811,6 +811,11 @@
                     "name": "Tanssi-relay",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi-charlie",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
                 }
             ]
         },

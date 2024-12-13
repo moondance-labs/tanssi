@@ -39,6 +39,11 @@
             {
                 "name": "bob",
                 "validator": true
+            },
+            {
+                "name": "charlie",
+                "ws_port": "9948",
+                "validator": true
             }
         ]
     },
