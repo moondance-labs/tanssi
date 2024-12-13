@@ -161,6 +161,17 @@ import type {
     PalletOffencesEvent,
     PalletParametersCall,
     PalletParametersEvent,
+    PalletPooledStakingAllTargetPool,
+    PalletPooledStakingCall,
+    PalletPooledStakingCandidateEligibleCandidate,
+    PalletPooledStakingError,
+    PalletPooledStakingEvent,
+    PalletPooledStakingHoldReason,
+    PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPendingOperationQuery,
+    PalletPooledStakingPoolsKey,
+    PalletPooledStakingSharesOrStake,
+    PalletPooledStakingTargetPool,
     PalletPreimageCall,
     PalletPreimageError,
     PalletPreimageEvent,
@@ -652,6 +663,17 @@ declare module "@polkadot/types/types/registry" {
         PalletOffencesEvent: PalletOffencesEvent;
         PalletParametersCall: PalletParametersCall;
         PalletParametersEvent: PalletParametersEvent;
+        PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
+        PalletPooledStakingCall: PalletPooledStakingCall;
+        PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;
+        PalletPooledStakingError: PalletPooledStakingError;
+        PalletPooledStakingEvent: PalletPooledStakingEvent;
+        PalletPooledStakingHoldReason: PalletPooledStakingHoldReason;
+        PalletPooledStakingPendingOperationKey: PalletPooledStakingPendingOperationKey;
+        PalletPooledStakingPendingOperationQuery: PalletPooledStakingPendingOperationQuery;
+        PalletPooledStakingPoolsKey: PalletPooledStakingPoolsKey;
+        PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
+        PalletPooledStakingTargetPool: PalletPooledStakingTargetPool;
         PalletPreimageCall: PalletPreimageCall;
         PalletPreimageError: PalletPreimageError;
         PalletPreimageEvent: PalletPreimageEvent;
