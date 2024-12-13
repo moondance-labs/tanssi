@@ -1074,17 +1074,6 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
     for CollatorAssignmentProvider
 {
     fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
-        let accounts_with_ed = [
-            crate::StakingAccount::get(),
-            crate::DancelightBondAccount::get(),
-            crate::PendingRewardsAccount::get(),
-        ];
-
-        log::error!("ACCOUNTS WITH ED:");
-        for a in &accounts_with_ed {
-            log::error!("{:?}", a);
-        }
-
         let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
         let assigned_paras: Vec<ParaId> = assigned_collators
             .container_chains
