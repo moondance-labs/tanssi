@@ -74,6 +74,7 @@ pallet-elections-phragmen = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-external-validators-rewards = { workspace = true }
+pallet-external-validators-rewards-runtime-api = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-initializer = { workspace = true }
@@ -134,6 +135,7 @@ pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
+pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
@@ -220,6 +222,7 @@ std = [
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
 	"pallet-external-validator-slashes/std",
+	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
 	"pallet-external-validators/std",
 	"pallet-grandpa/std",
@@ -235,6 +238,7 @@ std = [
 	"pallet-multisig/std",
 	"pallet-offences/std",
 	"pallet-parameters/std",
+	"pallet-pooled-staking/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
 	"pallet-ranked-collective/std",
@@ -345,6 +349,7 @@ runtime-benchmarks = [
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-offences/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
+	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-ranked-collective/runtime-benchmarks",
@@ -423,6 +428,7 @@ try-runtime = [
 	"pallet-multisig/try-runtime",
 	"pallet-offences/try-runtime",
 	"pallet-parameters/try-runtime",
+	"pallet-pooled-staking/try-runtime",
 	"pallet-preimage/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-ranked-collective/try-runtime",

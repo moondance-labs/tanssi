@@ -335,10 +335,25 @@ fn dancelight_testnet_genesis(
     let next_free_para_id = max_para_id
         .map(|x| ParaId::from(u32::from(*x) + 1))
         .unwrap_or(primitives::LOWEST_PUBLIC_ID);
+    let accounts_with_ed = [
+        crate::StakingAccount::get(),
+        crate::DancelightBondAccount::get(),
+        crate::PendingRewardsAccount::get(),
+    ];
 
     serde_json::json!({
         "balances": {
-            "balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
+            "balances": endowed_accounts
+                .iter()
+                .cloned()
+                .map(|k| (k, ENDOWMENT))
+                .chain(
+                    accounts_with_ed
+                        .iter()
+                        .cloned()
+                        .map(|k| (k, crate::EXISTENTIAL_DEPOSIT)),
+                )
+                .collect::<Vec<_>>(),
         },
         "session": {
             "keys": initial_authorities

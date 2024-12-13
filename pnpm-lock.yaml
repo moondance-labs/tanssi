@@ -127,46 +127,46 @@ importers:
   typescript-api:
     devDependencies:
       '@polkadot/api':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/api-augment':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/api-base':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/api-derive':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/rpc-augment':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/rpc-core':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/rpc-provider':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/typegen':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types-augment':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types-codec':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types-create':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types-known':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@polkadot/types-support':
-        specifier: ^14.0.0
+        specifier: ^14.3.1
         version: 14.3.1
       '@types/node':
         specifier: 22.5.0
@@ -3310,10 +3310,6 @@ packages:
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
 
-  nock@13.5.5:
-    resolution: {integrity: sha512-XKYnqUrCwXC8DGG1xX4YH5yNIrlh9c065uaMZZHUoeUUINTOyt+x/G+ezYk0Ft6ExSREVIs+qBJDK503viTfFA==}
-    engines: {node: '>= 10.13'}
-
   nock@13.5.6:
     resolution: {integrity: sha512-o2zOYiCpzRqSzPj0Zt/dQ/DqZeYoaQ7TUonc/xUPjCGl9WeHpNbxgVvOquXYAaJzI0M9BXV3HTzG0p8IUAbBTQ==}
     engines: {node: '>= 10.13'}
@@ -3820,9 +3816,6 @@ packages:
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
-
-  scale-ts@1.6.0:
-    resolution: {integrity: sha512-Ja5VCjNZR8TGKhUumy9clVVxcDpM+YFjAnkMuwQy68Hixio3VRRvWdE3g8T/yC+HXA0ZDQl2TGyUmtmbcVl40Q==}
 
   scale-ts@1.6.1:
     resolution: {integrity: sha512-PBMc2AWc6wSEqJYBDPcyCLUj9/tMKnLX70jLOSndMtcUoLQucP/DM0vnQo1wJAYjTrQiq8iG9rD0q6wFzgjH7g==}
@@ -5727,7 +5720,7 @@ snapshots:
       '@noble/hashes': 1.5.0
       '@polkadot-api/utils': 0.1.0
       '@scure/base': 1.1.9
-      scale-ts: 1.6.0
+      scale-ts: 1.6.1
     optional: true
 
   '@polkadot-api/substrate-bindings@0.9.4':
@@ -5993,7 +5986,7 @@ snapshots:
       '@polkadot/x-ws': 13.2.3
       eventemitter3: 5.0.1
       mock-socket: 9.3.1
-      nock: 13.5.5
+      nock: 13.5.6
       tslib: 2.8.1
     optionalDependencies:
       '@substrate/connect': 0.8.11
@@ -8634,14 +8627,6 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  nock@13.5.5:
-    dependencies:
-      debug: 4.3.7(supports-color@8.1.1)
-      json-stringify-safe: 5.0.1
-      propagate: 2.0.1
-    transitivePeerDependencies:
-      - supports-color
-
   nock@13.5.6:
     dependencies:
       debug: 4.3.7(supports-color@8.1.1)
@@ -9221,9 +9206,6 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
-
-  scale-ts@1.6.0:
-    optional: true
 
   scale-ts@1.6.1: {}
 

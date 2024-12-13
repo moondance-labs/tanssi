@@ -3405,6 +3405,7 @@ dependencies = [
  "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-external-validators-rewards",
+ "pallet-external-validators-rewards-runtime-api",
  "pallet-grandpa",
  "pallet-identity",
  "pallet-inflation-rewards",
@@ -3418,6 +3419,7 @@ dependencies = [
  "pallet-multisig",
  "pallet-offences",
  "pallet-parameters",
+ "pallet-pooled-staking",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-ranked-collective",
@@ -9605,6 +9607,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-balances",
  "pallet-session",
  "pallet-timestamp",
@@ -9612,12 +9615,25 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-runtime-parachains",
  "scale-info",
+ "snowbridge-core",
+ "snowbridge-outbound-queue-merkle-tree",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "tp-bridge",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-external-validators-rewards-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-api",
+ "sp-core",
 ]
 
 [[package]]

@@ -69,5 +69,8 @@
         "overrides": {
             "inquirer": "9.2.16"
         }
+    },
+    "volta": {
+        "node": "22.12.0"
     }
 }

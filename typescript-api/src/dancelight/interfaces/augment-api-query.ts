@@ -61,6 +61,9 @@ import type {
     PalletMessageQueuePage,
     PalletMigrationsMigrationCursor,
     PalletMultisigMultisig,
+    PalletPooledStakingCandidateEligibleCandidate,
+    PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPoolsKey,
     PalletPreimageOldRequestStatus,
     PalletPreimageRequestStatus,
     PalletProxyAnnouncement,
@@ -1882,6 +1885,68 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        pooledStaking: {
+            /** Pending operations balances. Balances are expressed in joining/leaving shares amounts. */
+            pendingOperations: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2:
+                        | PalletPooledStakingPendingOperationKey
+                        | { JoiningAutoCompounding: any }
+                        | { JoiningManualRewards: any }
+                        | { Leaving: any }
+                        | string
+                        | Uint8Array
+                ) => Observable<u128>,
+                [AccountId32, PalletPooledStakingPendingOperationKey]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, PalletPooledStakingPendingOperationKey]>;
+            /** Pools balances. */
+            pools: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2:
+                        | PalletPooledStakingPoolsKey
+                        | { CandidateTotalStake: any }
+                        | { JoiningShares: any }
+                        | { JoiningSharesSupply: any }
+                        | { JoiningSharesTotalStaked: any }
+                        | { JoiningSharesHeldStake: any }
+                        | { AutoCompoundingShares: any }
+                        | { AutoCompoundingSharesSupply: any }
+                        | { AutoCompoundingSharesTotalStaked: any }
+                        | { AutoCompoundingSharesHeldStake: any }
+                        | { ManualRewardsShares: any }
+                        | { ManualRewardsSharesSupply: any }
+                        | { ManualRewardsSharesTotalStaked: any }
+                        | { ManualRewardsSharesHeldStake: any }
+                        | { ManualRewardsCounter: any }
+                        | { ManualRewardsCheckpoint: any }
+                        | { LeavingShares: any }
+                        | { LeavingSharesSupply: any }
+                        | { LeavingSharesTotalStaked: any }
+                        | { LeavingSharesHeldStake: any }
+                        | string
+                        | Uint8Array
+                ) => Observable<u128>,
+                [AccountId32, PalletPooledStakingPoolsKey]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, PalletPooledStakingPoolsKey]>;
+            /**
+             * Keeps a list of all eligible candidates, sorted by the amount of stake backing them. This can be quickly
+             * updated using a binary search, and allow to easily take the top `MaxCollatorSetSize`.
+             */
+            sortedEligibleCandidates: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
