@@ -18,7 +18,6 @@ use crate::tests::common::xcm::*;
 
 use {
     crate::{
-        assert_expected_events,
         tests::common::xcm::mocknets::{
             DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
             FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate,
@@ -36,7 +35,7 @@ use {
     },
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
-    xcm_emulator::Chain,
+    xcm_emulator::{Chain, assert_expected_events},
 };
 
 #[test]

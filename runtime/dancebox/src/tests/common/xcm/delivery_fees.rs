@@ -16,7 +16,6 @@
 
 use {
     crate::{
-        assert_expected_events,
         tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
@@ -33,7 +32,7 @@ use {
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },
-    xcm_emulator::Chain,
+    xcm_emulator::{Chain, assert_expected_events},
 };
 
 #[test]

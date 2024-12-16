@@ -16,7 +16,6 @@
 
 use {
     crate::{
-        assert_expected_events,
         tests::common::{
             empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
@@ -42,7 +41,7 @@ use {
     staging_xcm::v3::QueryId,
     staging_xcm_executor::traits::ConvertLocation,
     tp_traits::{ParaId, SlotFrequency},
-    xcm_emulator::{Chain, RelayChain},
+    xcm_emulator::{assert_expected_events, Chain, RelayChain},
 };
 
 pub const PARATHREAD_ID: u32 = 3333;

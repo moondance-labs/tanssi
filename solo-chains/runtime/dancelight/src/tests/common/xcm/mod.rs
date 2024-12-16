@@ -17,8 +17,4 @@
 mod constants;
 mod mocknets;
 mod reserver_transfers_polkadot_xcm;
-
-#[macro_use]
-mod expected_event_checker;
-
 pub use xcm_emulator::{bx, TestExt};

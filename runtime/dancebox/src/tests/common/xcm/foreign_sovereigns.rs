@@ -16,7 +16,6 @@
 
 use {
     crate::{
-        assert_expected_events,
         tests::common::xcm::{
             mocknets::{
                 DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver,
@@ -38,7 +37,7 @@ use {
     },
     staging_xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
-    xcm_emulator::Chain,
+    xcm_emulator::{Chain, assert_expected_events},
 };
 
 #[test]

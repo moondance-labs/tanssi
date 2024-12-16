@@ -15,16 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{
-        assert_expected_events,
-        tests::common::xcm::{
-            mocknets::{
-                DancelightRelay as Dancelight, DancelightSender,
-                SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
-                SimpleTemplateDancelightPara as SimpleTemplateDancelight,
-            },
-            *,
+    crate::tests::common::xcm::{
+        mocknets::{
+            DancelightRelay as Dancelight, DancelightSender,
+            SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
+            SimpleTemplateDancelightPara as SimpleTemplateDancelight,
         },
+        *,
     },
     frame_support::{
         assert_ok,
@@ -36,7 +33,7 @@ use {
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::Chain,
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[allow(unused_assignments)]
