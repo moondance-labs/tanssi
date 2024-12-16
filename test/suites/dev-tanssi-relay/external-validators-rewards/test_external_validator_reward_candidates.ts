@@ -4,7 +4,7 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DTR1602",
+    id: "DTR1601",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 
@@ -21,6 +21,11 @@ describeSuite({
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
+                await context.createBlock();
+                // Send RPC call to enable para inherent candidate generation
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+                // Since collators are not assigned until session 2, we need to go till session 2 to actually see heads being injected
+                await jumpToSession(context, 3);
                 await context.createBlock();
 
                 // we are still in era 0
