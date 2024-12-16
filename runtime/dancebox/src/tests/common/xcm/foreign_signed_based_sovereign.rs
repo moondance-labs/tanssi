@@ -37,7 +37,7 @@ use {
         VersionedLocation, VersionedXcm,
     },
     staging_xcm_executor::traits::ConvertLocation,
-    xcm_emulator::{Chain, assert_expected_events},
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[test]
