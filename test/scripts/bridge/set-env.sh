@@ -1,6 +1,7 @@
 root_dir="$(realpath .)"
 
 scripts_root_dir="$root_dir/scripts/bridge"
+ts_scripts_dir="$scripts_root_dir/ts-scripts"
 assets_dir="$scripts_root_dir/assets"
 
 artifacts_dir="$root_dir/tmp/bridge"
@@ -15,6 +16,7 @@ mkdir -p $output_bin_dir
 export PATH="$output_bin_dir:$PATH"
 
 relayer_root_dir="$artifacts_dir/relayer"
+symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
 web_dir="$relayer_root_dir/web"
 export contract_dir="$relayer_root_dir/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"

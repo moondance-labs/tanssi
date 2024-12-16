@@ -31,10 +31,14 @@ describeSuite({
         let relayerChildProcess;
         let alice;
         let beefyClientDetails;
+
+        const ethUrl = "ws://127.0.0.1:8546";
+        let customHttpProvider;
+        let ethereumWallet;
+        let middlewareContract;
         let gatewayProxyAddress;
         let gatewayDetails;
-
-        let ethereumWallet;
+        let middlewareDetails;
 
         let operatorAccount;
         let operatorNimbusKey;
@@ -86,16 +90,19 @@ describeSuite({
 
             console.log("Contracts deployed");
 
-            const contractInfoData = JSON.parse(
-                <string>(await execCommand("./scripts/bridge/generate-contract-info.sh")).stdout
+            const ethInfo = JSON.parse(
+                <string>(await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout
             );
 
-            console.log("BeefyClient contract address is:", contractInfoData.data.contracts.BeefyClient.address);
-            beefyClientDetails = contractInfoData.data.contracts.BeefyClient;
+            console.log("BeefyClient contract address is:", ethInfo.snowbridge_info.contracts.BeefyClient.address);
+            beefyClientDetails = ethInfo.snowbridge_info.contracts.BeefyClient;
 
-            console.log("Gateway contract proxy address is:", contractInfoData.data.contracts.GatewayProxy.address);
-            gatewayProxyAddress = contractInfoData.data.contracts.GatewayProxy.address;
-            gatewayDetails = contractInfoData.data.contracts.Gateway;
+            console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
+            gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
+            gatewayDetails = ethInfo.snowbridge_info.contracts.Gateway;
+
+            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.Middleware.address);
+            middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await relayApi.tx.sudo
@@ -103,8 +110,13 @@ describeSuite({
                 .signAndSend(alice);
             console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.toHex());
 
-            const customHttpProvider = new ethers.WebSocketProvider("ws://127.0.0.1:8546");
-            ethereumWallet = new ethers.Wallet(contractInfoData.ethereum_key, customHttpProvider);
+            customHttpProvider = new ethers.WebSocketProvider(ethUrl);
+            ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
+
+            // Setting up Middleware
+            middlewareContract = new ethers.Contract(middlewareDetails.address, middlewareDetails.abi, ethereumWallet);
+            const tx = await middlewareContract.setGateway(gatewayProxyAddress);
+            await tx.wait();
 
             const initialBeaconUpdate = JSON.parse(
                 <string>(
@@ -159,8 +171,6 @@ describeSuite({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
             test: async function () {
-                const url = "ws://127.0.0.1:8546";
-                const customHttpProvider = new ethers.WebSocketProvider(url);
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
