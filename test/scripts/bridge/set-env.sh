@@ -1,6 +1,7 @@
 root_dir="$(realpath .)"
 
 scripts_root_dir="$root_dir/scripts/bridge"
+ts_scripts_dir="$scripts_root_dir/ts-scripts"
 assets_dir="$scripts_root_dir/assets"
 
 artifacts_dir="$root_dir/tmp/bridge"
@@ -15,6 +16,7 @@ mkdir -p $output_bin_dir
 export PATH="$output_bin_dir:$PATH"
 
 relayer_root_dir="$artifacts_dir/relayer"
+symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
 web_dir="$relayer_root_dir/web"
 export contract_dir="$relayer_root_dir/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
@@ -109,8 +111,12 @@ ethereum_key="0x5e002a1af63fd31f1c25258f3082dc889762664cb8f218d86da85dff8b07b342
 ethereum_address="90A987B944Cb1dCcE5564e5FDeCD7a54D3de27Fe"
 
 
-address_for() {
-    jq -r ".contracts.${1}.address" "$output_dir/contracts.json"
+snowbridge_address_for() {
+    jq -r ".contracts.${1}.address" "$output_dir/snowbridge_contracts.json"
+}
+
+symbiotic_address_for() {
+    jq -r ".contracts.${1}.address" "$output_dir/symbiotic_contracts.json"
 }
 
 kill_all() {

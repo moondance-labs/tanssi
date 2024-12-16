@@ -1,0 +1,13 @@
+{
+  "name": "@tanssi-symbiotic/test-helpers",
+  "version": "1.0.0",
+  "description": "Tanssi symbiotic test helpers",
+  "license": "Apache-2.0",
+  "scripts": {
+    "generateContracts": "npx tsx src/generateContractInfo.ts"
+  },
+  "dependencies": {
+    "@types/node": "^18.16.8",
+    "tsx": "^4.19.2"
+  }
+}

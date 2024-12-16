@@ -13,3 +13,8 @@ GOBIN=$output_bin_dir go install github.com/ferranbt/fastssz/sszgen@v0.1.4
 
 $bridge_scripts/build-ethereum-node.sh
 $bridge_scripts/build-relayer.sh
+$bridge_scripts/build-symbiotic-contracts.sh
+
+pushd $ts_scripts_dir
+pnpm install
+popd
