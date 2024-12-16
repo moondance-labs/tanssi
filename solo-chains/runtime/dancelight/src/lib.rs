@@ -1944,6 +1944,9 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
+    #[cfg(feature = "runtime-benchmarks")]
+    type InnerRegistrar = ();
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type InnerRegistrar =
         InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
