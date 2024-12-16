@@ -237,8 +237,11 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async function () {
+                console.log(`operator address: ${operatorAccount.address}`);
+
                 for(let i = 0; i < 20; ++i) {
-                    const author = await relayApi.query.authorship.author();
+                    const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
+                    const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
                     console.log(`author: ${author.toJSON()}`);
                     if (author == operatorAccount.address) {
                         return;
