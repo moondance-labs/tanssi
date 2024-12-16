@@ -22,7 +22,7 @@
     "gasLimit": "80000000",
     "alloc": {
         "90A987B944Cb1dCcE5564e5FDeCD7a54D3de27Fe": {
-            "balance": "10000000000000000000000"
+            "balance": "1000000000000000000000000"
         },
         "Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD": {
             "balance": "100000000000000000000"
