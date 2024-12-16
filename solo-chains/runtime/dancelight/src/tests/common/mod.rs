@@ -656,6 +656,13 @@ impl ExtBuilder {
         pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
             .assimilate_storage(&mut t)
             .unwrap();
+
+        snowbridge_pallet_system::GenesisConfig::<Runtime> {
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         t
     }
 
