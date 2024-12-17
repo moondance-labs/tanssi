@@ -41,7 +41,6 @@ async function mockAndInsertHeadData(
     slotNumber: number,
     sudoAccount: KeyringPair
 ) {
-    console.log(`mockAndInsertHeadData blockNumber: ${blockNumber}, slotNumber: ${slotNumber}`);
     const relayApi = context.polkadotJs();
     const aura_engine_id = stringToHex("aura");
 
@@ -150,12 +149,6 @@ describeSuite({
             title: "Alice should receive rewards through staking now",
             test: async function () {
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
-                console.log(
-                    "Assignment at block ",
-                    (await polkadotJs.query.system.number()).toJSON(),
-                    ": ",
-                    assignment
-                );
 
                 // Find alice in list of collators
                 let paraId = null;
@@ -172,17 +165,13 @@ describeSuite({
 
                 expect(paraId, `Alice not found in list of collators: ${assignment}`).to.not.be.null;
 
-                //const accountToReward: string = assignment.containerChains[2000][0];
                 const accountToReward = alice.address;
-                console.log("accountToReward: ", accountToReward);
                 // 70% is distributed across all rewards
                 // But we have 2 container chains, so it should get 1/2 of this
                 const accountBalanceBefore = (
                     await polkadotJs.query.system.account(accountToReward)
                 ).data.free.toBigInt();
 
-                //await customDevRpcRequest("mock_enableParaInherentCandidate", []);
-                console.log("Mocking head data at block ", 1 + (await polkadotJs.query.system.number()).toJSON());
                 await mockAndInsertHeadData(context, paraId, 1, 2 + slotOffset, alice);
                 await context.createBlock();
                 const events = await polkadotJs.query.system.events();
@@ -258,12 +247,6 @@ describeSuite({
                 ).toBigInt();
 
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
-                console.log(
-                    "Assignment at block ",
-                    (await polkadotJs.query.system.number()).toJSON(),
-                    ": ",
-                    assignment
-                );
                 // Find alice in list of collators
                 let paraId = null;
                 let slotOffset = 0;
@@ -282,7 +265,6 @@ describeSuite({
                 // We create one more block
                 await mockAndInsertHeadData(context, paraId, 2, 4 + slotOffset, alice);
                 await context.createBlock();
-                console.log("blockNumber: ", (await polkadotJs.query.system.number()).toJSON());
                 const events = await polkadotJs.query.system.events();
                 const rewards = fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
