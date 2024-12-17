@@ -148,7 +148,7 @@ describeSuite({
             id: "E01",
             title: "Alice should receive rewards through staking now",
             test: async function () {
-                const assignment = polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain().toJSON();
+                const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
                 console.log(
                     "Assignment at block ",
                     (await polkadotJs.query.system.number()).toJSON(),
@@ -284,7 +284,7 @@ describeSuite({
                 await mockAndInsertHeadData(context, paraId, block.duration + 1, 4 + slotOffset, alice);
                 await context.createBlock();
                 const events = await polkadotJs.query.system.events();
-                const rewards = await fetchRewardAuthorContainers(events);
+                const rewards = fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
                 const reward = rewards[0];
 
