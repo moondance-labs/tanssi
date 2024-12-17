@@ -117,12 +117,11 @@ describeSuite({
                 // The first account of container 2000 will be rewarded.
                 const accountToReward: string = assignment.containerChains[2000][0];
 
-                const { block } = await context.createBlock();
                 const accountBalanceBefore = (
                     await polkadotJs.query.system.account(accountToReward)
                 ).data.free.toBigInt();
 
-                await mockAndInsertHeadData(context, 2000, block.duration, 2, alice);
+                await mockAndInsertHeadData(context, 2000, 2, 2, alice);
                 await context.createBlock();
 
                 const currentChainRewards = (await polkadotJs.query.inflationRewards.chainsToReward()).unwrap();

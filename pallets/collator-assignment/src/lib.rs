@@ -591,7 +591,11 @@ pub mod pallet {
                 // Avoid division by zero below
                 return None;
             }
+
             let author_index = u64::from(slot) % collators.len() as u64;
+
+            log::info!("pallet_collator_assignment author_for_slot: slot {} index {} for para_id {}", u64::from(slot), author_index, u32::from(para_id));
+
             collators.get(author_index as usize).cloned()
         }
 

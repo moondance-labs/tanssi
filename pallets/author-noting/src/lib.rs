@@ -174,6 +174,7 @@ pub mod pallet {
                                     ContainerChainBlockInfo<T::AccountId>,
                                 >| {
                                     if let Some(ref mut old_block_info) = maybe_old_block_info {
+                                        log::info!("set_latest_author_data: {} > {}", block_info.block_number, old_block_info.block_number);
                                         if block_info.block_number > old_block_info.block_number {
                                             // We only reward author if the block increases
                                             total_weight = total_weight.saturating_add(
