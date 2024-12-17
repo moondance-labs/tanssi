@@ -2048,8 +2048,12 @@ impl pallet_registrar::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type InnerRegistrar = ();
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type InnerRegistrar =
-        InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
+    type InnerRegistrar = InnerDancelightRegistrar<
+        Runtime,
+        AccountId,
+        Registrar,
+        weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>,
+    >;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
