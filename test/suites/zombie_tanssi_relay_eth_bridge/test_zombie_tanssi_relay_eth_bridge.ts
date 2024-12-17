@@ -45,7 +45,6 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
-
             relayCharlieApi = context.polkadotJs("Tanssi-charlie");
 
             // //BeaconRelay
@@ -237,15 +236,17 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async function () {
-                console.log(`operator address: ${operatorAccount.address}`);
+                // wait a bit more
+                await waitSessions(context, relayApi, 6, null, "Tanssi-relay");
 
-                for(let i = 0; i < 20; ++i) {
+                for (let i = 0; i < 20; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    console.log(`author: ${author.toJSON()}`);
                     if (author == operatorAccount.address) {
                         return;
                     }
+
+                    await context.waitBlock(2, "Tanssi-relay");
                 }
 
                 expect.fail("operator didn't produce a block");
