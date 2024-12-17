@@ -185,27 +185,33 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
                 DAVE.into()
             ));
 
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
 
-            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
+            assert_eq!(
+                babe_authorities(),
+                vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
+            );
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // Invulnerables should have triggered on new session authorities change
             run_to_session(2u32);
 
-            assert!(babe_authorities() == vec![alice_keys.babe.clone(), bob_keys.babe.clone()]);
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
+            assert_eq!(
+                babe_authorities(),
+                vec![alice_keys.babe.clone(), bob_keys.babe.clone()]
+            );
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![charlie_keys.nimbus.clone(), dave_keys.nimbus.clone()])
             );
         });
 }
@@ -225,7 +231,7 @@ fn test_collators_per_container() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 2,
+            max_collators: 100,
             min_orchestrator_collators: 0,
             max_orchestrator_collators: 0,
             collators_per_container: 2,
@@ -261,9 +267,9 @@ fn test_collators_per_container() {
             ));
 
             // Initial assignment: Alice & Bob collating for container 1000
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // Change the collators_per_container param to 3.
@@ -275,20 +281,20 @@ fn test_collators_per_container() {
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32);
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()])
             );
 
             // We should see Charlie included in the authorities now
             run_to_session(2u32);
-            assert!(
-                authorities_for_container(1000u32.into())
-                    == Some(vec![
-                        alice_keys.nimbus.clone(),
-                        bob_keys.nimbus.clone(),
-                        charlie_keys.nimbus.clone()
-                    ])
+            assert_eq!(
+                authorities_for_container(1000u32.into()),
+                Some(vec![
+                    alice_keys.nimbus.clone(),
+                    bob_keys.nimbus.clone(),
+                    charlie_keys.nimbus.clone()
+                ])
             );
         });
 }

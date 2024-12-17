@@ -1172,10 +1172,6 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = Registrar;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
-    #[cfg(feature = "runtime-benchmarks")]
-    type AuthorNotingHook = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
@@ -1569,11 +1565,11 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<G>(PhantomData<G>);
+pub struct SessionTimer<Delay>(PhantomData<Delay>);
 
-impl<G> Timer for SessionTimer<G>
+impl<Delay> Timer for SessionTimer<Delay>
 where
-    G: Get<u32>,
+    Delay: Get<u32>,
 {
     type Instant = u32;
 
@@ -1582,7 +1578,7 @@ where
     }
 
     fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = G::get();
+        let delay = Delay::get();
         let Some(end) = instant.checked_add(delay) else {
             return false;
         };
@@ -1591,7 +1587,7 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn elapsed_instant() -> Self::Instant {
-        let delay = G::get();
+        let delay = Delay::get();
         Self::now()
             .checked_add(delay)
             .expect("overflow when computing valid elapsed instant")
