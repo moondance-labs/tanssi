@@ -26,8 +26,8 @@
     "devDependencies": {
         "@acala-network/chopsticks": "1.0.1",
         "@moonbeam-network/api-augment": "0.3200.3",
-        "@moonwall/cli": "5.6.0",
-        "@moonwall/util": "5.6.0",
+        "@moonwall/cli": "5.9.1",
+        "@moonwall/util": "5.9.1",
         "@polkadot/api": "14.3.1",
         "@polkadot/api-augment": "14.3.1",
         "@polkadot/keyring": "13.2.3",
@@ -69,5 +69,8 @@
         "overrides": {
             "inquirer": "9.2.16"
         }
+    },
+    "volta": {
+        "node": "22.12.0"
     }
 }
