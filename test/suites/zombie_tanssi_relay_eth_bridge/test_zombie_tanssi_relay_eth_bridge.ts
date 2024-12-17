@@ -236,9 +236,6 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async function () {
-                // wait a bit more
-                await waitSessions(context, relayApi, 6, null, "Tanssi-relay");
-
                 for (let i = 0; i < 20; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
@@ -246,7 +243,7 @@ describeSuite({
                         return;
                     }
 
-                    await context.waitBlock(2, "Tanssi-relay");
+                    await context.waitBlock(1, "Tanssi-relay");
                 }
 
                 expect.fail("operator didn't produce a block");
