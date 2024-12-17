@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, DevModeContext, customDevRpcRequest } from "@moonwall/cli";
+import { describeSuite, expect, beforeAll, DevModeContext } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
-import { Header, ParaId, HeadData, Digest, DigestItem } from "@polkadot/types/interfaces";
+import { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
 import {
     fetchIssuance,
     fetchRewardAuthorContainers,
@@ -11,7 +11,7 @@ import {
     jumpSessions,
 } from "util/block";
 import { DANCE } from "util/constants";
-import { numberToHex, stringToHex } from "@polkadot/util";
+import { stringToHex } from "@polkadot/util";
 
 export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
     let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
@@ -44,13 +44,14 @@ async function mockAndInsertHeadData(
     const relayApi = context.polkadotJs();
     const aura_engine_id = stringToHex("aura");
 
-    const digestItem: DigestItem = await relayApi.createType("DigestItem", {
-        PreRuntime: [aura_engine_id, numberToHex(slotNumber, 64)],
+    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
+    const digestItem: DigestItem = relayApi.createType("DigestItem", {
+        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
     });
-    const digest: Digest = await relayApi.createType("Digest", {
+    const digest: Digest = relayApi.createType("Digest", {
         logs: [digestItem],
     });
-    const header: Header = await relayApi.createType("Header", {
+    const header: Header = relayApi.createType("Header", {
         parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
         number: blockNumber,
         stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -58,8 +59,8 @@ async function mockAndInsertHeadData(
         digest,
     });
 
-    const headData: HeadData = await relayApi.createType("HeadData", header.toHex());
-    const paraHeadKey = await relayApi.query.paras.heads.key(paraId);
+    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
+    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
 
     await context.createBlock(
         relayApi.tx.sudo
@@ -147,7 +148,7 @@ describeSuite({
             id: "E01",
             title: "Alice should receive rewards through staking now",
             test: async function () {
-                const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
+                const assignment = polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain().toJSON();
                 console.log(
                     "Assignment at block ",
                     (await polkadotJs.query.system.number()).toJSON(),
@@ -163,7 +164,7 @@ describeSuite({
                     const index = assignment.containerChains[id].indexOf(alice.address);
                     if (index !== -1) {
                         paraId = id;
-                        slotOffset = index + 1;
+                        slotOffset = index;
                         break;
                     }
                 }
@@ -189,17 +190,14 @@ describeSuite({
                 const chainRewards = (issuance * 7n) / 10n;
                 const rounding = chainRewards % 3n > 0 ? 1n : 0n;
                 const expectedContainerReward = chainRewards / 2n - rounding;
-                const rewards = await fetchRewardAuthorContainers(events);
+                const rewards = fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
                 const reward = rewards[0];
 
                 expect(reward.accountId.toString(), "Alice was not the rewarded collator").toBe(accountToReward);
 
-                const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
-                const stakingRewardedDelegators = await filterRewardStakingDelegators(
-                    events,
-                    reward.accountId.toString()
-                );
+                const stakingRewardedCollator = filterRewardStakingCollator(events, reward.accountId.toString());
+                const stakingRewardedDelegators = filterRewardStakingDelegators(events, reward.accountId.toString());
 
                 // How much should the author have gotten?
                 // For now everything as we did not execute the pending operations
@@ -274,7 +272,7 @@ describeSuite({
                     const index = assignment.containerChains[id].indexOf(alice.address);
                     if (index !== -1) {
                         paraId = id;
-                        slotOffset = index + 1;
+                        slotOffset = index;
                         break;
                     }
                 }
@@ -305,11 +303,8 @@ describeSuite({
                 // Second, autocompounding
                 const delegatorsAutoCompoundRewards = delegatorRewards - realDistributedManualDelegatorRewards;
 
-                const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
-                const stakingRewardedDelegators = await filterRewardStakingDelegators(
-                    events,
-                    reward.accountId.toString()
-                );
+                const stakingRewardedCollator = filterRewardStakingCollator(events, reward.accountId.toString());
+                const stakingRewardedDelegators = filterRewardStakingDelegators(events, reward.accountId.toString());
 
                 // Test ranges, as we can have rounding errors for Perbill manipulation
                 expect(stakingRewardedDelegators.manualRewards).toBeGreaterThanOrEqual(
