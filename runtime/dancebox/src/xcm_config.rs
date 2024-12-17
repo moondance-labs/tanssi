@@ -63,6 +63,7 @@ use {
     },
     staging_xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,
+    tp_xcm_commons::NativeAssetReserve,
 };
 
 parameter_types! {
@@ -390,63 +391,6 @@ pub type AssetRateAsMultiplier =
         AssetRate,
         ForeignAssetsInstance,
     >;
-
-// TODO: this should probably move to somewhere in the polkadot-sdk repo
-pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if asset.id.0.parents == 0
-            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
-        {
-            Some(Location::here())
-        } else {
-            asset.id.0.chain_part()
-        };
-
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
-        }
-        false
-    }
-}
-
-pub trait Parse {
-    /// Returns the "chain" location part. It could be parent, sibling
-    /// parachain, or child parachain.
-    fn chain_part(&self) -> Option<Location>;
-    /// Returns "non-chain" location part.
-    fn non_chain_part(&self) -> Option<Location>;
-}
-
-impl Parse for Location {
-    fn chain_part(&self) -> Option<Location> {
-        match (self.parents, self.first_interior()) {
-            // sibling parachain
-            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
-            // parent
-            (1, _) => Some(Location::parent()),
-            // children parachain
-            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
-            _ => None,
-        }
-    }
-
-    fn non_chain_part(&self) -> Option<Location> {
-        let mut junctions = self.interior().clone();
-        while matches!(junctions.first(), Some(Parachain(_))) {
-            let _ = junctions.take_first();
-        }
-
-        if junctions != Here {
-            Some(Location::new(0, junctions))
-        } else {
-            None
-        }
-    }
-}
 
 parameter_types! {
     pub MessageQueueServiceWeight: Weight = Perbill::from_percent(25) * RuntimeBlockWeights::get().max_block;

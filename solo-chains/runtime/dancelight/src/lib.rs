@@ -2153,10 +2153,6 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = ContainerRegistrar;
     type SlotBeacon = BabeSlotBeacon;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    // We benchmark each hook individually, so for runtime-benchmarks this should be empty
-    #[cfg(feature = "runtime-benchmarks")]
-    type AuthorNotingHook = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;

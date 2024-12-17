@@ -37,6 +37,7 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
+    tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
@@ -136,20 +137,10 @@ parameter_types! {
     pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
     pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
     pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
+    pub const RelayNetwork: NetworkId = NetworkId::Westend;
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }
-pub type TrustedTeleporters = (
-    xcm_builder::Case<StarForTick>,
-    xcm_builder::Case<StarForTrick>,
-    xcm_builder::Case<StarForTrack>,
-    xcm_builder::Case<StarForAssetHub>,
-    xcm_builder::Case<StarForContracts>,
-    xcm_builder::Case<StarForEncointer>,
-    xcm_builder::Case<StarForBridgeHub>,
-    xcm_builder::Case<StarForPeople>,
-    xcm_builder::Case<StarForBroker>,
-);
 
 pub struct OnlyParachains;
 impl Contains<Location> for OnlyParachains {
@@ -187,7 +178,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
-pub type WaivedLocations = (SystemParachains, Equals<RootLocation>, LocalPlurality);
+pub type WaivedLocations = Equals<RootLocation>;
 pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
@@ -196,8 +187,8 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = LocalAssetTransactor;
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = ();
-    type IsTeleporter = TrustedTeleporters;
+    type IsReserve = NativeAssetReserve;
+    type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
     type Weigher = XcmWeigher;

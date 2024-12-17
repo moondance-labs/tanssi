@@ -125,6 +125,17 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
         T::DbWeight::get().writes(1)
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) {
+        // We insert the some data in the storage being removed.
+        // Not sure if this is necessary.
+        PendingBlocks::<T>::insert(para_id, BlockNumberFor::<T>::from(42u32));
+    }
 }
 
 #[frame_support::pallet]
