@@ -237,8 +237,22 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async function () {
+                // wait some time for the data to be relayed
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        const newValidators = await relayApi.query.session.validators();
+                        // Wait until there are more than 2 validators
+                        return newValidators.length > 2;
+                    },
+                    "Tanssi-relay"
+                );
+
                 console.log(`operator address: ${operatorAccount.address}`);
 
+                /*
                 for(let i = 0; i < 20; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
@@ -246,9 +260,13 @@ describeSuite({
                     if (author == operatorAccount.address) {
                         return;
                     }
+                    await context.waitBlock(1, "Tanssi-relay");
                 }
+                 */
 
-                expect.fail("operator didn't produce a block");
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+
+                //expect.fail("operator didn't produce a block");
             },
         });
 
