@@ -15,8 +15,119 @@ async function logSessionAssignment(polkadotJs) {
     console.log("session ", sessionIndex , " assignment: ", assignment);
 }
 
+async function deregisterAll(context) {
+    const polkadotJs = context.polkadotJs();
+    const alice = context.keyring.alice;
+    const parasRegistered = (await polkadotJs.query.registrar.registeredParaIds()).toJSON();
+
+    const txs = [];
+
+    for (let paraId of parasRegistered) {
+        const tx = polkadotJs.tx.registrar.deregister(paraId);
+        txs.push(tx);
+    }
+
+    await context.createBlock([
+        await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll(txs)).signAsync(alice),
+    ]);
+}
+
+async function registerParathreads(context) {
+    const polkadotJs = context.polkadotJs();
+    const alice = context.keyring.alice;
+    await context.createBlock();
+
+    const currentSesssion = await polkadotJs.query.session.currentIndex();
+    const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
+    const expectedScheduledOnboarding =
+        BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
+
+    const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+        min: 1,
+        max: 1,
+    });
+    const emptyGenesisData = () => {
+        const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+            storage: [
+                {
+                    key: "0x636f6465",
+                    value: "0x010203040506",
+                },
+            ],
+            name: "0x436f6e7461696e657220436861696e2032303030",
+            id: "0x636f6e7461696e65722d636861696e2d32303030",
+            forkId: null,
+            extensions: "0x",
+            properties: {
+                tokenMetadata: {
+                    tokenSymbol: "0x61626364",
+                    ss58Format: 42,
+                    tokenDecimals: 12,
+                },
+                isEthereum: false,
+            },
+        });
+        return g;
+    };
+    const containerChainGenesisData = emptyGenesisData();
+
+    const tx = polkadotJs.tx.registrar.registerParathread(
+        2002,
+        slotFrequency,
+        containerChainGenesisData,
+        null
+    );
+
+    const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+    const tx2 = polkadotJs.tx.dataPreservers.createProfile({
+        url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+        paraIds: "AnyParaId",
+        mode: "Bootnode",
+        assignmentRequest: "Free",
+    });
+
+    const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");
+    const tx4 = polkadotJs.tx.registrar.markValidForCollating(2002);
+    const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
+    await context.createBlock([
+        await tx.signAsync(alice, { nonce }),
+        await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
+        await tx3.signAsync(alice, { nonce: nonce.addn(2) }),
+        await polkadotJs.tx.sudo.sudo(tx4).signAsync(alice, { nonce: nonce.addn(3) }),
+    ]);
+
+    const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
+    expect(pendingParas.length).to.be.eq(1);
+    const sessionScheduling = pendingParas[0][0];
+    const parasScheduled = pendingParas[0][1];
+
+    expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
+
+    // These will be the paras in session 2
+    // TODO: fix once we have types
+    expect(parasScheduled.toJSON()).to.deep.equal([2002]);
+
+    // Check that the on chain genesis data is set correctly
+    const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
+    // TODO: fix once we have types
+    expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+
+    // Check the para id has been given some free credits
+    const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
+    expect(credits, "Container chain 2002 should have been given credits").toBeGreaterThan(0);
+
+    // Checking that in session 2 paras are registered
+    await jumpSessions(context, 2);
+
+    // Expect now paraIds to be registered
+    const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
+    // TODO: fix once we have types
+    expect(parasRegistered.toJSON()).to.deep.equal([2002]);
+
+}
+
 describeSuite({
-    id: "DTR0303",
+    id: "DTR0304",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
@@ -37,11 +148,15 @@ describeSuite({
             title: "Collator should rotate",
             test: async function () {
 
-                const orchestrator = "KeepAll";
-                const parachain = { KeepCollators: { keep: 1 } };
-                const parathread = "RotateAll";
+                const orchestrator = "RotateAll";
+                const parachain = "KeepAll";
+                const parathread = { KeepPerbill: { percentage: 500_000_000n } }; // 50%
                 const tx = context.polkadotJs().tx.configuration.setFullRotationMode(orchestrator, parachain, parathread);
                 await context.createBlock(polkadotJs.tx.sudo.sudo(tx).signAsync(alice));
+                const tx2 = context.polkadotJs().tx.configuration.setCollatorsPerParathread(2);
+                await context.createBlock(polkadotJs.tx.sudo.sudo(tx2).signAsync(alice));
+
+                // TODO: need to register parathread to be able to test different modes
 
                 // Add 4 collators more
                 // Use random accounts
@@ -71,10 +186,14 @@ describeSuite({
                 }
                 await context.createBlock();
 
+                // Deregister container chains and register parathreads instead
+                await deregisterAll(context);
+                await registerParathreads(context);
+
                 await logSessionAssignment(polkadotJs);
 
                 // Collators are registered, wait 2 sessions for them to be assigned
-                await jumpSessions(context, 2);
+                await jumpSessions(context, 1);
 
                 await logSessionAssignment(polkadotJs);
 
@@ -97,7 +216,7 @@ describeSuite({
                     await polkadotJs.query.collatorAssignment.collatorContainerChain()
                 ).toJSON();
 
-                expect(initialAssignment.containerChains[2000].length).to.eq(2);
+                expect(initialAssignment.containerChains[2002].length).to.eq(2);
                 expect((await polkadotJs.query.collatorAssignment.pendingCollatorContainerChain()).isNone);
 
                 // remainingSessionsForRotation - 1
@@ -108,8 +227,8 @@ describeSuite({
 
                 expect((await polkadotJs.query.collatorAssignment.pendingCollatorContainerChain()).isSome);
                 // Assignment shouldn't have changed yet
-                expect(initialAssignment.containerChains[2000].toSorted()).to.deep.eq(
-                    rotationEndAssignment.containerChains[2000].toSorted()
+                expect(initialAssignment.containerChains[2002].toSorted()).to.deep.eq(
+                    rotationEndAssignment.containerChains[2002].toSorted()
                 );
 
                 await logSessionAssignment(polkadotJs);
@@ -151,21 +270,19 @@ describeSuite({
                 // Assignment should have changed
                 expect(newAssignment).to.not.deep.eq(initialAssignment);
 
-                // Orchestrator collators should not change
-                expect(newAssignment.orchestratorChain).to.deep.eq(initialAssignment.orchestratorChain);
-
+                // Orchestrator collators should change
+                // But they don't change because they are invulnerables, and invulnerables that were previously assigned have priority.
+                expect(newAssignment.orchestratorChain).to.not.eq(initialAssignment.orchestratorChain);
+                
                 const arrayIntersection = (arr1, arr2) => {
                     const set2 = new Set(arr2);
                     return arr1.filter(item => set2.has(item));
                 };
 
-                // Parachain collators should keep 1 and rotate the other one
-                expect(newAssignment.containerChains["2000"].length).toBe(2);
-                const sameCollators2000 = arrayIntersection(newAssignment.containerChains["2000"], initialAssignment.containerChains["2000"]);
-                expect(sameCollators2000.length).toBe(1);
-                expect(newAssignment.containerChains["2001"].length).toBe(2);
-                const sameCollators2001 = arrayIntersection(newAssignment.containerChains["2001"], initialAssignment.containerChains["2001"]);
-                expect(sameCollators2001.length).toBe(1);
+                // Parathread collators should keep 1 and rotate the other one
+                expect(newAssignment.containerChains["2002"].length).toBe(2);
+                const sameCollators2002 = arrayIntersection(newAssignment.containerChains["2002"], initialAssignment.containerChains["2002"]);
+                expect(sameCollators2002.length).toBe(1);
             },
         });
     },
