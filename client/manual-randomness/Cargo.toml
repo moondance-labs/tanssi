@@ -1,0 +1,19 @@
+[package]
+name = "manual-randomness-rpc"
+authors = { workspace = true }
+edition = "2021"
+license = "GPL-3.0-only"
+repository = { workspace = true }
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+flume = { workspace = true }
+hex-literal = { workspace = true }
+jsonrpsee = { workspace = true, features = [ "macros", "server" ] }
+parity-scale-codec = { workspace = true, features = [ "std" ] }
+staging-xcm = { workspace = true }
+
+cumulus-primitives-core = { workspace = true, features = [ "std" ] }
