@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import {describeSuite, expect, beforeAll, customDevRpcRequest} from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
 import { filterAndApply, generateKeyringPair } from "@moonwall/util";
@@ -24,6 +24,9 @@ describeSuite({
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
+
+            // Enable randomness for this test
+            await customDevRpcRequest("mock_activateRandomness", []);
         });
 
         it({
@@ -32,7 +35,7 @@ describeSuite({
             test: async function () {
 
                 const orchestrator = null;
-                const parachain = { KeepCollators: { keep: 2 } };
+                const parachain = { KeepCollators: { keep: 1 } };
                 const parathread = { KeepPerbill: { percentage: 500_000_000n } }; // 50%
                 const tx = context.polkadotJs().tx.configuration.setFullRotationMode(orchestrator, parachain, parathread);
                 await context.createBlock(polkadotJs.tx.sudo.sudo(tx).signAsync(alice));
@@ -127,9 +130,13 @@ describeSuite({
                 const sessionDuration = 10;
                 await jumpBlocks(context, sessionDuration - 1);
                 const assignmentRandomness = await polkadotJs.query.collatorAssignment.randomness();
-                // TODO: in dancelight isEmpty == false because we have randomness there
-                // In dancebox dev tests there is no rotation because there is no randomness
-                expect(assignmentRandomness.isEmpty).toBe(true);
+                expect(assignmentRandomness.isEmpty).toBe(false);
+
+                await jumpSessions(context, 1);
+                const rotationRotateAssignment = (
+                    await polkadotJs.query.collatorAssignment.collatorContainerChain()
+                ).toJSON();
+                console.log("rotationRotateAssignment: ", rotationRotateAssignment);
             },
         });
     },

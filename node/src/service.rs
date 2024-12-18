@@ -1006,7 +1006,7 @@ pub fn start_dev_node(
 
                     if mock_additional_randomness {
                         let mut mock_randomness: [u8; 32] = [0u8; 32];
-                        mock_randomness[..8].copy_from_slice(&current_para_block.to_be_bytes());
+                        mock_randomness[..4].copy_from_slice(&current_para_block.to_be_bytes());
                         additional_keys.extend([(RelayWellKnownKeys::CURRENT_BLOCK_RANDOMNESS.to_vec(), mock_randomness.encode())]);
                     }
 
