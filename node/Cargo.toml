@@ -37,6 +37,7 @@ dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std"
 dp-slot-duration-runtime-api = { workspace = true }
 flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
+manual-randomness-rpc = { workspace = true }
 node-common = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
