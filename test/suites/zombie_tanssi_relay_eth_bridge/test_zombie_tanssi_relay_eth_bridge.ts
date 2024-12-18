@@ -55,6 +55,7 @@ describeSuite({
 
             // Operator keys
             operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
+            // We rotate the keys for charlie so that we have access to them from this test as well as the node
             operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
             console.log(`operatorNimbusKey: ${operatorNimbusKey}`);
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
