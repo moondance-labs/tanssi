@@ -103,6 +103,7 @@ tp-author-noting-inherent = { path = "primitives/author-noting-inherent", defaul
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tp-xcm-commons = { path = "primitives/xcm-commons", default-features = false }
 tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
 
 # Dancekit (wasm)
