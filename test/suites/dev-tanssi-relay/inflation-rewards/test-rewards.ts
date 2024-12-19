@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll, DevModeContext } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { Header, ParaId, HeadData, Digest, DigestItem } from "@polkadot/types/interfaces";
+import { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
 import { KeyringPair } from "@moonwall/util";
 import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/block";
 import { DANCELIGHT_BOND } from "util/constants";
-import { numberToHex, stringToHex } from "@polkadot/util";
+import { stringToHex } from "@polkadot/util";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 // Helper function to make rewards work for a specific block and slot.
@@ -25,13 +25,14 @@ async function mockAndInsertHeadData(
     const relayApi = context.polkadotJs();
     const aura_engine_id = stringToHex("aura");
 
-    const digestItem: DigestItem = await relayApi.createType("DigestItem", {
-        PreRuntime: [aura_engine_id, numberToHex(slotNumber, 64)],
+    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
+    const digestItem: DigestItem = relayApi.createType("DigestItem", {
+        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
     });
-    const digest: Digest = await relayApi.createType("Digest", {
+    const digest: Digest = relayApi.createType("Digest", {
         logs: [digestItem],
     });
-    const header: Header = await relayApi.createType("Header", {
+    const header: Header = relayApi.createType("Header", {
         parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
         number: blockNumber,
         stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -39,8 +40,8 @@ async function mockAndInsertHeadData(
         digest,
     });
 
-    const headData: HeadData = await relayApi.createType("HeadData", header.toHex());
-    const paraHeadKey = await relayApi.query.paras.heads.key(paraId);
+    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
+    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
 
     await context.createBlock(
         relayApi.tx.sudo
@@ -116,12 +117,11 @@ describeSuite({
                 // The first account of container 2000 will be rewarded.
                 const accountToReward: string = assignment.containerChains[2000][0];
 
-                const { block } = await context.createBlock();
                 const accountBalanceBefore = (
                     await polkadotJs.query.system.account(accountToReward)
                 ).data.free.toBigInt();
 
-                await mockAndInsertHeadData(context, 2000, block.duration, 2, alice);
+                await mockAndInsertHeadData(context, 2000, 2, 2, alice);
                 await context.createBlock();
 
                 const currentChainRewards = (await polkadotJs.query.inflationRewards.chainsToReward()).unwrap();
