@@ -519,9 +519,17 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
+pub struct RewardPoints;
+
+impl pallet_authorship::EventHandler<AccountId, BlockNumberFor<Runtime>> for RewardPoints {
+    fn note_author(author: AccountId) {
+        ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+    }
+}
+
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type EventHandler = ();
+    type EventHandler = RewardPoints;
 }
 
 impl_opaque_keys! {
