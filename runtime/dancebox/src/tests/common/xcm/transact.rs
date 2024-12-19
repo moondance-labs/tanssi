@@ -17,13 +17,10 @@
 use crate::tests::common::xcm::*;
 
 use {
-    crate::{
-        assert_expected_events,
-        tests::common::xcm::mocknets::{
-            DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
-            FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate,
-            SimpleTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet,
-        },
+    crate::tests::common::xcm::mocknets::{
+        DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
+        FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,
+        WestendRelay as Westend, WestendRelayPallet,
     },
     frame_support::{
         assert_ok,
@@ -36,7 +33,7 @@ use {
     },
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
-    xcm_emulator::Chain,
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[test]
