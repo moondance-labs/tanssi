@@ -1,0 +1,202 @@
+# Rust
+
+## Check
+
+[[entries]]
+name = "[Tanssi] Cargo Check"
+only_in_dir = "**/tanssi"
+script = """
+SKIP_WASM_BUILD=1 cargo check --all-targets --workspace --features runtime-benchmarks --tests --color always 2>&1 | less -CR
+"""
+
+## Lint and format
+
+[[entries]]
+name = "[Tanssi] Cargo Fix"
+script = """
+SKIP_WASM_BUILD=1 cargo fix --all-targets --tests --locked --workspace --allow-dirty
+"""
+
+[[entries]]
+name = "[Tanssi] Cargo Clippy"
+only_in_dir = "**/tanssi"
+script = """
+SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --features runtime-benchmarks
+"""
+
+[[entries]]
+name = "[Tanssi] Cargo Clippy Fix"
+only_in_dir = "**/tanssi"
+script = """
+SKIP_WASM_BUILD=1 cargo clippy --fix --all-targets --locked --workspace --features runtime-benchmarks --allow-dirty
+"""
+
+[[entries]]
+name = "[Rust] Cargo Fmt and toml-maid"
+script = """
+echo Running 'toml-maid' ...
+toml-maid
+echo
+
+echo Running 'cargo fmt' ...
+cargo fmt
+echo
+
+echo Done!
+"""
+
+## Tests
+
+[[entries]]
+name = "[Tanssi] Cargo Test All"
+only_in_dir = "**/tanssi"
+script = """
+cargo test --release --all --features fast-runtime
+"""
+
+[[entries]]
+name = "[Tanssi] Cargo Test Crate"
+only_in_dir = "**/tanssi"
+script = """
+cargo test --release -p $1 --features runtime-benchmarks
+"""
+args = ["Which crate to test"]
+
+## Build
+
+[[entries]]
+name = "[Tanssi] Build nodes for TS-Tests and TS-API"
+only_in_dir = "**/tanssi"
+script = """
+cargo build --release --all --features fast-runtime
+"""
+
+[[entries]]
+name = "[Tanssi] Build nodes for benchmarks"
+only_in_dir = "**/tanssi"
+script = """
+cargo build --release --all --features runtime-benchmarks
+"""
+
+## Benchmarks
+
+[[entries]]
+name = "[Tanssi] Run dancelight benchmarks"
+only_in_dir = "**/tanssi"
+script = """
+export BINARY="target/release/tanssi-relay"
+export TEMPLATE_PATH="benchmarking/frame-weight-runtime-template.hbs"
+export CHAIN="dancelight-dev"
+export OUTPUT_PATH="tmp/dancelight_weights"
+
+./tools/benchmarking.sh $1 "*"
+"""
+args = ["Which pallet to bench (* for all)"]
+
+[[entries]]
+name = "[Tanssi] Run dancebox benchmarks"
+only_in_dir = "**/tanssi"
+script = """
+export OUTPUT_PATH="tmp/dancebox_weights"
+export TEMPLATE_PATH="benchmarking/frame-weight-runtime-template.hbs"
+
+./tools/benchmarking.sh $1 "*"
+"""
+args = ["Which pallet to bench (* for all)"]
+
+[[entries]]
+name = "[Tanssi] Run flashbox benchmarks"
+only_in_dir = "**/tanssi"
+script = """
+export TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs
+export CHAIN=flashbox_dev
+export OUTPUT_PATH=tmp/flashbox_weights
+
+./tools/benchmarking.sh $1 "*"
+"""
+args = ["Which pallet to bench (* for all)"]
+
+# Typescript
+
+## API
+
+[[entries]]
+name = "[Tanssi] Generate TS-API"
+only_in_dir = "**/tanssi"
+script = """
+cd typescript-api
+pnpm i
+pnpm create-local-interfaces
+"""
+
+## Test
+
+[[entries]]
+name = "[Tanssi] Run Moonwall tests"
+only_in_dir = "**/tanssi"
+script = """
+cd test
+pnpm moonwall test $1 $2
+"""
+args = ["Which test suite to run", "Which specific test to run (* for all)"]
+
+## Lint and fmt
+
+[[entries]]
+name = "[Tanssi] Fix Format and Lint in tests"
+only_in_dir = "**/tanssi"
+script = """
+cd test
+pnpm fmt:fix
+pnpm lint:fix
+"""
+
+# Other
+
+[[entries]]
+name = "[Tanssi] Please make CI happy :)"
+only_in_dir = "**/tanssi"
+script = """
+echo "\nℹ️ Running 'cargo fix'\n"
+SKIP_WASM_BUILD=1 cargo fix --all-targets --tests --locked --workspace --allow-dirty
+
+echo "\nℹ️ Running 'cargo fmt'\n"
+cargo fmt
+
+echo "\nℹ️ Running 'toml-maid'\n"
+toml-maid
+
+echo "\nℹ️ Running 'zepter'\n"
+zepter
+
+cd test
+
+echo "\nℹ️ Running 'pnpm fmt:fix' in 'test'\n"
+pnpm fmt:fix
+
+echo "\nℹ️ Running 'pnpm lint:fix' in 'test'\n"
+pnpm lint:fix
+"""
+
+# Git
+
+[[entries]]
+name = "[Git] Fetch and merge master from origin"
+script = """
+git fetch origin
+git merge origin/master
+"""
+
+[[entries]]
+name = "[Git] Fetch + Pull"
+script = "git fetch origin && git pull"
+
+[[entries]]
+name = "[Git] Push"
+script = "git push"
+
+[[entries]]
+name = "[Git] Delete local branches (select)"
+script = """
+git branch | ichoose --multi --title "Select branches to delete" | while read x ; do git branch -D $x ; done
+"""
