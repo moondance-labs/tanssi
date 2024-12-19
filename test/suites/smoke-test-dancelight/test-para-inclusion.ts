@@ -127,10 +127,12 @@ describeSuite({
 
                         const parentBlockNumber = blockNumberMap.get(relayParent);
 
-                        // allowedAncestryLen = 1 means that parent + 1 == current
-                        // with allowedAncestryLen = 2, parent + allowedAncestryLen >= current
+                        // allowedAncestryLen = 0 means that we only allow building on top of the parent block
+                        // allowedAncestryLen = 1 means that we allow 2 different parent blocks,
+                        // so parent + 2 >= current
+                        // In general, parent + allowedAncestryLen + 1 >= current
                         expect(
-                            parentBlockNumber + allowedAncestryLen,
+                            parentBlockNumber + allowedAncestryLen + 1,
                             `Block #${blockNum}: backed candidate for para id ${paraId} has too old relayParent: ${parentBlockNumber} vs current ${blockNum}`
                         ).to.be.greaterThanOrEqual(blockNum);
 
