@@ -77,7 +77,7 @@ fn load_spec(
             ))
         }
         "dancebox" => Box::new(RawChainSpec::from_json_bytes(
-            &include_bytes!("../../specs/dancebox/dancebox-raw-specs.json")[..],
+            &include_bytes!("../../../../specs/dancebox/dancebox-raw-specs.json")[..],
         )?),
         "flashbox-dev" | "flashbox_dev" => Box::new(chain_spec::flashbox::development_config(
             para_id,
@@ -169,7 +169,7 @@ impl SubstrateCli for RelayChainCli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         match id {
             "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
-                &include_bytes!("../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
+                &include_bytes!("../../../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
             )?)),
             // If we are not using a moonbeam-centric pre-baked relay spec, then fall back to the
             // Polkadot service to interpret the id.
