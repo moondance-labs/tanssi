@@ -11,6 +11,9 @@
 # Spec/Wasm build directory
 /build/
 
-
 # RustRover - related
 **/.idea
+
+# Temporary files
+**/tmp
+raw.json
