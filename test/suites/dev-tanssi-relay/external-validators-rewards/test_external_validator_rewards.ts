@@ -29,8 +29,11 @@ describeSuite({
                     .query.externalValidatorsRewards.rewardPointsForEra(0);
                 const totalRewards = validatorRewards.total.toBigInt();
 
-                expect(totalRewards).to.be.greaterThan(0n);
-                // All of them come from alice as she is the only one validating candidates
+                const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toBigInt();
+
+                // 20 points per block
+                expect(totalRewards).toBe(20n * blockNumber);
+                // All of them come from alice as she is the only one producing blocks
                 expect(validatorRewards.individual.toHuman()[aliceStash.address]).to.be.eq(totalRewards.toString());
             },
         });

@@ -34,8 +34,10 @@ describeSuite({
                     .query.externalValidatorsRewards.rewardPointsForEra(0);
                 const totalRewards = validatorRewards.total.toBigInt();
 
+                const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toBigInt();
+
                 // Validators get 20 points for creating a block, so if they included a candidate, they will get more than 20
-                expect(totalRewards).to.be.greaterThan(20n);
+                expect(totalRewards).to.be.greaterThan(20n * blockNumber);
                 // All of them come from alice as she is the only one validating candidates
                 expect(validatorRewards.individual.toHuman()[aliceStash.address]).to.be.eq(totalRewards.toString());
             },
