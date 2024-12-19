@@ -69,32 +69,35 @@ async function registerParathreads(context) {
         });
         return g;
     };
+
     const containerChainGenesisData = emptyGenesisData();
 
-    const tx = polkadotJs.tx.registrar.registerParathread(
-        2002,
-        slotFrequency,
-        containerChainGenesisData,
-        null
-    );
+    for (let paraId of [2002, 2003]) {
+        const tx = polkadotJs.tx.registrar.registerParathread(
+            paraId,
+            slotFrequency,
+            containerChainGenesisData,
+            null
+        );
 
-    const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
-    const tx2 = polkadotJs.tx.dataPreservers.createProfile({
-        url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
-        paraIds: "AnyParaId",
-        mode: "Bootnode",
-        assignmentRequest: "Free",
-    });
+        const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
+        const tx2 = polkadotJs.tx.dataPreservers.createProfile({
+            url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+            paraIds: "AnyParaId",
+            mode: "Bootnode",
+            assignmentRequest: "Free",
+        });
 
-    const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");
-    const tx4 = polkadotJs.tx.registrar.markValidForCollating(2002);
-    const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
-    await context.createBlock([
-        await tx.signAsync(alice, { nonce }),
-        await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
-        await tx3.signAsync(alice, { nonce: nonce.addn(2) }),
-        await polkadotJs.tx.sudo.sudo(tx4).signAsync(alice, { nonce: nonce.addn(3) }),
-    ]);
+        const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");
+        const tx4 = polkadotJs.tx.registrar.markValidForCollating(paraId);
+        const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
+        await context.createBlock([
+            await tx.signAsync(alice, { nonce }),
+            await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
+            await tx3.signAsync(alice, { nonce: nonce.addn(2) }),
+            await polkadotJs.tx.sudo.sudo(tx4).signAsync(alice, { nonce: nonce.addn(3) }),
+        ]);
+    }
 
     const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
     expect(pendingParas.length).to.be.eq(1);
@@ -105,7 +108,7 @@ async function registerParathreads(context) {
 
     // These will be the paras in session 2
     // TODO: fix once we have types
-    expect(parasScheduled.toJSON()).to.deep.equal([2002]);
+    expect(parasScheduled.toJSON()).to.deep.equal([2002, 2003]);
 
     // Check that the on chain genesis data is set correctly
     const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
@@ -122,7 +125,7 @@ async function registerParathreads(context) {
     // Expect now paraIds to be registered
     const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
     // TODO: fix once we have types
-    expect(parasRegistered.toJSON()).to.deep.equal([2002]);
+    expect(parasRegistered.toJSON()).to.deep.equal([2002, 2003]);
 
 }
 
@@ -283,6 +286,9 @@ describeSuite({
                 expect(newAssignment.containerChains["2002"].length).toBe(2);
                 const sameCollators2002 = arrayIntersection(newAssignment.containerChains["2002"], initialAssignment.containerChains["2002"]);
                 expect(sameCollators2002.length).toBe(1);
+                expect(newAssignment.containerChains["2003"].length).toBe(2);
+                const sameCollators2003 = arrayIntersection(newAssignment.containerChains["2003"], initialAssignment.containerChains["2003"]);
+                expect(sameCollators2003.length).toBe(1);
             },
         });
     },

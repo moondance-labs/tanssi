@@ -402,13 +402,13 @@ pub mod pallet {
             let full_rotation =
                 T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index);
             if full_rotation {
-                log::debug!(
+                log::info!(
                     "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
                 );
             } else {
-                log::debug!(
+                log::info!(
                     "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
