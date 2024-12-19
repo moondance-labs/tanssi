@@ -55,6 +55,7 @@ parameter_types! {
 }
 
 // Holesky: https://github.com/eth-clients/holesky
+// Fork versions: https://github.com/eth-clients/holesky/blob/main/metadata/config.yaml
 #[cfg(not(any(
     feature = "std",
     feature = "fast-runtime",
@@ -68,19 +69,19 @@ parameter_types! {
             epoch: 0,
         },
         altair: Fork {
-            version: hex_literal::hex!("01017000"), // 0x01017000
+            version: hex_literal::hex!("02017000"), // 0x02017000
             epoch: 0,
         },
         bellatrix: Fork {
-            version: hex_literal::hex!("01017000"), // 0x01017000
+            version: hex_literal::hex!("03017000"), // 0x03017000
             epoch: 0,
         },
         capella: Fork {
-            version: hex_literal::hex!("01017001"), // 0x01017001
+            version: hex_literal::hex!("04017000"), // 0x04017000
             epoch: 256,
         },
         deneb: Fork {
-            version: hex_literal::hex!("01017002"), // 0x01017002
+            version: hex_literal::hex!("05017000"), // 0x05017000
             epoch: 29696,
         },
     };
