@@ -34,13 +34,10 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-#[cfg(feature = "try-runtime")]
-use frame_support::ensure;
-use frame_support::migration::move_pallet;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
-        migration::{clear_storage_prefix, storage_key_iter},
+        migration::{clear_storage_prefix, move_pallet, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         traits::{
             fungible::MutateHold, OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency,
@@ -57,6 +54,8 @@ use {
     sp_runtime::Perbill,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
+#[cfg(feature = "try-runtime")]
+use {frame_support::ensure, parity_scale_codec::DecodeAll};
 
 #[derive(
     Default,
@@ -67,7 +66,7 @@ use {
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
 )]
-pub struct HostConfigurationV2 {
+pub struct HostConfigurationV3 {
     pub max_collators: u32,
     pub min_orchestrator_collators: u32,
     pub max_orchestrator_collators: u32,
@@ -76,28 +75,26 @@ pub struct HostConfigurationV2 {
     pub collators_per_parathread: u32,
     pub parathreads_per_collator: u32,
     pub target_container_chain_fullness: Perbill,
+    pub max_parachain_cores_percentage: Option<Perbill>,
 }
 
-pub struct MigrateConfigurationAddParachainPercentage<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateConfigurationAddParachainPercentage<T>
+pub struct MigrateConfigurationAddFullRotationMode<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateConfigurationAddFullRotationMode<T>
 where
     T: pallet_configuration::Config,
 {
     fn friendly_name(&self) -> &str {
-        "TM_MigrateConfigurationAddParachainPercentage"
+        "TM_MigrateConfigurationAddFullRotationMode"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
         let default_config = HostConfiguration::default();
 
         // Modify active config
-        let old_config: HostConfigurationV2 =
-            frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
-                .expect("configuration.activeConfig should have value");
+        let old_config: HostConfigurationV3 = frame_support::storage::unhashed::get(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .expect("configuration.activeConfig should have value");
         let new_config = HostConfiguration {
             max_collators: old_config.max_collators,
             min_orchestrator_collators: old_config.min_orchestrator_collators,
@@ -107,14 +104,20 @@ where
             collators_per_parathread: old_config.collators_per_parathread,
             parathreads_per_collator: old_config.parathreads_per_collator,
             target_container_chain_fullness: old_config.target_container_chain_fullness,
-            max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
+            max_parachain_cores_percentage: old_config.max_parachain_cores_percentage,
+            full_rotation_mode: default_config.full_rotation_mode.clone(),
         };
-        frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
+        frame_support::storage::unhashed::put(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+            &new_config,
+        );
 
         // Modify pending configs, if any
-        let old_pending_configs: Vec<(u32, HostConfigurationV2)> =
-            frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
-                .unwrap_or_default();
+        let old_pending_configs: Vec<(u32, HostConfigurationV3)> =
+            frame_support::storage::unhashed::get(
+                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
+            )
+            .unwrap_or_default();
         let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
 
         for (session_index, old_config) in old_pending_configs {
@@ -127,14 +130,15 @@ where
                 collators_per_parathread: old_config.collators_per_parathread,
                 parathreads_per_collator: old_config.parathreads_per_collator,
                 target_container_chain_fullness: old_config.target_container_chain_fullness,
-                max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
+                max_parachain_cores_percentage: old_config.max_parachain_cores_percentage,
+                full_rotation_mode: default_config.full_rotation_mode.clone(),
             };
             new_pending_configs.push((session_index, new_config));
         }
 
         if !new_pending_configs.is_empty() {
             frame_support::storage::unhashed::put(
-                CONFIGURATION_PENDING_CONFIGS_KEY,
+                &pallet_configuration::PendingConfigs::<T>::hashed_key(),
                 &new_pending_configs,
             );
         }
@@ -145,20 +149,19 @@ where
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        let old_config_bytes = frame_support::storage::unhashed::get_raw(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .unwrap();
+        let old_config: Result<HostConfigurationV3, _> =
+            DecodeAll::decode_all(&mut old_config_bytes.as_ref());
+        let new_config: Result<HostConfiguration, _> =
+            DecodeAll::decode_all(&mut old_config_bytes.as_ref());
 
-        let old_config_bytes =
-            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
-                .expect("configuration.activeConfig should have value");
-        // This works because there is no enum in the v2
-        assert_eq!(
-            old_config_bytes.len(),
-            HostConfigurationV2::default().encoded_size()
-        );
+        assert!(old_config.is_ok());
+        assert!(new_config.is_err());
 
-        use parity_scale_codec::Encode;
-        Ok((old_config_bytes).encode())
+        Ok(vec![])
     }
 
     /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
@@ -167,132 +170,24 @@ where
         &self,
         _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
+        let new_config_bytes = frame_support::storage::unhashed::get_raw(
+            &pallet_configuration::ActiveConfig::<T>::hashed_key(),
+        )
+        .unwrap();
+        let old_config: Result<HostConfigurationV3, _> =
+            DecodeAll::decode_all(&mut new_config_bytes.as_ref());
+        let new_config: Result<HostConfiguration, _> =
+            DecodeAll::decode_all(&mut new_config_bytes.as_ref());
+
+        assert!(old_config.is_err());
+        assert!(new_config.is_ok());
+
         let new_config = pallet_configuration::Pallet::<T>::config();
         let default_config = HostConfiguration::default();
         assert_eq!(
-            new_config.max_parachain_cores_percentage,
-            default_config.max_parachain_cores_percentage
+            new_config.full_rotation_mode,
+            default_config.full_rotation_mode
         );
-        Ok(())
-    }
-}
-
-#[derive(
-    Clone,
-    parity_scale_codec::Encode,
-    parity_scale_codec::Decode,
-    PartialEq,
-    sp_core::RuntimeDebug,
-    scale_info::TypeInfo,
-)]
-struct HostConfigurationV1 {
-    pub max_collators: u32,
-    pub min_orchestrator_collators: u32,
-    pub max_orchestrator_collators: u32,
-    pub collators_per_container: u32,
-    pub full_rotation_period: u32,
-}
-
-pub struct MigrateConfigurationParathreads<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateConfigurationParathreads<T>
-where
-    T: pallet_configuration::Config,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_MigrateConfigurationParathreads"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
-        let default_config = HostConfiguration::default();
-
-        // Modify active config
-        let old_config: HostConfigurationV1 =
-            frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
-                .expect("configuration.activeConfig should have value");
-        let new_config = HostConfiguration {
-            max_collators: old_config.max_collators,
-            min_orchestrator_collators: old_config.min_orchestrator_collators,
-            max_orchestrator_collators: old_config.max_orchestrator_collators,
-            collators_per_container: old_config.collators_per_container,
-            full_rotation_period: old_config.full_rotation_period,
-            collators_per_parathread: default_config.collators_per_parathread,
-            parathreads_per_collator: default_config.parathreads_per_collator,
-            target_container_chain_fullness: default_config.target_container_chain_fullness,
-            max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
-        };
-        frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
-
-        // Modify pending configs, if any
-        let old_pending_configs: Vec<(u32, HostConfigurationV1)> =
-            frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
-                .unwrap_or_default();
-        let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
-
-        for (session_index, old_config) in old_pending_configs {
-            let new_config = HostConfiguration {
-                max_collators: old_config.max_collators,
-                min_orchestrator_collators: old_config.min_orchestrator_collators,
-                max_orchestrator_collators: old_config.max_orchestrator_collators,
-                collators_per_container: old_config.collators_per_container,
-                full_rotation_period: old_config.full_rotation_period,
-                collators_per_parathread: default_config.collators_per_parathread,
-                parathreads_per_collator: default_config.parathreads_per_collator,
-                target_container_chain_fullness: default_config.target_container_chain_fullness,
-                max_parachain_cores_percentage: default_config.max_parachain_cores_percentage,
-            };
-            new_pending_configs.push((session_index, new_config));
-        }
-
-        if !new_pending_configs.is_empty() {
-            frame_support::storage::unhashed::put(
-                CONFIGURATION_PENDING_CONFIGS_KEY,
-                &new_pending_configs,
-            );
-        }
-
-        <T as pallet_configuration::Config>::WeightInfo::set_config_with_u32()
-    }
-
-    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-
-        let old_config_bytes =
-            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
-                .expect("configuration.activeConfig should have value");
-        assert_eq!(old_config_bytes.len(), 20);
-
-        use parity_scale_codec::Encode;
-        Ok((old_config_bytes).encode())
-    }
-
-    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(
-        &self,
-        _number_of_invulnerables: Vec<u8>,
-    ) -> Result<(), sp_runtime::DispatchError> {
-        let new_config = pallet_configuration::Pallet::<T>::config();
-        let default_config = HostConfiguration::default();
-        assert_eq!(
-            new_config.collators_per_parathread,
-            default_config.collators_per_parathread
-        );
-        assert_eq!(
-            new_config.parathreads_per_collator,
-            default_config.collators_per_parathread
-        );
-        assert_eq!(
-            new_config.target_container_chain_fullness,
-            default_config.target_container_chain_fullness
-        );
-
         Ok(())
     }
 }
@@ -961,19 +856,20 @@ where
         //let migrate_services_payment =
         //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
+        //let migrate_config_parathread_params =
+        //    MigrateConfigurationParathreads::<Runtime>(Default::default());
 
-        let migrate_add_collator_assignment_credits =
-            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_registrar_pending_verification =
-            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
-        let migrate_registrar_manager =
-            RegistrarParaManagerMigration::<Runtime>(Default::default());
-        let migrate_data_preservers_assignments =
-            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
-        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        //let migrate_add_collator_assignment_credits =
+        //    MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        //let migrate_registrar_pending_verification =
+        //    RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        //let migrate_registrar_manager =
+        //    RegistrarParaManagerMigration::<Runtime>(Default::default());
+        //let migrate_data_preservers_assignments =
+        //    DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+        //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+        //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -981,13 +877,20 @@ where
             // Applied in runtime 400
             //Box::new(migrate_boot_nodes),
             // Applied in runtime 400
-            Box::new(migrate_config_parathread_params),
-            Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_registrar_pending_verification),
-            Box::new(migrate_registrar_manager),
-            Box::new(migrate_data_preservers_assignments),
-            Box::new(migrate_registrar_reserves),
-            Box::new(migrate_config_max_parachain_percentage),
+            //Box::new(migrate_config_parathread_params),
+            // Applied in runtime 500
+            //Box::new(migrate_add_collator_assignment_credits),
+            // Applied in runtime 700
+            //Box::new(migrate_registrar_pending_verification),
+            // Applied in runtime 700
+            //Box::new(migrate_registrar_manager),
+            // Applied in runtime 700
+            //Box::new(migrate_data_preservers_assignments),
+            // Applied in runtime 800
+            //Box::new(migrate_registrar_reserves),
+            // Applied in runtime 900
+            //Box::new(migrate_config_max_parachain_percentage),
+            Box::new(migrate_config_full_rotation_mode),
         ]
     }
 }
@@ -1027,23 +930,23 @@ where
         // let migrate_hold_reason_runtime_enum =
         //     MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
 
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
-        let migrate_add_collator_assignment_credits =
-            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
-        let migrate_registrar_pending_verification =
-            RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
-        let migrate_registrar_manager =
-            RegistrarParaManagerMigration::<Runtime>(Default::default());
-        let migrate_data_preservers_assignments =
-            DataPreserversAssignmentsMigration::<Runtime>(Default::default());
+        //let migrate_config_parathread_params =
+        //    MigrateConfigurationParathreads::<Runtime>(Default::default());
+        //let migrate_add_collator_assignment_credits =
+        //    MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        //let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        //let migrate_registrar_pending_verification =
+        //    RegistrarPendingVerificationValueToMap::<Runtime>(Default::default());
+        //let migrate_registrar_manager =
+        //    RegistrarParaManagerMigration::<Runtime>(Default::default());
+        //let migrate_data_preservers_assignments =
+        //    DataPreserversAssignmentsMigration::<Runtime>(Default::default());
 
-        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let foreign_asset_creator_migration =
-            ForeignAssetCreatorMigration::<Runtime>(Default::default());
-        let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
+        //let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let foreign_asset_creator_migration =
+        //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
+        //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
+        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1062,16 +965,27 @@ where
             //Box::new(migrate_hold_reason_runtime_enum),
             // Applied in runtime 400
             //Box::new(migrate_boot_nodes),
-            Box::new(migrate_config_parathread_params),
-            Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_xcmp_queue_v4),
-            Box::new(migrate_registrar_pending_verification),
-            Box::new(migrate_registrar_manager),
-            Box::new(migrate_pallet_xcm_v4),
-            Box::new(foreign_asset_creator_migration),
-            Box::new(migrate_data_preservers_assignments),
-            Box::new(migrate_registrar_reserves),
-            Box::new(migrate_config_max_parachain_percentage)
+            // Applied in runtime 500
+            //Box::new(migrate_config_parathread_params),
+            // Applied in runtime 500
+            //Box::new(migrate_add_collator_assignment_credits),
+            // Applied in runtime 500
+            //Box::new(migrate_xcmp_queue_v4),
+            // Applied in runtime 700
+            //Box::new(migrate_registrar_pending_verification),
+            // Applied in runtime 700
+            //Box::new(migrate_registrar_manager),
+            // Applied in runtime 700
+            //Box::new(migrate_pallet_xcm_v4),
+            // Applied in runtime 700
+            //Box::new(foreign_asset_creator_migration),
+            // Applied in runtime 700
+            //Box::new(migrate_data_preservers_assignments),
+            // Applied in runtime 800
+            //Box::new(migrate_registrar_reserves),
+            // Applied in runtime 900
+            //Box::new(migrate_config_max_parachain_percentage),
+            Box::new(migrate_config_full_rotation_mode),
         ]
     }
 }
@@ -1116,6 +1030,7 @@ impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
 where
     Runtime: frame_system::Config,
     Runtime: pallet_external_validators::Config,
+    Runtime: pallet_configuration::Config,
     Runtime: pallet_session::Config<
         ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
     >,
@@ -1124,10 +1039,13 @@ where
         let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
         let migrate_external_validators =
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
+        let migrate_config_full_rotation_mode =
+            MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_mmr_leaf_pallet),
             Box::new(migrate_external_validators),
+            Box::new(migrate_config_full_rotation_mode),
         ]
     }
 }

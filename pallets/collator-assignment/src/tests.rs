@@ -17,10 +17,13 @@
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
+    sp_runtime::Perbill,
     std::collections::BTreeMap,
+    tp_traits::{FullRotationMode, FullRotationModes},
 };
 
 mod assign_full;
+mod keep_collator_subset;
 mod prioritize_invulnerables;
 mod select_chains;
 mod with_core_config;
@@ -1078,6 +1081,7 @@ fn rotation_events() {
                 random_seed: [0; 32],
                 full_rotation: false,
                 target_session: 1,
+                full_rotation_mode: FullRotationModes::keep_all(),
             }
             .into(),
         );
@@ -1091,6 +1095,7 @@ fn rotation_events() {
                             random_seed: [0; 32],
                             full_rotation: false,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::keep_all(),
                         }
                         .into(),
                     );
@@ -1122,6 +1127,7 @@ fn rotation_events() {
                             random_seed: [1; 32],
                             full_rotation: false,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::keep_all(),
                         }
                         .into(),
                     );
@@ -1132,6 +1138,7 @@ fn rotation_events() {
                             random_seed: [1; 32],
                             full_rotation: true,
                             target_session: (i / 5) as u32 + 1,
+                            full_rotation_mode: FullRotationModes::default(),
                         }
                         .into(),
                     );
@@ -1368,5 +1375,65 @@ fn assign_collators_truncates_before_shuffling() {
             assigned_collators(),
             BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001), (5, 1000),])
         );
+    });
+}
+
+#[test]
+fn keep_subset_uses_correct_config() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+            // Add randomness to test shuffle
+            m.random_seed = [1; 32];
+            // Rotate every session
+            m.full_rotation_period = Some(1);
+            m.full_rotation_mode = FullRotationModes {
+                orchestrator: FullRotationMode::RotateAll,
+                parachain: FullRotationMode::KeepCollators { keep: 2 },
+                parathread: FullRotationMode::KeepPerbill {
+                    percentage: Perbill::from_percent(50),
+                },
+            };
+
+            m.collators = (1..50).collect();
+            m.container_chains = (2001..2010).collect();
+            m.parathreads = (3001..3010).collect();
+        });
+        assert_eq!(assigned_collators(), initial_collators(),);
+        run_to_block(11);
+
+        // Collect assignment history
+        let assignment_history = collect_assignment_history(50, |n| {
+            // Update randomness for each block
+            MockData::mutate(|m| {
+                m.random_seed = [n as u8; 32];
+            });
+        });
+
+        // Check: there is at least one session in which all orchestrator collators rotate
+        let max_orchestrator_rotate = compute_max_rotation(&assignment_history, |assignment| {
+            let collators = assignment.orchestrator_chain.clone();
+            let mut map = BTreeMap::new();
+            map.insert(1000, collators.into_iter().collect());
+            map
+        });
+        assert_eq!(max_orchestrator_rotate, 5);
+
+        // Check: parachain collators never rotate
+        let max_parachain_rotate = compute_max_rotation(&assignment_history, |assignment| {
+            extract_assignments_in_range(assignment, 2000..3000)
+        });
+        assert_eq!(max_parachain_rotate, 0);
+
+        // Check: at most one collator will rotate out of each parathread, never all 2
+        let max_parathread_rotate = compute_max_rotation(&assignment_history, |assignment| {
+            extract_assignments_in_range(assignment, 3000..4000)
+        });
+        assert_eq!(max_parathread_rotate, 1);
     });
 }
