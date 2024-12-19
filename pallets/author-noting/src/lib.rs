@@ -44,11 +44,12 @@ use {
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
+    sp_std::vec::Vec,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
-        AuthorNotingHook, ContainerChainBlockInfo, GenericStateProof, GenericStorageReader,
-        GetContainerChainAuthor, GetCurrentContainerChains, LatestAuthorInfoFetcher,
-        NativeStorageReader, ReadEntryErr,
+        AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
+        GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChains,
+        LatestAuthorInfoFetcher, NativeStorageReader, ReadEntryErr,
     },
 };
 
@@ -158,9 +159,8 @@ pub mod pallet {
                 let storage_reader = T::RelayOrPara::create_storage_reader(data);
 
                 let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
+                let mut infos = Vec::with_capacity(registered_para_ids.len());
 
-                // TODO: we should probably fetch all authors-containers first
-                // then pass the vector to the hook, this would allow for a better estimation
                 for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(
                         &storage_reader,
@@ -173,31 +173,23 @@ pub mod pallet {
                                 |maybe_old_block_info: &mut Option<
                                     ContainerChainBlockInfo<T::AccountId>,
                                 >| {
-                                    if let Some(ref mut old_block_info) = maybe_old_block_info {
-                                        if block_info.block_number > old_block_info.block_number {
-                                            // We only reward author if the block increases
-                                            total_weight = total_weight.saturating_add(
-                                                T::AuthorNotingHook::on_container_author_noted(
-                                                    &block_info.author,
-                                                    block_info.block_number,
-                                                    para_id,
-                                                ),
-                                            );
-                                            let _ = core::mem::replace(old_block_info, block_info);
-                                        }
-                                    } else {
-                                        // If there is no previous block, we should reward the author of the first block
-                                        total_weight = total_weight.saturating_add(
-                                            T::AuthorNotingHook::on_container_author_noted(
-                                                &block_info.author,
-                                                block_info.block_number,
-                                                para_id,
-                                            ),
-                                        );
-                                        let _ = core::mem::replace(
-                                            maybe_old_block_info,
-                                            Some(block_info),
-                                        );
+                                    // No block number is the same as the last block number being 0:
+                                    // the first block created by collators is block number 1.
+                                    let old_block_number = maybe_old_block_info
+                                        .as_ref()
+                                        .map(|old_block_info| old_block_info.block_number)
+                                        .unwrap_or(0);
+                                    // We only reward author if the block increases
+                                    // If there is no previous block, we should reward the author of the first block
+                                    if block_info.block_number > old_block_number {
+                                        let bi = block_info.clone();
+                                        let info = AuthorNotingInfo {
+                                            author: block_info.author,
+                                            block_number: block_info.block_number,
+                                            para_id,
+                                        };
+                                        infos.push(info);
+                                        *maybe_old_block_info = Some(bi);
                                     }
                                 },
                             );
@@ -209,6 +201,9 @@ pub mod pallet {
                         ),
                     }
                 }
+
+                total_weight = total_weight
+                    .saturating_add(T::AuthorNotingHook::on_container_authors_noted(&infos));
             }
 
             // We correctly set the data

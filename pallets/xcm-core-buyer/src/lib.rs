@@ -34,6 +34,7 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use tp_traits::AuthorNotingInfo;
 use {
     dp_core::ParaId,
     frame_support::{
@@ -50,9 +51,7 @@ use {
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },
-    tp_traits::{
-        AuthorNotingHook, BlockNumber, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
-    },
+    tp_traits::{AuthorNotingHook, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency},
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 
@@ -116,14 +115,16 @@ pub enum BuyingError<BlockNumber> {
 }
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
-    fn on_container_author_noted(
-        _author: &T::AccountId,
-        _block_number: BlockNumber,
-        para_id: ParaId,
-    ) -> Weight {
-        PendingBlocks::<T>::remove(para_id);
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
+        let mut writes = 0;
 
-        T::DbWeight::get().writes(1)
+        for info in info {
+            let para_id = info.para_id;
+            PendingBlocks::<T>::remove(para_id);
+            writes += 1;
+        }
+
+        T::DbWeight::get().writes(writes)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
