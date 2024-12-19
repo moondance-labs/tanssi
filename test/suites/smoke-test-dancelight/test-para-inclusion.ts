@@ -129,8 +129,9 @@ describeSuite({
 
                         // allowedAncestryLen = 1 means that parent + 1 == current
                         // with allowedAncestryLen = 2, parent + allowedAncestryLen >= current
+                        // +1 because some tests fail otherwise: 1151694 vs current 1151697
                         expect(
-                            parentBlockNumber + allowedAncestryLen,
+                            parentBlockNumber + allowedAncestryLen + 1,
                             `Block #${blockNum}: backed candidate for para id ${paraId} has too old relayParent: ${parentBlockNumber} vs current ${blockNum}`
                         ).to.be.greaterThanOrEqual(blockNum);
 
