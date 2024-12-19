@@ -1614,7 +1614,7 @@ impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = u64;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
@@ -2045,8 +2045,15 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type InnerRegistrar =
-        InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type InnerRegistrar = ();
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type InnerRegistrar = InnerDancelightRegistrar<
+        Runtime,
+        AccountId,
+        Registrar,
+        weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>,
+    >;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -2198,7 +2205,9 @@ mod benches {
         [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
+        [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
