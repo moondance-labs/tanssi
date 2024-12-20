@@ -36,7 +36,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_io::hashing::blake2_256,
     sp_runtime::{traits::TrailingZeroInput, DispatchError},
-    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook, CollatorAssignmentTip},
+    tp_traits::{AuthorNotingHook, CollatorAssignmentHook, CollatorAssignmentTip},
 };
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -50,6 +50,7 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 pub use pallet::*;
+use tp_traits::AuthorNotingInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -540,31 +541,32 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.
     // Currently we always charge 1 credit, even if a container chain produced more that 1 block in between tanssi
     // blocks.
-    fn on_container_author_noted(
-        _author: &T::AccountId,
-        _block_number: BlockNumber,
-        para_id: ParaId,
-    ) -> Weight {
-        if Pallet::<T>::burn_block_production_free_credit_for_para(&para_id).is_err() {
-            let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
+        for info in info {
+            let para_id = info.para_id;
+            if Pallet::<T>::burn_block_production_free_credit_for_para(&para_id).is_err() {
+                let (amount_to_charge, _weight) =
+                    T::ProvideBlockProductionCost::block_cost(&para_id);
 
-            match T::Currency::withdraw(
-                &Self::parachain_tank(para_id),
-                amount_to_charge,
-                WithdrawReasons::FEE,
-                ExistenceRequirement::KeepAlive,
-            ) {
-                Err(e) => log::warn!(
-                    "Failed to withdraw block production payment for container chain {}: {:?}",
-                    u32::from(para_id),
-                    e
-                ),
-                Ok(imbalance) => {
-                    T::OnChargeForBlock::on_unbalanced(imbalance);
+                match T::Currency::withdraw(
+                    &Self::parachain_tank(para_id),
+                    amount_to_charge,
+                    WithdrawReasons::FEE,
+                    ExistenceRequirement::KeepAlive,
+                ) {
+                    Err(e) => log::warn!(
+                        "Failed to withdraw block production payment for container chain {}: {:?}",
+                        u32::from(para_id),
+                        e
+                    ),
+                    Ok(imbalance) => {
+                        T::OnChargeForBlock::on_unbalanced(imbalance);
+                    }
                 }
             }
         }
 
+        // TODO: weight should depend on info.len()
         T::WeightInfo::on_container_author_noted()
     }
 

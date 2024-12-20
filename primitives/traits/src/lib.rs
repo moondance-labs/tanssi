@@ -89,16 +89,19 @@ impl<Balance> CollatorAssignmentTip<Balance> for () {
         None
     }
 }
+
+pub struct AuthorNotingInfo<AccountId> {
+    pub author: AccountId,
+    pub block_number: BlockNumber,
+    pub para_id: ParaId,
+}
+
 /// The author-noting hook to react to container chains authoring.
 pub trait AuthorNotingHook<AccountId> {
     /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.
     ///
     /// The hook should never panic and is required to return the weight consumed.
-    fn on_container_author_noted(
-        author: &AccountId,
-        block_number: BlockNumber,
-        para_id: ParaId,
-    ) -> Weight;
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<AccountId>]) -> Weight;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn prepare_worst_case_for_bench(author: &AccountId, block_number: BlockNumber, para_id: ParaId);
@@ -106,9 +109,9 @@ pub trait AuthorNotingHook<AccountId> {
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
 impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
-    fn on_container_author_noted(a: &AccountId, b: BlockNumber, p: ParaId) -> Weight {
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<AccountId>]) -> Weight {
         let mut weight: Weight = Default::default();
-        for_tuples!( #( weight.saturating_accrue(Tuple::on_container_author_noted(a, b, p)); )* );
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_container_authors_noted(info)); )* );
         weight
     }
 

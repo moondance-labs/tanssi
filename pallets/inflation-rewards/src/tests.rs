@@ -130,11 +130,13 @@ fn test_reward_container_chain_author() {
 
         // Note container author
         let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
-        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_author_noted(
-            &container_author,
-            1,
-            registered_para_ids[0],
-        );
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            AuthorNotingInfo {
+                author: container_author.clone(),
+                block_number: 1,
+                para_id: registered_para_ids[0],
+            },
+        ]);
 
         // Author should be rewarded immediately
         assert_eq!(
@@ -148,11 +150,13 @@ fn test_reward_container_chain_author() {
         let new_supply_2 = total_supply_2 - total_supply_1;
 
         // Note next container author
-        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_author_noted(
-            &container_author_2,
-            2,
-            registered_para_ids[0],
-        );
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            AuthorNotingInfo {
+                author: container_author_2.clone(),
+                block_number: 2,
+                para_id: registered_para_ids[0],
+            },
+        ]);
 
         // Author should be rewarded immediately
         assert_eq!(
@@ -177,18 +181,22 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
 
         // Note container author
         let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
-        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_author_noted(
-            &container_author,
-            1,
-            registered_para_ids[0],
-        );
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            AuthorNotingInfo {
+                author: container_author.clone(),
+                block_number: 1,
+                para_id: registered_para_ids[0],
+            },
+        ]);
 
         // Regardless if we inject a new block, we cannot reward twice the same paraId
-        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_author_noted(
-            &container_author,
-            2,
-            registered_para_ids[0],
-        );
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            AuthorNotingInfo {
+                author: container_author.clone(),
+                block_number: 2,
+                para_id: registered_para_ids[0],
+            },
+        ]);
 
         // Author should be rewarded only once
         assert_eq!(
