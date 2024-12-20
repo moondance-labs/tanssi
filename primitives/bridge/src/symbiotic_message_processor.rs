@@ -16,7 +16,7 @@
 
 use frame_support::pallet_prelude::*;
 use parity_scale_codec::DecodeAll;
-use snowbridge_core::Channel;
+use snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL};
 use snowbridge_router_primitives::inbound::envelope::Envelope;
 use snowbridge_router_primitives::inbound::MessageProcessor;
 use sp_runtime::DispatchError;
@@ -84,6 +84,11 @@ where
 
         match message {
             Message::V1(InboundCommand::ReceiveValidators { validators }) => {
+                if envelope.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
+                    return Err(DispatchError::Other(
+                        "Received governance message from invalid channel id",
+                    ));
+                }
                 pallet_external_validators::Pallet::<T>::set_external_validators(validators)?;
                 Ok(())
             }

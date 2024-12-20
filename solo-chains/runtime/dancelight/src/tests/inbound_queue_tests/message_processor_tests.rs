@@ -18,7 +18,7 @@ use crate::tests::common::ExtBuilder;
 use crate::{ExternalValidators, Runtime};
 use frame_support::pallet_prelude::*;
 use keyring::AccountKeyring;
-use snowbridge_core::Channel;
+use snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL};
 use snowbridge_router_primitives::inbound::envelope::Envelope;
 use snowbridge_router_primitives::inbound::MessageProcessor;
 use sp_core::{H160, H256};
@@ -36,7 +36,7 @@ fn test_symbiotic_message_processor() {
         };
 
         let envelope_with_invalid_payload = Envelope {
-            channel_id: H256::default().into(),
+            channel_id: PRIMARY_GOVERNANCE_CHANNEL,
             gateway: H160::default(),
             message_id: Default::default(),
             nonce: 0,
@@ -65,7 +65,7 @@ fn test_symbiotic_message_processor() {
             }),
         };
         let envelope = Envelope {
-            channel_id: H256::default().into(),
+            channel_id: PRIMARY_GOVERNANCE_CHANNEL,
             gateway: H160::default(),
             message_id: Default::default(),
             nonce: 0,
@@ -75,6 +75,60 @@ fn test_symbiotic_message_processor() {
             SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
             false
         );
+
+        // No external validators are set right now
+        assert_eq!(
+            ExternalValidators::validators(),
+            ExternalValidators::whitelisted_validators()
+        );
+
+        let payload_validators = vec![
+            AccountKeyring::Alice.to_account_id(),
+            AccountKeyring::Charlie.to_account_id(),
+            AccountKeyring::Bob.to_account_id(),
+        ];
+
+        let payload_with_correct_magic_bytes = Payload {
+            magic_bytes: MAGIC_BYTES,
+            message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
+                validators: payload_validators.clone(),
+            }),
+        };
+        let envelope = Envelope {
+            channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+            gateway: H160::default(),
+            message_id: Default::default(),
+            nonce: 0,
+            payload: payload_with_correct_magic_bytes.encode(),
+        };
+        assert_eq!(
+            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
+            true
+        );
+        assert_eq!(
+            SymbioticMessageProcessor::<Runtime>::process_message(
+                default_channel.clone(),
+                envelope
+            ),
+            Ok(())
+        );
+
+        let expected_validators = [
+            ExternalValidators::whitelisted_validators(),
+            payload_validators,
+        ]
+        .concat();
+        assert_eq!(ExternalValidators::validators(), expected_validators);
+    });
+}
+
+#[test]
+fn test_symbiotic_message_processor_rejects_invalid_channel_id() {
+    ExtBuilder::default().build().execute_with(|| {
+        let default_channel = Channel {
+            agent_id: H256::default(),
+            para_id: 0.into(),
+        };
 
         // No external validators are set right now
         assert_eq!(
@@ -110,14 +164,12 @@ fn test_symbiotic_message_processor() {
                 default_channel.clone(),
                 envelope
             ),
-            Ok(())
+            Err(DispatchError::Other(
+                "Received governance message from invalid channel id"
+            ))
         );
 
-        let expected_validators = [
-            ExternalValidators::whitelisted_validators(),
-            payload_validators,
-        ]
-        .concat();
+        let expected_validators = [ExternalValidators::whitelisted_validators()].concat();
         assert_eq!(ExternalValidators::validators(), expected_validators);
     });
 }

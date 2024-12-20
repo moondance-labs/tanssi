@@ -24,7 +24,7 @@ use snowbridge_beacon_primitives::types::deneb;
 use snowbridge_beacon_primitives::{ExecutionProof, VersionedExecutionPayloadHeader};
 use snowbridge_core::{
     inbound::{Log, Message, Proof},
-    Channel, ChannelId,
+    Channel, PRIMARY_GOVERNANCE_CHANNEL,
 };
 use snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted;
 use sp_core::H256;
@@ -33,14 +33,12 @@ use tp_bridge::symbiotic_message_processor::{
     InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
 };
 
-const MOCK_CHANNEL_ID: [u8; 32] = [0; 32];
-
 #[test]
 fn test_inbound_queue_message_passing() {
     ExtBuilder::default().build().execute_with(|| {
         let current_nonce = 1;
 
-        snowbridge_pallet_system::Channels::<Runtime>::set(ChannelId::from(MOCK_CHANNEL_ID), Some(Channel {
+        snowbridge_pallet_system::Channels::<Runtime>::set(PRIMARY_GOVERNANCE_CHANNEL, Some(Channel {
             agent_id: Default::default(),
             para_id: Default::default()
         }));
@@ -71,7 +69,7 @@ fn test_inbound_queue_message_passing() {
         } };
 
         let event_with_empty_payload = OutboundMessageAccepted {
-            channel_id: MOCK_CHANNEL_ID.into(),
+            channel_id: <[u8; 32]>::from(PRIMARY_GOVERNANCE_CHANNEL).into(),
             nonce: current_nonce,
             message_id: Default::default(),
             payload: vec![],
@@ -102,7 +100,7 @@ fn test_inbound_queue_message_passing() {
         };
 
         let event_with_valid_payload = OutboundMessageAccepted {
-            channel_id: MOCK_CHANNEL_ID.into(),
+            channel_id: <[u8; 32]>::from(PRIMARY_GOVERNANCE_CHANNEL).into(),
             nonce: current_nonce,
             message_id: Default::default(),
             payload: payload.encode(),
