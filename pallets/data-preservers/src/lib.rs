@@ -178,7 +178,7 @@ pub mod pallet {
 
         /// Helper type for benchmarks.
         #[cfg(feature = "runtime-benchmarks")]
-        type BenchmarkHelper: ArgumentFactory<ParaId>;
+        type BenchmarkHelper: ArgumentFactory<Self::AccountId>;
     }
 
     #[pallet::event]

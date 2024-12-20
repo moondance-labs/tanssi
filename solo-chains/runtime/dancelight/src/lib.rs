@@ -20,6 +20,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+use frame_support::dispatch::RawOrigin;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
@@ -34,7 +35,7 @@ use {
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
-            fungible::Inspect,
+            fungible::{Inspect, Mutate},
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, Contains, EverythingBut,
         },
@@ -1309,6 +1310,8 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_data_preservers::ArgumentFactory;
 use pallet_pooled_staking::traits::{IsCandidateEligible, Timer};
 use pallet_staking::SessionInterface;
 
@@ -1610,6 +1613,36 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignme
     }
 }
 
+pub struct DataPreserversBenchmarkHelper<T>(PhantomData<T>);
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> ArgumentFactory<T::AccountId> for DataPreserversBenchmarkHelper<T>
+where
+    T: pallet_registrar + pallet_registrar::Config + pallet_balances::Config,
+{
+    fn reserve_para_id(para_id: ParaId) {
+        let account: T::AccountId = frame_benchmarking::account("para_manager", 0, 1);
+        let _ = T::Currency::set_balance(
+            &account,
+            T::Currency::minimum_balance() + T::DepositAmount::get(),
+        );
+        let _ = pallet_registrar::Pallet::<T>::register(
+            RawOrigin::Signed(account.clone()).into(),
+            para_id,
+            ContainerChainGenesisData {
+                storage: vec![],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: Default::default(),
+                properties: Default::default(),
+            },
+            T::InnerRegistrar::bench_head_data(),
+        );
+        //<pallet_registrar::Pallet::<T> as pallet_registrar::GetCurrentContainerChains>::set_current_container_chains(&[para_id]);
+    }
+}
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
@@ -1627,7 +1660,7 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxNodeUrlLen = MaxNodeUrlLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = DataPreserversBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {

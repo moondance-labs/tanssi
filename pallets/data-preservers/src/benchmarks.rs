@@ -37,14 +37,14 @@ use {
 };
 
 /// Trait describing factory function for para_id.
-pub trait ArgumentFactory<ParaId> {
+pub trait ArgumentFactory<AcocuntId> {
     /// Factory function reserving parachain
-    fn reserve_para_id(para_id: ParaId) -> ();
+    fn reserve_para_id(para_id: ParaId);
 }
 
 /// Dummy implementation for when the factory is not needed.
-impl<ParaId> ArgumentFactory<ParaId> for () {
-    fn reserve_para_id(_para_id: ParaId) -> () {}
+impl<AccountId> ArgumentFactory<AccountId> for () {
+    fn reserve_para_id(_para_id: ParaId) {}
 }
 
 macro_rules! bset {
