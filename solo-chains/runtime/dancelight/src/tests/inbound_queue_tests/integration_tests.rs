@@ -33,8 +33,6 @@ use tp_bridge::symbiotic_message_processor::{
     InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
 };
 
-const MOCK_CHANNEL_ID: [u8; 32] = [0; 32];
-
 #[test]
 fn test_inbound_queue_message_passing() {
     ExtBuilder::default().build().execute_with(|| {
