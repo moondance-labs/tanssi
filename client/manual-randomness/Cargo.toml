@@ -10,10 +10,10 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+cumulus-primitives-core = { workspace = true, features = [ "std" ] }
 flume = { workspace = true }
 hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "macros", "server" ] }
 parity-scale-codec = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true, features = [ "std" ] }
 staging-xcm = { workspace = true }
-
-cumulus-primitives-core = { workspace = true, features = [ "std" ] }

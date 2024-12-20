@@ -904,7 +904,7 @@ pub fn start_dev_node(
 
         let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
         // Create channels for mocked parachain candidates.
-        let (mock_randomness_sender, mock_randomness_receiver) = flume::bounded::<bool>(100);
+        let (mock_randomness_sender, mock_randomness_receiver) = flume::bounded::<(bool, Option<[u8; 32]>)>(100);
 
         xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
         randomness_sender = Some(mock_randomness_sender);
@@ -968,13 +968,22 @@ pub fn start_dev_node(
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
 
-                let randomness_enabler_messages: Vec<bool> = mock_randomness_receiver.drain().collect();
+                let randomness_enabler_messages: Vec<(bool, Option<[u8; 32]>)> = mock_randomness_receiver.drain().collect();
 
                 // If there is a value to be updated, we update it
-                if let Some(value) = randomness_enabler_messages.last() {
+                if let Some((enable_randomness, new_seed)) = randomness_enabler_messages.last() {
+                    let value = client
+                        .get_aux(RANDOMNESS_ACTIVATED_AUX_KEY)
+                        .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
+                    let (_mock_additional_randomness, mut mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
+
+                    if let Some(new_seed) = new_seed {
+                        mock_randomness_seed = Some(*new_seed);
+                    }
+                    
                     client
                     .insert_aux(
-                        &[(RANDOMNESS_ACTIVATED_AUX_KEY, value.encode().as_slice())],
+                        &[(RANDOMNESS_ACTIVATED_AUX_KEY, (enable_randomness, mock_randomness_seed).encode().as_slice())],
                         &[],
                     )
                     .expect("Should be able to write to aux storage; qed");
@@ -984,9 +993,8 @@ pub fn start_dev_node(
                 // If error when reading, we simply put false
                 let value = client
                     .get_aux(RANDOMNESS_ACTIVATED_AUX_KEY)
-                    .expect("Should be able to query aux storage; qed").unwrap_or(false.encode());
-                    let mock_additional_randomness: bool = bool::decode(&mut value.as_slice()).expect("Boolean non-decodable");
-
+                    .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
+                let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
 
                 let client_for_xcm = client.clone();
                 async move {
@@ -1007,6 +1015,11 @@ pub fn start_dev_node(
                     if mock_additional_randomness {
                         let mut mock_randomness: [u8; 32] = [0u8; 32];
                         mock_randomness[..4].copy_from_slice(&current_para_block.to_be_bytes());
+                        if let Some(seed) = mock_randomness_seed {
+                            for i in 0..32 {
+                                mock_randomness[i] ^= seed[i];
+                            }
+                        }
                         additional_keys.extend([(RelayWellKnownKeys::CURRENT_BLOCK_RANDOMNESS.to_vec(), Some(mock_randomness).encode())]);
                         log::info!("mokcing randomnessss!!! {}", current_para_block);
                     }

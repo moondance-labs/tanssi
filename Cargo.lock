@@ -7541,6 +7541,7 @@ dependencies = [
  "hex-literal 0.3.4",
  "jsonrpsee",
  "parity-scale-codec",
+ "sp-core",
  "staging-xcm",
 ]
 

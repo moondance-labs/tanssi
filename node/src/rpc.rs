@@ -57,7 +57,7 @@ pub struct FullDeps<C, P> {
     /// Channels for manual xcm messages (downward, hrmp)
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
     /// Channels for manually activating the randomness
-    pub randomness_sender: Option<flume::Sender<bool>>,
+    pub randomness_sender: Option<flume::Sender<(bool, Option<[u8; 32]>)>>,
 }
 
 /// Instantiate all RPC extensions.

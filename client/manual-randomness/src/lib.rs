@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+use sp_core::H256;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 
 #[rpc(server)]
@@ -20,24 +21,24 @@ use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 pub trait ManualRandomnessApi {
     /// Inject randomness
     #[method(name = "mock_activateRandomness")]
-    async fn activate_randomness(&self) -> RpcResult<()>;
+    async fn activate_randomness(&self, seed: Option<H256>) -> RpcResult<()>;
     #[method(name = "mock_deactivateRandomness")]
     async fn deactivate_randomness(&self) -> RpcResult<()>;
 }
 
 pub struct ManualRandomness {
-    pub randomness_message_channel: flume::Sender<bool>,
+    pub randomness_message_channel: flume::Sender<(bool, Option<[u8; 32]>)>,
 }
 
 #[jsonrpsee::core::async_trait]
 impl ManualRandomnessApiServer for ManualRandomness {
-    async fn activate_randomness(&self) -> RpcResult<()> {
+    async fn activate_randomness(&self, seed: Option<H256>) -> RpcResult<()> {
         let randomness_message_channel = self.randomness_message_channel.clone();
 
         // Push the message to the shared channel where it will be queued up
         // to be injected in to an upcoming block.
         randomness_message_channel
-            .send_async(true)
+            .send_async((true, seed.map(|x| x.into())))
             .await
             .map_err(|err| internal_err(err.to_string()))?;
 
@@ -50,7 +51,7 @@ impl ManualRandomnessApiServer for ManualRandomness {
         // Push the message to the shared channel where it will be queued up
         // to be injected in to an upcoming block.
         randomness_message_channel
-            .send_async(false)
+            .send_async((false, None))
             .await
             .map_err(|err| internal_err(err.to_string()))?;
 
