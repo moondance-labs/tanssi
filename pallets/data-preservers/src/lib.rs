@@ -33,6 +33,9 @@ mod tests;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarks::ArgumentFactory;
+
 pub mod weights;
 pub use weights::WeightInfo;
 
@@ -172,6 +175,10 @@ pub mod pallet {
         type AssignmentPayment: AssignmentPayment<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
+
+        /// Helper type for benchmarks.
+        #[cfg(feature = "runtime-benchmarks")]
+        type BenchmarkHelper: ArgumentFactory<ParaId>;
     }
 
     #[pallet::event]

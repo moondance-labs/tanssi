@@ -36,6 +36,17 @@ use {
     tp_traits::{ParaId, StorageDeposit},
 };
 
+/// Trait describing factory function for para_id.
+pub trait ArgumentFactory<ParaId> {
+    /// Factory function reserving parachain
+    fn reserve_para_id(para_id: ParaId) -> ();
+}
+
+/// Dummy implementation for when the factory is not needed.
+impl<ParaId> ArgumentFactory<ParaId> for () {
+    fn reserve_para_id(_para_id: ParaId) -> () {}
+}
+
 macro_rules! bset {
     ( $($value:expr),* $(,)? ) => {
         {
@@ -333,6 +344,8 @@ mod benchmarks {
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
 
+        T::BenchmarkHelper::reserve_para_id(para_id);
+
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 
         #[extrinsic_call]
@@ -365,6 +378,8 @@ mod benchmarks {
 
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
+
+        T::BenchmarkHelper::reserve_para_id(para_id);
 
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 

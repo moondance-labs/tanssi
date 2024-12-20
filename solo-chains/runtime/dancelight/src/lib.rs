@@ -1626,6 +1626,8 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
     type MaxNodeUrlLen = MaxNodeUrlLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -2045,9 +2047,7 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    #[cfg(feature = "runtime-benchmarks")]
-    type InnerRegistrar = ();
-    #[cfg(not(feature = "runtime-benchmarks"))]
+
     type InnerRegistrar = InnerDancelightRegistrar<
         Runtime,
         AccountId,
