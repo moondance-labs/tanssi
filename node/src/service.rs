@@ -981,7 +981,7 @@ pub fn start_dev_node(
                     if let Some(new_seed) = new_seed {
                         mock_randomness_seed = Some(*new_seed);
                     }
-                    
+
                     client
                     .insert_aux(
                         &[(RANDOMNESS_ACTIVATED_AUX_KEY, (enable_randomness, mock_randomness_seed).encode().as_slice())],
