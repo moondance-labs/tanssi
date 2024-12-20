@@ -904,7 +904,8 @@ pub fn start_dev_node(
 
         let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
         // Create channels for mocked parachain candidates.
-        let (mock_randomness_sender, mock_randomness_receiver) = flume::bounded::<(bool, Option<[u8; 32]>)>(100);
+        let (mock_randomness_sender, mock_randomness_receiver) =
+            flume::bounded::<(bool, Option<[u8; 32]>)>(100);
 
         xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
         randomness_sender = Some(mock_randomness_sender);
