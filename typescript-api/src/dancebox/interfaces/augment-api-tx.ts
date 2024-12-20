@@ -46,6 +46,7 @@ import type {
     StagingXcmV4Location,
     StagingXcmV4Response,
     TpAuthorNotingInherentOwnParachainInherentData,
+    TpTraitsFullRotationMode,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     TpXcmCoreBuyerBuyCoreCollatorProof,
@@ -350,6 +351,41 @@ declare module "@polkadot/api-base/types/submittable" {
             setCollatorsPerParathread: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
+            >;
+            setFullRotationMode: AugmentedSubmittable<
+                (
+                    orchestrator:
+                        | Option<TpTraitsFullRotationMode>
+                        | null
+                        | Uint8Array
+                        | TpTraitsFullRotationMode
+                        | { RotateAll: any }
+                        | { KeepAll: any }
+                        | { KeepCollators: any }
+                        | { KeepPerbill: any }
+                        | string,
+                    parachain:
+                        | Option<TpTraitsFullRotationMode>
+                        | null
+                        | Uint8Array
+                        | TpTraitsFullRotationMode
+                        | { RotateAll: any }
+                        | { KeepAll: any }
+                        | { KeepCollators: any }
+                        | { KeepPerbill: any }
+                        | string,
+                    parathread:
+                        | Option<TpTraitsFullRotationMode>
+                        | null
+                        | Uint8Array
+                        | TpTraitsFullRotationMode
+                        | { RotateAll: any }
+                        | { KeepAll: any }
+                        | { KeepCollators: any }
+                        | { KeepPerbill: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [Option<TpTraitsFullRotationMode>, Option<TpTraitsFullRotationMode>, Option<TpTraitsFullRotationMode>]
             >;
             setFullRotationPeriod: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,

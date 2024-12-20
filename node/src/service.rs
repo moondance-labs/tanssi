@@ -51,7 +51,7 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
-    parity_scale_codec::Encode,
+    parity_scale_codec::{Decode, Encode},
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
@@ -93,6 +93,9 @@ use {
 };
 
 mod mocked_relay_keys;
+
+// We use this to detect whether randomness is activated
+const RANDOMNESS_ACTIVATED_AUX_KEY: &[u8] = b"__DEV_RANDOMNESS_ACTIVATED";
 
 type FullBackend = TFullBackend<Block>;
 
@@ -287,6 +290,7 @@ async fn start_node_impl(
                 pool: transaction_pool.clone(),
                 command_sink: None,
                 xcm_senders: None,
+                randomness_sender: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -893,11 +897,18 @@ pub fn start_dev_node(
     // production.
     let mut command_sink = None;
     let mut xcm_senders = None;
+    let mut randomness_sender = None;
     if parachain_config.role.is_authority() {
         let client = node_builder.client.clone();
         let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
+
         let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
+        // Create channels for mocked parachain candidates.
+        let (mock_randomness_sender, mock_randomness_receiver) =
+            flume::bounded::<(bool, Option<[u8; 32]>)>(100);
+
         xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
+        randomness_sender = Some(mock_randomness_sender);
 
         command_sink = node_builder.install_manual_seal(ManualSealConfiguration {
             block_import,
@@ -958,6 +969,34 @@ pub fn start_dev_node(
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
 
+                let randomness_enabler_messages: Vec<(bool, Option<[u8; 32]>)> = mock_randomness_receiver.drain().collect();
+
+                // If there is a value to be updated, we update it
+                if let Some((enable_randomness, new_seed)) = randomness_enabler_messages.last() {
+                    let value = client
+                        .get_aux(RANDOMNESS_ACTIVATED_AUX_KEY)
+                        .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
+                    let (_mock_additional_randomness, mut mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
+
+                    if let Some(new_seed) = new_seed {
+                        mock_randomness_seed = Some(*new_seed);
+                    }
+
+                    client
+                    .insert_aux(
+                        &[(RANDOMNESS_ACTIVATED_AUX_KEY, (enable_randomness, mock_randomness_seed).encode().as_slice())],
+                        &[],
+                    )
+                    .expect("Should be able to write to aux storage; qed");
+                }
+
+                // We read the value
+                // If error when reading, we simply put false
+                let value = client
+                    .get_aux(RANDOMNESS_ACTIVATED_AUX_KEY)
+                    .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
+                let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
+
                 let client_for_xcm = client.clone();
                 async move {
                     let mocked_author_noting =
@@ -973,6 +1012,18 @@ pub fn start_dev_node(
                     // This will allow any signed origin to deregister chains 2000 and 2001, and register 2002.
                     let (registrar_paras_key_2002, para_info_2002) = mocked_relay_keys::get_mocked_registrar_paras(2002.into());
                     additional_keys.extend([(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode()), (registrar_paras_key_2002, para_info_2002)]);
+
+                    if mock_additional_randomness {
+                        let mut mock_randomness: [u8; 32] = [0u8; 32];
+                        mock_randomness[..4].copy_from_slice(&current_para_block.to_be_bytes());
+                        if let Some(seed) = mock_randomness_seed {
+                            for i in 0..32 {
+                                mock_randomness[i] ^= seed[i];
+                            }
+                        }
+                        additional_keys.extend([(RelayWellKnownKeys::CURRENT_BLOCK_RANDOMNESS.to_vec(), Some(mock_randomness).encode())]);
+                        log::info!("mokcing randomnessss!!! {}", current_para_block);
+                    }
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -1011,6 +1062,7 @@ pub fn start_dev_node(
                 pool: transaction_pool.clone(),
                 command_sink: command_sink.clone(),
                 xcm_senders: xcm_senders.clone(),
+                randomness_sender: randomness_sender.clone(),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)

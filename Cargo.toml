@@ -87,6 +87,7 @@ flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 dancelight-runtime = { path = "solo-chains/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "solo-chains/runtime/dancelight/constants", default-features = false }
 ethabi = { package = "ethabi-decode", version = "1.0.0", default-features = false }
+manual-randomness-rpc = { path = "client/manual-randomness" }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
