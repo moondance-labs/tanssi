@@ -13,7 +13,7 @@ mkdir -p $data_store_dir
 config_relayer() {
     # Configure beefy relay
     jq \
-        --arg k1 "$(address_for BeefyClient)" \
+        --arg k1 "$(snowbridge_address_for BeefyClient)" \
         --arg eth_endpoint_ws $eth_endpoint_ws \
         --arg eth_gas_limit $eth_gas_limit \
         --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
@@ -45,7 +45,7 @@ config_relayer() {
     # Configure execution relay for starlight
     jq \
         --arg eth_endpoint_ws $eth_endpoint_ws \
-        --arg k1 "$(address_for GatewayProxy)" \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
         --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
         --arg channelID $PRIMARY_GOVERNANCE_CHANNEL_ID \
         --arg data_store_dir $data_store_dir \
