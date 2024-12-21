@@ -20,8 +20,6 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
-use frame_support::assert_ok;
-use frame_support::dispatch::RawOrigin;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
@@ -33,7 +31,8 @@ use {
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
-        dispatch::{DispatchErrorWithPostInfo, DispatchResult},
+        assert_ok,
+        dispatch::{DispatchErrorWithPostInfo, DispatchResult, RawOrigin},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
             fungible::{Inspect, Mutate},
@@ -1629,15 +1628,14 @@ where
                 + T::DepositAmount::get(),
         ));
 
-        while paras_registrar::NextFreeParaId::<T>::get() <= para_id {
-            assert_ok!(paras_registrar::Pallet::<T>::reserve(
-                RawOrigin::Signed(account.clone()).into()
-            ));
-        }
+       paras_registrar::NextFreeParaId::<T>::put(para_id);
+       assert_eq!(paras_registrar::NextFreeParaId::<T>::get(), para_id);
+       assert_ok!(paras_registrar::Pallet::<T>::reserve(
+           RawOrigin::Signed(account.clone()).into()
+       ));
 
         let mut storage = vec![];
         storage.push((b":code".to_vec(), vec![1; 10]).into());
-
         let genesis_data = ContainerChainGenesisData {
             storage,
             name: Default::default(),
@@ -1648,7 +1646,7 @@ where
         };
 
         assert_ok!(pallet_registrar::Pallet::<T>::register(
-            RawOrigin::Signed(account.clone()).into(),
+            RawOrigin::Signed(account).into(),
             para_id,
             genesis_data,
             T::InnerRegistrar::bench_head_data()
