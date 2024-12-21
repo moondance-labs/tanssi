@@ -859,6 +859,11 @@
                     "name": "Tanssi-relay",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi-charlie",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
                 }
             ]
         },
@@ -872,7 +877,7 @@
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
             ],
-            "timeout": 600000,
+            "timeout": 700000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {

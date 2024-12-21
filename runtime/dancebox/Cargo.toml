@@ -48,6 +48,7 @@ pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-xcm-commons = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
 # Moonkit
@@ -271,6 +272,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
+	"tp-xcm-commons/std",
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",

@@ -17,18 +17,15 @@
 use crate::tests::common::xcm::*;
 
 use {
-    crate::{
-        assert_expected_events,
-        tests::common::xcm::mocknets::{
-            DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
-        },
+    crate::tests::common::xcm::mocknets::{
+        DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
     },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
     staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
-    xcm_emulator::Chain,
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[test]

@@ -15,18 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{
-        assert_expected_events,
-        tests::common::xcm::{
-            core_buyer_common::*,
-            mocknets::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet},
-            *,
-        },
+    crate::tests::common::xcm::{
+        core_buyer_common::*,
+        mocknets::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet},
+        *,
     },
     polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand,
     staging_xcm::latest::{MaybeErrorCode, Response},
     tp_traits::ParaId,
-    xcm_emulator::Chain,
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[test]
