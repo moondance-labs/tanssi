@@ -31,11 +31,10 @@ use {
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
-        assert_ok,
-        dispatch::{DispatchErrorWithPostInfo, DispatchResult, RawOrigin},
+        dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
-            fungible::{Inspect, Mutate},
+            fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, Contains, EverythingBut,
         },
@@ -1621,6 +1620,8 @@ where
     T: pallet_registrar::Config + pallet_balances::Config + paras_registrar::Config,
 {
     fn reserve_para_id(para_id: ParaId) {
+        use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Mutate};
+
         let account: T::AccountId = frame_benchmarking::account("para_manager", 0, 1);
         assert_ok!(<T as pallet_registrar::Config>::Currency::mint_into(
             &account,
