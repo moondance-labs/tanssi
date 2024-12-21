@@ -1628,11 +1628,11 @@ where
                 + T::DepositAmount::get(),
         ));
 
-       paras_registrar::NextFreeParaId::<T>::put(para_id);
-       assert_eq!(paras_registrar::NextFreeParaId::<T>::get(), para_id);
-       assert_ok!(paras_registrar::Pallet::<T>::reserve(
-           RawOrigin::Signed(account.clone()).into()
-       ));
+        paras_registrar::NextFreeParaId::<T>::put(para_id);
+        assert_eq!(paras_registrar::NextFreeParaId::<T>::get(), para_id);
+        assert_ok!(paras_registrar::Pallet::<T>::reserve(
+            RawOrigin::Signed(account.clone()).into()
+        ));
 
         let mut storage = vec![];
         storage.push((b":code".to_vec(), vec![1; 10]).into());
