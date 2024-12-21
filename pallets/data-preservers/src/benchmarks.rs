@@ -36,6 +36,17 @@ use {
     tp_traits::{ParaId, StorageDeposit},
 };
 
+/// Trait describing factory function for para_id.
+pub trait ArgumentFactory<AcocuntId> {
+    /// Factory function reserving parachain
+    fn reserve_para_id(para_id: ParaId);
+}
+
+/// Dummy implementation for when the factory is not needed.
+impl<AccountId> ArgumentFactory<AccountId> for () {
+    fn reserve_para_id(_para_id: ParaId) {}
+}
+
 macro_rules! bset {
     ( $($value:expr),* $(,)? ) => {
         {
@@ -319,7 +330,11 @@ mod benchmarks {
     #[benchmark]
     fn start_assignment() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_id = ParaId::from(42);
+        // !!! (Applicable for Dancelight only)
+        // The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
+        // Currently, this value is 2000. We should also avoid setting the value to one of
+        // the container chains reserved by root
+        let para_id = ParaId::from(2042);
 
         let profile = Profile {
             url,
@@ -332,6 +347,8 @@ mod benchmarks {
 
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
+
+        T::BenchmarkHelper::reserve_para_id(para_id);
 
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 
@@ -352,7 +369,11 @@ mod benchmarks {
     #[benchmark]
     fn stop_assignment() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
-        let para_id = ParaId::from(42);
+        // !!! (Applicable for Dancelight only)
+        // The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
+        // Currently, this value is 2000. We should also avoid setting the value to one of
+        // the container chains reserved by root
+        let para_id = ParaId::from(2042);
 
         let profile = Profile {
             url,
@@ -365,6 +386,8 @@ mod benchmarks {
 
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
+
+        T::BenchmarkHelper::reserve_para_id(para_id);
 
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 
