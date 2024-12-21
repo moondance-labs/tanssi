@@ -20,6 +20,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+use frame_support::assert_ok;
 use frame_support::dispatch::RawOrigin;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
@@ -1553,7 +1554,7 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignme
     type ProviderRequest = PreserversAssignmentPaymentRequest;
     /// Extra parameter the assigner provides.
     type AssignerParameter = PreserversAssignmentPaymentExtra;
-    /// Represents the succesful outcome of the assignment.
+    /// Represents the successful outcome of the assignment.
     type AssignmentWitness = PreserversAssignmentPaymentWitness;
 
     fn try_start_assignment(
@@ -1618,28 +1619,40 @@ pub struct DataPreserversBenchmarkHelper<T>(PhantomData<T>);
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentFactory<T::AccountId> for DataPreserversBenchmarkHelper<T>
 where
-    T: pallet_registrar + pallet_registrar::Config + pallet_balances::Config,
+    T: pallet_registrar::Config + pallet_balances::Config + paras_registrar::Config,
 {
     fn reserve_para_id(para_id: ParaId) {
         let account: T::AccountId = frame_benchmarking::account("para_manager", 0, 1);
-        let _ = T::Currency::set_balance(
+        assert_ok!(<T as pallet_registrar::Config>::Currency::mint_into(
             &account,
-            T::Currency::minimum_balance() + T::DepositAmount::get(),
-        );
-        let _ = pallet_registrar::Pallet::<T>::register(
+            <T as pallet_registrar::Config>::Currency::minimum_balance() * 10_000_000u32.into()
+                + T::DepositAmount::get(),
+        ));
+
+        while paras_registrar::NextFreeParaId::<T>::get() <= para_id {
+            assert_ok!(paras_registrar::Pallet::<T>::reserve(
+                RawOrigin::Signed(account.clone()).into()
+            ));
+        }
+
+        let mut storage = vec![];
+        storage.push((b":code".to_vec(), vec![1; 10]).into());
+
+        let genesis_data = ContainerChainGenesisData {
+            storage,
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
+            extensions: Default::default(),
+            properties: Default::default(),
+        };
+
+        assert_ok!(pallet_registrar::Pallet::<T>::register(
             RawOrigin::Signed(account.clone()).into(),
             para_id,
-            ContainerChainGenesisData {
-                storage: vec![],
-                name: Default::default(),
-                id: Default::default(),
-                fork_id: Default::default(),
-                extensions: Default::default(),
-                properties: Default::default(),
-            },
-            T::InnerRegistrar::bench_head_data(),
-        );
-        //<pallet_registrar::Pallet::<T> as pallet_registrar::GetCurrentContainerChains>::set_current_container_chains(&[para_id]);
+            genesis_data,
+            T::InnerRegistrar::bench_head_data()
+        ));
     }
 }
 
