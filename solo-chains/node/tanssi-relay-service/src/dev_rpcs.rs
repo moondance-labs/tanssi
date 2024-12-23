@@ -76,12 +76,9 @@ impl DevApiServer for DevRpc {
     }
 
     async fn inject_upward_message(&self, msg: Vec<u8>) -> RpcResult<()> {
-        log::info!("RPC - Injecting upward message: {:?}", msg);
-
         let upward_message_channel = self.upward_message_channel.clone();
         // If no message is supplied, inject a default one.
         let msg = if msg.is_empty() {
-            log::info!("RPC - message is empty");
             // TODO: recheck this
             xcm::VersionedXcm::<()>::V4(Xcm(vec![
                 ReserveAssetDeposited((Parent, 10000000000000u128).into()),
@@ -89,7 +86,6 @@ impl DevApiServer for DevRpc {
             ]))
             .encode()
         } else {
-            log::info!("RPC - message is not empty");
             msg
         };
 

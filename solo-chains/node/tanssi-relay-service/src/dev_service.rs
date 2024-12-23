@@ -252,8 +252,6 @@ where
         parent: Hash,
         keystore: KeystorePtr,
     ) -> Result<ParachainsInherentData, InherentError> {
-        log::info!("Executing create method");
-
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
             Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
@@ -399,8 +397,6 @@ where
                             let collator_signature = collator_pair.sign(&payload);
 
                             let mut upm_messages = UpwardMessages::new();
-
-                            log::info!("Method create executed");
 
                             client
                                 .get_aux(XMC_UPM_SELECTOR_AUX_KEY)
@@ -739,8 +735,6 @@ fn new_full<
                         let upward_mock_receiver = upward_mock_receiver.clone();
                         let upward_message: Vec<Vec<u8>> = upward_mock_receiver.drain().collect();
 
-                        log::info!("Upward message received {:?}", upward_message);
-
                         // If there is a value to be updated, we update it
                         if let Some(value) = para_inherent_decider_messages.last() {
                             client_clone
@@ -752,8 +746,6 @@ fn new_full<
                         }
 
                         if let Some(value) = upward_message.last() {
-                            log::info!("Storing upm message in kvs");
-
                             client_clone
                             .insert_aux(
                                 &[(XMC_UPM_SELECTOR_AUX_KEY, value.as_slice())],
