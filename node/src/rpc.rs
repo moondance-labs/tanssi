@@ -108,7 +108,7 @@ where
         module.merge(
             ManualXcm {
                 downward_message_channel,
-                upward_message_channel,
+                upward_message_channel: Some(upward_message_channel),
                 hrmp_message_channel,
             }
             .into_rpc(),
