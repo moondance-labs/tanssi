@@ -5,7 +5,6 @@ import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "util/block";
 import { RawXcmMessage, XcmFragment, injectUmpMessageAndSeal } from "../../../util/xcm";
 
-
 describeSuite({
     id: "DTR1003",
     title: "XCM - Succeeds sending XCM",
@@ -18,9 +17,9 @@ describeSuite({
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
             alice = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-                          name: "Alice default",
-                      });
-        
+                name: "Alice default",
+            });
+
             transferredBalance = 10_000_000_000_000n;
         });
 
@@ -55,7 +54,7 @@ describeSuite({
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
-                 await jumpToSession(context, 3);
+                await jumpToSession(context, 3);
 
                 // Create a block in which the XCM will be executed
                 await context.createBlock();
