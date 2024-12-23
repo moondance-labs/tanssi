@@ -110,7 +110,10 @@ struct DevDeps<C, P> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for dev rpcs
-    pub dev_rpc_data: Option<flume::Sender<Vec<u8>>>,
+    pub dev_rpc_data: (
+        Option<flume::Sender<Vec<u8>>>, //downward
+        Option<flume::Sender<Vec<u8>>>, //upward
+    ),
 }
 
 fn create_dev_rpc_extension<C, P>(
@@ -147,10 +150,11 @@ where
         io.merge(ManualSeal::new(command_sink).into_rpc())?;
     }
 
-    if let Some(mock_para_inherent_channel) = maybe_dev_rpc_data {
+    if let Some(mock_para_inherent_channel) = maybe_dev_rpc_data.0 {
         io.merge(
             DevRpc {
                 mock_para_inherent_channel,
+                upward_message_channel: maybe_dev_rpc_data.1.unwrap(),
             }
             .into_rpc(),
         )?;
@@ -248,6 +252,8 @@ where
         parent: Hash,
         keystore: KeystorePtr,
     ) -> Result<ParachainsInherentData, InherentError> {
+        log::info!("Executing create method");
+
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
             Ok(None) => return Err(InherentError::ParentHeaderNotFound(parent)),
@@ -394,10 +400,15 @@ where
 
                             let mut upm_messages = UpwardMessages::new();
 
+                            log::info!("Method create executed");
+
                             client
                                 .get_aux(XMC_UPM_SELECTOR_AUX_KEY)
                                 .expect("Should be able to query aux storage; qed")
-                                .map(|upm_message| upm_messages.force_push(upm_message));
+                                .map(|upm_message| {
+                                    log::info!("upm message read from kvs {:?}", upm_message);
+                                    upm_messages.force_push(upm_message)
+                                });
 
                             // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceipt::<H256> {
@@ -605,8 +616,7 @@ fn new_full<
     let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
         flume::bounded::<Vec<u8>>(100);
 
-    let (_, upward_mock_para_inherent_receiver) =
-        flume::bounded::<Vec<u8>>(100);
+    let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         service::build_network(service::BuildNetworkParams {
@@ -719,15 +729,17 @@ fn new_full<
                     let client_clone = client_clone.clone();
                     let keystore = keystore_clone.clone();
                     let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
-                    let upward_mock_para_inherent_receiver = upward_mock_para_inherent_receiver.clone();
+                    let upward_mock_receiver = upward_mock_receiver.clone();
                     async move {
 
                         let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
                         // here we only take the last one
                         let para_inherent_decider_messages: Vec<Vec<u8>> = downward_mock_para_inherent_receiver.drain().collect();
 
-                        let upward_mock_para_inherent_receiver = upward_mock_para_inherent_receiver.clone();
-                        let para_inherent_upward_messages: Vec<Vec<u8>> = upward_mock_para_inherent_receiver.drain().collect();
+                        let upward_mock_receiver = upward_mock_receiver.clone();
+                        let upward_message: Vec<Vec<u8>> = upward_mock_receiver.drain().collect();
+
+                        log::info!("Upward message received {:?}", upward_message);
 
                         // If there is a value to be updated, we update it
                         if let Some(value) = para_inherent_decider_messages.last() {
@@ -739,7 +751,9 @@ fn new_full<
                             .expect("Should be able to write to aux storage; qed");
                         }
 
-                        if let Some(value) = para_inherent_upward_messages.last() {
+                        if let Some(value) = upward_message.last() {
+                            log::info!("Storing upm message in kvs");
+
                             client_clone
                             .insert_aux(
                                 &[(XMC_UPM_SELECTOR_AUX_KEY, value.as_slice())],
@@ -771,8 +785,15 @@ fn new_full<
     }
 
     // We dont need the flume receiver if we are not a validator
-    let dev_rpc_data = if role.clone().is_authority() {
+    let inherent_dev_rpc_data = if role.clone().is_authority() {
         Some(downward_mock_para_inherent_sender)
+    } else {
+        None
+    };
+
+    // TODO: recheck if we need it to be a validator
+    let upm_dev_rpc_data = if role.clone().is_authority() {
+        Some(upward_mock_sender)
     } else {
         None
     };
@@ -787,7 +808,7 @@ fn new_full<
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 command_sink: command_sink.clone(),
-                dev_rpc_data: dev_rpc_data.clone(),
+                dev_rpc_data: (inherent_dev_rpc_data.clone(), upm_dev_rpc_data.clone()),
             };
 
             create_dev_rpc_extension(deps).map_err(Into::into)

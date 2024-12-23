@@ -57,7 +57,7 @@ pub trait ManualXcmApi {
 
 pub struct ManualXcm {
     pub downward_message_channel: flume::Sender<Vec<u8>>,
-    pub upward_message_channel: flume::Sender<Vec<u8>>,
+    pub upward_message_channel: Option<flume::Sender<Vec<u8>>>,
     pub hrmp_message_channel: flume::Sender<(ParaId, Vec<u8>)>,
 }
 
@@ -135,10 +135,12 @@ impl ManualXcmApiServer for ManualXcm {
 
         // Push the message to the shared channel where it will be queued up
         // to be injected in to an upcoming block.
-        upward_message_channel
-            .send_async(msg)
-            .await
-            .map_err(|err| internal_err(err.to_string()))?;
+        if let Some(upm_channel) = upward_message_channel {
+            upm_channel
+                .send_async(msg)
+                .await
+                .map_err(|err| internal_err(err.to_string()))?;
+        }
 
         Ok(())
     }

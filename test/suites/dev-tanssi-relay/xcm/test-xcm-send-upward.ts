@@ -1,7 +1,8 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
+import { jumpToSession } from "util/block";
 import { RawXcmMessage, XcmFragment, injectUmpMessageAndSeal } from "../../../util/xcm";
 
 
@@ -32,7 +33,7 @@ describeSuite({
                     assets: [
                         {
                             multilocation: {
-                                parents: 1,
+                                parents: 0,
                                 interior: { Here: null },
                             },
                             fungible: transferredBalance,
@@ -46,11 +47,15 @@ describeSuite({
                     .deposit_asset()
                     .as_v3();
 
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
                 // Send an XCM and create block to execute it
                 await injectUmpMessageAndSeal(context, {
                     type: "XcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
+
+                 await jumpToSession(context, 3);
 
                 // Create a block in which the XCM will be executed
                 await context.createBlock();

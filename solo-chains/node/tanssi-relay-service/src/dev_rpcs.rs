@@ -26,6 +26,7 @@ use jsonrpsee::{
         ErrorObjectOwned,
     },
 };
+use xcm::latest::prelude::*;
 
 /// This RPC interface is used to provide methods in dev mode only
 #[rpc(server)]
@@ -38,10 +39,14 @@ pub trait DevApi {
     /// Indicate the mock parachain candidate insertion to be disabled
     #[method(name = "mock_disableParaInherentCandidate")]
     async fn disable_para_inherent_candidate(&self) -> RpcResult<()>;
+
+    #[method(name = "xcm_injectUpwardMessage")]
+    async fn inject_upward_message(&self, message: Vec<u8>) -> RpcResult<()>;
 }
 
 pub struct DevRpc {
     pub mock_para_inherent_channel: flume::Sender<Vec<u8>>,
+    pub upward_message_channel: flume::Sender<Vec<u8>>,
 }
 
 #[jsonrpsee::core::async_trait]
@@ -64,6 +69,34 @@ impl DevApiServer for DevRpc {
         // to be injected in to an upcoming block.
         mock_para_inherent_channel
             .send_async(false.encode())
+            .await
+            .map_err(|err| internal_err(err.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn inject_upward_message(&self, msg: Vec<u8>) -> RpcResult<()> {
+        log::info!("RPC - Injecting upward message: {:?}", msg);
+
+        let upward_message_channel = self.upward_message_channel.clone();
+        // If no message is supplied, inject a default one.
+        let msg = if msg.is_empty() {
+            log::info!("RPC - message is empty");
+            // TODO: recheck this
+            xcm::VersionedXcm::<()>::V4(Xcm(vec![
+                ReserveAssetDeposited((Parent, 10000000000000u128).into()),
+                ClearOrigin,
+            ]))
+            .encode()
+        } else {
+            log::info!("RPC - message is not empty");
+            msg
+        };
+
+        // Push the message to the shared channel where it will be queued up
+        // to be injected in to an upcoming block.
+        upward_message_channel
+            .send_async(msg)
             .await
             .map_err(|err| internal_err(err.to_string()))?;
 

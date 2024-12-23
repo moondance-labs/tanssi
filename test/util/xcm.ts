@@ -192,6 +192,12 @@ export function buildDmpMessage(context: DevModeContext, message: RawXcmMessage)
     return [...receivedMessage.toU8a()];
 }
 
+export function buildUmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", message.payload) as any;
+
+    return [...receivedMessage.toU8a()];
+}
+
 export async function injectHrmpMessage(context: DevModeContext, paraId: number, message?: RawXcmMessage) {
     const totalMessage = message != null ? buildXcmpMessage(context, message) : [];
     // Send RPC call to inject XCM message
@@ -205,7 +211,7 @@ export async function injectDmpMessage(context: DevModeContext, message?: RawXcm
 }
 
 export async function injectUmpMessage(context: DevModeContext, message?: RawXcmMessage) {
-    const totalMessage = message != null ? buildDmpMessage(context, message) : [];
+    const totalMessage = message != null ? buildUmpMessage(context, message) : [];
     // Send RPC call to inject XCM message
     await customDevRpcRequest("xcm_injectUpwardMessage", [totalMessage]);
 }
