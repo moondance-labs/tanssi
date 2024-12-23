@@ -3,7 +3,8 @@ import { KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "util/block";
-import { RawXcmMessage, XcmFragment, injectUmpMessageAndSeal } from "../../../util/xcm";
+import { injectUmpMessageAndSeal, RawXcmMessage, XcmFragment } from "../../../util/xcm";
+
 
 describeSuite({
     id: "DTR1003",
@@ -75,17 +76,17 @@ describeSuite({
                     .deposit_asset_v3()
                     .as_v3();
 
+                // Enable para inherent to process xcm message
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
 
-                // Send an XCM and create block to execute it
+                // Send ump message
                 await injectUmpMessageAndSeal(context, {
                     type: "XcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
+                // Wait until message is processed
                 await jumpToSession(context, 3);
-
-                // Create a block in which the XCM will be executed
                 await context.createBlock();
 
                 const balanceRandomAfter = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
