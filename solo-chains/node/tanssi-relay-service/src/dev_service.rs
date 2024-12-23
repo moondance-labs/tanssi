@@ -398,10 +398,12 @@ where
 
                             let mut upm_messages = UpwardMessages::new();
 
-                            client
+                            if let Some(upm_message) = client
                                 .get_aux(XMC_UPM_SELECTOR_AUX_KEY)
                                 .expect("Should be able to query aux storage; qed")
-                                .map(|upm_message| upm_messages.force_push(upm_message));
+                            {
+                                upm_messages.force_push(upm_message);
+                            }
 
                             // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceipt::<H256> {
