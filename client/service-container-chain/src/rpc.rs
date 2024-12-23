@@ -51,7 +51,11 @@ pub struct FullDeps<C, P> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
-    pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
+    pub xcm_senders: Option<(
+        flume::Sender<Vec<u8>>,
+        flume::Sender<Vec<u8>>,
+        flume::Sender<(ParaId, Vec<u8>)>,
+    )>,
 }
 
 tp_traits::alias!(
@@ -103,10 +107,13 @@ where
         )?;
     };
 
-    if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
+    if let Some((downward_message_channel, upward_message_channel, hrmp_message_channel)) =
+        xcm_senders
+    {
         module.merge(
             ManualXcm {
                 downward_message_channel,
+                upward_message_channel,
                 hrmp_message_channel,
             }
             .into_rpc(),
@@ -137,7 +144,11 @@ pub mod generate_rpc_builder {
         sc_transaction_pool::TransactionPoolHandle<Block, ContainerChainClient<RuntimeApi>>;
     pub type CommandSink =
         futures::channel::mpsc::Sender<sc_consensus_manual_seal::EngineCommand<Hash>>;
-    pub type XcmSenders = (flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>);
+    pub type XcmSenders = (
+        flume::Sender<Vec<u8>>,
+        flume::Sender<Vec<u8>>,
+        flume::Sender<(ParaId, Vec<u8>)>,
+    );
     pub type Network = dyn sc_network::service::traits::NetworkService;
     pub type CompleteRpcBuilder = Box<
         dyn Fn(sc_rpc::SubscriptionTaskExecutor) -> Result<jsonrpsee::RpcModule<()>, ServiceError>,
