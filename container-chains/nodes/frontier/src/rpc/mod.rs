@@ -324,7 +324,6 @@ where
         io.merge(
             ManualXcm {
                 downward_message_channel,
-                upward_message_channel: None,
                 hrmp_message_channel,
             }
             .into_rpc(),

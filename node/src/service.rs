@@ -901,7 +901,6 @@ pub fn start_dev_node(
     if parachain_config.role.is_authority() {
         let client = node_builder.client.clone();
         let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
-        let (upward_xcm_sender, _) = flume::bounded::<Vec<u8>>(100);
         let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
         // Create channels for mocked parachain candidates.
         let (mock_randomness_sender, mock_randomness_receiver) =

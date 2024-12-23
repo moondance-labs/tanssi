@@ -102,13 +102,10 @@ where
         )?;
     };
 
-    if let Some((downward_message_channel, upward_message_channel, hrmp_message_channel)) =
-        xcm_senders
-    {
+    if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
         module.merge(
             ManualXcm {
                 downward_message_channel,
-                upward_message_channel: Some(upward_message_channel),
                 hrmp_message_channel,
             }
             .into_rpc(),
