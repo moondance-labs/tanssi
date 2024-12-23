@@ -29,10 +29,16 @@ const DEFAULT_PROOF_SIZE: u64 = 64 * 1024;
 #[jsonrpsee::core::async_trait]
 pub trait ManualXcmApi {
     /// Inject a downward xcm message - A message that comes from the relay chain.
-    /// You may provide an arbitrary message, or if you provide an emtpy byte array,
+    /// You may provide an arbitrary message, or if you provide an empty byte array,
     /// Then a default message (DOT transfer down to ALITH) will be injected
     #[method(name = "xcm_injectDownwardMessage")]
     async fn inject_downward_message(&self, message: Vec<u8>) -> RpcResult<()>;
+
+    /// Inject a upward xcm message - A message that comes from the a parachain.
+    /// You may provide an arbitrary message, or if you provide an empty byte array,
+    /// Then a default message (DOT transfer up to ALITH) will be injected
+    #[method(name = "xcm_injectUpwardMessage")]
+    async fn inject_upward_message(&self, message: Vec<u8>) -> RpcResult<()>;
 
     /// Inject an HRMP message - A message that comes from a dedicated channel to a sibling
     /// parachain.
@@ -51,6 +57,7 @@ pub trait ManualXcmApi {
 
 pub struct ManualXcm {
     pub downward_message_channel: flume::Sender<Vec<u8>>,
+    pub upward_message_channel: flume::Sender<Vec<u8>>,
     pub hrmp_message_channel: flume::Sender<(ParaId, Vec<u8>)>,
 }
 
@@ -89,6 +96,46 @@ impl ManualXcmApiServer for ManualXcm {
         // Push the message to the shared channel where it will be queued up
         // to be injected in to an upcoming block.
         downward_message_channel
+            .send_async(msg)
+            .await
+            .map_err(|err| internal_err(err.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn inject_upward_message(&self, msg: Vec<u8>) -> RpcResult<()> {
+        let upward_message_channel = self.upward_message_channel.clone();
+        // If no message is supplied, inject a default one.
+        let msg = if msg.is_empty() {
+            staging_xcm::VersionedXcm::<()>::V4(Xcm(vec![
+                ReserveAssetDeposited((Here, 10000000000000u128).into()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: (Here, 10000000000000u128).into(),
+                    weight_limit: Limited(Weight::from_parts(
+                        4_000_000_000u64,
+                        DEFAULT_PROOF_SIZE * 2,
+                    )),
+                },
+                DepositAsset {
+                    assets: AllCounted(1).into(),
+                    beneficiary: Location::new(
+                        0,
+                        [AccountKey20 {
+                            network: None,
+                            key: hex_literal::hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac"),
+                        }],
+                    ),
+                },
+            ]))
+            .encode()
+        } else {
+            msg
+        };
+
+        // Push the message to the shared channel where it will be queued up
+        // to be injected in to an upcoming block.
+        upward_message_channel
             .send_async(msg)
             .await
             .map_err(|err| internal_err(err.to_string()))?;

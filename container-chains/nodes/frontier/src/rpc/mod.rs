@@ -124,7 +124,11 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
-    pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
+    pub xcm_senders: Option<(
+        flume::Sender<Vec<u8>>,
+        flume::Sender<Vec<u8>>,
+        flume::Sender<(ParaId, Vec<u8>)>,
+    )>,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -320,10 +324,13 @@ where
     )?;
     io.merge(tx_pool.into_rpc())?;
 
-    if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
+    if let Some((downward_message_channel, upward_message_channel, hrmp_message_channel)) =
+        xcm_senders
+    {
         io.merge(
             ManualXcm {
                 downward_message_channel,
+                upward_message_channel,
                 hrmp_message_channel,
             }
             .into_rpc(),

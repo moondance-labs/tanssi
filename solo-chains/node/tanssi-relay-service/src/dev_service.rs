@@ -43,6 +43,7 @@ use {
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
+    polkadot_parachain_primitives::primitives::UpwardMessages,
     polkadot_primitives::{
         runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptor,
         CollatorPair, CommittedCandidateReceipt, CompactStatement, EncodeAs,
@@ -77,6 +78,7 @@ use {
 
 // We use this key to store whether we want the para inherent mocker to be active
 const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
+const XMC_UPM_SELECTOR_AUX_KEY: &[u8] = b"__DEV_XMC_UMP_SELECTOR";
 
 pub type FullBackend = service::TFullBackend<Block>;
 
@@ -231,6 +233,7 @@ struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRunti
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
 where
     C::Api: ParachainHost<Block>,
+    C: AuxStore,
 {
     pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
         MockParachainsInherentDataProvider {
@@ -388,6 +391,14 @@ where
                                 &validation_code_hash,
                             );
                             let collator_signature = collator_pair.sign(&payload);
+
+                            let mut upm_messages = UpwardMessages::new();
+
+                            client
+                                .get_aux(XMC_UPM_SELECTOR_AUX_KEY)
+                                .expect("Should be able to query aux storage; qed")
+                                .map(|upm_message| upm_messages.force_push(upm_message));
+
                             // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceipt::<H256> {
                                 descriptor: CandidateDescriptor::<H256> {
@@ -402,7 +413,7 @@ where
                                     validation_code_hash,
                                 },
                                 commitments: CandidateCommitments::<u32> {
-                                    upward_messages: Default::default(),
+                                    upward_messages: upm_messages,
                                     horizontal_messages: Default::default(),
                                     new_validation_code: None,
                                     head_data: parachain_mocked_header.clone().encode().into(),
@@ -594,6 +605,9 @@ fn new_full<
     let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
         flume::bounded::<Vec<u8>>(100);
 
+    let (_, upward_mock_para_inherent_receiver) =
+        flume::bounded::<Vec<u8>>(100);
+
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         service::build_network(service::BuildNetworkParams {
             config: &config,
@@ -705,11 +719,15 @@ fn new_full<
                     let client_clone = client_clone.clone();
                     let keystore = keystore_clone.clone();
                     let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
+                    let upward_mock_para_inherent_receiver = upward_mock_para_inherent_receiver.clone();
                     async move {
 
                         let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
                         // here we only take the last one
                         let para_inherent_decider_messages: Vec<Vec<u8>> = downward_mock_para_inherent_receiver.drain().collect();
+
+                        let upward_mock_para_inherent_receiver = upward_mock_para_inherent_receiver.clone();
+                        let para_inherent_upward_messages: Vec<Vec<u8>> = upward_mock_para_inherent_receiver.drain().collect();
 
                         // If there is a value to be updated, we update it
                         if let Some(value) = para_inherent_decider_messages.last() {
@@ -719,7 +737,15 @@ fn new_full<
                                 &[],
                             )
                             .expect("Should be able to write to aux storage; qed");
+                        }
 
+                        if let Some(value) = para_inherent_upward_messages.last() {
+                            client_clone
+                            .insert_aux(
+                                &[(XMC_UPM_SELECTOR_AUX_KEY, value.as_slice())],
+                                &[],
+                            )
+                            .expect("Should be able to write to aux storage; qed");
                         }
 
                         let parachain = MockParachainsInherentDataProvider::new(
