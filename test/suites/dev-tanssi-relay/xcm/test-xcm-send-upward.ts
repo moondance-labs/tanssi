@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
+=======
+import { beforeAll, customDevRpcRequest, describeSuite } from "@moonwall/cli";
+import { ApiPromise } from "@polkadot/api";
+>>>>>>> fb92948b (Improve xcm ump dancelight test)
 import { jumpToSession } from "util/block";
 import { injectUmpMessageAndSeal, RawXcmMessage, XcmFragment } from "../../../util/xcm";
 
