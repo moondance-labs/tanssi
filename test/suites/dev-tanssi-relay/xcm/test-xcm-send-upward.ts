@@ -1,5 +1,5 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
+import { KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "util/block";
@@ -12,6 +12,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let random: KeyringPair;
         let transferredBalance;
 
         beforeAll(async function () {
@@ -20,14 +21,43 @@ describeSuite({
                 name: "Alice default",
             });
 
-            transferredBalance = 10_000_000_000_000n;
+            random = generateKeyringPair("sr25519");
+
+            transferredBalance = 100_000_000_000_000_000n;
+
+            const location = {
+                V3: {
+                    parents: 0,
+                    interior: { X1: { Parachain: 2000 } },
+                },
+            };
+
+            const locationToAccountResult = await polkadotJs.call.locationToAccountApi.convertLocation(location);
+            expect(locationToAccountResult.isOk);
+
+            const convertedAddress = locationToAccountResult.asOk.toJSON();
+
+            let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
+
+            // Send some tokens to the sovereign account of para 2000
+            const txSigned = polkadotJs.tx.balances.transferAllowDeath(convertedAddress, transferredBalance);
+            await context.createBlock(await txSigned.signAsync(alice, { nonce: aliceNonce++ }), {
+                allowFailures: false,
+            });
+
+            const balanceSigned = (await polkadotJs.query.system.account(convertedAddress)).data.free.toBigInt();
+            expect(balanceSigned).to.eq(transferredBalance);
         });
 
         it({
             id: "T01",
             title: "Should succeed receiving tokens",
             test: async function () {
-                // XCM message sending reserved assets to alice
+                const balanceRandomBefore = (
+                    await polkadotJs.query.system.account(random.address)
+                ).data.free.toBigInt();
+                expect(balanceRandomBefore).to.eq(0n);
+
                 const xcmMessage = new XcmFragment({
                     assets: [
                         {
@@ -35,15 +65,14 @@ describeSuite({
                                 parents: 0,
                                 interior: { Here: null },
                             },
-                            fungible: transferredBalance,
+                            fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(alice.addressRaw),
+                    beneficiary: u8aToHex(random.addressRaw),
                 })
-                    .reserve_asset_deposited()
-                    .clear_origin()
+                    .withdraw_asset()
                     .buy_execution()
-                    .deposit_asset()
+                    .deposit_asset_v3()
                     .as_v3();
 
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
@@ -59,13 +88,8 @@ describeSuite({
                 // Create a block in which the XCM will be executed
                 await context.createBlock();
 
-                // Make sure the state has alice's to DOT tokens
-                const alice_dot_balance = (await context.polkadotJs().query.foreignAssets.account(1, alice.address))
-                    .unwrap()
-                    .balance.toBigInt();
-                expect(alice_dot_balance > 0n).to.be.true;
-                // we should expect to have received less than the amount transferred
-                expect(alice_dot_balance < transferredBalance).to.be.true;
+                const balanceRandomAfter = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
+                expect(Number(balanceRandomAfter)).to.be.greaterThan(0);
             },
         });
     },
