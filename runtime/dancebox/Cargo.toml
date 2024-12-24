@@ -273,8 +273,6 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
-	"tp-xcm-commons/std",
-	"tp-xcm-core-buyer/std",
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",

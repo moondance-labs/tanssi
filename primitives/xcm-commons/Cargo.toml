@@ -21,8 +21,6 @@ default = [
 ]
 std = [
 	"frame-support/std",
-	"frame-support/std",
-	"log/std",
 	"log/std",
 	"staging-xcm/std",
 ]
