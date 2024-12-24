@@ -79,10 +79,23 @@ impl DevApiServer for DevRpc {
         let upward_message_channel = self.upward_message_channel.clone();
         // If no message is supplied, inject a default one.
         let msg = if msg.is_empty() {
-            // TODO: recheck this
+            // Note: Sovereign account of the origin parachain must be funded before injecting the message.
             xcm::VersionedXcm::<()>::V4(Xcm(vec![
-                ReserveAssetDeposited((Parent, 10000000000000u128).into()),
-                ClearOrigin,
+                WithdrawAsset((Here, 10000000000000u128).into()),
+                BuyExecution {
+                    fees: (Here, 10000000000000u128).into(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: AllCounted(1).into(),
+                    beneficiary: Location::new(
+                        0,
+                        [AccountKey20 {
+                            network: None,
+                            key: hex_literal::hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac"),
+                        }],
+                    ),
+                },
             ]))
             .encode()
         } else {
