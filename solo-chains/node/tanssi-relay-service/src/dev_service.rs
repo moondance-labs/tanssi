@@ -396,13 +396,13 @@ where
                             );
                             let collator_signature = collator_pair.sign(&payload);
 
-                            let mut upm_messages = UpwardMessages::new();
+                            let mut ump_messages = UpwardMessages::new();
 
-                            if let Some(upm_message) = client
+                            if let Some(ump_message) = client
                                 .get_aux(XMC_UPM_SELECTOR_AUX_KEY)
                                 .expect("Should be able to query aux storage; qed")
                             {
-                                upm_messages.force_push(upm_message);
+                                ump_messages.force_push(ump_message);
                             }
 
                             // generate a candidate with most of the values mocked
@@ -419,7 +419,7 @@ where
                                     validation_code_hash,
                                 },
                                 commitments: CandidateCommitments::<u32> {
-                                    upward_messages: upm_messages,
+                                    upward_messages: ump_messages,
                                     horizontal_messages: Default::default(),
                                     new_validation_code: None,
                                     head_data: parachain_mocked_header.clone().encode().into(),
