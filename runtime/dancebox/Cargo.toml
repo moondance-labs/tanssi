@@ -274,11 +274,8 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
-<<<<<<< HEAD
 	"tp-xcm-commons/std",
 	"tp-xcm-core-buyer/std",
-=======
->>>>>>> 4c1c707d (Toml fmt)
 	"tp-xcm-commons/std",
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
