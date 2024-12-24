@@ -105,8 +105,6 @@ tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 tp-xcm-commons = { path = "primitives/xcm-commons", default-features = false }
 tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
-tp-xcm-commons = { path = "primitives/xcm-commons", default-features = false }
-tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }
 
 # Dancekit (wasm)
 ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-stable2409", default-features = false }

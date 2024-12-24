@@ -50,8 +50,6 @@ tanssi-relay-encoder = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
-tp-xcm-commons = { workspace = true }
-tp-xcm-core-buyer = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -275,8 +273,8 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
-	"tp-xcm-core-buyer/std",
 	"tp-xcm-commons/std",
+	"tp-xcm-core-buyer/std",
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
