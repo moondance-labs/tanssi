@@ -5,7 +5,6 @@ import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "util/block";
 import { injectUmpMessageAndSeal, RawXcmMessage, XcmFragment } from "../../../util/xcm";
 
-
 describeSuite({
     id: "DTR1003",
     title: "XCM - Succeeds sending XCM",
