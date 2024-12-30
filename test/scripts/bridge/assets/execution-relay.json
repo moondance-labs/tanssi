@@ -31,7 +31,7 @@
     },
     "instantVerification": false,
     "schedule": {
-        "id": null,
+        "id": 1,
         "totalRelayerCount": 1,
         "sleepInterval": 1
     }

@@ -21,7 +21,7 @@ else
   popd
 fi
 
-$scripts_path/build-eth-contracts.sh
+$scripts_path/build-snowbridge-contracts.sh
 
 echo "Building Relayer"
 pushd $relayer_root_dir

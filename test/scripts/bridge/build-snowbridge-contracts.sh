@@ -7,7 +7,7 @@ scripts_path="$(realpath ./scripts/bridge)"
 
 source $scripts_path/set-env.sh
 
-echo "Building contracts"
+echo "Building snowbridge contracts"
 
 pushd $contract_dir
 forge build
