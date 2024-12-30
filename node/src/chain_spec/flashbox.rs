@@ -98,6 +98,7 @@ pub fn development_config(
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
                 max_parachain_cores_percentage: None,
+                full_rotation_mode: Default::default(),
             },
             ..Default::default()
         },
@@ -161,6 +162,7 @@ pub fn local_flashbox_config(
                 parathreads_per_collator: 1,
                 target_container_chain_fullness: Perbill::from_percent(80),
                 max_parachain_cores_percentage: None,
+                full_rotation_mode: Default::default(),
             },
             ..Default::default()
         },

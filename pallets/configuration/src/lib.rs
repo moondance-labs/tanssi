@@ -42,6 +42,7 @@ pub use weights::WeightInfo;
 mod benchmarks;
 
 pub use pallet::*;
+use tp_traits::FullRotationModes;
 use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
@@ -88,6 +89,8 @@ pub struct HostConfiguration {
     pub target_container_chain_fullness: Perbill,
     ///  Maximum number of cores that can be allocated to parachains (only applicable for solo chain)
     pub max_parachain_cores_percentage: Option<Perbill>,
+    /// Full rotation mode
+    pub full_rotation_mode: FullRotationModes,
 }
 
 impl Default for HostConfiguration {
@@ -102,6 +105,7 @@ impl Default for HostConfiguration {
             parathreads_per_collator: 1,
             target_container_chain_fullness: Perbill::from_percent(80),
             max_parachain_cores_percentage: None,
+            full_rotation_mode: Default::default(),
         }
     }
 }
@@ -161,7 +165,7 @@ impl HostConfiguration {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use tp_traits::GetHostConfiguration;
+    use tp_traits::{FullRotationMode, GetHostConfiguration};
 
     use super::*;
 
@@ -195,7 +199,7 @@ pub mod pallet {
 
     /// The active configuration for the current session.
     #[pallet::storage]
-    pub(crate) type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
+    pub type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
 
     /// Pending configuration changes.
     ///
@@ -209,7 +213,7 @@ pub mod pallet {
     // since it can have at most 2 items anyway. But the upstream pallet doesn't do that so low
     // priority.
     #[pallet::unbounded]
-    pub(crate) type PendingConfigs<T: Config> =
+    pub type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
     /// If this is set, then the configuration setters will bypass the consistency checks. This
@@ -353,6 +357,31 @@ pub mod pallet {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.max_parachain_cores_percentage = new;
+            })
+        }
+
+        #[pallet::call_index(9)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_full_rotation_mode(
+            origin: OriginFor<T>,
+            orchestrator: Option<FullRotationMode>,
+            parachain: Option<FullRotationMode>,
+            parathread: Option<FullRotationMode>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                if let Some(orchestrator) = orchestrator {
+                    config.full_rotation_mode.orchestrator = orchestrator;
+                }
+                if let Some(parachain) = parachain {
+                    config.full_rotation_mode.parachain = parachain;
+                }
+                if let Some(parathread) = parathread {
+                    config.full_rotation_mode.parathread = parathread;
+                }
             })
         }
 
@@ -598,6 +627,10 @@ pub mod pallet {
 
         fn max_parachain_cores_percentage(session_index: T::SessionIndex) -> Option<Perbill> {
             Self::config_at_session(session_index).max_parachain_cores_percentage
+        }
+
+        fn full_rotation_mode(session_index: T::SessionIndex) -> FullRotationModes {
+            Self::config_at_session(session_index).full_rotation_mode
         }
     }
 }

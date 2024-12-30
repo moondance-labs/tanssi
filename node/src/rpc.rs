@@ -24,6 +24,7 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
+    manual_randomness_rpc::{ManualRandomness, ManualRandomnessApiServer},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
     sc_client_api::{AuxStore, UsageProvider},
@@ -55,6 +56,8 @@ pub struct FullDeps<C, P> {
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
+    /// Channels for manually activating the randomness
+    pub randomness_sender: Option<flume::Sender<(bool, Option<[u8; 32]>)>>,
 }
 
 /// Instantiate all RPC extensions.
@@ -84,6 +87,7 @@ where
         pool,
         command_sink,
         xcm_senders,
+        randomness_sender,
     } = deps;
 
     module.merge(System::new(client.clone(), pool).into_rpc())?;
@@ -103,6 +107,15 @@ where
             ManualXcm {
                 downward_message_channel,
                 hrmp_message_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
+
+    if let Some(randomness_message_channel) = randomness_sender {
+        module.merge(
+            ManualRandomness {
+                randomness_message_channel,
             }
             .into_rpc(),
         )?;
