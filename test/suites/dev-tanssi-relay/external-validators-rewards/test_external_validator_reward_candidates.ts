@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DTR1602",
+    id: "DTR1601",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 
@@ -22,6 +22,11 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
                 await context.createBlock();
+                // Send RPC call to enable para inherent candidate generation
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+                // Since collators are not assigned until session 2, we need to go till session 2 to actually see heads being injected
+                await jumpToSession(context, 3);
+                await context.createBlock();
 
                 // we are still in era 0
                 const validatorRewards = await context
@@ -31,9 +36,9 @@ describeSuite({
 
                 const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toBigInt();
 
-                // 20 points per block
-                expect(totalRewards).toBe(20n * blockNumber);
-                // All of them come from alice as she is the only one producing blocks
+                // Validators get 20 points for creating a block, so if they included a candidate, they will get more than 20
+                expect(totalRewards).to.be.greaterThan(20n * blockNumber);
+                // All of them come from alice as she is the only one validating candidates
                 expect(validatorRewards.individual.toHuman()[aliceStash.address]).to.be.eq(totalRewards.toString());
             },
         });

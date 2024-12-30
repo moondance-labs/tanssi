@@ -24,7 +24,9 @@ use {
         mem,
         vec::Vec,
     },
-    tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
+    tp_traits::{
+        FullRotationMode, FullRotationModes, ParaId, RemoveInvulnerables as RemoveInvulnerablesT,
+    },
 };
 
 // Separate import of `sp_std::vec!` macro, which cause issues with rustfmt if grouped
@@ -38,29 +40,6 @@ impl<T> Assignment<T>
 where
     T: crate::Config,
 {
-    /// Recompute collator assignment from scratch. If the list of collators and the list of
-    /// container chains are shuffled, this returns a random assignment.
-    pub fn assign_collators_rotate_all<TShuffle>(
-        collators: Vec<T::AccountId>,
-        orchestrator_chain: ChainNumCollators,
-        chains: Vec<ChainNumCollators>,
-        shuffle: Option<TShuffle>,
-    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError>
-    where
-        TShuffle: FnOnce(&mut Vec<T::AccountId>),
-    {
-        // This is just the "always_keep_old" algorithm but with an empty "old"
-        let old_assigned = Default::default();
-
-        Self::assign_collators_always_keep_old(
-            collators,
-            orchestrator_chain,
-            chains,
-            old_assigned,
-            shuffle,
-        )
-    }
-
     /// Assign new collators to missing container_chains.
     /// Old collators always have preference to remain on the same chain.
     /// If there are no missing collators, nothing is changed.
@@ -80,10 +59,11 @@ where
         orchestrator_chain: ChainNumCollators,
         mut chains: Vec<ChainNumCollators>,
         mut old_assigned: AssignedCollators<T::AccountId>,
-        shuffle: Option<TShuffle>,
+        mut shuffle: Option<TShuffle>,
+        full_rotation_mode: FullRotationModes,
     ) -> Result<AssignedCollators<T::AccountId>, AssignmentError>
     where
-        TShuffle: FnOnce(&mut Vec<T::AccountId>),
+        TShuffle: FnMut(&mut Vec<T::AccountId>),
     {
         if collators.is_empty() && !T::ForceEmptyOrchestrator::get() {
             return Err(AssignmentError::ZeroCollators);
@@ -111,7 +91,24 @@ where
             &collators_set,
         );
 
+        // Remove some previously assigned collators to allow new collators to take their place.
+        // Based on full_rotation_mode. In regular sessions this is FullRotationMode::KeepAll, a no-op.
+        for chain in chains.iter() {
+            let mode = if chain.para_id == orchestrator_chain.para_id {
+                full_rotation_mode.orchestrator.clone()
+            } else if chain.parathread {
+                full_rotation_mode.parathread.clone()
+            } else {
+                full_rotation_mode.parachain.clone()
+            };
+
+            let collators = old_assigned.get_mut(&chain.para_id);
+            Self::keep_collator_subset(collators, mode, chain.max_collators, shuffle.as_mut());
+        }
+
         // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
+        // Invulnerables can be unassigned by `keep_collator_subset`, but here we will assign other
+        // invulnerables again. The downside is that the new invulnerables can be different.
         Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
 
         let new_assigned_chains =
@@ -140,6 +137,48 @@ where
         new_assigned.orchestrator_chain = orchestrator_assigned;
 
         Ok(new_assigned)
+    }
+
+    /// Keep a subset of collators instead of rotating all of them.
+    pub fn keep_collator_subset<TShuffle>(
+        collators: Option<&mut Vec<T::AccountId>>,
+        full_rotation_mode: FullRotationMode,
+        max_collators: u32,
+        shuffle: Option<&mut TShuffle>,
+    ) where
+        TShuffle: FnMut(&mut Vec<T::AccountId>),
+    {
+        let collators = match collators {
+            Some(x) => x,
+            None => return,
+        };
+
+        let num_to_keep = match full_rotation_mode {
+            FullRotationMode::RotateAll => 0,
+            FullRotationMode::KeepAll => {
+                return;
+            }
+            FullRotationMode::KeepCollators { keep } => keep,
+            FullRotationMode::KeepPerbill { percentage: keep } => keep * max_collators,
+        };
+
+        if num_to_keep == 0 {
+            // Remove all
+            collators.clear();
+            return;
+        }
+
+        // Less than N collators, no need to shuffle
+        if collators.len() as u32 <= num_to_keep {
+            return;
+        }
+
+        // Shuffle and keep first N
+        if let Some(shuffle) = shuffle {
+            shuffle(collators);
+        }
+
+        collators.truncate(num_to_keep as usize);
     }
 
     /// Select which container chains will be assigned collators and how many collators, but do not specify which
@@ -488,8 +527,12 @@ pub enum AssignmentError {
 /// This can be a container chain, a parathread, or the orchestrator chain.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ChainNumCollators {
+    /// Para id.
     pub para_id: ParaId,
+    /// Min collators.
     pub min_collators: u32,
-    // This will only be filled if all the other min have been reached
+    /// Max collators. This will only be filled if all the other chains have reached min_collators
     pub max_collators: u32,
+    /// True if this a parathread. False means parachain or orchestrator.
+    pub parathread: bool,
 }
