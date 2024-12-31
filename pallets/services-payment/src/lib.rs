@@ -21,6 +21,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use tp_traits::BlockNumber;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{

@@ -19,8 +19,8 @@
 //! Benchmarking
 use {
     crate::{
-        BalanceOf, BlockNumberFor, Call, Config, Pallet, ProvideBlockProductionCost,
-        ProvideCollatorAssignmentCost,
+        AuthorNotingInfo, BalanceOf, BlockNumberFor, Call, Config, Pallet,
+        ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
     },
     frame_benchmarking::{account, v2::*},
     frame_support::{
@@ -178,11 +178,13 @@ mod benchmarks {
         ));
         #[block]
         {
-            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_author_noted(
-                &caller,
-                0,
-                para_id.into(),
-            );
+            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_authors_noted(&[
+                AuthorNotingInfo {
+                    author: caller,
+                    block_number: 0,
+                    para_id: para_id.into(),
+                },
+            ]);
         }
     }
 
