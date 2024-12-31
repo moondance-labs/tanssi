@@ -28,7 +28,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use tp_traits::AuthorNotingInfo;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use tp_traits::BlockNumber;
 use {
     dp_core::ParaId,
     frame_support::{
@@ -45,7 +46,8 @@ use {
         Perbill,
     },
     tp_traits::{
-        AuthorNotingHook, DistributeRewards, GetCurrentContainerChains, MaybeSelfChainBlockAuthor,
+        AuthorNotingHook, AuthorNotingInfo, DistributeRewards, GetCurrentContainerChains,
+        MaybeSelfChainBlockAuthor,
     },
 };
 
