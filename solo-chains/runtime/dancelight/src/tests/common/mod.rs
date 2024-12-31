@@ -673,6 +673,12 @@ impl ExtBuilder {
             .assimilate_storage(&mut t)
             .unwrap();
 
+        snowbridge_pallet_system::GenesisConfig::<Runtime> {
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         if self.safe_xcm_version.is_some() {
             // Disable run_block checks in XCM tests, because the XCM emulator runs on_initialize and
             // on_finalize automatically

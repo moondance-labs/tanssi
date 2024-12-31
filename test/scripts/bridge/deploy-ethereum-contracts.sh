@@ -8,15 +8,22 @@ source $scripts_path/set-env.sh
 deploy_command() {
     local deploy_script=$1
 
-    pushd "$contract_dir"
-    forge script \
+    OWNER_PRIVATE_KEY=$ethereum_key forge script \
     --rpc-url $eth_endpoint_http \
     --legacy \
     --broadcast \
     -vvv \
+    --slow \
+    --skip-simulation \
     $deploy_script
-    popd
 }
 
-echo "Deploying contracts"
+echo "Deploying snowbridge contracts"
+pushd "$contract_dir"
 deploy_command scripts/DeployLocal.sol:DeployLocal
+popd
+
+echo "Deploying symbiotic contracts"
+pushd "$symbiotic_contracts_dir"
+deploy_command script/test/DeployTanssiEcosystemDemo.s.sol:DeployTanssiEcosystem
+popd

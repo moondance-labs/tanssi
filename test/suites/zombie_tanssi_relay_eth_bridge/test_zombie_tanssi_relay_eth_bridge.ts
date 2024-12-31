@@ -27,14 +27,18 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: function ({ it, context }) {
         let relayApi: ApiPromise;
+        let relayCharlieApi: ApiPromise;
         let ethereumNodeChildProcess;
         let relayerChildProcess;
         let alice;
         let beefyClientDetails;
-        let gatewayProxyAddress;
-        let gatewayDetails;
 
+        const ethUrl = "ws://127.0.0.1:8546";
+        let customHttpProvider;
         let ethereumWallet;
+        let middlewareContract;
+        let gatewayProxyAddress;
+        let middlewareDetails;
 
         let operatorAccount;
         let operatorNimbusKey;
@@ -44,6 +48,8 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
+            relayCharlieApi = context.polkadotJs("Tanssi-charlie");
+
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -51,10 +57,10 @@ describeSuite({
             const executionRelay = keyring.addFromUri("//ExecutionRelay", { name: "Execution relay default" });
 
             // Operator keys
-            operatorAccount = keyring.addFromUri("//" + "Bob", { name: "COLLATOR" + " ACCOUNT" });
-            operatorNimbusKey = keyring.addFromUri("//" + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" });
-
-            await relayApi.tx.session.setKeys(u8aToHex(operatorNimbusKey), []).signAndSend(operatorAccount);
+            operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
+            // We rotate the keys for charlie so that we have access to them from this test as well as the node
+            operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
+            await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
             const fundingTxHash = await relayApi.tx.utility
                 .batch([
@@ -82,20 +88,25 @@ describeSuite({
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
 
-            await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh");
+            await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
+                env: {
+                    OPERATOR1_KEY: u8aToHex(operatorAccount.addressRaw),
+                    ...process.env,
+                },
+            });
 
             console.log("Contracts deployed");
 
-            const contractInfoData = JSON.parse(
-                <string>(await execCommand("./scripts/bridge/generate-contract-info.sh")).stdout
-            );
+            const ethInfo = JSON.parse(<string>(await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
 
-            console.log("BeefyClient contract address is:", contractInfoData.data.contracts.BeefyClient.address);
-            beefyClientDetails = contractInfoData.data.contracts.BeefyClient;
+            console.log("BeefyClient contract address is:", ethInfo.snowbridge_info.contracts.BeefyClient.address);
+            beefyClientDetails = ethInfo.snowbridge_info.contracts.BeefyClient;
 
-            console.log("Gateway contract proxy address is:", contractInfoData.data.contracts.GatewayProxy.address);
-            gatewayProxyAddress = contractInfoData.data.contracts.GatewayProxy.address;
-            gatewayDetails = contractInfoData.data.contracts.Gateway;
+            console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
+            gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
+
+            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.Middleware.address);
+            middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await relayApi.tx.sudo
@@ -103,8 +114,13 @@ describeSuite({
                 .signAndSend(alice);
             console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.toHex());
 
-            const customHttpProvider = new ethers.WebSocketProvider("ws://127.0.0.1:8546");
-            ethereumWallet = new ethers.Wallet(contractInfoData.ethereum_key, customHttpProvider);
+            customHttpProvider = new ethers.WebSocketProvider(ethUrl);
+            ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
+
+            // Setting up Middleware
+            middlewareContract = new ethers.Contract(middlewareDetails.address, middlewareDetails.abi, ethereumWallet);
+            const tx = await middlewareContract.setGateway(gatewayProxyAddress);
+            await tx.wait();
 
             const initialBeaconUpdate = JSON.parse(
                 <string>(
@@ -159,8 +175,6 @@ describeSuite({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
             test: async function () {
-                const url = "ws://127.0.0.1:8546";
-                const customHttpProvider = new ethers.WebSocketProvider(url);
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -178,18 +192,21 @@ describeSuite({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
             test: async function () {
-                const gatewayContract = new ethers.Contract(gatewayProxyAddress, gatewayDetails.abi, ethereumWallet);
-
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
-                const rawValidators = [
-                    u8aToHex(operatorAccount.addressRaw),
-                    "0x7894567890123456789012345678901234567890123456789012345678901234",
-                    "0x4564567890123456789012345678901234567890123456789012345678901234",
-                ];
+                const epoch = await middlewareContract.getCurrentEpoch();
+                const currentOperators = await middlewareContract.getOperatorsByEpoch(epoch);
+                const currentOperatorsKeys = [];
+                for (let i = 0; i < currentOperators.length; i++) {
+                    currentOperatorsKeys.push(await middlewareContract.getCurrentOperatorKey(currentOperators[i]));
+                }
+
+                console.log("Middleware: Epoch is:", epoch);
+                console.log("Middleware: Operator keys are:", currentOperatorsKeys);
+                console.log("Starlight: External validators are:", externalValidatorsBefore.toJSON());
 
                 try {
-                    const tx = await gatewayContract.sendOperatorsData(rawValidators, 1);
+                    const tx = await middlewareContract.sendCurrentOperatorsKeys();
                     await tx.wait();
                 } catch (error) {
                     throw new Error(`Failed to send operator data: ${error.message}`, error.code);
@@ -219,10 +236,30 @@ describeSuite({
                     return u8aToHex(decodeAddress(x));
                 });
 
-                expect(externalValidatorsHex).to.deep.eq(rawValidators);
+                console.log("After message transfer:");
 
-                const sessionValidators = await relayApi.query.session.validators();
-                expect(sessionValidators.includes(operatorNimbusKey));
+                console.log("Middleware: Operator keys are:", currentOperatorsKeys);
+                console.log("Starlight: External validators are:", externalValidatorsHex);
+
+                expect(externalValidatorsHex).to.deep.eq(currentOperatorsKeys);
+            },
+        });
+
+        it({
+            id: "T04",
+            title: "Operator produces blocks",
+            test: async function () {
+                for (let i = 0; i < 20; ++i) {
+                    const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
+                    const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
+                    if (author == operatorAccount.address) {
+                        return;
+                    }
+
+                    await context.waitBlock(1, "Tanssi-relay");
+                }
+
+                expect.fail("operator didn't produce a block");
             },
         });
 

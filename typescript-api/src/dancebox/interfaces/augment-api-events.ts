@@ -27,6 +27,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpTraitsFullRotationModes,
     XcmV3TraitsError,
     XcmVersionedAssets,
     XcmVersionedLocation,
@@ -139,8 +140,18 @@ declare module "@polkadot/api-base/types/events" {
         collatorAssignment: {
             NewPendingAssignment: AugmentedEvent<
                 ApiType,
-                [randomSeed: U8aFixed, fullRotation: bool, targetSession: u32],
-                { randomSeed: U8aFixed; fullRotation: bool; targetSession: u32 }
+                [
+                    randomSeed: U8aFixed,
+                    fullRotation: bool,
+                    targetSession: u32,
+                    fullRotationMode: TpTraitsFullRotationModes,
+                ],
+                {
+                    randomSeed: U8aFixed;
+                    fullRotation: bool;
+                    targetSession: u32;
+                    fullRotationMode: TpTraitsFullRotationModes;
+                }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
