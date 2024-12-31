@@ -569,7 +569,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         }
 
         // TODO: weight should depend on info.len()
-        T::WeightInfo::on_container_author_noted()
+        T::WeightInfo::on_container_authors_noted()
     }
 
     #[cfg(feature = "runtime-benchmarks")]

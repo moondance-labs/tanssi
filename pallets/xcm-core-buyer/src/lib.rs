@@ -34,7 +34,8 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use tp_traits::AuthorNotingInfo;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use tp_traits::BlockNumber;
 use {
     dp_core::ParaId,
     frame_support::{
@@ -51,7 +52,10 @@ use {
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },
-    tp_traits::{AuthorNotingHook, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency},
+    tp_traits::{
+        AuthorNotingHook, AuthorNotingInfo, LatestAuthorInfoFetcher, ParathreadParams,
+        SlotFrequency,
+    },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 

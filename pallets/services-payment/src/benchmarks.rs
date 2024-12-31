@@ -164,7 +164,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn on_container_author_noted() {
+    fn on_container_authors_noted() {
         let para_id = 1001u32;
         let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
         let credits: BalanceOf<T> = 1000u32.into();

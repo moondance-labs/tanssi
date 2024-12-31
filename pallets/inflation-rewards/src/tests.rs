@@ -132,7 +132,7 @@ fn test_reward_container_chain_author() {
         let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
-                author: container_author.clone(),
+                author: container_author,
                 block_number: 1,
                 para_id: registered_para_ids[0],
             },
@@ -152,7 +152,7 @@ fn test_reward_container_chain_author() {
         // Note next container author
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
-                author: container_author_2.clone(),
+                author: container_author_2,
                 block_number: 2,
                 para_id: registered_para_ids[0],
             },
@@ -183,7 +183,7 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
         let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
-                author: container_author.clone(),
+                author: container_author,
                 block_number: 1,
                 para_id: registered_para_ids[0],
             },
@@ -192,7 +192,7 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
         // Regardless if we inject a new block, we cannot reward twice the same paraId
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
-                author: container_author.clone(),
+                author: container_author,
                 block_number: 2,
                 para_id: registered_para_ids[0],
             },

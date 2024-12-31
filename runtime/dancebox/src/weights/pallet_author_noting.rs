@@ -113,7 +113,7 @@ impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeig
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:1)
 	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
-	fn on_container_author_noted() -> Weight {
+	fn on_container_authors_noted() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `881`
 		//  Estimated: `11402`

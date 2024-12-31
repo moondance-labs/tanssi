@@ -109,7 +109,7 @@ impl<T: frame_system::Config> pallet_author_noting::WeightInfo for SubstrateWeig
 	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(6402), added: 6897, mode: `MaxEncodedLen`)
 	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:0)
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
-	fn on_container_author_noted() -> Weight {
+	fn on_container_authors_noted() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `647`
 		//  Estimated: `7887`

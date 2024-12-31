@@ -56,7 +56,7 @@ pub trait WeightInfo {
 	fn set_latest_author_data(x: u32, ) -> Weight;
 	fn set_author() -> Weight;
 	fn kill_author_data() -> Weight;
-	fn on_container_author_noted() -> Weight;
+	fn on_container_authors_noted() -> Weight;
 }
 
 /// Weights for pallet_author_noting using the Substrate node and recommended hardware.
@@ -133,7 +133,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:1)
 	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
-	fn on_container_author_noted() -> Weight {
+	fn on_container_authors_noted() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `881`
 		//  Estimated: `11402`
@@ -217,7 +217,7 @@ impl WeightInfo for () {
 	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	/// Storage: `XcmCoreBuyer::PendingBlocks` (r:0 w:1)
 	/// Proof: `XcmCoreBuyer::PendingBlocks` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
-	fn on_container_author_noted() -> Weight {
+	fn on_container_authors_noted() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `881`
 		//  Estimated: `11402`

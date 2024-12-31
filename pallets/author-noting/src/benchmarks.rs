@@ -18,7 +18,7 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
+    crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
     core::any::{Any, TypeId},
     frame_benchmarking::{account, benchmarks},
     frame_support::{assert_ok, Hashable},
@@ -148,13 +148,13 @@ benchmarks! {
         assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author, u64::from(block_number).into()));
     }: _(RawOrigin::Root, para_id)
 
-    on_container_author_noted {
+    on_container_authors_noted {
         let para_id = 1000.into();
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
 
         T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
-    }: { T::AuthorNotingHook::on_container_author_noted(&author, block_number, para_id )}
+    }: { T::AuthorNotingHook::on_container_authors_noted(&[AuthorNotingInfo { author, block_number, para_id }])}
 
     impl_benchmark_test_suite!(
         Pallet,
