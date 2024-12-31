@@ -404,7 +404,7 @@ where
                             let collator_signature = collator_pair.sign(&payload);
 
                             let upward_messages = UpwardMessages::try_from(
-                                upward_messages_receiver.drain().collect::<Vec<_>>().clone(),
+                                upward_messages_receiver.drain().collect::<Vec<_>>(),
                             )
                             .expect("create upward messages from raw messages");
 
