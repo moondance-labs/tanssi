@@ -108,11 +108,8 @@ struct DevDeps<C, P> {
     pub pool: Arc<P>,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
-    /// Channels for dev rpcs
-    pub dev_rpc_data: (
-        Option<flume::Sender<Vec<u8>>>, //downward
-        Option<flume::Sender<Vec<u8>>>, //upward
-    ),
+    /// Dev rpcs
+    pub dev_rpc: Option<DevRpc>,
 }
 
 fn create_dev_rpc_extension<C, P>(
@@ -120,7 +117,7 @@ fn create_dev_rpc_extension<C, P>(
         client,
         pool,
         command_sink: maybe_command_sink,
-        dev_rpc_data: maybe_dev_rpc_data,
+        dev_rpc: maybe_dev_rpc,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -149,14 +146,8 @@ where
         io.merge(ManualSeal::new(command_sink).into_rpc())?;
     }
 
-    if let Some(mock_para_inherent_channel) = maybe_dev_rpc_data.0 {
-        io.merge(
-            DevRpc {
-                mock_para_inherent_channel,
-                upward_message_channel: maybe_dev_rpc_data.1.unwrap(),
-            }
-            .into_rpc(),
-        )?;
+    if let Some(dev_rpc_data) = maybe_dev_rpc {
+        io.merge(dev_rpc_data.into_rpc())?;
     }
 
     Ok(io)
@@ -770,16 +761,11 @@ fn new_full<
         );
     }
 
-    // We dont need the flume receiver if we are not a validator
-    let inherent_dev_rpc_data = if role.clone().is_authority() {
-        Some(downward_mock_para_inherent_sender)
-    } else {
-        None
-    };
-
-    // TODO: recheck if we need it to be a validator
-    let upm_dev_rpc_data = if role.clone().is_authority() {
-        Some(upward_mock_sender)
+    let dev_rpc = if role.clone().is_authority() {
+        Some(DevRpc {
+            mock_para_inherent_channel: downward_mock_para_inherent_sender,
+            upward_message_channel: upward_mock_sender,
+        })
     } else {
         None
     };
@@ -794,7 +780,7 @@ fn new_full<
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 command_sink: command_sink.clone(),
-                dev_rpc_data: (inherent_dev_rpc_data.clone(), upm_dev_rpc_data.clone()),
+                dev_rpc: dev_rpc.clone(),
             };
 
             create_dev_rpc_extension(deps).map_err(Into::into)

@@ -44,6 +44,7 @@ pub trait DevApi {
     async fn inject_upward_message(&self, message: Vec<u8>) -> RpcResult<()>;
 }
 
+#[derive(Clone)]
 pub struct DevRpc {
     pub mock_para_inherent_channel: flume::Sender<Vec<u8>>,
     pub upward_message_channel: flume::Sender<Vec<u8>>,
