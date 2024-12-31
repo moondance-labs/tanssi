@@ -1344,7 +1344,7 @@ impl pallet_external_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type OnEraStart = (ExternalValidatorSlashes, ExternalValidatorsRewards);
-    type OnEraEnd = ExternalValidatorsRewards;
+    type OnEraEnd = (ExternalValidatorSlashes, ExternalValidatorsRewards);
     type WeightInfo = weights::pallet_external_validators::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
