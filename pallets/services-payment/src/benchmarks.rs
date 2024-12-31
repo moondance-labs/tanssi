@@ -164,27 +164,30 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn on_container_authors_noted() {
-        let para_id = 1001u32;
-        let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
-        let credits: BalanceOf<T> = 1000u32.into();
-        let balance_to_purchase = block_cost.saturating_mul(credits);
-        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
-        let existential_deposit = <T::Currency>::minimum_balance();
-        assert_ok!(Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller.clone()).into(),
-            para_id.into(),
-            balance_to_purchase + existential_deposit
-        ));
+    fn on_container_authors_noted(n: Linear<1, 50>) {
+        let mut infos = vec![];
+        for i in 0..n {
+            let para_id = 1000u32 + i;
+            let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
+            let credits: BalanceOf<T> = 1000u32.into();
+            let balance_to_purchase = block_cost.saturating_mul(credits);
+            let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+            let existential_deposit = <T::Currency>::minimum_balance();
+            assert_ok!(Pallet::<T>::purchase_credits(
+                RawOrigin::Signed(caller.clone()).into(),
+                para_id.into(),
+                balance_to_purchase + existential_deposit
+            ));
+            infos.push(AuthorNotingInfo {
+                author: caller,
+                block_number: 0,
+                para_id: para_id.into(),
+            });
+        }
+
         #[block]
         {
-            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_authors_noted(&[
-                AuthorNotingInfo {
-                    author: caller,
-                    block_number: 0,
-                    para_id: para_id.into(),
-                },
-            ]);
+            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_authors_noted(&infos);
         }
     }
 

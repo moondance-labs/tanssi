@@ -149,12 +149,18 @@ benchmarks! {
     }: _(RawOrigin::Root, para_id)
 
     on_container_authors_noted {
-        let para_id = 1000.into();
-        let block_number = 1;
-        let author: T::AccountId = account("account id", 0u32, 0u32);
+        // Depend on the number of parachains registered
+        let x in 1..50;
 
-        T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
-    }: { T::AuthorNotingHook::on_container_authors_noted(&[AuthorNotingInfo { author, block_number, para_id }])}
+        let mut infos = vec![];
+        for i in 0..x {
+            let para_id = (1000 + x).into();
+            let block_number = 1;
+            let author: T::AccountId = account("account id", 0u32, 0u32);
+            T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
+            infos.push(AuthorNotingInfo { author, block_number, para_id });
+        }
+    }: { T::AuthorNotingHook::on_container_authors_noted(&infos)}
 
     impl_benchmark_test_suite!(
         Pallet,
