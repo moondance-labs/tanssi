@@ -29,6 +29,7 @@ fn invulnerable_priority_0_collators() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned = BTreeMap::new();
 
@@ -48,6 +49,7 @@ fn invulnerable_priority_0_invulnerables() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![1, 2])]);
 
@@ -67,6 +69,7 @@ fn invulnerable_priority_1_invulnerable_orchestrator() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![101])]);
 
@@ -86,6 +89,7 @@ fn invulnerable_priority_1_invulnerable_not_assigned() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned = BTreeMap::new();
 
@@ -105,6 +109,7 @@ fn invulnerable_priority_1_invulnerable_assigned_to_another_chain() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned =
         BTreeMap::from_iter(vec![(1000.into(), vec![]), (2000.into(), vec![101])]);
@@ -125,6 +130,7 @@ fn bug_same_invulnerable_selected_twice() {
         para_id: 1000.into(),
         min_collators: 2,
         max_collators: 5,
+        parathread: false,
     };
     let mut old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![100])]);
 
@@ -148,16 +154,19 @@ fn bug_not_using_assigned_invulnerables() {
             para_id: 1000.into(),
             min_collators: 2,
             max_collators: 5,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2000.into(),
             min_collators: 2,
             max_collators: 2,
+            parathread: false,
         },
         ChainNumCollators {
             para_id: 2001.into(),
             min_collators: 2,
             max_collators: 2,
+            parathread: false,
         },
     ];
     let orchestrator_chain = container_chains[0];

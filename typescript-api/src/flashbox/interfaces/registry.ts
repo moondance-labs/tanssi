@@ -187,6 +187,8 @@ import type {
     StagingParachainInfoCall,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpTraitsContainerChainBlockInfo,
+    TpTraitsFullRotationMode,
+    TpTraitsFullRotationModes,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
@@ -374,6 +376,8 @@ declare module "@polkadot/types/types/registry" {
         StagingParachainInfoCall: StagingParachainInfoCall;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
+        TpTraitsFullRotationMode: TpTraitsFullRotationMode;
+        TpTraitsFullRotationModes: TpTraitsFullRotationModes;
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
     } // InterfaceTypes
