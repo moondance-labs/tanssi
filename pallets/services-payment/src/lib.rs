@@ -543,8 +543,8 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.
     // Currently we always charge 1 credit, even if a container chain produced more that 1 block in between tanssi
     // blocks.
-    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
-        for info in info {
+    fn on_container_authors_noted(infos: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
+        for info in infos {
             let para_id = info.para_id;
             if Pallet::<T>::burn_block_production_free_credit_for_para(&para_id).is_err() {
                 let (amount_to_charge, _weight) =
@@ -568,8 +568,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
             }
         }
 
-        // TODO: weight should depend on info.len()
-        T::WeightInfo::on_container_authors_noted()
+        T::WeightInfo::on_container_authors_noted(infos.len() as u32)
     }
 
     #[cfg(feature = "runtime-benchmarks")]

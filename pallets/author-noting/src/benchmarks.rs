@@ -154,7 +154,7 @@ benchmarks! {
 
         let mut infos = vec![];
         for i in 0..x {
-            let para_id = (1000 + x).into();
+            let para_id = (1000 + i).into();
             let block_number = 1;
             let author: T::AccountId = account("account id", 0u32, 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
