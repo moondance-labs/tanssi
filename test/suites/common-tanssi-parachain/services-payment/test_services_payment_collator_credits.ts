@@ -51,7 +51,7 @@ describeSuite({
                         ).toBe(startingCredits);
                         expect(
                             collators.toJSON().containerChains[paraId.toString()].length,
-                            `Container chain ${paraId} has 0 collators`
+                            `Container chain ${paraId} has more than 0 collators`
                         ).toBe(0);
                     }
                 }

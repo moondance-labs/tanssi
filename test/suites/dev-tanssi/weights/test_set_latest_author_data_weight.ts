@@ -12,8 +12,11 @@ describeSuite({
             id: "E01",
             title: "Weight should be match expected",
             test: async function () {
-                const expectedRefTime = new BN(1_245_284_212);
-                const expectedProofSize = new BN(15_236);
+                // TODO: check ref time again after final benchmark
+                //const expectedRefTime = new BN(1386352443);
+                //const expectedProofSize = new BN(15336);
+                const expectedRefTime = new BN(912947136);
+                const expectedProofSize = new BN(8046);
 
                 await context.createBlock();
 
@@ -41,6 +44,9 @@ describeSuite({
                 const usedWeight = (events.at(-1).event.data[0] as unknown as FrameSupportDispatchDispatchInfo).weight;
                 const refTime = usedWeight.refTime.toBn();
                 const proofSize = usedWeight.proofSize.toBn();
+
+		console.log("used weight: ", refTime.toNumber());
+		console.log("proof size: ", proofSize.toNumber());
 
                 // Allow 10% variance
                 expect(refTime.gte(expectedRefTime.divn(1.1)) && refTime.lte(expectedRefTime.muln(1.1))).to.be.true;

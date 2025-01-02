@@ -180,7 +180,7 @@ mod benchmarks {
             ));
             infos.push(AuthorNotingInfo {
                 author: caller,
-                block_number: 0,
+                block_number: 1,
                 para_id: para_id.into(),
             });
         }
