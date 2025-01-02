@@ -1365,6 +1365,13 @@ impl Get<u64> for TimestampProvider {
     }
 }
 
+pub struct GetWhitelistedValidators;
+impl Get<Vec<AccountId>> for GetWhitelistedValidators {
+    fn get() -> Vec<AccountId> {
+        pallet_external_validators::WhitelistedValidatorsBackup::<Runtime>::get().into()
+    }
+}
+
 impl pallet_external_validators_rewards::Config for Runtime {
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
@@ -1374,6 +1381,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     // Will likely be through InflationRewards.
     type EraInflationProvider = ();
     type TimestampProvider = TimestampProvider;
+    type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;

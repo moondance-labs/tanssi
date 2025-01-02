@@ -761,6 +761,8 @@ fn external_validators_rewards_merkle_proofs() {
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .build()
         .execute_with(|| {
@@ -769,16 +771,64 @@ fn external_validators_rewards_merkle_proofs() {
 
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
-                true
+                false
+            ));
+            assert_eq!(
+                ExternalValidators::whitelisted_validators(),
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(ALICE)
+            ));
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(BOB)
+            ));
+            assert_ok!(ExternalValidators::set_external_validators(vec![
+                AccountId::from(CHARLIE),
+                AccountId::from(DAVE)
+            ]));
+
+            // Register CHARLIE and DAVE session keys
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                crate::SessionKeys {
+                    babe: charlie_keys.babe.clone(),
+                    grandpa: charlie_keys.grandpa.clone(),
+                    para_validator: charlie_keys.para_validator.clone(),
+                    para_assignment: charlie_keys.para_assignment.clone(),
+                    authority_discovery: charlie_keys.authority_discovery.clone(),
+                    beefy: charlie_keys.beefy.clone(),
+                    nimbus: charlie_keys.nimbus.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                crate::SessionKeys {
+                    babe: dave_keys.babe.clone(),
+                    grandpa: dave_keys.grandpa.clone(),
+                    para_validator: dave_keys.para_validator.clone(),
+                    para_assignment: dave_keys.para_assignment.clone(),
+                    authority_discovery: dave_keys.authority_discovery.clone(),
+                    beefy: dave_keys.beefy.clone(),
+                    nimbus: dave_keys.nimbus.clone(),
+                },
+                vec![]
             ));
 
-            run_to_session(sessions_per_era);
+            // TODO: Need to wait 1 session more for validators to get points
+            run_to_session(sessions_per_era + 1);
             let validators = Session::validators();
 
-            // Only whitelisted validators get selected
+            // Only external validators get selected
             assert_eq!(
                 validators,
-                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
             assert!(
@@ -786,7 +836,7 @@ fn external_validators_rewards_merkle_proofs() {
                     == 0
             );
 
-            // Reward Alice and Bob in era 1
+            // Reward all validators in era 1
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
 
@@ -795,47 +845,60 @@ fn external_validators_rewards_merkle_proofs() {
                     == 1
             );
 
-            let alice_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
-                AccountId::from(ALICE),
-                1u32,
-            );
-            let is_alice_merkle_proof_valid =
-                ExternalValidatorsRewards::verify_rewards_merkle_proof(alice_merkle_proof.unwrap());
+            let (_era_index, era_rewards) =
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter()
+                    .next()
+                    .unwrap();
+            assert!(era_rewards.total > 0);
 
-            let bob_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
-                AccountId::from(BOB),
-                1u32,
-            );
-            let is_bob_merkle_proof_valid =
-                ExternalValidatorsRewards::verify_rewards_merkle_proof(bob_merkle_proof.unwrap());
+            //let xasd: Vec<_> = pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().collect();
+            //println!("{:?}", xasd);
 
-            assert!(is_alice_merkle_proof_valid);
-            assert!(is_bob_merkle_proof_valid);
-
-            // Let's check invalid proofs now.
             let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
                 AccountId::from(CHARLIE),
                 1u32,
             );
+            let is_charlie_merkle_proof_valid =
+                ExternalValidatorsRewards::verify_rewards_merkle_proof(
+                    charlie_merkle_proof.unwrap(),
+                );
 
-            let alice_invalid_merkle_proof =
+            let dave_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(DAVE),
+                1u32,
+            );
+            let is_dave_merkle_proof_valid =
+                ExternalValidatorsRewards::verify_rewards_merkle_proof(dave_merkle_proof.unwrap());
+
+            assert!(is_charlie_merkle_proof_valid);
+            assert!(is_dave_merkle_proof_valid);
+
+            // Let's check invalid proofs now.
+            // Alice is not a validator anymore.
+            let alice_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                AccountId::from(ALICE),
+                1u32,
+            );
+
+            let charlie_invalid_merkle_proof =
                 ExternalValidatorsRewards::generate_rewards_merkle_proof(
-                    AccountId::from(ALICE),
+                    AccountId::from(CHARLIE),
                     0u32,
                 );
 
-            let bob_invalid_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
-                AccountId::from(BOB),
-                2u32,
-            );
+            let dave_invalid_merkle_proof =
+                ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                    AccountId::from(DAVE),
+                    2u32,
+                );
 
-            // Charlie is not present in the validator set, so no merkle proof for him.
-            assert!(charlie_merkle_proof.is_none());
+            // Alice is not present in the validator set, so no merkle proof for her.
+            assert!(alice_merkle_proof.is_none());
 
-            // Alice wasn't rewarded for era 0.
-            assert!(alice_invalid_merkle_proof.is_none());
+            // Charlie wasn't rewarded for era 0.
+            assert!(charlie_invalid_merkle_proof.is_none());
 
             // Proof for a future era should also be invalid.
-            assert!(bob_invalid_merkle_proof.is_none());
+            assert!(dave_invalid_merkle_proof.is_none());
         });
 }

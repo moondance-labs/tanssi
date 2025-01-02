@@ -21,6 +21,7 @@
 //! ## Terminology
 //!
 //! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
+//!      Are not rewarded.
 //! - ExternalValidators: Validators set using storage proofs from another blockchain. Can be disabled by setting
 //!     `SkipExternalValidators` to true.
 //!
@@ -152,6 +153,11 @@ pub mod pallet {
     /// Fixed validators set by root/governance. Have priority over the external validators.
     #[pallet::storage]
     pub type WhitelistedValidators<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+
+    /// Fixed validators set by root/governance. Have priority over the external validators.
+    #[pallet::storage]
+    pub type WhitelistedValidatorsBackup<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
     /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
@@ -496,6 +502,8 @@ pub mod pallet {
             if let Some(old_era) = new_planned_era.checked_sub(T::HistoryDepth::get() + 1) {
                 Self::clear_era_information(old_era);
             }
+
+            WhitelistedValidatorsBackup::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
             Self::validators()
