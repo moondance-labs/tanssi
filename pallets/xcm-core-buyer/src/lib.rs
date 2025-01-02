@@ -34,7 +34,7 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 use {
     dp_core::ParaId,

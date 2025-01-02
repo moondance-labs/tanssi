@@ -28,7 +28,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 use {
     dp_core::ParaId,
