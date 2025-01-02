@@ -841,6 +841,7 @@ pub enum ProxyType {
     Auction,
     OnDemandOrdering,
     SudoRegistrar,
+    SudoValidatorManagement,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -910,6 +911,16 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                             | &RuntimeCall::ContainerRegistrar(..)
                             | &RuntimeCall::Paras(..)
                             | &RuntimeCall::ParasSudoWrapper(..)
+                    )
+                }
+                _ => false,
+            },
+            ProxyType::SudoValidatorManagement => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::ExternalValidators(..)
+                            | &RuntimeCall::ExternalValidatorSlashes(..)
                     )
                 }
                 _ => false,
