@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
+import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
     id: "DTR1201",
@@ -12,7 +12,6 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let sudoAlice: KeyringPair;
         let delegateBob: KeyringPair;
-        let charlie: KeyringPair;
         const VALIDATOR_PROXY_INDEX = 8;
 
         beforeAll(() => {
@@ -20,7 +19,6 @@ describeSuite({
 
             sudoAlice = context.keyring.alice;
             delegateBob = context.keyring.bob;
-            charlie = context.keyring.charlie;
 
             polkadotJs = context.polkadotJs();
         });
@@ -52,11 +50,7 @@ describeSuite({
                 const txAddWhitelisted = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
-                    polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.externalValidators.addWhitelisted(
-                            delegateBob.address,
-                        )
-                    )
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.externalValidators.addWhitelisted(delegateBob.address))
                 );
                 await context.createBlock([await txAddWhitelisted.signAsync(delegateBob)]);
 
@@ -73,11 +67,7 @@ describeSuite({
                     sudoAlice.address,
                     null,
                     polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(
-                            0,
-                            sudoAlice.address,
-                            1000,
-                        )
+                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, sudoAlice.address, 1000)
                     )
                 );
                 await context.createBlock([await txAddWhitelisted.signAsync(delegateBob)]);
@@ -87,7 +77,6 @@ describeSuite({
                 // scheduled slashes
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
                 expect(expectedSlashes.length).to.be.eq(1);
-
             },
         });
     },
