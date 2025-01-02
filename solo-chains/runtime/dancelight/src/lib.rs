@@ -843,7 +843,7 @@ pub enum ProxyType {
     SudoRegistrar,
     SudoValidatorManagement,
     SessionKeyManagement,
-    Staking
+    Staking,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -929,7 +929,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             },
             ProxyType::SessionKeyManagement => {
                 matches!(c, RuntimeCall::Session(..))
-            },
+            }
             ProxyType::Staking => {
                 matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
             }
