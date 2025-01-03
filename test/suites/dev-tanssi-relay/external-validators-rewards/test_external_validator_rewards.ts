@@ -30,7 +30,6 @@ describeSuite({
                     .query.externalValidatorsRewards.rewardPointsForEra(0);
                 const totalRewards = validatorRewards.total.toBigInt();
 
-                // TODO: this test should fail because alice will not be rewarded, why doesn't it fail
                 const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toBigInt();
 
                 // 20 points per block
