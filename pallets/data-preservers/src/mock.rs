@@ -446,6 +446,9 @@ impl pallet_data_preservers::Config for Test {
     type MaxParaIdsVecLen = ConstU32<20>;
     type ProfileDeposit = tp_traits::BytesDeposit<ConstU128<1000>, ConstU128<51>>;
     type WeightInfo = ();
+
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 #[derive(Default)]
