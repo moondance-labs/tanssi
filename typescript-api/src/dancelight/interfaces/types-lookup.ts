@@ -3499,6 +3499,9 @@ declare module "@polkadot/types/lookup" {
         readonly isAuction: boolean;
         readonly isOnDemandOrdering: boolean;
         readonly isSudoRegistrar: boolean;
+        readonly isSudoValidatorManagement: boolean;
+        readonly isSessionKeyManagement: boolean;
+        readonly isStaking: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -3507,7 +3510,10 @@ declare module "@polkadot/types/lookup" {
             | "CancelProxy"
             | "Auction"
             | "OnDemandOrdering"
-            | "SudoRegistrar";
+            | "SudoRegistrar"
+            | "SudoValidatorManagement"
+            | "SessionKeyManagement"
+            | "Staking";
     }
 
     /** @name PalletMultisigCall (309) */

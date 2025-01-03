@@ -2852,6 +2852,9 @@ export default {
             "Auction",
             "OnDemandOrdering",
             "SudoRegistrar",
+            "SudoValidatorManagement",
+            "SessionKeyManagement",
+            "Staking",
         ],
     },
     /** Lookup309: pallet_multisig::pallet::Call<T> */
