@@ -217,8 +217,11 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
-            <WhitelistedValidators<T>>::put(bounded_validators);
+            <WhitelistedValidators<T>>::put(&bounded_validators);
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
+            // TODO: this doesn't seem to fix any tests, is it needed or not?
+            <WhitelistedValidatorsBackup<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsBackupPending<T>>::put(&bounded_validators);
         }
     }
 
