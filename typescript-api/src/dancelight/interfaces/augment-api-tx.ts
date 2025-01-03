@@ -3371,6 +3371,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -3439,6 +3442,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -3484,6 +3490,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -3527,6 +3536,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3578,6 +3590,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -3678,6 +3693,9 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Auction"
                         | "OnDemandOrdering"
                         | "SudoRegistrar"
+                        | "SudoValidatorManagement"
+                        | "SessionKeyManagement"
+                        | "Staking"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array

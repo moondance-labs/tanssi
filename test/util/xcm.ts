@@ -1,4 +1,5 @@
 import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
+import { ApiPromise } from "@polkadot/api";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
@@ -7,7 +8,6 @@ import {
 } from "@polkadot/types/lookup";
 import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
-import { ApiPromise } from "@polkadot/api";
 
 // Creates and returns the tx that overrides the paraHRMP existence
 // This needs to be inserted at every block in which you are willing to test
@@ -192,6 +192,12 @@ export function buildDmpMessage(context: DevModeContext, message: RawXcmMessage)
     return [...receivedMessage.toU8a()];
 }
 
+export function buildUmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", message.payload) as any;
+
+    return [...receivedMessage.toU8a()];
+}
+
 export async function injectHrmpMessage(context: DevModeContext, paraId: number, message?: RawXcmMessage) {
     const totalMessage = message != null ? buildXcmpMessage(context, message) : [];
     // Send RPC call to inject XCM message
@@ -202,6 +208,12 @@ export async function injectDmpMessage(context: DevModeContext, message?: RawXcm
     const totalMessage = message != null ? buildDmpMessage(context, message) : [];
     // Send RPC call to inject XCM message
     await customDevRpcRequest("xcm_injectDownwardMessage", [totalMessage]);
+}
+
+export async function injectUmpMessage(context: DevModeContext, message?: RawXcmMessage) {
+    const totalMessage = message != null ? buildUmpMessage(context, message) : [];
+    // Send RPC call to inject XCM message
+    await customDevRpcRequest("xcm_injectUpwardMessage", [totalMessage]);
 }
 
 // Weight a particular message using the xcm utils precompile
@@ -221,6 +233,12 @@ export async function injectHrmpMessageAndSeal(context: DevModeContext, paraId: 
 
 export async function injectDmpMessageAndSeal(context: DevModeContext, message?: RawXcmMessage) {
     await injectDmpMessage(context, message);
+    // Create a block in which the XCM will be executed
+    await context.createBlock();
+}
+
+export async function injectUmpMessageAndSeal(context: DevModeContext, message?: RawXcmMessage) {
+    await injectUmpMessage(context, message);
     // Create a block in which the XCM will be executed
     await context.createBlock();
 }

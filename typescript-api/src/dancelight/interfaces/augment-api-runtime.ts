@@ -74,7 +74,8 @@ import type { RuntimeVersion } from "@polkadot/types/interfaces/state";
 import type { ApplyExtrinsicResult } from "@polkadot/types/interfaces/system";
 import type { TransactionSource, TransactionValidity } from "@polkadot/types/interfaces/txqueue";
 import type { XcmPaymentApiError } from "@polkadot/types/interfaces/xcmPaymentApi";
-import type { XcmVersionedAssetId, XcmVersionedXcm } from "@polkadot/types/lookup";
+import type { Error } from "@polkadot/types/interfaces/xcmRuntimeApi";
+import type { XcmVersionedAssetId, XcmVersionedLocation, XcmVersionedXcm } from "@polkadot/types/lookup";
 import type { IExtrinsic, Observable } from "@polkadot/types/types";
 
 export type __AugmentedCall<ApiType extends ApiTypes> = AugmentedCall<ApiType>;
@@ -226,6 +227,18 @@ declare module "@polkadot/api-base/types/calls" {
                         | Uint8Array,
                     keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array
                 ) => Observable<Option<Null>>
+            >;
+            /** Generic call */
+            [key: string]: DecoratedCallBase<ApiType>;
+        };
+        /** 0x9ffb505aa738d69c/1 */
+        locationToAccountApi: {
+            /** Converts `Location` to `AccountId` */
+            convertLocation: AugmentedCall<
+                ApiType,
+                (
+                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                ) => Observable<Result<AccountId, Error>>
             >;
             /** Generic call */
             [key: string]: DecoratedCallBase<ApiType>;
