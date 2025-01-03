@@ -83,7 +83,7 @@ fn test_reward_to_invulnerable() {
             let balance_before = System::account(account.clone()).data.free;
 
             // We need to set the AuthorNoting's inherent for it to also run
-            // InflationRewards::on_container_author_noted and reward the collator.
+            // InflationRewards::on_container_authors_noted and reward the collator.
             set_author_noting_inherent_data(sproof);
 
             assert_eq!(

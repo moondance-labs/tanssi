@@ -6,7 +6,7 @@ import { jumpSessions } from "util/block";
 import { paraIdTank } from "util/payment";
 
 describeSuite({
-    id: "CPT0601",
+    id: "CPT0602",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -51,7 +51,7 @@ describeSuite({
                         ).toBe(startingCredits);
                         expect(
                             collators.toJSON().containerChains[paraId.toString()].length,
-                            `Container chain ${paraId} has 0 collators`
+                            `Container chain ${paraId} has more than 0 collators`
                         ).toBe(0);
                     }
                 }

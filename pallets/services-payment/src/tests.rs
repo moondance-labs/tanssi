@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use tp_traits::AuthorNotingInfo;
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
@@ -239,7 +240,11 @@ fn credits_should_be_substracted_from_tank_if_no_free_credits() {
                 1000u128
             );
 
-            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+            PaymentServices::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1,
+                block_number: 1,
+                para_id: 1.into(),
+            }]);
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -266,7 +271,11 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
                 100u128
             );
 
-            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+            PaymentServices::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1,
+                block_number: 1,
+                para_id: 1.into(),
+            }]);
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -303,7 +312,11 @@ fn not_having_enough_tokens_in_tank_should_not_error() {
                 1u128
             );
 
-            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+            PaymentServices::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1,
+                block_number: 1,
+                para_id: 1.into(),
+            }]);
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -456,7 +469,11 @@ fn tip_should_be_charged_on_collators_assignment() {
                 false
             ));
 
-            PaymentServices::on_container_author_noted(&1, 1, para_id.into());
+            PaymentServices::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1,
+                block_number: 1,
+                para_id: para_id.into(),
+            }]);
 
             let (assignment_cost, _weight) =
                 <Test as crate::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(
