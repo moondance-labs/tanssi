@@ -155,9 +155,11 @@ pub mod pallet {
     pub type WhitelistedValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
-    /// Fixed validators set by root/governance. Have priority over the external validators.
     #[pallet::storage]
     pub type WhitelistedValidatorsBackup<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+    #[pallet::storage]
+    pub type WhitelistedValidatorsBackupPending<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
     /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
@@ -472,6 +474,7 @@ pub mod pallet {
                 });
                 new_index
             });
+            WhitelistedValidatorsBackup::<T>::put(WhitelistedValidatorsBackupPending::<T>::take());
             Self::deposit_event(Event::NewEra { era: active_era });
             T::OnEraStart::on_era_start(active_era, start_session);
         }
@@ -503,7 +506,7 @@ pub mod pallet {
                 Self::clear_era_information(old_era);
             }
 
-            WhitelistedValidatorsBackup::<T>::put(WhitelistedValidators::<T>::get());
+            WhitelistedValidatorsBackupPending::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
             Self::validators()

@@ -785,6 +785,7 @@ fn external_validators_rewards_merkle_proofs() {
                 root_origin(),
                 AccountId::from(BOB)
             ));
+
             assert_ok!(ExternalValidators::set_external_validators(vec![
                 AccountId::from(CHARLIE),
                 AccountId::from(DAVE)
@@ -821,8 +822,8 @@ fn external_validators_rewards_merkle_proofs() {
                 vec![]
             ));
 
-            // TODO: Need to wait 1 session more for validators to get points
-            run_to_session(sessions_per_era + 1);
+            run_to_session(sessions_per_era);
+            run_block();
             let validators = Session::validators();
 
             // Only external validators get selected
@@ -850,9 +851,6 @@ fn external_validators_rewards_merkle_proofs() {
                     .next()
                     .unwrap();
             assert!(era_rewards.total > 0);
-
-            //let xasd: Vec<_> = pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().collect();
-            //println!("{:?}", xasd);
 
             let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
                 AccountId::from(CHARLIE),
@@ -900,5 +898,151 @@ fn external_validators_rewards_merkle_proofs() {
 
             // Proof for a future era should also be invalid.
             assert!(dave_invalid_merkle_proof.is_none());
+        });
+}
+
+#[test]
+fn external_validators_whitelisted_never_rewarded() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // * Test starts with whitelisted validators: Alice, Bob
+            // * Remove Alice and Bob, add Charlie and Dave as external validators
+            // * Wait until next era change.
+            //   Before that, validators will be Alice and Bob, and they will never get rewards
+            //   because whitelisted validators don't get rewards.
+            //   After the era change, Alice and Bob also won't get rewards because they no longer
+            //   are validators. Charlie and Dave will start getting rewards.
+            // * This test ensures that Alice never gets any rewards because of edge cases during
+            //   era changes.
+
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            assert_ok!(ExternalValidators::skip_external_validators(
+                root_origin(),
+                false
+            ));
+            assert_eq!(
+                ExternalValidators::whitelisted_validators(),
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(ALICE)
+            ));
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(BOB)
+            ));
+
+            // Register CHARLIE and DAVE session keys
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                crate::SessionKeys {
+                    babe: charlie_keys.babe.clone(),
+                    grandpa: charlie_keys.grandpa.clone(),
+                    para_validator: charlie_keys.para_validator.clone(),
+                    para_assignment: charlie_keys.para_assignment.clone(),
+                    authority_discovery: charlie_keys.authority_discovery.clone(),
+                    beefy: charlie_keys.beefy.clone(),
+                    nimbus: charlie_keys.nimbus.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                crate::SessionKeys {
+                    babe: dave_keys.babe.clone(),
+                    grandpa: dave_keys.grandpa.clone(),
+                    para_validator: dave_keys.para_validator.clone(),
+                    para_assignment: dave_keys.para_assignment.clone(),
+                    authority_discovery: dave_keys.authority_discovery.clone(),
+                    beefy: dave_keys.beefy.clone(),
+                    nimbus: dave_keys.nimbus.clone(),
+                },
+                vec![]
+            ));
+
+            // Add Charlie as a whitelisted validator, and Dave as an external validator.
+            // Check that Dave is rewarded and Charlie is not.
+            assert_ok!(ExternalValidators::add_whitelisted(
+                root_origin(),
+                AccountId::from(CHARLIE)
+            ));
+            assert_ok!(ExternalValidators::set_external_validators(vec![
+                AccountId::from(DAVE)
+            ]));
+
+            // Reward validators in every session
+            for session in 1..(sessions_per_era + 1) {
+                run_to_block(session_to_block(session));
+                run_block();
+                let validators = Session::validators();
+
+                // Reward all validators
+                crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+                crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
+
+                if session <= 5 {
+                    assert_eq!(
+                        validators,
+                        vec![AccountId::from(ALICE), AccountId::from(BOB)]
+                    );
+
+                    let (_era_index, era_rewards) =
+                        pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter()
+                            .next()
+                            .unwrap();
+                    assert_eq!(era_rewards.total, 0);
+                } else {
+                    // session >= 6
+                    assert_eq!(
+                        validators,
+                        vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
+                    );
+
+                    let (_era_index, era_rewards) =
+                        pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter()
+                            .next()
+                            .unwrap();
+                    assert!(era_rewards.total > 0);
+
+                    let dave_merkle_proof =
+                        ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                            AccountId::from(DAVE),
+                            1u32,
+                        );
+                    let is_dave_merkle_proof_valid =
+                        ExternalValidatorsRewards::verify_rewards_merkle_proof(
+                            dave_merkle_proof.unwrap(),
+                        );
+
+                    assert!(is_dave_merkle_proof_valid);
+                }
+
+                // Alice never gets rewards, for any era
+                let alice_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                    AccountId::from(ALICE),
+                    0u32,
+                );
+                assert!(alice_merkle_proof.is_none());
+                let alice_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
+                    AccountId::from(ALICE),
+                    1u32,
+                );
+                assert!(alice_merkle_proof.is_none());
+            }
         });
 }
