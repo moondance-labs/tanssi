@@ -19,6 +19,7 @@ describeSuite({
             id: "E01",
             title: "para candidates should trigger reward info",
             test: async function () {
+                // TODO: here instead of alice we need to register a new external validator
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
                 await context.createBlock();

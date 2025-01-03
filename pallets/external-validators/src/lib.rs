@@ -21,6 +21,7 @@
 //! ## Terminology
 //!
 //! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
+//!      Are not rewarded.
 //! - ExternalValidators: Validators set using storage proofs from another blockchain. Can be disabled by setting
 //!     `SkipExternalValidators` to true.
 //!
@@ -154,6 +155,13 @@ pub mod pallet {
     pub type WhitelistedValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
+    #[pallet::storage]
+    pub type WhitelistedValidatorsBackup<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+    #[pallet::storage]
+    pub type WhitelistedValidatorsBackupPending<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+
     /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
     #[pallet::storage]
     pub type ExternalValidators<T: Config> =
@@ -209,8 +217,11 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
-            <WhitelistedValidators<T>>::put(bounded_validators);
+            <WhitelistedValidators<T>>::put(&bounded_validators);
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
+            // TODO: this doesn't seem to fix any tests, is it needed or not?
+            <WhitelistedValidatorsBackup<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsBackupPending<T>>::put(&bounded_validators);
         }
     }
 
@@ -466,6 +477,7 @@ pub mod pallet {
                 });
                 new_index
             });
+            WhitelistedValidatorsBackup::<T>::put(WhitelistedValidatorsBackupPending::<T>::take());
             Self::deposit_event(Event::NewEra { era: active_era });
             T::OnEraStart::on_era_start(active_era, start_session);
         }
@@ -496,6 +508,8 @@ pub mod pallet {
             if let Some(old_era) = new_planned_era.checked_sub(T::HistoryDepth::get() + 1) {
                 Self::clear_era_information(old_era);
             }
+
+            WhitelistedValidatorsBackupPending::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
             Self::validators()
