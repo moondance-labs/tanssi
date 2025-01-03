@@ -181,8 +181,6 @@ pub mod pallet {
                                         .unwrap_or(0);
                                     // We only reward author if the block increases
                                     // If there is no previous block, we should reward the author of the first block
-                                    // TODO: this fixes the test
-                                    //if maybe_old_block_info.is_none || block_info.block_number > old_block_number {
                                     if block_info.block_number > old_block_number {
                                         let bi = block_info.clone();
                                         let info = AuthorNotingInfo {
