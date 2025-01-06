@@ -2057,6 +2057,7 @@ where
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn prepare_chain_registration(id: ParaId, who: AccountId) {
+        use frame_support::assert_ok;
         paras_registrar::NextFreeParaId::<Runtime>::put(id);
         assert_eq!(paras_registrar::NextFreeParaId::<Runtime>::get(), id);
         assert_ok!(Registrar::reserve(RuntimeOrigin::signed(who.into())));
