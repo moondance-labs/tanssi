@@ -348,8 +348,6 @@ mod benchmarks {
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
 
-        T::BenchmarkHelper::reserve_para_id(para_id);
-
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 
         #[extrinsic_call]
@@ -386,8 +384,6 @@ mod benchmarks {
 
         Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
             .expect("to create profile");
-
-        T::BenchmarkHelper::reserve_para_id(para_id);
 
         let origin = T::AssignmentOrigin::try_successful_origin(&para_id).unwrap();
 

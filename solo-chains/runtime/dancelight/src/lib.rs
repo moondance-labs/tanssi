@@ -20,6 +20,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+use frame_support::assert_ok;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
@@ -1317,8 +1318,6 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-#[cfg(feature = "runtime-benchmarks")]
-use pallet_data_preservers::ArgumentFactory;
 use pallet_pooled_staking::traits::{IsCandidateEligible, Timer};
 use pallet_staking::SessionInterface;
 
@@ -1620,49 +1619,6 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignme
     }
 }
 
-pub struct DataPreserversBenchmarkHelper<T>(PhantomData<T>);
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<T> ArgumentFactory<T::AccountId> for DataPreserversBenchmarkHelper<T>
-where
-    T: pallet_registrar::Config + pallet_balances::Config + paras_registrar::Config,
-{
-    fn reserve_para_id(para_id: ParaId) {
-        use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Mutate};
-
-        let account: T::AccountId = frame_benchmarking::account("para_manager", 0, 1);
-        assert_ok!(<T as pallet_registrar::Config>::Currency::mint_into(
-            &account,
-            <T as pallet_registrar::Config>::Currency::minimum_balance() * 10_000_000u32.into()
-                + T::DepositAmount::get(),
-        ));
-
-        paras_registrar::NextFreeParaId::<T>::put(para_id);
-        assert_eq!(paras_registrar::NextFreeParaId::<T>::get(), para_id);
-        assert_ok!(paras_registrar::Pallet::<T>::reserve(
-            RawOrigin::Signed(account.clone()).into()
-        ));
-
-        let mut storage = vec![];
-        storage.push((b":code".to_vec(), vec![1; 10]).into());
-        let genesis_data = ContainerChainGenesisData {
-            storage,
-            name: Default::default(),
-            id: Default::default(),
-            fork_id: Default::default(),
-            extensions: Default::default(),
-            properties: Default::default(),
-        };
-
-        assert_ok!(pallet_registrar::Pallet::<T>::register(
-            RawOrigin::Signed(account).into(),
-            para_id,
-            genesis_data,
-            T::InnerRegistrar::bench_head_data()
-        ));
-    }
-}
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
@@ -1679,8 +1635,6 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
     type MaxNodeUrlLen = MaxNodeUrlLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = DataPreserversBenchmarkHelper<Runtime>;
 }
 
 parameter_types! {
@@ -2003,7 +1957,7 @@ impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
-    Runtime: pallet_registrar::Config,
+    Runtime: pallet_registrar::Config + paras_registrar::Config,
     sp_runtime::AccountId32: From<AccountId>,
 {
     fn register(
@@ -2082,6 +2036,12 @@ where
     #[cfg(feature = "runtime-benchmarks")]
     fn registrar_new_session(session: u32) {
         benchmark_helpers::run_to_session(session)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_chain_registration(id: ParaId, who: AccountId) {
+        paras_registrar::NextFreeParaId::<Runtime>::put(id);
+        assert_eq!(paras_registrar::NextFreeParaId::<Runtime>::get(), id);
+        assert_ok!(Registrar::reserve(RuntimeOrigin::signed(who.into())));
     }
 }
 

@@ -175,10 +175,6 @@ pub mod pallet {
         type AssignmentPayment: AssignmentPayment<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
-
-        /// Helper type for benchmarks.
-        #[cfg(feature = "runtime-benchmarks")]
-        type BenchmarkHelper: ArgumentFactory<Self::AccountId>;
     }
 
     #[pallet::event]

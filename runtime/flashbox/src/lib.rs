@@ -1013,9 +1013,6 @@ impl pallet_data_preservers::Config for Runtime {
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
     type MaxNodeUrlLen = MaxNodeUrlLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
-
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
 }
 
 impl pallet_author_noting::Config for Runtime {
