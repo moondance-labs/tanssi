@@ -1,20 +1,18 @@
 [workspace]
 members = [
+	"chains/container-chains/nodes/*",
+	"chains/container-chains/runtime-templates/*",
+	"chains/orchestrator-paras/node",
+	"chains/orchestrator-paras/runtime/*",
+	"chains/orchestrator-relays/client/*",
+	"chains/orchestrator-relays/node/*",
+	"chains/orchestrator-relays/runtime/dancelight",
+	"chains/orchestrator-relays/runtime/dancelight/constants",
 	"client/*",
-	"container-chains/nodes/*",
-	"container-chains/runtime-templates/*",
-	"node",
 	"pallets/*",
 	"pallets/collator-assignment/runtime-api",
 	"pallets/registrar/runtime-api",
 	"primitives/*",
-	"runtime/dancebox",
-	"runtime/flashbox",
-	"runtime/relay-encoder",
-	"solo-chains/client/*",
-	"solo-chains/node/*",
-	"solo-chains/runtime/dancelight",
-	"solo-chains/runtime/dancelight/constants",
 ]
 resolver = "2"
 
@@ -78,27 +76,30 @@ pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/runtime-api
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
 pallet-xcm-core-buyer-runtime-api = { path = "pallets/xcm-core-buyer/runtime-api", default-features = false }
 
-container-chain-template-frontier-runtime = { path = "container-chains/runtime-templates/frontier", default-features = false }
-container-chain-template-simple-runtime = { path = "container-chains/runtime-templates/simple", default-features = false }
+container-chain-template-frontier-runtime = { path = "chains/container-chains/runtime-templates/frontier", default-features = false }
+container-chain-template-simple-runtime = { path = "chains/container-chains/runtime-templates/simple", default-features = false }
 
-dancebox-runtime = { path = "runtime/dancebox", default-features = false }
-flashbox-runtime = { path = "runtime/flashbox", default-features = false }
+dancebox-runtime = { path = "chains/orchestrator-paras/runtime/dancebox", default-features = false }
+flashbox-runtime = { path = "chains/orchestrator-paras/runtime/flashbox", default-features = false }
 
-dancelight-runtime = { path = "solo-chains/runtime/dancelight", default-features = false }
-dancelight-runtime-constants = { path = "solo-chains/runtime/dancelight/constants", default-features = false }
-ethabi = { package = "ethabi-decode", version = "1.0.0", default-features = false }
+tanssi-relay-encoder = { path = "chains/orchestrator-paras/runtime/relay-encoder", default-features = false }
+tanssi-runtime-common = { path = "chains/orchestrator-paras/runtime/common", default-features = false }
+
+dancelight-runtime = { path = "chains/orchestrator-relays/runtime/dancelight", default-features = false }
+dancelight-runtime-constants = { path = "chains/orchestrator-relays/runtime/dancelight/constants", default-features = false }
+
+tanssi-relay-cli = { path = "chains/orchestrator-relays/client/cli" }
+tanssi-relay-service = { path = "chains/orchestrator-relays/node/tanssi-relay-service" }
+
 manual-randomness-rpc = { path = "client/manual-randomness" }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
-tanssi-relay-cli = { path = "solo-chains/client/cli" }
-tanssi-relay-encoder = { path = "runtime/relay-encoder", default-features = false }
-tanssi-relay-service = { path = "solo-chains/node/tanssi-relay-service" }
-tanssi-runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
+
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
@@ -341,6 +342,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 
 # General (wasm)
 bounded-collections = { version = "0.1.8", default-features = false }
+ethabi = { package = "ethabi-decode", version = "1.0.0", default-features = false }
 finality-grandpa = { version = "0.16.2", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
