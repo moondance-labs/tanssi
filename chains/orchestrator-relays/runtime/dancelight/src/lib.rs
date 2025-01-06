@@ -842,6 +842,9 @@ pub enum ProxyType {
     Auction,
     OnDemandOrdering,
     SudoRegistrar,
+    SudoValidatorManagement,
+    SessionKeyManagement,
+    Staking,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -915,6 +918,22 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
+            ProxyType::SudoValidatorManagement => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::ExternalValidators(..)
+                            | &RuntimeCall::ExternalValidatorSlashes(..)
+                    )
+                }
+                _ => false,
+            },
+            ProxyType::SessionKeyManagement => {
+                matches!(c, RuntimeCall::Session(..))
+            }
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
