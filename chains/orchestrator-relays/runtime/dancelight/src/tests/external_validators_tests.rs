@@ -995,7 +995,8 @@ fn external_validators_whitelisted_never_rewarded() {
                 crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
                 crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
 
-                if session < sessions_per_era { // session < 6
+                if session < sessions_per_era {
+                    // session < 6
                     assert_eq!(
                         validators,
                         vec![AccountId::from(ALICE), AccountId::from(BOB)]

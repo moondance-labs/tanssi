@@ -339,10 +339,23 @@ pub mod pallet {
             Self::set_force_era(mode);
             Ok(())
         }
+
+        /// Manually set external validators. Should only be needed for tests, validators are set
+        /// automatically by the bridge.
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::set_external_validators())]
+        pub fn set_external_validators(
+            origin: OriginFor<T>,
+            validators: Vec<T::ValidatorId>,
+        ) -> DispatchResult {
+            T::UpdateOrigin::ensure_origin(origin)?;
+
+            Self::set_external_validators_inner(validators)
+        }
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn set_external_validators(validators: Vec<T::ValidatorId>) -> DispatchResult {
+        pub fn set_external_validators_inner(validators: Vec<T::ValidatorId>) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
             <ExternalValidators<T>>::put(validators);
