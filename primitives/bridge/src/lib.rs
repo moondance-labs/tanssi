@@ -80,6 +80,8 @@ pub enum Command {
         rewards_merkle_root: H256,
     },
     ReportSlashes {
+        // block timestamp
+        timestamp: u64,
         // index of the era we are sending info of
         era_index: u32,
         // vec of tuples: (validatorId, slash_fraction)
@@ -124,7 +126,12 @@ impl Command {
                     rewards_mr_token,
                 ])])
             }
-            Command::ReportSlashes { era_index, slashes } => {
+            Command::ReportSlashes {
+                timestamp,
+                era_index,
+                slashes,
+            } => {
+                let timestamp_token = Token::Uint(U256::from(*timestamp));
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let mut slashes_tokens_vec: Vec<Token> = vec![];
 
@@ -139,7 +146,11 @@ impl Command {
                 }
 
                 let slashes_tokens_tuple = Token::Tuple(slashes_tokens_vec);
-                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_tokens_tuple])])
+                ethabi::encode(&[Token::Tuple(vec![
+                    timestamp_token,
+                    era_index_token,
+                    slashes_tokens_tuple,
+                ])])
             }
         }
     }

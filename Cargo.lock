@@ -9590,6 +9590,7 @@ dependencies = [
  "log",
  "pallet-session",
  "pallet-staking",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "snowbridge-core",

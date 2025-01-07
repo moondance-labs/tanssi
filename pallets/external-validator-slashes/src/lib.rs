@@ -135,6 +135,9 @@ pub mod pallet {
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 
+        /// Provider to retrieve the current block timestamp.
+        type TimestampProvider: Get<u64>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -537,6 +540,7 @@ impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         }
 
         let command = Command::ReportSlashes {
+            timestamp: T::TimestampProvider::get(),
             era_index,
             slashes: slashes_to_send,
         };

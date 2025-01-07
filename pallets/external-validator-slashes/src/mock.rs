@@ -43,8 +43,16 @@ frame_support::construct_runtime!(
         Session: pallet_session,
         Historical: pallet_session::historical,
         ExternalValidatorSlashes: external_validator_slashes,
+        Timestamp: pallet_timestamp,
     }
 );
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = ConstU64<5>;
+    type WeightInfo = ();
+}
 
 impl system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
@@ -214,6 +222,13 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
     }
 }
 
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
+    }
+}
+
 parameter_types! {
     pub const BondingDuration: u32 = 5u32;
 }
@@ -230,6 +245,7 @@ impl external_validator_slashes::Config for Test {
     type InvulnerablesProvider = MockInvulnerableProvider;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
+    type TimestampProvider = TimestampProvider;
     type WeightInfo = ();
 }
 
