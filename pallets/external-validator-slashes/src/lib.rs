@@ -494,98 +494,79 @@ impl<T: Config> OnEraStart for Pallet<T> {
     }
 }
 
-impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
-    fn on_era_end(era_index: EraIndex) {
-        // Send up to SLASH_PAGE_SIZE slashes per era
-        // TODO: should this be a runtime const?
-        const SLASH_PAGE_SIZE: usize = 20;
-
-        let era_slashes = Slashes::<T>::get(era_index);
-        let unreported_slashes = UnreportedSlashes::<T>::get();
-
-        let free_slashing_space = SLASH_PAGE_SIZE.saturating_sub(unreported_slashes.len());
-
-        let mut slashes_to_send: Vec<_> = vec![];
-
-        for unreported_slash in unreported_slashes.iter() {
-            // TODO: check if validator.clone().encode() matches with the actual account bytes.
-            slashes_to_send.push((
-                unreported_slash.validator.clone().encode(),
-                unreported_slash.percentage.deconstruct(),
-            ));
-        }
-
-        // TODO: optimize code logic
-        if era_slashes.len() > free_slashing_space {
-            let limit = era_slashes.len().saturating_div(free_slashing_space);
-            let (slashes_to_include_send, slashes_to_unreport) = era_slashes.split_at(limit);
-
-            for slash_to_include in slashes_to_include_send.iter() {
-                slashes_to_send.push((
-                    slash_to_include.validator.clone().encode(),
-                    slash_to_include.percentage.deconstruct(),
-                ));
-            }
-
-            UnreportedSlashes::<T>::mutate(|unreported_slashes| {
-                unreported_slashes.append(&mut slashes_to_unreport.to_vec());
-            });
-        } else {
-            for slash in era_slashes.iter() {
-                slashes_to_send.push((
-                    slash.validator.clone().encode(),
-                    slash.percentage.deconstruct(),
-                ));
-            }
-        }
-
-        let command = Command::ReportSlashes {
-            timestamp: T::TimestampProvider::get(),
-            era_index,
-            slashes: slashes_to_send,
-        };
-
-        let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
-
-        let outbound_message = Message {
-            id: None,
-            channel_id,
-            command,
-        };
-
-        // Validate and deliver the message
-        match T::ValidateMessage::validate(&outbound_message) {
-            Ok((ticket, _fee)) => {
-                if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                    log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
-                }
-            }
-            Err(err) => {
-                log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
-            }
-        }
-
-        // TODO: bench
-        /*  frame_system::Pallet::<T>::register_extra_weight_unchecked(
-            T::WeightInfo::on_era_end(),
-            DispatchClass::Mandatory,
-        ); */
-    }
-}
-
 impl<T: Config> Pallet<T> {
     /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
+    /// In this case, we also send (or schedule for sending) slashes to ethereum
     fn confirm_unconfirmed_slashes(active_era: EraIndex) {
+        const SLASH_PAGE_SIZE: usize = 20;
+        
         Slashes::<T>::mutate(&active_era, |era_slashes| {
-            log!(
-                log::Level::Debug,
-                "found {} slashes scheduled to be confirmed in era {:?}",
-                era_slashes.len(),
-                active_era,
-            );
-            for slash in era_slashes {
-                slash.confirmed = true;
+
+            let unreported_slashes = UnreportedSlashes::<T>::get();
+
+            let free_slashing_space = SLASH_PAGE_SIZE.saturating_sub(unreported_slashes.len());
+
+            let mut slashes_to_send: Vec<_> = vec![];
+
+            for unreported_slash in unreported_slashes.iter() {
+                // TODO: check if validator.clone().encode() matches with the actual account bytes.
+                slashes_to_send.push((
+                    unreported_slash.validator.clone().encode(),
+                    unreported_slash.percentage.deconstruct(),
+                ));
             }
+
+            // TODO: optimize code logic
+            if era_slashes.len() > free_slashing_space {
+                let limit = era_slashes.len().saturating_div(free_slashing_space);
+                let (slashes_to_include_send, slashes_to_unreport) = era_slashes.split_at(limit);
+
+                for slash_to_include in slashes_to_include_send.iter() {
+                    slashes_to_send.push((
+                        slash_to_include.validator.clone().encode(),
+                        slash_to_include.percentage.deconstruct(),
+                    ));
+                }
+
+                UnreportedSlashes::<T>::mutate(|unreported_slashes| {
+                    unreported_slashes.append(&mut slashes_to_unreport.to_vec());
+                });
+            } else {
+                for slash in era_slashes {
+                    slash.confirmed = true;
+                    slashes_to_send.push((
+                        slash.validator.clone().encode(),
+                        slash.percentage.deconstruct(),
+                    ));
+                }
+            }
+
+            let command = Command::ReportSlashes {
+                // TODO: change this
+                timestamp: T::TimestampProvider::get(),
+                era_index: active_era,
+                slashes: slashes_to_send,
+            };
+
+            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+            let outbound_message = Message {
+                id: None,
+                channel_id,
+                command,
+            };
+
+            // Validate and deliver the message
+            match T::ValidateMessage::validate(&outbound_message) {
+                Ok((ticket, _fee)) => {
+                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                        log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
+                    }
+                }
+                Err(err) => {
+                    log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
+                }
+            };
         });
     }
 }
