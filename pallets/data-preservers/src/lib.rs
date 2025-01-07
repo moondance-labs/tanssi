@@ -33,9 +33,6 @@ mod tests;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
 
-#[cfg(feature = "runtime-benchmarks")]
-pub use benchmarks::ArgumentFactory;
-
 pub mod weights;
 pub use weights::WeightInfo;
 
