@@ -36,17 +36,6 @@ use {
     tp_traits::{ParaId, StorageDeposit},
 };
 
-/// Trait describing factory function for para_id.
-pub trait ArgumentFactory<AcocuntId> {
-    /// Factory function reserving parachain
-    fn reserve_para_id(para_id: ParaId);
-}
-
-/// Dummy implementation for when the factory is not needed.
-impl<AccountId> ArgumentFactory<AccountId> for () {
-    fn reserve_para_id(_para_id: ParaId) {}
-}
-
 macro_rules! bset {
     ( $($value:expr),* $(,)? ) => {
         {
