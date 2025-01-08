@@ -512,9 +512,6 @@ impl<T: Config> OnEraStart for Pallet<T> {
         });
 
         Self::add_era_slashes_to_queue(era_index);
-
-        // we can process one queue page immediatly
-        Self::process_slashes_queue_page();
     }
 }
 
