@@ -18,7 +18,7 @@ use {
     crate as external_validator_slashes,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU32, ConstU64, Get},
+        traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
     },
     frame_system as system,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},

@@ -272,7 +272,6 @@ fn test_on_offence_defer_period_0() {
             }]
         );
         start_era(2, 2);
-        // One on-initialize should be needed to dispatch messages
         roll_one_block();
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
@@ -300,16 +299,16 @@ fn test_on_offence_defer_period_0_messages_get_queued() {
 
         assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
         start_era(2, 2);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 25);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
 
         // this triggers on_initialize
         roll_one_block();
         assert_eq!(sent_ethereum_message_nonce(), 1);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 5);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 5);
 
         roll_one_block();
         assert_eq!(sent_ethereum_message_nonce(), 2);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 0);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
     });
 }
 
@@ -333,12 +332,12 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
         }
         assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
         start_era(2, 2);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 25);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
 
         // this triggers on_initialize
         roll_one_block();
         assert_eq!(sent_ethereum_message_nonce(), 1);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 5);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 5);
 
         // We have 5 non-dispatched, which should accumulate
         // We shoulld have 30 after we initialie era 3
@@ -356,16 +355,16 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
         }
         
         start_era(3, 3);
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 30);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 30);
 
         // this triggers on_initialize
         roll_one_block();
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 10);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 10);
         assert_eq!(sent_ethereum_message_nonce(), 2);
 
         // this triggers on_initialize
         roll_one_block();
-        assert_eq!(UnreportedSlashes::<Test>::get().len(), 0);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
         assert_eq!(sent_ethereum_message_nonce(), 3);
 
     });
