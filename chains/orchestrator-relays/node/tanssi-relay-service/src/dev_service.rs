@@ -43,6 +43,7 @@ use {
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,
+    polkadot_parachain_primitives::primitives::UpwardMessages,
     polkadot_primitives::{
         runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptor,
         CollatorPair, CommittedCandidateReceipt, CompactStatement, EncodeAs,
@@ -107,8 +108,8 @@ struct DevDeps<C, P> {
     pub pool: Arc<P>,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
-    /// Channels for dev rpcs
-    pub dev_rpc_data: Option<flume::Sender<Vec<u8>>>,
+    /// Dev rpcs
+    pub dev_rpc: Option<DevRpc>,
 }
 
 fn create_dev_rpc_extension<C, P>(
@@ -116,7 +117,7 @@ fn create_dev_rpc_extension<C, P>(
         client,
         pool,
         command_sink: maybe_command_sink,
-        dev_rpc_data: maybe_dev_rpc_data,
+        dev_rpc: maybe_dev_rpc,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -145,13 +146,8 @@ where
         io.merge(ManualSeal::new(command_sink).into_rpc())?;
     }
 
-    if let Some(mock_para_inherent_channel) = maybe_dev_rpc_data {
-        io.merge(
-            DevRpc {
-                mock_para_inherent_channel,
-            }
-            .into_rpc(),
-        )?;
+    if let Some(dev_rpc_data) = maybe_dev_rpc {
+        io.merge(dev_rpc_data.into_rpc())?;
     }
 
     Ok(io)
@@ -226,17 +222,25 @@ struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRunti
     pub client: Arc<C>,
     pub parent: Hash,
     pub keystore: KeystorePtr,
+    pub upward_messages_receiver: flume::Receiver<Vec<u8>>,
 }
 
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
 where
     C::Api: ParachainHost<Block>,
+    C: AuxStore,
 {
-    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
+    pub fn new(
+        client: Arc<C>,
+        parent: Hash,
+        keystore: KeystorePtr,
+        upward_messages_receiver: flume::Receiver<Vec<u8>>,
+    ) -> Self {
         MockParachainsInherentDataProvider {
             client,
             parent,
             keystore,
+            upward_messages_receiver,
         }
     }
 
@@ -244,6 +248,7 @@ where
         client: Arc<C>,
         parent: Hash,
         keystore: KeystorePtr,
+        upward_messages_receiver: flume::Receiver<Vec<u8>>,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -388,6 +393,12 @@ where
                                 &validation_code_hash,
                             );
                             let collator_signature = collator_pair.sign(&payload);
+
+                            let upward_messages = UpwardMessages::try_from(
+                                upward_messages_receiver.drain().collect::<Vec<_>>(),
+                            )
+                            .expect("create upward messages from raw messages");
+
                             // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceipt::<H256> {
                                 descriptor: CandidateDescriptor::<H256> {
@@ -402,7 +413,7 @@ where
                                     validation_code_hash,
                                 },
                                 commitments: CandidateCommitments::<u32> {
-                                    upward_messages: Default::default(),
+                                    upward_messages,
                                     horizontal_messages: Default::default(),
                                     new_validation_code: None,
                                     head_data: parachain_mocked_header.clone().encode().into(),
@@ -481,6 +492,7 @@ where
                         self.client.clone(),
                         self.parent,
                         self.keystore.clone(),
+                        self.upward_messages_receiver.clone(),
                     )
                     .await
                     .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
@@ -594,6 +606,8 @@ fn new_full<
     let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
         flume::bounded::<Vec<u8>>(100);
 
+    let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
+
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         service::build_network(service::BuildNetworkParams {
             config: &config,
@@ -705,11 +719,14 @@ fn new_full<
                     let client_clone = client_clone.clone();
                     let keystore = keystore_clone.clone();
                     let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
+                    let upward_mock_receiver = upward_mock_receiver.clone();
                     async move {
 
                         let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
                         // here we only take the last one
                         let para_inherent_decider_messages: Vec<Vec<u8>> = downward_mock_para_inherent_receiver.drain().collect();
+
+                        let upward_messages_receiver = upward_mock_receiver.clone();
 
                         // If there is a value to be updated, we update it
                         if let Some(value) = para_inherent_decider_messages.last() {
@@ -719,13 +736,13 @@ fn new_full<
                                 &[],
                             )
                             .expect("Should be able to write to aux storage; qed");
-
                         }
 
                         let parachain = MockParachainsInherentDataProvider::new(
                             client_clone.clone(),
                             parent,
-                            keystore
+                            keystore,
+                            upward_messages_receiver,
                         );
 
                         let timestamp = get_next_timestamp(client_clone, slot_duration);
@@ -744,9 +761,11 @@ fn new_full<
         );
     }
 
-    // We dont need the flume receiver if we are not a validator
-    let dev_rpc_data = if role.clone().is_authority() {
-        Some(downward_mock_para_inherent_sender)
+    let dev_rpc = if role.clone().is_authority() {
+        Some(DevRpc {
+            mock_para_inherent_channel: downward_mock_para_inherent_sender,
+            upward_message_channel: upward_mock_sender,
+        })
     } else {
         None
     };
@@ -761,7 +780,7 @@ fn new_full<
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 command_sink: command_sink.clone(),
-                dev_rpc_data: dev_rpc_data.clone(),
+                dev_rpc: dev_rpc.clone(),
             };
 
             create_dev_rpc_extension(deps).map_err(Into::into)

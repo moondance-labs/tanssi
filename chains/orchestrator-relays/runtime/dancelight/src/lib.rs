@@ -519,9 +519,17 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
+pub struct RewardPoints;
+
+impl pallet_authorship::EventHandler<AccountId, BlockNumberFor<Runtime>> for RewardPoints {
+    fn note_author(author: AccountId) {
+        ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+    }
+}
+
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type EventHandler = ();
+    type EventHandler = RewardPoints;
 }
 
 impl_opaque_keys! {
@@ -833,6 +841,9 @@ pub enum ProxyType {
     Auction,
     OnDemandOrdering,
     SudoRegistrar,
+    SudoValidatorManagement,
+    SessionKeyManagement,
+    Staking,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -906,6 +917,22 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
+            ProxyType::SudoValidatorManagement => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::ExternalValidators(..)
+                            | &RuntimeCall::ExternalValidatorSlashes(..)
+                    )
+                }
+                _ => false,
+            },
+            ProxyType::SessionKeyManagement => {
+                matches!(c, RuntimeCall::Session(..))
+            }
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -2256,6 +2283,18 @@ sp_api::impl_runtime_apis! {
 
         fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
             XcmPallet::query_delivery_fees(destination, message)
+        }
+    }
+
+    impl xcm_runtime_apis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
+        fn convert_location(location: VersionedLocation) -> Result<
+            AccountId,
+            xcm_runtime_apis::conversions::Error
+        > {
+            xcm_runtime_apis::conversions::LocationToAccountHelper::<
+                AccountId,
+                xcm_config::LocationConverter,
+            >::convert_location(location)
         }
     }
 
