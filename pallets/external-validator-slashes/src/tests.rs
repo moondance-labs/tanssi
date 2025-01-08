@@ -222,8 +222,9 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
             1u64,
             Perbill::from_percent(75)
         ));
+        let era_to_slash = 1;
         assert_eq!(
-            Slashes::<Test>::get(0),
+            Slashes::<Test>::get(era_to_slash),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),

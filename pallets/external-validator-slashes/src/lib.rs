@@ -276,7 +276,7 @@ pub mod pallet {
 
             // If we defer duration is 0, we immediately apply and confirm
             let era_to_consider = if slash_defer_duration == 0 {
-                era
+                era.saturating_add(One::one())
             } else {
                 era.saturating_add(slash_defer_duration)
                     .saturating_add(One::one())
