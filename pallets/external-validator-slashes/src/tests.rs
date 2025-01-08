@@ -272,6 +272,8 @@ fn test_on_offence_defer_period_0() {
             }]
         );
         start_era(2, 2);
+        // One on-initialize should be needed to dispatch messages
+        roll_one_block();
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
     });
@@ -348,7 +350,8 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
                     reporters: vec![],
                 }],
                 &[Perbill::from_percent(75)],
-                0,
+                // Inject for slashing session 1
+                2,
             );
         }
         
