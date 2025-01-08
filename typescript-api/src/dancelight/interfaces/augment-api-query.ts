@@ -809,6 +809,10 @@ declare module "@polkadot/api-base/types/storage" {
             /** Fixed validators set by root/governance. Have priority over the external validators. */
             whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            whitelistedValidatorsBackup: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            whitelistedValidatorsBackupPending: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

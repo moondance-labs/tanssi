@@ -1610,6 +1610,14 @@ declare module "@polkadot/api-base/types/submittable" {
                 [AccountId32]
             >;
             /**
+             * Manually set external validators. Should only be needed for tests, validators are set automatically by the
+             * bridge.
+             */
+            setExternalValidators: AugmentedSubmittable<
+                (validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>]
+            >;
+            /**
              * Allow to ignore external validators and use only whitelisted ones.
              *
              * The origin for this call must be the `UpdateOrigin`.

@@ -1336,6 +1336,9 @@ export default {
             force_era: {
                 mode: "PalletExternalValidatorsForcing",
             },
+            set_external_validators: {
+                validators: "Vec<AccountId32>",
+            },
         },
     },
     /** Lookup140: pallet_external_validator_slashes::pallet::Call<T> */
