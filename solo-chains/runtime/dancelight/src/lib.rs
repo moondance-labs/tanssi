@@ -1385,6 +1385,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type TimestampProvider = TimestampProvider;
+    type QueuedSlashesProcessedPerBlock = ConstU32<20>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
