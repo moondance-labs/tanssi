@@ -267,10 +267,10 @@ fn test_on_offence_defer_period_0() {
             0,
         );
 
-        let slash_era = 0;
-
+        // The era in which it is going to be slashed should be the active era +1
+        let era_to_slash = 2;
         assert_eq!(
-            Slashes::<Test>::get(slash_era),
+            Slashes::<Test>::get(era_to_slash),
             vec![Slash {
                 validator: 3,
                 percentage: Perbill::from_percent(75),

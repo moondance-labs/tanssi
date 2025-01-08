@@ -431,9 +431,13 @@ where
                 );
 
                 // Cover slash defer duration equal to 0
+                // Slashes are applied at the end of the current era
                 if slash_defer_duration == 0 {
-                    Slashes::<T>::mutate(slash_era, move |for_now| for_now.push(slash));
+                    Slashes::<T>::mutate(active_era.saturating_add(One::one()), move |for_now| {
+                        for_now.push(slash)
+                    });
                 } else {
+                    // Else, slashes are applied after slash_defer_period since the slashed era
                     Slashes::<T>::mutate(
                         slash_era
                             .saturating_add(slash_defer_duration)
@@ -499,9 +503,8 @@ impl<T: Config> Pallet<T> {
     /// In this case, we also send (or schedule for sending) slashes to ethereum
     fn confirm_unconfirmed_slashes(active_era: EraIndex) {
         const SLASH_PAGE_SIZE: usize = 20;
-        
-        Slashes::<T>::mutate(&active_era, |era_slashes| {
 
+        Slashes::<T>::mutate(&active_era, |era_slashes| {
             let unreported_slashes = UnreportedSlashes::<T>::get();
 
             let free_slashing_space = SLASH_PAGE_SIZE.saturating_sub(unreported_slashes.len());
