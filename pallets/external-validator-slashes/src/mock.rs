@@ -124,6 +124,8 @@ pub struct MockEraIndexProvider;
 thread_local! {
     pub static ERA_INDEX: RefCell<EraIndex> = const { RefCell::new(0) };
     pub static DEFER_PERIOD: RefCell<EraIndex> = const { RefCell::new(2) };
+    pub static SENT_ETHEREUM_MESSAGE_NONCE: RefCell<u64> = const { RefCell::new(0) };
+
 }
 
 impl MockEraIndexProvider {
@@ -205,11 +207,18 @@ impl DeferPeriodGetter {
     }
 }
 
+pub fn sent_ethereum_message_nonce() -> u64 {
+    SENT_ETHEREUM_MESSAGE_NONCE.with(|q| (*q.borrow()).clone())
+}
+
 pub struct MockOkOutboundQueue;
 impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
     type Ticket = ();
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        // Every time we hit deliver, increment the nonce
+        SENT_ETHEREUM_MESSAGE_NONCE.with(|r| *r.borrow_mut() = r.take() + 1);
+
         Ok(H256::zero())
     }
 }

@@ -16,7 +16,9 @@
 
 use {
     super::*,
-    crate::mock::{new_test_ext, ExternalValidatorSlashes, RuntimeOrigin, Test},
+    crate::mock::{
+        new_test_ext, sent_ethereum_message_nonce, ExternalValidatorSlashes, RuntimeOrigin, Test,
+    },
     frame_support::{assert_noop, assert_ok},
 };
 
@@ -279,6 +281,9 @@ fn test_on_offence_defer_period_0() {
                 slash_id: 0
             }]
         );
+        start_era(2, 2);
+
+        assert_eq!(sent_ethereum_message_nonce(), 1);
     });
 }
 

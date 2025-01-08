@@ -544,32 +544,34 @@ impl<T: Config> Pallet<T> {
                 }
             }
 
-            let command = Command::ReportSlashes {
-                // TODO: change this
-                timestamp: T::TimestampProvider::get(),
-                era_index: active_era,
-                slashes: slashes_to_send,
-            };
+            if slashes_to_send.len() > 0 {
+                let command = Command::ReportSlashes {
+                    // TODO: change this
+                    timestamp: T::TimestampProvider::get(),
+                    era_index: active_era,
+                    slashes: slashes_to_send,
+                };
 
-            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+                let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-            let outbound_message = Message {
-                id: None,
-                channel_id,
-                command,
-            };
+                let outbound_message = Message {
+                    id: None,
+                    channel_id,
+                    command,
+                };
 
-            // Validate and deliver the message
-            match T::ValidateMessage::validate(&outbound_message) {
-                Ok((ticket, _fee)) => {
-                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                        log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
+                // Validate and deliver the message
+                match T::ValidateMessage::validate(&outbound_message) {
+                    Ok((ticket, _fee)) => {
+                        if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                            log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
+                        }
                     }
-                }
-                Err(err) => {
-                    log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
-                }
-            };
+                    Err(err) => {
+                        log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
+                    }
+                };
+            }
         });
     }
 }
