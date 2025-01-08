@@ -18,7 +18,7 @@ use {
     crate as external_validator_slashes,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64, Get, OnInitialize, OnFinalize},
+        traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
     },
     frame_system as system,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -255,6 +255,7 @@ impl external_validator_slashes::Config for Test {
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
     type TimestampProvider = TimestampProvider;
+    type QueuedSlashesProcessedPerBlock = ConstU32<20>;
     type WeightInfo = ();
 }
 
