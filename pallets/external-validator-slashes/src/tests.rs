@@ -17,9 +17,11 @@
 use {
     super::*,
     crate::mock::{
-        new_test_ext, sent_ethereum_message_nonce, ExternalValidatorSlashes, RuntimeOrigin, Test,
+        new_test_ext, sent_ethereum_message_nonce, DeferPeriodGetter, ExternalValidatorSlashes,
+        RuntimeOrigin, Test,
     },
     frame_support::{assert_noop, assert_ok},
+    mock::MockEraIndexProvider,
 };
 
 #[test]
@@ -33,7 +35,7 @@ fn root_can_inject_manual_offence() {
             Perbill::from_percent(75)
         ));
         assert_eq!(
-            Slashes::<Test>::get(3),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -95,7 +97,7 @@ fn root_can_cance_deferred_slash() {
             vec![0]
         ));
 
-        assert_eq!(Slashes::<Test>::get(3), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
     });
 }
 
@@ -135,7 +137,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         ));
 
         assert_eq!(
-            Slashes::<Test>::get(3),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -152,7 +154,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         // whenever we start the 6th era, we can remove everything from era 3
         Pallet::<Test>::on_era_start(9, 9);
 
-        assert_eq!(Slashes::<Test>::get(3), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
     });
 }
 
@@ -170,13 +172,8 @@ fn test_on_offence_injects_offences() {
             &[Perbill::from_percent(75)],
             0,
         );
-        // current era (1) + defer period + 1
-        let slash_era = 0
-            .saturating_add(crate::mock::DeferPeriodGetter::get())
-            .saturating_add(One::one());
-
         assert_eq!(
-            Slashes::<Test>::get(slash_era),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 3,
                 percentage: Perbill::from_percent(75),
@@ -202,12 +199,8 @@ fn test_on_offence_does_not_work_for_invulnerables() {
             &[Perbill::from_percent(75)],
             0,
         );
-        // current era (1) + defer period + 1
-        let slash_era = 1
-            .saturating_add(crate::mock::DeferPeriodGetter::get())
-            .saturating_add(One::one());
 
-        assert_eq!(Slashes::<Test>::get(slash_era), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)), vec![]);
     });
 }
 
@@ -222,9 +215,8 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
             1u64,
             Perbill::from_percent(75)
         ));
-        let era_to_slash = 1;
         assert_eq!(
-            Slashes::<Test>::get(era_to_slash),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -270,10 +262,8 @@ fn test_on_offence_defer_period_0() {
             0,
         );
 
-        // The era in which it is going to be slashed should be the active era +1
-        let era_to_slash = 2;
         assert_eq!(
-            Slashes::<Test>::get(era_to_slash),
+            Slashes::<Test>::get(get_slashing_era(1)),
             vec![Slash {
                 validator: 3,
                 percentage: Perbill::from_percent(75),
@@ -291,4 +281,14 @@ fn test_on_offence_defer_period_0() {
 fn start_era(era_index: EraIndex, session_index: SessionIndex) {
     Pallet::<Test>::on_era_start(era_index, session_index);
     crate::mock::MockEraIndexProvider::with_era(era_index);
+}
+
+fn get_slashing_era(slash_era: EraIndex) -> EraIndex {
+    if DeferPeriodGetter::get() > 0 {
+        slash_era
+            .saturating_add(DeferPeriodGetter::get())
+            .saturating_add(1)
+    } else {
+        MockEraIndexProvider::active_era().index.saturating_add(1)
+    }
 }
