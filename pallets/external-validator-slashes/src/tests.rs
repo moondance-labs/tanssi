@@ -17,8 +17,7 @@
 use {
     super::*,
     crate::mock::{
-        new_test_ext, sent_ethereum_message_nonce, DeferPeriodGetter, ExternalValidatorSlashes,
-        RuntimeOrigin, Test,
+        new_test_ext, sent_ethereum_message_nonce, DeferPeriodGetter, ExternalValidatorSlashes, roll_one_block, Test, RuntimeOrigin
     },
     frame_support::{assert_noop, assert_ok},
     mock::MockEraIndexProvider,
@@ -275,6 +274,97 @@ fn test_on_offence_defer_period_0() {
         start_era(2, 2);
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
+    });
+}
+
+#[test]
+fn test_on_offence_defer_period_0_messages_get_queued() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        // The limit is 20,
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                0,
+            );
+        }
+
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
+        start_era(2, 2);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 25);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 5);
+
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 2);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 0);
+    });
+}
+
+#[test]
+fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        // The limit is 20,
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                0,
+            );
+        }
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
+        start_era(2, 2);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 25);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 5);
+
+        // We have 5 non-dispatched, which should accumulate
+        // We shoulld have 30 after we initialie era 3
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                0,
+            );
+        }
+        
+        start_era(3, 3);
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 30);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 10);
+        assert_eq!(sent_ethereum_message_nonce(), 2);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(UnreportedSlashes::<Test>::get().len(), 0);
+        assert_eq!(sent_ethereum_message_nonce(), 3);
+
     });
 }
 

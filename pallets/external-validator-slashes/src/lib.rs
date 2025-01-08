@@ -522,6 +522,7 @@ impl<T: Config> Pallet<T> {
             // TODO: optimize code logic
             if era_slashes.len() > free_slashing_space {
                 let limit = era_slashes.len().saturating_div(free_slashing_space);
+
                 let (slashes_to_include_send, slashes_to_unreport) = era_slashes.split_at(limit);
 
                 for slash_to_include in slashes_to_include_send.iter() {
@@ -530,6 +531,7 @@ impl<T: Config> Pallet<T> {
                         slash_to_include.percentage.deconstruct(),
                     ));
                 }
+                //print!("Unreported slashes appending {:?}", slashes_to_unreport);
 
                 UnreportedSlashes::<T>::mutate(|unreported_slashes| {
                     unreported_slashes.append(&mut slashes_to_unreport.to_vec());

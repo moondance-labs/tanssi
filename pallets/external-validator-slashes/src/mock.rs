@@ -18,7 +18,7 @@ use {
     crate as external_validator_slashes,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64, Get},
+        traits::{ConstU16, ConstU64, Get, OnInitialize, OnFinalize},
     },
     frame_system as system,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -282,4 +282,15 @@ impl sp_runtime::traits::Convert<u64, Option<u64>> for IdentityValidator {
     fn convert(a: u64) -> Option<u64> {
         Some(a)
     }
+}
+
+/// Rolls forward one block. Returns the new block number.
+#[allow(dead_code)]
+pub(crate) fn roll_one_block() -> u64 {
+    ExternalValidatorSlashes::on_finalize(System::block_number());
+    System::on_finalize(System::block_number());
+    System::set_block_number(System::block_number() + 1);
+    System::on_initialize(System::block_number());
+    ExternalValidatorSlashes::on_initialize(System::block_number());
+    System::block_number()
 }
