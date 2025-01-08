@@ -428,6 +428,8 @@ pub trait RegistrarHandler<AccountId> {
     fn add_trusted_validation_code(_code: Vec<u8>) {}
     #[cfg(feature = "runtime-benchmarks")]
     fn registrar_new_session(_session: u32) {}
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_chain_registration(_id: ParaId, _who: AccountId) {}
 }
 
 impl<AccountId> RegistrarHandler<AccountId> for () {

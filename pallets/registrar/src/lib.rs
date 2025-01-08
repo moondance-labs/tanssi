@@ -800,6 +800,7 @@ pub mod pallet {
                 let new_balance =
                     T::Currency::minimum_balance() * 10_000_000u32.into() + T::DepositAmount::get();
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
+                T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
                 let origin = RawOrigin::Signed(account);
                 let mut storage = vec![];
                 storage.push((b":code".to_vec(), vec![1; 10]).into());
