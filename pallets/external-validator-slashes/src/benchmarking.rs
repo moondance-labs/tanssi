@@ -104,8 +104,8 @@ mod benchmarks {
     fn process_slashes_queue(s: Linear<1, 200>) -> Result<(), BenchmarkError> {
         let mut queue = VecDeque::new();
         let dummy = || T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap();
-    
-        for _ in 0..(s+1) {
+
+        for _ in 0..(s + 1) {
             queue.push_back(Slash::<T::AccountId, T::SlashId>::default_from(dummy()));
         }
 
@@ -115,11 +115,11 @@ mod benchmarks {
 
         #[block]
         {
-            processed = Pallet::<T>::process_slashes_queue(s as usize);
+            processed = Pallet::<T>::process_slashes_queue(s);
         }
 
         assert_eq!(UnreportedSlashesQueue::<T>::get().len(), 1);
-        assert_eq!(processed, s as usize);
+        assert_eq!(processed, s);
 
         Ok(())
     }

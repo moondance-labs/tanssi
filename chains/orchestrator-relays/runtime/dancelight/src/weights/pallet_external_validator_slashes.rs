@@ -108,4 +108,37 @@ impl<T: frame_system::Config> pallet_external_validator_slashes::WeightInfo for 
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
+
+
+	/// Storage: `ExternalValidators::ActiveEra` (r:1 w:0)
+	/// Proof: `ExternalValidators::ActiveEra` (`max_values`: Some(1), `max_size`: Some(13), added: 508, mode: `MaxEncodedLen`)
+	/// Storage: `ExternalValidatorSlashes::UnreportedSlashesQueue` (r:1 w:1)
+	/// Proof: `ExternalValidatorSlashes::UnreportedSlashesQueue` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
+	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
+	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
+	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Storage: `MessageQueue::Pages` (r:0 w:1)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// The range of component `s` is `[1, 200]`.
+	fn process_slashes_queue(s: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `393 + s * (42 ±0)`
+		//  Estimated: `3601 + s * (42 ±0)`
+		// Minimum execution time: 46_622_000 picoseconds.
+		Weight::from_parts(72_326_163, 3601)
+			// Standard Error: 58_929
+			.saturating_add(Weight::from_parts(2_894_084, 0).saturating_mul(s.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(Weight::from_parts(0, 42).saturating_mul(s.into()))
+	}
 }

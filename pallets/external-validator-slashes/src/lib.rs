@@ -347,14 +347,10 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            let weight = Weight::zero();
-
             log::info!("inside on-initialize");
-            let processed = Self::process_slashes_queue(T::QueuedSlashesProcessedPerBlock::get() as usize);
 
-            // TODO: Weight
-
-            weight
+            let processed = Self::process_slashes_queue(T::QueuedSlashesProcessedPerBlock::get());
+            T::WeightInfo::process_slashes_queue(processed)
         }
     }
 }
@@ -524,7 +520,7 @@ impl<T: Config> Pallet<T> {
         UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
     }
 
-    fn process_slashes_queue(amount: usize) -> usize {
+    fn process_slashes_queue(amount: u32) -> u32 {
         let mut slashes_to_send: Vec<_> = vec![];
         let era_index = T::EraIndexProvider::active_era().index;
 
@@ -535,7 +531,7 @@ impl<T: Config> Pallet<T> {
                     // no more slashes to process in the queue
                     break;
                 };
-    
+
                 // TODO: check if validator.clone().encode() matches with the actual account bytes.
                 slashes_to_send.push((
                     slash.validator.clone().encode(),
@@ -548,7 +544,7 @@ impl<T: Config> Pallet<T> {
             return 0;
         }
 
-        let slashes_count = slashes_to_send.len();
+        let slashes_count = slashes_to_send.len() as u32;
 
         // Build command with slashes.
         let command = Command::ReportSlashes {
