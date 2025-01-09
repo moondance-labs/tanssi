@@ -350,7 +350,7 @@ pub mod pallet {
             let weight = Weight::zero();
 
             log::info!("inside on-initialize");
-            Self::process_slashes_queue_page();
+            let processed = Self::process_slashes_queue(T::QueuedSlashesProcessedPerBlock::get() as usize);
 
             // TODO: Weight
 
@@ -524,27 +524,31 @@ impl<T: Config> Pallet<T> {
         UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
     }
 
-    fn process_slashes_queue_page() {
+    fn process_slashes_queue(amount: usize) -> usize {
         let mut slashes_to_send: Vec<_> = vec![];
         let era_index = T::EraIndexProvider::active_era().index;
 
         // prepare up to QueuedSlashesProcessedPerBlock slashes to be sent
-        for _ in 0..(T::QueuedSlashesProcessedPerBlock::get() as usize) {
-            let Some(slash) = UnreportedSlashesQueue::<T>::mutate(VecDeque::pop_front) else {
-                // no more slashes to process in the queue
-                break;
-            };
-
-            // TODO: check if validator.clone().encode() matches with the actual account bytes.
-            slashes_to_send.push((
-                slash.validator.clone().encode(),
-                slash.percentage.deconstruct(),
-            ));
-        }
+        UnreportedSlashesQueue::<T>::mutate(|queue| {
+            for _ in 0..amount {
+                let Some(slash) = queue.pop_front() else {
+                    // no more slashes to process in the queue
+                    break;
+                };
+    
+                // TODO: check if validator.clone().encode() matches with the actual account bytes.
+                slashes_to_send.push((
+                    slash.validator.clone().encode(),
+                    slash.percentage.deconstruct(),
+                ));
+            }
+        });
 
         if slashes_to_send.is_empty() {
-            return;
+            return 0;
         }
+
+        let slashes_count = slashes_to_send.len();
 
         // Build command with slashes.
         let command = Command::ReportSlashes {
@@ -573,6 +577,8 @@ impl<T: Config> Pallet<T> {
                 log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
             }
         };
+
+        slashes_count
     }
 }
 
