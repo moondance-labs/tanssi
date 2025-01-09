@@ -22,7 +22,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 # mkdir just in case as the benchmarking fails if they don't exist
-mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights
+mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/dancelight_weights
 
 # Empty directories
 rm -rf tmp/*_weights/*
