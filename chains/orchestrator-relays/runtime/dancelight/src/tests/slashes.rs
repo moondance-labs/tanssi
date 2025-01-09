@@ -470,6 +470,150 @@ fn test_slashes_are_sent_to_ethereum() {
         });
 }
 
+use frame_support::traits::Get;
+
+#[test]
+fn test_slashes_are_sent_to_ethereum_accumulatedly() {
+    sp_tracing::try_init_simple();
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
+
+            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
+            let mut combined_channel_id_key = Vec::new();
+            let hashed_key = twox_64(&channel_id);
+
+            combined_channel_id_key.extend_from_slice(&hashed_key);
+            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
+
+            let mut full_storage_key = Vec::new();
+            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(
+                b"EthereumSystem",
+                b"Channels",
+            ));
+            full_storage_key.extend_from_slice(&combined_channel_id_key);
+
+            let channel = Channel {
+                agent_id: H256::default(),
+                para_id: 1000u32.into(),
+            };
+
+            frame_support::storage::unhashed::put(&full_storage_key, &channel);
+
+            // We can inject arbitraqry slashes for arbitary accounts with root
+            let page_limit: u32 = <Runtime as pallet_external_validator_slashes::Config>::QueuedSlashesProcessedPerBlock::get();
+            for i in 0..page_limit +1 {
+                assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+                    RuntimeOrigin::root(),
+                    0,
+                    AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
+                    Perbill::from_percent(75)
+                ));
+            }
+
+            let deferred_era = ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
+            assert_eq!(slashes.len() as u32, page_limit +1);
+
+            let session_in_which_slashes_are_sent =
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(session_in_which_slashes_are_sent);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // We have two reasons for sending messages:
+            // 1, because on_era_end sends rewards
+            // 2, because on_era_start sends slashes
+            // Both session ends and session starts are done on_initialize of frame-sesssion
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // We still have all slashes as unprocessed
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+            assert_eq!(unprocessed_slashes.len() as u32, page_limit +1);
+
+
+            // Slashes start being sent after the era block
+            // They are scheduled as unprocessedSlashes
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // We still should have one pending unprocessed slash, to be sent in the next block
+            assert_eq!(unprocessed_slashes.len() as u32, 1);
+
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // Now we should have 0
+            assert_eq!(unprocessed_slashes.len() as u32, 0);
+
+            // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)
+            // MessageQueuePallet on_initialize -> dispatch queue -> process_message -> EthereumOutboundQueue_process_message
+            let nonce = snowbridge_pallet_outbound_queue::Nonce::<Runtime>::get(
+                snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+            );
+
+            // We dispatched 3 already
+            // 1 reward + 2 slashes
+            assert_eq!(nonce, 3);
+        });
+}
+
 fn inject_babe_slash(seed: &str) {
     let babe_key = get_pair_from_seed::<babe_primitives::AuthorityId>(seed);
     let equivocation_proof = generate_babe_equivocation_proof(&babe_key);
