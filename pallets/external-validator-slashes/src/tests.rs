@@ -17,7 +17,8 @@
 use {
     super::*,
     crate::mock::{
-        new_test_ext, sent_ethereum_message_nonce, DeferPeriodGetter, ExternalValidatorSlashes, roll_one_block, Test, RuntimeOrigin
+        new_test_ext, roll_one_block, sent_ethereum_message_nonce, DeferPeriodGetter,
+        ExternalValidatorSlashes, RuntimeOrigin, Test,
     },
     frame_support::{assert_noop, assert_ok},
     mock::MockEraIndexProvider,
@@ -353,7 +354,7 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
                 2,
             );
         }
-        
+
         start_era(3, 3);
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 30);
 
@@ -366,7 +367,6 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
         roll_one_block();
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
         assert_eq!(sent_ethereum_message_nonce(), 3);
-
     });
 }
 

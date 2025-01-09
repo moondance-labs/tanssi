@@ -21,7 +21,7 @@ use {
     crate::tests::common::*,
     crate::{
         BondingDuration, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
-        SessionsPerEra, SlashDeferDuration,
+        RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok},
     sp_core::H256,
@@ -354,6 +354,119 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                 ),
                 pallet_external_validator_slashes::Error::<crate::Runtime>::DeferPeriodIsOver
             );
+        });
+}
+
+use parity_scale_codec::Encode;
+use snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL};
+use sp_core::twox_64;
+#[test]
+fn test_slashes_are_sent_to_ethereum() {
+    sp_tracing::try_init_simple();
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
+
+            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
+            let mut combined_channel_id_key = Vec::new();
+            let hashed_key = twox_64(&channel_id);
+
+            combined_channel_id_key.extend_from_slice(&hashed_key);
+            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
+
+            let mut full_storage_key = Vec::new();
+            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(
+                b"EthereumSystem",
+                b"Channels",
+            ));
+            full_storage_key.extend_from_slice(&combined_channel_id_key);
+
+            let channel = Channel {
+                agent_id: H256::default(),
+                para_id: 1000u32.into(),
+            };
+
+            frame_support::storage::unhashed::put(&full_storage_key, &channel);
+
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                RuntimeOrigin::root(),
+                AccountId::from(ALICE)
+            ));
+
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
+
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
+            assert_eq!(reports.len(), 1);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
+
+            let deferred_era =
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
+            assert_eq!(slashes.len(), 1);
+            assert_eq!(slashes[0].validator, AccountId::from(ALICE));
+
+            let session_in_which_slashes_are_sent =
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(session_in_which_slashes_are_sent);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // We have two reasons for sending messages:
+            // 1, because on_era_end sends rewards
+            // 2, because on_era_start sends slashes
+            // Both session ends and session starts are done on_initialize of frame-sesssion
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // Slashes start being sent after the era block
+            // They are scheduled as unprocessedSlashes
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)
+            // MessageQueuePallet on_initialize -> dispatch queue -> process_message -> EthereumOutboundQueue_process_message
+            let nonce = snowbridge_pallet_outbound_queue::Nonce::<Runtime>::get(
+                snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+            );
+
+            // We dispatched 2 already
+            assert_eq!(nonce, 2);
         });
 }
 

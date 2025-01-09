@@ -1356,7 +1356,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1825,6 +1825,8 @@ construct_runtime! {
         ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
         ExternalValidatorsRewards: pallet_external_validators_rewards = 22,
 
+        EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 26,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1891,7 +1893,6 @@ construct_runtime! {
 
         // Bridging stuff
         EthereumInboundQueue: snowbridge_pallet_inbound_queue = 91,
-        EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
         EthereumSystem: snowbridge_pallet_system = 103,
 
         // Migration stuff

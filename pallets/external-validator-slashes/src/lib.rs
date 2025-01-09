@@ -349,6 +349,7 @@ pub mod pallet {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             let weight = Weight::zero();
 
+            log::info!("inside on-initialize");
             Self::process_slashes_queue_page();
 
             // TODO: Weight
@@ -478,6 +479,7 @@ impl<T: Config> OnEraStart for Pallet<T> {
         // let's put 1000 as a conservative measure
         const REMOVE_LIMIT: u32 = 1000;
 
+        log::info!("on era start");
         let bonding_duration = T::BondingDuration::get();
 
         BondedEras::<T>::mutate(|bonded| {
@@ -517,7 +519,7 @@ impl<T: Config> OnEraStart for Pallet<T> {
 
 impl<T: Config> Pallet<T> {
     fn add_era_slashes_to_queue(active_era: EraIndex) {
-        let mut slashes: VecDeque<_> = Slashes::<T>::take(&active_era).into();
+        let mut slashes: VecDeque<_> = Slashes::<T>::get(&active_era).into();
 
         UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
     }

@@ -17,7 +17,7 @@
 #![allow(dead_code)]
 
 use {
-    crate::{BlockProductionCost, CollatorAssignmentCost, RuntimeCall},
+    crate::{BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, RuntimeCall},
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -237,9 +237,13 @@ pub fn start_block() -> RunSummary {
     // Initialize the new block
     Babe::on_initialize(System::block_number());
     ContainerRegistrar::on_initialize(System::block_number());
+    ExternalValidatorSlashes::on_initialize(System::block_number());
+
     Session::on_initialize(System::block_number());
+
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());
+    MessageQueue::on_initialize(System::block_number());
 
     let current_issuance = Balances::total_issuance();
     InflationRewards::on_initialize(System::block_number());
@@ -253,7 +257,6 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
-
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
@@ -1232,6 +1235,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         "profile should be correctly assigned"
     );
 }
+use crate::MessageQueue;
 use milagro_bls::Keypair;
 pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     let mut keys = vec![];
