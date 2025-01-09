@@ -37,6 +37,12 @@ use {
     tp_traits::{ParaId, RegistrarHandler, RelayStorageRootProvider, SlotFrequency},
 };
 
+// !!! (Applicable for Dancelight only)
+// The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
+// Currently, this value is 2000. We should also avoid setting the value to one of
+// the container chains reserved by root
+const BASE_PARA_ID: u32 = 2010;
+
 /// Create a funded user.
 /// Used for generating the necessary amount for registering
 fn create_funded_user<T: Config>(
@@ -144,17 +150,21 @@ mod benchmarks {
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
+        let para_id = ParaId::from(BASE_PARA_ID);
+
+        T::InnerRegistrar::prepare_chain_registration(para_id, caller.clone());
+
         #[extrinsic_call]
         Pallet::<T>::register(
             RawOrigin::Signed(caller),
-            Default::default(),
+            para_id,
             storage,
             T::InnerRegistrar::bench_head_data(),
         );
 
         // verification code
         assert_eq!(pending_verification_len::<T>(), 1usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+        assert!(Pallet::<T>::registrar_deposit(para_id).is_some());
     }
 
     #[benchmark]
@@ -216,9 +226,11 @@ mod benchmarks {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let current_para_id = ParaId::from(2010 + i);
+            T::InnerRegistrar::prepare_chain_registration(current_para_id, caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
-                i.into(),
+                current_para_id,
                 storage.clone(),
                 T::InnerRegistrar::bench_head_data(),
             )
@@ -228,14 +240,14 @@ mod benchmarks {
 
         // We should have registered y
         assert_eq!(pending_verification_len::<T>(), y as usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID + y - 1)).is_some());
 
         #[extrinsic_call]
-        Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
+        Pallet::<T>::deregister(RawOrigin::Root, (BASE_PARA_ID + y - 1).into());
 
         // We should have y-1
         assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID + y - 1)).is_none());
     }
 
     #[benchmark]
@@ -250,10 +262,11 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
-        for i in 0..y {
+        for i in BASE_PARA_ID..(BASE_PARA_ID + y) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -269,9 +282,10 @@ mod benchmarks {
         T::InnerRegistrar::registrar_new_session(2);
         T::InnerRegistrar::registrar_new_session(3);
 
-        for i in 0..y {
+        for i in BASE_PARA_ID..(BASE_PARA_ID + y) {
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
+
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -279,17 +293,17 @@ mod benchmarks {
         Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
         // We should have registered y
         assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID + y - 1)).is_some());
 
         #[extrinsic_call]
-        Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
+        Pallet::<T>::deregister(RawOrigin::Root, (BASE_PARA_ID + y - 1).into());
 
         // We now have y - 1 but the deposit has not been removed yet
         assert_eq!(
             Pallet::<T>::pending_registered_para_ids()[0].1.len(),
             (y - 1) as usize
         );
-        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID + y - 1)).is_some());
 
         // Start a new session
         Pallet::<T>::initializer_on_new_session(
@@ -298,7 +312,7 @@ mod benchmarks {
 
         // Now it has been removed
         assert_eq!(Pallet::<T>::registered_para_ids().len(), (y - 1) as usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_none());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID + y - 1)).is_none());
     }
 
     #[benchmark]
@@ -314,6 +328,7 @@ mod benchmarks {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -433,7 +448,7 @@ mod benchmarks {
     #[benchmark]
     fn mark_valid_for_collating() {
         let x = T::MaxGenesisDataSize::get();
-        let y = T::MaxLengthParaIds::get();
+        let y = T::MaxLengthParaIds::get() + BASE_PARA_ID;
         let storage = max_size_genesis_data(1, x);
         let code = get_code(&storage);
 
@@ -444,10 +459,13 @@ mod benchmarks {
 
         // Worst case: when RegisteredParaIds and PendingVerification are both full
         // First loop to fill PendingVerification to its maximum
-        for i in 0..y {
+        for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+
+            T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
+
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -458,10 +476,11 @@ mod benchmarks {
         }
 
         // Second loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
-        for k in 1000..(1000 + y - 1) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
@@ -477,7 +496,7 @@ mod benchmarks {
         T::InnerRegistrar::registrar_new_session(2);
         T::InnerRegistrar::registrar_new_session(3);
 
-        for k in 1000..(1000 + y - 1) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
@@ -487,20 +506,23 @@ mod benchmarks {
         Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // We should have registered y
-        assert_eq!(pending_verification_len::<T>(), y as usize);
+        assert_eq!(pending_verification_len::<T>(), (y - BASE_PARA_ID) as usize);
         T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
 
         #[extrinsic_call]
         Pallet::<T>::mark_valid_for_collating(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
-        assert_eq!(pending_verification_len::<T>(), (y - 1) as usize);
+        assert_eq!(
+            pending_verification_len::<T>(),
+            (y - BASE_PARA_ID - 1) as usize
+        );
     }
 
     #[benchmark]
     fn pause_container_chain() {
         let x = T::MaxGenesisDataSize::get();
-        let y = T::MaxLengthParaIds::get();
+        let y = T::MaxLengthParaIds::get() + BASE_PARA_ID;
         let storage = max_size_genesis_data(1, x);
         let code = get_code(&storage);
         // Deregister all the existing chains to avoid conflicts with the new ones
@@ -510,9 +532,10 @@ mod benchmarks {
 
         // Worst case: when RegisteredParaIds and Paused are both full
         // Second loop to fill Paused to its maximum, minus 1 space for the benchmark call
-        for k in 1000..(1000 + y - 1) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
@@ -525,10 +548,11 @@ mod benchmarks {
         }
 
         // First loop to fill RegisteredParaIds to its maximum
-        for i in 0..y {
+        for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -544,16 +568,19 @@ mod benchmarks {
         T::InnerRegistrar::registrar_new_session(2);
         T::InnerRegistrar::registrar_new_session(3);
 
-        for k in 1000..(1000 + y - 1) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
-        for i in 0..y {
+        for i in BASE_PARA_ID..y {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
         // Check PendingPaused has a length of y - 1
-        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize - 1);
+        assert_eq!(
+            Pallet::<T>::pending_paused()[0].1.len(),
+            (y - BASE_PARA_ID) as usize - 1
+        );
         // Check y-1 is not in PendingPaused
         assert!(!Pallet::<T>::pending_paused()[0]
             .1
@@ -578,7 +605,7 @@ mod benchmarks {
     #[benchmark]
     fn unpause_container_chain() {
         let x = T::MaxGenesisDataSize::get();
-        let y = T::MaxLengthParaIds::get();
+        let y = T::MaxLengthParaIds::get() + BASE_PARA_ID;
         let storage = max_size_genesis_data(1, x);
         let code = get_code(&storage);
         // Deregister all the existing chains to avoid conflicts with the new ones
@@ -588,9 +615,10 @@ mod benchmarks {
 
         // Worst case: when RegisteredParaIds and Paused are both full
         // Second loop to fill Paused to its maximum
-        for k in 1000..(1000 + y) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y) {
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 k.into(),
@@ -603,10 +631,11 @@ mod benchmarks {
         }
 
         // First loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
-        for i in 0..(y - 1) {
+        for i in BASE_PARA_ID..(y - 1) {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -622,35 +651,38 @@ mod benchmarks {
         T::InnerRegistrar::registrar_new_session(2);
         T::InnerRegistrar::registrar_new_session(3);
 
-        for k in 1000..(1000 + y) {
+        for k in (BASE_PARA_ID + 1000)..(1000 + y) {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
-        for i in 0..(y - 1) {
+        for i in BASE_PARA_ID..(y - 1) {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
         // Check PendingPaused has a length of y
-        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize);
+        assert_eq!(
+            Pallet::<T>::pending_paused()[0].1.len(),
+            (y - BASE_PARA_ID) as usize
+        );
         // Check 1000 is in PendingPaused
         assert!(Pallet::<T>::pending_paused()[0]
             .1
-            .contains(&ParaId::from(1000)));
+            .contains(&ParaId::from(1000 + BASE_PARA_ID)));
         // Check 1000 is not in pending_registered_para_ids
         assert!(!Pallet::<T>::pending_registered_para_ids()[0]
             .1
-            .contains(&ParaId::from(1000)));
+            .contains(&ParaId::from(1000 + BASE_PARA_ID)));
 
         #[extrinsic_call]
-        Pallet::<T>::unpause_container_chain(RawOrigin::Root, 1000u32.into());
+        Pallet::<T>::unpause_container_chain(RawOrigin::Root, (1000 + BASE_PARA_ID).into());
 
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&(T::SessionDelay::get() + 3u32.into()));
 
         // Check 1000 is not in Paused
-        assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000)));
+        assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000 + BASE_PARA_ID)));
         // Check 1000 is in registered_para_ids
-        assert!(Pallet::<T>::registered_para_ids().contains(&ParaId::from(1000)));
+        assert!(Pallet::<T>::registered_para_ids().contains(&ParaId::from(1000 + BASE_PARA_ID)));
     }
 
     #[benchmark]
@@ -661,10 +693,12 @@ mod benchmarks {
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
+        T::InnerRegistrar::prepare_chain_registration(BASE_PARA_ID.into(), caller.clone());
+
         #[extrinsic_call]
         Pallet::<T>::register_parathread(
             RawOrigin::Signed(caller),
-            Default::default(),
+            BASE_PARA_ID.into(),
             slot_frequency,
             storage,
             T::InnerRegistrar::bench_head_data(),
@@ -672,13 +706,13 @@ mod benchmarks {
 
         // verification code
         assert_eq!(pending_verification_len::<T>(), 1usize);
-        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(BASE_PARA_ID)).is_some());
     }
 
     #[benchmark]
     fn set_parathread_params() {
         let x = T::MaxGenesisDataSize::get();
-        let y = T::MaxLengthParaIds::get();
+        let y = T::MaxLengthParaIds::get() + BASE_PARA_ID;
         let storage = max_size_genesis_data(1, x);
         let slot_frequency = SlotFrequency::default();
 
@@ -687,10 +721,11 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
-        for i in 0..y {
+        for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
                 create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register_parathread(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -706,7 +741,7 @@ mod benchmarks {
         T::InnerRegistrar::registrar_new_session(2);
         T::InnerRegistrar::registrar_new_session(3);
 
-        for i in 0..y {
+        for i in BASE_PARA_ID..y {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -731,7 +766,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_para_manager() {
-        let para_id = 1001u32.into();
+        let para_id = 2010u32.into();
 
         let origin = EnsureSignedByManager::<T>::try_successful_origin(&para_id)
             .expect("failed to create ManagerOrigin");
