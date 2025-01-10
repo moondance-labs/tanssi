@@ -30,7 +30,7 @@ tp-bridge = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
-pallet-timestamp = { workspace = true, features=["std"] }
+pallet-timestamp = { workspace = true, features = [ "std" ] }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 
@@ -43,6 +43,7 @@ std = [
 	"log/std",
 	"pallet-session/std",
 	"pallet-staking/std",
+	"pallet-timestamp/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"snowbridge-core/std",
@@ -53,19 +54,18 @@ std = [
 	"sp-std/std",
 	"tp-bridge/std",
 	"tp-traits/std",
-	"pallet-timestamp/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -73,6 +73,6 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
+	"pallet-timestamp/try-runtime",
 	"sp-runtime/try-runtime",
-	"pallet-timestamp/try-runtime"
-	]
+]
