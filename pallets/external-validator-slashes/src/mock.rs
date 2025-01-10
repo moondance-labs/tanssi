@@ -208,7 +208,7 @@ impl DeferPeriodGetter {
 }
 
 pub fn sent_ethereum_message_nonce() -> u64 {
-    SENT_ETHEREUM_MESSAGE_NONCE.with(|q| (*q.borrow()).clone())
+    SENT_ETHEREUM_MESSAGE_NONCE.with(|q| (*q.borrow()))
 }
 
 pub struct MockOkOutboundQueue;
