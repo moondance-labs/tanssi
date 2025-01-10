@@ -677,6 +677,10 @@ impl ExtBuilder {
             .unwrap();
 
         snowbridge_pallet_system::GenesisConfig::<Runtime> {
+            // This is irrelevant, we can put any number here
+            // as long as it is a non-used para id
+            para_id: 1000u32.into(),
+            asset_hub_para_id: 1001u32.into(),
             ..Default::default()
         }
         .assimilate_storage(&mut t)
