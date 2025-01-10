@@ -92,21 +92,27 @@ describeSuite({
                     DeferPeriod + 1
                 );
                 // We should have unprocessed messages
-                const expectedUnprocessedMessages = await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
-                expect (expectedUnprocessedMessages.length).to.be.eq(1);
+                const expectedUnprocessedMessages =
+                    await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
+                expect(expectedUnprocessedMessages.length).to.be.eq(1);
                 expect(expectedSlashesAfterDefer.length).to.be.eq(1);
                 expect(expectedSlashesAfterDefer[0].confirmed.toHuman()).to.be.true;
 
                 // In the next block we should send the slashes. For this we will confirm:
                 // A: that the unprocessed slashes decrease
                 // B: that the nonce of the primary channel increases
-                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID)
+                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(
+                    PRIMARY_GOVERNANCE_CHANNEL_ID
+                );
 
                 await context.createBlock();
-                const expectedUnprocessedMessagesAfterOneBlock = await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
-                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
-                expect (primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt()+ 1n);
-                expect (expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(0);
+                const expectedUnprocessedMessagesAfterOneBlock =
+                    await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
+                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(
+                    PRIMARY_GOVERNANCE_CHANNEL_ID
+                );
+                expect(primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt() + 1n);
+                expect(expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(0);
             },
         });
     },
