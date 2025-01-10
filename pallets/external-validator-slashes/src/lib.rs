@@ -140,6 +140,7 @@ pub mod pallet {
         type TimestampProvider: Get<u64>;
 
         /// How many queued slashes are being processed per block.
+        #[pallet::constant]
         type QueuedSlashesProcessedPerBlock: Get<u32>;
 
         /// The weight information of this pallet.
@@ -475,7 +476,6 @@ impl<T: Config> OnEraStart for Pallet<T> {
         // let's put 1000 as a conservative measure
         const REMOVE_LIMIT: u32 = 1000;
 
-        log::info!("on era start");
         let bonding_duration = T::BondingDuration::get();
 
         BondedEras::<T>::mutate(|bonded| {
