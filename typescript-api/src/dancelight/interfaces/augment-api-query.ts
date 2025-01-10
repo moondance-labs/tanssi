@@ -829,6 +829,13 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** All unreported slashes that will be processed in the future. */
+            unreportedSlashesQueue: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletExternalValidatorSlashesSlash>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /** All slashing events on validators, mapped by era to the highest slash proportion and slash value of the era. */
             validatorSlashInEra: AugmentedQuery<
                 ApiType,
