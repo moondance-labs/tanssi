@@ -13,14 +13,9 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let aliceBabePair: KeyringPair;
-        let aliceStash: KeyringPair;
         beforeAll(async () => {
-            const keyringBabe = new Keyring({ type: "sr25519" });
-            aliceBabePair = keyringBabe.addFromUri("//Alice");
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
-            aliceStash = keyringBabe.addFromUri("//Alice//stash");
         });
         it({
             id: "E01",
