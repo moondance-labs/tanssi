@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair, generateKeyringPair } from "@moonwall/util";
-import { Keyring } from "@polkadot/keyring";
 import { jumpToSession } from "../../../util/block";
 import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
 
