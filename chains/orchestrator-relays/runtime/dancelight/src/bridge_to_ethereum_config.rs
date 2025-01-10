@@ -26,15 +26,17 @@ use {
     crate::{
         parameter_types, weights, xcm_config, xcm_config::UniversalLocation,
         AggregateMessageOrigin, Balance, Balances, EthereumInboundQueue, EthereumOutboundQueue,
-        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue, Runtime,
-        RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TransactionByteFee,
+        TreasuryAccount, WeightToFee, UNITS,
     },
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
-    sp_core::{ConstU32, ConstU8, H160},
+    snowbridge_pallet_outbound_queue::OnNewCommitment,
+    sp_core::{ConstU32, ConstU8, H160, H256},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
 };
 
@@ -50,6 +52,18 @@ parameter_types! {
         rewards: Rewards { local: 1 * UNITS, remote: meth(1) },
         multiplier: FixedU128::from_rational(1, 1),
     };
+}
+
+pub struct CommitmentRecorder;
+
+impl OnNewCommitment for CommitmentRecorder {
+    fn on_new_commitment(commitment: H256) {
+        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+    }
+}
+
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
 }
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
@@ -68,6 +82,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
     type PricingParameters = EthereumSystem;
     type Channels = EthereumSystem;
+    type OnNewCommitment = CommitmentRecorder;
 }
 
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions

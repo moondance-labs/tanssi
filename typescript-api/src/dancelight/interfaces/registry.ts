@@ -160,6 +160,7 @@ import type {
     PalletMultisigMultisig,
     PalletMultisigTimepoint,
     PalletOffencesEvent,
+    PalletOutboundMessageCommitmentRecorderEvent,
     PalletParametersCall,
     PalletParametersEvent,
     PalletPooledStakingAllTargetPool,
@@ -664,6 +665,7 @@ declare module "@polkadot/types/types/registry" {
         PalletMultisigMultisig: PalletMultisigMultisig;
         PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletOffencesEvent: PalletOffencesEvent;
+        PalletOutboundMessageCommitmentRecorderEvent: PalletOutboundMessageCommitmentRecorderEvent;
         PalletParametersCall: PalletParametersCall;
         PalletParametersEvent: PalletParametersEvent;
         PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
