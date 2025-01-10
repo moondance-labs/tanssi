@@ -6,6 +6,7 @@ import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "../../../util/block";
 import { generateBabeEquivocationProof } from "../../../util/slashes";
+import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
 
 describeSuite({
     id: "DTR1304",
@@ -90,8 +91,22 @@ describeSuite({
                 const expectedSlashesAfterDefer = await polkadotJs.query.externalValidatorSlashes.slashes(
                     DeferPeriod + 1
                 );
+                // We should have unprocessed messages
+                const expectedUnprocessedMessages = await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
+                expect (expectedUnprocessedMessages.length).to.be.eq(1);
                 expect(expectedSlashesAfterDefer.length).to.be.eq(1);
                 expect(expectedSlashesAfterDefer[0].confirmed.toHuman()).to.be.true;
+
+                // In the next block we should send the slashes. For this we will confirm:
+                // A: that the unprocessed slashes decrease
+                // B: that the nonce of the primary channel increases
+                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID)
+
+                await context.createBlock();
+                const expectedUnprocessedMessagesAfterOneBlock = await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
+                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+                expect (primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt()+ 1n);
+                expect (expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(0);
             },
         });
     },
