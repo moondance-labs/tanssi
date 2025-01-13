@@ -1385,6 +1385,7 @@ impl Get<u64> for TimestampProvider {
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
