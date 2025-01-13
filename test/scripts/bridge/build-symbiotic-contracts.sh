@@ -17,7 +17,7 @@ then
 else
   git clone https://github.com/moondance-labs/tanssi-symbiotic $symbiotic_contracts_dir
   pushd $symbiotic_contracts_dir
-  git fetch && git checkout 518f7e9d0059d24d899d2fc8340da5387a127b3b
+  git fetch && git checkout 142d523cd5c62f2f2b62541b6cb68de75a2404e3
   popd
 fi
 
