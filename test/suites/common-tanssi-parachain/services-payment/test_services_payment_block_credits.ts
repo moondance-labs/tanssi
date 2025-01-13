@@ -223,6 +223,14 @@ describeSuite({
                 ).toBeGreaterThan(0);
                 expect(balanceTank).toBe(requiredBalance);
 
+                let creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+                // It might happen that we still have some left over collator block credits. Let's try to clean them
+                while (creditsRemaining != 0) {
+                    await context.createBlock();
+                    creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+                }
+
+                // After this payment should be done through the para tank
                 // Create a block, the block number should increase, and the number of credits should decrease
                 const containerBlockNum3 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
@@ -233,6 +241,7 @@ describeSuite({
                 expect(containerBlockNum3, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum4
                 );
+
                 const balanceTankAfter = (
                     await polkadotJs.query.system.account(paraIdTank(paraId))
                 ).data.free.toBigInt();
