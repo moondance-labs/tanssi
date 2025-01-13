@@ -28,8 +28,10 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+use tp_traits::BlockNumber;
 use {
-    dp_core::{BlockNumber, ParaId},
+    dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -44,7 +46,8 @@ use {
         Perbill,
     },
     tp_traits::{
-        AuthorNotingHook, DistributeRewards, GetCurrentContainerChains, MaybeSelfChainBlockAuthor,
+        AuthorNotingHook, AuthorNotingInfo, DistributeRewards, GetCurrentContainerChains,
+        MaybeSelfChainBlockAuthor,
     },
 };
 
@@ -249,53 +252,57 @@ pub mod pallet {
 // There will be no additional check other than checking if we have already
 // rewarded this author for **in this tanssi block**
 // Any additional check should be done in the calling function
-// TODO: consider passing a vector here
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
-    fn on_container_author_noted(
-        author: &T::AccountId,
-        _block_number: BlockNumber,
-        para_id: ParaId,
-    ) -> Weight {
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         // We take chains to reward, to see what containers are left to reward
         if let Some(mut container_chains_to_reward) = ChainsToReward::<T>::get() {
-            // If we find the index is because we still have not rewarded it
-            if let Ok(index) = container_chains_to_reward.para_ids.binary_search(&para_id) {
-                // we distribute rewards to the author
-                match T::StakingRewardsDistributor::distribute_rewards(
-                    author.clone(),
-                    T::Currency::withdraw(
-                        &T::PendingRewardsAccount::get(),
-                        container_chains_to_reward.rewards_per_chain,
-                        Precision::BestEffort,
-                        Preservation::Expendable,
-                        Fortitude::Force,
-                    )
-                    .unwrap_or(CreditOf::<T>::zero()),
-                ) {
-                    Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
-                        Self::deposit_event(Event::RewardedContainer {
-                            account_id: author.clone(),
-                            balance: container_chains_to_reward.rewards_per_chain,
-                            para_id,
-                        });
-                        if let Some(weight) = actual_weight {
-                            total_weight += weight
+            for info in info {
+                let author = &info.author;
+                let para_id = info.para_id;
+
+                // If we find the index is because we still have not rewarded it
+                if let Ok(index) = container_chains_to_reward.para_ids.binary_search(&para_id) {
+                    // we distribute rewards to the author
+                    match T::StakingRewardsDistributor::distribute_rewards(
+                        author.clone(),
+                        T::Currency::withdraw(
+                            &T::PendingRewardsAccount::get(),
+                            container_chains_to_reward.rewards_per_chain,
+                            Precision::BestEffort,
+                            Preservation::Expendable,
+                            Fortitude::Force,
+                        )
+                        .unwrap_or(CreditOf::<T>::zero()),
+                    ) {
+                        Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
+                            Self::deposit_event(Event::RewardedContainer {
+                                account_id: author.clone(),
+                                balance: container_chains_to_reward.rewards_per_chain,
+                                para_id,
+                            });
+                            if let Some(weight) = actual_weight {
+                                total_weight += weight
+                            }
+                        }
+                        Err(e) => {
+                            log::warn!("Fail to distribute rewards: {:?}", e)
                         }
                     }
-                    Err(e) => {
-                        log::debug!("Fail to distribute rewards: {:?}", e)
-                    }
+                    // we remove the para id from container-chains to reward
+                    // this makes sure we dont reward it twice in the same block
+                    container_chains_to_reward.para_ids.remove(index);
                 }
-                // we remove the para id from container-chains to reward
-                // this makes sure we dont reward it twice in the same block
-                container_chains_to_reward.para_ids.remove(index);
-
-                total_weight += T::DbWeight::get().writes(1);
-                // Keep track of chains to reward
-                ChainsToReward::<T>::put(container_chains_to_reward);
             }
+
+            total_weight += T::DbWeight::get().writes(1);
+            // Keep track of chains to reward
+            ChainsToReward::<T>::put(container_chains_to_reward);
+        } else {
+            // TODO: why would ChainsToReward ever be None?
+            log::warn!("ChainsToReward is None");
         }
+
         total_weight
     }
 
