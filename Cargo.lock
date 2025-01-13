@@ -18822,6 +18822,7 @@ dependencies = [
  "ethabi-decode",
  "frame-support",
  "frame-system",
+ "hex-literal 0.3.4",
  "impl-trait-for-tuples",
  "macro_rules_attribute",
  "pallet-external-validators",
