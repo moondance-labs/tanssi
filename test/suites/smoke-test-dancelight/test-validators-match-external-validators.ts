@@ -17,13 +17,13 @@ describeSuite({
             title: "Validators should match external validators",
 
             test: async function () {
+                const sessionValidators = await api.query.session.validators();
+                const externalValidators = await api.query.externalValidators.whitelistedValidators();
 
-                const validators = await api.query.staking.validators.entries();
-                const externalValidators = await api.query.externalValidators.externalValidators.entries();
+                expect(sessionValidators.length).to.equal(externalValidators.length);
 
-                for (const key of validators.keys()) {
-                    const validator = externalValidators.find(([validatorKey]) => validatorKey.eq(key));
-                    expect(validator).to.not.be.undefined;
+                for (const validatorId of sessionValidators) {
+                    expect(externalValidators.includes(validatorId)).to.be.true;
                 }
             },
         });
