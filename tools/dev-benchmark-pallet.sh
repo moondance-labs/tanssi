@@ -22,7 +22,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 # mkdir just in case as the benchmarking fails if they don't exist
-mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights
+mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/dancelight_weights
 
 # Empty directories
 rm -rf tmp/*_weights/*
@@ -70,14 +70,23 @@ fi
 TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     OUTPUT_PATH=tmp/dancebox_weights \
     tools/benchmarking.sh "$PALLET" "*" --check
-cp -v tmp/dancebox_weights/$PALLET.rs runtime/dancebox/src/weights/$PALLET.rs
+cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/runtime/dancebox/src/weights/$PALLET.rs
 
 # Flashbox weights
 TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
     CHAIN=flashbox_dev \
     OUTPUT_PATH=tmp/flashbox_weights \
     tools/benchmarking.sh "$PALLET" "*" --check
-cp -v tmp/flashbox_weights/$PALLET.rs runtime/flashbox/src/weights/$PALLET.rs
+cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/runtime/flashbox/src/weights/$PALLET.rs
+
+# Dancelight weights
+BINARY=target/release/tanssi-relay \
+    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+    CHAIN=dancelight-dev \
+    OUTPUT_PATH=tmp/dancelight_weights \
+    tools/benchmarking.sh "$PALLET" "*" --check
+cp -v tmp/dancelight_weights/$PALLET.rs chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs
+
 
 # Probably don't need to add weights to templates, change false to true if the pallet is also included in the templates
 if false; then

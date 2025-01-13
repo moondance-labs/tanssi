@@ -63,18 +63,18 @@ update_lib_rs() {
 }
 
 # Update Cargo.toml files
-update_cargo_toml "container-chains/nodes/frontier/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "container-chains/nodes/simple/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "node/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "solo-chains/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "solo-chains/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/container-chains/nodes/frontier/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/container-chains/nodes/simple/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/orchestrator-paras/node/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
 
 # Update lib.rs files
-update_lib_rs "container-chains/runtime-templates/frontier/src/lib.rs" "$RUNTIME_VERSION"
-update_lib_rs "container-chains/runtime-templates/simple/src/lib.rs" "$RUNTIME_VERSION"
-update_lib_rs "runtime/dancebox/src/lib.rs" "$RUNTIME_VERSION"
-update_lib_rs "runtime/flashbox/src/lib.rs" "$RUNTIME_VERSION"
-update_lib_rs "solo-chains/runtime/dancelight/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/container-chains/runtime-templates/frontier/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/container-chains/runtime-templates/simple/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/orchestrator-paras/runtime/dancebox/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/orchestrator-paras/runtime/flashbox/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/orchestrator-relays/runtime/dancelight/src/lib.rs" "$RUNTIME_VERSION"
 
 echo "All files updated successfully. Updating Cargo.lock"
 
