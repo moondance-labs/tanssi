@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use super::*;
 use hex_literal::hex;
 
@@ -22,7 +38,9 @@ fn test_report_rewards_encoding() {
         era_index: 42,
         total_points: 123_456_789_012_345,
         tokens_inflated: 987_654_321_098,
-        rewards_merkle_root: H256::from(hex!("b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4"))
+        rewards_merkle_root: H256::from(hex!(
+            "b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4"
+        )),
     };
 
     let expected = hex!(
