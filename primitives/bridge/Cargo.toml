@@ -53,7 +53,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	"xcm-executor/std"
+	"xcm-executor/std",
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -64,5 +64,5 @@ runtime-benchmarks = [
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"xcm-executor/runtime-benchmarks"
+	"xcm-executor/runtime-benchmarks",
 ]

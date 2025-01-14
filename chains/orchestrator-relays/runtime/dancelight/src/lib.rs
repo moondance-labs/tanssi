@@ -1386,10 +1386,10 @@ impl Get<u64> for TimestampProvider {
 }
 
 parameter_types! {
-    // TODO: Set real chain id
+    // Chain ID of Holesky.
     pub RewardsEthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
-            &Location::new(1, [GlobalConsensus(Ethereum { chain_id: 42 } )])
+            &Location::new(1, [GlobalConsensus(Ethereum { chain_id: 17_000 } )])
         ).expect("to convert RewardsEthereumSovereignAccount");
 }
 
