@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::KeyOwnerProofSystem;
-use sp_core::Pair;
-use sp_runtime::Perbill;
 use {
     crate::tests::common::*,
     crate::{
         BondingDuration, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
         RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
-    frame_support::{assert_noop, assert_ok},
-    sp_core::H256,
+    frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
+    sp_core::{H256, Pair},
+    sp_runtime::Perbill,
     sp_std::vec,
+    parity_scale_codec::Encode,
+    tp_bridge::Command,
 };
 
 #[test]
@@ -427,10 +427,48 @@ fn test_slashes_are_sent_to_ethereum() {
                 })
                 .count();
 
+            let mut slashes_command_found: Option<Command> = None;
+            let ext_validators_slashes_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::ExternalValidatorSlashes(
+                        pallet_external_validator_slashes::Event::SlashesMessageSent {
+                            slashes_command,
+                        },
+                    ) => {
+                        slashes_command_found = Some(slashes_command.clone());
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
             // This one is related to slashes
             assert_eq!(
                 outbound_msg_queue_event, 1,
                 "MessageQueued event should be emitted"
+            );
+
+            assert_eq!(
+                ext_validators_slashes_event, 1,
+                "SlashesMessageSent event should be emitted"
+            );
+
+            let expected_slashes = vec![(
+                AccountId::from(ALICE).encode(),
+                Perbill::from_percent(100).deconstruct(),
+            )];
+
+            let expected_slashes_command = Command::ReportSlashes {
+                timestamp: 0u64,
+                era_index: 1u32,
+                slashes: expected_slashes,
+            };
+
+            assert_eq!(
+                slashes_command_found.unwrap(),
+                expected_slashes_command,
+                "Both slashes commands should match!"
             );
 
             // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)

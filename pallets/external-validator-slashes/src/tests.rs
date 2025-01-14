@@ -16,13 +16,15 @@
 
 use {
     super::*,
-    crate::mock::{
-        new_test_ext, roll_one_block, sent_ethereum_message_nonce, DeferPeriodGetter,
-        ExternalValidatorSlashes, RuntimeOrigin, Test,
+    crate::{
+        mock::{
+            new_test_ext, roll_one_block, sent_ethereum_message_nonce, DeferPeriodGetter,
+            ExternalValidatorSlashes, MockEraIndexProvider, RuntimeEvent, RuntimeOrigin, System,
+            Test,
+        },
+        Slash,
     },
-    crate::Slash,
     frame_support::{assert_noop, assert_ok},
-    mock::MockEraIndexProvider,
 };
 
 #[test]
@@ -277,6 +279,54 @@ fn test_on_offence_defer_period_0() {
         roll_one_block();
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
+    });
+}
+
+#[test]
+fn test_slashes_command_matches_event() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        Pallet::<Test>::on_offence(
+            &[OffenceDetails {
+                // 1 and 2 are invulnerables
+                offender: (3, ()),
+                reporters: vec![],
+            }],
+            &[Perbill::from_percent(75)],
+            0,
+        );
+
+        // The slash was inserted properly
+        assert_eq!(
+            Slashes::<Test>::get(get_slashing_era(1)),
+            vec![Slash {
+                validator: 3,
+                percentage: Perbill::from_percent(75),
+                confirmed: true,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
+        start_era(2, 2);
+        roll_one_block();
+
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+
+        // The slash is sent on era 2
+        let expected_slashes = vec![(3u64.encode(), Perbill::from_percent(75).deconstruct())];
+        let expected_command = Command::ReportSlashes {
+            timestamp: 0u64,
+            era_index: 2u32,
+            slashes: expected_slashes,
+        };
+
+        System::assert_last_event(RuntimeEvent::ExternalValidatorSlashes(
+            crate::Event::SlashesMessageSent {
+                slashes_command: expected_command,
+            },
+        ));
     });
 }
 

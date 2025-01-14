@@ -78,6 +78,8 @@ pub mod pallet {
             fraction: Perbill,
             slash_era: EraIndex,
         },
+        /// The slashes message was sent correctly.
+        SlashesMessageSent { slashes_command: Command },
     }
 
     #[pallet::config]
@@ -558,7 +560,7 @@ impl<T: Config> Pallet<T> {
         let outbound_message = Message {
             id: None,
             channel_id,
-            command,
+            command: command.clone(),
         };
 
         // Validate and deliver the message
@@ -566,6 +568,10 @@ impl<T: Config> Pallet<T> {
             Ok((ticket, _fee)) => {
                 if let Err(err) = T::OutboundQueue::deliver(ticket) {
                     log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
+                } else {
+                    Self::deposit_event(Event::SlashesMessageSent {
+                        slashes_command: command,
+                    });
                 }
             }
             Err(err) => {
