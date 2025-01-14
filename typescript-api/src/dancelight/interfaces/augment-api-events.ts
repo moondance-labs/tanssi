@@ -354,6 +354,12 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         externalValidatorSlashes: {
+            /** The slashes message was sent correctly. */
+            SlashesMessageSent: AugmentedEvent<
+                ApiType,
+                [slashesCommand: TpBridgeCommand],
+                { slashesCommand: TpBridgeCommand }
+            >;
             /** Removed author data */
             SlashReported: AugmentedEvent<
                 ApiType,
