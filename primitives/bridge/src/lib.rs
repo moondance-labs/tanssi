@@ -19,6 +19,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod tests;
+
 pub mod symbiotic_message_processor;
 
 use {
