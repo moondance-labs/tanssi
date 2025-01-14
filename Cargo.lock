@@ -9628,6 +9628,7 @@ dependencies = [
 name = "pallet-external-validators-rewards"
 version = "0.1.0"
 dependencies = [
+ "cumulus-primitives-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -18835,6 +18836,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "staging-xcm-executor",
 ]
 
 [[package]]

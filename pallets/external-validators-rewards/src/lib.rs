@@ -33,7 +33,10 @@ pub mod weights;
 pub use pallet::*;
 
 use {
-    frame_support::traits::{Defensive, Get, ValidatorSet},
+    frame_support::traits::{
+        fungible::{self, Mutate},
+        Defensive, Get, ValidatorSet,
+    },
     parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
@@ -104,6 +107,13 @@ pub mod pallet {
         type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
+
+        /// Currency the rewards are minted in
+        type Currency: fungible::Inspect<Self::AccountId, Balance: From<u128>>
+            + fungible::Mutate<Self::AccountId>;
+
+        /// Ethereum Sovereign Account where rewards will be minted
+        type RewardsEthereumSovereignAccount: Get<Self::AccountId>;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -232,11 +242,20 @@ pub mod pallet {
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
             if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
+                let tokens_inflated = T::EraInflationProvider::get();
+
+                let ethereum_soverein_account = T::RewardsEthereumSovereignAccount::get();
+                if let Err(err) =
+                    T::Currency::mint_into(&ethereum_soverein_account, tokens_inflated.into())
+                {
+                    log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
+                }
+
                 let command = Command::ReportRewards {
                     timestamp: T::TimestampProvider::get(),
                     era_index,
                     total_points: utils.total_points,
-                    tokens_inflated: T::EraInflationProvider::get(),
+                    tokens_inflated,
                     rewards_merkle_root: utils.rewards_merkle_root,
                 };
 
