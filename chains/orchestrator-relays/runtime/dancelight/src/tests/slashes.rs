@@ -21,10 +21,10 @@ use {
         RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
-    sp_core::{H256, Pair},
+    parity_scale_codec::Encode,
+    sp_core::{Pair, H256},
     sp_runtime::Perbill,
     sp_std::vec,
-    parity_scale_codec::Encode,
     tp_bridge::Command,
 };
 

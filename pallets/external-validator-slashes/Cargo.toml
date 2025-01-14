@@ -46,6 +46,7 @@ std = [
 	"pallet-staking/std",
 	"pallet-timestamp/std",
 	"parity-scale-codec/std",
+	"polkadot-core-primitives/std",
 	"scale-info/std",
 	"snowbridge-core/std",
 	"sp-core/std",
