@@ -65,6 +65,7 @@ std = [
 	"sp-std/std",
 	"tp-bridge/std",
 	"tp-traits/std",
+	"cumulus-primitives-core/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -79,6 +80,7 @@ runtime-benchmarks = [
 	"sp-staking/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]
 
 try-runtime = [
