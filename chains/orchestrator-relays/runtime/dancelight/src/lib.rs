@@ -145,7 +145,7 @@ pub use {
 };
 
 /// Constant values used within the runtime.
-use dancelight_runtime_constants::{currency::*, fee::*, time::*};
+use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
 
 // XCM configurations.
 pub mod xcm_config;
@@ -1389,7 +1389,7 @@ parameter_types! {
     // Chain ID of Holesky.
     pub RewardsEthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
-            &Location::new(1, [GlobalConsensus(Ethereum { chain_id: 17_000 } )])
+            &EthereumLocation::get()
         ).expect("to convert RewardsEthereumSovereignAccount");
 }
 
