@@ -244,9 +244,9 @@ pub mod pallet {
             if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
                 let tokens_inflated = T::EraInflationProvider::get();
 
-                let ethereum_soverein_account = T::RewardsEthereumSovereignAccount::get();
+                let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
                 if let Err(err) =
-                    T::Currency::mint_into(&ethereum_soverein_account, tokens_inflated.into())
+                    T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
                 {
                     log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
                 }
