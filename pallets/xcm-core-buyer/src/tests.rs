@@ -359,7 +359,11 @@ fn slot_frequency_is_taken_into_account() {
                 _ => panic!("We checked for the event variant above; qed")
             };
             assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Success)));
-            Pallet::<Test>::on_container_author_noted(&1u64, 5, another_para_id);
+            Pallet::<Test>::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1u64,
+                block_number: 5,
+                para_id: another_para_id,
+            }]);
 
             // Add latest author info entry to indicate block was produced
             MockData::mutate(|stored_mock_data| {
@@ -576,7 +580,11 @@ fn force_buy_two_messages_fails_after_receiving_order_success_response() {
             assert_noop!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,), Error::<Test>::BlockProductionPending);
 
             // Now if the pallet gets notification that pending block for that para id is incremented it is possible to buy again.
-            Pallet::<Test>::on_container_author_noted(&1u64, 5, para_id);
+            Pallet::<Test>::on_container_authors_noted(&[AuthorNotingInfo {
+                author: 1u64,
+                block_number: 5,
+                para_id,
+            }]);
             assert_ok!(XcmCoreBuyer::force_buy_core(RuntimeOrigin::root(), para_id,));
 
             assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Success)));

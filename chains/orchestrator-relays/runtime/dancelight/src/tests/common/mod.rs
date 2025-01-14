@@ -17,7 +17,10 @@
 #![allow(dead_code)]
 
 use {
-    crate::{BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, RuntimeCall},
+    crate::{
+        BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, MessageQueue,
+        RuntimeCall,
+    },
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -238,7 +241,6 @@ pub fn start_block() -> RunSummary {
     Babe::on_initialize(System::block_number());
     ContainerRegistrar::on_initialize(System::block_number());
     ExternalValidatorSlashes::on_initialize(System::block_number());
-
     Session::on_initialize(System::block_number());
 
     Initializer::on_initialize(System::block_number());

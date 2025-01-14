@@ -1385,6 +1385,7 @@ impl Get<u64> for TimestampProvider {
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
@@ -1579,7 +1580,7 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignme
     type ProviderRequest = PreserversAssignmentPaymentRequest;
     /// Extra parameter the assigner provides.
     type AssignerParameter = PreserversAssignmentPaymentExtra;
-    /// Represents the succesful outcome of the assignment.
+    /// Represents the successful outcome of the assignment.
     type AssignmentWitness = PreserversAssignmentPaymentWitness;
 
     fn try_start_assignment(
@@ -1643,7 +1644,7 @@ impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = u64;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
@@ -1978,7 +1979,7 @@ impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
-    Runtime: pallet_registrar::Config,
+    Runtime: pallet_registrar::Config + paras_registrar::Config,
     sp_runtime::AccountId32: From<AccountId>,
 {
     fn register(
@@ -2058,6 +2059,13 @@ where
     fn registrar_new_session(session: u32) {
         benchmark_helpers::run_to_session(session)
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_chain_registration(id: ParaId, who: AccountId) {
+        use frame_support::assert_ok;
+        paras_registrar::NextFreeParaId::<Runtime>::put(id);
+        assert_eq!(paras_registrar::NextFreeParaId::<Runtime>::get(), id);
+        assert_ok!(Registrar::reserve(RuntimeOrigin::signed(who.into())));
+    }
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -2075,8 +2083,13 @@ impl pallet_registrar::Config for Runtime {
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type InnerRegistrar =
-        InnerDancelightRegistrar<Runtime, AccountId, Registrar, paras_registrar::TestWeightInfo>;
+
+    type InnerRegistrar = InnerDancelightRegistrar<
+        Runtime,
+        AccountId,
+        Registrar,
+        weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>,
+    >;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
 }
 
@@ -2228,7 +2241,9 @@ mod benches {
         [pallet_external_validators_rewards, ExternalValidatorsRewards]
         [pallet_external_validator_slashes, ExternalValidatorSlashes]
         [pallet_invulnerables, TanssiInvulnerables]
+        [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]

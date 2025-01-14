@@ -24,6 +24,7 @@ use {
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
     std::{collections::HashMap, ops::RangeInclusive},
+    tp_bridge::Command,
 };
 
 fn assert_validators_do_not_change(
@@ -810,5 +811,86 @@ fn external_validators_rewards_merkle_proofs() {
 
             // Proof for a future era should also be invalid.
             assert!(bob_invalid_merkle_proof.is_none());
+        });
+}
+
+#[test]
+fn external_validators_rewards_test_command_integrity() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let sessions_per_era = SessionsPerEra::get();
+
+            assert_ok!(ExternalValidators::skip_external_validators(
+                root_origin(),
+                true
+            ));
+
+            run_to_session(sessions_per_era);
+            let validators = Session::validators();
+
+            // Only whitelisted validators get selected
+            assert_eq!(
+                validators,
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 0
+            );
+
+            // Reward Alice and Bob in era 1
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 1
+            );
+
+            // This will call on_era_end for era 1
+            run_to_session(sessions_per_era * 2);
+
+            let mut rewards_command_found: Option<Command> = None;
+            let ext_validators_rewards_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::ExternalValidatorsRewards(
+                        pallet_external_validators_rewards::Event::RewardsMessageSent {
+                            rewards_command,
+                        },
+                    ) => {
+                        rewards_command_found = Some(rewards_command.clone());
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
+            let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+            let expected_rewards_command = Command::ReportRewards {
+                timestamp: 0u64,
+                era_index: 1u32,
+                total_points: 40u128,
+                tokens_inflated: 0u128,
+                rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+            };
+
+            assert_eq!(
+                ext_validators_rewards_event, 1,
+                "RewardsMessageSent event should be emitted"
+            );
+            assert_eq!(
+                rewards_command_found.unwrap(),
+                expected_rewards_command,
+                "Both rewards commands should match!"
+            );
         });
 }

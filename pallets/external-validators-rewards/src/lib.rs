@@ -73,6 +73,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// Overarching event type.
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
         /// How to fetch the current era info.
         type EraIndexProvider: EraIndexProvider;
 
@@ -112,6 +115,13 @@ pub mod pallet {
     #[pallet::pallet]
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// The rewards message was sent correctly.
+        RewardsMessageSent { rewards_command: Command },
+    }
 
     /// Keep tracks of distributed points per validator and total.
     #[derive(RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
@@ -245,7 +255,7 @@ pub mod pallet {
                 let outbound_message = Message {
                     id: None,
                     channel_id,
-                    command,
+                    command: command.clone(),
                 };
 
                 // Validate and deliver the message
@@ -253,6 +263,10 @@ pub mod pallet {
                     Ok((ticket, _fee)) => {
                         if let Err(err) = T::OutboundQueue::deliver(ticket) {
                             log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
+                        } else {
+                            Self::deposit_event(Event::RewardsMessageSent {
+                                rewards_command: command,
+                            });
                         }
                     }
                     Err(err) => {
