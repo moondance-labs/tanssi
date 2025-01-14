@@ -54,10 +54,10 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='{"runtime_name": "dancebox","runtime_path" : "./runtime/dancebox/src/lib.rs", "runtime_dir" : "./runtime/dancebox", "chain_name": "dancebox"}'
-          flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs", "runtime_dir" : "./runtime/flashbox", "chain_name": "flashbox"}'
-          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/runtime-templates/frontier/src/lib.rs", "runtime_dir" : "./container-chains/runtime-templates/frontier/", "chain_name": "container-chain-template-frontier"}'
-          simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/runtime-templates/simple/src/lib.rs", "runtime_dir" : "./container-chains/runtime-templates/simple/", "chain_name": "container-chain-template-simple"}'
+          dancebox='{"runtime_name": "dancebox","runtime_path" : "./chains/orchestrator-paras/runtime/dancebox/src/lib.rs", "runtime_dir" : "./runtime/dancebox", "chain_name": "dancebox"}'
+          flashbox='{"runtime_name": "flashbox","runtime_path" : "./chains/orchestrator-paras/runtime/flashbox/src/lib.rs", "runtime_dir" : "./runtime/flashbox", "chain_name": "flashbox"}'
+          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./chains/container-chains/runtime-templates/frontier/src/lib.rs", "runtime_dir" : "./chains/container-chains/runtime-templates/frontier/", "chain_name": "container-chain-template-frontier"}'
+          simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs", "runtime_dir" : "./chains/container-chains/runtime-templates/simple/", "chain_name": "container-chain-template-simple"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
