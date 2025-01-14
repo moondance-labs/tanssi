@@ -20,6 +20,7 @@ use {
         new_test_ext, roll_one_block, sent_ethereum_message_nonce, DeferPeriodGetter,
         ExternalValidatorSlashes, RuntimeOrigin, Test,
     },
+    crate::Slash,
     frame_support::{assert_noop, assert_ok},
     mock::MockEraIndexProvider,
 };
@@ -310,6 +311,25 @@ fn test_on_offence_defer_period_0_messages_get_queued() {
         roll_one_block();
         assert_eq!(sent_ethereum_message_nonce(), 2);
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
+    });
+}
+
+#[test]
+fn test_account_id_encoding() {
+    new_test_ext().execute_with(|| {
+        use polkadot_core_primitives::AccountId as OpaqueAccountId;
+        let alice_account: [u8; 32] = [4u8; 32];
+
+        let slash = Slash::<OpaqueAccountId, u32> {
+            validator: OpaqueAccountId::from(alice_account),
+            reporters: vec![],
+            slash_id: 1,
+            percentage: Perbill::default(),
+            confirmed: true,
+        };
+
+        let encoded_account = slash.validator.encode();
+        assert_eq!(alice_account.to_vec(), encoded_account);
     });
 }
 

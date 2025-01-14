@@ -9592,6 +9592,7 @@ dependencies = [
  "pallet-staking",
  "pallet-timestamp",
  "parity-scale-codec",
+ "polkadot-core-primitives",
  "scale-info",
  "snowbridge-core",
  "sp-core",

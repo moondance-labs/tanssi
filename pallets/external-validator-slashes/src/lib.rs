@@ -532,7 +532,6 @@ impl<T: Config> Pallet<T> {
                     break;
                 };
 
-                // TODO: check if validator.clone().encode() matches with the actual account bytes.
                 slashes_to_send.push((
                     slash.validator.clone().encode(),
                     slash.percentage.deconstruct(),
