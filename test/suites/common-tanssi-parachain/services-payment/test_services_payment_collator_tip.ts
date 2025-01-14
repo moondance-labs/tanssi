@@ -49,5 +49,32 @@ describeSuite({
                 expect(tipEvent.tip.toNumber()).to.be.equal(tip);
             },
         });
+        it({
+            id: "E02",
+            title: "Tip is not charged when there are enough collators for all chains",
+            test: async function () {
+                await context.createBlock();
+
+                const paraId = 2001n;
+                const otherParaId = 2000n;
+
+                // Deregister the other chain, 2000, so that 2001 is the only chain
+                const txDeregister = polkadotJs.tx.registrar.deregister(otherParaId);
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(txDeregister).signAsync(alice)]);
+                await jumpSessions(context, 2);
+
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
+
+                expect(
+                    collators.toJSON().containerChains[paraId].length,
+                    `Container chain ${paraId} should have 2 collators`
+                ).toBe(2);
+
+                // No tip event
+                const events = await polkadotJs.query.system.events();
+                const tipEvent = fetchCollatorAssignmentTip(events);
+                expect(tipEvent).to.be.undefined;
+            },
+        });
     },
 });
