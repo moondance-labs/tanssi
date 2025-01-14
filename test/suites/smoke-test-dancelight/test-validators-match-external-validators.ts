@@ -1,5 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
+import { Vec } from "@polkadot/types-codec";
+import { AccountId32 } from "@polkadot/types/interfaces";
 
 describeSuite({
     id: "S23",
@@ -18,13 +20,12 @@ describeSuite({
 
             test: async function () {
                 const sessionValidators = await api.query.session.validators();
-                const externalValidators = await api.query.externalValidators.whitelistedValidators();
+                const externalValidators = await api.query.externalValidators.whitelistedValidators<Vec<AccountId32>>();
 
-                expect(sessionValidators.length).to.equal(externalValidators.length);
-
-                for (const validatorId of sessionValidators) {
-                    expect(externalValidators.includes(validatorId)).to.be.true;
-                }
+                expect(sessionValidators.eq(externalValidators.map((v) => v.toHex()))).to.be.eq(
+                    true,
+                    `Validators ${sessionValidators.toString()} are inconsistent with external validators ${externalValidators.toString()}`
+                );
             },
         });
     },
