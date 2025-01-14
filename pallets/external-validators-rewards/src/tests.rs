@@ -17,7 +17,8 @@
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
     sp_std::collections::btree_map::BTreeMap,
-    tp_traits::{ActiveEraInfo, OnEraStart},
+    tp_bridge::Command,
+    tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
 };
 
 #[test]
@@ -80,5 +81,35 @@ fn history_limit() {
         let storage_eras =
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 0, "data should be erased now");
+    })
+}
+
+#[test]
+fn test_on_era_end() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        Mock::mutate(|mock| {
+            mock.active_era = Some(ActiveEraInfo {
+                index: 1,
+                start: None,
+            })
+        });
+        ExternalValidatorsRewards::reward_by_ids([(1, 10), (3, 30), (5, 50)]);
+        ExternalValidatorsRewards::on_era_end(1);
+
+        let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+        let expected_command = Command::ReportRewards {
+            timestamp: 31000u64,
+            era_index: 1u32,
+            total_points: 90u128,
+            tokens_inflated: 0u128,
+            rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+        };
+
+        System::assert_last_event(RuntimeEvent::ExternalValidatorsRewards(
+            crate::Event::RewardsMessageSent {
+                rewards_command: expected_command,
+            },
+        ));
     })
 }
