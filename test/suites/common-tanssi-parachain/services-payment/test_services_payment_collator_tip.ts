@@ -3,6 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 import { fetchCollatorAssignmentTip, jumpSessions } from "util/block";
+import { paraIdTank } from "../../../util/payment.ts";
 
 describeSuite({
     id: "CPT0608",
@@ -61,6 +62,35 @@ describeSuite({
                 // Deregister the other chain, 2000, so that 2001 is the only chain
                 const txDeregister = polkadotJs.tx.registrar.deregister(otherParaId);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(txDeregister).signAsync(alice)]);
+                await jumpSessions(context, 2);
+
+                const collators = await collatorAssignmentAlias.collatorContainerChain();
+
+                expect(
+                    collators.toJSON().containerChains[paraId].length,
+                    `Container chain ${paraId} should have 2 collators`
+                ).toBe(2);
+
+                // No tip event
+                const events = await polkadotJs.query.system.events();
+                const tipEvent = fetchCollatorAssignmentTip(events);
+                expect(tipEvent).to.be.undefined;
+            },
+        });
+        it({
+            id: "E03",
+            title: "If tip is not charged, parachain tank account does not need to have balance",
+            // Skipping this test because it is currently failing. See MD-815
+            modifier: "skip",
+            test: async function () {
+                await context.createBlock();
+
+                const paraId = 2001n;
+
+                // Set tank account to 0 balance, shouldn't matter because the chain doesn't need tip, and also the
+                // chain has credits.
+                const tx = polkadotJs.tx.balances.forceSetBalance(paraIdTank(paraId), 0);
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
                 await jumpSessions(context, 2);
 
                 const collators = await collatorAssignmentAlias.collatorContainerChain();
