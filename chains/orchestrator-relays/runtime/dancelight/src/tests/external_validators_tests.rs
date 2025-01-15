@@ -23,11 +23,8 @@ use {
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
-    parity_scale_codec::Encode,
-    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    sp_core::H256,
-    sp_io::hashing::twox_64,
     std::{collections::HashMap, ops::RangeInclusive},
+    tp_bridge::Command,
 };
 
 fn assert_validators_do_not_change(
@@ -716,29 +713,6 @@ fn external_validators_rewards_sends_message_on_era_end() {
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
-            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
-
-            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
-            let mut combined_channel_id_key = Vec::new();
-            let hashed_key = twox_64(&channel_id);
-
-            combined_channel_id_key.extend_from_slice(&hashed_key);
-            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
-
-            let mut full_storage_key = Vec::new();
-            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(
-                b"EthereumSystem",
-                b"Channels",
-            ));
-            full_storage_key.extend_from_slice(&combined_channel_id_key);
-
-            let channel = Channel {
-                agent_id: H256::default(),
-                para_id: 1000u32.into(),
-            };
-
-            frame_support::storage::unhashed::put(&full_storage_key, &channel);
-
             // This will call on_era_end for era 0
             run_to_session(sessions_per_era);
 
@@ -1051,5 +1025,86 @@ fn external_validators_whitelisted_never_rewarded() {
                 );
                 assert!(alice_merkle_proof.is_none());
             }
+        });
+}
+
+#[test]
+fn external_validators_rewards_test_command_integrity() {
+    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
+
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let sessions_per_era = SessionsPerEra::get();
+
+            assert_ok!(ExternalValidators::skip_external_validators(
+                root_origin(),
+                true
+            ));
+
+            run_to_session(sessions_per_era);
+            let validators = Session::validators();
+
+            // Only whitelisted validators get selected
+            assert_eq!(
+                validators,
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 0
+            );
+
+            // Reward Alice and Bob in era 1
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
+
+            assert!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
+                    == 1
+            );
+
+            // This will call on_era_end for era 1
+            run_to_session(sessions_per_era * 2);
+
+            let mut rewards_command_found: Option<Command> = None;
+            let ext_validators_rewards_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::ExternalValidatorsRewards(
+                        pallet_external_validators_rewards::Event::RewardsMessageSent {
+                            rewards_command,
+                        },
+                    ) => {
+                        rewards_command_found = Some(rewards_command.clone());
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
+            let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+            let expected_rewards_command = Command::ReportRewards {
+                timestamp: 0u64,
+                era_index: 1u32,
+                total_points: 40u128,
+                tokens_inflated: 0u128,
+                rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+            };
+
+            assert_eq!(
+                ext_validators_rewards_event, 1,
+                "RewardsMessageSent event should be emitted"
+            );
+            assert_eq!(
+                rewards_command_found.unwrap(),
+                expected_rewards_command,
+                "Both rewards commands should match!"
+            );
         });
 }

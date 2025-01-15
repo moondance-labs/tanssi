@@ -34,11 +34,6 @@ if [[ $PALLET = "*" ]]; then
 	exit
 fi
 
-# Pallet weights
-TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs \
-    OUTPUT_PATH=tmp \
-    tools/benchmarking.sh "$PALLET" "*" --check
-
 # Copy "tmp/pallet_registrar.rs" to "pallets/registrar/src/weights.rs"
 # Use cargo metadata command to get the pallet folder from the pallet name.
 # Need to use a regex to support pallets with underscores properly
@@ -60,45 +55,70 @@ export CRATE_NAME_REAL=$(cargo metadata --no-deps --format-version 1 | \
 	.name
     ')
 
+# Update pallet weights
+TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs \
+    OUTPUT_PATH=tmp \
+    tools/benchmarking.sh "$PALLET" "*" --check
+
 if [ -z $CRATE_PATH ]; then
 	echo "Couldn't find pallet folder, you will need to copy the weights manually"
 else
 	cp -v tmp/$PALLET.rs $CRATE_PATH/src/weights.rs
 fi
 
-# Dancebox weights
-TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-    OUTPUT_PATH=tmp/dancebox_weights \
-    tools/benchmarking.sh "$PALLET" "*" --check
-cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/runtime/dancebox/src/weights/$PALLET.rs
+# For each runtime, only update the weights if they already existed before
+# This is because the different runtimes have different pallets
+if [ -f "chains/orchestrator-paras/dancebox/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Dancebox weights"
+	echo "------------------------------------------------------------"
+	TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+	    OUTPUT_PATH=tmp/dancebox_weights \
+	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/dancebox/src/weights/$PALLET.rs
+fi
 
-# Flashbox weights
-TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-    CHAIN=flashbox_dev \
-    OUTPUT_PATH=tmp/flashbox_weights \
-    tools/benchmarking.sh "$PALLET" "*" --check
-cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/runtime/flashbox/src/weights/$PALLET.rs
+if [ -f "chains/orchestrator-paras/flashbox/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Flashbox weights"
+	echo "------------------------------------------------------------"
+	TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+	    CHAIN=flashbox_dev \
+	    OUTPUT_PATH=tmp/flashbox_weights \
+	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/flashbox/src/weights/$PALLET.rs
+fi
 
-# Dancelight weights
-BINARY=target/release/tanssi-relay \
-    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-    CHAIN=dancelight-dev \
-    OUTPUT_PATH=tmp/dancelight_weights \
-    tools/benchmarking.sh "$PALLET" "*" --check
-cp -v tmp/dancelight_weights/$PALLET.rs chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs
-
-
-# Probably don't need to add weights to templates, change false to true if the pallet is also included in the templates
-if false; then
-	# Simple template weights
+if [ -f "chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Simple template weights"
+	echo "------------------------------------------------------------"
 	BINARY=target/release/container-chain-simple-node \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/simple_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/simple_template_weights/$PALLET.rs chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs
+fi
 
-	# Frontier template weights
+if [ -f "chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Frontier template weights"
+	echo "------------------------------------------------------------"
 	BINARY=target/release/container-chain-frontier-node \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/frontier_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/frontier_template_weights/$PALLET.rs chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.rs
+fi
+
+if [ -f "chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Dancelight weights"
+	echo "------------------------------------------------------------"
+	BINARY=target/release/tanssi-relay \
+	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+	    CHAIN=dancelight-dev \
+	    OUTPUT_PATH=tmp/dancelight_weights \
+	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/dancelight_weights/$PALLET.rs chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs
 fi
