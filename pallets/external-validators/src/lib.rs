@@ -155,11 +155,16 @@ pub mod pallet {
     pub type WhitelistedValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
+    /// Copy of `WhitelistedValidators` at the start of this active era.
+    /// Used to check which validators we don't need to reward.
     #[pallet::storage]
-    pub type WhitelistedValidatorsBackup<T: Config> =
+    pub type WhitelistedValidatorsActiveEra<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+
+    /// Same as `WhitelistedValidatorsActiveEra` but only exists for a brief period of time when the
+    /// next era has been planned but not enacted yet.
     #[pallet::storage]
-    pub type WhitelistedValidatorsBackupPending<T: Config> =
+    pub type WhitelistedValidatorsActiveEraPending<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
     /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
@@ -217,11 +222,10 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
-            <WhitelistedValidators<T>>::put(&bounded_validators);
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
-            // TODO: this doesn't seem to fix any tests, is it needed or not?
-            <WhitelistedValidatorsBackup<T>>::put(&bounded_validators);
-            <WhitelistedValidatorsBackupPending<T>>::put(&bounded_validators);
+            <WhitelistedValidators<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsActiveEra<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsActiveEraPending<T>>::put(&bounded_validators);
         }
     }
 
@@ -490,7 +494,9 @@ pub mod pallet {
                 });
                 new_index
             });
-            WhitelistedValidatorsBackup::<T>::put(WhitelistedValidatorsBackupPending::<T>::take());
+            WhitelistedValidatorsActiveEra::<T>::put(
+                WhitelistedValidatorsActiveEraPending::<T>::take(),
+            );
             Self::deposit_event(Event::NewEra { era: active_era });
             T::OnEraStart::on_era_start(active_era, start_session);
         }
@@ -522,7 +528,7 @@ pub mod pallet {
                 Self::clear_era_information(old_era);
             }
 
-            WhitelistedValidatorsBackupPending::<T>::put(WhitelistedValidators::<T>::get());
+            WhitelistedValidatorsActiveEraPending::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
             Self::validators()

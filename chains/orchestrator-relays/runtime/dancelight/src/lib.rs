@@ -524,7 +524,7 @@ pub struct RewardPoints;
 impl pallet_authorship::EventHandler<AccountId, BlockNumberFor<Runtime>> for RewardPoints {
     fn note_author(author: AccountId) {
         let whitelisted_validators =
-            pallet_external_validators::WhitelistedValidatorsBackup::<Runtime>::get();
+            pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get();
         // Do not reward whitelisted validators
         if !whitelisted_validators.contains(&author) {
             ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
@@ -1392,7 +1392,7 @@ impl Get<u64> for TimestampProvider {
 pub struct GetWhitelistedValidators;
 impl Get<Vec<AccountId>> for GetWhitelistedValidators {
     fn get() -> Vec<AccountId> {
-        pallet_external_validators::WhitelistedValidatorsBackup::<Runtime>::get().into()
+        pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get().into()
     }
 }
 

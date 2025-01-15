@@ -149,6 +149,7 @@ pub mod pallet {
         StorageMap<_, Twox64Concat, EraIndex, EraRewardPoints<T::AccountId>, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
+        /// Reward validators. Does not check if the validators are valid, caller needs to make sure of that.
         pub fn reward_by_ids(points: impl IntoIterator<Item = (T::AccountId, RewardPoints)>) {
             let active_era = T::EraIndexProvider::active_era();
 
