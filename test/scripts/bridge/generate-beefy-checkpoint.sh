@@ -9,7 +9,7 @@ generate_beefy_checkpoint()
 {
     pushd "$test_helpers_dir"
     pnpm up "@polkadot/*@14.0.1"
-    pnpm generateBeefyCheckpoint
+    contract_dir="$artifacts_dir/tanssi-symbiotic" pnpm generateBeefyCheckpoint
     popd
 }
 
