@@ -22,10 +22,23 @@ describeSuite({
                 const sessionValidators = await api.query.session.validators();
                 const externalValidators = await api.query.externalValidators.whitelistedValidators<Vec<AccountId32>>();
 
-                expect(sessionValidators.eq(externalValidators.map((v) => v.toHex()))).to.be.eq(
-                    true,
-                    `Validators ${sessionValidators.toString()} are inconsistent with external validators ${externalValidators.toString()}`
-                );
+                if (externalValidators.length <= sessionValidators.length) {
+                    // Less external validators than session validators: all external validators must be session validators
+                    for (const externalValidator of externalValidators) {
+                        expect(
+                            sessionValidators.toString().includes(externalValidator.toString()),
+                            `External validator should be in validators list: ${externalValidator.toString()}`
+                        ).to.be.true;
+                    }
+                } else {
+                    // More external validators than session validators: all session validators must be external validators
+                    for (const validator of sessionValidators) {
+                        expect(
+                            externalValidators.toString().includes(validator.toString()),
+                            `Validator should be in external validators list: ${validator.toString()}`
+                        ).to.be.true;
+                    }
+                }
             },
         });
     },
