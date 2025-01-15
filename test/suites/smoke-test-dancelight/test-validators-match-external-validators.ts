@@ -20,7 +20,7 @@ describeSuite({
 
             test: async function () {
                 const sessionValidators = await api.query.session.validators();
-                const externalValidators = await api.query.externalValidators.whitelistedValidators<Vec<AccountId32>>();
+                const externalValidators = await api.query.externalValidators.externalValidators<Vec<AccountId32>>();
 
                 if (externalValidators.length <= sessionValidators.length) {
                     // Less external validators than session validators: all external validators must be session validators
