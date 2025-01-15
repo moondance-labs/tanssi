@@ -1036,23 +1036,75 @@ fn external_validators_rewards_test_command_integrity() {
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .build()
         .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
-                true
+                false
+            ));
+            assert_eq!(
+                ExternalValidators::whitelisted_validators(),
+                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+            );
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(ALICE)
+            ));
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                root_origin(),
+                AccountId::from(BOB)
+            ));
+
+            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
+                AccountId::from(CHARLIE),
+                AccountId::from(DAVE)
+            ]));
+
+            // Register CHARLIE and DAVE session keys
+            let charlie_keys =
+                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                crate::SessionKeys {
+                    babe: charlie_keys.babe.clone(),
+                    grandpa: charlie_keys.grandpa.clone(),
+                    para_validator: charlie_keys.para_validator.clone(),
+                    para_assignment: charlie_keys.para_assignment.clone(),
+                    authority_discovery: charlie_keys.authority_discovery.clone(),
+                    beefy: charlie_keys.beefy.clone(),
+                    nimbus: charlie_keys.nimbus.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                crate::SessionKeys {
+                    babe: dave_keys.babe.clone(),
+                    grandpa: dave_keys.grandpa.clone(),
+                    para_validator: dave_keys.para_validator.clone(),
+                    para_assignment: dave_keys.para_assignment.clone(),
+                    authority_discovery: dave_keys.authority_discovery.clone(),
+                    beefy: dave_keys.beefy.clone(),
+                    nimbus: dave_keys.nimbus.clone(),
+                },
+                vec![]
             ));
 
             run_to_session(sessions_per_era);
+            run_block();
             let validators = Session::validators();
 
             // Only whitelisted validators get selected
             assert_eq!(
                 validators,
-                vec![AccountId::from(ALICE), AccountId::from(BOB)]
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
             assert!(
