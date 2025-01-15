@@ -65,8 +65,7 @@ mod custom_do_process_message;
 mod custom_send_message;
 
 /// A command which is executable by the Gateway contract on Ethereum
-#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
-#[cfg_attr(feature = "std", derive(PartialEq))]
+#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq)]
 pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
