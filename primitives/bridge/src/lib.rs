@@ -138,9 +138,7 @@ impl Command {
                 let mut slashes_tokens_vec: Vec<Token> = vec![];
 
                 for slash in slashes.into_iter() {
-                    // TODO: we could probably do some conversion here to ensure the account
-                    // has 32 bytes.
-                    let account_token = Token::Bytes(slash.0.clone());
+                    let account_token = Token::FixedBytes(slash.0.clone());
                     let slash_fraction_token = Token::Uint(U256::from(slash.1));
                     let tuple_token = Token::Tuple(vec![account_token, slash_fraction_token]);
 
