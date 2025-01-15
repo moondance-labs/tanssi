@@ -260,7 +260,6 @@ describeSuite({
 
                 {
                     const tx = paraApi.tx.dataPreservers.updateProfile(profile2, newProfile);
-                    console.log(`tx: ${tx.toHuman().toString()}`);
                     await signAndSendAndInclude(tx, bob);
                     await context.waitBlock(1, "Tanssi");
                 }
@@ -335,7 +334,13 @@ describeSuite({
                 const newParaId = (await dataProvider2000BApi.query.parachainInfo.parachainId()).toString();
                 expect(newContainerNetwork, "Container2000 API incorrect").to.contain("container-chain-template");
                 expect(newParaId, "Container2000 API incorrect").to.be.equal("2000");
+            },
+        });
 
+        it({
+            id: "T11b",
+            title: "Start new assignment for chain 2000 with stream payment - wait 10 blocks",
+            test: async function () {
                 await context.waitBlock(10, "Tanssi");
             },
         });

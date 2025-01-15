@@ -269,25 +269,66 @@ export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: 
     return 0n;
 }
 
-/// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
-///
-/// ```
-/// const txHash = await tx.signAndSend(alice);
-/// // We don't know if the transaction has been included in a block or not
-/// const { txHash, blockHash } = await signAndSendAndInclude(tx, alice);
-/// // We know the blockHash of the block that includes this transaction
-/// ```
-export function signAndSendAndInclude(tx, account): Promise<{ txHash; blockHash; status }> {
-    return new Promise((resolve) => {
-        tx.signAndSend(account, ({ status, txHash }) => {
-            if (status.isFinalized) {
-                resolve({
-                    txHash,
-                    blockHash: status.asFinalized,
-                    status,
-                });
-            }
+// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
+//
+// ```
+// const txHash = await tx.signAndSend(alice);
+// // We don't know if the transaction has been included in a block or not
+// const { txHash, blockHash } = await signAndSendAndInclude(tx, alice);
+// // We know the blockHash of the block that includes this transaction
+// ```
+//
+// @param tx - The SubmittableExtrinsic to send.
+// @param account - The account (keypair or address) used to sign the transaction.
+// @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
+// @returns A Promise resolving with the transaction hash, block hash, and the full status object.
+export async function signAndSendAndInclude(
+    tx,
+    account,
+    timeout: number | null = 3 * 60 * 1000
+): Promise<{ txHash; blockHash; status }> {
+    // Inner function that doesn't handle timeout
+    const signAndSendAndIncludeInner = (tx, account) => {
+        return new Promise((resolve, reject) => {
+            tx.signAndSend(account, (result) => {
+                const { status, txHash } = result;
+
+                // Resolve once the transaction is finalized
+                if (status.isFinalized) {
+                    resolve({
+                        txHash,
+                        blockHash: status.asFinalized,
+                        status: result,
+                    });
+                }
+            }).catch((error) => {
+                reject(error);
+            });
         });
+    };
+
+    // If no timeout is specified, directly call the no-timeout version
+    if (timeout === null) {
+        return signAndSendAndIncludeInner(tx, account);
+    }
+
+    // Otherwise, create our own promise that sets/rejects on timeout
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            console.log("Transaction timed out");
+            console.log(tx.toJSON());
+            reject(new Error("Transaction timed out"));
+        }, timeout);
+
+        signAndSendAndIncludeInner(tx, account)
+            .then((result) => {
+                clearTimeout(timer);
+                resolve(result);
+            })
+            .catch((error) => {
+                clearTimeout(timer);
+                reject(error);
+            });
     });
 }
 
