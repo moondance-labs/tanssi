@@ -19,9 +19,10 @@ deploy_command() {
 }
 
 echo "Deploying snowbridge contracts"
-pushd "$contract_dir"
-deploy_command scripts/DeployLocal.sol:DeployLocal
+pushd "$symbiotic_contracts_dir"
+deploy_command script/test/DeployLocalSnowbridge.sol:DeployLocalSnowbridge
 popd
+
 
 echo "Deploying symbiotic contracts"
 pushd "$symbiotic_contracts_dir"
