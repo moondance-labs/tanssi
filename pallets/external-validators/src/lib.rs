@@ -528,6 +528,7 @@ pub mod pallet {
                 Self::clear_era_information(old_era);
             }
 
+            // Save whitelisted validators for when the era truly changes (start_era)
             WhitelistedValidatorsActiveEraPending::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
