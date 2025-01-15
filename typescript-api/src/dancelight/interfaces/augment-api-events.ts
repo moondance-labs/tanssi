@@ -57,6 +57,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpBridgeCommand,
     TpTraitsFullRotationModes,
     XcmV3TraitsError,
     XcmVersionedAssets,
@@ -358,6 +359,16 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [validator: AccountId32, fraction: Perbill, slashEra: u32],
                 { validator: AccountId32; fraction: Perbill; slashEra: u32 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        externalValidatorsRewards: {
+            /** The rewards message was sent correctly. */
+            RewardsMessageSent: AugmentedEvent<
+                ApiType,
+                [rewardsCommand: TpBridgeCommand],
+                { rewardsCommand: TpBridgeCommand }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;

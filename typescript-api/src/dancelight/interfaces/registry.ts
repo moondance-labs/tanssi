@@ -123,6 +123,7 @@ import type {
     PalletExternalValidatorsEvent,
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
+    PalletExternalValidatorsRewardsEvent,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -450,6 +451,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpBridgeCommand,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
@@ -625,6 +627,7 @@ declare module "@polkadot/types/types/registry" {
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
         PalletExternalValidatorsForcing: PalletExternalValidatorsForcing;
         PalletExternalValidatorsRewardsEraRewardPoints: PalletExternalValidatorsRewardsEraRewardPoints;
+        PalletExternalValidatorsRewardsEvent: PalletExternalValidatorsRewardsEvent;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
@@ -952,6 +955,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4Response: StagingXcmV4Response;
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
+        TpBridgeCommand: TpBridgeCommand;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;
