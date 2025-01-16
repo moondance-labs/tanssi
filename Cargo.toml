@@ -58,6 +58,7 @@ pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/r
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-data-preservers = { path = "pallets/data-preservers", default-features = false }
 pallet-data-preservers-runtime-api = { path = "pallets/data-preservers/runtime-api", default-features = false }
+pallet-ethereum-token-transfers = { path = "pallets/ethereum-token-transfers", default-features = false }
 pallet-external-validator-slashes = { path = "pallets/external-validator-slashes", default-features = false }
 pallet-external-validators = { path = "pallets/external-validators", default-features = false }
 pallet-external-validators-rewards = { path = "pallets/external-validators-rewards", default-features = false }

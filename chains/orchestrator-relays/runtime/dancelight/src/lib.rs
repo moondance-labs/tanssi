@@ -1892,6 +1892,7 @@ construct_runtime! {
         EthereumInboundQueue: snowbridge_pallet_inbound_queue = 91,
         EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
         EthereumSystem: snowbridge_pallet_system = 103,
+        EthereumTokenTransfers: pallet_ethereum_token_transfers = 104,
 
         // Migration stuff
         Migrations: pallet_migrations = 120,
@@ -2246,6 +2247,7 @@ mod benches {
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         // Bridges
+        [pallet_ethereum_token_transfers, EthereumTokenTransfers]
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
         [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
         [snowbridge_pallet_system, EthereumSystem]

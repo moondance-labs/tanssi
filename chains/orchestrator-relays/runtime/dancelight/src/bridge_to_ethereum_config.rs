@@ -33,9 +33,13 @@ use {
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
-    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
-    sp_core::{ConstU32, ConstU8, H160},
+    snowbridge_core::{
+        gwei, meth, AgentId, Channel, ChannelId, ParaId, PricingParameters, Rewards,
+    },
+    sp_core::{ConstU32, ConstU8, H160, H256},
+    sp_runtime::DispatchResult,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
+    tp_traits::EthereumSystemChannelManager,
 };
 
 // Ethereum Bridge
@@ -157,6 +161,24 @@ impl snowbridge_pallet_system::Config for Runtime {
     type UniversalLocation = UniversalLocation;
     type EthereumLocation = EthereumLocation;
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
+}
+
+pub struct EthereumSystemHandler;
+impl EthereumSystemChannelManager for EthereumSystemHandler {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult {
+        if snowbridge_pallet_system::Channels::<Runtime>::contains_key(channel_id) {
+            return Err(snowbridge_pallet_system::Error::<Runtime>::ChannelAlreadyCreated.into());
+        }
+
+        let channel = Channel { agent_id, para_id };
+
+        snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
+        Ok(())
+    }
+}
+
+impl pallet_ethereum_token_transfers::Config for Runtime {
+    type EthereumSystemHandler = EthereumSystemHandler;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

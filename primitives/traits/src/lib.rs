@@ -39,6 +39,7 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
+    snowbridge_core::{AgentId, ChannelId},
     sp_core::H256,
     sp_runtime::{
         app_crypto::sp_core,
@@ -580,4 +581,8 @@ impl FullRotationModes {
             parathread: FullRotationMode::KeepAll,
         }
     }
+}
+
+pub trait EthereumSystemChannelManager {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult;
 }
