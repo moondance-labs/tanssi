@@ -19,10 +19,7 @@
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 #[cfg(not(test))]
 use crate::EthereumBeaconClient;
-use frame_support::weights::ConstantMultiplier;
 
-use sp_core::H160;
-use sp_core::{ConstU32, ConstU8};
 #[cfg(not(feature = "runtime-benchmarks"))]
 use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 use {
@@ -33,9 +30,11 @@ use {
         RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     dancelight_runtime_constants::snowbridge::EthereumLocation,
+    frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
-    snowbridge_core::{gwei, meth, AllowSiblingsOnly, PricingParameters, Rewards},
+    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
+    sp_core::{ConstU32, ConstU8, H160},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
 };
 
@@ -147,7 +146,7 @@ impl snowbridge_pallet_ethereum_client::Config for Runtime {
 impl snowbridge_pallet_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = EthereumOutboundQueue;
-    type SiblingOrigin = EnsureXcm<AllowSiblingsOnly>;
+    type SiblingOrigin = EnsureXcm<Nothing>;
     type AgentIdOf = snowbridge_core::AgentIdOf;
     type TreasuryAccount = TreasuryAccount;
     type Token = Balances;
