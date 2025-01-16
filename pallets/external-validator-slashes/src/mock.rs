@@ -217,7 +217,7 @@ impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
         // Every time we hit deliver, increment the nonce
-        SENT_ETHEREUM_MESSAGE_NONCE.with(|r| *r.borrow_mut() = r.take() + 1);
+        SENT_ETHEREUM_MESSAGE_NONCE.with(|r| *r.borrow_mut() += 1);
 
         Ok(H256::zero())
     }
