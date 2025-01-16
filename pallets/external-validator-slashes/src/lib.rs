@@ -350,8 +350,6 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            log::info!("inside on-initialize");
-
             let processed = Self::process_slashes_queue(T::QueuedSlashesProcessedPerBlock::get());
             T::WeightInfo::process_slashes_queue(processed)
         }
@@ -522,6 +520,8 @@ impl<T: Config> Pallet<T> {
         UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
     }
 
+    /// Process up to QueuedSlashesProcessedPerBlock slashes.
+    /// Returns number of slashes that were sent to ethereum.
     fn process_slashes_queue(amount: u32) -> u32 {
         let mut slashes_to_send: Vec<_> = vec![];
         let era_index = T::EraIndexProvider::active_era().index;
