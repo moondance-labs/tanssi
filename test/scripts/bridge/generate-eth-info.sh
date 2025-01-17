@@ -6,7 +6,8 @@ scripts_path="$(realpath ./scripts/bridge)"
 source $scripts_path/set-env.sh
 
 pushd "$ts_scripts_dir" > /dev/null
-contract_dir="$artifacts_dir/relayer/contracts" deploy_script="DeployLocal.sol" pnpm generateContracts "$output_dir/snowbridge_contracts.json" > /dev/null
+#contract_dir="$artifacts_dir/relayer/contracts" deploy_script="DeployLocal.sol" pnpm generateContracts "$output_dir/snowbridge_contracts.json" > /dev/null
+contract_dir="$artifacts_dir/tanssi-symbiotic" deploy_script="DeployLocalSnowbridge.sol" pnpm generateContracts "$output_dir/snowbridge_contracts.json" > /dev/null
 contract_dir="$artifacts_dir/tanssi-symbiotic" deploy_script="DeployTanssiEcosystemDemo.s.sol" pnpm generateContracts "$output_dir/symbiotic_contracts.json" > /dev/null
 popd > /dev/null
 

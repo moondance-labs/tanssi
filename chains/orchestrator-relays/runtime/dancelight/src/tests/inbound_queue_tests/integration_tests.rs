@@ -95,7 +95,8 @@ fn test_inbound_queue_message_passing() {
         let payload = Payload {
             magic_bytes: MAGIC_BYTES,
             message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
-                validators: payload_validators.clone()
+                validators: payload_validators.clone(),
+                timestamp: 0u64
             }),
         };
 
