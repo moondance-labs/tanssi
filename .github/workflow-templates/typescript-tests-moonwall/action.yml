@@ -22,7 +22,7 @@ runs:
       shell: bash
       run: |
         #### Set the number of CPUs to use for parallel tests.
-        echo "CPUS=$(lscpu | egrep '^CPU\(s\)' | grep -o '[0-9]*')" >> $GITHUB_ENV
+        echo "CPUS=$(lscpu | egrep '^CPU\(s\):' | grep -o '[0-9]*')" >> $GITHUB_ENV
 
         echo "CPUS: $CPUS"
 
