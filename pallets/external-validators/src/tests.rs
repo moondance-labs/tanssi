@@ -159,7 +159,9 @@ fn whitelisted_and_external_order() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
+            50, 51
+        ]));
 
         run_to_session(6);
         let validators = Session::validators();
@@ -172,7 +174,9 @@ fn validator_provider_returns_all_validators() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
+            50, 51
+        ]));
 
         run_to_session(6);
         let validators_new_session = Session::validators();
@@ -186,7 +190,9 @@ fn can_skip_external_validators() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![50, 51]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
+            50, 51
+        ]));
         assert_ok!(ExternalValidators::skip_external_validators(
             RuntimeOrigin::signed(RootAccount::get()),
             true
@@ -203,7 +209,7 @@ fn duplicate_validators_are_deduplicated() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![2]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(vec![2]));
 
         run_to_session(6);
         let validators = Session::validators();
@@ -238,7 +244,7 @@ fn duplicate_validator_order_is_preserved() {
             2
         ));
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![3, 1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators(vec![
+        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
             3, 2, 1, 4
         ]));
 

@@ -524,7 +524,12 @@ pub struct RewardPoints;
 
 impl pallet_authorship::EventHandler<AccountId, BlockNumberFor<Runtime>> for RewardPoints {
     fn note_author(author: AccountId) {
-        ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+        let whitelisted_validators =
+            pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get();
+        // Do not reward whitelisted validators
+        if !whitelisted_validators.contains(&author) {
+            ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+        }
     }
 }
 
@@ -1397,6 +1402,13 @@ parameter_types! {
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
 }
 
+pub struct GetWhitelistedValidators;
+impl Get<Vec<AccountId>> for GetWhitelistedValidators {
+    fn get() -> Vec<AccountId> {
+        pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get().into()
+    }
+}
+
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1408,6 +1420,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
 
     type EraInflationProvider = ExternalRewardsEraInflationProvider;
     type TimestampProvider = TimestampProvider;
+    type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;

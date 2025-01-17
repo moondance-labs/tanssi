@@ -1744,7 +1744,16 @@ declare module "@polkadot/types/lookup" {
         readonly asForceEra: {
             readonly mode: PalletExternalValidatorsForcing;
         } & Struct;
-        readonly type: "SkipExternalValidators" | "AddWhitelisted" | "RemoveWhitelisted" | "ForceEra";
+        readonly isSetExternalValidators: boolean;
+        readonly asSetExternalValidators: {
+            readonly validators: Vec<AccountId32>;
+        } & Struct;
+        readonly type:
+            | "SkipExternalValidators"
+            | "AddWhitelisted"
+            | "RemoveWhitelisted"
+            | "ForceEra"
+            | "SetExternalValidators";
     }
 
     /** @name PalletExternalValidatorSlashesCall (142) */
