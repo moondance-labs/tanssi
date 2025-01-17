@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
+mod bridge_to_eth;
 mod mocknets;
 mod reserver_transfers_polkadot_xcm;
 mod xcm_message_exporter;
