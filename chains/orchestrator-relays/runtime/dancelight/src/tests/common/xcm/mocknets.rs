@@ -22,6 +22,7 @@ use {
     dancelight_runtime_constants::currency::UNITS as UNIT,
     emulated_integration_tests_common::xcm_emulator::decl_test_parachains,
     frame_support::parameter_types,
+    frame_support::traits::OnIdle,
     snowbridge_pallet_outbound_queue::CommittedMessage,
     sp_std::cell::RefCell,
     xcm_emulator::TestExt,
@@ -166,6 +167,21 @@ decl_test_networks! {
         ],
         bridge = DancelightEthMockBridge
     }
+}
+
+pub fn force_process_bridge() {
+    type DancelightRelayMessageQueue = <DancelightRelay as DancelightRelayPallet>::MessageQueue;
+    type DancelightRelaySystem = <DancelightRelay as DancelightRelayPallet>::System;
+
+    // Force process MessageQueue
+    DancelightRelay::execute_with(|| {
+        DancelightRelayMessageQueue::on_idle(
+            DancelightRelaySystem::block_number(),
+            crate::MessageQueueServiceWeight::get(),
+        );
+    });
+    // Force send bridge messages, it's hacky but we need to execute anything in the parachain to trigger the bridge.
+    SimpleTemplateDancelightPara::execute_with(|| {});
 }
 
 parameter_types! {
