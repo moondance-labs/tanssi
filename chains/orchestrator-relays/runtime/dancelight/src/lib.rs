@@ -1391,6 +1391,10 @@ parameter_types! {
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()
         ).expect("to convert RewardsEthereumSovereignAccount");
+
+    // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
+    // to properly write integration tests.
+    pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
 }
 
 impl pallet_external_validators_rewards::Config for Runtime {
@@ -1400,7 +1404,8 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type DisputeStatementPoints = ConstU32<20>;
     // TODO: add a proper way to retrieve the inflated tokens.
     // Will likely be through InflationRewards.
-    type EraInflationProvider = ();
+
+    type EraInflationProvider = ExternalRewardsEraInflationProvider;
     type TimestampProvider = TimestampProvider;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
