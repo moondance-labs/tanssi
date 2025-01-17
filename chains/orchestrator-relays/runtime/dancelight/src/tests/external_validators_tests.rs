@@ -25,7 +25,7 @@ use {
     pallet_external_validators::Forcing,
     parity_scale_codec::Encode,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    sp_core::{Get, H256},
+    sp_core::H256,
     sp_io::hashing::twox_64,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
