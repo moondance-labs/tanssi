@@ -14,11 +14,13 @@ config_relayer() {
     # Configure beefy relay
     jq \
         --arg k1 "$(snowbridge_address_for BeefyClient)" \
+        --arg k2 "$(snowbridge_address_for GatewayProxy)" \
         --arg eth_endpoint_ws $eth_endpoint_ws \
         --arg eth_gas_limit $eth_gas_limit \
         --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
         '
       .sink.contracts.BeefyClient = $k1
+    | .sink.contracts.Gateway = $k2
     | .sink.ethereum.endpoint = $eth_endpoint_ws
     | .sink.ethereum."gas-limit" = $eth_gas_limit
     | .source.polkadot.endpoint = $relay_chain_endpoint
@@ -58,6 +60,26 @@ config_relayer() {
     | .schedule.id = 0
     ' \
         $assets_dir/execution-relay.json >$output_dir/execution-relay.json
+
+
+    # Configure substrate relay for ethereum
+    jq \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
+        --arg k2 "$(snowbridge_address_for BeefyClient)" \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg eth_writer_endpoint $eth_writer_endpoint \
+        --arg channelID $PRIMARY_GOVERNANCE_CHANNEL_ID \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.polkadot.endpoint = $relay_chain_endpoint
+    | .source.contracts.BeefyClient = $k2
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .sink.contracts.Gateway = $k1
+    | .sink.ethereum.endpoint = $eth_writer_endpoint
+    ' \
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay.json
 }
 
 write_beacon_checkpoint() {

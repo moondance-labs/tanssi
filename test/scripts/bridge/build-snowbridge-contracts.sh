@@ -10,5 +10,5 @@ source $scripts_path/set-env.sh
 echo "Building snowbridge contracts"
 
 pushd $contract_dir
-forge build --skip test
+forge build
 popd
