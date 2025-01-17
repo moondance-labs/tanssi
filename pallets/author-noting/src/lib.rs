@@ -43,8 +43,9 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
-    sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
+    sp_runtime::{traits::Header, DigestItem, DispatchResult},
     sp_std::vec::Vec,
+    sp_std::borrow::Cow,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
@@ -285,7 +286,7 @@ pub mod pallet {
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
             Ok(Some(InherentError::Other(
-                sp_runtime::RuntimeString::Borrowed("Pallet Author Noting Inherent required"),
+                Cow::from("Pallet Author Noting Inherent required"),
             )))
         }
 
@@ -391,7 +392,7 @@ impl<T: Config> Pallet<T> {
 #[derive(Encode)]
 #[cfg_attr(feature = "std", derive(Debug, Decode))]
 pub enum InherentError {
-    Other(RuntimeString),
+    Other(Cow<'static, str>),
 }
 
 impl IsFatalError for InherentError {

@@ -662,7 +662,7 @@ pub mod pallet {
                 query_id: 0,
                 response: Default::default(),
             });
-            let notify_call_weight = notify_call.get_dispatch_info().weight;
+            let notify_call_weight = notify_call.get_dispatch_info().call_weight;
 
             let notify_query_ttl =
                 <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();

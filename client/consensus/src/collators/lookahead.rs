@@ -44,7 +44,7 @@ use {
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
-        relay_chain::{AsyncBackingParams, CoreIndex, CoreState, Hash as PHash},
+        relay_chain::{AsyncBackingParams, CoreIndex, Hash as PHash},
         PersistedValidationData,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -79,6 +79,7 @@ use {
     tokio_util::sync::CancellationToken,
     tp_xcm_core_buyer::{BuyCollatorProofCreationError, BuyCoreCollatorProof},
 };
+use cumulus_relay_chain_interface::CoreState;
 
 #[derive(Debug)]
 pub enum BuyCoreError<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> {

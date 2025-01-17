@@ -60,7 +60,7 @@ impl ManualXcmApiServer for ManualXcm {
         let downward_message_channel = self.downward_message_channel.clone();
         // If no message is supplied, inject a default one.
         let msg = if msg.is_empty() {
-            staging_xcm::VersionedXcm::<()>::V4(Xcm(vec![
+            staging_xcm::VersionedXcm::<()>::from(Xcm(vec![
                 ReserveAssetDeposited((Parent, 10000000000000u128).into()),
                 ClearOrigin,
                 BuyExecution {
@@ -103,7 +103,7 @@ impl ManualXcmApiServer for ManualXcm {
         let msg = if msg.is_empty() {
             let mut mes = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
             mes.append(
-                &mut (staging_xcm::VersionedXcm::<()>::V4(Xcm(vec![
+                &mut (staging_xcm::VersionedXcm::<()>::from(Xcm(vec![
                     ReserveAssetDeposited(
                         ((Parent, Parachain(sender.into())), 10000000000000u128).into(),
                     ),
