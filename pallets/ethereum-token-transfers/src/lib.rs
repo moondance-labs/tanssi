@@ -30,15 +30,15 @@ mod benchmarking;
 use {
     frame_support::{
         pallet_prelude::*,
-        traits::{Defensive, Get, ValidatorSet},
+        traits::{fungible::{self, Mutate}, tokens::Preservation, Defensive, Get, ValidatorSet},
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
-    snowbridge_core::{AgentId, ChannelId, ParaId},
+    snowbridge_core::{AgentId, ChannelId, ParaId, outbound::SendError},
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
-    sp_core::H256,
+    sp_core::{H160, H256},
     sp_runtime::DispatchResult,
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
@@ -71,26 +71,44 @@ pub mod pallet {
         /// Overarching event type.
         // type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+        /// Currency to handle fees and internal native transfers.
+        type Currency: fungible::Inspect<Self::AccountId, Balance: From<u128>>
+            + fungible::Mutate<Self::AccountId>;
+
         /// Validate a message that will be sent to Ethereum.
-        // type ValidateMessage: ValidateMessage;
+        type ValidateMessage: ValidateMessage;
 
         /// Send a message to Ethereum. Needs to be validated first.
-        /*         type OutboundQueue: DeliverMessage<
+        type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
-        >; */
+        >; 
 
+        /// Handler for EthereumSystem pallet. Commonly used to manage channel creation.
         type EthereumSystemHandler: EthereumSystemChannelManager;
+
+        /// Ethereum sovereign account, where native transfers will go to.
+        type EthereumSovereignAccount: Get<Self::AccountId>;
+
+        /// Account in which fees will be minted.
+        type FeesAccount: Get<Self::AccountId>;
 
         // The weight information of this pallet.
         // type WeightInfo: WeightInfo;
     }
 
     // Events
+
     // Errors
     #[pallet::error]
     pub enum Error<T> {
+        /// The requested ChannelId is already present in this pallet.
         ChannelIdAlreadyExists,
+        /// The requested ParaId is already present in this pallet.
         ParaIdAlreadyExists,
+        /// The outbound message is invalid prior to send.
+        InvalidMessage(SendError),
+        /// The outbound message could not be sent.
+        TransferMessageNotSent(SendError),
     }
 
     #[pallet::pallet]
@@ -136,6 +154,48 @@ pub mod pallet {
             CurrentParaId::<T>::put(para_id);
 
             T::EthereumSystemHandler::create_channel(channel_id, agent_id, para_id)?;
+
+            Ok(())
+        }
+
+        // TODO: docs
+        // TODO: benchmarking
+        #[pallet::call_index(1)]
+        #[pallet::weight(Weight::default())]
+        pub fn transfer_native_token(
+            origin: OriginFor<T>,
+            amount: u128,
+            recipient: H160
+        ) -> DispatchResult {
+            let source = ensure_signed(origin)?;
+
+            // Transfer amount to Ethereum's sovereign account.
+            let ethereum_sovereign_account = T::EthereumSovereignAccount::get();
+            T::Currency::mint_into(&ethereum_sovereign_account, amount.into())?;
+
+            // TODO: which validations should we perform over the channel_id?
+            // Should we check if it exists first? (e.g comparing to the default value given that's not an Option)
+            // Or that's not necessary?
+            let channel_id = CurrentChannelId::<T>::get();
+
+            // TODO: which recipient should we use? Is it okay to receive it via params?
+            // TODO: which token_id?
+            let command = Command::MintForeignToken { token_id: H256::default(), recipient, amount };
+
+            let message = Message { id: None, channel_id, command };
+			let (ticket, fee) =
+				T::ValidateMessage::validate(&message).map_err(|err| Error::<T>::InvalidMessage(err))?;
+
+            // Transfer fees
+            // TODO: transfer fees at once or use something like PayFees?
+            T::Currency::transfer(
+				&source,
+				&T::FeesAccount::get(),
+				(fee.total() as u128).into(),
+				Preservation::Preserve,
+			)?;
+
+            T::OutboundQueue::deliver(ticket).map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
 
             Ok(())
         }

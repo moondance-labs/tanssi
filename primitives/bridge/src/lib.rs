@@ -47,7 +47,7 @@ use {
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
     sp_core::hashing,
-    sp_core::H256,
+    sp_core::{H160, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
 };
@@ -81,6 +81,14 @@ pub enum Command {
         // merkle root of vec![(validatorId, rewardPoints)]
         rewards_merkle_root: H256,
     },
+    MintForeignToken {
+        /// ID for the token
+        token_id: H256,
+        /// The recipient of the newly minted tokens
+        recipient: H160,
+        /// The amount of tokens to mint
+        amount: u128,
+    },
 }
 
 impl Command {
@@ -90,6 +98,7 @@ impl Command {
             // Starting from 32 to keep compatibility with Snowbridge Command enum
             Command::Test { .. } => 32,
             Command::ReportRewards { .. } => 33,
+            Command::MintForeignToken { .. } => 35,
         }
     }
 
@@ -119,6 +128,13 @@ impl Command {
                     rewards_mr_token,
                 ])])
             }
+            Command::MintForeignToken { token_id, recipient, amount } => {
+                ethabi::encode(&[Token::Tuple(vec![
+                    Token::FixedBytes(token_id.as_bytes().to_owned()),
+                    Token::Address(*recipient),
+                    Token::Uint(U256::from(*amount)),
+                ])])
+            }
         }
     }
 }
@@ -144,6 +160,7 @@ pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(Phantom
 
 pub trait ValidateMessage {
     type Ticket;
+    //type Balance: BaseArithmetic + Unsigned + Copy;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
 }
