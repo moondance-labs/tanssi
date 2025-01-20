@@ -183,6 +183,8 @@ declare module "@polkadot/api-base/types/consts" {
         externalValidatorSlashes: {
             /** Number of eras that staked funds must remain bonded for. */
             bondingDuration: u32 & AugmentedConst<ApiType>;
+            /** How many queued slashes are being processed per block. */
+            queuedSlashesProcessedPerBlock: u32 & AugmentedConst<ApiType>;
             /**
              * Number of eras that slashes are deferred by, after computation.
              *

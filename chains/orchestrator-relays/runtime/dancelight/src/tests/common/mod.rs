@@ -244,6 +244,7 @@ pub fn start_block() -> RunSummary {
     ContainerRegistrar::on_initialize(System::block_number());
     ExternalValidatorSlashes::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
+
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());
     MessageQueue::on_initialize(System::block_number());
@@ -260,7 +261,6 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
-
     RunSummary {
         inflation: new_issuance - current_issuance,
     }

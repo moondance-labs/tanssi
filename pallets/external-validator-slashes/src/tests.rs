@@ -16,7 +16,14 @@
 
 use {
     super::*,
-    crate::mock::{new_test_ext, ExternalValidatorSlashes, RuntimeOrigin, Test},
+    crate::{
+        mock::{
+            new_test_ext, roll_one_block, sent_ethereum_message_nonce, DeferPeriodGetter,
+            ExternalValidatorSlashes, MockEraIndexProvider, RuntimeEvent, RuntimeOrigin, System,
+            Test,
+        },
+        Slash,
+    },
     frame_support::{assert_noop, assert_ok},
 };
 
@@ -31,7 +38,7 @@ fn root_can_inject_manual_offence() {
             Perbill::from_percent(75)
         ));
         assert_eq!(
-            Slashes::<Test>::get(3),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -93,7 +100,7 @@ fn root_can_cance_deferred_slash() {
             vec![0]
         ));
 
-        assert_eq!(Slashes::<Test>::get(3), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
     });
 }
 
@@ -133,7 +140,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         ));
 
         assert_eq!(
-            Slashes::<Test>::get(3),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -150,7 +157,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         // whenever we start the 6th era, we can remove everything from era 3
         Pallet::<Test>::on_era_start(9, 9);
 
-        assert_eq!(Slashes::<Test>::get(3), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
     });
 }
 
@@ -168,13 +175,8 @@ fn test_on_offence_injects_offences() {
             &[Perbill::from_percent(75)],
             0,
         );
-        // current era (1) + defer period + 1
-        let slash_era = 0
-            .saturating_add(crate::mock::DeferPeriodGetter::get())
-            .saturating_add(One::one());
-
         assert_eq!(
-            Slashes::<Test>::get(slash_era),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 3,
                 percentage: Perbill::from_percent(75),
@@ -200,12 +202,8 @@ fn test_on_offence_does_not_work_for_invulnerables() {
             &[Perbill::from_percent(75)],
             0,
         );
-        // current era (1) + defer period + 1
-        let slash_era = 1
-            .saturating_add(crate::mock::DeferPeriodGetter::get())
-            .saturating_add(One::one());
 
-        assert_eq!(Slashes::<Test>::get(slash_era), vec![]);
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)), vec![]);
     });
 }
 
@@ -221,7 +219,7 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
             Perbill::from_percent(75)
         ));
         assert_eq!(
-            Slashes::<Test>::get(0),
+            Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
                 validator: 1,
                 percentage: Perbill::from_percent(75),
@@ -267,10 +265,8 @@ fn test_on_offence_defer_period_0() {
             0,
         );
 
-        let slash_era = 0;
-
         assert_eq!(
-            Slashes::<Test>::get(slash_era),
+            Slashes::<Test>::get(get_slashing_era(1)),
             vec![Slash {
                 validator: 3,
                 percentage: Perbill::from_percent(75),
@@ -279,10 +275,182 @@ fn test_on_offence_defer_period_0() {
                 slash_id: 0
             }]
         );
+        start_era(2, 2);
+        roll_one_block();
+
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+    });
+}
+
+#[test]
+fn test_slashes_command_matches_event() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        Pallet::<Test>::on_offence(
+            &[OffenceDetails {
+                // 1 and 2 are invulnerables
+                offender: (3, ()),
+                reporters: vec![],
+            }],
+            &[Perbill::from_percent(75)],
+            0,
+        );
+
+        // The slash was inserted properly
+        assert_eq!(
+            Slashes::<Test>::get(get_slashing_era(1)),
+            vec![Slash {
+                validator: 3,
+                percentage: Perbill::from_percent(75),
+                confirmed: true,
+                reporters: vec![],
+                slash_id: 0
+            }]
+        );
+        start_era(2, 2);
+        roll_one_block();
+
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+
+        // The slash is sent on era 2
+        let expected_slashes = vec![(3u64.encode(), Perbill::from_percent(75).deconstruct())];
+        let expected_command = Command::ReportSlashes {
+            timestamp: 0u64,
+            era_index: 2u32,
+            slashes: expected_slashes,
+        };
+
+        System::assert_last_event(RuntimeEvent::ExternalValidatorSlashes(
+            crate::Event::SlashesMessageSent {
+                slashes_command: expected_command,
+            },
+        ));
+    });
+}
+
+#[test]
+fn test_on_offence_defer_period_0_messages_get_queued() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        // The limit is 20,
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                0,
+            );
+        }
+
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
+        start_era(2, 2);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 5);
+
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 2);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
+    });
+}
+
+#[test]
+fn test_account_id_encoding() {
+    new_test_ext().execute_with(|| {
+        use polkadot_core_primitives::AccountId as OpaqueAccountId;
+        let alice_account: [u8; 32] = [4u8; 32];
+
+        let slash = Slash::<OpaqueAccountId, u32> {
+            validator: OpaqueAccountId::from(alice_account),
+            reporters: vec![],
+            slash_id: 1,
+            percentage: Perbill::default(),
+            confirmed: true,
+        };
+
+        let encoded_account = slash.validator.encode();
+        assert_eq!(alice_account.to_vec(), encoded_account);
+    });
+}
+
+#[test]
+fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
+    new_test_ext().execute_with(|| {
+        crate::mock::DeferPeriodGetter::with_defer_period(0);
+        start_era(0, 0);
+        start_era(1, 1);
+        // The limit is 20,
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                0,
+            );
+        }
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
+        start_era(2, 2);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(sent_ethereum_message_nonce(), 1);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 5);
+
+        // We have 5 non-dispatched, which should accumulate
+        // We shoulld have 30 after we initialie era 3
+        for i in 0..25 {
+            Pallet::<Test>::on_offence(
+                &[OffenceDetails {
+                    // 1 and 2 are invulnerables
+                    offender: (3 + i, ()),
+                    reporters: vec![],
+                }],
+                &[Perbill::from_percent(75)],
+                // Inject for slashing session 1
+                2,
+            );
+        }
+
+        start_era(3, 3);
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 30);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 10);
+        assert_eq!(sent_ethereum_message_nonce(), 2);
+
+        // this triggers on_initialize
+        roll_one_block();
+        assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 0);
+        assert_eq!(sent_ethereum_message_nonce(), 3);
     });
 }
 
 fn start_era(era_index: EraIndex, session_index: SessionIndex) {
     Pallet::<Test>::on_era_start(era_index, session_index);
     crate::mock::MockEraIndexProvider::with_era(era_index);
+}
+
+fn get_slashing_era(slash_era: EraIndex) -> EraIndex {
+    if DeferPeriodGetter::get() > 0 {
+        slash_era
+            .saturating_add(DeferPeriodGetter::get())
+            .saturating_add(1)
+    } else {
+        MockEraIndexProvider::active_era().index.saturating_add(1)
+    }
 }
