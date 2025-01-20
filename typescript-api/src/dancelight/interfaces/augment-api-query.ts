@@ -1467,6 +1467,13 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        outboundMessageCommitmentRecorder: {
+            /** Message commitment from last block. This will be set only when there are messages to relay. */
+            recordedCommitment: AugmentedQuery<ApiType, () => Observable<Option<H256>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         paraInclusion: {
             /**
              * Candidates pending availability by `ParaId`. They form a chain starting from the latest included head of the

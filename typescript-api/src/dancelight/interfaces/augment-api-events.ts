@@ -841,6 +841,12 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        outboundMessageCommitmentRecorder: {
+            CommitmentRootRead: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
+            NewCommitmentRootRecorded: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         paraInclusion: {
             /** A candidate was backed. `[candidate, head_data]` */
             CandidateBacked: AugmentedEvent<ApiType, [PolkadotPrimitivesV8CandidateReceipt, Bytes, u32, u32]>;

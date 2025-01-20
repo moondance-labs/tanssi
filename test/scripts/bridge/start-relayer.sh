@@ -45,10 +45,10 @@ start_relayer() {
 
     # Launch execution relay
     (
-          : >$output_dir/execution-relay.log
-          while :; do
-              echo "Starting execution relay at $(date)"
-              "${relay_bin}" run execution \
+        : >$output_dir/execution-relay.log
+        while :; do
+            echo "Starting execution relay at $(date)"
+            "${relay_bin}" run execution \
                 --config $output_dir/execution-relay.json \
                 --substrate.private-key "//ExecutionRelay" \
                 >>"$logs_dir"/execution-relay.log 2>&1 || true
@@ -56,6 +56,20 @@ start_relayer() {
         done
     ) &
     echo "execution_relay=$!" >> $artifacts_dir/daemons.pid
+
+     # Launch execution relay
+    (
+        : >$output_dir/substrate-relay.log
+        while :; do
+            echo "Starting substrate relay at $(date)"
+            "${relay_bin}" run solochain \
+                --config $output_dir/substrate-relay.json \
+                --ethereum.private-key $ethereum_key \
+                >>"$logs_dir"/substrate-relay.log 2>&1 || true
+            sleep 20
+        done
+    ) &
+    echo "substrate_relay=$!" >> $artifacts_dir/daemons.pid
 }
 
 echo "start relayers only!"
