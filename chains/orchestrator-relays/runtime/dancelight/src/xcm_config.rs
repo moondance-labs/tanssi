@@ -70,7 +70,7 @@ pub type LocationConverter = (
     // Foreign locations alias into accounts according to a hash of their standard description.
     HashedDescription<AccountId, DescribeFamily<DescribeAllTerminal>>,
     // Ethereum contract sovereign account.
-    // (Used to get convert ethereum contract locations to sovereign account)
+    // (Used to convert ethereum contract locations to sovereign account)
     EthereumLocationsConverterFor<AccountId>,
 );
 
