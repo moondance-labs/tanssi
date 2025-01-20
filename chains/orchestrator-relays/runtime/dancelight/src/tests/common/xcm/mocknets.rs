@@ -23,12 +23,13 @@ use {
     emulated_integration_tests_common::xcm_emulator::decl_test_parachains,
     frame_support::parameter_types,
     frame_support::traits::OnIdle,
+    frame_system::Pallet as SystemPallet,
     snowbridge_pallet_outbound_queue::CommittedMessage,
     sp_std::cell::RefCell,
     xcm_emulator::TestExt,
     xcm_emulator::{
         decl_test_networks, decl_test_relay_chains, Bridge, BridgeLaneId, BridgeMessage,
-        BridgeMessageDispatchError, BridgeMessageHandler, Chain, Network,
+        BridgeMessageDispatchError, BridgeMessageHandler, Chain, Network, Parachain, RelayChain,
     },
 };
 
@@ -169,19 +170,22 @@ decl_test_networks! {
     }
 }
 
-pub fn force_process_bridge() {
-    type DancelightRelayMessageQueue = <DancelightRelay as DancelightRelayPallet>::MessageQueue;
-    type DancelightRelaySystem = <DancelightRelay as DancelightRelayPallet>::System;
-
-    // Force process MessageQueue
-    DancelightRelay::execute_with(|| {
-        DancelightRelayMessageQueue::on_idle(
-            DancelightRelaySystem::block_number(),
+pub fn force_process_bridge<R, P>()
+where
+    R: RelayChain,
+    P: Parachain<Network = R::Network>,
+    R::Runtime: pallet_message_queue::Config,
+{
+    // Process MessageQueue on relay chain to consume the message we want to send to eth
+    R::execute_with(|| {
+        <pallet_message_queue::Pallet<R::Runtime>>::on_idle(
+            SystemPallet::<R::Runtime>::block_number(),
             crate::MessageQueueServiceWeight::get(),
         );
     });
-    // Force send bridge messages, it's hacky but we need to execute anything in the parachain to trigger the bridge.
-    SimpleTemplateDancelightPara::execute_with(|| {});
+
+    // Execute empty block in parachain to trigger bridge message
+    P::execute_with(|| {});
 }
 
 parameter_types! {
