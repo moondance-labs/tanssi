@@ -1378,7 +1378,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1442,6 +1442,8 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type TimestampProvider = TimestampProvider;
+    type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
