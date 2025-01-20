@@ -29,7 +29,7 @@ use {
 };
 
 #[test]
-fn invulnerables_cannot_be_slashed() {
+fn invulnerables_cannot_be_slashed_with_babe() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -42,6 +42,31 @@ fn invulnerables_cannot_be_slashed() {
         .execute_with(|| {
             run_to_block(2);
             inject_babe_slash(&AccountId::from(ALICE).to_string());
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
+            assert_eq!(reports.len(), 1);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
+
+            let slashes = ExternalValidatorSlashes::slashes(
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
+            );
+            assert_eq!(slashes.len(), 0);
+        });
+}
+
+#[test]
+fn invulnerables_cannot_be_slashed_with_grandpa() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            inject_grandpa_slash(&AccountId::from(ALICE).to_string());
             let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
