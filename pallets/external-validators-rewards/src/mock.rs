@@ -142,6 +142,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type DisputeStatementPoints = ConstU32<20>;
     type EraInflationProvider = ();
     type TimestampProvider = TimestampProvider;
+    type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;

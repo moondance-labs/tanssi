@@ -57,6 +57,7 @@ pub trait WeightInfo {
 	fn add_whitelisted(b: u32, ) -> Weight;
 	fn remove_whitelisted(b: u32, ) -> Weight;
 	fn force_era() -> Weight;
+	fn set_external_validators() -> Weight;
 	fn new_session(r: u32, ) -> Weight;
 }
 
@@ -107,6 +108,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
 	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	fn force_era() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 4_578_000 picoseconds.
+		Weight::from_parts(4_924_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
+	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
+	fn set_external_validators() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
@@ -186,6 +197,16 @@ impl WeightInfo for () {
 	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
 	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	fn force_era() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 4_578_000 picoseconds.
+		Weight::from_parts(4_924_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `ExternalValidators::ForceEra` (r:0 w:1)
+	/// Proof: `ExternalValidators::ForceEra` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
+	fn set_external_validators() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`

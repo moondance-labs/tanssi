@@ -27,6 +27,7 @@ mod collator_assignment_tests;
 mod common;
 mod core_scheduling_tests;
 mod ethereum_client;
+mod ethereum_system;
 mod external_validators_tests;
 mod inbound_queue_tests;
 mod inflation_rewards;

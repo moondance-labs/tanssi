@@ -14,22 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::KeyOwnerProofSystem;
-use sp_core::Pair;
-use sp_runtime::Perbill;
 use {
     crate::tests::common::*,
     crate::{
         BondingDuration, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
-        SessionsPerEra, SlashDeferDuration,
+        RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
-    frame_support::{assert_noop, assert_ok},
-    sp_core::H256,
+    frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
+    parity_scale_codec::Encode,
+    sp_core::{Pair, H256},
+    sp_runtime::Perbill,
     sp_std::vec,
+    tp_bridge::Command,
 };
 
 #[test]
-fn invulnerables_cannot_be_slashed() {
+fn invulnerables_cannot_be_slashed_with_babe() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -42,6 +42,31 @@ fn invulnerables_cannot_be_slashed() {
         .execute_with(|| {
             run_to_block(2);
             inject_babe_slash(&AccountId::from(ALICE).to_string());
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
+            assert_eq!(reports.len(), 1);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
+
+            let slashes = ExternalValidatorSlashes::slashes(
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1,
+            );
+            assert_eq!(slashes.len(), 0);
+        });
+}
+
+#[test]
+fn invulnerables_cannot_be_slashed_with_grandpa() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            inject_grandpa_slash(&AccountId::from(ALICE).to_string());
             let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
             assert_eq!(reports.len(), 1);
             assert_eq!(ExternalValidators::current_era().unwrap(), 0);
@@ -353,6 +378,341 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
                     vec![0]
                 ),
                 pallet_external_validator_slashes::Error::<crate::Runtime>::DeferPeriodIsOver
+            );
+        });
+}
+
+#[test]
+fn test_slashes_are_sent_to_ethereum() {
+    sp_tracing::try_init_simple();
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(ExternalValidators::remove_whitelisted(
+                RuntimeOrigin::root(),
+                AccountId::from(ALICE)
+            ));
+
+            inject_babe_slash(&AccountId::from(ALICE).to_string());
+
+            let reports = pallet_offences::Reports::<crate::Runtime>::iter().collect::<Vec<_>>();
+            assert_eq!(reports.len(), 1);
+            assert_eq!(ExternalValidators::current_era().unwrap(), 0);
+
+            let deferred_era =
+                ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
+            assert_eq!(slashes.len(), 1);
+            assert_eq!(slashes[0].validator, AccountId::from(ALICE));
+
+            let session_in_which_slashes_are_sent =
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(session_in_which_slashes_are_sent);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // We have two reasons for sending messages:
+            // 1, because on_era_end sends rewards
+            // 2, because on_era_start sends slashes
+            // Both session ends and session starts are done on_initialize of frame-sesssion
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // Slashes start being sent after the era block
+            // They are scheduled as unprocessedSlashes
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            let mut slashes_command_found: Option<Command> = None;
+            let ext_validators_slashes_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::ExternalValidatorSlashes(
+                        pallet_external_validator_slashes::Event::SlashesMessageSent {
+                            slashes_command,
+                        },
+                    ) => {
+                        slashes_command_found = Some(slashes_command.clone());
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            assert_eq!(
+                ext_validators_slashes_event, 1,
+                "SlashesMessageSent event should be emitted"
+            );
+
+            let expected_slashes = vec![(
+                AccountId::from(ALICE).encode(),
+                Perbill::from_percent(100).deconstruct(),
+            )];
+
+            let expected_slashes_command = Command::ReportSlashes {
+                timestamp: 0u64,
+                era_index: 1u32,
+                slashes: expected_slashes,
+            };
+
+            assert_eq!(
+                slashes_command_found.unwrap(),
+                expected_slashes_command,
+                "Both slashes commands should match!"
+            );
+
+            // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)
+            // MessageQueuePallet on_initialize -> dispatch queue -> process_message -> EthereumOutboundQueue_process_message
+            let nonce = snowbridge_pallet_outbound_queue::Nonce::<Runtime>::get(
+                snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+            );
+
+            // We dispatched 2 already
+            assert_eq!(nonce, 2);
+        });
+}
+
+use frame_support::traits::Get;
+
+#[test]
+fn test_slashes_are_sent_to_ethereum_accumulatedly() {
+    sp_tracing::try_init_simple();
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // We can inject arbitraqry slashes for arbitary accounts with root
+            let page_limit: u32 = <Runtime as pallet_external_validator_slashes::Config>::QueuedSlashesProcessedPerBlock::get();
+            for i in 0..page_limit +1 {
+                assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+                    RuntimeOrigin::root(),
+                    0,
+                    AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
+                    Perbill::from_percent(75)
+                ));
+            }
+
+            let deferred_era = ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
+            assert_eq!(slashes.len() as u32, page_limit +1);
+
+            let session_in_which_slashes_are_sent =
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(session_in_which_slashes_are_sent);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // We have two reasons for sending messages:
+            // 1, because on_era_end sends rewards
+            // 2, because on_era_start sends slashes
+            // Both session ends and session starts are done on_initialize of frame-sesssion
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // We still have all slashes as unprocessed
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+            assert_eq!(unprocessed_slashes.len() as u32, page_limit +1);
+
+
+            // Slashes start being sent after the era block
+            // They are scheduled as unprocessedSlashes
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // We still should have one pending unprocessed slash, to be sent in the next block
+            assert_eq!(unprocessed_slashes.len() as u32, 1);
+
+            run_block();
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+
+            // This one is related to slashes
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // Now we should have 0
+            assert_eq!(unprocessed_slashes.len() as u32, 0);
+
+            // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)
+            // MessageQueuePallet on_initialize -> dispatch queue -> process_message -> EthereumOutboundQueue_process_message
+            let nonce = snowbridge_pallet_outbound_queue::Nonce::<Runtime>::get(
+                snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+            );
+
+            // We dispatched 3 already
+            // 1 reward + 2 slashes
+            assert_eq!(nonce, 3);
+        });
+}
+
+#[test]
+fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
+    sp_tracing::try_init_simple();
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // We can inject arbitraqry slashes for arbitary accounts with root
+            let page_limit: u32 = <Runtime as pallet_external_validator_slashes::Config>::QueuedSlashesProcessedPerBlock::get();
+
+            let blocks_in_era = crate::EpochDurationInBlocks::get() * SessionsPerEra::get();
+            let total_slashes_to_inject = blocks_in_era*page_limit +1;
+            for i in 0..total_slashes_to_inject {
+                assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+                    RuntimeOrigin::root(),
+                    0,
+                    AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
+                    Perbill::from_percent(75)
+                ));
+            }
+
+            let deferred_era = ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
+
+            let slashes = ExternalValidatorSlashes::slashes(deferred_era);
+            assert_eq!(slashes.len() as u32, total_slashes_to_inject);
+
+            let session_in_which_slashes_are_sent =
+                (ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1)
+                    * SessionsPerEra::get();
+            run_to_session(session_in_which_slashes_are_sent);
+
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            // We have two reasons for sending messages:
+            // 1, because on_era_end sends rewards
+            // 2, because on_era_start sends slashes
+            // Both session ends and session starts are done on_initialize of frame-sesssion
+            assert_eq!(
+                outbound_msg_queue_event, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            // We still have all slashes as unprocessed
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+            assert_eq!(unprocessed_slashes.len() as u32, total_slashes_to_inject);
+
+            // Running to the next era, but we should still have unprocessed
+            run_to_session((ExternalValidators::current_era().unwrap() +1)*SessionsPerEra::get());
+
+            let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
+
+            // We still should have one pending unprocessed slash, to be sent in the next block
+            assert_eq!(unprocessed_slashes.len() as u32, 1);
+
+            // And in this case, we have 2 events
+            // the rewards one plus the one where we sent remaining slashes
+            let outbound_msg_queue_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::EthereumOutboundQueue(
+                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+            assert_eq!(
+                outbound_msg_queue_event, 2,
+                "MessageQueued event should be emitted"
             );
         });
 }

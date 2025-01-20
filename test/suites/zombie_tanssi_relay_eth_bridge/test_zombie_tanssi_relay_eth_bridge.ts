@@ -182,7 +182,7 @@ describeSuite({
                 );
                 const currentBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(currentBeefyBlock).to.greaterThan(0);
-                await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
+                await waitSessions(context, relayApi, 3, null, "Tanssi-relay");
                 const nextBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },
@@ -249,7 +249,9 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async function () {
-                for (let i = 0; i < 20; ++i) {
+                // 3 sessions per era, 6 blocks per session
+                // just in case we add one additional session
+                for (let i = 0; i < 24; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
                     if (author == operatorAccount.address) {

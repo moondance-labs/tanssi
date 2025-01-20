@@ -354,6 +354,12 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         externalValidatorSlashes: {
+            /** The slashes message was sent correctly. */
+            SlashesMessageSent: AugmentedEvent<
+                ApiType,
+                [slashesCommand: TpBridgeCommand],
+                { slashesCommand: TpBridgeCommand }
+            >;
             /** Removed author data */
             SlashReported: AugmentedEvent<
                 ApiType,
@@ -838,6 +844,12 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** The value of the spot price has likely changed */
             SpotPriceSet: AugmentedEvent<ApiType, [spotPrice: u128], { spotPrice: u128 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        outboundMessageCommitmentRecorder: {
+            CommitmentRootRead: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
+            NewCommitmentRootRecorded: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
