@@ -34,7 +34,7 @@ use {
         ParaId,
     },
     cumulus_relay_chain_interface::{
-        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
+        call_runtime_api, OverseerHandle, RelayChainInterface,
     },
     dancebox_runtime::{
         opaque::{Block, Hash},
@@ -1410,7 +1410,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        let res: Option<ContainerChainGenesisData> = call_remote_runtime_function(
+        let res: Option<ContainerChainGenesisData> = call_runtime_api(
             &self.relay_chain_interface,
             "RegistrarApi_genesis_data",
             relay_parent,
@@ -1427,7 +1427,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        let res: Vec<Vec<u8>> = call_remote_runtime_function(
+        let res: Vec<Vec<u8>> = call_runtime_api(
             &self.relay_chain_interface,
             "RegistrarApi_boot_nodes",
             relay_parent,
@@ -1444,7 +1444,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        let res: Option<BlockNumber> = call_remote_runtime_function(
+        let res: Option<BlockNumber> = call_runtime_api(
             &self.relay_chain_interface,
             "AuthorNotingApi_latest_block_number",
             relay_parent,
@@ -1483,7 +1483,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         authority: NimbusId,
     ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_remote_runtime_function(
+        let res: Option<ParaId> = call_runtime_api(
             &self.relay_chain_interface,
             "TanssiAuthorityAssignmentApi_check_para_id_assignment",
             relay_parent,
@@ -1500,7 +1500,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         authority: NimbusId,
     ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_remote_runtime_function(
+        let res: Option<ParaId> = call_runtime_api(
             &self.relay_chain_interface,
             "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
             relay_parent,
