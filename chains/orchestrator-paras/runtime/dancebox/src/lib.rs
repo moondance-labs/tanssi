@@ -99,7 +99,7 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        Cow, generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
             Hash as HashT, IdentityLookup, Verify,
@@ -249,8 +249,8 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("dancebox"),
-    impl_name: create_runtime_str!("dancebox"),
+    spec_name: Cow::Borrowed("dancebox"),
+    impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
     spec_version: 1100,
     impl_version: 0,
@@ -390,6 +390,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -454,6 +455,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -508,6 +510,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -538,6 +541,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 pub struct ParaSlotProvider;
 impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
@@ -1848,6 +1852,7 @@ parameter_types! {
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
     // Additional bytes adds 0 entries, storing 1 byte on-chain
     pub const ByteDeposit: Balance = currency::deposit(0, 1);
+    pub const UsernameDeposit: Balance = currency::deposit(0, 32);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1858,6 +1863,7 @@ impl pallet_identity::Config for Runtime {
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
     type ByteDeposit = ByteDeposit;
+    type UsernameDeposit = UsernameDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
     type MaxRegistrars = MaxRegistrars;
@@ -1870,6 +1876,7 @@ impl pallet_identity::Config for Runtime {
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
@@ -1906,6 +1913,7 @@ impl pallet_treasury::Config for Runtime {
     // TODO: implement pallet-asset-rate to allow the treasury to spend other assets
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
+    type BlockNumberProvider = System;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
@@ -2722,7 +2730,7 @@ impl_runtime_apis! {
                 proof
             });
 
-            let unsigned_extrinsic = UncheckedExtrinsic::new_unsigned(call);
+            let unsigned_extrinsic = UncheckedExtrinsic::new_bare(call);
 
             Box::new(unsigned_extrinsic)
         }
@@ -2742,12 +2750,12 @@ impl_runtime_apis! {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
 
-            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+            Ok([VersionedAssetId::V5(xcm_config::SelfReserve::get().into())]
                 .into_iter()
                 .chain(
                     pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
                         pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
-                            VersionedAssetId::V4(location.into())
+                            VersionedAssetId::V5(location.into())
                         }).or_else(|| {
                             log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
                             None
@@ -2761,7 +2769,7 @@ impl_runtime_apis! {
         }
 
         fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
-            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let local_asset = VersionedAssetId::V5(xcm_config::SelfReserve::get().into());
             let asset = asset
                 .into_version(4)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
@@ -2770,8 +2778,8 @@ impl_runtime_apis! {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_v4: staging_xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: staging_xcm::latest::Location = asset_v4.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

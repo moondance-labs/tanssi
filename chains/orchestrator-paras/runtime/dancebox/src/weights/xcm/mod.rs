@@ -86,7 +86,7 @@ where
     }
     fn transact(
         _origin_type: &OriginKind,
-        _require_weight_at_most: &Weight,
+        _require_weight_at_most: &Option<Weight>,
         _call: &DoubleEncoded<RuntimeCall>,
     ) -> XCMWeight {
         XcmGeneric::<Runtime>::transact()

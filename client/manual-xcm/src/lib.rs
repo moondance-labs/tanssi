@@ -17,7 +17,7 @@ use {
     cumulus_primitives_core::{ParaId, XcmpMessageFormat},
     jsonrpsee::{core::RpcResult, proc_macros::rpc},
     parity_scale_codec::Encode,
-    staging_xcm::{latest::prelude::*, opaque::lts::Weight},
+    staging_xcm::{latest::prelude::*, latest::Weight},
 };
 
 const DEFAULT_PROOF_SIZE: u64 = 64 * 1024;
