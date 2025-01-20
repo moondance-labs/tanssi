@@ -182,7 +182,7 @@ describeSuite({
                 );
                 const currentBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(currentBeefyBlock).to.greaterThan(0);
-                await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
+                await waitSessions(context, relayApi, 3, null, "Tanssi-relay");
                 const nextBeefyBlock = Number(await beefyContract.latestBeefyBlock());
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },

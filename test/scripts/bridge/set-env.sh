@@ -17,13 +17,13 @@ export PATH="$output_bin_dir:$PATH"
 
 relayer_root_dir="$artifacts_dir/relayer"
 symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
-web_dir="$relayer_root_dir/web"
-export contract_dir="$relayer_root_dir/contracts"
+web_dir="$relayer_root_dir/snowbridge/web"
+export contract_dir="$relayer_root_dir/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
-relay_dir="$relayer_root_dir/relayer"
-relay_bin="$relay_dir/build/snowbridge-relay"
+relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
-RELAYER_TAG="demo-v1.0.30-tanssi" # TODO: Demo tag please change
+RELAYER_BRANCH="main" # TODO: Change to tag when we do releases
+TANSSI_SYMBIOTIC_COMMIT="695c7d1c5c0541f93587a607bc193c4e9944e985" # TODO: Change to tag when we do release
 GETH_TAG="v1.14.11" # We will need to investigate if this is right
 LODESTAR_TAG="v1.19.0"
 

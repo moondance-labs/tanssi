@@ -115,6 +115,8 @@ pub fn get_beefy_digest(log: ConsensusLog<BeefyId>) -> DigestItem {
     DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
+/// FIXME: run_to_session(n) only runs to the last block of session n-1, so Session::index() will
+/// return n-1. To actually run to session n, create an additional block afterwards using `run_block()`.
 pub fn run_to_session(n: u32) {
     run_to_block(session_to_block(n));
 }

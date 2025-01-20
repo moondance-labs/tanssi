@@ -809,6 +809,18 @@ declare module "@polkadot/api-base/types/storage" {
             /** Fixed validators set by root/governance. Have priority over the external validators. */
             whitelistedValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Copy of `WhitelistedValidators` at the start of this active era. Used to check which validators we don't need
+             * to reward.
+             */
+            whitelistedValidatorsActiveEra: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Same as `WhitelistedValidatorsActiveEra` but only exists for a brief period of time when the next era has been
+             * planned but not enacted yet.
+             */
+            whitelistedValidatorsActiveEraPending: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -1459,6 +1471,13 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, []>;
             /** Keeps track of accumulated revenue from on demand order sales. */
             revenue: AugmentedQuery<ApiType, () => Observable<Vec<u128>>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        outboundMessageCommitmentRecorder: {
+            /** Message commitment from last block. This will be set only when there are messages to relay. */
+            recordedCommitment: AugmentedQuery<ApiType, () => Observable<Option<H256>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
