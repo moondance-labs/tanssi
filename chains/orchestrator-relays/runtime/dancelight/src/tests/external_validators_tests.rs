@@ -1121,6 +1121,10 @@ fn external_validators_rewards_test_command_integrity() {
                     == 1
             );
 
+            let expected_inflation =
+                <Runtime as pallet_external_validators_rewards::Config>::EraInflationProvider::get(
+                );
+
             // This will call on_era_end for era 1
             run_to_session(sessions_per_era * 2);
 
@@ -1145,7 +1149,7 @@ fn external_validators_rewards_test_command_integrity() {
                 timestamp: 0u64,
                 era_index: 1u32,
                 total_points: 40u128,
-                tokens_inflated: 0u128,
+                tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
             };
 
@@ -1157,6 +1161,41 @@ fn external_validators_rewards_test_command_integrity() {
                 rewards_command_found.unwrap(),
                 expected_rewards_command,
                 "Both rewards commands should match!"
+            );
+        });
+}
+
+#[test]
+fn external_validators_rewards_are_minted_in_sovereign_account() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            let sovereign_acount = <Runtime as pallet_external_validators_rewards::Config>::RewardsEthereumSovereignAccount::get();
+
+            let balance_before = System::account(sovereign_acount.clone())
+                .data
+                .free;
+
+            let expected_inflation = <Runtime as pallet_external_validators_rewards::Config>::EraInflationProvider::get();
+
+            // This will call on_era_end for era 0
+            run_to_session(sessions_per_era);
+
+            let balance_after = System::account(sovereign_acount)
+                .data
+                .free;
+
+            assert_eq!(
+                balance_after - balance_before,
+                expected_inflation,
+                "Inflation should be minted in Ethereum Sovereign Account"
             );
         });
 }
