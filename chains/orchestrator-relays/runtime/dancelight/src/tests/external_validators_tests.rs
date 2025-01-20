@@ -1121,6 +1121,10 @@ fn external_validators_rewards_test_command_integrity() {
                     == 1
             );
 
+            let expected_inflation =
+                <Runtime as pallet_external_validators_rewards::Config>::EraInflationProvider::get(
+                );
+
             // This will call on_era_end for era 1
             run_to_session(sessions_per_era * 2);
 
@@ -1145,7 +1149,7 @@ fn external_validators_rewards_test_command_integrity() {
                 timestamp: 0u64,
                 era_index: 1u32,
                 total_points: 40u128,
-                tokens_inflated: 0u128,
+                tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
             };
 
