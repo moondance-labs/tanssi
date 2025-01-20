@@ -1177,29 +1177,6 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
-            let channel_id = PRIMARY_GOVERNANCE_CHANNEL.encode();
-
-            // Insert PRIMARY_GOVERNANCE_CHANNEL channel id into storage.
-            let mut combined_channel_id_key = Vec::new();
-            let hashed_key = twox_64(&channel_id);
-
-            combined_channel_id_key.extend_from_slice(&hashed_key);
-            combined_channel_id_key.extend_from_slice(PRIMARY_GOVERNANCE_CHANNEL.as_ref());
-
-            let mut full_storage_key = Vec::new();
-            full_storage_key.extend_from_slice(&frame_support::storage::storage_prefix(
-                b"EthereumSystem",
-                b"Channels",
-            ));
-            full_storage_key.extend_from_slice(&combined_channel_id_key);
-
-            let channel = Channel {
-                agent_id: H256::default(),
-                para_id: 1000u32.into(),
-            };
-
-            frame_support::storage::unhashed::put(&full_storage_key, &channel);
-
             let sovereign_acount = <Runtime as pallet_external_validators_rewards::Config>::RewardsEthereumSovereignAccount::get();
 
             let balance_before = System::account(sovereign_acount.clone())
