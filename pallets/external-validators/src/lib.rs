@@ -21,6 +21,7 @@
 //! ## Terminology
 //!
 //! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
+//!      Are not rewarded.
 //! - ExternalValidators: Validators set using storage proofs from another blockchain. Can be disabled by setting
 //!     `SkipExternalValidators` to true.
 //!
@@ -154,6 +155,18 @@ pub mod pallet {
     pub type WhitelistedValidators<T: Config> =
         StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
 
+    /// Copy of `WhitelistedValidators` at the start of this active era.
+    /// Used to check which validators we don't need to reward.
+    #[pallet::storage]
+    pub type WhitelistedValidatorsActiveEra<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+
+    /// Same as `WhitelistedValidatorsActiveEra` but only exists for a brief period of time when the
+    /// next era has been planned but not enacted yet.
+    #[pallet::storage]
+    pub type WhitelistedValidatorsActiveEraPending<T: Config> =
+        StorageValue<_, BoundedVec<T::ValidatorId, T::MaxWhitelistedValidators>, ValueQuery>;
+
     /// Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
     #[pallet::storage]
     pub type ExternalValidators<T: Config> =
@@ -209,8 +222,10 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
-            <WhitelistedValidators<T>>::put(bounded_validators);
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
+            <WhitelistedValidators<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsActiveEra<T>>::put(&bounded_validators);
+            <WhitelistedValidatorsActiveEraPending<T>>::put(&bounded_validators);
         }
     }
 
@@ -328,10 +343,23 @@ pub mod pallet {
             Self::set_force_era(mode);
             Ok(())
         }
+
+        /// Manually set external validators. Should only be needed for tests, validators are set
+        /// automatically by the bridge.
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::set_external_validators())]
+        pub fn set_external_validators(
+            origin: OriginFor<T>,
+            validators: Vec<T::ValidatorId>,
+        ) -> DispatchResult {
+            T::UpdateOrigin::ensure_origin(origin)?;
+
+            Self::set_external_validators_inner(validators)
+        }
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn set_external_validators(validators: Vec<T::ValidatorId>) -> DispatchResult {
+        pub fn set_external_validators_inner(validators: Vec<T::ValidatorId>) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
             <ExternalValidators<T>>::put(validators);
@@ -466,6 +494,9 @@ pub mod pallet {
                 });
                 new_index
             });
+            WhitelistedValidatorsActiveEra::<T>::put(
+                WhitelistedValidatorsActiveEraPending::<T>::take(),
+            );
             Self::deposit_event(Event::NewEra { era: active_era });
             T::OnEraStart::on_era_start(active_era, start_session);
         }
@@ -496,6 +527,9 @@ pub mod pallet {
             if let Some(old_era) = new_planned_era.checked_sub(T::HistoryDepth::get() + 1) {
                 Self::clear_era_information(old_era);
             }
+
+            // Save whitelisted validators for when the era truly changes (start_era)
+            WhitelistedValidatorsActiveEraPending::<T>::put(WhitelistedValidators::<T>::get());
 
             // Returns new validators
             Self::validators()

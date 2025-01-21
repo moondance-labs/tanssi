@@ -10,3 +10,5 @@ export const STATEMINT_LOCATION_EXAMPLE = {
         X3: [{ Parachain: 1000 }, { PalletInstance: 50 }, { GeneralIndex: 0n }],
     },
 };
+
+export const PRIMARY_GOVERNANCE_CHANNEL_ID = "0x0000000000000000000000000000000000000000000000000000000000000001";

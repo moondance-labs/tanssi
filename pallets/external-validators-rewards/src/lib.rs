@@ -97,6 +97,8 @@ pub mod pallet {
         /// Provider to retrieve the current block timestamp.
         type TimestampProvider: Get<u64>;
 
+        type GetWhitelistedValidators: Get<Vec<Self::AccountId>>;
+
         /// Hashing tool used to generate/verify merkle roots and proofs.
         type Hashing: Hash<Output = H256>;
 
@@ -147,6 +149,7 @@ pub mod pallet {
         StorageMap<_, Twox64Concat, EraIndex, EraRewardPoints<T::AccountId>, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
+        /// Reward validators. Does not check if the validators are valid, caller needs to make sure of that.
         pub fn reward_by_ids(points: impl IntoIterator<Item = (T::AccountId, RewardPoints)>) {
             let active_era = T::EraIndexProvider::active_era();
 
@@ -313,7 +316,13 @@ where
             None => return,
         };
         // limit rewards to the active validator set
-        let active_set: BTreeSet<_> = C::ValidatorSet::validators().into_iter().collect();
+        let mut active_set: BTreeSet<_> = C::ValidatorSet::validators().into_iter().collect();
+
+        // Remove whitelisted validators, we don't want to reward them
+        let whitelisted_validators = C::GetWhitelistedValidators::get();
+        for validator in whitelisted_validators {
+            active_set.remove(&validator);
+        }
 
         let rewards = indices
             .into_iter()

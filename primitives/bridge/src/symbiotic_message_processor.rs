@@ -93,7 +93,7 @@ where
                         "Received governance message from invalid channel id",
                     ));
                 }
-                pallet_external_validators::Pallet::<T>::set_external_validators(validators)?;
+                pallet_external_validators::Pallet::<T>::set_external_validators_inner(validators)?;
                 Ok(())
             }
         }

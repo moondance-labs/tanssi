@@ -2,9 +2,7 @@
     "source": {
         "polkadot": {
             "endpoint": ""
-        },
-        "fast-forward-depth": 20,
-        "update-period": 0
+        }
     },
     "sink": {
         "ethereum": {
@@ -13,7 +11,14 @@
         },
         "descendants-until-final": 3,
         "contracts": {
-            "BeefyClient": null
+            "BeefyClient": null,
+            "Gateway": null
         }
+    },
+    "on-demand-sync": {
+        "asset-hub-channel-id": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "max-tokens": 5,
+        "refill-amount": 1,
+        "refill-period": 3600
     }
 }

@@ -18,7 +18,7 @@ use {
     crate as external_validator_slashes,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64, Get},
+        traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
     },
     frame_system as system,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -43,8 +43,16 @@ frame_support::construct_runtime!(
         Session: pallet_session,
         Historical: pallet_session::historical,
         ExternalValidatorSlashes: external_validator_slashes,
+        Timestamp: pallet_timestamp,
     }
 );
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = ConstU64<5>;
+    type WeightInfo = ();
+}
 
 impl system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
@@ -116,6 +124,8 @@ pub struct MockEraIndexProvider;
 thread_local! {
     pub static ERA_INDEX: RefCell<EraIndex> = const { RefCell::new(0) };
     pub static DEFER_PERIOD: RefCell<EraIndex> = const { RefCell::new(2) };
+    pub static SENT_ETHEREUM_MESSAGE_NONCE: RefCell<u64> = const { RefCell::new(0) };
+
 }
 
 impl MockEraIndexProvider {
@@ -197,11 +207,18 @@ impl DeferPeriodGetter {
     }
 }
 
+pub fn sent_ethereum_message_nonce() -> u64 {
+    SENT_ETHEREUM_MESSAGE_NONCE.with(|q| (*q.borrow()))
+}
+
 pub struct MockOkOutboundQueue;
 impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
     type Ticket = ();
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        // Every time we hit deliver, increment the nonce
+        SENT_ETHEREUM_MESSAGE_NONCE.with(|r| *r.borrow_mut() += 1);
+
         Ok(H256::zero())
     }
 }
@@ -211,6 +228,13 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 
     fn local_fee() -> Self::Balance {
         1
+    }
+}
+
+pub struct TimestampProvider;
+impl Get<u64> for TimestampProvider {
+    fn get() -> u64 {
+        Timestamp::get()
     }
 }
 
@@ -230,6 +254,8 @@ impl external_validator_slashes::Config for Test {
     type InvulnerablesProvider = MockInvulnerableProvider;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
+    type TimestampProvider = TimestampProvider;
+    type QueuedSlashesProcessedPerBlock = ConstU32<20>;
     type WeightInfo = ();
 }
 
@@ -257,4 +283,15 @@ impl sp_runtime::traits::Convert<u64, Option<u64>> for IdentityValidator {
     fn convert(a: u64) -> Option<u64> {
         Some(a)
     }
+}
+
+/// Rolls forward one block. Returns the new block number.
+#[allow(dead_code)]
+pub(crate) fn roll_one_block() -> u64 {
+    ExternalValidatorSlashes::on_finalize(System::block_number());
+    System::on_finalize(System::block_number());
+    System::set_block_number(System::block_number() + 1);
+    System::on_initialize(System::block_number());
+    ExternalValidatorSlashes::on_initialize(System::block_number());
+    System::block_number()
 }
