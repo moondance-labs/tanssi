@@ -324,6 +324,11 @@ impl ConvertMessage for DoNothingConvertMessage {
     }
 }
 
+// This is a variation of the converter found here:
+// https://github.com/paritytech/polkadot-sdk/blob/711e6ff33373bc08b026446ce19b73920bfe068c/bridges/snowbridge/primitives/router/src/inbound/mod.rs#L467
+//
+// Upstream converter only works for parachains (parents 2) while we to use it in tanssi solo-chain
+// (parents 1).
 pub struct EthereumLocationsConverterFor<AccountId>(PhantomData<AccountId>);
 impl<AccountId> ConvertLocation<AccountId> for EthereumLocationsConverterFor<AccountId>
 where

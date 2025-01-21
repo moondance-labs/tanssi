@@ -43,7 +43,7 @@ use {
     snowbridge_core::ChannelId,
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
-    sp_runtime::traits::Hash,
+    sp_runtime::traits::{Hash, Zero},
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
@@ -255,13 +255,14 @@ pub mod pallet {
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
             if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
-                let tokens_inflated = T::EraInflationProvider::get();
+                let mut tokens_inflated = T::EraInflationProvider::get();
 
                 let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
                 if let Err(err) =
                     T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
                 {
                     log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
+                    tokens_inflated = Zero::zero();
                 }
 
                 let command = Command::ReportRewards {
