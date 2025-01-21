@@ -21,14 +21,16 @@ use {
         traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
-    snowbridge_core::{ChannelId, AgentId, ParaId, outbound::{SendError, SendMessageFeeProvider}},
+    snowbridge_core::{
+        outbound::{SendError, SendMessageFeeProvider},
+        AgentId, ChannelId, ParaId,
+    },
     sp_core::H256,
     sp_runtime::{
-        DispatchResult,
         traits::{BlakeTwo256, Get, IdentityLookup, Keccak256},
-        BuildStorage,
+        BuildStorage, DispatchResult,
     },
-    tp_traits::EthereumSystemChannelManager
+    tp_traits::EthereumSystemChannelManager,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -200,6 +202,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
     ext
 }
+
+pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;
 
 pub const INIT_TIMESTAMP: u64 = 30_000;
 pub const BLOCK_TIME: u64 = 1000;

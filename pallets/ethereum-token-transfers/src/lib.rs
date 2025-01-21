@@ -30,13 +30,17 @@ mod benchmarking;
 use {
     frame_support::{
         pallet_prelude::*,
-        traits::{fungible::{self, Mutate}, tokens::Preservation, Defensive, Get, ValidatorSet},
+        traits::{
+            fungible::{self, Mutate},
+            tokens::Preservation,
+            Defensive, Get, ValidatorSet,
+        },
     },
     frame_system::pallet_prelude::*,
     parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
-    snowbridge_core::{AgentId, ChannelId, ParaId, outbound::SendError},
+    snowbridge_core::{outbound::SendError, AgentId, ChannelId, ParaId},
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::{H160, H256},
     sp_runtime::DispatchResult,
@@ -81,7 +85,7 @@ pub mod pallet {
         /// Send a message to Ethereum. Needs to be validated first.
         type OutboundQueue: DeliverMessage<
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
-        >; 
+        >;
 
         /// Handler for EthereumSystem pallet. Commonly used to manage channel creation.
         type EthereumSystemHandler: EthereumSystemChannelManager;
@@ -165,7 +169,7 @@ pub mod pallet {
         pub fn transfer_native_token(
             origin: OriginFor<T>,
             amount: u128,
-            recipient: H160
+            recipient: H160,
         ) -> DispatchResult {
             let source = ensure_signed(origin)?;
 
@@ -180,22 +184,31 @@ pub mod pallet {
 
             // TODO: which recipient should we use? Is it okay to receive it via params?
             // TODO: which token_id?
-            let command = Command::MintForeignToken { token_id: H256::default(), recipient, amount };
+            let command = Command::MintForeignToken {
+                token_id: H256::default(),
+                recipient,
+                amount,
+            };
 
-            let message = Message { id: None, channel_id, command };
-			let (ticket, fee) =
-				T::ValidateMessage::validate(&message).map_err(|err| Error::<T>::InvalidMessage(err))?;
+            let message = Message {
+                id: None,
+                channel_id,
+                command,
+            };
+            let (ticket, fee) = T::ValidateMessage::validate(&message)
+                .map_err(|err| Error::<T>::InvalidMessage(err))?;
 
             // Transfer fees
             // TODO: transfer fees at once or use something like PayFees?
             T::Currency::transfer(
-				&source,
-				&T::FeesAccount::get(),
-				(fee.total() as u128).into(),
-				Preservation::Preserve,
-			)?;
+                &source,
+                &T::FeesAccount::get(),
+                (fee.total() as u128).into(),
+                Preservation::Preserve,
+            )?;
 
-            T::OutboundQueue::deliver(ticket).map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+            T::OutboundQueue::deliver(ticket)
+                .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
 
             Ok(())
         }

@@ -128,13 +128,15 @@ impl Command {
                     rewards_mr_token,
                 ])])
             }
-            Command::MintForeignToken { token_id, recipient, amount } => {
-                ethabi::encode(&[Token::Tuple(vec![
-                    Token::FixedBytes(token_id.as_bytes().to_owned()),
-                    Token::Address(*recipient),
-                    Token::Uint(U256::from(*amount)),
-                ])])
-            }
+            Command::MintForeignToken {
+                token_id,
+                recipient,
+                amount,
+            } => ethabi::encode(&[Token::Tuple(vec![
+                Token::FixedBytes(token_id.as_bytes().to_owned()),
+                Token::Address(*recipient),
+                Token::Uint(U256::from(*amount)),
+            ])]),
         }
     }
 }
