@@ -82,7 +82,7 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{Get, MaxEncodedLen, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        Cow, generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentifyAccount,
             IdentityLookup, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
@@ -329,8 +329,8 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("frontier-template"),
-    impl_name: create_runtime_str!("frontier-template"),
+    spec_name: Cow::Borrowed("frontier-template"),
+    impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
     spec_version: 1100,
     impl_version: 0,
@@ -510,6 +510,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<0>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -541,6 +542,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 
 pub struct ParaSlotProvider;

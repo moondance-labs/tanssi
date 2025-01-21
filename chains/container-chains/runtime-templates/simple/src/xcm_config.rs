@@ -50,6 +50,7 @@ use {
     },
     staging_xcm_executor::XcmExecutor,
 };
+use staging_xcm::latest::WESTEND_GENESIS_HASH;
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
@@ -67,7 +68,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();

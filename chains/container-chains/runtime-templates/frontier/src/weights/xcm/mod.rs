@@ -26,6 +26,8 @@ use {
         DoubleEncoded,
     },
 };
+use frame_support::BoundedVec;
+use staging_xcm::latest::AssetTransferFilter;
 
 trait WeighAssets {
     fn weigh_multi_assets(&self, weight: Weight) -> XCMWeight;
@@ -231,5 +233,21 @@ where
     }
     fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
         XcmGeneric::<Runtime>::unpaid_execution()
+    }
+
+    fn pay_fees(asset: &Asset) -> Weight {
+        todo!()
+    }
+
+    fn initiate_transfer(destination: &Location, remote_fees: &Option<AssetTransferFilter>, preserve_origin: &bool, assets: &Vec<AssetTransferFilter>, remote_xcm: &Xcm<()>) -> Weight {
+        todo!()
+    }
+
+    fn execute_with_origin(descendant_origin: &Option<InteriorLocation>, xcm: &Xcm<RuntimeCall>) -> Weight {
+        todo!()
+    }
+
+    fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
+        todo!()
     }
 }
