@@ -17,7 +17,7 @@ use {
     crate as pallet_external_validators_rewards,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64},
+        traits::{ConstU32, ConstU64, ConstU128},
     },
     pallet_balances::AccountData,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -145,7 +145,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
-    type EraInflationProvider = ();
+    type EraInflationProvider = ConstU128<42>;
     type TimestampProvider = TimestampProvider;
     type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
