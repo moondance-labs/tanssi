@@ -10,22 +10,22 @@ FROM debian:bookworm-slim
 LABEL maintainer "gorka@moondancelabs.com"
 LABEL description="Binary for Dancelight"
 
-RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi-relay tanssi-relay && \
-	mkdir -p /tanssi-relay/.local/share && \
+RUN useradd -m -u 1000 -U -s /bin/sh -d /snowbridge-relay snowbridge-relay && \
+	mkdir -p /snowbridge-relay/.local/share && \
 	mkdir /data && \
-	chown -R tanssi-relay:tanssi-relay /data && \
-	ln -s /data /tanssi-relay/.local/share/tanssi-relay && \
+	chown -R snowbridge-relay:snowbridge-relay /data && \
+	ln -s /data /snowbridge-relay/.local/share/snowbridge-relay && \
 	rm -rf /usr/sbin
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-USER tanssi-relay
+USER snowbridge-relay
 
-COPY --chown=tanssi-relay build/tanssi-relay* /tanssi-relay
-RUN chmod uog+x /tanssi-relay/tanssi-relay*
+COPY --chown=snowbridge-relay build/snowbridge-relay /snowbridge-relay
+RUN chmod uog+x /snowbridge-relay/snowbridge-relay
 
 EXPOSE 30333 9933 9944 9615
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/tanssi-relay/tanssi-relay"]
+ENTRYPOINT ["/snowbridge-relay/snowbridge-relay"]
