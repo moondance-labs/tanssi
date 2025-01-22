@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { Vec } from "@polkadot/types-codec";
+import { U32, Vec } from "@polkadot/types-codec";
 import { AccountId32 } from "@polkadot/types/interfaces";
 
 describeSuite({
@@ -19,8 +19,25 @@ describeSuite({
             title: "Validators should match external validators",
 
             test: async function () {
+                // Find the last block in which the era changed
+                const currentEra = await api.query.externalValidators.currentEra<U32>();
+                let blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
+                let apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
+
+                while (currentEra == (await apiBeforeLatestNewSession.query.externalValidators.currentEra<U32>())) {
+                    blockToCheck = (await apiBeforeLatestNewSession.query.babe.epochStart()).toJSON()[1];
+                    apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
+                }
+
+                const externalValidatorsList = await (
+                    await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1))
+                ).query.externalValidators.externalValidators<Vec<AccountId32>>();
+                const whitelistedValidatorsList = await (
+                    await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1))
+                ).query.externalValidators.whitelistedValidators<Vec<AccountId32>>();
+
                 const sessionValidators = await api.query.session.validators();
-                const externalValidators = await api.query.externalValidators.externalValidators<Vec<AccountId32>>();
+                const externalValidators = externalValidatorsList.toArray().concat(whitelistedValidatorsList.toArray());
 
                 if (externalValidators.length <= sessionValidators.length) {
                     // Less external validators than session validators: all external validators must be session validators
