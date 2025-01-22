@@ -180,6 +180,13 @@ pub struct RunCmd {
     #[arg(long, hide = true)]
     pub disable_worker_version_check: bool,
 
+    /// Enable approval-voting message processing in parallel.
+    ///
+    ///**Dangerous!** This is an experimental feature and should not be used in production, unless
+    /// explicitly advised to.
+    #[arg(long)]
+    pub enable_approval_voting_parallel: bool,
+
     // Enable the development service
     #[arg(long)]
     pub dev_service: bool,
