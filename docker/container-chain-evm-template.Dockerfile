@@ -6,11 +6,11 @@ FROM docker.io/library/ubuntu:20.04 AS builder
 
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
-FROM debian:bookworm-slim
+FROM ubuntu:24.04
 LABEL maintainer "gorka@moondancelabs.com"
 LABEL description="Binary for container-chain-template-evm Collator"
 
-RUN useradd -m -u 1000 -U -s /bin/sh -d /container-chain-template-evm container-chain-template-evm && \
+RUN useradd -m -u 2000 -U -s /bin/sh -d /container-chain-template-evm container-chain-template-evm && \
 	mkdir -p /container-chain-template-evm/.local/share && \
 	mkdir /data && \
 	chown -R container-chain-template-evm:container-chain-template-evm /data && \

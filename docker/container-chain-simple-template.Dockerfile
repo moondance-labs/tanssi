@@ -6,11 +6,11 @@ FROM docker.io/library/ubuntu:20.04 AS builder
 
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
-FROM debian:bookworm-slim
+FROM ubuntu:24.04
 LABEL maintainer "gorka@moondancelabs.com"
 LABEL description="Binary for simple container chain template node"
 
-RUN useradd -m -u 1000 -U -s /bin/sh -d /container-chain-template-simple container-chain-template-simple && \
+RUN useradd -m -u 2000 -U -s /bin/sh -d /container-chain-template-simple container-chain-template-simple && \
 	mkdir -p /container-chain-template-simple/.local/share && \
 	mkdir /data && \
 	chown -R container-chain-template-simple:container-chain-template-simple /data && \
