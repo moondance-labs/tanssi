@@ -1410,10 +1410,10 @@ impl Get<u64> for TimestampProvider {
 parameter_types! {
     // Chain ID of Holesky.
     // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
-    pub RewardsEthereumSovereignAccount: AccountId =
+    pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()
-        ).expect("to convert RewardsEthereumSovereignAccount");
+        ).expect("to convert EthereumSovereignAccount");
 
     // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
     // to properly write integration tests.
@@ -1443,7 +1443,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
-    type RewardsEthereumSovereignAccount = RewardsEthereumSovereignAccount;
+    type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
