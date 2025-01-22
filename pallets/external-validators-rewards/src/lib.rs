@@ -43,7 +43,7 @@ use {
     snowbridge_core::ChannelId,
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
-    sp_runtime::traits::{Hash, Zero},
+    sp_runtime::traits::Hash,
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
