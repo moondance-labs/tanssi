@@ -96,4 +96,13 @@ impl<T: frame_system::Config> pallet_sudo::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn check_only_sudo_account() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `132`
+		//  Estimated: `1517`
+		// Minimum execution time: 10_012_000 picoseconds.
+		Weight::from_parts(10_240_000, 1517)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }

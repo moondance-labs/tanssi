@@ -69,6 +69,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
     type PricingParameters = EthereumSystem;
     type Channels = EthereumSystem;
+    type OnNewCommitment = ();
 }
 
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
