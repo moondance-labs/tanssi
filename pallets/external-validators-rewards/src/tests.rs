@@ -102,7 +102,7 @@ fn test_on_era_end() {
             timestamp: 31000u64,
             era_index: 1u32,
             total_points: 90u128,
-            tokens_inflated: 0u128,
+            tokens_inflated: 42u128, // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
         };
 

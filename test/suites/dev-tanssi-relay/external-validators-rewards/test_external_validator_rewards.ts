@@ -2,6 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
+import { encodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
     id: "DTR1602",
@@ -87,6 +88,27 @@ describeSuite({
 
                 // rewards should have expired
                 expect(totalRewards).to.be.equal(0n);
+            },
+        });
+
+        it({
+            id: "E03",
+            title: "Ethereum Sovereign Account balance should increase on session change",
+            test: async function () {
+                const currentIndex = await polkadotJs.query.session.currentIndex();
+                const account = encodeAddress("0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77", 0);
+
+                const {
+                    data: { free: balanceBefore },
+                } = await context.polkadotJs().query.system.account(account);
+
+                await jumpToSession(context, currentIndex + 1);
+
+                const {
+                    data: { free: balanceAfter },
+                } = await context.polkadotJs().query.system.account(account);
+
+                expect(balanceAfter.toBigInt()).to.be.greaterThan(balanceBefore.toBigInt());
             },
         });
     },
