@@ -709,11 +709,17 @@ declare module "@polkadot/types/lookup" {
         } & Struct;
         readonly isReportSlashes: boolean;
         readonly asReportSlashes: {
-            readonly timestamp: u64;
             readonly eraIndex: u32;
-            readonly slashes: Vec<ITuple<[Bytes, u32]>>;
+            readonly slashes: Vec<TpBridgeSlashData>;
         } & Struct;
         readonly type: "Test" | "ReportRewards" | "ReportSlashes";
+    }
+
+    /** @name TpBridgeSlashData (62) */
+    interface TpBridgeSlashData extends Struct {
+        readonly encodedValidatorId: Bytes;
+        readonly slashFraction: u32;
+        readonly timestamp: u64;
     }
 
     /** @name PalletExternalValidatorsRewardsEvent (63) */
@@ -7096,6 +7102,7 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletExternalValidatorSlashesSlash (622) */
     interface PalletExternalValidatorSlashesSlash extends Struct {
+        readonly timestamp: u64;
         readonly validator: AccountId32;
         readonly reporters: Vec<AccountId32>;
         readonly slashId: u32;
