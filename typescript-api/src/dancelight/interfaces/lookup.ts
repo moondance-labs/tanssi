@@ -498,11 +498,16 @@ export default {
                 rewardsMerkleRoot: "H256",
             },
             ReportSlashes: {
-                timestamp: "u64",
                 eraIndex: "u32",
-                slashes: "Vec<(Bytes,u32)>",
+                slashes: "Vec<TpBridgeSlashData>",
             },
         },
+    },
+    /** Lookup62: tp_bridge::SlashData */
+    TpBridgeSlashData: {
+        encodedValidatorId: "Bytes",
+        slashFraction: "u32",
+        timestamp: "u64",
     },
     /** Lookup63: pallet_external_validators_rewards::pallet::Event<T> */
     PalletExternalValidatorsRewardsEvent: {
@@ -5535,6 +5540,7 @@ export default {
     },
     /** Lookup622: pallet_external_validator_slashes::Slash<sp_core::crypto::AccountId32, SlashId> */
     PalletExternalValidatorSlashesSlash: {
+        timestamp: "u64",
         validator: "AccountId32",
         reporters: "Vec<AccountId32>",
         slashId: "u32",

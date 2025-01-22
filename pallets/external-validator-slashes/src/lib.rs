@@ -50,7 +50,7 @@ use {
 };
 
 use snowbridge_core::ChannelId;
-use tp_bridge::{Command, DeliverMessage, Message, ValidateMessage};
+use tp_bridge::{Command, DeliverMessage, Message, SlashData, ValidateMessage};
 
 pub use pallet::*;
 
@@ -532,10 +532,11 @@ impl<T: Config> Pallet<T> {
                     break;
                 };
 
-                slashes_to_send.push((
-                    slash.validator.clone().encode(),
-                    slash.percentage.deconstruct(),
-                ));
+                slashes_to_send.push(SlashData {
+                    encoded_validator_id: slash.validator.clone().encode(),
+                    slash_fraction: slash.percentage.deconstruct(),
+                    timestamp: slash.timestamp,
+                });
             }
         });
 
@@ -547,8 +548,6 @@ impl<T: Config> Pallet<T> {
 
         // Build command with slashes.
         let command = Command::ReportSlashes {
-            // TODO: change this
-            timestamp: T::TimestampProvider::get(),
             era_index,
             slashes: slashes_to_send,
         };
@@ -585,6 +584,8 @@ impl<T: Config> Pallet<T> {
 /// rather deferred for several eras.
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
 pub struct Slash<AccountId, SlashId> {
+    /// Timestamp when slash occurred
+    pub timestamp: u64,
     /// The stash ID of the offending validator.
     pub validator: AccountId,
     /// Reporters of the offence; bounty payout recipients.
@@ -600,6 +601,7 @@ impl<AccountId, SlashId: One> Slash<AccountId, SlashId> {
     /// Initializes the default object using the given `validator`.
     pub fn default_from(validator: AccountId) -> Self {
         Self {
+            timestamp: 0,
             validator,
             reporters: vec![],
             slash_id: One::one(),
@@ -641,6 +643,8 @@ pub(crate) fn compute_slash<T: Config>(
 
     let confirmed = slash_defer_duration.is_zero();
     Some(Slash {
+        // TODO: change this to timestamp from Ethereum
+        timestamp: T::TimestampProvider::get(),
         validator: stash.clone(),
         percentage: slash_fraction,
         slash_id,

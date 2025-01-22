@@ -453,6 +453,7 @@ import type {
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
     TpBridgeCommand,
+    TpBridgeSlashData,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
@@ -958,6 +959,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpBridgeCommand: TpBridgeCommand;
+        TpBridgeSlashData: TpBridgeSlashData;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;
