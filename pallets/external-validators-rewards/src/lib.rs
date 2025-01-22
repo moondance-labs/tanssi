@@ -255,14 +255,15 @@ pub mod pallet {
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
             if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
-                let mut tokens_inflated = T::EraInflationProvider::get();
+                let tokens_inflated = T::EraInflationProvider::get();
 
                 let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
                 if let Err(err) =
                     T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
                 {
                     log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
-                    tokens_inflated = Zero::zero();
+                    log::error!(target: "ext_validators_rewards", "Not sending message since there are no rewards to distribute");
+                    return;
                 }
 
                 let command = Command::ReportRewards {
