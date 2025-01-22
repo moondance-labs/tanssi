@@ -239,8 +239,7 @@ fn dancelight_testnet_genesis(
     invulnerables: Vec<String>,
     host_configuration: HostConfiguration,
 ) -> serde_json::Value {
-    let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
-    endowed_accounts.push(crate::EthereumSovereignAccount::get());
+    let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
 
     let invulnerable_keys: Vec<_> = invulnerables
         .iter()
@@ -341,6 +340,7 @@ fn dancelight_testnet_genesis(
         crate::StakingAccount::get(),
         crate::DancelightBondAccount::get(),
         crate::PendingRewardsAccount::get(),
+        crate::EthereumSovereignAccount::get(),
     ];
 
     serde_json::json!({
