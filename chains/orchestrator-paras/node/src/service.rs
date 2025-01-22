@@ -17,6 +17,8 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use frame_support::__private::sp_tracing::tracing::Instrument;
+use polkadot_primitives::UpgradeGoAhead;
+use cumulus_primitives_core::CollectCollationInfo;
 use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
@@ -996,6 +998,7 @@ pub fn start_dev_node(
                     .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
                 let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
 
+                let client_set_aside_for_cidp = client.clone();
                 let client_for_xcm = client.clone();
                 async move {
                     let mocked_author_noting =
@@ -1024,6 +1027,21 @@ pub fn start_dev_node(
                         log::info!("mokcing randomnessss!!! {}", current_para_block);
                     }
 
+                    let current_para_head = client_set_aside_for_cidp
+                            .header(block)
+                            .expect("Header lookup should succeed")
+                            .expect("Header passed in as parent should be present in backend.");
+                    let should_send_go_ahead = match client_set_aside_for_cidp
+                            .runtime_api()
+                            .collect_collation_info(block, &current_para_head)
+                    {
+                            Ok(info) => info.new_validation_code.is_some(),
+                            Err(e) => {
+                                    log::error!("Failed to collect collation info: {:?}", e);
+                                    false
+                            },
+                    };
+
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
@@ -1042,6 +1060,12 @@ pub fn start_dev_node(
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
                         para_id,
+                        upgrade_go_ahead: should_send_go_ahead.then(|| {
+                            log::info!(
+                                "Detected pending validation code, sending go-ahead signal."
+                            );
+                            UpgradeGoAhead::GoAhead
+                        }),
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))

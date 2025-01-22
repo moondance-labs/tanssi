@@ -849,6 +849,7 @@ parameter_types! {
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
+    pub GasLimitStorageGrowthRatio: u64 = 366;
 }
 
 impl_on_charge_evm_transaction!();
@@ -878,6 +879,7 @@ impl pallet_evm::Config for Runtime {
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
     type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
+    type GasLimitStorageGrowthRatio = GasLimitStorageGrowthRatio;
     type SuicideQuickClearLimit = SuicideQuickClearLimit;
     type Timestamp = Timestamp;
     type WeightInfo = ();
@@ -1128,7 +1130,7 @@ impl_runtime_apis! {
                 RuntimeCall::Ethereum(transact { .. }) => intermediate_valid,
                 _ if dispatch_info.class != DispatchClass::Normal => intermediate_valid,
                 _ => {
-                    let tip = match xt.0.signature {
+                    let tip = match xt.0.preamble.to_signed() {
                         None => 0,
                         Some((_, _, ref signed_extra)) => {
                             // Yuck, this depends on the index of charge transaction in Signed Extra
@@ -1137,9 +1139,10 @@ impl_runtime_apis! {
                         }
                     };
 
+                    // TODO: call_weight or extrinsic_weight
                     let effective_gas =
                         <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-                            dispatch_info.weight
+                            dispatch_info.call_weight
                         );
                     let tip_per_gas = if effective_gas > 0 {
                         tip.saturating_div(u128::from(effective_gas))
