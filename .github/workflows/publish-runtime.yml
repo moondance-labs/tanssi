@@ -80,7 +80,7 @@ jobs:
           fi
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
-    runs-on: self-hosted
+    runs-on: tanssi-release-two
     strategy:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
