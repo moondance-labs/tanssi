@@ -17,7 +17,7 @@ use {
     crate as pallet_external_validators_rewards,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64, ConstU128},
+        traits::{ConstU128, ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
