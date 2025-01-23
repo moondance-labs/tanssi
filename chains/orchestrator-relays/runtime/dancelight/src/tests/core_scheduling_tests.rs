@@ -655,6 +655,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
 #[test]
 fn test_should_have_availability_for_registered_parachain() {
+    sp_tracing::try_init_simple();
+
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit

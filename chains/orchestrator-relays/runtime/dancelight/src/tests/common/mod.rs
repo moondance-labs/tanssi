@@ -799,6 +799,7 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::
         RuntimeCall::ParaInherent(parachains_paras_inherent::Call::<Runtime>::enter { data })
             .dispatch(inherent_origin())
     );
+    // Error: InherentDataFilteredDuringExecution
     frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
         b"ParaInherent",
         b"Included",
