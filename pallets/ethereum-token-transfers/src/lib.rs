@@ -40,7 +40,12 @@ use {
     parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
-    snowbridge_core::{outbound::{SendError, SendMessage, Command as SnowbridgeCommand, Message as SnowbridgeMessage}, AgentId, ChannelId, ParaId},
+    snowbridge_core::{
+        outbound::{
+            Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendError, SendMessage,
+        },
+        AgentId, ChannelId, ParaId,
+    },
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::{H160, H256},
     sp_runtime::DispatchResult,
@@ -54,7 +59,7 @@ use {
 pub use pallet::*;
 
 pub type BalanceOf<T> =
-	<<T as pallet::Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+    <<T as pallet::Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -75,7 +80,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// Overarching event type.
-        // type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         /// Currency to handle fees and internal native transfers.
         type Currency: fungible::Inspect<Self::AccountId, Balance: From<u128>>
@@ -98,6 +103,24 @@ pub mod pallet {
     }
 
     // Events
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// Information for the channel was set properly.
+        ChannelInfoSet {
+            channel_id: ChannelId,
+            para_id: ParaId,
+        },
+        /// Some native token was successfully transferred to Ethereum.
+        NativeTokenTransferred {
+            channel_id: ChannelId,
+            source: T::AccountId,
+            recipient: H160,
+            token_id: H256,
+            amount: u128,
+            fee: BalanceOf<T>,
+        },
+    }
 
     // Errors
     #[pallet::error]
@@ -158,6 +181,11 @@ pub mod pallet {
 
             T::EthereumSystemHandler::create_channel(channel_id, agent_id, para_id)?;
 
+            Self::deposit_event(Event::<T>::ChannelInfoSet {
+                channel_id,
+                para_id,
+            });
+
             Ok(())
         }
 
@@ -172,19 +200,12 @@ pub mod pallet {
         ) -> DispatchResult {
             let source = ensure_signed(origin)?;
 
-            // Transfer amount to Ethereum's sovereign account.
-            T::Currency::transfer(
-                &source,
-                &T::EthereumSovereignAccount::get(),
-                amount.into(),
-                Preservation::Preserve,
-            )?;
-
             if let Some(channel_id) = CurrentChannelId::<T>::get() {
                 // TODO: which recipient should we use? Is it okay to receive it via params?
                 // TODO: which token_id?
+                let token_id = H256::default();
                 let command = SnowbridgeCommand::MintForeignToken {
-                    token_id: H256::default(),
+                    token_id,
                     recipient,
                     amount,
                 };
@@ -207,8 +228,25 @@ pub mod pallet {
                     Preservation::Preserve,
                 )?;
 
+                // Transfer amount to Ethereum's sovereign account.
+                T::Currency::transfer(
+                    &source,
+                    &T::EthereumSovereignAccount::get(),
+                    amount.into(),
+                    Preservation::Preserve,
+                )?;
+
                 T::OutboundQueue::deliver(ticket)
                     .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+
+                Self::deposit_event(Event::<T>::NativeTokenTransferred {
+                    channel_id,
+                    source,
+                    recipient,
+                    token_id,
+                    amount,
+                    fee: fee.total(),
+                });
 
                 return Ok(());
             } else {

@@ -22,7 +22,7 @@ use {
     },
     pallet_balances::AccountData,
     snowbridge_core::{
-        outbound::{SendError, SendMessageFeeProvider, Fee, Message},
+        outbound::{Fee, Message, SendError, SendMessageFeeProvider},
         AgentId, ChannelId, ParaId,
     },
     sp_core::H256,
@@ -30,6 +30,7 @@ use {
         traits::{BlakeTwo256, Get, IdentityLookup, Keccak256},
         BuildStorage, DispatchResult,
     },
+    sp_std::cell::RefCell,
     tp_traits::EthereumSystemChannelManager,
 };
 
@@ -40,10 +41,9 @@ frame_support::construct_runtime!(
     pub enum Test
     {
         System: frame_system,
-        EthereumTokenTransfers: pallet_ethereum_token_transfers,
-        // Session: pallet_session,
         Balances: pallet_balances,
         Timestamp: pallet_timestamp,
+        EthereumTokenTransfers: pallet_ethereum_token_transfers,
         Mock: mock_data,
     }
 );
@@ -115,22 +115,41 @@ impl pallet_timestamp::Config for Test {
 
 impl mock_data::Config for Test {}
 
+thread_local! {
+    /// Detect we sent a message to Ethereum.
+    pub static SENT_ETHEREUM_MESSAGE_NONCE: RefCell<u64> = const { RefCell::new(0) };
+    /// Detect we called EthereumSystemHandler hook.
+    pub static ETHEREUM_SYSTEM_HANDLER_NONCE: RefCell<u64> = const { RefCell::new(0) };
+}
+
+pub fn sent_ethereum_message_nonce() -> u64 {
+    SENT_ETHEREUM_MESSAGE_NONCE.with(|q| (*q.borrow()))
+}
+
+pub fn ethereum_system_handler_nonce() -> u64 {
+    ETHEREUM_SYSTEM_HANDLER_NONCE.with(|q| (*q.borrow()))
+}
+
 pub struct MockOkOutboundQueue;
 impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
     type Ticket = ();
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        // Every time we hit deliver, increment the nonce
+        SENT_ETHEREUM_MESSAGE_NONCE.with(|r| *r.borrow_mut() += 1);
         Ok(H256::zero())
     }
 
     fn validate(
-            _message: &Message,
-        ) -> Result<(Self::Ticket, Fee<<Self as SendMessageFeeProvider>::Balance>), SendError> {
-            let fee = Fee {
+        _message: &Message,
+    ) -> Result<(Self::Ticket, Fee<<Self as SendMessageFeeProvider>::Balance>), SendError> {
+        Ok((
+            (),
+            Fee {
                 local: 0u128,
-                remote: 0u128
-            };
-        Ok(((), fee))
+                remote: 0u128,
+            },
+        ))
     }
 }
 
@@ -141,21 +160,30 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
         1
     }
 }
-
 pub struct EthereumSystemHandler;
 impl EthereumSystemChannelManager for EthereumSystemHandler {
-    // TODO: wire ethereum system pallet here
-    fn create_channel(_channel_id: ChannelId, _agent_id: AgentId, _para_id: ParaId) -> DispatchResult {
+    fn create_channel(
+        _channel_id: ChannelId,
+        _agent_id: AgentId,
+        _para_id: ParaId,
+    ) -> DispatchResult {
+        ETHEREUM_SYSTEM_HANDLER_NONCE.with(|r| *r.borrow_mut() += 1);
         Ok(())
     }
 }
 
+parameter_types! {
+    pub const EthereumSovereignAccount: u64 = 4;
+    pub const FeesAccount: u64 = 5;
+}
+
 impl pallet_ethereum_token_transfers::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = MockOkOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler;
-    type EthereumSovereignAccount = ();
-    type FeesAccount = ();
+    type EthereumSovereignAccount = EthereumSovereignAccount;
+    type FeesAccount = FeesAccount;
 }
 
 // Pallet to provide some mock data, used to test

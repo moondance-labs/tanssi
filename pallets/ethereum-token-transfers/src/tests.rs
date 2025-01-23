@@ -28,6 +28,7 @@ use {
 #[test]
 fn test_set_token_transfer_channel_only_callable_by_root() {
     new_test_ext().execute_with(|| {
+        run_to_block(1);
         let channel_id = ChannelId::new([5u8; 32]);
         let agent_id = AgentId::random();
         let para_id: ParaId = 2000u32.into();
@@ -42,18 +43,27 @@ fn test_set_token_transfer_channel_only_callable_by_root() {
             BadOrigin
         );
 
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
         assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
             RuntimeOrigin::root(),
             channel_id,
             agent_id,
             para_id
         ));
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet { channel_id, para_id },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
     });
 }
 
 #[test]
 fn test_cannot_register_existing_channel_id() {
     new_test_ext().execute_with(|| {
+        run_to_block(1);
         let channel_id = ChannelId::new([5u8; 32]);
         let agent_id = AgentId::random();
         let para_id: ParaId = 2000u32.into();
@@ -64,6 +74,12 @@ fn test_cannot_register_existing_channel_id() {
             agent_id,
             para_id
         ));
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet { channel_id, para_id },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
 
         assert_noop!(
             EthereumTokenTransfers::set_token_transfer_channel(
@@ -74,12 +90,16 @@ fn test_cannot_register_existing_channel_id() {
             ),
             Error::<Test>::ChannelIdAlreadyExists
         );
+
+        // Nonce should have the same value.
+        assert_eq!(ethereum_system_handler_nonce(), 1);
     });
 }
 
 #[test]
 fn test_cannot_register_existing_para_id() {
     new_test_ext().execute_with(|| {
+        run_to_block(1);
         let channel_id = ChannelId::new([5u8; 32]);
         let agent_id = AgentId::random();
         let para_id: ParaId = 2000u32.into();
@@ -90,6 +110,12 @@ fn test_cannot_register_existing_para_id() {
             agent_id,
             para_id
         ));
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet { channel_id, para_id },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
 
         let new_channel_id = ChannelId::new([6u8; 32]);
 
@@ -102,5 +128,70 @@ fn test_cannot_register_existing_para_id() {
             ),
             Error::<Test>::ParaIdAlreadyExists
         );
+
+        // Nonce should have the same value.
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+    });
+}
+
+#[test]
+fn test_transfer_native_token_channel_id_not_set() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_eq!(CurrentChannelId::<Test>::get(), None);
+
+        assert_noop!(
+            EthereumTokenTransfers::transfer_native_token(
+                RuntimeOrigin::signed(ALICE),
+                10u128,
+                H160::default(),
+            ),
+            Error::<Test>::ChannelIdNotSet
+        );
+    });
+}
+
+#[test]
+fn test_transfer_native_token_succeeds() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet { channel_id, para_id },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::transfer_native_token(
+            RuntimeOrigin::signed(ALICE),
+            10u128,
+            H160::default(),
+        ));
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::NativeTokenTransferred { 
+                channel_id, 
+                source: ALICE, 
+                recipient: H160::default(), 
+                token_id: H256::default(), 
+                amount: 10u128, 
+                fee: 0u128
+            },
+        ));
+
+        assert_eq!(sent_ethereum_message_nonce(), 1);
     });
 }
