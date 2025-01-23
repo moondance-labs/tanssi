@@ -1772,7 +1772,7 @@ checksum = "cd7e35aee659887cbfb97aaf227ac12cad1a9d7c71e55ff3376839ed4e282d08"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -1870,7 +1870,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -17334,7 +17334,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -17435,7 +17435,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -17495,7 +17495,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",

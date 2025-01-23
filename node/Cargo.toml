@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Tanssi node implementation"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.10.1"
+version = "0.10.2"
 
 [lints]
 workspace = true

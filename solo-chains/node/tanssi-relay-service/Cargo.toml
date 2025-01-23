@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Utils to tie different Tanssi components together and allow instantiation of a node."
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.10.1"
+version = "0.10.2"
 
 [lints]
 workspace = true

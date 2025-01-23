@@ -5,7 +5,7 @@ description = "Implementation of a `https://tanssi.network` node in Rust based o
 edition = "2021"
 license = "GPL-3.0-only"
 readme = "README.md"
-version = "0.10.1"
+version = "0.10.2"
 
 [[bin]]
 name = "tanssi-relay"
