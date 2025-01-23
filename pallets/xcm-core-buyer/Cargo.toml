@@ -9,6 +9,9 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 
+[lints]
+workspace = true
+
 [dependencies]
 
 dp-core = { workspace = true }
