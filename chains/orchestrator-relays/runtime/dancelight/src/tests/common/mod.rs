@@ -29,10 +29,10 @@ use {
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
-            node_features::FeatureIndex, AvailabilityBitfield, BackedCandidate,
-            CandidateCommitments, CandidateDescriptor, CollatorPair, CommittedCandidateReceipt,
+            node_features::FeatureIndex, AvailabilityBitfield, vstaging::BackedCandidate,
+            CandidateCommitments, vstaging::CandidateDescriptorV2, CollatorPair, vstaging::CommittedCandidateReceiptV2,
             CompactStatement, CoreIndex, GroupIndex, HeadData,
-            InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
+            vstaging::InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
             UncheckedSigned, ValidationCode, ValidatorIndex, ValidityAttestation,
         },
         ParaId,
@@ -772,14 +772,14 @@ pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
-fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
-    let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> {
+    let data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
         frame_support::storage::unhashed::take(b"ParasInherent");
 
     data
 }
 
-pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
+pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
     frame_support::storage::unhashed::put(b"ParasInherent", &data);
 }
 
@@ -790,7 +790,7 @@ pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
-pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
+pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
     // In order for this inherent to work, we need to match the parent header
     // the parent header does not play a significant role in the rest of the framework so
     // we are simply going to mock it
@@ -1017,18 +1017,18 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                         let group_validators = Self::group_validators(group_idx).unwrap();
 
-                        let candidate = CommittedCandidateReceipt::<T::Hash> {
-                            descriptor: CandidateDescriptor::<T::Hash> {
+                        let candidate = CommittedCandidateReceiptV2::<T::Hash> {
+                            descriptor: CandidateDescriptorV2::<T::Hash>::new(
                                 para_id,
                                 relay_parent,
-                                collator: collator_pair.public(),
+                                core_idx,
+                                current_session,
                                 persisted_validation_data_hash,
                                 pov_hash,
-                                erasure_root: Default::default(),
-                                signature,
-                                para_head: prev_head.hash(),
+                                Default::default(),
+                                prev_head.hash(),
                                 validation_code_hash,
-                            },
+                            ),
                             commitments: CandidateCommitments::<u32> {
                                 upward_messages: Default::default(),
                                 horizontal_messages: Default::default(),

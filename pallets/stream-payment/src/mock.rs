@@ -110,6 +110,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<1>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = ();
 }
 

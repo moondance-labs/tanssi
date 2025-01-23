@@ -45,7 +45,7 @@ use {
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
-        CollatorPair, CoreState, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
+        CollatorPair, vstaging::CoreState, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
         ScheduledCore, ValidatorId,
     },
     sc_block_builder::BlockBuilderBuilder,
@@ -89,6 +89,8 @@ use {
     tokio_util::sync::CancellationToken,
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
+use polkadot_primitives::CoreIndex;
+use std::collections::VecDeque;
 
 // Duration of slot time
 pub const SLOT_DURATION_MS: u64 = 1000;
@@ -411,12 +413,19 @@ impl RelayChainInterface for RelayChain {
         unimplemented!("Not needed for test")
     }
 
-    async fn call_remote_runtime_function_encoded(
+    async fn call_runtime_api(
         &self,
         _: &'static str,
         _: PHash,
         _: &[u8],
     ) -> RelayChainResult<Vec<u8>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn claim_queue(
+        &self,
+        _: PHash,
+    ) -> RelayChainResult<BTreeMap<CoreIndex, VecDeque<ParaId>>> {
         unimplemented!("Not needed for test")
     }
 }
