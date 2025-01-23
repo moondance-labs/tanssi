@@ -479,13 +479,13 @@ fn test_slashes_are_sent_to_ethereum() {
                 "SlashesMessageSent event should be emitted"
             );
 
-            let expected_slashes = vec![(
-                AccountId::from(ALICE).encode(),
-                Perbill::from_percent(100).deconstruct(),
-            )];
+            let expected_slashes = vec![SlashData {
+                encoded_validator_id: AccountId::from(ALICE).encode(),
+                slash_fraction: Perbill::from_percent(100).deconstruct(),
+                timestamp: 0,
+            }];
 
             let expected_slashes_command = Command::ReportSlashes {
-                timestamp: 0u64,
                 era_index: 1u32,
                 slashes: expected_slashes,
             };
@@ -508,6 +508,7 @@ fn test_slashes_are_sent_to_ethereum() {
 }
 
 use frame_support::traits::Get;
+use tp_bridge::SlashData;
 
 #[test]
 fn test_slashes_are_sent_to_ethereum_accumulatedly() {
