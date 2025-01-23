@@ -17,7 +17,7 @@ use {
     crate as pallet_external_validators_rewards,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64},
+        traits::{ConstU128, ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -63,7 +63,7 @@ impl frame_system::Config for Test {
     type BlockHashCount = BlockHashCount;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = AccountData<u64>;
+    type AccountData = AccountData<u128>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -88,7 +88,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
-    type Balance = u64;
+    type Balance = u128;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
@@ -134,18 +134,25 @@ impl Get<u64> for TimestampProvider {
     }
 }
 
+parameter_types! {
+    pub const RewardsEthereumSovereignAccount: u64
+        = 0xffffffffffffffff;
+}
+
 impl pallet_external_validators_rewards::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
-    type EraInflationProvider = ();
+    type EraInflationProvider = ConstU128<42>;
     type TimestampProvider = TimestampProvider;
     type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
+    type Currency = Balances;
+    type RewardsEthereumSovereignAccount = RewardsEthereumSovereignAccount;
     type WeightInfo = ();
 }
 
