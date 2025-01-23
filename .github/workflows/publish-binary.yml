@@ -55,10 +55,10 @@ jobs:
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: binaries
-          path: binaries
+          name: binaries-${{matrix.cpu}}
+          path: build/moonbeam-${{matrix.cpu}}
 
   ####### Prepare the release draft #######
   publish-draft-release:
@@ -111,9 +111,10 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-node", "container-chain-frontier-node", "container-chain-simple-node"]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: binaries
+          pattern: binaries-*
+          merge-multiple: true
           path: build
       - name: Upload tanssi and templates
         uses: actions/upload-release-asset@v1
