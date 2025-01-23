@@ -22,7 +22,7 @@ use {
     },
     pallet_balances::AccountData,
     snowbridge_core::{
-        outbound::{SendError, SendMessageFeeProvider},
+        outbound::{SendError, SendMessageFeeProvider, Fee, Message},
         AgentId, ChannelId, ParaId,
     },
     sp_core::H256,
@@ -116,11 +116,21 @@ impl pallet_timestamp::Config for Test {
 impl mock_data::Config for Test {}
 
 pub struct MockOkOutboundQueue;
-impl tp_bridge::DeliverMessage for MockOkOutboundQueue {
+impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
     type Ticket = ();
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
         Ok(H256::zero())
+    }
+
+    fn validate(
+            _message: &Message,
+        ) -> Result<(Self::Ticket, Fee<<Self as SendMessageFeeProvider>::Balance>), SendError> {
+            let fee = Fee {
+                local: 0u128,
+                remote: 0u128
+            };
+        Ok(((), fee))
     }
 }
 
@@ -135,14 +145,13 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 pub struct EthereumSystemHandler;
 impl EthereumSystemChannelManager for EthereumSystemHandler {
     // TODO: wire ethereum system pallet here
-    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult {
+    fn create_channel(_channel_id: ChannelId, _agent_id: AgentId, _para_id: ParaId) -> DispatchResult {
         Ok(())
     }
 }
 
 impl pallet_ethereum_token_transfers::Config for Test {
     type Currency = Balances;
-    type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler;
     type EthereumSovereignAccount = ();
