@@ -117,6 +117,7 @@ decl_test_parachains! {
     }
 }
 
+// Store messages sent to ethereum throught the bridge
 thread_local! {
     pub static ETH_BRIDGE_SENT_MSGS: RefCell<Vec<CommittedMessage>> = RefCell::new(Vec::new());
 }
