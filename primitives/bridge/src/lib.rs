@@ -30,6 +30,7 @@ use {
         relay_chain::{AccountId, Balance},
         Assets, Location, SendResult, SendXcm, Xcm, XcmHash,
     },
+    cumulus_primitives_core::{AccountKey20, Ethereum, GlobalConsensus},
     ethabi::{Token, U256},
     frame_support::{
         ensure,
@@ -46,6 +47,7 @@ use {
     snowbridge_router_primitives::inbound::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
+    sp_core::blake2_256,
     sp_core::hashing,
     sp_core::H256,
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
@@ -59,6 +61,7 @@ use sp_std::vec;
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
     custom_send_message::CustomSendMessage,
+    xcm_executor::traits::ConvertLocation,
 };
 
 mod custom_do_process_message;
@@ -147,8 +150,8 @@ impl Command {
                     slashes_tokens_vec.push(tuple_token);
                 }
 
-                let slashes_tokens_tuple = Token::Tuple(slashes_tokens_vec);
-                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_tokens_tuple])])
+                let slashes_tokens_array = Token::Array(slashes_tokens_vec);
+                ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_tokens_array])])
             }
         }
     }
@@ -316,5 +319,37 @@ impl ConvertMessage for DoNothingConvertMessage {
         _message: VersionedXcmMessage,
     ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
         Err(ConvertMessageError::UnsupportedVersion)
+    }
+}
+
+// This is a variation of the converter found here:
+// https://github.com/paritytech/polkadot-sdk/blob/711e6ff33373bc08b026446ce19b73920bfe068c/bridges/snowbridge/primitives/router/src/inbound/mod.rs#L467
+//
+// Upstream converter only works for parachains (parents 2) while we to use it in tanssi solo-chain
+// (parents 1).
+pub struct EthereumLocationsConverterFor<AccountId>(PhantomData<AccountId>);
+impl<AccountId> ConvertLocation<AccountId> for EthereumLocationsConverterFor<AccountId>
+where
+    AccountId: From<[u8; 32]> + Clone,
+{
+    fn convert_location(location: &Location) -> Option<AccountId> {
+        match location.unpack() {
+            (1, [GlobalConsensus(Ethereum { chain_id })]) => {
+                Some(Self::from_chain_id(chain_id).into())
+            }
+            (1, [GlobalConsensus(Ethereum { chain_id }), AccountKey20 { network: _, key }]) => {
+                Some(Self::from_chain_id_with_key(chain_id, *key).into())
+            }
+            _ => None,
+        }
+    }
+}
+
+impl<AccountId> EthereumLocationsConverterFor<AccountId> {
+    pub fn from_chain_id(chain_id: &u64) -> [u8; 32] {
+        (b"ethereum-chain", chain_id).using_encoded(blake2_256)
+    }
+    pub fn from_chain_id_with_key(chain_id: &u64, key: [u8; 20]) -> [u8; 32] {
+        (b"ethereum-chain", chain_id, key).using_encoded(blake2_256)
     }
 }
