@@ -54,3 +54,49 @@ fn test_report_rewards_encoding() {
 
     assert_eq!(command.abi_encode(), expected);
 }
+
+#[test]
+fn test_report_slashes_encoding() {
+    pub const ALICE: [u8; 32] = [4u8; 32];
+    pub const BOB: [u8; 32] = [5u8; 32];
+    pub const CHARLIE: [u8; 32] = [6u8; 32];
+    let command = Command::ReportSlashes {
+        era_index: 42,
+        slashes: vec![
+            SlashData {
+                encoded_validator_id: sp_runtime::AccountId32::from(ALICE).encode(),
+                slash_fraction: 5_000u32,
+                timestamp: 500u64,
+            },
+            SlashData {
+                encoded_validator_id: sp_runtime::AccountId32::from(BOB).encode(),
+                slash_fraction: 4_000u32,
+                timestamp: 400u64,
+            },
+            SlashData {
+                encoded_validator_id: sp_runtime::AccountId32::from(CHARLIE).encode(),
+                slash_fraction: 3_000u32,
+                timestamp: 300u64,
+            },
+        ],
+    };
+
+    let expected = hex!(
+        // no tuple offset since all fields have static size
+        "0000000000000000000000000000000000000000000000000000000000000020" // offset of era_index
+        "000000000000000000000000000000000000000000000000000000000000002A" // era index
+        "0000000000000000000000000000000000000000000000000000000000000040" // offset of slashes
+        "0000000000000000000000000000000000000000000000000000000000000003" // length of slashes
+        "0404040404040404040404040404040404040404040404040404040404040404" // ALICE
+        "0000000000000000000000000000000000000000000000000000000000001388" // 5_000u32
+        "00000000000000000000000000000000000000000000000000000000000001F4" // 500u64
+        "0505050505050505050505050505050505050505050505050505050505050505" // BOB
+        "0000000000000000000000000000000000000000000000000000000000000FA0" // 4_000u32
+        "0000000000000000000000000000000000000000000000000000000000000190" // 400u64
+        "0606060606060606060606060606060606060606060606060606060606060606" // CHARLIE
+        "0000000000000000000000000000000000000000000000000000000000000BB8" // 3_000u32
+        "000000000000000000000000000000000000000000000000000000000000012C"  // 300u64
+    );
+
+    assert_eq!(command.abi_encode(), expected);
+}

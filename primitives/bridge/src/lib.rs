@@ -150,7 +150,7 @@ impl Command {
                     slashes_tokens_vec.push(tuple_token);
                 }
 
-                let slashes_tokens_tuple = Token::Tuple(slashes_tokens_vec);
+                let slashes_tokens_tuple = Token::Array(slashes_tokens_vec);
                 ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_tokens_tuple])])
             }
         }
