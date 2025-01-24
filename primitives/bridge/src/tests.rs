@@ -82,7 +82,6 @@ fn test_report_slashes_encoding() {
     };
 
     let expected = hex!(
-        // no tuple offset since all fields have static size
         "0000000000000000000000000000000000000000000000000000000000000020" // offset of era_index
         "000000000000000000000000000000000000000000000000000000000000002A" // era index
         "0000000000000000000000000000000000000000000000000000000000000040" // offset of slashes
