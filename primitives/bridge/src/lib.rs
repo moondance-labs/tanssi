@@ -49,9 +49,9 @@ use {
     },
     sp_core::blake2_256,
     sp_core::hashing,
-    sp_core::{H160, H256},
+    sp_core::H256,
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
-    sp_std::{prelude::ToOwned, vec::Vec},
+    sp_std::vec::Vec,
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
@@ -178,7 +178,6 @@ pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(Phantom
 
 pub trait ValidateMessage {
     type Ticket;
-    //type Balance: BaseArithmetic + Unsigned + Copy;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
 }
