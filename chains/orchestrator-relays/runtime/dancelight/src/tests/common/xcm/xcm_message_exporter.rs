@@ -19,15 +19,16 @@ use {
         super::{AccountId, ExtBuilder, ALICE},
         mocknets::{DancelightRelay as Dancelight, DancelightRelayPallet},
     },
-    frame_support::weights::Weight,
+    crate::xcm_config,
+    frame_support::{assert_err, weights::Weight},
     pallet_xcm::Error,
     sp_runtime::DispatchError,
-    xcm::{latest::prelude::*, VersionedXcm},
+    xcm::{latest::prelude::*, v4::Location, VersionedXcm},
     xcm_emulator::Chain,
 };
 
 #[test]
-fn test_message_export_disabled() {
+fn test_message_exporter_disabled_for_origin_account() {
     ExtBuilder::default().build().execute_with(|| {
         // The only test we can do is with signed runtime origins since we are ensuring local origin in xcm config
         let origin = <Dancelight as Chain>::RuntimeOrigin::signed(AccountId::from(ALICE));
@@ -49,4 +50,26 @@ fn test_message_export_disabled() {
             DispatchError::from(Error::<<Dancelight as Chain>::Runtime>::LocalExecutionIncomplete)
         );
     });
+}
+
+#[test]
+fn test_message_exporter_validate_should_fail() {
+    let mut location = Some(Location {
+        parents: 1,
+        interior: Junctions::Here,
+    });
+
+    let mut message = Some(Xcm(vec![Instruction::ExportMessage {
+        network: NetworkId::Ethereum { chain_id: 1 },
+        destination: Junctions::Here,
+        xcm: Xcm(vec![]),
+    }]));
+
+    assert_err!(
+        <xcm_config::XcmConfig as xcm_executor::Config>::MessageExporter::validate(
+            &mut location,
+            &mut message
+        ),
+        SendError::NotApplicable
+    );
 }
