@@ -17,7 +17,6 @@
 mod bridge_to_eth;
 mod constants;
 mod mocknets;
-mod mocks;
 mod reserver_transfers_polkadot_xcm;
 mod xcm_message_exporter;
 pub use xcm_emulator::{bx, TestExt};

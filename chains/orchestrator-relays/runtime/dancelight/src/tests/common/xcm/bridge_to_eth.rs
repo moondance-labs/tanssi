@@ -15,29 +15,35 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::tests::common::xcm::{
-        mocknets::{
-            DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
-            SimpleTemplateDancelightPara as DancelightPara,
+    crate::{
+        tests::common::{
+            mock_snowbridge_message_proof,
+            xcm::{
+                mocknets::{
+                    DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
+                    SimpleTemplateDancelightPara as DancelightPara,
+                },
+                *,
+            },
         },
-        *,
+        Runtime,
     },
-    crate::Runtime,
     alloy_sol_types::SolEvent,
     frame_support::assert_ok,
     keyring::AccountKeyring,
-    mocks::mock_execution_proof,
     parity_scale_codec::Encode,
     snowbridge_core::{
-        inbound::{Log, Message, Proof},
+        inbound::{Log, Message},
         PRIMARY_GOVERNANCE_CHANNEL,
     },
     snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
     sp_core::H256,
-    tp_bridge::symbiotic_message_processor::{
-        InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+    tp_bridge::{
+        symbiotic_message_processor::{
+            InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+        },
+        Command,
     },
-    tp_bridge::Command,
     xcm_emulator::Chain,
 };
 
@@ -118,10 +124,7 @@ fn receive_msg_from_eth_validators_are_updated() {
                     .collect(),
                 data: event.encode_data(),
             },
-            proof: Proof {
-                receipt_proof: Default::default(),
-                execution_proof: mock_execution_proof(),
-            },
+            proof: mock_snowbridge_message_proof(),
         };
 
         // Submit message to the queue
