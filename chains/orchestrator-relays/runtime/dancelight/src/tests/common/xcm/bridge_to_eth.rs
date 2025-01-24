@@ -17,20 +17,32 @@
 use {
     crate::tests::common::xcm::{
         mocknets::{
-            DancelightRelay as Dancelight, DancelightRelayPallet,
+            DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
             SimpleTemplateDancelightPara as DancelightPara,
         },
         *,
     },
+    crate::Runtime,
+    alloy_sol_types::SolEvent,
     frame_support::assert_ok,
+    keyring::AccountKeyring,
+    mocks::mock_execution_proof,
     parity_scale_codec::Encode,
+    snowbridge_core::{
+        inbound::{Log, Message, Proof},
+        PRIMARY_GOVERNANCE_CHANNEL,
+    },
+    snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
     sp_core::H256,
+    tp_bridge::symbiotic_message_processor::{
+        InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+    },
     tp_bridge::Command,
     xcm_emulator::Chain,
 };
 
 #[test]
-fn send_msg_to_eth() {
+fn send_msg_to_eth_should_be_process_by_the_bridge() {
     let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
     let nonce: H256 = sp_core::blake2_256(b"nonce").into();
     let msg_size = 32; // For simplicity since we are hashing the nonce in 32bytes
@@ -64,4 +76,73 @@ fn send_msg_to_eth() {
     );
     assert_eq!(sent_message.command, command.index());
     assert_eq!(sent_message.params, command.abi_encode());
+}
+
+#[test]
+fn receive_msg_from_eth_validators_are_updated() {
+    Dancelight::execute_with(|| {
+        let origin =
+            <Runtime as frame_system::Config>::RuntimeOrigin::signed(DancelightSender::get());
+
+        // New validators to be added
+        let payload_validators = vec![
+            AccountKeyring::Alice.to_account_id(),
+            AccountKeyring::Charlie.to_account_id(),
+            AccountKeyring::Bob.to_account_id(),
+        ];
+
+        let payload = Payload {
+            magic_bytes: MAGIC_BYTES,
+            message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
+                validators: payload_validators.clone(),
+                timestamp: 0u64,
+            }),
+        };
+
+        let event = OutboundMessageAccepted {
+            channel_id: <[u8; 32]>::from(PRIMARY_GOVERNANCE_CHANNEL).into(),
+            nonce: 1,
+            message_id: Default::default(),
+            payload: payload.encode(),
+        };
+
+        let message = Message {
+            event_log: Log {
+                // gateway address
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(
+                ),
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0 .0))
+                    .collect(),
+                data: event.encode_data(),
+            },
+            proof: Proof {
+                receipt_proof: Default::default(),
+                execution_proof: mock_execution_proof(),
+            },
+        };
+
+        // Submit message to the queue
+        assert_ok!(
+            <Dancelight as DancelightRelayPallet>::EthereumInboundQueue::submit(origin, message)
+        );
+
+        let whitelisted =
+            <Dancelight as DancelightRelayPallet>::ExternalValidators::whitelisted_validators();
+
+        // Ignore whitelisted
+        let mut new_validators =
+            <Dancelight as DancelightRelayPallet>::ExternalValidators::validators()
+                .into_iter()
+                .filter(|v| !whitelisted.contains(v))
+                .collect::<Vec<_>>();
+
+        let mut expected_validators = payload_validators.clone();
+
+        new_validators.sort();
+        expected_validators.sort();
+        assert_eq!(new_validators, expected_validators);
+    });
 }
