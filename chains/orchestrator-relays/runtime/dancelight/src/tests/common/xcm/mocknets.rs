@@ -63,9 +63,12 @@ decl_test_relay_chains! {
             OnDemandAssignmentProvider: crate::OnDemandAssignmentProvider,
             XcmPallet: crate::XcmPallet,
             Sudo: crate::Sudo,
+            MessageQueue: crate::MessageQueue,
             ExternalValidatorSlashes: crate::ExternalValidatorSlashes,
             EthereumOutboundQueue: crate::EthereumOutboundQueue,
-            MessageQueue: crate::MessageQueue,
+            EthereumInboundQueue: crate::EthereumInboundQueue,
+            EthereumSystem: crate::EthereumSystem,
+            ExternalValidators: crate::ExternalValidators,
         }
     }
 }
