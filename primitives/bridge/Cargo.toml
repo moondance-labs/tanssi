@@ -35,7 +35,6 @@ cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
-hex = { workspace = true }
 
 [features]
 default = [ "std" ]
