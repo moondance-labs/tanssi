@@ -9385,6 +9385,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "staging-xcm",
  "tp-bridge",
  "tp-traits",
 ]

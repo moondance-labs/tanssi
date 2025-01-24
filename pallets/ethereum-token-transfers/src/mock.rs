@@ -146,8 +146,8 @@ impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
         Ok((
             (),
             Fee {
-                local: 0u128,
-                remote: 0u128,
+                local: 20u128,
+                remote: 30u128,
             },
         ))
     }
@@ -173,8 +173,8 @@ impl EthereumSystemChannelManager for EthereumSystemHandler {
 }
 
 parameter_types! {
-    pub const EthereumSovereignAccount: u64 = 4;
-    pub const FeesAccount: u64 = 5;
+    pub const EthereumSovereignAccount: u64 = 6;
+    pub const FeesAccount: u64 = 7;
 }
 
 impl pallet_ethereum_token_transfers::Config for Test {

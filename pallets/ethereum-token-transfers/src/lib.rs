@@ -41,6 +41,7 @@ use {
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     snowbridge_core::{
+        location::TokenIdOf,
         outbound::{
             Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendError, SendMessage,
         },
@@ -54,6 +55,7 @@ use {
     sp_std::vec,
     sp_std::vec::Vec,
     tp_traits::EthereumSystemChannelManager,
+    xcm::latest::Location,
 };
 
 pub use pallet::*;
@@ -110,6 +112,7 @@ pub mod pallet {
         ChannelInfoSet {
             channel_id: ChannelId,
             para_id: ParaId,
+            agent_id: AgentId,
         },
         /// Some native token was successfully transferred to Ethereum.
         NativeTokenTransferred {
@@ -131,6 +134,10 @@ pub mod pallet {
         ChannelIdNotSet,
         /// The requested ParaId is already present in this pallet.
         ParaIdAlreadyExists,
+        /// The requested AgentId is already present in this pallet.
+        AgentIdAlreadyExists,
+        /// Conversion from Location to TokenId failed.
+        LocationConversionFailed,
         /// The outbound message is invalid prior to send.
         InvalidMessage(SendError),
         /// The outbound message could not be sent.
@@ -142,6 +149,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     // Storage
+    // TODO: create a struct to hold the three elements at once?
     #[pallet::storage]
     #[pallet::getter(fn current_channel_id)]
     pub type CurrentChannelId<T: Config> = StorageValue<_, ChannelId, OptionQuery>;
@@ -149,6 +157,10 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn current_para_id)]
     pub type CurrentParaId<T: Config> = StorageValue<_, ParaId, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn current_agent_id)]
+    pub type CurrentAgentId<T: Config> = StorageValue<_, AgentId, OptionQuery>;
 
     // Calls
     #[pallet::call]
@@ -167,6 +179,7 @@ pub mod pallet {
 
             let current_channel_id = CurrentChannelId::<T>::get();
             let current_para_id = CurrentParaId::<T>::get();
+            let current_agent_id = CurrentAgentId::<T>::get();
 
             if current_channel_id == Some(channel_id) {
                 return Err(Error::<T>::ChannelIdAlreadyExists.into());
@@ -176,14 +189,20 @@ pub mod pallet {
                 return Err(Error::<T>::ParaIdAlreadyExists.into());
             }
 
+            if current_agent_id == Some(agent_id) {
+                return Err(Error::<T>::AgentIdAlreadyExists.into());
+            }
+
             CurrentChannelId::<T>::put(channel_id);
             CurrentParaId::<T>::put(para_id);
+            CurrentAgentId::<T>::put(agent_id);
 
             T::EthereumSystemHandler::create_channel(channel_id, agent_id, para_id)?;
 
             Self::deposit_event(Event::<T>::ChannelInfoSet {
                 channel_id,
                 para_id,
+                agent_id,
             });
 
             Ok(())
@@ -202,7 +221,8 @@ pub mod pallet {
 
             if let Some(channel_id) = CurrentChannelId::<T>::get() {
                 // TODO: which recipient should we use? Is it okay to receive it via params?
-                // TODO: which token_id?
+                // TODO: use Location::here or balances pallet location?
+                //let token_id = TokenIdOf::convert_location(&Location::new(0, GlobalConsensus(ByGenesis([0u8;32])))).ok_or(Error::<T>::LocationConversionFailed)?;
                 let token_id = H256::default();
                 let command = SnowbridgeCommand::MintForeignToken {
                     token_id,

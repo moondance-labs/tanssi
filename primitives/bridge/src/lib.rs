@@ -97,14 +97,6 @@ pub enum Command {
         // vec of `SlashData`
         slashes: Vec<SlashData>,
     },
-    MintForeignToken {
-        /// ID for the token
-        token_id: H256,
-        /// The recipient of the newly minted tokens
-        recipient: H160,
-        /// The amount of tokens to mint
-        amount: u128,
-    }
 }
 
 impl Command {
@@ -115,7 +107,6 @@ impl Command {
             Command::Test { .. } => 32,
             Command::ReportRewards { .. } => 33,
             Command::ReportSlashes { .. } => 34,
-            Command::MintForeignToken { .. } => 35,
         }
     }
 
@@ -162,15 +153,6 @@ impl Command {
                 let slashes_tokens_tuple = Token::Tuple(slashes_tokens_vec);
                 ethabi::encode(&[Token::Tuple(vec![era_index_token, slashes_tokens_tuple])])
             }
-            Command::MintForeignToken {
-                token_id,
-                recipient,
-                amount,
-            } => ethabi::encode(&[Token::Tuple(vec![
-                Token::FixedBytes(token_id.as_bytes().to_owned()),
-                Token::Address(*recipient),
-                Token::Uint(U256::from(*amount)),
-            ])])
         }
     }
 }

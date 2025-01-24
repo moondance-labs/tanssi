@@ -1878,6 +1878,7 @@ construct_runtime! {
         EthereumInboundQueue: snowbridge_pallet_inbound_queue = 24,
         EthereumSystem: snowbridge_pallet_system = 25,
         OutboundMessageCommitmentRecorder: pallet_outbound_message_commitment_recorder = 26,
+        EthereumTokenTransfers: pallet_ethereum_token_transfers = 27,
 
         // Session management
         Session: pallet_session = 30,

@@ -36,6 +36,7 @@ snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-merkle-tree = { workspace = true }
 
 polkadot-primitives = { workspace = true }
+xcm = { workspace = true }
 
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
@@ -64,6 +65,7 @@ std = [
 	"sp-std/std",
 	"tp-bridge/std",
 	"tp-traits/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

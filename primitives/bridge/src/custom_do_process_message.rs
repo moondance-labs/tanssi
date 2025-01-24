@@ -154,7 +154,6 @@ impl ConstantGasMeter {
             // TODO: revisit gas cost
             Command::ReportRewards { .. } => 60_000,
             Command::ReportSlashes { .. } => 60_000,
-            Command::MintForeignToken { .. } => 60_000,
         }
     }
 }

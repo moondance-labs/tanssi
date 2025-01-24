@@ -26,8 +26,8 @@ use {
     crate::{
         parameter_types, weights, xcm_config, xcm_config::UniversalLocation,
         AggregateMessageOrigin, Balance, Balances, EthereumInboundQueue, EthereumOutboundQueue,
-        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TransactionByteFee,
+        EthereumSovereignAccount, EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256,
+        MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TransactionByteFee,
         TreasuryAccount, WeightToFee, UNITS,
     },
     dancelight_runtime_constants::snowbridge::EthereumLocation,
@@ -37,9 +37,9 @@ use {
     snowbridge_core::{
         gwei, meth, AgentId, Channel, ChannelId, ParaId, PricingParameters, Rewards,
     },
+    snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
     sp_runtime::DispatchResult,
-    snowbridge_pallet_outbound_queue::OnNewCommitment,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
     tp_traits::EthereumSystemChannelManager,
 };
@@ -185,15 +185,25 @@ impl EthereumSystemChannelManager for EthereumSystemHandler {
             return Err(snowbridge_pallet_system::Error::<Runtime>::ChannelAlreadyCreated.into());
         }
 
+        if snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
+            return Err(snowbridge_pallet_system::Error::<Runtime>::AgentAlreadyCreated.into());
+        }
+
         let channel = Channel { agent_id, para_id };
 
+        snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
         snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
         Ok(())
     }
 }
 
 impl pallet_ethereum_token_transfers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler;
+    type EthereumSovereignAccount = EthereumSovereignAccount;
+    type FeesAccount = TreasuryAccount;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
