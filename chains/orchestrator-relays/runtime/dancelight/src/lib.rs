@@ -1432,6 +1432,15 @@ impl Get<Vec<AccountId>> for GetWhitelistedValidators {
     }
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct RewardsBenchHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_external_validators_rewards::BenchmarkHelperTrait for RewardsBenchHelper {
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+}
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1452,6 +1461,8 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type TokenLocationReanchored = RewardTokenLocation;
     type TokenIdFromLocation = EthereumSystem;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = RewardsBenchHelper;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {

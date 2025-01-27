@@ -63,6 +63,10 @@ mod benchmarks {
                 .insert(account_id, T::BackingPoints::get());
         }
 
+        T::BenchmarkHelper::set_up_token(
+            T::TokenLocationReanchored::get(),
+            H256::repeat_byte(0x01),
+        );
         <RewardPointsForEra<T>>::insert(1u32, era_reward_points);
 
         #[block]

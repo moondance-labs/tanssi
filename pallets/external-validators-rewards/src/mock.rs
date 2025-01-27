@@ -175,6 +175,8 @@ impl pallet_external_validators_rewards::Config for Test {
     type TokenLocationReanchored = Mock;
     type TokenIdFromLocation = MockTokenIdConvert;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 // Pallet to provide some mock data, used to test

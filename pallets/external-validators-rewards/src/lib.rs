@@ -129,11 +129,24 @@ pub mod pallet {
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
+
+        #[cfg(feature = "runtime-benchmarks")]
+        type BenchmarkHelper: BenchmarkHelperTrait;
     }
 
     #[pallet::pallet]
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
+
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Helper trait to benchmark the on_era_end
+    pub trait BenchmarkHelperTrait {
+        /// Set up the token and location info
+        fn set_up_token(_location: Location, _token_id: TokenId) {}
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    impl BenchmarkHelperTrait for () {}
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
