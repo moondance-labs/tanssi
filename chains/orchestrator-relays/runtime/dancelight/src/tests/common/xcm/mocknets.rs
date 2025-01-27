@@ -137,7 +137,7 @@ impl BridgeMessageHandler for DancelightEthMockBridgeHandler {
             sent_msgs.borrow_mut().extend(msgs.clone());
         });
 
-        // TODO: return the right Vec<BridgeMessage> here
+        // TODO: We don't check the dispatches messages from the bridge so it's fine to return default value here
         Default::default()
     }
 
