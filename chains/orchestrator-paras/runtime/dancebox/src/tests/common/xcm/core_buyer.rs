@@ -31,10 +31,10 @@ const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = crate::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND: u128 = 3076488;
+const BUY_EXECUTION_REFUND: u128 = 24506230;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 743178;
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 22172920;
 
 #[test]
 fn constants() {
