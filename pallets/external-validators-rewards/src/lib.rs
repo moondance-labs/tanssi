@@ -121,10 +121,10 @@ pub mod pallet {
         /// Ethereum Sovereign Account where rewards will be minted
         type RewardsEthereumSovereignAccount: Get<Self::AccountId>;
 
-        // Token Location
+        /// Token Location from the external chain's point of view.
         type TokenLocationReanchored: Get<Location>;
 
-        // Location to Foreign Id
+        /// How to convert from a given Location to a specific TokenId.
         type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
         /// The weight information of this pallet.
