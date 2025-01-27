@@ -3,10 +3,11 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 import { encodeAddress } from "@polkadot/util-crypto";
+import { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
     id: "DTR1602",
-    title: "Paras inherent tests",
+    title: "Ethereum reward tests",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -25,6 +26,21 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
 
+                // We need to register the token otherwise rewards are not sent to ethereum
+                const tokenLocation: MultiLocation = {
+                    parents: 0,
+                    interior: "Here",
+                };
+                const versionedLocation = {
+                    V3: tokenLocation,
+                };
+
+                const metadata = {
+                    name: "dance",
+                    symbol: "dance",
+                    decimals: 12,
+                };
+
                 // Register Alice as an external validator, because it starts as a whitelisted validator and whitelisted
                 // validators don't get rewards.
                 let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
@@ -35,6 +51,9 @@ describeSuite({
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                     await polkadotJs.tx.sudo
                         .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address]))
+                        .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                    await polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.ethereumSystem.registerToken(versionedLocation, metadata))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 ]);
 
@@ -95,14 +114,16 @@ describeSuite({
             id: "E03",
             title: "Ethereum Sovereign Account balance should increase on session change",
             test: async function () {
-                const currentIndex = await polkadotJs.query.session.currentIndex();
+                const currentIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const account = encodeAddress("0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77", 0);
+                const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
 
                 const {
                     data: { free: balanceBefore },
                 } = await context.polkadotJs().query.system.account(account);
 
-                await jumpToSession(context, currentIndex + 1);
+                // We need to jump at least one era
+                await jumpToSession(context, currentIndex + sessionsPerEra.toNumber());
 
                 const {
                     data: { free: balanceAfter },

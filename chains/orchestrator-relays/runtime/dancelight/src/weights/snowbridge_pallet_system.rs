@@ -308,6 +308,8 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 	}
 
         fn register_token() -> Weight {
-                Weight::MAX
+			Weight::from_parts(26_818_000, 3601)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
         }
 }
