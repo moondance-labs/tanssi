@@ -1418,6 +1418,8 @@ parameter_types! {
     // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
     // to properly write integration tests.
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+
+    pub RewardTokenLocation: Location = xcm_config::TokenLocation::get().reanchored(&EthereumLocation::get(), &xcm_config::UniversalLocation::get()).expect("unable to reanchor reward token");
 }
 
 pub struct GetWhitelistedValidators;
@@ -1444,6 +1446,8 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
+    type TokenLocationReanchored = RewardTokenLocation;
+    type TokenIdFromLocation = EthereumSystem;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
