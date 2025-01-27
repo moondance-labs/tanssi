@@ -30,6 +30,7 @@ use {
         MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TransactionByteFee,
         TreasuryAccount, WeightToFee, UNITS,
     },
+    cumulus_primitives_core::Reanchorable,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
@@ -42,6 +43,7 @@ use {
     sp_runtime::DispatchResult,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
     tp_traits::EthereumSystemChannelManager,
+    xcm::latest::Location,
 };
 
 // Ethereum Bridge
@@ -197,6 +199,13 @@ impl EthereumSystemChannelManager for EthereumSystemHandler {
     }
 }
 
+parameter_types! {
+    pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
+        &EthereumLocation::get(),
+        &xcm_config::UniversalLocation::get()
+    ).expect("unable to reanchor token");
+}
+
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -204,6 +213,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type EthereumSystemHandler = EthereumSystemHandler;
     type EthereumSovereignAccount = EthereumSovereignAccount;
     type FeesAccount = TreasuryAccount;
+    type TokenLocationReanchored = TokenLocationReanchored;
+    type TokenIdFromLocation = EthereumSystem;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

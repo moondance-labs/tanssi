@@ -45,17 +45,17 @@ use {
         outbound::{
             Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendError, SendMessage,
         },
-        AgentId, ChannelId, ParaId,
+        AgentId, ChannelId, ParaId, TokenId,
     },
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::{H160, H256},
-    sp_runtime::DispatchResult,
+    sp_runtime::{traits::MaybeEquivalence, DispatchResult},
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
     sp_std::vec::Vec,
     tp_traits::EthereumSystemChannelManager,
-    xcm::latest::Location,
+    xcm::prelude::*,
 };
 
 pub use pallet::*;
@@ -100,6 +100,12 @@ pub mod pallet {
         /// Account in which fees will be minted.
         type FeesAccount: Get<Self::AccountId>;
 
+        /// Token Location from Ethereum's point of view.
+        type TokenLocationReanchored: Get<Location>;
+
+        /// How to convert from a given Location to a specific TokenId.
+        type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
+
         // The weight information of this pallet.
         // type WeightInfo: WeightInfo;
     }
@@ -137,7 +143,7 @@ pub mod pallet {
         /// The requested AgentId is already present in this pallet.
         AgentIdAlreadyExists,
         /// Conversion from Location to TokenId failed.
-        LocationConversionFailed,
+        UnknownLocationForToken,
         /// The outbound message is invalid prior to send.
         InvalidMessage(SendError),
         /// The outbound message could not be sent.
@@ -221,54 +227,57 @@ pub mod pallet {
 
             if let Some(channel_id) = CurrentChannelId::<T>::get() {
                 // TODO: which recipient should we use? Is it okay to receive it via params?
-                // TODO: use Location::here or balances pallet location?
-                //let token_id = TokenIdOf::convert_location(&Location::new(0, GlobalConsensus(ByGenesis([0u8;32])))).ok_or(Error::<T>::LocationConversionFailed)?;
-                let token_id = H256::default();
-                let command = SnowbridgeCommand::MintForeignToken {
-                    token_id,
-                    recipient,
-                    amount,
-                };
+                let token_location = T::TokenLocationReanchored::get();
+                let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
-                let message = SnowbridgeMessage {
-                    id: None,
-                    channel_id,
-                    command,
-                };
+                if let Some(token_id) = token_id {
+                    let command = SnowbridgeCommand::MintForeignToken {
+                        token_id,
+                        recipient,
+                        amount,
+                    };
 
-                let (ticket, fee) = T::OutboundQueue::validate(&message)
-                    .map_err(|err| Error::<T>::InvalidMessage(err))?;
+                    let message = SnowbridgeMessage {
+                        id: None,
+                        channel_id,
+                        command,
+                    };
 
-                // Transfer fees
-                // TODO: transfer fees at once or use something like PayFees?
-                T::Currency::transfer(
-                    &source,
-                    &T::FeesAccount::get(),
-                    fee.total(),
-                    Preservation::Preserve,
-                )?;
+                    let (ticket, fee) = T::OutboundQueue::validate(&message)
+                        .map_err(|err| Error::<T>::InvalidMessage(err))?;
 
-                // Transfer amount to Ethereum's sovereign account.
-                T::Currency::transfer(
-                    &source,
-                    &T::EthereumSovereignAccount::get(),
-                    amount.into(),
-                    Preservation::Preserve,
-                )?;
+                    // Transfer fees to FeesAccount.
+                    T::Currency::transfer(
+                        &source,
+                        &T::FeesAccount::get(),
+                        fee.total(),
+                        Preservation::Preserve,
+                    )?;
 
-                T::OutboundQueue::deliver(ticket)
-                    .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+                    // Transfer amount to Ethereum's sovereign account.
+                    T::Currency::transfer(
+                        &source,
+                        &T::EthereumSovereignAccount::get(),
+                        amount.into(),
+                        Preservation::Preserve,
+                    )?;
 
-                Self::deposit_event(Event::<T>::NativeTokenTransferred {
-                    channel_id,
-                    source,
-                    recipient,
-                    token_id,
-                    amount,
-                    fee: fee.total(),
-                });
+                    T::OutboundQueue::deliver(ticket)
+                        .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
 
-                return Ok(());
+                    Self::deposit_event(Event::<T>::NativeTokenTransferred {
+                        channel_id,
+                        source,
+                        recipient,
+                        token_id,
+                        amount,
+                        fee: fee.total(),
+                    });
+
+                    return Ok(());
+                } else {
+                    return Err(Error::<T>::UnknownLocationForToken.into());
+                }
             } else {
                 return Err(Error::<T>::ChannelIdNotSet.into());
             }

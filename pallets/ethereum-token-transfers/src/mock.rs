@@ -23,15 +23,16 @@ use {
     pallet_balances::AccountData,
     snowbridge_core::{
         outbound::{Fee, Message, SendError, SendMessageFeeProvider},
-        AgentId, ChannelId, ParaId,
+        AgentId, ChannelId, ParaId, TokenId
     },
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256},
+        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256, MaybeEquivalence},
         BuildStorage, DispatchResult,
     },
     sp_std::cell::RefCell,
     tp_traits::EthereumSystemChannelManager,
+    xcm::prelude::*,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -173,8 +174,23 @@ impl EthereumSystemChannelManager for EthereumSystemHandler {
 }
 
 parameter_types! {
+    pub TokenLocation: Location = Here.into();
     pub const EthereumSovereignAccount: u64 = 6;
     pub const FeesAccount: u64 = 7;
+}
+
+pub struct MockTokenIdConvert;
+impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+    fn convert(_id: &TokenId) -> Option<Location> {
+        Some(Location::parent())
+    }
+    fn convert_back(loc: &Location) -> Option<TokenId> {
+        if *loc == Location::here() {
+            Some(H256::repeat_byte(0x01))
+        } else {
+            None
+        }
+    }
 }
 
 impl pallet_ethereum_token_transfers::Config for Test {
@@ -184,6 +200,8 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type EthereumSystemHandler = EthereumSystemHandler;
     type EthereumSovereignAccount = EthereumSovereignAccount;
     type FeesAccount = FeesAccount;
+    type TokenIdFromLocation = MockTokenIdConvert;
+    type TokenLocationReanchored = TokenLocation;
 }
 
 // Pallet to provide some mock data, used to test

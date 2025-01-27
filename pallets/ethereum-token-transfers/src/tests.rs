@@ -250,12 +250,14 @@ fn test_transfer_native_token_succeeds() {
             H160::default(),
         ));
 
+        let expected_token_id = MockTokenIdConvert::convert_back(&TokenLocation::get());
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::NativeTokenTransferred {
                 channel_id,
                 source: ALICE,
                 recipient: H160::default(),
-                token_id: H256::default(),
+                token_id: expected_token_id.unwrap(),
                 amount: 10u128,
                 fee: 50u128,
             },
