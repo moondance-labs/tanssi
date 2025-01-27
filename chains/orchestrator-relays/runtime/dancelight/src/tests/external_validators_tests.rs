@@ -18,8 +18,9 @@
 
 use {
     crate::{
-        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators, RewardTokenLocation,
-        RuntimeEvent, SessionKeys, SessionsPerEra, System,
+        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
+        MaxExternalValidators, RewardTokenLocation, RuntimeEvent, SessionKeys, SessionsPerEra,
+        System,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
@@ -713,15 +714,18 @@ fn external_validators_rewards_sends_message_on_era_end() {
         ])
         .build()
         .execute_with(|| {
-            let token_location: VersionedLocation = Location::here()
-            .into();
-        
-            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
-                name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                decimals: 12,
-		    }));
-            
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
@@ -1053,14 +1057,17 @@ fn external_validators_rewards_test_command_integrity() {
         ])
         .build()
         .execute_with(|| {
-            let token_location: VersionedLocation = Location::here()
-            .into();
-        
-            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location.clone()), snowbridge_core::AssetMetadata {
-                name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                decimals: 12,
-		    }));
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location.clone()),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
 
             let token_id = EthereumSystem::convert_back(&RewardTokenLocation::get()).unwrap();
 

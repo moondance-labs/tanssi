@@ -17,8 +17,8 @@
 use {
     crate::tests::common::*,
     crate::{
-        BondingDuration, EthereumSystem, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
-        RuntimeEvent, SessionsPerEra, SlashDeferDuration,
+        BondingDuration, EthereumSystem, ExternalValidatorSlashes, ExternalValidators, Grandpa,
+        Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     parity_scale_codec::Encode,
@@ -342,15 +342,17 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
         ])
         .build()
         .execute_with(|| {
-            let token_location: VersionedLocation = Location::here()
-            .into();
-        
-            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
-                name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                decimals: 12,
-		    }));
-            
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
 
             run_to_block(2);
             assert_ok!(ExternalValidators::remove_whitelisted(
@@ -407,15 +409,18 @@ fn test_slashes_are_sent_to_ethereum() {
         ])
         .build()
         .execute_with(|| {
-            let token_location: VersionedLocation = Location::here()
-            .into();
-        
-            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
-                name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                decimals: 12,
-		    }));
-            
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             run_to_block(2);
             assert_ok!(ExternalValidators::remove_whitelisted(
                 RuntimeOrigin::root(),

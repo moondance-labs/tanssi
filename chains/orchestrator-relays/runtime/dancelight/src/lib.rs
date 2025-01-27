@@ -1420,7 +1420,7 @@ parameter_types! {
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
 
     pub RewardTokenLocation: Location = xcm_config::TokenLocation::get().reanchored(
-        &EthereumLocation::get(), 
+        &EthereumLocation::get(),
         &xcm_config::UniversalLocation::get()
     ).expect("unable to reanchor reward token");
 }
