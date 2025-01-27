@@ -136,16 +136,14 @@ fn receive_msg_from_eth_validators_are_updated() {
             <Dancelight as DancelightRelayPallet>::ExternalValidators::whitelisted_validators();
 
         // Ignore whitelisted
-        let mut new_validators =
+        let new_validators =
             <Dancelight as DancelightRelayPallet>::ExternalValidators::validators()
                 .into_iter()
                 .filter(|v| !whitelisted.contains(v))
                 .collect::<Vec<_>>();
 
-        let mut expected_validators = payload_validators.clone();
+        let expected_validators = payload_validators.clone();
 
-        new_validators.sort();
-        expected_validators.sort();
         assert_eq!(new_validators, expected_validators);
     });
 }
