@@ -90,6 +90,8 @@ pub enum Command {
         tokens_inflated: u128,
         // merkle root of vec![(validatorId, rewardPoints)]
         rewards_merkle_root: H256,
+        // the token id in which we need to mint
+        token_id: H256,
     },
     ReportSlashes {
         // index of the era we are sending info of
@@ -122,18 +124,22 @@ impl Command {
                 total_points,
                 tokens_inflated,
                 rewards_merkle_root,
+                token_id,
             } => {
                 let timestamp_token = Token::Uint(U256::from(*timestamp));
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let total_points_token = Token::Uint(U256::from(*total_points));
                 let tokens_inflated_token = Token::Uint(U256::from(*tokens_inflated));
                 let rewards_mr_token = Token::FixedBytes(rewards_merkle_root.0.to_vec());
+                let token_id_token = Token::FixedBytes(token_id.0.to_vec());
+
                 ethabi::encode(&[Token::Tuple(vec![
                     timestamp_token,
                     era_index_token,
                     total_points_token,
                     tokens_inflated_token,
                     rewards_mr_token,
+                    token_id_token,
                 ])])
             }
             Command::ReportSlashes { era_index, slashes } => {

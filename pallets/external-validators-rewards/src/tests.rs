@@ -16,9 +16,11 @@
 
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
+    sp_core::H256,
     sp_std::collections::btree_map::BTreeMap,
     tp_bridge::Command,
     tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
+    xcm::latest::prelude::*,
 };
 
 #[test]
@@ -104,6 +106,7 @@ fn test_on_era_end() {
             total_points: 90u128,
             tokens_inflated: 42u128, // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+            token_id: H256::repeat_byte(0x01),
         };
 
         System::assert_last_event(RuntimeEvent::ExternalValidatorsRewards(
@@ -111,5 +114,43 @@ fn test_on_era_end() {
                 rewards_command: expected_command,
             },
         ));
+    })
+}
+
+#[test]
+fn test_on_era_end_without_proper_token() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        Mock::mutate(|mock| {
+            mock.active_era = Some(ActiveEraInfo {
+                index: 1,
+                start: None,
+            })
+        });
+        Mock::set_location(Location::parent());
+        ExternalValidatorsRewards::reward_by_ids([(1, 10), (3, 30), (5, 50)]);
+        ExternalValidatorsRewards::on_era_end(1);
+
+        let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+        let expected_command = Command::ReportRewards {
+            timestamp: 31000u64,
+            era_index: 1u32,
+            total_points: 90u128,
+            tokens_inflated: 42u128, // test inflation value used in mock
+            rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+            token_id: H256::repeat_byte(0x01),
+        };
+
+        let events = System::events();
+        let expected_not_thrown_event =
+            RuntimeEvent::ExternalValidatorsRewards(crate::Event::RewardsMessageSent {
+                rewards_command: expected_command,
+            });
+        assert!(
+            !events
+                .iter()
+                .any(|record| record.event == expected_not_thrown_event),
+            "event should not have been thrown",
+        );
     })
 }
