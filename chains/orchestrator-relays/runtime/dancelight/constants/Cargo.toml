@@ -41,5 +41,5 @@ runtime-benchmarks = [
 	"primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"xcm-builder/runtime-benchmarks"
+	"xcm-builder/runtime-benchmarks",
 ]
