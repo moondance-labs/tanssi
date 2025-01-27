@@ -14,16 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::ExtBuilder;
+use crate::tests::common::{mock_snowbridge_message_proof, ExtBuilder};
 use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
 use alloy_sol_types::SolEvent;
 use frame_system::pallet_prelude::OriginFor;
 use keyring::AccountKeyring;
 use parity_scale_codec::Encode;
-use snowbridge_beacon_primitives::types::deneb;
-use snowbridge_beacon_primitives::{ExecutionProof, VersionedExecutionPayloadHeader};
 use snowbridge_core::{
-    inbound::{Log, Message, Proof},
+    inbound::{Log, Message},
     Channel, PRIMARY_GOVERNANCE_CHANNEL,
 };
 use snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted;
@@ -43,30 +41,7 @@ fn test_inbound_queue_message_passing() {
             para_id: Default::default()
         }));
 
-        let dummy_proof = Proof { receipt_proof: (vec![], vec![]), execution_proof: ExecutionProof {
-            header: Default::default(),
-            ancestry_proof: None,
-            execution_header: VersionedExecutionPayloadHeader::Deneb(deneb::ExecutionPayloadHeader {
-                parent_hash: Default::default(),
-                fee_recipient: Default::default(),
-                state_root: Default::default(),
-                receipts_root: Default::default(),
-                logs_bloom: vec![],
-                prev_randao: Default::default(),
-                block_number: 0,
-                gas_limit: 0,
-                gas_used: 0,
-                timestamp: 0,
-                extra_data: vec![],
-                base_fee_per_gas: Default::default(),
-                block_hash: Default::default(),
-                transactions_root: Default::default(),
-                withdrawals_root: Default::default(),
-                blob_gas_used: 0,
-                excess_blob_gas: 0,
-            }),
-            execution_branch: vec![],
-        } };
+        let dummy_proof = mock_snowbridge_message_proof();
 
         let event_with_empty_payload = OutboundMessageAccepted {
             channel_id: <[u8; 32]>::from(PRIMARY_GOVERNANCE_CHANNEL).into(),
