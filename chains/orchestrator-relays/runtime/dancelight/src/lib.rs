@@ -78,7 +78,10 @@ use {
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
-    snowbridge_core::ChannelId,
+    snowbridge_core::{
+        outbound::{Command, Fee},
+        ChannelId, PricingParameters,
+    },
     snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
@@ -92,6 +95,7 @@ use {
         marker::PhantomData,
         prelude::*,
     },
+    tp_bridge::ConvertLocation,
     tp_traits::{
         apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
@@ -144,7 +148,7 @@ pub use {
 };
 
 /// Constant values used within the runtime.
-use dancelight_runtime_constants::{currency::*, fee::*, time::*};
+use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
 
 // XCM configurations.
 pub mod xcm_config;
@@ -525,7 +529,12 @@ pub struct RewardPoints;
 
 impl pallet_authorship::EventHandler<AccountId, BlockNumberFor<Runtime>> for RewardPoints {
     fn note_author(author: AccountId) {
-        ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+        let whitelisted_validators =
+            pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get();
+        // Do not reward whitelisted validators
+        if !whitelisted_validators.contains(&author) {
+            ExternalValidatorsRewards::reward_by_ids(vec![(author, 20u32)])
+        }
     }
 }
 
@@ -1288,9 +1297,15 @@ parameter_types! {
     pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0, 0);
 }
 
-pub struct ParaHeadsRootProvider;
-impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
-    fn extra_data() -> H256 {
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]
+pub struct LeafExtraData {
+    para_heads_root: H256,
+    commitment_root: H256,
+}
+
+pub struct LeafExtraDataProvider;
+impl BeefyDataProvider<LeafExtraData> for LeafExtraDataProvider {
+    fn extra_data() -> LeafExtraData {
         let mut para_heads: Vec<(u32, Vec<u8>)> = parachains_paras::Parachains::<Runtime>::get()
             .into_iter()
             .filter_map(|id| {
@@ -1298,17 +1313,25 @@ impl BeefyDataProvider<H256> for ParaHeadsRootProvider {
             })
             .collect();
         para_heads.sort();
-        binary_merkle_tree::merkle_root::<mmr::Hashing, _>(
+        let para_heads_root = binary_merkle_tree::merkle_root::<mmr::Hashing, _>(
             para_heads.into_iter().map(|pair| pair.encode()),
-        )
+        );
+
+        let commitment_root =
+            OutboundMessageCommitmentRecorder::take_commitment_root().unwrap_or_default();
+
+        LeafExtraData {
+            para_heads_root,
+            commitment_root,
+        }
     }
 }
 
 impl pallet_beefy_mmr::Config for Runtime {
     type LeafVersion = LeafVersion;
     type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
-    type LeafExtra = H256;
-    type BeefyDataProvider = ParaHeadsRootProvider;
+    type LeafExtra = LeafExtraData;
+    type BeefyDataProvider = LeafExtraDataProvider;
     type WeightInfo = ();
 }
 
@@ -1334,7 +1357,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 
 parameter_types! {
     pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(27, 2);
+    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1362,6 +1385,26 @@ impl Get<u64> for TimestampProvider {
     }
 }
 
+parameter_types! {
+    // Chain ID of Holesky.
+    // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
+    pub EthereumSovereignAccount: AccountId =
+        tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
+            &EthereumLocation::get()
+        ).expect("to convert EthereumSovereignAccount");
+
+    // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
+    // to properly write integration tests.
+    pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+}
+
+pub struct GetWhitelistedValidators;
+impl Get<Vec<AccountId>> for GetWhitelistedValidators {
+    fn get() -> Vec<AccountId> {
+        pallet_external_validators::WhitelistedValidatorsActiveEra::<Runtime>::get().into()
+    }
+}
+
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1370,11 +1413,15 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type DisputeStatementPoints = ConstU32<20>;
     // TODO: add a proper way to retrieve the inflated tokens.
     // Will likely be through InflationRewards.
-    type EraInflationProvider = ();
+
+    type EraInflationProvider = ExternalRewardsEraInflationProvider;
     type TimestampProvider = TimestampProvider;
+    type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type Currency = Balances;
+    type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
 }
 
@@ -1390,6 +1437,8 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type TimestampProvider = TimestampProvider;
+    type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }
 
@@ -1802,6 +1851,12 @@ construct_runtime! {
         ExternalValidatorSlashes: pallet_external_validator_slashes = 21,
         ExternalValidatorsRewards: pallet_external_validators_rewards = 22,
 
+        // Bridging stuff - 1
+        EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 23,
+        EthereumInboundQueue: snowbridge_pallet_inbound_queue = 24,
+        EthereumSystem: snowbridge_pallet_system = 25,
+        OutboundMessageCommitmentRecorder: pallet_outbound_message_commitment_recorder = 26,
+
         // Session management
         Session: pallet_session = 30,
         Grandpa: pallet_grandpa = 31,
@@ -1865,11 +1920,6 @@ construct_runtime! {
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
-
-        // Bridging stuff
-        EthereumInboundQueue: snowbridge_pallet_inbound_queue = 91,
-        EthereumOutboundQueue: snowbridge_pallet_outbound_queue = 101,
-        EthereumSystem: snowbridge_pallet_system = 103,
 
         // Migration stuff
         Migrations: pallet_migrations = 120,
@@ -2902,6 +2952,16 @@ sp_api::impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+    }
+
+    impl snowbridge_outbound_queue_runtime_api::OutboundQueueApi<Block, Balance> for Runtime {
+        fn prove_message(leaf_index: u64) -> Option<MerkleProof> {
+            snowbridge_pallet_outbound_queue::api::prove_message::<Runtime>(leaf_index)
+        }
+
+        fn calculate_fee(command: Command, parameters: Option<PricingParameters<Balance>>) -> Fee<Balance> {
+            snowbridge_pallet_outbound_queue::api::calculate_fee::<Runtime>(command, parameters)
         }
     }
 

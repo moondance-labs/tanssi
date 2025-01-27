@@ -8,9 +8,11 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
+        let alice;
 
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
+            alice = context.keyring.alice;
         });
 
         it({
@@ -22,6 +24,20 @@ describeSuite({
                 await context.createBlock();
                 // Send RPC call to enable para inherent candidate generation
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
+                // Register Alice as an external validator, because it starts as a whitelisted validator and whitelisted
+                // validators don't get rewards.
+                let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
+
+                await context.createBlock([
+                    await polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.externalValidators.removeWhitelisted(aliceStash.address))
+                        .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                    await polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address]))
+                        .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
+                ]);
+
                 // Since collators are not assigned until session 2, we need to go till session 2 to actually see heads being injected
                 await jumpToSession(context, 3);
                 await context.createBlock();

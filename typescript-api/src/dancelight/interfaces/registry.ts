@@ -160,6 +160,7 @@ import type {
     PalletMultisigMultisig,
     PalletMultisigTimepoint,
     PalletOffencesEvent,
+    PalletOutboundMessageCommitmentRecorderEvent,
     PalletParametersCall,
     PalletParametersEvent,
     PalletPooledStakingAllTargetPool,
@@ -452,6 +453,7 @@ import type {
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
     TpBridgeCommand,
+    TpBridgeSlashData,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
@@ -664,6 +666,7 @@ declare module "@polkadot/types/types/registry" {
         PalletMultisigMultisig: PalletMultisigMultisig;
         PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletOffencesEvent: PalletOffencesEvent;
+        PalletOutboundMessageCommitmentRecorderEvent: PalletOutboundMessageCommitmentRecorderEvent;
         PalletParametersCall: PalletParametersCall;
         PalletParametersEvent: PalletParametersEvent;
         PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
@@ -956,6 +959,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
         TpBridgeCommand: TpBridgeCommand;
+        TpBridgeSlashData: TpBridgeSlashData;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;

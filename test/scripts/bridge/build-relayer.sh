@@ -15,17 +15,15 @@ if [ -d "$relayer_root_dir" ];
 then
   echo "Relayer seems to be already setup. Skipping git fetch"
 else
-  git clone https://github.com/moondance-labs/snowbridge $relayer_root_dir
+  git clone --recurse-submodules https://github.com/moondance-labs/tanssi-bridge-relayer $relayer_root_dir
   pushd $relayer_root_dir
-  git fetch && git checkout $RELAYER_TAG
+  git fetch && git checkout $RELAYER_BRANCH
   popd
 fi
 
-$scripts_path/build-snowbridge-contracts.sh
-
 echo "Building Relayer"
 pushd $relayer_root_dir
-cd relayer && mage build
+mage build
 popd
 
 

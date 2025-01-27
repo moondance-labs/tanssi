@@ -43,13 +43,14 @@ use {
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
+    sp_std::collections::vec_deque::VecDeque,
     sp_std::vec,
     sp_std::vec::Vec,
     tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
 };
 
 use snowbridge_core::ChannelId;
-use tp_bridge::{Command, Message, ValidateMessage};
+use tp_bridge::{Command, DeliverMessage, Message, SlashData, ValidateMessage};
 
 pub use pallet::*;
 
@@ -67,7 +68,6 @@ pub mod weights;
 pub mod pallet {
     use super::*;
     pub use crate::weights::WeightInfo;
-    use tp_bridge::DeliverMessage;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -78,6 +78,8 @@ pub mod pallet {
             fraction: Perbill,
             slash_era: EraIndex,
         },
+        /// The slashes message was sent correctly.
+        SlashesMessageSent { slashes_command: Command },
     }
 
     #[pallet::config]
@@ -136,6 +138,13 @@ pub mod pallet {
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 
+        /// Provider to retrieve the current block timestamp.
+        type TimestampProvider: Get<u64>;
+
+        /// How many queued slashes are being processed per block.
+        #[pallet::constant]
+        type QueuedSlashesProcessedPerBlock: Get<u32>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -190,6 +199,13 @@ pub mod pallet {
     #[pallet::getter(fn slashes)]
     pub type Slashes<T: Config> =
         StorageMap<_, Twox64Concat, EraIndex, Vec<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
+
+    /// All unreported slashes that will be processed in the future.
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn unreported_slashes)]
+    pub type UnreportedSlashesQueue<T: Config> =
+        StorageValue<_, VecDeque<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -267,7 +283,7 @@ pub mod pallet {
 
             // If we defer duration is 0, we immediately apply and confirm
             let era_to_consider = if slash_defer_duration == 0 {
-                era
+                era.saturating_add(One::one())
             } else {
                 era.saturating_add(slash_defer_duration)
                     .saturating_add(One::one())
@@ -328,6 +344,14 @@ pub mod pallet {
             }
 
             Ok(())
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            let processed = Self::process_slashes_queue(T::QueuedSlashesProcessedPerBlock::get());
+            T::WeightInfo::process_slashes_queue(processed)
         }
     }
 }
@@ -422,9 +446,13 @@ where
                 );
 
                 // Cover slash defer duration equal to 0
+                // Slashes are applied at the end of the current era
                 if slash_defer_duration == 0 {
-                    Slashes::<T>::mutate(slash_era, move |for_now| for_now.push(slash));
+                    Slashes::<T>::mutate(active_era.saturating_add(One::one()), move |for_now| {
+                        for_now.push(slash)
+                    });
                 } else {
+                    // Else, slashes are applied after slash_defer_period since the slashed era
                     Slashes::<T>::mutate(
                         slash_era
                             .saturating_add(slash_defer_duration)
@@ -481,24 +509,74 @@ impl<T: Config> OnEraStart for Pallet<T> {
             }
         });
 
-        Self::confirm_unconfirmed_slashes(era_index);
+        Self::add_era_slashes_to_queue(era_index);
     }
 }
 
 impl<T: Config> Pallet<T> {
-    /// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
-    fn confirm_unconfirmed_slashes(active_era: EraIndex) {
-        Slashes::<T>::mutate(&active_era, |era_slashes| {
-            log!(
-                log::Level::Debug,
-                "found {} slashes scheduled to be confirmed in era {:?}",
-                era_slashes.len(),
-                active_era,
-            );
-            for slash in era_slashes {
-                slash.confirmed = true;
+    fn add_era_slashes_to_queue(active_era: EraIndex) {
+        let mut slashes: VecDeque<_> = Slashes::<T>::get(&active_era).into();
+
+        UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
+    }
+
+    /// Returns number of slashes that were sent to ethereum.
+    fn process_slashes_queue(amount: u32) -> u32 {
+        let mut slashes_to_send: Vec<_> = vec![];
+        let era_index = T::EraIndexProvider::active_era().index;
+
+        UnreportedSlashesQueue::<T>::mutate(|queue| {
+            for _ in 0..amount {
+                let Some(slash) = queue.pop_front() else {
+                    // no more slashes to process in the queue
+                    break;
+                };
+
+                slashes_to_send.push(SlashData {
+                    encoded_validator_id: slash.validator.clone().encode(),
+                    slash_fraction: slash.percentage.deconstruct(),
+                    timestamp: slash.timestamp,
+                });
             }
         });
+
+        if slashes_to_send.is_empty() {
+            return 0;
+        }
+
+        let slashes_count = slashes_to_send.len() as u32;
+
+        // Build command with slashes.
+        let command = Command::ReportSlashes {
+            era_index,
+            slashes: slashes_to_send,
+        };
+
+        let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+        let outbound_message = Message {
+            id: None,
+            channel_id,
+            command: command.clone(),
+        };
+
+        // Validate and deliver the message
+        match T::ValidateMessage::validate(&outbound_message) {
+            Ok((ticket, _fee)) => {
+                if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                    log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
+                } else {
+                    Self::deposit_event(Event::SlashesMessageSent {
+                        slashes_command: command,
+                    });
+                }
+            }
+            Err(err) => {
+                log::error!(target: "ext_validators_slashes", "OutboundQueue validation of message failed. {err:?}");
+            }
+        };
+
+        slashes_count
     }
 }
 
@@ -506,6 +584,8 @@ impl<T: Config> Pallet<T> {
 /// rather deferred for several eras.
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
 pub struct Slash<AccountId, SlashId> {
+    /// Timestamp when slash occurred
+    pub timestamp: u64,
     /// The stash ID of the offending validator.
     pub validator: AccountId,
     /// Reporters of the offence; bounty payout recipients.
@@ -521,6 +601,7 @@ impl<AccountId, SlashId: One> Slash<AccountId, SlashId> {
     /// Initializes the default object using the given `validator`.
     pub fn default_from(validator: AccountId) -> Self {
         Self {
+            timestamp: 0,
             validator,
             reporters: vec![],
             slash_id: One::one(),
@@ -562,6 +643,8 @@ pub(crate) fn compute_slash<T: Config>(
 
     let confirmed = slash_defer_duration.is_zero();
     Some(Slash {
+        // TODO: change this to timestamp from Ethereum
+        timestamp: T::TimestampProvider::get(),
         validator: stash.clone(),
         percentage: slash_fraction,
         slash_id,

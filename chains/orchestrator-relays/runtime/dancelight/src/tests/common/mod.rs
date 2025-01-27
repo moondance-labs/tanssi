@@ -115,6 +115,8 @@ pub fn get_beefy_digest(log: ConsensusLog<BeefyId>) -> DigestItem {
     DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
+/// FIXME: run_to_session(n) only runs to the last block of session n-1, so Session::index() will
+/// return n-1. To actually run to session n, create an additional block afterwards using `run_block()`.
 pub fn run_to_session(n: u32) {
     run_to_block(session_to_block(n));
 }
@@ -242,6 +244,7 @@ pub fn start_block() -> RunSummary {
     ContainerRegistrar::on_initialize(System::block_number());
     ExternalValidatorSlashes::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
+
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());
     MessageQueue::on_initialize(System::block_number());
@@ -258,7 +261,6 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
-
     RunSummary {
         inflation: new_issuance - current_issuance,
     }

@@ -240,6 +240,7 @@ fn dancelight_testnet_genesis(
     host_configuration: HostConfiguration,
 ) -> serde_json::Value {
     let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
+
     let invulnerable_keys: Vec<_> = invulnerables
         .iter()
         .map(|seed| get_authority_keys_from_seed(seed, None))
@@ -339,6 +340,7 @@ fn dancelight_testnet_genesis(
         crate::StakingAccount::get(),
         crate::DancelightBondAccount::get(),
         crate::PendingRewardsAccount::get(),
+        crate::EthereumSovereignAccount::get(),
     ];
 
     serde_json::json!({

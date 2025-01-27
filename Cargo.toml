@@ -66,6 +66,7 @@ pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-feature
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
 pallet-ocw-testing = { path = "pallets/ocw-testing", default-features = false }
+pallet-outbound-message-commitment-recorder = { path = "pallets/oubound-message-commitment-recorder", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
@@ -270,6 +271,7 @@ milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-f
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 snowbridge-outbound-queue-merkle-tree = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
+snowbridge-outbound-queue-runtime-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 snowbridge-pallet-inbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 snowbridge-pallet-inbound-queue-fixtures = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }

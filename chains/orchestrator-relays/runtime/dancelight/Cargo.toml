@@ -136,6 +136,7 @@ pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
+pallet-outbound-message-commitment-recorder = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
@@ -149,6 +150,7 @@ pallet-migrations = { workspace = true }
 # Bridges
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
+snowbridge-outbound-queue-runtime-api = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-pallet-inbound-queue-fixtures = { workspace = true, optional = true }
@@ -249,6 +251,7 @@ std = [
 	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-offences/std",
+	"pallet-outbound-message-commitment-recorder/std",
 	"pallet-parameters/std",
 	"pallet-pooled-staking/std",
 	"pallet-preimage/std",
@@ -287,6 +290,7 @@ std = [
 	"serde_json/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
+	"snowbridge-outbound-queue-runtime-api/std",
 	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-pallet-ethereum-client/std",
 	"snowbridge-pallet-inbound-queue-fixtures/std",
@@ -367,6 +371,7 @@ runtime-benchmarks = [
 	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-offences/runtime-benchmarks",
+	"pallet-outbound-message-commitment-recorder/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
@@ -450,6 +455,7 @@ try-runtime = [
 	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-offences/try-runtime",
+	"pallet-outbound-message-commitment-recorder/try-runtime",
 	"pallet-parameters/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-preimage/try-runtime",

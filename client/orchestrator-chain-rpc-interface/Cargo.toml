@@ -5,6 +5,9 @@ edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 async-io = { workspace = true }
 async-trait = { workspace = true }

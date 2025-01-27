@@ -21,10 +21,10 @@ use super::{
     Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee,
     XcmPallet,
 };
-
 use crate::governance::StakingAdmin;
 use xcm::opaque::latest::ROCOCO_GENESIS_HASH;
 use xcm::opaque::latest::WESTEND_GENESIS_HASH;
+use tp_bridge::EthereumLocationsConverterFor;
 use {
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
     frame_support::{
@@ -70,6 +70,9 @@ pub type LocationConverter = (
     AccountId32Aliases<ThisNetwork, AccountId>,
     // Foreign locations alias into accounts according to a hash of their standard description.
     HashedDescription<AccountId, DescribeFamily<DescribeAllTerminal>>,
+    // Ethereum contract sovereign account.
+    // (Used to convert ethereum contract locations to sovereign account)
+    EthereumLocationsConverterFor<AccountId>,
 );
 
 /// Our asset transactor. This is what allows us to interest with the runtime facilities from the
