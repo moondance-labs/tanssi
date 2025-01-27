@@ -307,9 +307,13 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 
-        fn register_token() -> Weight {
-			Weight::from_parts(26_818_000, 3601)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
-        }
+	fn register_token() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `497`
+		//  Estimated: `4115`
+		// Minimum execution time: 53_708_000 picoseconds.
+		Weight::from_parts(55_951_000, 4115)
+				.saturating_add(T::DbWeight::get().reads(6_u64))
+				.saturating_add(T::DbWeight::get().writes(7_u64))
+	}
 }

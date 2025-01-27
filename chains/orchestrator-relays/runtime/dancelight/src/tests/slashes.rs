@@ -551,13 +551,13 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
             .into();
-        
+
             assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
                 name: "dance".as_bytes().to_vec().try_into().unwrap(),
                 symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                 decimals: 12,
 		    }));
-            
+
 
             run_to_block(2);
 
@@ -681,13 +681,13 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
             .into();
-        
+
             assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
                 name: "dance".as_bytes().to_vec().try_into().unwrap(),
                 symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                 decimals: 12,
 		    }));
-            
+
             run_to_block(2);
 
             // We can inject arbitraqry slashes for arbitary accounts with root

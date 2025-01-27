@@ -1207,7 +1207,7 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
             .into();
-        
+
             assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
                 name: "dance".as_bytes().to_vec().try_into().unwrap(),
                 symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
