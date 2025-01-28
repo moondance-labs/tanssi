@@ -26,9 +26,10 @@ use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 use {
     crate::{
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSystem, EthereumSovereignAccount, FixedU128,
-        GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
-        Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, TokenLocationReanchored, WeightToFee, UNITS,
+        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
+        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
+        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
@@ -214,10 +215,7 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for EthereumTokenTransfer
     }
 
     fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {
-        let channel = Channel {
-            agent_id,
-            para_id,
-        };
+        let channel = Channel { agent_id, para_id };
         snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
         snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
     }
@@ -233,7 +231,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = EthereumTokenTransfersBenchHelper; 
+    type BenchmarkHelper = EthereumTokenTransfersBenchHelper;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 

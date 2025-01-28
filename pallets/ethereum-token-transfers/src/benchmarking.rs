@@ -79,11 +79,7 @@ mod benchmarks {
 
         CurrentChannelId::<T>::put(channel_id);
 
-        T::BenchmarkHelper::set_up_channel(
-            channel_id,
-            para_id,
-            agent_id
-        );
+        T::BenchmarkHelper::set_up_channel(channel_id, para_id, agent_id);
 
         T::BenchmarkHelper::set_up_token(
             T::TokenLocationReanchored::get(),

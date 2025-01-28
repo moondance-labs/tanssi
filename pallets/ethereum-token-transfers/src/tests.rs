@@ -20,9 +20,6 @@ use {
     frame_support::{assert_noop, assert_ok},
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_runtime::DispatchError::BadOrigin,
-    sp_std::collections::btree_map::BTreeMap,
-    tp_bridge::Command,
-    tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
 };
 
 #[test]

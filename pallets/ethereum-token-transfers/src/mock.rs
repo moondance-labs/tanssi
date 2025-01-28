@@ -27,7 +27,7 @@ use {
     },
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256, MaybeEquivalence},
+        traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
         BuildStorage, DispatchResult,
     },
     sp_std::cell::RefCell,
@@ -45,7 +45,6 @@ frame_support::construct_runtime!(
         Balances: pallet_balances,
         Timestamp: pallet_timestamp,
         EthereumTokenTransfers: pallet_ethereum_token_transfers,
-        Mock: mock_data,
     }
 );
 
@@ -113,8 +112,6 @@ impl pallet_timestamp::Config for Test {
     type MinimumPeriod = ConstU64<5>;
     type WeightInfo = ();
 }
-
-impl mock_data::Config for Test {}
 
 thread_local! {
     /// Detect we sent a message to Ethereum.
@@ -207,45 +204,6 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type BenchmarkHelper = ();
 }
 
-// Pallet to provide some mock data, used to test
-#[frame_support::pallet]
-pub mod mock_data {
-    use {
-        frame_support::pallet_prelude::*,
-        tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider},
-    };
-
-    #[derive(Clone, Default, Encode, Decode, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-    pub struct Mocks {
-        pub active_era: Option<ActiveEraInfo>,
-    }
-
-    #[pallet::config]
-    pub trait Config: frame_system::Config {}
-
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {}
-
-    #[pallet::pallet]
-    #[pallet::without_storage_info]
-    pub struct Pallet<T>(_);
-
-    #[pallet::storage]
-    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
-
-    impl<T: Config> Pallet<T> {
-        pub fn mock() -> Mocks {
-            Mock::<T>::get()
-        }
-        pub fn mutate<F, R>(f: F) -> R
-        where
-            F: FnOnce(&mut Mocks) -> R,
-        {
-            Mock::<T>::mutate(f)
-        }
-    }
-}
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
@@ -262,7 +220,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 pub const ALICE: u64 = 1;
-pub const BOB: u64 = 2;
 
 pub const INIT_TIMESTAMP: u64 = 30_000;
 pub const BLOCK_TIME: u64 = 1000;
