@@ -1165,6 +1165,7 @@ fn external_validators_rewards_test_command_integrity() {
                     RuntimeEvent::ExternalValidatorsRewards(
                         pallet_external_validators_rewards::Event::RewardsMessageSent {
                             rewards_command,
+                            ..
                         },
                     ) => {
                         rewards_command_found = Some(rewards_command.clone());

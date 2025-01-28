@@ -485,6 +485,7 @@ fn test_slashes_are_sent_to_ethereum() {
                     RuntimeEvent::ExternalValidatorSlashes(
                         pallet_external_validator_slashes::Event::SlashesMessageSent {
                             slashes_command,
+                            ..
                         },
                     ) => {
                         slashes_command_found = Some(slashes_command.clone());

@@ -333,6 +333,7 @@ fn test_slashes_command_matches_event() {
 
         System::assert_last_event(RuntimeEvent::ExternalValidatorSlashes(
             crate::Event::SlashesMessageSent {
+                message_id: Default::default(),
                 slashes_command: expected_command,
             },
         ));

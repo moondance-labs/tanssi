@@ -121,6 +121,7 @@ fn test_on_era_end() {
 
         System::assert_last_event(RuntimeEvent::ExternalValidatorsRewards(
             crate::Event::RewardsMessageSent {
+                message_id: Default::default(),
                 rewards_command: expected_command,
             },
         ));
