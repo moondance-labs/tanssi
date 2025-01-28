@@ -52,8 +52,8 @@ use {
     xcm::prelude::*,
 };
 
-/* #[cfg(feature = "runtime-benchmarks")]
-use tp_traits::BenchmarkHelperTrait; */
+#[cfg(feature = "runtime-benchmarks")]
+use tp_bridge::TokenChannelSetterBenchmarkHelperTrait;
 
 pub use pallet::*;
 
@@ -101,8 +101,8 @@ pub mod pallet {
         // The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
-/*         #[cfg(feature = "runtime-benchmarks")]
-        type BenchmarkHelper: BenchmarkHelperTrait; */
+        #[cfg(feature = "runtime-benchmarks")]
+        type BenchmarkHelper: TokenChannelSetterBenchmarkHelperTrait;
     }
 
     // Events

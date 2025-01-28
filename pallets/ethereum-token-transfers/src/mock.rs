@@ -203,8 +203,8 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type TokenIdFromLocation = MockTokenIdConvert;
     type TokenLocationReanchored = TokenLocation;
     type WeightInfo = ();
-/*     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = (); */
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 // Pallet to provide some mock data, used to test

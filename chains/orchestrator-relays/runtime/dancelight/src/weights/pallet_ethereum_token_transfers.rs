@@ -43,7 +43,6 @@
 // raw.json
 // --output
 // chains/orchestrator-relays/runtime/dancelight/src/weights//pallet_ethereum_token_transfers.rs
-// -leth-token=error
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -69,8 +68,8 @@ impl<T: frame_system::Config> pallet_ethereum_token_transfers::WeightInfo for Su
 		// Proof Size summary in bytes:
 		//  Measured:  `221`
 		//  Estimated: `3541`
-		// Minimum execution time: 14_920_000 picoseconds.
-		Weight::from_parts(15_300_000, 3541)
+		// Minimum execution time: 15_030_000 picoseconds.
+		Weight::from_parts(15_610_000, 3541)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
@@ -100,8 +99,8 @@ impl<T: frame_system::Config> pallet_ethereum_token_transfers::WeightInfo for Su
 		// Proof Size summary in bytes:
 		//  Measured:  `901`
 		//  Estimated: `6196`
-		// Minimum execution time: 99_540_000 picoseconds.
-		Weight::from_parts(101_170_000, 6196)
+		// Minimum execution time: 92_780_000 picoseconds.
+		Weight::from_parts(95_249_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}

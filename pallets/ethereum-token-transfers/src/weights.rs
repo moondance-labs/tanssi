@@ -43,7 +43,6 @@
 // raw.json
 // --output
 // pallets/ethereum-token-transfers/src//pallet_ethereum_token_transfers.rs
-// -leth-token=error
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -75,8 +74,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `221`
 		//  Estimated: `3541`
-		// Minimum execution time: 15_580_000 picoseconds.
-		Weight::from_parts(15_850_000, 3541)
+		// Minimum execution time: 15_360_000 picoseconds.
+		Weight::from_parts(15_670_000, 3541)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
@@ -106,8 +105,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `901`
 		//  Estimated: `6196`
-		// Minimum execution time: 102_290_000 picoseconds.
-		Weight::from_parts(105_179_000, 6196)
+		// Minimum execution time: 93_430_000 picoseconds.
+		Weight::from_parts(95_380_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
@@ -129,8 +128,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `221`
 		//  Estimated: `3541`
-		// Minimum execution time: 15_580_000 picoseconds.
-		Weight::from_parts(15_850_000, 3541)
+		// Minimum execution time: 15_360_000 picoseconds.
+		Weight::from_parts(15_670_000, 3541)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(5_u64))
 	}
@@ -160,8 +159,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `901`
 		//  Estimated: `6196`
-		// Minimum execution time: 102_290_000 picoseconds.
-		Weight::from_parts(105_179_000, 6196)
+		// Minimum execution time: 93_430_000 picoseconds.
+		Weight::from_parts(95_380_000, 6196)
 			.saturating_add(RocksDbWeight::get().reads(9_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 	}

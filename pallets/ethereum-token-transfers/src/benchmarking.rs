@@ -22,10 +22,8 @@ use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::Currency,
     frame_system::{EventRecord, RawOrigin},
-    pallet_session::{self as session},
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::H160,
-    sp_runtime::traits::TrailingZeroInput,
     sp_std::prelude::*,
 };
 
@@ -76,8 +74,16 @@ mod benchmarks {
     #[benchmark]
     fn transfer_native_token() -> Result<(), BenchmarkError> {
         let channel_id = ChannelId::new([4u8; 32]);
+        let agent_id = AgentId::from([5u8; 32]);
+        let para_id: ParaId = 2000u32.into();
 
         CurrentChannelId::<T>::put(channel_id);
+
+        T::BenchmarkHelper::set_up_channel(
+            channel_id,
+            para_id,
+            agent_id
+        );
 
         T::BenchmarkHelper::set_up_token(
             T::TokenLocationReanchored::get(),
