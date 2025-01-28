@@ -15,6 +15,7 @@ deploy_command() {
     -vvv \
     --slow \
     --skip-simulation \
+    --optimizer-runs 1 \
     $deploy_script
 }
 
