@@ -13,7 +13,7 @@ function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
         exec(command, options, (error: child.ExecException, stdout: string, stderr: string) => {
             if (error) {
-                reject(error);
+                reject({ error, stdout, stderr });
             } else {
                 resolve({ stdout, stderr });
             }
@@ -121,6 +121,14 @@ describeSuite({
             middlewareContract = new ethers.Contract(middlewareDetails.address, middlewareDetails.abi, ethereumWallet);
             const tx = await middlewareContract.setGateway(gatewayProxyAddress);
             await tx.wait();
+
+            const gatewayContract = new ethers.Contract(
+                gatewayProxyAddress,
+                ethInfo.snowbridge_info.contracts.Gateway.abi,
+                ethereumWallet
+            );
+            const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareDetails.address);
+            await setMiddlewareTx.wait();
 
             const initialBeaconUpdate = JSON.parse(
                 <string>(
