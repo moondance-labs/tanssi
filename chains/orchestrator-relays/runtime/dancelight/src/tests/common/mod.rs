@@ -16,6 +16,7 @@
 
 #![allow(dead_code)]
 
+use std::collections::{BTreeSet, VecDeque};
 use {
     crate::{
         BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, MessageQueue,
@@ -811,6 +812,14 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::
 pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent::Config> {
     /// Starting block number; we expect it to get incremented on session setup.
     block_number: BlockNumberFor<T>,
+
+    /// Session index of for each dispute. Index of slice corresponds to a core,
+    /// which is offset by the number of entries for `backed_and_concluding_paras`. I.E. if
+    /// `backed_and_concluding_paras` has 3 entries, the first index of `dispute_sessions`
+    /// will correspond to core index 3. There must be one entry for each core with a dispute
+    /// statement set.
+    dispute_sessions: Vec<u32>,
+
     /// Paras here will both be backed in the inherent data and already occupying a core (which is
     /// freed via bitfields).
     ///
@@ -822,11 +831,30 @@ pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent
 
     /// Paras which don't yet occupy a core, but will after the inherent has been processed.
     backed_in_inherent_paras: BTreeMap<u32, u32>,
+
+    /// Map from para id (seed) to number of chained candidates.
+    elastic_paras: BTreeMap<u32, u8>,
+    /// Make every candidate include a code upgrade by setting this to `Some` where the interior
+    /// value is the byte length of the new code.
+    code_upgrade: Option<u32>,
+
     _phantom: core::marker::PhantomData<T>,
 }
 
 pub fn mock_validation_code() -> ValidationCode {
     ValidationCode(vec![1; 10])
+}
+
+/// Create a dummy collator id suitable to be used in a V1 candidate descriptor.
+pub fn junk_collator() -> CollatorId {
+    CollatorId::from_slice(&mut (0..32).into_iter().collect::<Vec<_>>().as_slice())
+        .expect("32 bytes; qed")
+}
+
+/// Creates a dummy collator signature suitable to be used in a V1 candidate descriptor.
+pub fn junk_collator_signature() -> CollatorSignature {
+    CollatorSignature::from_slice(&mut (0..64).into_iter().collect::<Vec<_>>().as_slice())
+        .expect("64 bytes; qed")
 }
 
 #[allow(dead_code)]
@@ -836,8 +864,11 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     pub(crate) fn new() -> Self {
         ParasInherentTestBuilder {
             block_number: Zero::zero(),
+            dispute_sessions: Default::default(),
             backed_and_concluding_paras: Default::default(),
             backed_in_inherent_paras: Default::default(),
+            elastic_paras: Default::default(),
+            code_upgrade: None,
             _phantom: core::marker::PhantomData::<T>,
         }
     }
@@ -854,6 +885,19 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// Set a map from para id seed to number of validity votes for votes in inherent data.
     pub(crate) fn set_backed_in_inherent_paras(mut self, backed: BTreeMap<u32, u32>) -> Self {
         self.backed_in_inherent_paras = backed;
+        self
+    }
+
+    /// Set a map from para id seed to number of cores assigned to it.
+    pub(crate) fn set_elastic_paras(mut self, elastic_paras: BTreeMap<u32, u8>) -> Self {
+        self.elastic_paras = elastic_paras;
+        self
+    }
+
+    /// Set to include a code upgrade for all backed candidates. The value will be the byte length
+    /// of the code.
+    pub(crate) fn set_code_upgrade(mut self, code_upgrade: impl Into<Option<u32>>) -> Self {
+        self.code_upgrade = code_upgrade.into();
         self
     }
 
@@ -900,21 +944,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         self.max_validators() / self.max_validators_per_core()
     }
 
-    /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
-    /// that is concluding and `cores` is the total number of cores in the system.
-    fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
-        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
-        for i in 0..cores {
-            if i < used_cores {
-                bitfields.push(true);
-            } else {
-                bitfields.push(false)
-            }
-        }
-
-        bitfields.into()
-    }
-
     /// Create a bitvec of `validators` length with all yes votes.
     fn validator_availability_votes_yes(validators: usize) -> BitVec<u8, bitvec::order::Lsb0> {
         // every validator confirms availability.
@@ -925,6 +954,124 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         let max_head_size =
             runtime_parachains::configuration::ActiveConfig::<T>::get().max_head_data_size;
         HeadData(vec![0xFF; max_head_size as usize])
+    }
+
+    fn candidate_descriptor_mock(
+        para_id: ParaId,
+        candidate_descriptor_v2: bool,
+    ) -> CandidateDescriptorV2<T::Hash> {
+        if candidate_descriptor_v2 {
+            CandidateDescriptorV2::new(
+                para_id,
+                Default::default(),
+                CoreIndex(200),
+                2,
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                mock_validation_code().hash(),
+            )
+        } else {
+            // Convert v1 to v2.
+            CandidateDescriptor::<T::Hash> {
+                para_id,
+                relay_parent: Default::default(),
+                collator: junk_collator(),
+                persisted_validation_data_hash: Default::default(),
+                pov_hash: Default::default(),
+                erasure_root: Default::default(),
+                signature: junk_collator_signature(),
+                para_head: Default::default(),
+                validation_code_hash: mock_validation_code().hash(),
+            }
+                .into()
+        }
+            .into()
+    }
+
+    /*
+    /// Create a mock of `CandidatePendingAvailability`.
+    fn candidate_availability_mock(
+        para_id: ParaId,
+        group_idx: GroupIndex,
+        core_idx: CoreIndex,
+        candidate_hash: CandidateHash,
+        availability_votes: BitVec<u8, bitvec::order::Lsb0>,
+        commitments: CandidateCommitments,
+        candidate_descriptor_v2: bool,
+    ) -> CandidatePendingAvailability<T::Hash, BlockNumberFor<T>> {
+        CandidatePendingAvailability::<T::Hash, BlockNumberFor<T>>::new(
+            core_idx,                                                          // core
+            candidate_hash,                                                    // hash
+            Self::candidate_descriptor_mock(para_id, candidate_descriptor_v2), /* candidate descriptor */
+            commitments,                                                       // commitments
+            availability_votes,                                                /* availability
+                                                                                            * votes */
+            Default::default(), // backers
+            Zero::zero(),       // relay parent
+            One::one(),         /* relay chain block this
+                                             * was backed in */
+            group_idx, // backing group
+        )
+    }
+     */
+
+    /*
+    /// Add `CandidatePendingAvailability` and `CandidateCommitments` to the relevant storage items.
+    ///
+    /// NOTE: the default `CandidateCommitments` used does not include any data that would lead to
+    /// heavy code paths in `enact_candidate`. But enact_candidates does return a weight which will
+    /// get taken into account.
+    fn add_availability(
+        para_id: ParaId,
+        core_idx: CoreIndex,
+        group_idx: GroupIndex,
+        availability_votes: BitVec<u8, bitvec::order::Lsb0>,
+        candidate_hash: CandidateHash,
+        candidate_descriptor_v2: bool,
+    ) {
+        let commitments = CandidateCommitments::<u32> {
+            upward_messages: Default::default(),
+            horizontal_messages: Default::default(),
+            new_validation_code: None,
+            head_data: Self::mock_head_data(),
+            processed_downward_messages: 0,
+            hrmp_watermark: 0u32.into(),
+        };
+        let candidate_availability = Self::candidate_availability_mock(
+            para_id,
+            group_idx,
+            core_idx,
+            candidate_hash,
+            availability_votes,
+            commitments,
+            candidate_descriptor_v2,
+        );
+        inclusion::PendingAvailability::<T>::mutate(para_id, |maybe_candidates| {
+            if let Some(candidates) = maybe_candidates {
+                candidates.push_back(candidate_availability);
+            } else {
+                *maybe_candidates =
+                    Some([candidate_availability].into_iter().collect::<VecDeque<_>>());
+            }
+        });
+    }
+     */
+
+    /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
+    /// that is concluding and `cores` is the total number of cores in the system.
+    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
+        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
+        for i in 0..cores {
+            if concluding_cores.contains(&(i as u32)) {
+                bitfields.push(true);
+            } else {
+                bitfields.push(false)
+            }
+        }
+
+        bitfields.into()
     }
 
     /// Number of the relay parent block.
@@ -1005,23 +1152,17 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                         let pov_hash = Default::default();
                         let validation_code_hash = mock_validation_code().hash();
-                        let payload =
-                            cumulus_primitives_core::relay_chain::collator_signature_payload(
-                                &relay_parent,
-                                &para_id,
-                                &persisted_validation_data_hash,
-                                &pov_hash,
-                                &validation_code_hash,
-                            );
 
-                        let collator_pair = CollatorPair::generate().0;
-
-                        let signature = collator_pair.sign(&payload);
+                        /*
+                        let mut past_code_meta =
+                            paras::ParaPastCodeMeta::<BlockNumberFor<T>>::default();
+                        past_code_meta.note_replacement(0u32.into(), 0u32.into());
+                         */
 
                         let group_validators = Self::group_validators(group_idx).unwrap();
 
-                        let candidate = CommittedCandidateReceiptV2::<T::Hash> {
-                            descriptor: CandidateDescriptorV2::<T::Hash>::new(
+                        let descriptor = if true /* self.candidate_descriptor_v2 */ {
+                            CandidateDescriptorV2::new(
                                 para_id,
                                 relay_parent,
                                 core_idx,
@@ -1031,7 +1172,13 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 Default::default(),
                                 prev_head.hash(),
                                 validation_code_hash,
-                            ),
+                            )
+                        } else {
+                            todo!()
+                        };
+
+                        let mut candidate = CommittedCandidateReceiptV2::<T::Hash> {
+                            descriptor,
                             commitments: CandidateCommitments::<u32> {
                                 upward_messages: Default::default(),
                                 horizontal_messages: Default::default(),
@@ -1041,6 +1188,22 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 hrmp_watermark: self.relay_parent_number() + 1,
                             },
                         };
+
+                        if true /* self.candidate_descriptor_v2 */ {
+                            // `UMPSignal` separator.
+                            candidate.commitments.upward_messages.force_push(UMP_SEPARATOR);
+
+                            // `SelectCore` commitment.
+                            // Claim queue offset must be `0` so this candidate is for the very
+                            // next block.
+                            candidate.commitments.upward_messages.force_push(
+                                UMPSignal::SelectCore(
+                                    CoreSelector(chain_idx as u8),
+                                    ClaimQueueOffset(0),
+                                )
+                                    .encode(),
+                            );
+                        }
 
                         let candidate_hash = candidate.hash();
 
@@ -1084,6 +1247,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect()
     }
+
     /// Get the group assigned to a specific core by index at the current block number. Result
     /// undefined if the core index is unknown or the block number is less than the session start
     /// index.
@@ -1152,8 +1316,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         backed_in_inherent.append(&mut self.backed_and_concluding_paras.clone());
         backed_in_inherent.append(&mut self.backed_in_inherent_paras.clone());
         let backed_candidates = self.create_backed_candidates(&backed_in_inherent);
+        let used_cores_set = (0..used_cores).into_iter().map(|x| x as u32).collect();
 
-        let availability_bitvec = Self::availability_bitvec(used_cores, max_cores);
+        let availability_bitvec = Self::availability_bitvec(&used_cores_set, max_cores);
 
         let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = validators
             .iter()
@@ -1259,7 +1424,10 @@ use babe_primitives::AuthorityPair as BabeAuthorityPair;
 use grandpa_primitives::{
     AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };
-use sp_core::H256;
+use primitives::{CandidateDescriptor, CandidateHash, CollatorId, CollatorSignature};
+use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
+use runtime_parachains::inclusion::CandidatePendingAvailability;
+use sp_core::{ByteArray, H256};
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
     vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
@@ -1349,6 +1517,8 @@ pub fn generate_babe_equivocation_proof(
 }
 
 use sp_core::Public;
+use crate::weights::runtime_parachains_inclusion;
+
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
     let secret_uri = format!("//{}", seed);
