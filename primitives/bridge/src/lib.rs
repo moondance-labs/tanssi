@@ -197,7 +197,7 @@ impl TicketInfo for () {
 
 impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     fn message_id(&self) -> H256 {
-        self.message_id.clone()
+        self.message_id
     }
 }
 

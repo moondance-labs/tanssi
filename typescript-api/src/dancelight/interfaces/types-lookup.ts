@@ -706,7 +706,6 @@ declare module "@polkadot/types/lookup" {
             readonly totalPoints: u128;
             readonly tokensInflated: u128;
             readonly rewardsMerkleRoot: H256;
-            readonly tokenId: H256;
         } & Struct;
         readonly isReportSlashes: boolean;
         readonly asReportSlashes: {
