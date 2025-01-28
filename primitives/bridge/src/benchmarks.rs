@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-mod bridge_to_eth;
-mod constants;
-mod mocknets;
-mod reserver_transfers_polkadot_xcm;
-mod xcm_message_exporter;
-pub use xcm_emulator::{bx, TestExt};
+use snowbridge_core::TokenId;
+use xcm::latest::prelude::*;
+/// Helper trait to set up token characteristics
+pub trait TokenSetterBenchmarkHelperTrait {
+    /// Set up the token and location info
+    fn set_up_token(_location: Location, _token_id: TokenId) {}
+}
+impl TokenSetterBenchmarkHelperTrait for () {}

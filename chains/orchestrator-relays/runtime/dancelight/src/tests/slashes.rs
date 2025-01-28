@@ -17,8 +17,8 @@
 use {
     crate::tests::common::*,
     crate::{
-        BondingDuration, ExternalValidatorSlashes, ExternalValidators, Grandpa, Historical,
-        RuntimeEvent, SessionsPerEra, SlashDeferDuration,
+        BondingDuration, EthereumSystem, ExternalValidatorSlashes, ExternalValidators, Grandpa,
+        Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     parity_scale_codec::Encode,
@@ -26,6 +26,8 @@ use {
     sp_runtime::Perbill,
     sp_std::vec,
     tp_bridge::Command,
+    xcm::latest::prelude::*,
+    xcm::VersionedLocation,
 };
 
 #[test]
@@ -340,6 +342,18 @@ fn test_slashes_cannot_be_cancelled_after_defer_period() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             run_to_block(2);
             assert_ok!(ExternalValidators::remove_whitelisted(
                 RuntimeOrigin::root(),
@@ -395,6 +409,18 @@ fn test_slashes_are_sent_to_ethereum() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             run_to_block(2);
             assert_ok!(ExternalValidators::remove_whitelisted(
                 RuntimeOrigin::root(),
@@ -523,6 +549,16 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here()
+            .into();
+
+            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
+                name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+		    }));
+
+
             run_to_block(2);
 
             // We can inject arbitraqry slashes for arbitary accounts with root
@@ -643,6 +679,15 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here()
+            .into();
+
+            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
+                name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+		    }));
+
             run_to_block(2);
 
             // We can inject arbitraqry slashes for arbitary accounts with root

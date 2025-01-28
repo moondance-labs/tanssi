@@ -22,16 +22,15 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
+
 use {
     crate::{
-        parameter_types, weights, xcm_config, xcm_config::UniversalLocation,
-        AggregateMessageOrigin, Balance, Balances, EthereumInboundQueue, EthereumOutboundQueue,
-        EthereumSovereignAccount, EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256,
-        MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TransactionByteFee,
-        TreasuryAccount, WeightToFee, UNITS,
+        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
+        EthereumInboundQueue, EthereumOutboundQueue, EthereumSystem, EthereumLocation, EthereumSovereignAccount, FixedU128,
+        GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
+        Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     cumulus_primitives_core::Reanchorable,
-    dancelight_runtime_constants::snowbridge::EthereumLocation,
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
@@ -175,9 +174,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;
     type InboundDeliveryCost = EthereumInboundQueue;
-    type EthereumLocation = EthereumLocation;
-    type UniversalLocation = UniversalLocation;
-    /*     #[cfg(not(feature = "runtime-benchmarks"))]
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type UniversalLocation = xcm_config::UniversalLocation;
     #[cfg(feature = "runtime-benchmarks")]
     type UniversalLocation = xcm_config::UniversalLocationForParaIdBenchmarks;
@@ -185,7 +182,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     type EthereumLocation = dancelight_runtime_constants::snowbridge::EthereumLocation;
     #[cfg(feature = "runtime-benchmarks")]
     type EthereumLocation =
-        dancelight_runtime_constants::snowbridge::EthereumLocationForParaIdBenchmarks; */
+        dancelight_runtime_constants::snowbridge::EthereumLocationForParaIdBenchmarks;
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 

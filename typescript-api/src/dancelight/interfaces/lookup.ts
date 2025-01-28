@@ -496,6 +496,7 @@ export default {
                 totalPoints: "u128",
                 tokensInflated: "u128",
                 rewardsMerkleRoot: "H256",
+                tokenId: "H256",
             },
             ReportSlashes: {
                 eraIndex: "u32",

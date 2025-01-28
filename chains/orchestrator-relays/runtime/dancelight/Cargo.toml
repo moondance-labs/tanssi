@@ -340,6 +340,7 @@ runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
+	"dancelight-runtime-constants/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
