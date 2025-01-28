@@ -1418,6 +1418,11 @@ parameter_types! {
     // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
     // to properly write integration tests.
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+
+    pub RewardTokenLocation: Location = xcm_config::TokenLocation::get().reanchored(
+        &EthereumLocation::get(),
+        &xcm_config::UniversalLocation::get()
+    ).expect("unable to reanchor reward token");
 }
 
 pub struct GetWhitelistedValidators;
@@ -1427,6 +1432,15 @@ impl Get<Vec<AccountId>> for GetWhitelistedValidators {
     }
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct RewardsBenchHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl tp_bridge::TokenSetterBenchmarkHelperTrait for RewardsBenchHelper {
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+}
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1444,7 +1458,11 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
+    type TokenLocationReanchored = RewardTokenLocation;
+    type TokenIdFromLocation = EthereumSystem;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = RewardsBenchHelper;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {

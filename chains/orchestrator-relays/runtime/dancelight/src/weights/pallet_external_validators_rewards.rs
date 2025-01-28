@@ -54,29 +54,34 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_external_validators_rewards using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_external_validators_rewards::WeightInfo for SubstrateWeight<T> {
-	/// Storage: `ExternalValidatorsRewards::RewardPointsForEra` (r:1 w:0)
-	/// Proof: `ExternalValidatorsRewards::RewardPointsForEra` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Timestamp::Now` (r:1 w:0)
-	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
-	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
-	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
-	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	fn on_era_end() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `36522`
-		//  Estimated: `39987`
-		// Minimum execution time: 1_005_863_000 picoseconds.
-		Weight::from_parts(1_017_752_000, 39987)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
-	}
+	/// Storage: `EthereumSystem::NativeToForeignId` (r:1 w:0)
+    /// Proof: `EthereumSystem::NativeToForeignId` (`max_values`: None, `max_size`: Some(650), added: 3125, mode: `MaxEncodedLen`)
+    /// Storage: `ExternalValidatorsRewards::RewardPointsForEra` (r:1 w:0)
+    /// Proof: `ExternalValidatorsRewards::RewardPointsForEra` (`max_values`: None, `max_size`: None, mode: `Measured`)
+    /// Storage: `System::Account` (r:1 w:1)
+    /// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+    /// Storage: `Timestamp::Now` (r:1 w:0)
+    /// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+    /// Storage: `EthereumSystem::Channels` (r:1 w:0)
+    /// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
+    /// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
+    /// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
+    /// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
+    /// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
+    /// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+    /// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+    /// Storage: `MessageQueue::Pages` (r:0 w:1)
+    /// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
+    /// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+    /// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+    fn on_era_end() -> Weight {
+        // Proof Size summary in bytes:
+        //  Measured:  `37303`
+        //  Estimated: `40768`
+        // Minimum execution time: 1_163_657_000 picoseconds.
+        Weight::from_parts(1_180_553_000, 40768)
+            .saturating_add(T::DbWeight::get().reads(7_u64))
+            .saturating_add(T::DbWeight::get().writes(6_u64))
+    }
+
 }
