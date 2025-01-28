@@ -214,7 +214,9 @@ fn default_parachains_host_configuration(
             allowed_ancestry_len: 2,
         },
         node_features: bitvec::vec::BitVec::from_element(
-            1u8 << (FeatureIndex::ElasticScalingMVP as usize),
+                           (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
+            // TODO: this may not be needed, we could still support v1 only
+                           (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
         ),
         scheduler_params: SchedulerParams {
             lookahead: 2,

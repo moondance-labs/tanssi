@@ -814,14 +814,6 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::
 pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent::Config> {
     /// Starting block number; we expect it to get incremented on session setup.
     block_number: BlockNumberFor<T>,
-
-    /// Session index of for each dispute. Index of slice corresponds to a core,
-    /// which is offset by the number of entries for `backed_and_concluding_paras`. I.E. if
-    /// `backed_and_concluding_paras` has 3 entries, the first index of `dispute_sessions`
-    /// will correspond to core index 3. There must be one entry for each core with a dispute
-    /// statement set.
-    dispute_sessions: Vec<u32>,
-
     /// Paras here will both be backed in the inherent data and already occupying a core (which is
     /// freed via bitfields).
     ///
@@ -833,13 +825,6 @@ pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent
 
     /// Paras which don't yet occupy a core, but will after the inherent has been processed.
     backed_in_inherent_paras: BTreeMap<u32, u32>,
-
-    /// Map from para id (seed) to number of chained candidates.
-    elastic_paras: BTreeMap<u32, u8>,
-    /// Make every candidate include a code upgrade by setting this to `Some` where the interior
-    /// value is the byte length of the new code.
-    code_upgrade: Option<u32>,
-
     _phantom: core::marker::PhantomData<T>,
 }
 
@@ -866,11 +851,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     pub(crate) fn new() -> Self {
         ParasInherentTestBuilder {
             block_number: Zero::zero(),
-            dispute_sessions: Default::default(),
             backed_and_concluding_paras: Default::default(),
             backed_in_inherent_paras: Default::default(),
-            elastic_paras: Default::default(),
-            code_upgrade: None,
             _phantom: core::marker::PhantomData::<T>,
         }
     }
@@ -887,19 +869,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// Set a map from para id seed to number of validity votes for votes in inherent data.
     pub(crate) fn set_backed_in_inherent_paras(mut self, backed: BTreeMap<u32, u32>) -> Self {
         self.backed_in_inherent_paras = backed;
-        self
-    }
-
-    /// Set a map from para id seed to number of cores assigned to it.
-    pub(crate) fn set_elastic_paras(mut self, elastic_paras: BTreeMap<u32, u8>) -> Self {
-        self.elastic_paras = elastic_paras;
-        self
-    }
-
-    /// Set to include a code upgrade for all backed candidates. The value will be the byte length
-    /// of the code.
-    pub(crate) fn set_code_upgrade(mut self, code_upgrade: impl Into<Option<u32>>) -> Self {
-        self.code_upgrade = code_upgrade.into();
         self
     }
 
@@ -944,6 +913,21 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// Get the maximum number of cores we expect from this configuration.
     pub(crate) fn max_cores(&self) -> u32 {
         self.max_validators() / self.max_validators_per_core()
+    }
+
+    /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
+    /// that is concluding and `cores` is the total number of cores in the system.
+    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
+        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
+        for i in 0..cores {
+            if concluding_cores.contains(&(i as u32)) {
+                bitfields.push(true);
+            } else {
+                bitfields.push(false)
+            }
+        }
+
+        bitfields.into()
     }
 
     /// Create a bitvec of `validators` length with all yes votes.
@@ -1060,21 +1044,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         });
     }
      */
-
-    /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
-    /// that is concluding and `cores` is the total number of cores in the system.
-    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
-        let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
-        for i in 0..cores {
-            if concluding_cores.contains(&(i as u32)) {
-                bitfields.push(true);
-            } else {
-                bitfields.push(false)
-            }
-        }
-
-        bitfields.into()
-    }
 
     /// Number of the relay parent block.
     fn relay_parent_number(&self) -> u32 {
@@ -1309,7 +1278,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .validators
             .clone();
 
-        let max_cores = self.max_cores() as usize;
+        //let max_cores = self.max_cores() as usize;
+        let max_cores = 2;
 
         let used_cores =
             self.backed_and_concluding_paras.len() + self.backed_in_inherent_paras.len();
@@ -1338,6 +1308,34 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect();
 
+
+        let mut disputed_cores = (self.backed_and_concluding_paras.len() as u32..
+            ((used_cores - 0) as u32))
+            .into_iter()
+            .map(|idx| (idx, 0))
+            .collect::<BTreeMap<_, _>>();
+        
+        let mut all_cores = self.backed_and_concluding_paras.clone();
+        all_cores.append(&mut disputed_cores);
+
+        let mut core_idx = 0u32;
+        let cores = all_cores
+            .keys()
+            .flat_map(|para_id| {
+                (0..1)
+                    .map(|_para_local_core_idx| {
+                        // Load an assignment into provider so that one is present to pop
+                        let assignment = Assignment::Bulk(ParaId::from(*para_id));
+
+                        core_idx += 1;
+                        (CoreIndex(core_idx - 1), [assignment].into())
+                    })
+                    .collect::<Vec<(CoreIndex, VecDeque<Assignment>)>>()
+            })
+            .collect::<BTreeMap<CoreIndex, VecDeque<Assignment>>>();
+
+        runtime_parachains::scheduler::ClaimQueue::<T>::set(cores);
+        
         ParachainsInherentData {
             bitfields,
             backed_candidates,
@@ -1429,6 +1427,7 @@ use grandpa_primitives::{
 use primitives::{CandidateDescriptor, CandidateHash, CollatorId, CollatorSignature};
 use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
 use runtime_parachains::inclusion::CandidatePendingAvailability;
+use runtime_parachains::scheduler::common::{Assignment, AssignmentProvider};
 use sp_core::{ByteArray, H256};
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
