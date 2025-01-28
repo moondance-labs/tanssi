@@ -19,6 +19,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
 #[cfg(test)]
 mod tests;
 
@@ -63,6 +65,9 @@ pub use {
     custom_send_message::CustomSendMessage,
     xcm_executor::traits::ConvertLocation,
 };
+
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarks::*;
 
 mod custom_do_process_message;
 mod custom_send_message;

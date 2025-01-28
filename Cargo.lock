@@ -18867,6 +18867,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "staging-xcm",
  "staging-xcm-executor",
 ]
 
