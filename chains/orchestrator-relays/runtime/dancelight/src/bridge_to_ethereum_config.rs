@@ -175,8 +175,17 @@ impl snowbridge_pallet_system::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type DefaultPricingParameters = Parameters;
     type InboundDeliveryCost = EthereumInboundQueue;
-    type UniversalLocation = UniversalLocation;
     type EthereumLocation = EthereumLocation;
+    type UniversalLocation = UniversalLocation;
+    /*     #[cfg(not(feature = "runtime-benchmarks"))]
+    type UniversalLocation = xcm_config::UniversalLocation;
+    #[cfg(feature = "runtime-benchmarks")]
+    type UniversalLocation = xcm_config::UniversalLocationForParaIdBenchmarks;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type EthereumLocation = dancelight_runtime_constants::snowbridge::EthereumLocation;
+    #[cfg(feature = "runtime-benchmarks")]
+    type EthereumLocation =
+        dancelight_runtime_constants::snowbridge::EthereumLocationForParaIdBenchmarks; */
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
@@ -206,6 +215,22 @@ parameter_types! {
     ).expect("unable to reanchor token");
 }
 
+/* #[cfg(feature = "runtime-benchmarks")]
+pub struct BenchHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl tp_traits::BenchmarkHelperTrait for BenchHelper {
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        let channel = Channel {
+            agent_id: AgentId::from([5u8; 32]),
+            para_id: 2000u32.into(),
+        };
+        snowbridge_pallet_system::Channels::<Runtime>::insert(ChannelId::new([4u8; 32]), channel);
+
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+} */
+
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -215,6 +240,9 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type FeesAccount = TreasuryAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
+/*     #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = BenchHelper; */
+    type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

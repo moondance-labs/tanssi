@@ -27,36 +27,33 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
 use {
     frame_support::{
         pallet_prelude::*,
         traits::{
             fungible::{self, Inspect, Mutate},
             tokens::Preservation,
-            Defensive, Get, ValidatorSet,
+            Get,
         },
     },
     frame_system::pallet_prelude::*,
-    parity_scale_codec::Encode,
-    polkadot_primitives::ValidatorIndex,
-    runtime_parachains::session_info,
     snowbridge_core::{
-        location::TokenIdOf,
         outbound::{
             Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendError, SendMessage,
         },
         AgentId, ChannelId, ParaId, TokenId,
     },
-    snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
-    sp_staking::SessionIndex,
-    sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
-    sp_std::vec::Vec,
     tp_traits::EthereumSystemChannelManager,
     xcm::prelude::*,
 };
+
+/* #[cfg(feature = "runtime-benchmarks")]
+use tp_traits::BenchmarkHelperTrait; */
 
 pub use pallet::*;
 
@@ -65,13 +62,8 @@ pub type BalanceOf<T> =
 
 #[frame_support::pallet]
 pub mod pallet {
-    //pub use crate::weights::WeightInfo;
-    /*     use {
-        super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
-        tp_traits::EraIndexProvider,
-    }; */
-
     use super::*;
+    pub use crate::weights::WeightInfo;
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -107,7 +99,10 @@ pub mod pallet {
         type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
         // The weight information of this pallet.
-        // type WeightInfo: WeightInfo;
+        type WeightInfo: WeightInfo;
+
+/*         #[cfg(feature = "runtime-benchmarks")]
+        type BenchmarkHelper: BenchmarkHelperTrait; */
     }
 
     // Events
@@ -172,9 +167,8 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         // TODO: docs
-        // TODO: benchmarking
         #[pallet::call_index(0)]
-        #[pallet::weight(Weight::default())]
+        #[pallet::weight(T::WeightInfo::set_token_transfer_channel())]
         pub fn set_token_transfer_channel(
             origin: OriginFor<T>,
             channel_id: ChannelId,
@@ -215,9 +209,8 @@ pub mod pallet {
         }
 
         // TODO: docs
-        // TODO: benchmarking
         #[pallet::call_index(1)]
-        #[pallet::weight(Weight::default())]
+        #[pallet::weight(T::WeightInfo::transfer_native_token())]
         pub fn transfer_native_token(
             origin: OriginFor<T>,
             amount: u128,

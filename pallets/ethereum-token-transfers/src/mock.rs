@@ -23,7 +23,7 @@ use {
     pallet_balances::AccountData,
     snowbridge_core::{
         outbound::{Fee, Message, SendError, SendMessageFeeProvider},
-        AgentId, ChannelId, ParaId, TokenId
+        AgentId, ChannelId, ParaId, TokenId,
     },
     sp_core::H256,
     sp_runtime::{
@@ -202,6 +202,9 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type FeesAccount = FeesAccount;
     type TokenIdFromLocation = MockTokenIdConvert;
     type TokenLocationReanchored = TokenLocation;
+    type WeightInfo = ();
+/*     #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = (); */
 }
 
 // Pallet to provide some mock data, used to test
