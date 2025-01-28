@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-#![cfg(feature = "runtime-benchmarks")]
-
 use snowbridge_core::TokenId;
 use xcm::latest::prelude::*;
 /// Helper trait to set up token characteristics
