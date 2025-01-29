@@ -22,5 +22,6 @@ else
 fi
 
 pushd $symbiotic_contracts_dir
+make install
 forge build
 popd

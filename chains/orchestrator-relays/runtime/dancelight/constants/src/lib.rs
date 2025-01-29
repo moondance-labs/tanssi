@@ -79,6 +79,15 @@ pub mod snowbridge {
             /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
             pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 17000 };
             pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
+
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    parameter_types! {
+            // We need a different ethereum location for benchmarks as the ethereum system pallet
+            // is written for benchmarks from para
+            pub EthereumLocationForParaIdBenchmarks: Location = Location::new(2, EthereumNetwork::get());
+
     }
 }
 

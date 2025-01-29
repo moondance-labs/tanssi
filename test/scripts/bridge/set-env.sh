@@ -23,7 +23,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
 RELAYER_BRANCH="main" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="695c7d1c5c0541f93587a607bc193c4e9944e985" # TODO: Change to tag when we do release
+TANSSI_SYMBIOTIC_COMMIT="f42ebae15225282be1b235e0d28b8ab16f67dff5" # TODO: Change to tag when we do release
 GETH_TAG="v1.14.11" # We will need to investigate if this is right
 LODESTAR_TAG="v1.19.0"
 
@@ -69,13 +69,6 @@ export FOREIGN_TOKEN_DECIMALS=12
 # Beacon relay account (//BeaconRelay 5GWFwdZb6JyU46e6ZiLxjGxogAHe8SenX76btfq8vGNAaq8c in testnet)
 beacon_relayer_pub_key="${BEACON_RELAYER_PUB_KEY:-0xc46e141b5083721ad5f5056ba1cded69dce4a65f027ed3362357605b1687986a}"
 
-
-# Config for deploying contracts
-
-## Deployment key
-export PRIVATE_KEY="${DEPLOYER_ETH_KEY:-0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77}"
-export ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-0x0}"
-
 ## BeefyClient
 # For max safety delay should be MAX_SEED_LOOKAHEAD=4 epochs=4*8*6=192s
 # but for rococo-local each session is only 20 slots=120s
@@ -109,6 +102,12 @@ execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c5
 ethereum_key="0x5e002a1af63fd31f1c25258f3082dc889762664cb8f218d86da85dff8b07b342"
 # Above key's address
 ethereum_address="90A987B944Cb1dCcE5564e5FDeCD7a54D3de27Fe"
+
+# Config for deploying contracts
+
+## Deployment key
+export PRIVATE_KEY="${DEPLOYER_ETH_KEY:-$ethereum_key}"
+export ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-0x0}"
 
 
 snowbridge_address_for() {

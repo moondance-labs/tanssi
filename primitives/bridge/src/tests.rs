@@ -41,6 +41,7 @@ fn test_report_rewards_encoding() {
         rewards_merkle_root: H256::from(hex!(
             "b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4"
         )),
+        token_id: H256::repeat_byte(0x01),
     };
 
     let expected = hex!(
@@ -50,6 +51,7 @@ fn test_report_rewards_encoding() {
         "00000000000000000000000000000000000000000000000000007048860DDF79" // total points
         "000000000000000000000000000000000000000000000000000000E5F4C8F3CA" // total inflated
         "b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4" // root
+        "0101010101010101010101010101010101010101010101010101010101010101" // token_id
     );
 
     assert_eq!(command.abi_encode(), expected);

@@ -16,15 +16,20 @@
 
 #![cfg(test)]
 
+use sp_core::H256;
 use {
     crate::{
-        tests::common::*, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators,
-        RuntimeEvent, SessionKeys, SessionsPerEra, System,
+        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
+        MaxExternalValidators, RewardTokenLocation, RuntimeEvent, SessionKeys, SessionsPerEra,
+        System,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
+    sp_runtime::traits::MaybeEquivalence,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
+    xcm::latest::prelude::*,
+    xcm::VersionedLocation,
 };
 
 fn assert_validators_do_not_change(
@@ -710,6 +715,18 @@ fn external_validators_rewards_sends_message_on_era_end() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
@@ -1041,6 +1058,20 @@ fn external_validators_rewards_test_command_integrity() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location.clone()),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_id = EthereumSystem::convert_back(&RewardTokenLocation::get()).unwrap();
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
@@ -1129,14 +1160,17 @@ fn external_validators_rewards_test_command_integrity() {
             run_to_session(sessions_per_era * 2);
 
             let mut rewards_command_found: Option<Command> = None;
+            let mut message_id_found: Option<H256> = None;
             let ext_validators_rewards_event = System::events()
                 .iter()
                 .filter(|r| match &r.event {
                     RuntimeEvent::ExternalValidatorsRewards(
                         pallet_external_validators_rewards::Event::RewardsMessageSent {
                             rewards_command,
+                            message_id,
                         },
                     ) => {
+                        message_id_found = Some(*message_id);
                         rewards_command_found = Some(rewards_command.clone());
                         true
                     }
@@ -1151,6 +1185,7 @@ fn external_validators_rewards_test_command_integrity() {
                 total_points: 40u128,
                 tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+                token_id,
             };
 
             assert_eq!(
@@ -1162,6 +1197,7 @@ fn external_validators_rewards_test_command_integrity() {
                 expected_rewards_command,
                 "Both rewards commands should match!"
             );
+            assert_eq!(message_id_found.unwrap(), read_last_entropy().into());
         });
 }
 
@@ -1174,6 +1210,15 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here()
+            .into();
+
+            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
+                name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+		    }));
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 

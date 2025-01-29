@@ -62,6 +62,12 @@ parameter_types! {
     pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+    // Universal location for benchmarks that need to run through a para-id scenario
+    pub UniversalLocationForParaIdBenchmarks: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(2000u32)].into();
+}
+
 pub type LocationConverter = (
     // We can convert a child parachain using the standard `AccountId` conversion.
     ChildParachainConvertsVia<ParaId, AccountId>,
