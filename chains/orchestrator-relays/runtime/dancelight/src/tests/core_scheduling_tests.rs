@@ -116,10 +116,6 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             collators_per_container: 2,
             ..Default::default()
         })
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
         .with_para_ids(vec![ParaRegistrationParams {
             para_id: 1000,
             genesis_data: empty_genesis_data(),
@@ -193,6 +189,10 @@ fn test_cannot_use_elastic_scaling_if_not_enabled() {
             collators_per_container: 2,
             ..Default::default()
         })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .with_para_ids(vec![ParaRegistrationParams {
             para_id: 1000,
             genesis_data: empty_genesis_data(),
