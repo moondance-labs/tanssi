@@ -100,7 +100,7 @@ fn whitelisted_validators_priority() {
                 external_validators.push(mock_validator);
             }
 
-            ExternalValidators::set_external_validators_inner(external_validators).unwrap();
+            ExternalValidators::set_external_validators_inner(external_validators, 1).unwrap();
 
             run_to_session(sessions_per_era);
             let validators = Session::validators();
@@ -160,7 +160,7 @@ fn validators_only_change_once_per_era() {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![mock_validator], 1).unwrap();
 
                 run_to_session(session);
                 let validators = Session::validators();
@@ -240,7 +240,7 @@ fn external_validators_can_be_disabled() {
                 vec![]
             ));
 
-            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                 .unwrap();
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
@@ -289,7 +289,7 @@ fn no_duplicate_validators() {
             let sessions_per_era = SessionsPerEra::get();
 
             // Alice is both a whitelisted validator and an external validator
-            ExternalValidators::set_external_validators_inner(vec![AccountId::from(ALICE)])
+            ExternalValidators::set_external_validators_inner(vec![AccountId::from(ALICE)], 1)
                 .unwrap();
 
             run_to_session(sessions_per_era);
@@ -356,7 +356,7 @@ fn default_era_changes() {
                         vec![]
                     ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![mock_validator], 1).unwrap();
 
                 run_to_session(session);
                 let validators = Session::validators();
@@ -452,7 +452,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_era(
@@ -487,7 +487,7 @@ mod force_eras {
                 );
 
                 // Change external validators again
-                ExternalValidators::set_external_validators_inner(vec![]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![], 1).unwrap();
                 run_to_session(1 + sessions_per_era - 1);
                 // Validators will not change until `sessions_per_era` sessions later
                 // With sessions_per_era=6, era will change in session 7, validators will change in
@@ -560,7 +560,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 // Validators will never change
                 assert_eq!(ExternalValidators::current_era(), Some(0));
@@ -611,7 +611,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 // Validators will change on every session
                 assert_eq!(ExternalValidators::current_era(), Some(0));
@@ -632,7 +632,7 @@ mod force_eras {
                     ]
                 );
 
-                ExternalValidators::set_external_validators_inner(vec![]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![], 1).unwrap();
                 run_to_session(4);
                 assert_eq!(ExternalValidators::current_era(), Some(4));
                 let validators = Session::validators();
@@ -676,7 +676,7 @@ fn external_validators_manual_reward_points() {
                 vec![]
             ));
 
-            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                 .unwrap();
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
@@ -783,10 +783,10 @@ fn external_validators_rewards_merkle_proofs() {
                 AccountId::from(BOB)
             ));
 
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(CHARLIE),
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)],
+                1
+            ));
 
             // Register CHARLIE and DAVE session keys
             let charlie_keys =
@@ -978,9 +978,10 @@ fn external_validators_whitelisted_never_rewarded() {
                 root_origin(),
                 AccountId::from(CHARLIE)
             ));
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(DAVE)],
+                1
+            ));
 
             // Reward validators in every session
             for session in 1..(sessions_per_era + 1) {
@@ -1092,10 +1093,10 @@ fn external_validators_rewards_test_command_integrity() {
                 AccountId::from(BOB)
             ));
 
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(CHARLIE),
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)],
+                1
+            ));
 
             // Register CHARLIE and DAVE session keys
             let charlie_keys =
@@ -1180,7 +1181,7 @@ fn external_validators_rewards_test_command_integrity() {
 
             let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
             let expected_rewards_command = Command::ReportRewards {
-                timestamp: 0u64,
+                timestamp: 1u64,
                 era_index: 1u32,
                 total_points: 40u128,
                 tokens_inflated: expected_inflation,

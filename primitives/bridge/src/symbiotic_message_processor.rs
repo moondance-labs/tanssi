@@ -86,14 +86,16 @@ where
         match message {
             Message::V1(InboundCommand::ReceiveValidators {
                 validators,
-                timestamp: _timestamp,
+                timestamp,
             }) => {
                 if envelope.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
                     return Err(DispatchError::Other(
                         "Received governance message from invalid channel id",
                     ));
                 }
-                pallet_external_validators::Pallet::<T>::set_external_validators_inner(validators)?;
+                pallet_external_validators::Pallet::<T>::set_external_validators_inner(
+                    validators, timestamp,
+                )?;
                 Ok(())
             }
         }

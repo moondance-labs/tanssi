@@ -44,8 +44,8 @@ use {
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec::Vec,
     tp_traits::{
-        ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart,
-        ValidatorProvider,
+        ActiveEraInfo, EraIndex, EraIndexProvider, ExternalTimestampProvider,
+        InvulnerablesProvider, OnEraEnd, OnEraStart, ValidatorProvider,
     },
 };
 
@@ -194,6 +194,17 @@ pub mod pallet {
     /// Mode of era forcing.
     #[pallet::storage]
     pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
+
+    /// Mode of era forcing.
+    #[pallet::storage]
+    pub type ExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
+
+    #[pallet::storage]
+    pub type PendingExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
+
+    /// Mode of era forcing.
+    #[pallet::storage]
+    pub type CurrentExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
 
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
@@ -351,19 +362,23 @@ pub mod pallet {
         pub fn set_external_validators(
             origin: OriginFor<T>,
             validators: Vec<T::ValidatorId>,
+            timestamp: u64,
         ) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
-            Self::set_external_validators_inner(validators)
+            Self::set_external_validators_inner(validators, timestamp)
         }
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn set_external_validators_inner(validators: Vec<T::ValidatorId>) -> DispatchResult {
+        pub fn set_external_validators_inner(
+            validators: Vec<T::ValidatorId>,
+            timestamp: u64,
+        ) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
             <ExternalValidators<T>>::put(validators);
-
+            <ExternalTimestamp<T>>::put(timestamp);
             Ok(())
         }
 
@@ -497,8 +512,10 @@ pub mod pallet {
             WhitelistedValidatorsActiveEra::<T>::put(
                 WhitelistedValidatorsActiveEraPending::<T>::take(),
             );
+            let timestamp = PendingExternalTimestamp::<T>::take();
+            CurrentExternalTimestamp::<T>::put(timestamp);
             Self::deposit_event(Event::NewEra { era: active_era });
-            T::OnEraStart::on_era_start(active_era, start_session);
+            T::OnEraStart::on_era_start(active_era, start_session, timestamp);
         }
 
         /// End era. It does:
@@ -530,6 +547,7 @@ pub mod pallet {
 
             // Save whitelisted validators for when the era truly changes (start_era)
             WhitelistedValidatorsActiveEraPending::<T>::put(WhitelistedValidators::<T>::get());
+            PendingExternalTimestamp::<T>::put(ExternalTimestamp::<T>::get());
 
             // Returns new validators
             Self::validators()
@@ -569,6 +587,12 @@ pub mod pallet {
                 }
             }
             // `on_finalize` weight is tracked in `on_initialize`
+        }
+    }
+
+    impl<T: Config> ExternalTimestampProvider for Pallet<T> {
+        fn get_external_timestamp() -> u64 {
+            CurrentExternalTimestamp::<T>::get()
         }
     }
 }
