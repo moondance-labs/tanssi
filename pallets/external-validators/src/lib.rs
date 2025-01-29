@@ -195,14 +195,15 @@ pub mod pallet {
     #[pallet::storage]
     pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
 
-    /// Mode of era forcing.
+    /// Latest sent external timestamp
     #[pallet::storage]
     pub type ExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
 
+    /// Pending external timestamp to be applied in the upcoming era
     #[pallet::storage]
     pub type PendingExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
 
-    /// Mode of era forcing.
+    /// Current external timestamp attached to the latest validators
     #[pallet::storage]
     pub type CurrentExternalTimestamp<T> = StorageValue<_, u64, ValueQuery>;
 
