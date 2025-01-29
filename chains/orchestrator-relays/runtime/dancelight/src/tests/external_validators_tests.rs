@@ -16,6 +16,7 @@
 
 #![cfg(test)]
 
+use sp_core::H256;
 use {
     crate::{
         tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
@@ -1159,14 +1160,17 @@ fn external_validators_rewards_test_command_integrity() {
             run_to_session(sessions_per_era * 2);
 
             let mut rewards_command_found: Option<Command> = None;
+            let mut message_id_found: Option<H256> = None;
             let ext_validators_rewards_event = System::events()
                 .iter()
                 .filter(|r| match &r.event {
                     RuntimeEvent::ExternalValidatorsRewards(
                         pallet_external_validators_rewards::Event::RewardsMessageSent {
                             rewards_command,
+                            message_id,
                         },
                     ) => {
+                        message_id_found = Some(*message_id);
                         rewards_command_found = Some(rewards_command.clone());
                         true
                     }
@@ -1193,6 +1197,7 @@ fn external_validators_rewards_test_command_integrity() {
                 expected_rewards_command,
                 "Both rewards commands should match!"
             );
+            assert_eq!(message_id_found.unwrap(), read_last_entropy().into());
         });
 }
 

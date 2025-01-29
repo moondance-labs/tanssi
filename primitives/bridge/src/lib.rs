@@ -185,10 +185,26 @@ pub struct Message {
     pub command: Command,
 }
 
+pub trait TicketInfo {
+    fn message_id(&self) -> H256;
+}
+
+impl TicketInfo for () {
+    fn message_id(&self) -> H256 {
+        H256::zero()
+    }
+}
+
+impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
+    fn message_id(&self) -> H256 {
+        self.message_id
+    }
+}
+
 pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
 
 pub trait ValidateMessage {
-    type Ticket;
+    type Ticket: TicketInfo;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
 }

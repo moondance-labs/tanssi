@@ -121,6 +121,7 @@ fn test_on_era_end() {
 
         System::assert_last_event(RuntimeEvent::ExternalValidatorsRewards(
             crate::Event::RewardsMessageSent {
+                message_id: Default::default(),
                 rewards_command: expected_command,
             },
         ));
@@ -163,6 +164,7 @@ fn test_on_era_end_without_proper_token() {
         let events = System::events();
         let expected_not_thrown_event =
             RuntimeEvent::ExternalValidatorsRewards(crate::Event::RewardsMessageSent {
+                message_id: Default::default(),
                 rewards_command: expected_command,
             });
         assert!(

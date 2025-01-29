@@ -357,8 +357,8 @@ declare module "@polkadot/api-base/types/events" {
             /** The slashes message was sent correctly. */
             SlashesMessageSent: AugmentedEvent<
                 ApiType,
-                [slashesCommand: TpBridgeCommand],
-                { slashesCommand: TpBridgeCommand }
+                [messageId: H256, slashesCommand: TpBridgeCommand],
+                { messageId: H256; slashesCommand: TpBridgeCommand }
             >;
             /** Removed author data */
             SlashReported: AugmentedEvent<
@@ -373,8 +373,8 @@ declare module "@polkadot/api-base/types/events" {
             /** The rewards message was sent correctly. */
             RewardsMessageSent: AugmentedEvent<
                 ApiType,
-                [rewardsCommand: TpBridgeCommand],
-                { rewardsCommand: TpBridgeCommand }
+                [messageId: H256, rewardsCommand: TpBridgeCommand],
+                { messageId: H256; rewardsCommand: TpBridgeCommand }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
