@@ -1081,8 +1081,9 @@ where
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode =
             MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        
-        let external_validator_slashes_bonded_eras_timestamp = BondedErasTimestampMigration::<Runtime>(Default::default());
+
+        let external_validator_slashes_bonded_eras_timestamp =
+            BondedErasTimestampMigration::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_mmr_leaf_pallet),
