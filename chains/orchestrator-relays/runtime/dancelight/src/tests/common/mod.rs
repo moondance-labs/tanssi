@@ -1206,6 +1206,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
                             .map(|_the_bit| core_idx);
+                        let core_idx = None;
+                        
+                        assert_eq!(group_validators.len(), 1);
 
                         BackedCandidate::<T::Hash>::new(
                             candidate,
@@ -1322,7 +1325,13 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         let cores = all_cores
             .keys()
             .flat_map(|para_id| {
-                (0..1)
+                // TODO: here we need to somehow know if this is a parathread?
+                let is_parathread = Paras::is_parathread(ParaId::from(*para_id));
+                // Done, but how do we know if it bought a core or not?
+                let n = if is_parathread { 0 } else { 1 };
+                let n = 1;
+                
+                (0..n)
                     .map(|_para_local_core_idx| {
                         // Load an assignment into provider so that one is present to pop
                         let assignment = Assignment::Bulk(ParaId::from(*para_id));
@@ -1518,6 +1527,7 @@ pub fn generate_babe_equivocation_proof(
 }
 
 use sp_core::Public;
+use crate::Paras;
 use crate::weights::runtime_parachains_inclusion;
 
 /// Helper function to generate a crypto pair from seed
