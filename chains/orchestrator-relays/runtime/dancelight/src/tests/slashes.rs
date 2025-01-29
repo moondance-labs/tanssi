@@ -479,14 +479,17 @@ fn test_slashes_are_sent_to_ethereum() {
                 .count();
 
             let mut slashes_command_found: Option<Command> = None;
+            let mut message_id_found: Option<H256> = None;
             let ext_validators_slashes_event = System::events()
                 .iter()
                 .filter(|r| match &r.event {
                     RuntimeEvent::ExternalValidatorSlashes(
                         pallet_external_validator_slashes::Event::SlashesMessageSent {
                             slashes_command,
+                            message_id,
                         },
                     ) => {
+                        message_id_found = Some(*message_id);
                         slashes_command_found = Some(slashes_command.clone());
                         true
                     }
@@ -521,6 +524,8 @@ fn test_slashes_are_sent_to_ethereum() {
                 expected_slashes_command,
                 "Both slashes commands should match!"
             );
+
+            assert_eq!(message_id_found.unwrap(), read_last_entropy().into());
 
             // EthereumOutboundQueue -> queue_message -> MessageQQueuePallet (queue)
             // MessageQueuePallet on_initialize -> dispatch queue -> process_message -> EthereumOutboundQueue_process_message

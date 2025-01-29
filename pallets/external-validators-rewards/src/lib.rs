@@ -48,7 +48,7 @@ use {
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_bridge::{Command, DeliverMessage, Message, ValidateMessage},
+    tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     xcm::prelude::*,
 };
 
@@ -142,7 +142,10 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// The rewards message was sent correctly.
-        RewardsMessageSent { rewards_command: Command },
+        RewardsMessageSent {
+            message_id: H256,
+            rewards_command: Command,
+        },
     }
 
     /// Keep tracks of distributed points per validator and total.
@@ -300,10 +303,12 @@ pub mod pallet {
                     // Validate and deliver the message
                     match T::ValidateMessage::validate(&outbound_message) {
                         Ok((ticket, _fee)) => {
+                            let message_id = ticket.message_id();
                             if let Err(err) = T::OutboundQueue::deliver(ticket) {
                                 log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
                             } else {
                                 Self::deposit_event(Event::RewardsMessageSent {
+                                    message_id,
                                     rewards_command: command,
                                 });
                             }

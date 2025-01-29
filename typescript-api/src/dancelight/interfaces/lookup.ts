@@ -482,6 +482,7 @@ export default {
                 slashEra: "u32",
             },
             SlashesMessageSent: {
+                messageId: "H256",
                 slashesCommand: "TpBridgeCommand",
             },
         },
@@ -514,6 +515,7 @@ export default {
     PalletExternalValidatorsRewardsEvent: {
         _enum: {
             RewardsMessageSent: {
+                messageId: "H256",
                 rewardsCommand: "TpBridgeCommand",
             },
         },

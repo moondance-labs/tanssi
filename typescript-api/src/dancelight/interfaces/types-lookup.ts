@@ -690,6 +690,7 @@ declare module "@polkadot/types/lookup" {
         } & Struct;
         readonly isSlashesMessageSent: boolean;
         readonly asSlashesMessageSent: {
+            readonly messageId: H256;
             readonly slashesCommand: TpBridgeCommand;
         } & Struct;
         readonly type: "SlashReported" | "SlashesMessageSent";
@@ -727,6 +728,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletExternalValidatorsRewardsEvent extends Enum {
         readonly isRewardsMessageSent: boolean;
         readonly asRewardsMessageSent: {
+            readonly messageId: H256;
             readonly rewardsCommand: TpBridgeCommand;
         } & Struct;
         readonly type: "RewardsMessageSent";
