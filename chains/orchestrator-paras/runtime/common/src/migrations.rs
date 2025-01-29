@@ -1024,6 +1024,45 @@ impl<T> MigrateMMRLeafPallet<T> {
     }
 }
 
+pub struct BondedErasTimestampMigration<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for BondedErasTimestampMigration<Runtime>
+where
+    Runtime: pallet_external_validator_slashes::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_ExternalValidatorSlashesBondedErasTimestampMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use frame_support::pallet_prelude::*;
+
+        let bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+            frame_support::storage::unhashed::get(
+                &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
+            )
+            .unwrap_or_default();
+        let new_eras = bonded_eras
+            .iter()
+            .map(|(era, session)| (*era, *session, 0u64))
+            .collect();
+        pallet_external_validator_slashes::BondedEras::<Runtime>::set(new_eras);
+
+        // One db read and one db write per element, plus the on-chain storage
+        Runtime::DbWeight::get().reads_writes(1, 1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
@@ -1034,6 +1073,7 @@ where
     Runtime: pallet_session::Config<
         ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
     >,
+    Runtime: pallet_external_validator_slashes::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
@@ -1041,11 +1081,14 @@ where
             ExternalValidatorsInitialMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode =
             MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        
+        let external_validator_slashes_bonded_eras_timestamp = BondedErasTimestampMigration::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_mmr_leaf_pallet),
             Box::new(migrate_external_validators),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(external_validator_slashes_bonded_eras_timestamp),
         ]
     }
 }
