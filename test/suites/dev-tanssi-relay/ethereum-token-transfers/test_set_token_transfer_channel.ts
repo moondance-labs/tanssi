@@ -34,11 +34,19 @@ describeSuite({
                 let newParaId = 500;
 
                 const tx = await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(newChannelId, newAgentId, newParaId))
+                    .sudo(
+                        polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                            newChannelId,
+                            newAgentId,
+                            newParaId
+                        )
+                    )
                     .signAsync(alice);
-                await context.createBlock([tx]);
+                await context.createBlock([tx], { allowFailures: false });
 
-                const currentChannelIdAfter = (await polkadotJs.query.ethereumTokenTransfers.currentChannelId()).toJSON();
+                const currentChannelIdAfter = (
+                    await polkadotJs.query.ethereumTokenTransfers.currentChannelId()
+                ).toJSON();
                 const currentParalIdAfter = (await polkadotJs.query.ethereumTokenTransfers.currentParaId()).toJSON();
                 const currentAgentIdAfter = (await polkadotJs.query.ethereumTokenTransfers.currentAgentId()).toJSON();
 
