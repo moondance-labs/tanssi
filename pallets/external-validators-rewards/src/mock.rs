@@ -26,7 +26,7 @@ use {
     },
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256, MaybeEquivalence},
+        traits::{BlakeTwo256, IdentityLookup, Keccak256, MaybeEquivalence},
         BuildStorage,
     },
     xcm::prelude::*,
