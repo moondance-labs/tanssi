@@ -475,7 +475,6 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
                 // A very high number to avoid group rotation in tests
                 // Otherwise we get a 1 by default, which changes groups every block
                 group_rotation_frequency: 10000000,
-                ttl: 2,
                 ..Default::default()
             },
             async_backing_params: AsyncBackingParams {
@@ -591,7 +590,6 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
                 // A very high number to avoid group rotation in tests
                 // Otherwise we get a 1 by default, which changes groups every block
                 group_rotation_frequency: 10000000,
-                ttl: 2,
                 ..Default::default()
             },
             async_backing_params: AsyncBackingParams {
