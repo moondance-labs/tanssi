@@ -131,7 +131,9 @@ pub fn ethereum_system_handler_nonce() -> u64 {
 }
 
 #[derive(Clone, Decode, Default, Encode)]
-pub struct DummyTicket;
+pub struct DummyTicket {
+    message_id: H256,
+}
 
 impl TicketInfo for DummyTicket {
     fn message_id(&self) -> H256 {

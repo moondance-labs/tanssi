@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
-import { expectEventCount } from "../../../helpers/events"
+import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
     id: "DTR1801",

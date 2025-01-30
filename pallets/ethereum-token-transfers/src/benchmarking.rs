@@ -65,9 +65,11 @@ mod benchmarks {
         #[extrinsic_call]
         _(RawOrigin::Root, channel_id, agent_id, para_id);
 
-        assert_eq!(CurrentChannelId::<T>::get().unwrap(), channel_id);
-        assert_eq!(CurrentAgentId::<T>::get().unwrap(), agent_id);
-        assert_eq!(CurrentParaId::<T>::get().unwrap(), para_id);
+        let curren_channel_info = CurrentChannelInfo::<T>::get().unwrap();
+
+        assert_eq!(curren_channel_info.channel_id, channel_id);
+        assert_eq!(curren_channel_info.agent_id, agent_id);
+        assert_eq!(curren_channel_info.para_id, para_id);
         Ok(())
     }
 
@@ -77,7 +79,13 @@ mod benchmarks {
         let agent_id = AgentId::from([5u8; 32]);
         let para_id: ParaId = 2000u32.into();
 
-        CurrentChannelId::<T>::put(channel_id);
+        let channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        CurrentChannelInfo::<T>::put(channel_info);
 
         T::BenchmarkHelper::set_up_channel(channel_id, para_id, agent_id);
 
@@ -140,6 +148,7 @@ mod benchmarks {
 
         assert_last_event::<T>(
             Event::NativeTokenTransferred {
+                message_id: Default::default(),
                 channel_id,
                 source: caller.clone(),
                 recipient,

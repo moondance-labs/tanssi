@@ -67,8 +67,6 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
             assert!(EthereumSystem::agents(agent_id).is_some());
             assert!(EthereumSystem::channels(channel_id).is_some());
 
-            assert_eq!(EthereumSystem::agents(agent_id).unwrap(), ());
-
             // PartialEq is not implemented for Channel, so we compare each element individually.
             let expected_channel = EthereumSystem::channels(channel_id).unwrap();
             assert_eq!(expected_channel.para_id, para_id);

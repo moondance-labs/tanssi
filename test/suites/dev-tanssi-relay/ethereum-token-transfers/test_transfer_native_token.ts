@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { MultiLocation } from "../../../util/xcm";
-import { expectEventCount } from "../../../helpers/events"
+import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
     id: "DTR1702",
@@ -23,9 +23,9 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                let newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
-                let newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-                let newParaId = 500;
+                const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
+                const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
+                const newParaId = 500;
 
                 // Set channel info on EthereumTokenTransfers pallet.
                 const tx1 = await polkadotJs.tx.sudo
@@ -60,15 +60,15 @@ describeSuite({
 
                 await context.createBlock([tx2], { allowFailures: false });
 
-                let recipient = "0x0000000000000000000000000000000000000007";
-                let amount = 1000;
+                const recipient = "0x0000000000000000000000000000000000000007";
+                const amount = 1000;
 
                 // Finally call transferNativeToken extrinsic.
                 const tx3 = await polkadotJs.tx.ethereumTokenTransfers
                     .transferNativeToken(amount, recipient)
                     .signAsync(alice);
-                await context.createBlock([tx3], {allowFailures: false});
-                
+                await context.createBlock([tx3], { allowFailures: false });
+
                 // Check events and digest were emitted correctly.
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
@@ -82,7 +82,7 @@ describeSuite({
                     MessageAccepted: 1,
                     Processed: 1,
                     MessageQueued: 1,
-                    NativeTokenTransferred: 1
+                    NativeTokenTransferred: 1,
                 });
 
                 // Also a MessagesCommitted event with the same hash as the digest log

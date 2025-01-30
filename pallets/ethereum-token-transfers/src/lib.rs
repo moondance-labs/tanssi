@@ -31,7 +31,8 @@
 //!
 //! ### transfer_native_token:
 //!
-//! Used to perform the actual sending of the tokens, it requires to specify an amount and a recipient.
+//! Used to perform the actual sending of the tokens, it requires to specify an amount and a recipient,
+//! which is a H160 account on the Ethereum side.
 //!
 //! Inside it, the message is built using the MintForeignToken command. Once the message is validated,
 //! the amount is transferred from the caller to the EthereumSovereignAccount. This allows to prevent
@@ -275,6 +276,8 @@ pub mod pallet {
                     )?;
 
                     let message_id = ticket.message_id();
+
+                    log::error!("MESSAGE ID: {:?}", message_id);
 
                     T::OutboundQueue::deliver(ticket)
                         .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;

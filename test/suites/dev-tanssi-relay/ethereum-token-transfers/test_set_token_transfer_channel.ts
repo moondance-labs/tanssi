@@ -21,17 +21,14 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                const currentChannelId = (await polkadotJs.query.ethereumTokenTransfers.currentChannelId()).toJSON();
-                const currentParalId = (await polkadotJs.query.ethereumTokenTransfers.currentParaId()).toJSON();
-                const currentAgentId = (await polkadotJs.query.ethereumTokenTransfers.currentAgentId()).toJSON();
+                const currentChannelInfo = (
+                    await polkadotJs.query.ethereumTokenTransfers.currentChannelInfo()
+                ).toJSON();
+                expect(currentChannelInfo).to.be.null;
 
-                expect(currentChannelId).to.be.null;
-                expect(currentParalId).to.be.null;
-                expect(currentAgentId).to.be.null;
-
-                let newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
-                let newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-                let newParaId = 500;
+                const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
+                const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
+                const newParaId = 500;
 
                 const tx = await polkadotJs.tx.sudo
                     .sudo(
@@ -44,15 +41,13 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([tx], { allowFailures: false });
 
-                const currentChannelIdAfter = (
-                    await polkadotJs.query.ethereumTokenTransfers.currentChannelId()
+                const currentChannelInfoAfter = (
+                    await polkadotJs.query.ethereumTokenTransfers.currentChannelInfo()
                 ).toJSON();
-                const currentParalIdAfter = (await polkadotJs.query.ethereumTokenTransfers.currentParaId()).toJSON();
-                const currentAgentIdAfter = (await polkadotJs.query.ethereumTokenTransfers.currentAgentId()).toJSON();
 
-                expect(currentChannelIdAfter).to.eq(newChannelId);
-                expect(currentParalIdAfter).to.eq(newParaId);
-                expect(currentAgentIdAfter).to.eq(newAgentId);
+                expect(currentChannelInfoAfter["channelId"]).to.eq(newChannelId);
+                expect(currentChannelInfoAfter["paraId"]).to.eq(newParaId);
+                expect(currentChannelInfoAfter["agentId"]).to.eq(newAgentId);
             },
         });
     },
