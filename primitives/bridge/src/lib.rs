@@ -43,7 +43,7 @@ use {
     scale_info::TypeInfo,
     snowbridge_core::{
         outbound::{Fee, SendError},
-        ChannelId,
+        AgentId, ChannelId, ParaId,
     },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     snowbridge_router_primitives::inbound::{
@@ -52,7 +52,7 @@ use {
     sp_core::blake2_256,
     sp_core::hashing,
     sp_core::H256,
-    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, traits::Convert, DispatchResult, RuntimeDebug},
     sp_std::vec::Vec,
 };
 
@@ -387,4 +387,9 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
     pub fn from_chain_id_with_key(chain_id: &u64, key: [u8; 20]) -> [u8; 32] {
         (b"ethereum-chain", chain_id, key).using_encoded(blake2_256)
     }
+}
+
+/// Trait to manage channel creation inside EthereumSystem pallet.
+pub trait EthereumSystemChannelManager {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult;
 }

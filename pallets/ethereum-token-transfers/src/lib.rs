@@ -72,8 +72,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
     sp_std::vec,
-    tp_bridge::TicketInfo,
-    tp_traits::EthereumSystemChannelManager,
+    tp_bridge::{EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 

@@ -40,8 +40,7 @@ use {
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
     sp_runtime::DispatchResult,
-    tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
-    tp_traits::EthereumSystemChannelManager,
+    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemChannelManager},
 };
 
 // Ethereum Bridge

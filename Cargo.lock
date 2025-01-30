@@ -18920,7 +18920,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "snowbridge-core",
  "sp-core",
  "sp-runtime",
  "sp-std",

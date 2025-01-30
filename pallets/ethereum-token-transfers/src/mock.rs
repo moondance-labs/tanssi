@@ -32,8 +32,7 @@ use {
         BuildStorage, DispatchResult,
     },
     sp_std::cell::RefCell,
-    tp_bridge::TicketInfo,
-    tp_traits::EthereumSystemChannelManager,
+    tp_bridge::{EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
