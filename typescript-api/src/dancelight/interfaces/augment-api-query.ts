@@ -48,6 +48,7 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
+    PalletEthereumTokenTransfersChannelInfo,
     PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
@@ -772,6 +773,16 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [StagingXcmV4Location]>;
             pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumTokenTransfers: {
+            currentChannelInfo: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletEthereumTokenTransfersChannelInfo>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
