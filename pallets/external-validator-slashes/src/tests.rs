@@ -30,7 +30,7 @@ use {
 #[test]
 fn root_can_inject_manual_offence() {
     new_test_ext().execute_with(|| {
-        start_era(0, 0);
+        start_era(0, 0, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -41,7 +41,7 @@ fn root_can_inject_manual_offence() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 0,
+                timestamp: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
@@ -56,7 +56,7 @@ fn root_can_inject_manual_offence() {
 #[test]
 fn cannot_inject_future_era_offence() {
     new_test_ext().execute_with(|| {
-        start_era(0, 0);
+        start_era(0, 0, 0);
         assert_noop!(
             ExternalValidatorSlashes::force_inject_slash(
                 RuntimeOrigin::root(),
@@ -73,7 +73,7 @@ fn cannot_inject_future_era_offence() {
 #[test]
 fn cannot_inject_era_offence_too_far_in_the_past() {
     new_test_ext().execute_with(|| {
-        start_era(10, 0);
+        start_era(10, 0, 10);
         //Bonding period is 5, we cannot inject slash for era 4
         assert_noop!(
             ExternalValidatorSlashes::force_inject_slash(
@@ -91,7 +91,7 @@ fn cannot_inject_era_offence_too_far_in_the_past() {
 #[test]
 fn root_can_cance_deferred_slash() {
     new_test_ext().execute_with(|| {
-        start_era(1, 0);
+        start_era(1, 0, 1);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -112,7 +112,7 @@ fn root_can_cance_deferred_slash() {
 #[test]
 fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
     new_test_ext().execute_with(|| {
-        start_era(1, 0);
+        start_era(1, 0, 1);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -121,7 +121,7 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
             1
         ));
 
-        start_era(4, 0);
+        start_era(4, 0, 4);
 
         assert_noop!(
             ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
@@ -133,11 +133,11 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
 #[test]
 fn test_after_bonding_period_we_can_remove_slashes() {
     new_test_ext().execute_with(|| {
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
 
         // we are storing a tuple (era index, start_session_block)
-        assert_eq!(BondedEras::<Test>::get(), [(0, 0), (1, 1)]);
+        assert_eq!(BondedEras::<Test>::get(), [(0, 0, 0), (1, 1, 1)]);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -149,7 +149,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 0,
+                timestamp: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
@@ -158,12 +158,12 @@ fn test_after_bonding_period_we_can_remove_slashes() {
             }]
         );
 
-        Pallet::<Test>::on_era_start(3, 3);
+        Pallet::<Test>::on_era_start(3, 3, 3);
 
-        start_era(8, 8);
+        start_era(8, 8, 8);
 
         // whenever we start the 6th era, we can remove everything from era 3
-        Pallet::<Test>::on_era_start(9, 9);
+        Pallet::<Test>::on_era_start(9, 9, 9);
 
         assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
     });
@@ -172,8 +172,8 @@ fn test_after_bonding_period_we_can_remove_slashes() {
 #[test]
 fn test_on_offence_injects_offences() {
     new_test_ext().execute_with(|| {
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 // 1 and 2 are invulnerables
@@ -200,8 +200,8 @@ fn test_on_offence_injects_offences() {
 #[test]
 fn test_on_offence_does_not_work_for_invulnerables() {
     new_test_ext().execute_with(|| {
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         // account 1 invulnerable
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
@@ -220,7 +220,7 @@ fn test_on_offence_does_not_work_for_invulnerables() {
 fn defer_period_of_zero_confirms_immediately_slashes() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
+        start_era(0, 0, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -231,7 +231,7 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 0,
+                timestamp: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: true,
@@ -246,7 +246,7 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
 fn we_cannot_cancel_anything_with_defer_period_zero() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
+        start_era(0, 0, 0);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
             RuntimeOrigin::root(),
             0,
@@ -265,8 +265,8 @@ fn we_cannot_cancel_anything_with_defer_period_zero() {
 fn test_on_offence_defer_period_0() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 // 1 and 2 are invulnerables
@@ -288,7 +288,7 @@ fn test_on_offence_defer_period_0() {
                 slash_id: 0
             }]
         );
-        start_era(2, 2);
+        start_era(2, 2, 2);
         roll_one_block();
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
@@ -299,8 +299,8 @@ fn test_on_offence_defer_period_0() {
 fn test_slashes_command_matches_event() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         Pallet::<Test>::on_offence(
             &[OffenceDetails {
                 // 1 and 2 are invulnerables
@@ -323,7 +323,7 @@ fn test_slashes_command_matches_event() {
                 slash_id: 0
             }]
         );
-        start_era(2, 2);
+        start_era(2, 2, 2);
         roll_one_block();
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
@@ -352,8 +352,8 @@ fn test_slashes_command_matches_event() {
 fn test_on_offence_defer_period_0_messages_get_queued() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         // The limit is 20,
         for i in 0..25 {
             Pallet::<Test>::on_offence(
@@ -368,7 +368,7 @@ fn test_on_offence_defer_period_0_messages_get_queued() {
         }
 
         assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
-        start_era(2, 2);
+        start_era(2, 2, 2);
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
 
         // this triggers on_initialize
@@ -406,8 +406,8 @@ fn test_account_id_encoding() {
 fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
-        start_era(0, 0);
-        start_era(1, 1);
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
         // The limit is 20,
         for i in 0..25 {
             Pallet::<Test>::on_offence(
@@ -421,7 +421,7 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
             );
         }
         assert_eq!(Slashes::<Test>::get(get_slashing_era(1)).len(), 25);
-        start_era(2, 2);
+        start_era(2, 2, 2);
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 25);
 
         // this triggers on_initialize
@@ -444,7 +444,7 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
             );
         }
 
-        start_era(3, 3);
+        start_era(3, 3, 3);
         assert_eq!(UnreportedSlashesQueue::<Test>::get().len(), 30);
 
         // this triggers on_initialize
@@ -459,8 +459,8 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
     });
 }
 
-fn start_era(era_index: EraIndex, session_index: SessionIndex) {
-    Pallet::<Test>::on_era_start(era_index, session_index);
+fn start_era(era_index: EraIndex, session_index: SessionIndex, timestamp: u64) {
+    Pallet::<Test>::on_era_start(era_index, session_index, timestamp);
     crate::mock::MockEraIndexProvider::with_era(era_index);
 }
 

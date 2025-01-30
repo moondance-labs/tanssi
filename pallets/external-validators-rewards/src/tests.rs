@@ -75,12 +75,12 @@ fn history_limit() {
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 1);
 
-        ExternalValidatorsRewards::on_era_start(10, 0);
+        ExternalValidatorsRewards::on_era_start(10, 0, 10);
         let storage_eras =
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 1, "shouldn't erase data yet");
 
-        ExternalValidatorsRewards::on_era_start(11, 0);
+        ExternalValidatorsRewards::on_era_start(11, 0, 11);
         let storage_eras =
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 0, "data should be erased now");

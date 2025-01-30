@@ -132,8 +132,8 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 }
 
 pub struct TimestampProvider;
-impl Get<u64> for TimestampProvider {
-    fn get() -> u64 {
+impl tp_traits::ExternalTimestampProvider for TimestampProvider {
+    fn get_external_timestamp() -> u64 {
         Timestamp::get()
     }
 }
