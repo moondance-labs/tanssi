@@ -36,8 +36,12 @@ use {
         inbound::{Log, Message},
         PRIMARY_GOVERNANCE_CHANNEL,
     },
-    snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+    snowbridge_router_primitives::inbound::{
+        envelope::{Envelope, OutboundMessageAccepted},
+        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
     sp_core::H256,
+    sp_runtime::AccountId32,
     tp_bridge::{
         symbiotic_message_processor::{
             InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
@@ -145,5 +149,53 @@ fn receive_msg_from_eth_validators_are_updated() {
         let expected_validators = payload_validators.clone();
 
         assert_eq!(new_validators, expected_validators);
+    });
+}
+
+#[test]
+fn receive_native_tokens_from_eth_processed_successful() {
+    Dancelight::execute_with(|| {
+        let send_native_token_channel = ChannelId::new(hex!(
+            "0000000000000000000000000000000000000000000000000000000000000001"
+        ));
+
+        let origin =
+            <Runtime as frame_system::Config>::RuntimeOrigin::signed(DancelightSender::get());
+
+        let payload = VersionedXcmMessage::V1(MessageV1 {
+            chain_id: 1,
+            command: Command::SendNativeToken {
+                token_id: Default::default(),
+                destination: AccountId32::from(AccountKeyring::Alice),
+                amount: 100,
+                fee: 0,
+            },
+        });
+
+        let event = OutboundMessageAccepted {
+            channel_id: <[u8; 32]>::from(PRIMARY_GOVERNANCE_CHANNEL).into(),
+            nonce: 1,
+            message_id: Default::default(),
+            payload: payload.encode(),
+        };
+
+        let message = Message {
+            event_log: Log {
+                // gateway address
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(
+                ),
+                topics: payload
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0 .0))
+                    .collect(),
+                data: payload.encode_data(),
+            },
+            proof: mock_snowbridge_message_proof(),
+        };
+
+        assert_ok!(
+            <Dancelight as DancelightRelayPallet>::EthereumInboundQueue::submit(origin, message)
+        );
     });
 }
