@@ -1317,8 +1317,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                 )
             })
             .collect();
-
-
+        
         let mut disputed_cores = (self.backed_and_concluding_paras.len() as u32..
             ((used_cores - 0) as u32))
             .into_iter()
@@ -1332,16 +1331,17 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         let cores = all_cores
             .keys()
             .flat_map(|para_id| {
-                // TODO: here we need to somehow know if this is a parathread?
-                let is_parathread = Paras::is_parathread(ParaId::from(*para_id));
-                // Done, but how do we know if it bought a core or not?
-                let n = if is_parathread { 0 } else { 1 };
-                let n = 1;
-                
-                (0..n)
+                (0..1)
                     .map(|_para_local_core_idx| {
+                        let is_parathread = Paras::is_parathread(ParaId::from(*para_id));
+
                         // Load an assignment into provider so that one is present to pop
-                        let assignment = Assignment::Bulk(ParaId::from(*para_id));
+                        let assignment = if is_parathread {
+                            // TODO: core_idx or _para_local_core_idx
+                            Assignment::Pool { para_id: ParaId::from(*para_id), core_index: CoreIndex(core_idx) }
+                        } else {
+                            Assignment::Bulk(ParaId::from(*para_id))
+                        };
 
                         core_idx += 1;
                         (CoreIndex(core_idx - 1), [assignment].into())
