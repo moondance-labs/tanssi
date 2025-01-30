@@ -21,8 +21,8 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
-pallet-external-validators = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
+pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true }
@@ -112,6 +112,7 @@ runtime-benchmarks = [
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -123,6 +124,7 @@ try-runtime = [
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-invulnerables/try-runtime",
