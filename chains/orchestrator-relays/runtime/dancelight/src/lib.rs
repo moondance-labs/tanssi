@@ -1117,8 +1117,8 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
         let assigned_paras: Vec<ParaId> = assigned_collators
             .container_chains
             .iter()
-            .filter_map(|(&para_id, _)| {
-                if Paras::is_parachain(para_id) {
+            .filter_map(|(&para_id, collators)| {
+                if Paras::is_parachain(para_id) && collators.len() > 0 {
                     Some(para_id)
                 } else {
                     None
@@ -1141,9 +1141,14 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(
                     core_idx,
                 )?;
+
+            // Let's check that we have collators before allowing an assignment
             if assigned_collators
                 .container_chains
-                .contains_key(&assignment.para_id())
+                .get(&assignment.para_id())
+                .unwrap_or(&vec![])
+                .len()
+                > 0
             {
                 Some(assignment)
             } else {
