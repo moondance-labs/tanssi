@@ -201,6 +201,7 @@ dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-consta
 fast-runtime = [ "dancelight-runtime?/fast-runtime" ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
+	"dancelight-runtime-constants?/runtime-benchmarks",
 	"dancelight-runtime?/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",

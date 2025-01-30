@@ -60,6 +60,7 @@ use {
         BuildStorage, Digest, DigestItem,
     },
     sp_std::collections::btree_map::BTreeMap,
+    sp_storage::well_known_keys,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -73,6 +74,12 @@ pub use crate::{
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
+
+pub fn read_last_entropy() -> [u8; 32] {
+    let mut last = [0u8; 32];
+    sp_io::storage::read(well_known_keys::INTRABLOCK_ENTROPY, &mut last[..], 0);
+    last
+}
 
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;

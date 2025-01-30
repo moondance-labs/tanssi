@@ -50,7 +50,7 @@ use {
 };
 
 use snowbridge_core::ChannelId;
-use tp_bridge::{Command, DeliverMessage, Message, SlashData, ValidateMessage};
+use tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage};
 
 pub use pallet::*;
 
@@ -79,7 +79,10 @@ pub mod pallet {
             slash_era: EraIndex,
         },
         /// The slashes message was sent correctly.
-        SlashesMessageSent { slashes_command: Command },
+        SlashesMessageSent {
+            message_id: H256,
+            slashes_command: Command,
+        },
     }
 
     #[pallet::config]
@@ -563,10 +566,12 @@ impl<T: Config> Pallet<T> {
         // Validate and deliver the message
         match T::ValidateMessage::validate(&outbound_message) {
             Ok((ticket, _fee)) => {
+                let message_id = ticket.message_id();
                 if let Err(err) = T::OutboundQueue::deliver(ticket) {
                     log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
                 } else {
                     Self::deposit_event(Event::SlashesMessageSent {
+                        message_id,
                         slashes_command: command,
                     });
                 }

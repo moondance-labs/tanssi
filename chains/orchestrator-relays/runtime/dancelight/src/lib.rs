@@ -1094,8 +1094,8 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
         let assigned_paras: Vec<ParaId> = assigned_collators
             .container_chains
             .iter()
-            .filter_map(|(&para_id, _)| {
-                if Paras::is_parachain(para_id) {
+            .filter_map(|(&para_id, collators)| {
+                if Paras::is_parachain(para_id) && collators.len() > 0 {
                     Some(para_id)
                 } else {
                     None
@@ -1118,9 +1118,14 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 parachains_assigner_on_demand::Pallet::<Runtime>::pop_assignment_for_core(
                     core_idx,
                 )?;
+
+            // Let's check that we have collators before allowing an assignment
             if assigned_collators
                 .container_chains
-                .contains_key(&assignment.para_id())
+                .get(&assignment.para_id())
+                .unwrap_or(&vec![])
+                .len()
+                > 0
             {
                 Some(assignment)
             } else {
@@ -1396,6 +1401,11 @@ parameter_types! {
     // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
     // to properly write integration tests.
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+
+    pub RewardTokenLocation: Location = xcm_config::TokenLocation::get().reanchored(
+        &EthereumLocation::get(),
+        &xcm_config::UniversalLocation::get()
+    ).expect("unable to reanchor reward token");
 }
 
 pub struct GetWhitelistedValidators;
@@ -1405,6 +1415,15 @@ impl Get<Vec<AccountId>> for GetWhitelistedValidators {
     }
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct RewardsBenchHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl tp_bridge::TokenSetterBenchmarkHelperTrait for RewardsBenchHelper {
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+}
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1422,7 +1441,11 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
+    type TokenLocationReanchored = RewardTokenLocation;
+    type TokenIdFromLocation = EthereumSystem;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = RewardsBenchHelper;
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {

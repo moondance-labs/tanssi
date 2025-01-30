@@ -10561,6 +10561,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std 14.0.0 (git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412)",
+ "staging-xcm",
  "tp-bridge",
  "tp-traits",
 ]
@@ -20381,6 +20382,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std 14.0.0 (git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412)",
+ "staging-xcm",
  "staging-xcm-executor",
 ]
 
