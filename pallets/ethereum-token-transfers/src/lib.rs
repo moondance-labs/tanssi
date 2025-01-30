@@ -14,7 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! TODO: pallet's description
+//! EthereumTokenTransfers pallet.
+//!
+//! This pallet takes care of sending the native Starlight token from Starlight to Ethereum.
+//!
+//! It does this by sending a MintForeignToken command to Ethereum through a
+//! specific channel_id (which is also stored in this pallet).
+//!
+//! ## Extrinsics:
+//!
+//! ### set_token_transfer_channel:
+//!
+//! Only callable by root. Used to specify which channel_id
+//! will be used to send the tokens through. It also receives the para_id and
+//! agent_id params corresponding to the channel specified.
+//!
+//! ### transfer_native_token:
+//!
+//! Used to perform the actual sending of the tokens, it requires to specify an amount and a recipient.
+//!
+//! Inside it, the message is built using the MintForeignToken command. Once the message is validated,
+//! the amount is transferred from the caller to the EthereumSovereignAccount. This allows to prevent
+//! double-spending and to track how much of the native token is sent to Ethereum.
+//!
+//! After that, the message is delivered to Ethereum through the T::OutboundQueue implementation.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -48,6 +71,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
     sp_std::vec,
+    tp_bridge::TicketInfo,
     tp_traits::EthereumSystemChannelManager,
     xcm::prelude::*,
 };
@@ -56,6 +80,14 @@ use {
 use tp_bridge::TokenChannelSetterBenchmarkHelperTrait;
 
 pub use pallet::*;
+
+/// Information of the token-sending channel stored in this pallet.
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+pub struct ChannelInfo {
+    pub channel_id: ChannelId,
+    pub para_id: ParaId,
+    pub agent_id: AgentId,
+}
 
 pub type BalanceOf<T> =
     <<T as pallet::Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
@@ -81,7 +113,7 @@ pub mod pallet {
             + fungible::Mutate<Self::AccountId>;
 
         /// Validate and send a message to Ethereum.
-        type OutboundQueue: SendMessage<Balance = BalanceOf<Self>>;
+        type OutboundQueue: SendMessage<Balance = BalanceOf<Self>, Ticket: TicketInfo>;
 
         /// Handler for EthereumSystem pallet. Commonly used to manage channel creation.
         type EthereumSystemHandler: EthereumSystemChannelManager;
@@ -92,7 +124,7 @@ pub mod pallet {
         /// Account in which fees will be minted.
         type FeesAccount: Get<Self::AccountId>;
 
-        /// Token Location from Ethereum's point of view.
+        /// Token Location from the external chain's point of view.
         type TokenLocationReanchored: Get<Location>;
 
         /// How to convert from a given Location to a specific TokenId.
@@ -110,13 +142,10 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Information for the channel was set properly.
-        ChannelInfoSet {
-            channel_id: ChannelId,
-            para_id: ParaId,
-            agent_id: AgentId,
-        },
+        ChannelInfoSet { channel_info: ChannelInfo },
         /// Some native token was successfully transferred to Ethereum.
         NativeTokenTransferred {
+            message_id: H256,
             channel_id: ChannelId,
             source: T::AccountId,
             recipient: H160,
@@ -131,8 +160,8 @@ pub mod pallet {
     pub enum Error<T> {
         /// The requested ChannelId is already present in this pallet.
         ChannelIdAlreadyExists,
-        /// The ChannelId has not been set on this pallet yet.
-        ChannelIdNotSet,
+        /// The channel's information has not been set on this pallet yet.
+        ChannelInfoNotSet,
         /// The requested ParaId is already present in this pallet.
         ParaIdAlreadyExists,
         /// The requested AgentId is already present in this pallet.
@@ -150,23 +179,13 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     // Storage
-    // TODO: create a struct to hold the three elements at once?
     #[pallet::storage]
-    #[pallet::getter(fn current_channel_id)]
-    pub type CurrentChannelId<T: Config> = StorageValue<_, ChannelId, OptionQuery>;
-
-    #[pallet::storage]
-    #[pallet::getter(fn current_para_id)]
-    pub type CurrentParaId<T: Config> = StorageValue<_, ParaId, OptionQuery>;
-
-    #[pallet::storage]
-    #[pallet::getter(fn current_agent_id)]
-    pub type CurrentAgentId<T: Config> = StorageValue<_, AgentId, OptionQuery>;
+    #[pallet::getter(fn current_channel_info)]
+    pub type CurrentChannelInfo<T: Config> = StorageValue<_, ChannelInfo, OptionQuery>;
 
     // Calls
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        // TODO: docs
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::set_token_transfer_channel())]
         pub fn set_token_transfer_channel(
@@ -177,38 +196,39 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            let current_channel_id = CurrentChannelId::<T>::get();
-            let current_para_id = CurrentParaId::<T>::get();
-            let current_agent_id = CurrentAgentId::<T>::get();
+            if let Some(channel_info) = CurrentChannelInfo::<T>::get() {
+                if channel_info.channel_id == channel_id {
+                    return Err(Error::<T>::ChannelIdAlreadyExists.into());
+                }
 
-            if current_channel_id == Some(channel_id) {
-                return Err(Error::<T>::ChannelIdAlreadyExists.into());
+                if channel_info.para_id == para_id {
+                    return Err(Error::<T>::ParaIdAlreadyExists.into());
+                }
+
+                if channel_info.agent_id == agent_id {
+                    return Err(Error::<T>::AgentIdAlreadyExists.into());
+                }
             }
 
-            if current_para_id == Some(para_id) {
-                return Err(Error::<T>::ParaIdAlreadyExists.into());
-            }
-
-            if current_agent_id == Some(agent_id) {
-                return Err(Error::<T>::AgentIdAlreadyExists.into());
-            }
-
-            CurrentChannelId::<T>::put(channel_id);
-            CurrentParaId::<T>::put(para_id);
-            CurrentAgentId::<T>::put(agent_id);
-
-            T::EthereumSystemHandler::create_channel(channel_id, agent_id, para_id)?;
-
-            Self::deposit_event(Event::<T>::ChannelInfoSet {
+            let channel_info = ChannelInfo {
                 channel_id,
                 para_id,
                 agent_id,
-            });
+            };
+
+            CurrentChannelInfo::<T>::put(channel_info.clone());
+
+            T::EthereumSystemHandler::create_channel(
+                channel_info.channel_id,
+                channel_info.agent_id,
+                channel_info.para_id,
+            )?;
+
+            Self::deposit_event(Event::<T>::ChannelInfoSet { channel_info });
 
             Ok(())
         }
 
-        // TODO: docs
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::transfer_native_token())]
         pub fn transfer_native_token(
@@ -218,8 +238,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let source = ensure_signed(origin)?;
 
-            if let Some(channel_id) = CurrentChannelId::<T>::get() {
-                // TODO: which recipient should we use? Is it okay to receive it via params?
+            if let Some(channel_info) = CurrentChannelInfo::<T>::get() {
                 let token_location = T::TokenLocationReanchored::get();
                 let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
@@ -232,7 +251,7 @@ pub mod pallet {
 
                     let message = SnowbridgeMessage {
                         id: None,
-                        channel_id,
+                        channel_id: channel_info.channel_id,
                         command,
                     };
 
@@ -255,11 +274,14 @@ pub mod pallet {
                         Preservation::Preserve,
                     )?;
 
+                    let message_id = ticket.message_id();
+
                     T::OutboundQueue::deliver(ticket)
                         .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
 
                     Self::deposit_event(Event::<T>::NativeTokenTransferred {
-                        channel_id,
+                        message_id,
+                        channel_id: channel_info.channel_id,
                         source,
                         recipient,
                         token_id,
@@ -272,7 +294,7 @@ pub mod pallet {
                     return Err(Error::<T>::UnknownLocationForToken.into());
                 }
             } else {
-                return Err(Error::<T>::ChannelIdNotSet.into());
+                return Err(Error::<T>::ChannelInfoNotSet.into());
             }
         }
     }

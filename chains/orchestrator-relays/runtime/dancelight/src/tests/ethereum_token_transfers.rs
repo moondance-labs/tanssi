@@ -19,15 +19,14 @@
 use {
     crate::{
         tests::common::*, Balances, EthereumSovereignAccount, EthereumSystem,
-        EthereumTokenTransfers, RuntimeEvent, TreasuryAccount,
+        EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
     },
-    frame_support::{assert_noop, assert_ok},
-    pallet_xcm::Origin as XcmOrigin,
-    snowbridge_core::{outbound::OperatingMode, AgentId, Channel, ChannelId, ParaId},
+    frame_support::assert_ok,
+    snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::{H160, H256},
-    sp_runtime::DispatchError::BadOrigin,
+    sp_runtime::traits::MaybeEquivalence,
     sp_std::vec,
-    xcm::latest::{Junction::Parachain, Location},
+    xcm::{latest::Location, VersionedLocation},
 };
 
 #[test]
@@ -47,9 +46,7 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
 
-            assert_eq!(EthereumTokenTransfers::current_channel_id(), None);
-            assert_eq!(EthereumTokenTransfers::current_para_id(), None);
-            assert_eq!(EthereumTokenTransfers::current_agent_id(), None);
+            assert_eq!(EthereumTokenTransfers::current_channel_info(), None);
 
             assert!(EthereumSystem::agents(agent_id).is_none());
             assert!(EthereumSystem::channels(channel_id).is_none());
@@ -61,12 +58,11 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
                 para_id
             ));
 
-            assert_eq!(
-                EthereumTokenTransfers::current_channel_id(),
-                Some(channel_id)
-            );
-            assert_eq!(EthereumTokenTransfers::current_para_id(), Some(para_id));
-            assert_eq!(EthereumTokenTransfers::current_agent_id(), Some(agent_id));
+            let new_channel_info = EthereumTokenTransfers::current_channel_info();
+
+            assert_eq!(new_channel_info.clone().unwrap().channel_id, channel_id);
+            assert_eq!(new_channel_info.clone().unwrap().para_id, para_id);
+            assert_eq!(new_channel_info.unwrap().agent_id, agent_id);
 
             assert!(EthereumSystem::agents(agent_id).is_some());
             assert!(EthereumSystem::channels(channel_id).is_some());
@@ -93,6 +89,19 @@ fn test_transfer_native_token() {
         .build()
         .execute_with(|| {
             run_to_block(2);
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            run_to_block(4);
             let channel_id = ChannelId::new([5u8; 32]);
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
@@ -137,6 +146,7 @@ fn test_transfer_native_token() {
             );
 
             // Check event's integrity.
+            let mut message_id_found: Option<H256> = None;
             let mut channel_id_found = ChannelId::default();
             let mut source_found = AccountId::from([0u8; 32]);
             let mut recipient_found = H160::default();
@@ -149,6 +159,7 @@ fn test_transfer_native_token() {
                 .filter(|r| match &r.event {
                     RuntimeEvent::EthereumTokenTransfers(
                         pallet_ethereum_token_transfers::Event::NativeTokenTransferred {
+                            message_id,
                             channel_id,
                             source,
                             recipient,
@@ -157,6 +168,7 @@ fn test_transfer_native_token() {
                             fee,
                         },
                     ) => {
+                        message_id_found = Some(*message_id);
                         channel_id_found = *channel_id;
                         source_found = source.clone();
                         recipient_found = *recipient;
@@ -174,12 +186,14 @@ fn test_transfer_native_token() {
                 "NativeTokenTransferred event should be emitted!"
             );
 
+            let expected_token_id = EthereumSystem::convert_back(&TokenLocationReanchored::get());
+
             // Check channel data and transfer info.
+            assert_eq!(message_id_found.unwrap(), read_last_entropy().into());
             assert_eq!(channel_id_found, channel_id);
             assert_eq!(source_found, AccountId::from(ALICE));
             assert_eq!(recipient_found, recipient);
-            // TODO: check for the proper token_id here
-            assert_eq!(token_id_found, H256::default());
+            assert_eq!(token_id_found, expected_token_id.unwrap());
             assert_eq!(amount_found, amount_to_transfer);
 
             // Check balances consistency.

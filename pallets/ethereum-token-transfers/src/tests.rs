@@ -49,11 +49,15 @@ fn test_set_token_transfer_channel_only_callable_by_root() {
             para_id
         ));
 
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::ChannelInfoSet {
-                channel_id,
-                para_id,
-                agent_id,
+                channel_info: expected_channel_info,
             },
         ));
 
@@ -76,11 +80,15 @@ fn test_cannot_register_existing_channel_id() {
             para_id
         ));
 
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::ChannelInfoSet {
-                channel_id,
-                para_id,
-                agent_id,
+                channel_info: expected_channel_info,
             },
         ));
 
@@ -116,11 +124,15 @@ fn test_cannot_register_existing_para_id() {
             para_id
         ));
 
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::ChannelInfoSet {
-                channel_id,
-                para_id,
-                agent_id,
+                channel_info: expected_channel_info,
             },
         ));
 
@@ -159,11 +171,15 @@ fn test_cannot_register_existing_agent_id() {
             para_id_2000
         ));
 
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id: para_id_2000,
+            agent_id,
+        };
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::ChannelInfoSet {
-                channel_id,
-                para_id: para_id_2000,
-                agent_id,
+                channel_info: expected_channel_info,
             },
         ));
 
@@ -190,7 +206,7 @@ fn test_cannot_register_existing_agent_id() {
 fn test_transfer_native_token_channel_id_not_set() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
-        assert_eq!(CurrentChannelId::<Test>::get(), None);
+        assert_eq!(CurrentChannelInfo::<Test>::get(), None);
 
         assert_noop!(
             EthereumTokenTransfers::transfer_native_token(
@@ -198,7 +214,7 @@ fn test_transfer_native_token_channel_id_not_set() {
                 10u128,
                 H160::default(),
             ),
-            Error::<Test>::ChannelIdNotSet
+            Error::<Test>::ChannelInfoNotSet
         );
     });
 }
@@ -230,11 +246,15 @@ fn test_transfer_native_token_succeeds() {
         let alice_balance_before = Balances::free_balance(ALICE);
         assert_eq!(alice_balance_before, 100u128);
 
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::ChannelInfoSet {
-                channel_id,
-                para_id,
-                agent_id,
+                channel_info: expected_channel_info,
             },
         ));
 
@@ -251,6 +271,7 @@ fn test_transfer_native_token_succeeds() {
 
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::NativeTokenTransferred {
+                message_id: Default::default(),
                 channel_id,
                 source: ALICE,
                 recipient: H160::default(),

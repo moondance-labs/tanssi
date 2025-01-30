@@ -21,6 +21,7 @@ use {
         traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
+    parity_scale_codec::{Decode, Encode},
     snowbridge_core::{
         outbound::{Fee, Message, SendError, SendMessageFeeProvider},
         AgentId, ChannelId, ParaId, TokenId,
@@ -31,6 +32,7 @@ use {
         BuildStorage, DispatchResult,
     },
     sp_std::cell::RefCell,
+    tp_bridge::TicketInfo,
     tp_traits::EthereumSystemChannelManager,
     xcm::prelude::*,
 };
@@ -128,9 +130,18 @@ pub fn ethereum_system_handler_nonce() -> u64 {
     ETHEREUM_SYSTEM_HANDLER_NONCE.with(|q| (*q.borrow()))
 }
 
+#[derive(Clone, Decode, Default, Encode)]
+pub struct DummyTicket;
+
+impl TicketInfo for DummyTicket {
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
+
 pub struct MockOkOutboundQueue;
 impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
-    type Ticket = ();
+    type Ticket = DummyTicket;
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
         // Every time we hit deliver, increment the nonce
@@ -142,7 +153,7 @@ impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
         _message: &Message,
     ) -> Result<(Self::Ticket, Fee<<Self as SendMessageFeeProvider>::Balance>), SendError> {
         Ok((
-            (),
+            DummyTicket::default(),
             Fee {
                 local: 20u128,
                 remote: 30u128,
