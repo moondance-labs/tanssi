@@ -195,7 +195,9 @@ pub mod pallet {
     #[pallet::storage]
     pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
 
-    /// Latest received external index
+    /// Latest received external index. This index can be a timestamp
+    /// a set-id, an epoch or in general anything that identifies
+    /// a particular set of validators selected at a given point in time
     #[pallet::storage]
     pub type ExternalIndex<T> = StorageValue<_, u64, ValueQuery>;
 
