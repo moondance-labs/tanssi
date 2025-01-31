@@ -152,8 +152,8 @@ impl ConstantGasMeter {
         match command {
             Command::Test { .. } => 60_000,
             // TODO: revisit gas cost
-            Command::ReportRewards { .. } => 60_000,
-            Command::ReportSlashes { .. } => 60_000,
+            Command::ReportRewards { .. } => 1_000_000,
+            Command::ReportSlashes { .. } => 1_000_000,
         }
     }
 }
