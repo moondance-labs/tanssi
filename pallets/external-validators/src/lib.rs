@@ -365,23 +365,23 @@ pub mod pallet {
         pub fn set_external_validators(
             origin: OriginFor<T>,
             validators: Vec<T::ValidatorId>,
-            timestamp: u64,
+            external_index: u64,
         ) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
-            Self::set_external_validators_inner(validators, timestamp)
+            Self::set_external_validators_inner(validators, external_index)
         }
     }
 
     impl<T: Config> Pallet<T> {
         pub fn set_external_validators_inner(
             validators: Vec<T::ValidatorId>,
-            timestamp: u64,
+            external_index: u64,
         ) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
             <ExternalValidators<T>>::put(validators);
-            <ExternalIndex<T>>::put(timestamp);
+            <ExternalIndex<T>>::put(external_index);
             Ok(())
         }
 
