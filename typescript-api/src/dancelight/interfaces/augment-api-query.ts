@@ -786,7 +786,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             currentEra: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
             /** Current external timestamp attached to the latest validators */
-            currentExternalTimestamp: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+            currentExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * The session index at which the era start for the last [`Config::HistoryDepth`] eras.
@@ -801,7 +801,7 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /** Latest sent external timestamp */
-            externalTimestamp: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            externalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
             /** Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true. */
             externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
@@ -809,7 +809,7 @@ declare module "@polkadot/api-base/types/storage" {
             forceEra: AugmentedQuery<ApiType, () => Observable<PalletExternalValidatorsForcing>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Pending external timestamp to be applied in the upcoming era */
-            pendingExternalTimestamp: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+            pendingExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Allow to disable external validators. */
             skipExternalValidators: AugmentedQuery<ApiType, () => Observable<bool>, []> &

@@ -492,7 +492,7 @@ export default {
         _enum: {
             Test: "Bytes",
             ReportRewards: {
-                timestamp: "u64",
+                externalIdx: "u64",
                 eraIndex: "u32",
                 totalPoints: "u128",
                 tokensInflated: "u128",
@@ -509,7 +509,7 @@ export default {
     TpBridgeSlashData: {
         encodedValidatorId: "Bytes",
         slashFraction: "u32",
-        timestamp: "u64",
+        externalIdx: "u64",
     },
     /** Lookup63: pallet_external_validators_rewards::pallet::Event<T> */
     PalletExternalValidatorsRewardsEvent: {
@@ -1774,7 +1774,7 @@ export default {
                 era: "u32",
                 validator: "AccountId32",
                 percentage: "Perbill",
-                timestamp: "u64",
+                externalIdx: "u64",
             },
             root_test_send_msg_to_eth: {
                 nonce: "H256",
@@ -5545,7 +5545,7 @@ export default {
     },
     /** Lookup624: pallet_external_validator_slashes::Slash<sp_core::crypto::AccountId32, SlashId> */
     PalletExternalValidatorSlashesSlash: {
-        timestamp: "u64",
+        externalIdx: "u64",
         validator: "AccountId32",
         reporters: "Vec<AccountId32>",
         slashId: "u32",

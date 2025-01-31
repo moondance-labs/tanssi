@@ -1646,7 +1646,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     era: u32 | AnyNumber | Uint8Array,
                     validator: AccountId32 | string | Uint8Array,
                     percentage: Perbill | AnyNumber | Uint8Array,
-                    timestamp: u64 | AnyNumber | Uint8Array
+                    externalIdx: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, AccountId32, Perbill, u64]
             >;
