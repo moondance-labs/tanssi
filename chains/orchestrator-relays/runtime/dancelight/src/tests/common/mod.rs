@@ -1212,8 +1212,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         let core_idx = runtime_parachains::configuration::ActiveConfig::<T>::get()
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
-                            .map(|_the_bit| core_idx);
-                        let core_idx = None;
+                            .and_then(|the_bit| if *the_bit { Some(core_idx) } else { None });
                         
                         assert_eq!(group_validators.len(), 1);
 

@@ -100,7 +100,7 @@ fn test_cannot_propose_a_block_without_availability() {
 }
 
 #[test]
-#[should_panic(expected = "InherentDataFilteredDuringExecution")]
+#[should_panic(expected = "InvalidBacking")]
 // This test does not panic when producing the candidate, but when injecting it as backed
 // the inclusion pallet will filter it as it does not have a core assigned
 fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
