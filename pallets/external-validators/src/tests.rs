@@ -308,3 +308,47 @@ fn era_hooks() {
         assert_eq!(Mock::mock().called_hooks, expected_calls);
     });
 }
+
+#[test]
+fn era_hooks_with_timestamp() {
+    new_test_ext().execute_with(|| {
+        let first_timestamp = 1000;
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            first_timestamp
+        ));
+
+        run_to_session(8);
+
+        let second_timestamp = 2000;
+
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            second_timestamp
+        ));
+
+        run_to_session(14);
+
+        let expected_calls = vec![
+            HookCall::OnEraStart {
+                era: 0,
+                session: 0,
+                timestamp: 0,
+            },
+            HookCall::OnEraEnd { era: 0 },
+            HookCall::OnEraStart {
+                era: 1,
+                session: 6,
+                timestamp: first_timestamp,
+            },
+            HookCall::OnEraEnd { era: 1 },
+            HookCall::OnEraStart {
+                era: 2,
+                session: 12,
+                timestamp: second_timestamp,
+            },
+        ];
+
+        assert_eq!(Mock::mock().called_hooks, expected_calls);
+    });
+}
