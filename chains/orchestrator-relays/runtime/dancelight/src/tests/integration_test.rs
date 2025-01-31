@@ -24,16 +24,10 @@ use {
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_noop, assert_ok, BoundedVec},
-    pallet_migrations::Migration,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
-    sp_arithmetic::Perbill,
-    sp_core::Encode,
     sp_std::vec,
-    tanssi_runtime_common::migrations::{
-        HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
-    },
 };
 
 #[test]
