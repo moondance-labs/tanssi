@@ -41,7 +41,7 @@ fn root_can_inject_manual_offence() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 1,
+                external_idx: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
@@ -149,7 +149,7 @@ fn test_after_bonding_period_we_can_remove_slashes() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 1,
+                external_idx: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
@@ -186,7 +186,7 @@ fn test_on_offence_injects_offences() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 0,
+                external_idx: 0,
                 validator: 3,
                 percentage: Perbill::from_percent(75),
                 confirmed: false,
@@ -231,7 +231,7 @@ fn defer_period_of_zero_confirms_immediately_slashes() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(0)),
             vec![Slash {
-                timestamp: 1,
+                external_idx: 1,
                 validator: 1,
                 percentage: Perbill::from_percent(75),
                 confirmed: true,
@@ -280,7 +280,7 @@ fn test_on_offence_defer_period_0() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(1)),
             vec![Slash {
-                timestamp: 0,
+                external_idx: 0,
                 validator: 3,
                 percentage: Perbill::from_percent(75),
                 confirmed: true,
@@ -389,7 +389,7 @@ fn test_account_id_encoding() {
         let alice_account: [u8; 32] = [4u8; 32];
 
         let slash = Slash::<OpaqueAccountId, u32> {
-            timestamp: 0,
+            external_idx: 0,
             validator: OpaqueAccountId::from(alice_account),
             reporters: vec![],
             slash_id: 1,
