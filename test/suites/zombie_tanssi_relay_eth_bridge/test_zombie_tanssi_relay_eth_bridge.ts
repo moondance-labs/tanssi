@@ -158,13 +158,6 @@ describeSuite({
                 ).stdout
             );
 
-            // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
-            // Once that is done, we can start the relayer
-            await signAndSendAndInclude(
-                relayApi.tx.sudo.sudo(relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate)),
-                alice
-            );
-
             const tokenLocation: MultiLocation = {
                 parents: 0,
                 interior: "Here",
@@ -179,9 +172,16 @@ describeSuite({
                 decimals: 18,
             };
 
-            // Register reward token
+            // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
+            // We also need to register token
+            // Once that is done, we can start the relayer
             await signAndSendAndInclude(
-                relayApi.tx.sudo.sudo(relayApi.tx.ethereumSystem.registerToken(versionedLocation, metadata)),
+                relayApi.tx.sudo.sudo(
+                    relayApi.tx.utility.batch([
+                        relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate),
+                        relayApi.tx.ethereumSystem.registerToken(versionedLocation, metadata),
+                    ])
+                ),
                 alice
             );
 
