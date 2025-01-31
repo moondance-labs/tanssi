@@ -1456,7 +1456,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     // Will likely be through InflationRewards.
 
     type EraInflationProvider = ExternalRewardsEraInflationProvider;
-    type TimestampProvider = ExternalValidators;
+    type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
@@ -1482,7 +1482,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
-    type TimestampProvider = ExternalValidators;
+    type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
 }

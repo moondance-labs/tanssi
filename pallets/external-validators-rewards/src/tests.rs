@@ -110,7 +110,7 @@ fn test_on_era_end() {
 
         let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
         let expected_command = Command::ReportRewards {
-            timestamp: 31000u64,
+            external_idx: 31000u64,
             era_index: 1u32,
             total_points: total_points as u128,
             tokens_inflated:
@@ -152,7 +152,7 @@ fn test_on_era_end_without_proper_token() {
 
         let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
         let expected_command = Command::ReportRewards {
-            timestamp: 31000u64,
+            external_idx: 31000u64,
             era_index: 1u32,
             total_points: total_points as u128,
             tokens_inflated:

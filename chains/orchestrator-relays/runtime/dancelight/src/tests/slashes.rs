@@ -511,7 +511,7 @@ fn test_slashes_are_sent_to_ethereum() {
             let expected_slashes = vec![SlashData {
                 encoded_validator_id: AccountId::from(ALICE).encode(),
                 slash_fraction: Perbill::from_percent(100).deconstruct(),
-                timestamp: 0,
+                external_idx: 0,
             }];
 
             let expected_slashes_command = Command::ReportSlashes {

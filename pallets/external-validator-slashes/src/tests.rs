@@ -315,7 +315,7 @@ fn test_slashes_command_matches_event() {
         assert_eq!(
             Slashes::<Test>::get(get_slashing_era(1)),
             vec![Slash {
-                timestamp: 0,
+                external_idx: 0,
                 validator: 3,
                 percentage: Perbill::from_percent(75),
                 confirmed: true,
@@ -332,7 +332,7 @@ fn test_slashes_command_matches_event() {
         let expected_slashes = vec![SlashData {
             encoded_validator_id: 3u64.encode(),
             slash_fraction: Perbill::from_percent(75).deconstruct(),
-            timestamp: 0u64,
+            external_idx: 0u64,
         }];
         let expected_command = Command::ReportSlashes {
             era_index: 2u32,
@@ -459,8 +459,8 @@ fn test_on_offence_defer_period_0_messages_get_queued_across_eras() {
     });
 }
 
-fn start_era(era_index: EraIndex, session_index: SessionIndex, timestamp: u64) {
-    Pallet::<Test>::on_era_start(era_index, session_index, timestamp);
+fn start_era(era_index: EraIndex, session_index: SessionIndex, external_idx: u64) {
+    Pallet::<Test>::on_era_start(era_index, session_index, external_idx);
     crate::mock::MockEraIndexProvider::with_era(era_index);
 }
 

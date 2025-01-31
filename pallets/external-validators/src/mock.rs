@@ -250,12 +250,12 @@ pub struct Mocks {
 // We use the mock_data pallet to test hooks: we store a list of all the calls, and then check that
 // no eras are skipped.
 impl<T> OnEraStart for mock_data::Pallet<T> {
-    fn on_era_start(era_index: EraIndex, session_start: u32, timestamp: u64) {
+    fn on_era_start(era_index: EraIndex, session_start: u32, external_idx: u64) {
         Mock::mutate(|m| {
             m.called_hooks.push(HookCall::OnEraStart {
                 era: era_index,
                 session: session_start,
-                timestamp,
+                external_idx,
             });
         });
     }

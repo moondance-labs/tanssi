@@ -23,7 +23,7 @@ use {
     },
     frame_support::{assert_noop, assert_ok},
     sp_runtime::traits::BadOrigin,
-    tp_traits::{ExternalTimestampProvider, ValidatorProvider},
+    tp_traits::{ExternalIndexProvider, ValidatorProvider},
 };
 
 #[test]
@@ -166,7 +166,7 @@ fn whitelisted_and_external_order() {
 
         run_to_session(6);
         let validators = Session::validators();
-        let timestamp = ExternalValidators::get_external_timestamp();
+        let timestamp = ExternalValidators::get_external_index();
         assert_eq!(validators, vec![1, 2, 50, 51]);
         assert_eq!(timestamp, 1);
     });
@@ -271,11 +271,11 @@ fn timestamp_gets_set_correctly() {
             vec![2],
             1
         ));
-        let timestamp = ExternalValidators::get_external_timestamp();
+        let timestamp = ExternalValidators::get_external_index();
         assert_eq!(timestamp, 0);
         run_to_session(6);
 
-        let timestamp = ExternalValidators::get_external_timestamp();
+        let timestamp = ExternalValidators::get_external_index();
         assert_eq!(timestamp, 1);
     });
 }

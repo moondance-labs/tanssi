@@ -1181,7 +1181,7 @@ fn external_validators_rewards_test_command_integrity() {
 
             let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
             let expected_rewards_command = Command::ReportRewards {
-                timestamp: 1u64,
+                external_idx: 1u64,
                 era_index: 1u32,
                 total_points: 40u128,
                 tokens_inflated: expected_inflation,

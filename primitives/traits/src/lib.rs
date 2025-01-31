@@ -501,13 +501,13 @@ pub trait InvulnerablesProvider<ValidatorId> {
 }
 
 pub trait OnEraStart {
-    fn on_era_start(_era_index: EraIndex, _session_start: u32, _timestamp: u64) {}
+    fn on_era_start(_era_index: EraIndex, _session_start: u32, _external_idx: u64) {}
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
 impl OnEraStart for Tuple {
-    fn on_era_start(era_index: EraIndex, session_start: u32, timestamp: u64) {
-        for_tuples!( #( Tuple::on_era_start(era_index, session_start, timestamp); )* );
+    fn on_era_start(era_index: EraIndex, session_start: u32, external_idx: u64) {
+        for_tuples!( #( Tuple::on_era_start(era_index, session_start, external_idx); )* );
     }
 }
 
@@ -582,6 +582,8 @@ impl FullRotationModes {
     }
 }
 
-pub trait ExternalTimestampProvider {
-    fn get_external_timestamp() -> u64;
+// A trait to retrieve the external index provider identifying some set of data
+// In starlight, used to retrieve the external index associated to validators
+pub trait ExternalIndexProvider {
+    fn get_external_index() -> u64;
 }

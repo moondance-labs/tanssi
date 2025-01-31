@@ -132,8 +132,8 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 }
 
 pub struct TimestampProvider;
-impl tp_traits::ExternalTimestampProvider for TimestampProvider {
-    fn get_external_timestamp() -> u64 {
+impl tp_traits::ExternalIndexProvider for TimestampProvider {
+    fn get_external_index() -> u64 {
         Timestamp::get()
     }
 }
@@ -165,7 +165,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
     type EraInflationProvider = ConstU128<42>;
-    type TimestampProvider = TimestampProvider;
+    type ExternalIndexProvider = TimestampProvider;
     type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
     type ValidateMessage = ();
