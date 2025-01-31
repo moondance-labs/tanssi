@@ -74,6 +74,9 @@ fn test_cannot_propose_a_block_without_availability() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -141,8 +144,9 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
         .with_keystore(Arc::new(MemoryKeystore::new()))
         .build()
         .execute_with(|| {
+            sp_tracing::try_init_simple();
             run_to_block(2);
-            // Here para-id is not registered, but we can indeed buy a on-demand core for a non-existing para
+            // Here para-id is registered but does not have collators, but we can indeed buy a on-demand core
             // however we should not be able to produce for it
             assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
@@ -161,6 +165,83 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
                 .build();
             set_new_inherent_data(inherent_data);
             // This should filter out, as we dont have any collators assigned to it
+            run_block();
+        })
+}
+
+#[test]
+#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+// This test does not panic when producing the candidate, but when injecting it as backed
+// the inclusion pallet will filter it as it does not have a core assigned
+fn test_cannot_use_elastic_scaling_if_not_enabled() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
+            collators_per_container: 2,
+            ..Default::default()
+        })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![ParaRegistrationParams {
+            para_id: 1000,
+            genesis_data: empty_genesis_data(),
+            block_production_credits: u32::MAX,
+            collator_assignment_credits: u32::MAX,
+            parathread_params: None,
+        }])
+        .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
+            BlockNumberFor<Runtime>,
+        > {
+            scheduler_params: SchedulerParams {
+                num_cores: 2,
+                // A very high number to avoid group rotation in tests
+                // Otherwise we get a 1 by default, which changes groups every block
+                group_rotation_frequency: 10000000,
+                ..Default::default()
+            },
+            async_backing_params: AsyncBackingParams {
+                allowed_ancestry_len: 1,
+                max_candidate_depth: 0,
+            },
+            minimum_backing_votes: 1,
+            max_head_data_size: 5,
+            ..Default::default()
+        })
+        .with_keystore(Arc::new(MemoryKeystore::new()))
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+            run_to_block(2);
+            // Here para-id is registered and has collators, but we can indeed buy a on-demand core additional
+            // however we should not be able to produce for it without elastic scaling enabled
+            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+                origin_of(ALICE.into()),
+                100 * UNIT,
+                1000u32.into()
+            ));
+            run_block();
+            // Now we try to create the block
+            let cores_with_backed: BTreeMap<_, _> =
+                vec![(1000u32, Session::validators().len() as u32)]
+                    .into_iter()
+                    .collect();
+
+            let inherent_data = ParasInherentTestBuilder::<Runtime>::new()
+                .set_backed_and_concluding_paras(cores_with_backed)
+                .build();
+            set_new_inherent_data(inherent_data);
+            // This should filter out, because we are trying to use elastic scaling when not enabled
             run_block();
         })
 }
@@ -214,6 +295,9 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -293,6 +377,9 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -386,6 +473,9 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -498,6 +588,9 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -690,6 +783,9 @@ fn test_should_have_availability_for_registered_parachain() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+            ),
             ..Default::default()
         })
         .with_para_ids(vec![ParaRegistrationParams {
