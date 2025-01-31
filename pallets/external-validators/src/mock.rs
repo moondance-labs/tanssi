@@ -255,7 +255,7 @@ impl<T> OnEraStart for mock_data::Pallet<T> {
             m.called_hooks.push(HookCall::OnEraStart {
                 era: era_index,
                 session: session_start,
-                external_idx,
+                external_index: external_idx,
             });
         });
     }

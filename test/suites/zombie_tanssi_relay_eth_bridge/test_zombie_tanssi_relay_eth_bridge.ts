@@ -331,10 +331,12 @@ describeSuite({
             test: async function () {
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
                 const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
                     activeEraInfo.index,
                     operatorAccount.address,
-                    1000
+                    1000,
+                    currentExternalIndex
                 );
                 const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
 
