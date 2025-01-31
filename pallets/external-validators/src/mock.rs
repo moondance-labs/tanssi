@@ -231,7 +231,7 @@ pub enum HookCall {
     OnEraStart {
         era: u32,
         session: u32,
-        timestamp: u64,
+        external_index: u64,
     },
     OnEraEnd {
         era: u32,

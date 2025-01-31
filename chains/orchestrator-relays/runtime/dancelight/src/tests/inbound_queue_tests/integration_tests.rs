@@ -71,7 +71,7 @@ fn test_inbound_queue_message_passing() {
             magic_bytes: MAGIC_BYTES,
             message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone(),
-                timestamp: 0u64
+                external_index: 0u64
             }),
         };
 

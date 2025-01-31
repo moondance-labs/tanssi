@@ -166,9 +166,9 @@ fn whitelisted_and_external_order() {
 
         run_to_session(6);
         let validators = Session::validators();
-        let timestamp = ExternalValidators::get_external_index();
+        let external_index = ExternalValidators::get_external_index();
         assert_eq!(validators, vec![1, 2, 50, 51]);
-        assert_eq!(timestamp, 1);
+        assert_eq!(external_index, 1);
     });
 }
 
@@ -264,19 +264,19 @@ fn duplicate_validator_order_is_preserved() {
 }
 
 #[test]
-fn timestamp_gets_set_correctly() {
+fn external_index_gets_set_correctly() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_ok!(ExternalValidators::set_external_validators_inner(
             vec![2],
             1
         ));
-        let timestamp = ExternalValidators::get_external_index();
-        assert_eq!(timestamp, 0);
+        let external_index = ExternalValidators::get_external_index();
+        assert_eq!(external_index, 0);
         run_to_session(6);
 
-        let timestamp = ExternalValidators::get_external_index();
-        assert_eq!(timestamp, 1);
+        let external_index = ExternalValidators::get_external_index();
+        assert_eq!(external_index, 1);
     });
 }
 
@@ -289,19 +289,19 @@ fn era_hooks() {
             HookCall::OnEraStart {
                 era: 0,
                 session: 0,
-                timestamp: 0,
+                external_index: 0,
             },
             HookCall::OnEraEnd { era: 0 },
             HookCall::OnEraStart {
                 era: 1,
                 session: 6,
-                timestamp: 0,
+                external_index: 0,
             },
             HookCall::OnEraEnd { era: 1 },
             HookCall::OnEraStart {
                 era: 2,
                 session: 12,
-                timestamp: 0,
+                external_index: 0,
             },
         ];
 
@@ -310,21 +310,21 @@ fn era_hooks() {
 }
 
 #[test]
-fn era_hooks_with_timestamp() {
+fn era_hooks_with_external_index() {
     new_test_ext().execute_with(|| {
-        let first_timestamp = 1000;
+        let first_external_index = 1000;
         assert_ok!(ExternalValidators::set_external_validators_inner(
             vec![50, 51],
-            first_timestamp
+            first_external_index
         ));
 
         run_to_session(8);
 
-        let second_timestamp = 2000;
+        let second_external_index = 2000;
 
         assert_ok!(ExternalValidators::set_external_validators_inner(
             vec![50, 51],
-            second_timestamp
+            second_external_index
         ));
 
         run_to_session(14);
@@ -333,19 +333,19 @@ fn era_hooks_with_timestamp() {
             HookCall::OnEraStart {
                 era: 0,
                 session: 0,
-                timestamp: 0,
+                external_index: 0,
             },
             HookCall::OnEraEnd { era: 0 },
             HookCall::OnEraStart {
                 era: 1,
                 session: 6,
-                timestamp: first_timestamp,
+                external_index: first_external_index,
             },
             HookCall::OnEraEnd { era: 1 },
             HookCall::OnEraStart {
                 era: 2,
                 session: 12,
-                timestamp: second_timestamp,
+                external_index: second_external_index,
             },
         ];
 
