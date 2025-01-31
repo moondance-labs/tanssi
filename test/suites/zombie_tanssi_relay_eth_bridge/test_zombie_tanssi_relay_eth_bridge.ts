@@ -79,13 +79,14 @@ describeSuite({
             operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
-            const fundingTxHash = await relayApi.tx.utility
-                .batch([
+            const fundingTxHash = await signAndSendAndInclude(
+                relayApi.tx.utility.batch([
                     relayApi.tx.balances.transferAllowDeath(beaconRelay.address, 1_000_000_000_000),
                     relayApi.tx.balances.transferAllowDeath(executionRelay.address, 1_000_000_000_000),
-                ])
-                .signAndSend(alice);
-            console.log("Transferred money to relayers", fundingTxHash.toHex());
+                ]),
+                alice
+            );
+            console.log("Transferred money to relayers", fundingTxHash.txHash.toHex());
 
             ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {
                 shell: true,
@@ -126,10 +127,11 @@ describeSuite({
             middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
-            const setGatewayAddressTxHash = await relayApi.tx.sudo
-                .sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]]))
-                .signAndSend(alice);
-            console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.toHex());
+            const setGatewayAddressTxHash = await signAndSendAndInclude(
+                relayApi.tx.sudo.sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]])),
+                alice
+            );
+            console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.txHash.toHex());
 
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
@@ -331,10 +333,12 @@ describeSuite({
             test: async function () {
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
                 const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
                     activeEraInfo.index,
                     operatorAccount.address,
-                    1000
+                    1000,
+                    currentExternalIndex
                 );
                 const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
 

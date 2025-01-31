@@ -63,7 +63,7 @@ fn test_symbiotic_message_processor() {
             magic_bytes: [1, 2, 3, 4],
             message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: vec![],
-                timestamp: 0u64,
+                external_index: 0u64,
             }),
         };
         let envelope = Envelope {
@@ -94,7 +94,7 @@ fn test_symbiotic_message_processor() {
             magic_bytes: MAGIC_BYTES,
             message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone(),
-                timestamp: 10u64,
+                external_index: 10u64,
             }),
         };
         let envelope = Envelope {
@@ -149,7 +149,7 @@ fn test_symbiotic_message_processor_rejects_invalid_channel_id() {
             magic_bytes: MAGIC_BYTES,
             message: Message::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone(),
-                timestamp: 0u64,
+                external_index: 0u64,
             }),
         };
         let envelope = Envelope {

@@ -56,7 +56,7 @@ where
 {
     ReceiveValidators {
         validators: Vec<<T as pallet_external_validators::Config>::ValidatorId>,
-        timestamp: u64,
+        external_index: u64,
     },
 }
 
@@ -86,14 +86,17 @@ where
         match message {
             Message::V1(InboundCommand::ReceiveValidators {
                 validators,
-                timestamp: _timestamp,
+                external_index,
             }) => {
                 if envelope.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
                     return Err(DispatchError::Other(
                         "Received governance message from invalid channel id",
                     ));
                 }
-                pallet_external_validators::Pallet::<T>::set_external_validators_inner(validators)?;
+                pallet_external_validators::Pallet::<T>::set_external_validators_inner(
+                    validators,
+                    external_index,
+                )?;
                 Ok(())
             }
         }

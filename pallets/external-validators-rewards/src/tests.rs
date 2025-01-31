@@ -75,12 +75,12 @@ fn history_limit() {
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 1);
 
-        ExternalValidatorsRewards::on_era_start(10, 0);
+        ExternalValidatorsRewards::on_era_start(10, 0, 10);
         let storage_eras =
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 1, "shouldn't erase data yet");
 
-        ExternalValidatorsRewards::on_era_start(11, 0);
+        ExternalValidatorsRewards::on_era_start(11, 0, 11);
         let storage_eras =
             pallet_external_validators_rewards::RewardPointsForEra::<Test>::iter().count();
         assert_eq!(storage_eras, 0, "data should be erased now");
@@ -110,7 +110,7 @@ fn test_on_era_end() {
 
         let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
         let expected_command = Command::ReportRewards {
-            timestamp: 31000u64,
+            external_idx: 31000u64,
             era_index: 1u32,
             total_points: total_points as u128,
             tokens_inflated:
@@ -152,7 +152,7 @@ fn test_on_era_end_without_proper_token() {
 
         let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
         let expected_command = Command::ReportRewards {
-            timestamp: 31000u64,
+            external_idx: 31000u64,
             era_index: 1u32,
             total_points: total_points as u128,
             tokens_inflated:
