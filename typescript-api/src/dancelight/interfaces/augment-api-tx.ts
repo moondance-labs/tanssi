@@ -1616,7 +1616,7 @@ declare module "@polkadot/api-base/types/submittable" {
             setExternalValidators: AugmentedSubmittable<
                 (
                     validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
-                    timestamp: u64 | AnyNumber | Uint8Array
+                    externalIndex: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<AccountId32>, u64]
             >;

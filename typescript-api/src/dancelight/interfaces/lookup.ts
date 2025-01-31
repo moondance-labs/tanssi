@@ -1759,7 +1759,7 @@ export default {
             },
             set_external_validators: {
                 validators: "Vec<AccountId32>",
-                timestamp: "u64",
+                externalIndex: "u64",
             },
         },
     },

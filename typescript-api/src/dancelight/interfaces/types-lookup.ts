@@ -2359,7 +2359,7 @@ declare module "@polkadot/types/lookup" {
         readonly isSetExternalValidators: boolean;
         readonly asSetExternalValidators: {
             readonly validators: Vec<AccountId32>;
-            readonly timestamp: u64;
+            readonly externalIndex: u64;
         } & Struct;
         readonly type:
             | "SkipExternalValidators"

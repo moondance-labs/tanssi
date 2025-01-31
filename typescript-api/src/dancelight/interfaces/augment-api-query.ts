@@ -785,7 +785,7 @@ declare module "@polkadot/api-base/types/storage" {
              * queued.
              */
             currentEra: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
-            /** Current external timestamp attached to the latest validators */
+            /** Current external index attached to the latest validators */
             currentExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -800,7 +800,10 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /** Latest sent external timestamp */
+            /**
+             * Latest received external index. This index can be a timestamp a set-id, an epoch or in general anything that
+             * identifies a particular set of validators selected at a given point in time
+             */
             externalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
             /** Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true. */
             externalValidators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
@@ -808,7 +811,7 @@ declare module "@polkadot/api-base/types/storage" {
             /** Mode of era forcing. */
             forceEra: AugmentedQuery<ApiType, () => Observable<PalletExternalValidatorsForcing>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** Pending external timestamp to be applied in the upcoming era */
+            /** Pending external index to be applied in the upcoming era */
             pendingExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /** Allow to disable external validators. */
