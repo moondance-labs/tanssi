@@ -62,7 +62,7 @@ config_relayer() {
         $assets_dir/execution-relay.json >$output_dir/execution-relay.json
 
 
-    # Configure substrate relay for ethereum
+    # Configure substrate relay for ethereum for primary channel
     jq \
         --arg k1 "$(snowbridge_address_for GatewayProxy)" \
         --arg k2 "$(snowbridge_address_for BeefyClient)" \
@@ -79,7 +79,27 @@ config_relayer() {
     | .sink.contracts.Gateway = $k1
     | .sink.ethereum.endpoint = $eth_writer_endpoint
     ' \
-        $assets_dir/substrate-relay.json >$output_dir/substrate-relay.json
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay-primary.json
+
+    # Configure substrate relay for ethereum for secondary channel
+    jq \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
+        --arg k2 "$(snowbridge_address_for BeefyClient)" \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg eth_writer_endpoint $eth_writer_endpoint \
+        --arg channelID $SECONDARY_GOVERNANCE_CHANNEL_ID \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.polkadot.endpoint = $relay_chain_endpoint
+    | .source.contracts.BeefyClient = $k2
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .sink.contracts.Gateway = $k1
+    | .sink.ethereum.endpoint = $eth_writer_endpoint
+    ' \
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay-secondary.json
+
 }
 
 write_beacon_checkpoint() {
