@@ -34,7 +34,8 @@
             {
                 "name": "alice",
                 "ws_port": "9947",
-                "validator": true
+                "validator": true,
+                "args": ["--pool-type=fork-aware"]
             },
             {
                 "name": "bob",
@@ -43,7 +44,8 @@
             {
                 "name": "charlie",
                 "ws_port": "9948",
-                "validator": true
+                "validator": true,
+                "args": ["--pool-type=fork-aware"]
             }
         ]
     },
