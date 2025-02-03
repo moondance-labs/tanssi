@@ -265,7 +265,6 @@ fn receive_native_tokens_from_eth_processed_successful() {
 
             let message = Message {
                 event_log: Log {
-                    // gateway address
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                     topics: event
