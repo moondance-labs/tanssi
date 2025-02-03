@@ -34,13 +34,14 @@ fn test_command_encoding() {
 #[test]
 fn test_report_rewards_encoding() {
     let command = Command::ReportRewards {
-        timestamp: 123_456_789,
+        external_idx: 123_456_789,
         era_index: 42,
         total_points: 123_456_789_012_345,
         tokens_inflated: 987_654_321_098,
         rewards_merkle_root: H256::from(hex!(
             "b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4"
         )),
+        token_id: H256::repeat_byte(0x01),
     };
 
     let expected = hex!(
@@ -50,6 +51,7 @@ fn test_report_rewards_encoding() {
         "00000000000000000000000000000000000000000000000000007048860DDF79" // total points
         "000000000000000000000000000000000000000000000000000000E5F4C8F3CA" // total inflated
         "b6e16d27ac5ab427a7f68900ac5559ce272dc6c37c82b3e052246c82244c50e4" // root
+        "0101010101010101010101010101010101010101010101010101010101010101" // token_id
     );
 
     assert_eq!(command.abi_encode(), expected);
@@ -66,17 +68,17 @@ fn test_report_slashes_encoding() {
             SlashData {
                 encoded_validator_id: sp_runtime::AccountId32::from(ALICE).encode(),
                 slash_fraction: 5_000u32,
-                timestamp: 500u64,
+                external_idx: 500u64,
             },
             SlashData {
                 encoded_validator_id: sp_runtime::AccountId32::from(BOB).encode(),
                 slash_fraction: 4_000u32,
-                timestamp: 400u64,
+                external_idx: 400u64,
             },
             SlashData {
                 encoded_validator_id: sp_runtime::AccountId32::from(CHARLIE).encode(),
                 slash_fraction: 3_000u32,
-                timestamp: 300u64,
+                external_idx: 300u64,
             },
         ],
     };

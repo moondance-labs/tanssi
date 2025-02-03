@@ -67,7 +67,7 @@ describeSuite({
                     sudoAlice.address,
                     null,
                     polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, sudoAlice.address, 1000)
+                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, sudoAlice.address, 1000, 1)
                     )
                 );
                 await context.createBlock([await txAddWhitelisted.signAsync(delegateBob)]);

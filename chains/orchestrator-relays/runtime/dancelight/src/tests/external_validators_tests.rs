@@ -16,15 +16,20 @@
 
 #![cfg(test)]
 
+use sp_core::H256;
 use {
     crate::{
-        tests::common::*, ExternalValidators, ExternalValidatorsRewards, MaxExternalValidators,
-        RuntimeEvent, SessionKeys, SessionsPerEra, System,
+        tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
+        MaxExternalValidators, RewardTokenLocation, RuntimeEvent, SessionKeys, SessionsPerEra,
+        System,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
+    sp_runtime::traits::MaybeEquivalence,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
+    xcm::latest::prelude::*,
+    xcm::VersionedLocation,
 };
 
 fn assert_validators_do_not_change(
@@ -95,7 +100,7 @@ fn whitelisted_validators_priority() {
                 external_validators.push(mock_validator);
             }
 
-            ExternalValidators::set_external_validators_inner(external_validators).unwrap();
+            ExternalValidators::set_external_validators_inner(external_validators, 1).unwrap();
 
             run_to_session(sessions_per_era);
             let validators = Session::validators();
@@ -155,7 +160,7 @@ fn validators_only_change_once_per_era() {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![mock_validator], 1).unwrap();
 
                 run_to_session(session);
                 let validators = Session::validators();
@@ -235,7 +240,7 @@ fn external_validators_can_be_disabled() {
                 vec![]
             ));
 
-            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                 .unwrap();
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
@@ -284,7 +289,7 @@ fn no_duplicate_validators() {
             let sessions_per_era = SessionsPerEra::get();
 
             // Alice is both a whitelisted validator and an external validator
-            ExternalValidators::set_external_validators_inner(vec![AccountId::from(ALICE)])
+            ExternalValidators::set_external_validators_inner(vec![AccountId::from(ALICE)], 1)
                 .unwrap();
 
             run_to_session(sessions_per_era);
@@ -351,7 +356,7 @@ fn default_era_changes() {
                         vec![]
                     ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![mock_validator], 1).unwrap();
 
                 run_to_session(session);
                 let validators = Session::validators();
@@ -447,7 +452,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 assert_eq!(ExternalValidators::current_era(), Some(0));
                 assert_ok!(ExternalValidators::force_era(
@@ -482,7 +487,7 @@ mod force_eras {
                 );
 
                 // Change external validators again
-                ExternalValidators::set_external_validators_inner(vec![]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![], 1).unwrap();
                 run_to_session(1 + sessions_per_era - 1);
                 // Validators will not change until `sessions_per_era` sessions later
                 // With sessions_per_era=6, era will change in session 7, validators will change in
@@ -555,7 +560,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 // Validators will never change
                 assert_eq!(ExternalValidators::current_era(), Some(0));
@@ -606,7 +611,7 @@ mod force_eras {
                     vec![]
                 ));
 
-                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+                ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                     .unwrap();
                 // Validators will change on every session
                 assert_eq!(ExternalValidators::current_era(), Some(0));
@@ -627,7 +632,7 @@ mod force_eras {
                     ]
                 );
 
-                ExternalValidators::set_external_validators_inner(vec![]).unwrap();
+                ExternalValidators::set_external_validators_inner(vec![], 1).unwrap();
                 run_to_session(4);
                 assert_eq!(ExternalValidators::current_era(), Some(4));
                 let validators = Session::validators();
@@ -671,7 +676,7 @@ fn external_validators_manual_reward_points() {
                 vec![]
             ));
 
-            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()])
+            ExternalValidators::set_external_validators_inner(vec![mock_validator.clone()], 1)
                 .unwrap();
             assert_ok!(ExternalValidators::skip_external_validators(
                 root_origin(),
@@ -710,6 +715,18 @@ fn external_validators_rewards_sends_message_on_era_end() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
@@ -766,10 +783,10 @@ fn external_validators_rewards_merkle_proofs() {
                 AccountId::from(BOB)
             ));
 
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(CHARLIE),
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)],
+                1
+            ));
 
             // Register CHARLIE and DAVE session keys
             let charlie_keys =
@@ -961,9 +978,10 @@ fn external_validators_whitelisted_never_rewarded() {
                 root_origin(),
                 AccountId::from(CHARLIE)
             ));
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(DAVE)],
+                1
+            ));
 
             // Reward validators in every session
             for session in 1..(sessions_per_era + 1) {
@@ -1041,6 +1059,20 @@ fn external_validators_rewards_test_command_integrity() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location.clone()),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_id = EthereumSystem::convert_back(&RewardTokenLocation::get()).unwrap();
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 
@@ -1061,10 +1093,10 @@ fn external_validators_rewards_test_command_integrity() {
                 AccountId::from(BOB)
             ));
 
-            assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-                AccountId::from(CHARLIE),
-                AccountId::from(DAVE)
-            ]));
+            assert_ok!(ExternalValidators::set_external_validators_inner(
+                vec![AccountId::from(CHARLIE), AccountId::from(DAVE)],
+                1
+            ));
 
             // Register CHARLIE and DAVE session keys
             let charlie_keys =
@@ -1129,14 +1161,17 @@ fn external_validators_rewards_test_command_integrity() {
             run_to_session(sessions_per_era * 2);
 
             let mut rewards_command_found: Option<Command> = None;
+            let mut message_id_found: Option<H256> = None;
             let ext_validators_rewards_event = System::events()
                 .iter()
                 .filter(|r| match &r.event {
                     RuntimeEvent::ExternalValidatorsRewards(
                         pallet_external_validators_rewards::Event::RewardsMessageSent {
                             rewards_command,
+                            message_id,
                         },
                     ) => {
+                        message_id_found = Some(*message_id);
                         rewards_command_found = Some(rewards_command.clone());
                         true
                     }
@@ -1146,11 +1181,12 @@ fn external_validators_rewards_test_command_integrity() {
 
             let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
             let expected_rewards_command = Command::ReportRewards {
-                timestamp: 0u64,
+                external_idx: 1u64,
                 era_index: 1u32,
                 total_points: 40u128,
                 tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
+                token_id,
             };
 
             assert_eq!(
@@ -1162,6 +1198,7 @@ fn external_validators_rewards_test_command_integrity() {
                 expected_rewards_command,
                 "Both rewards commands should match!"
             );
+            assert_eq!(message_id_found.unwrap(), read_last_entropy().into());
         });
 }
 
@@ -1174,6 +1211,15 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
         ])
         .build()
         .execute_with(|| {
+            let token_location: VersionedLocation = Location::here()
+            .into();
+
+            assert_ok!(EthereumSystem::register_token(root_origin(), Box::new(token_location), snowbridge_core::AssetMetadata {
+                name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+		    }));
+
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
 

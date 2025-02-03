@@ -33,7 +33,9 @@ describeSuite({
                 for (let i = 0; i < slashesToInject; i++) {
                     const randomAccount = generateKeyringPair("sr25519");
                     await polkadotJs.tx.sudo
-                        .sudo(polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, randomAccount.address, 1000))
+                        .sudo(
+                            polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, randomAccount.address, 1000, 1)
+                        )
                         .signAndSend(alice, { nonce: aliceNonce++ });
                 }
                 await context.createBlock();

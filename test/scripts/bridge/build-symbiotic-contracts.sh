@@ -18,6 +18,7 @@ else
   git clone https://github.com/moondance-labs/tanssi-symbiotic $symbiotic_contracts_dir
   pushd $symbiotic_contracts_dir
   git fetch && git checkout $TANSSI_SYMBIOTIC_COMMIT
+  make install
   popd
 fi
 

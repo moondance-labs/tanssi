@@ -1614,8 +1614,11 @@ declare module "@polkadot/api-base/types/submittable" {
              * bridge.
              */
             setExternalValidators: AugmentedSubmittable<
-                (validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<AccountId32>]
+                (
+                    validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    externalIndex: u64 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>, u64]
             >;
             /**
              * Allow to ignore external validators and use only whitelisted ones.
@@ -1642,9 +1645,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     era: u32 | AnyNumber | Uint8Array,
                     validator: AccountId32 | string | Uint8Array,
-                    percentage: Perbill | AnyNumber | Uint8Array
+                    percentage: Perbill | AnyNumber | Uint8Array,
+                    externalIdx: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, AccountId32, Perbill]
+                [u32, AccountId32, Perbill, u64]
             >;
             rootTestSendMsgToEth: AugmentedSubmittable<
                 (

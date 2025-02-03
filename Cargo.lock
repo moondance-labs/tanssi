@@ -9651,6 +9651,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "staging-xcm",
  "tp-bridge",
  "tp-traits",
 ]
@@ -18163,6 +18164,7 @@ dependencies = [
  "pallet-beefy-mmr",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-foreign-asset-creator",
  "pallet-invulnerables",
@@ -18177,6 +18179,7 @@ dependencies = [
  "scale-info",
  "sp-core",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
  "staging-xcm",
 ]
@@ -18866,6 +18869,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "staging-xcm",
  "staging-xcm-executor",
 ]
 

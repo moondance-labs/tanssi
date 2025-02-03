@@ -1,0 +1,76 @@
+name: Bridge e2e tests
+description: |
+  Setup and run bridge e2e tests between tanssi and ethereum
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check g++
+      shell: bash
+      id: setup_g_plusplus
+      run: |
+        g++ --version
+    - name: Check protoc
+      shell: bash
+      id: check_proto_c
+      run: |
+        protoc --version
+    - name: Check jq
+      shell: bash
+      id: check_jq
+      run: |
+        jq --version
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '^1.22.0'
+    - name: Check go
+      shell: bash
+      id: check_go
+      run: |
+        go version
+    - name: Run Mage
+      uses: magefile/mage-action@v3
+      with:
+        install-only: true
+    - name: Check mage
+      shell: bash
+      id: check_mage
+      run: |
+        mage --version
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    - name: Check forge
+      shell: bash
+      id: check_forge
+      run: |
+        forge --version
+    - name: Pnpm
+      uses: pnpm/action-setup@v4.0.0
+      with:
+        version: 9
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+    - name: Install yarn
+      shell: bash
+      run: |-
+        curl -fsSL --create-dirs -o $HOME/bin/yarn \
+        https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+        chmod +x $HOME/bin/yarn
+        echo "$HOME/bin" >> $GITHUB_PATH
+    - name: Check yarn
+      shell: bash
+      id: check_yarn
+      run: |
+        yarn --version
+    - name: Check date
+      shell: bash
+      id: check_date
+      run: |
+        date --version
+    - name: Run Zombienet Test zombie_tanssi_relay_eth_bridge
+      uses: ./.github/workflow-templates/zombienet-tests
+      with:
+        test_name: zombie_tanssi_relay_eth_bridge

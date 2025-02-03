@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+  merge_group:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=12288"

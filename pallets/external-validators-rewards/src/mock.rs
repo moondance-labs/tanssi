@@ -20,12 +20,16 @@ use {
         traits::{ConstU128, ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
-    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
+    snowbridge_core::{
+        outbound::{SendError, SendMessageFeeProvider},
+        TokenId,
+    },
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, Get, IdentityLookup, Keccak256},
+        traits::{BlakeTwo256, IdentityLookup, Keccak256, MaybeEquivalence},
         BuildStorage,
     },
+    xcm::prelude::*,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -128,15 +132,30 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 }
 
 pub struct TimestampProvider;
-impl Get<u64> for TimestampProvider {
-    fn get() -> u64 {
+impl tp_traits::ExternalIndexProvider for TimestampProvider {
+    fn get_external_index() -> u64 {
         Timestamp::get()
+    }
+}
+
+pub struct MockTokenIdConvert;
+impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+    fn convert(_id: &TokenId) -> Option<Location> {
+        Some(Location::parent())
+    }
+    fn convert_back(loc: &Location) -> Option<TokenId> {
+        if *loc == Location::here() {
+            Some(H256::repeat_byte(0x01))
+        } else {
+            None
+        }
     }
 }
 
 parameter_types! {
     pub const RewardsEthereumSovereignAccount: u64
         = 0xffffffffffffffff;
+    pub RewardTokenLocation: Location = Location::here();
 }
 
 impl pallet_external_validators_rewards::Config for Test {
@@ -146,14 +165,18 @@ impl pallet_external_validators_rewards::Config for Test {
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
     type EraInflationProvider = ConstU128<42>;
-    type TimestampProvider = TimestampProvider;
+    type ExternalIndexProvider = TimestampProvider;
     type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = RewardsEthereumSovereignAccount;
+    type TokenLocationReanchored = Mock;
+    type TokenIdFromLocation = MockTokenIdConvert;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 // Pallet to provide some mock data, used to test
@@ -162,6 +185,7 @@ pub mod mock_data {
     use {
         frame_support::pallet_prelude::*,
         tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider},
+        xcm::latest::prelude::*,
     };
 
     #[derive(Clone, Default, Encode, Decode, sp_core::RuntimeDebug, scale_info::TypeInfo)]
@@ -182,15 +206,25 @@ pub mod mock_data {
     #[pallet::storage]
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
+    #[pallet::storage]
+    pub(super) type TokenLocation<T: Config> = StorageValue<_, Location, ValueQuery>;
+
     impl<T: Config> Pallet<T> {
         pub fn mock() -> Mocks {
             Mock::<T>::get()
+        }
+        pub fn token_loc() -> Location {
+            TokenLocation::<T>::get()
         }
         pub fn mutate<F, R>(f: F) -> R
         where
             F: FnOnce(&mut Mocks) -> R,
         {
             Mock::<T>::mutate(f)
+        }
+
+        pub fn set_location(location: Location) {
+            TokenLocation::<T>::set(location)
         }
     }
 
@@ -204,6 +238,12 @@ pub mod mock_data {
 
         fn era_to_session_start(_era_index: EraIndex) -> Option<u32> {
             unimplemented!()
+        }
+    }
+
+    impl<T: Config> Get<Location> for Pallet<T> {
+        fn get() -> Location {
+            Self::token_loc()
         }
     }
 }
