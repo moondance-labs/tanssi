@@ -226,7 +226,7 @@ impl MessageProcessor for TokenTransferMessageProcessor {
         }
 
         // Check it is from the right gateway
-        if envelope.gateway != <EthereumGatewayAddress as sp_core::TypedGet>::get() {
+        if envelope.gateway != EthereumGatewayAddress::get() {
             return false;
         }
 
@@ -270,7 +270,7 @@ impl MessageProcessor for TokenTransferMessageProcessor {
                 }
 
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
-                let sovereign_account = <EthereumSovereignAccount as sp_core::TypedGet>::get();
+                let sovereign_account = EthereumSovereignAccount::get();
 
                 <Balances as fungible::Mutate<_>>::transfer(
                     &sovereign_account,
