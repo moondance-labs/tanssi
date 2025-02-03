@@ -221,6 +221,8 @@ impl MessageProcessor for TokenTransferMessageProcessor {
             {
                 return false;
             }
+        } else {
+            return false;
         }
 
         // Check it is from the right gateway
