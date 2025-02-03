@@ -18,8 +18,8 @@
 
 use {
     crate::{
-        BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, MessageQueue,
-        RuntimeCall, Authorship
+        Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
+        MessageQueue, RuntimeCall,
     },
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
@@ -407,7 +407,6 @@ impl ExtBuilder {
         self
     }
 
-
     pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
         self
@@ -626,7 +625,7 @@ impl ExtBuilder {
 
         if !self.external_validators.is_empty() {
             let validator_keys: Vec<_> = self
-                .validators
+                .external_validators
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
