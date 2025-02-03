@@ -101,7 +101,7 @@ fn receive_msg_from_eth_validators_are_updated() {
             magic_bytes: MAGIC_BYTES,
             message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
                 validators: payload_validators.clone(),
-                timestamp: 0u64,
+                external_index: 0u64,
             }),
         };
 

@@ -76,7 +76,7 @@ mod custom_send_message;
 pub struct SlashData {
     pub encoded_validator_id: Vec<u8>,
     pub slash_fraction: u32,
-    pub timestamp: u64,
+    pub external_idx: u64,
 }
 
 /// A command which is executable by the Gateway contract on Ethereum
@@ -85,8 +85,8 @@ pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
     ReportRewards {
-        // block timestamp
-        timestamp: u64,
+        // external identifier for validators
+        external_idx: u64,
         // index of the era we are sending info of
         era_index: u32,
         // total_points for the era
@@ -124,14 +124,14 @@ impl Command {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
             }
             Command::ReportRewards {
-                timestamp,
+                external_idx,
                 era_index,
                 total_points,
                 tokens_inflated,
                 rewards_merkle_root,
                 token_id,
             } => {
-                let timestamp_token = Token::Uint(U256::from(*timestamp));
+                let external_idx_token = Token::Uint(U256::from(*external_idx));
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let total_points_token = Token::Uint(U256::from(*total_points));
                 let tokens_inflated_token = Token::Uint(U256::from(*tokens_inflated));
@@ -139,7 +139,7 @@ impl Command {
                 let token_id_token = Token::FixedBytes(token_id.0.to_vec());
 
                 ethabi::encode(&[Token::Tuple(vec![
-                    timestamp_token,
+                    external_idx_token,
                     era_index_token,
                     total_points_token,
                     tokens_inflated_token,
@@ -154,9 +154,9 @@ impl Command {
                 for slash in slashes.into_iter() {
                     let account_token = Token::FixedBytes(slash.encoded_validator_id.clone());
                     let slash_fraction_token = Token::Uint(U256::from(slash.slash_fraction));
-                    let timestamp = Token::Uint(U256::from(slash.timestamp));
+                    let external_idx = Token::Uint(U256::from(slash.external_idx));
                     let tuple_token =
-                        Token::Tuple(vec![account_token, slash_fraction_token, timestamp]);
+                        Token::Tuple(vec![account_token, slash_fraction_token, external_idx]);
 
                     slashes_tokens_vec.push(tuple_token);
                 }

@@ -49,6 +49,7 @@ use {
     sp_std::vec,
     sp_std::vec::Vec,
     tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
+    tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
 };
 
@@ -98,8 +99,8 @@ pub mod pallet {
         /// Provider to know how may tokens were inflated (added) in a specific era.
         type EraInflationProvider: Get<u128>;
 
-        /// Provider to retrieve the current block timestamp.
-        type TimestampProvider: Get<u64>;
+        /// Provider to retrieve the current external index indetifying the validators
+        type ExternalIndexProvider: ExternalIndexProvider;
 
         type GetWhitelistedValidators: Get<Vec<Self::AccountId>>;
 
@@ -256,7 +257,7 @@ pub mod pallet {
     }
 
     impl<T: Config> tp_traits::OnEraStart for Pallet<T> {
-        fn on_era_start(era_index: EraIndex, _session_start: u32) {
+        fn on_era_start(era_index: EraIndex, _session_start: u32, _external_idx: u64) {
             let Some(era_index_to_delete) = era_index.checked_sub(T::HistoryDepth::get()) else {
                 return;
             };
@@ -284,7 +285,7 @@ pub mod pallet {
                     }
 
                     let command = Command::ReportRewards {
-                        timestamp: T::TimestampProvider::get(),
+                        external_idx: T::ExternalIndexProvider::get_external_index(),
                         era_index,
                         total_points: utils.total_points,
                         tokens_inflated,

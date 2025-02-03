@@ -22,8 +22,8 @@ export contract_dir="$relayer_root_dir/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
-RELAYER_BRANCH="main" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="f42ebae15225282be1b235e0d28b8ab16f67dff5" # TODO: Change to tag when we do release
+RELAYER_COMMIT="6b4e60b905854fd72e2e972a4734b6cb6d308ac2" # TODO: Change to tag when we do releases
+TANSSI_SYMBIOTIC_COMMIT="224bf2dfc682b25bf8f757e222de0aa7003ffb9f" # TODO: Change to tag when we do release
 GETH_TAG="v1.14.11" # We will need to investigate if this is right
 LODESTAR_TAG="v1.19.0"
 
@@ -96,6 +96,7 @@ export BRIDGE_HUB_INITIAL_DEPOSIT="${ETH_BRIDGE_HUB_INITIAL_DEPOSIT:-10000000000
 
 ## Message passing
 export PRIMARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
+export SECONDARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000002"
 # Execution relay account (//ExecutionRelay 5CFNWKMFPsw5Cs2Teo6Pvg7rWyjKiFfqPZs8U4MZXzMYFwXL in testnet)
 execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c58a043da95c8bf177659fc587643e71e7ed1534666177730196f}"
 # Funded ethereum key

@@ -230,8 +230,14 @@ pub mod mock_data {
 
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 pub enum HookCall {
-    OnEraStart { era: u32, session: u32 },
-    OnEraEnd { era: u32 },
+    OnEraStart {
+        era: u32,
+        session: u32,
+        external_index: u64,
+    },
+    OnEraEnd {
+        era: u32,
+    },
 }
 
 impl mock_data::Config for Test {}
@@ -246,11 +252,12 @@ pub struct Mocks {
 // We use the mock_data pallet to test hooks: we store a list of all the calls, and then check that
 // no eras are skipped.
 impl<T> OnEraStart for mock_data::Pallet<T> {
-    fn on_era_start(era_index: EraIndex, session_start: u32) {
+    fn on_era_start(era_index: EraIndex, session_start: u32, external_idx: u64) {
         Mock::mutate(|m| {
             m.called_hooks.push(HookCall::OnEraStart {
                 era: era_index,
                 session: session_start,
+                external_index: external_idx,
             });
         });
     }
