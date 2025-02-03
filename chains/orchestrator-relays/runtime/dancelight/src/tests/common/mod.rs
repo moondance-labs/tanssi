@@ -19,7 +19,7 @@
 use {
     crate::{
         BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, MessageQueue,
-        RuntimeCall,
+        RuntimeCall, Authorship
     },
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
@@ -253,6 +253,7 @@ pub fn start_block() -> RunSummary {
     ContainerRegistrar::on_initialize(System::block_number());
     ExternalValidatorSlashes::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
+    Authorship::on_initialize(System::block_number());
 
     Initializer::on_initialize(System::block_number());
     TanssiCollatorAssignment::on_initialize(System::block_number());
@@ -335,6 +336,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [validator, amount]
     validators: Vec<(AccountId, Balance)>,
+    // [validator, amount]
+    external_validators: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // sudo key
@@ -362,6 +365,7 @@ impl Default for ExtBuilder {
                 (AccountId::from(ALICE), 210 * UNIT),
                 (AccountId::from(BOB), 100 * UNIT),
             ],
+            external_validators: vec![],
             collators: Default::default(),
             sudo: Default::default(),
             para_ids: Default::default(),
@@ -397,6 +401,12 @@ impl ExtBuilder {
         self.validators = validators;
         self
     }
+
+    pub fn with_external_validators(mut self, validators: Vec<(AccountId, Balance)>) -> Self {
+        self.external_validators = validators;
+        self
+    }
+
 
     pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
@@ -614,6 +624,32 @@ impl ExtBuilder {
             keys.extend(validator_keys)
         }
 
+        if !self.external_validators.is_empty() {
+            let validator_keys: Vec<_> = self
+                .validators
+                .clone()
+                .into_iter()
+                .map(|(account, _balance)| {
+                    let authority_keys =
+                        get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
+                    (
+                        account.clone(),
+                        account,
+                        crate::SessionKeys {
+                            babe: authority_keys.babe.clone(),
+                            grandpa: authority_keys.grandpa.clone(),
+                            para_validator: authority_keys.para_validator.clone(),
+                            para_assignment: authority_keys.para_assignment.clone(),
+                            authority_discovery: authority_keys.authority_discovery.clone(),
+                            beefy: authority_keys.beefy.clone(),
+                            nimbus: authority_keys.nimbus.clone(),
+                        },
+                    )
+                })
+                .collect();
+            keys.extend(validator_keys)
+        }
+
         if !self.collators.is_empty() {
             // We set invulnerables in pallet_invulnerables
             let invulnerables: Vec<AccountId> = self
@@ -671,6 +707,11 @@ impl ExtBuilder {
             skip_external_validators: false,
             whitelisted_validators: self
                 .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect(),
+            external_validators: self
+                .external_validators
                 .iter()
                 .map(|(account, _)| account.clone())
                 .collect(),

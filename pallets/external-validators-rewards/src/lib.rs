@@ -43,7 +43,7 @@ use {
     snowbridge_core::{ChannelId, TokenId},
     snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
-    sp_runtime::traits::{Hash, MaybeEquivalence},
+    sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     sp_std::vec,
@@ -274,6 +274,16 @@ pub mod pallet {
             if let Some(token_id) = token_id {
                 if let Some(utils) = Self::generate_era_rewards_utils(era_index, None) {
                     let tokens_inflated = T::EraInflationProvider::get();
+
+                    if tokens_inflated.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because tokens_inflated is 0");
+                        return;
+                    }
+
+                    if utils.total_points.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because total_points is 0");
+                        return;
+                    }
 
                     let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
                     if let Err(err) =
