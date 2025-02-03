@@ -710,8 +710,41 @@ where
         ) -> Option<UncheckedExtrinsic> {
                 use sp_runtime::traits::StaticLookup;
                 // take the biggest period possible.
+                let period =
+                        BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
 
-                todo!()
+                let current_block = System::block_number()
+                        .saturated_into::<u64>()
+                        // The `System::block_number` is initialized with `n+1`,
+                        // so the actual block number is `n`.
+                        .saturating_sub(1);
+                let tip = 0;
+                let tx_ext: TxExtension = (
+                        frame_system::CheckNonZeroSender::<Runtime>::new(),
+                        frame_system::CheckSpecVersion::<Runtime>::new(),
+                        frame_system::CheckTxVersion::<Runtime>::new(),
+                        frame_system::CheckGenesis::<Runtime>::new(),
+                        frame_system::CheckMortality::<Runtime>::from(generic::Era::mortal(
+                                period,
+                                current_block,
+                        )),
+                        frame_system::CheckNonce::<Runtime>::from(nonce),
+                        frame_system::CheckWeight::<Runtime>::new(),
+                        pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+                        //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
+                        frame_metadata_hash_extension::CheckMetadataHash::new(true),
+                )
+                        .into();
+                let raw_payload = SignedPayload::new(call, tx_ext)
+                        .map_err(|e| {
+                                log::warn!("Unable to create signed payload: {:?}", e);
+                        })
+                        .ok()?;
+                let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+                let (call, tx_ext, _) = raw_payload.deconstruct();
+                let address = <Runtime as frame_system::Config>::Lookup::unlookup(account);
+                let transaction = UncheckedExtrinsic::new_signed(call, address, signature, tx_ext);
+                Some(transaction)
         }
 }
 
@@ -1976,8 +2009,8 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type SignedBlock = generic::SignedBlock<Block>;
 /// `BlockId` type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
-/// The `SignedExtension` to the basic transaction logic.
-pub type SignedExtra = (
+/// The `TxExtension` to the basic transaction logic.
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -1991,7 +2024,7 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
 #[allow(deprecated, missing_docs)]
@@ -2010,7 +2043,7 @@ pub type Executive = frame_executive::Executive<
     migrations::Unreleased,
 >;
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNITS;
