@@ -23,22 +23,27 @@
     "keywords": [],
     "author": "",
     "license": "ISC",
+    "dependencies": {
+        "@polkadot/api": "*",
+        "@polkadot/api-augment": "*",
+        "@polkadot/keyring": "*",
+        "@polkadot/types": "*",
+        "@polkadot/types-codec": "*",
+        "@polkadot/util": "*",
+        "@polkadot/util-crypto": "*",
+        "@zombienet/orchestrator": "0.0.97",
+        "inquirer": "9.2.16",
+        "ps-node": "0.1.6"
+    },
     "devDependencies": {
         "@acala-network/chopsticks": "1.0.1",
         "@moonbeam-network/api-augment": "0.3200.3",
         "@moonwall/cli": "5.9.1",
         "@moonwall/util": "5.9.1",
-        "@polkadot/api": "15.4.1",
-        "@polkadot/api-augment": "15.4.1",
-        "@polkadot/keyring": "13.3.1",
-        "@polkadot/types": "15.4.1",
-        "@polkadot/types-codec": "15.4.1",
-        "@polkadot/util": "13.3.1",
-        "@polkadot/util-crypto": "13.3.1",
         "@polkadot/wasm-crypto": "^7.4.1",
         "@tanssi/api-augment": "workspace:*",
         "@types/debug": "4.1.12",
-        "@types/node": "22.9.0",
+        "@types/node": "*",
         "@typescript-eslint/eslint-plugin": "6.15.0",
         "@typescript-eslint/parser": "6.15.0",
         "@vitest/ui": "2.1.5",
@@ -59,16 +64,6 @@
         "web3": "4.15.0",
         "web3-providers-ws": "4.0.8",
         "yargs": "17.7.2"
-    },
-    "dependencies": {
-        "@zombienet/orchestrator": "0.0.97",
-        "inquirer": "9.2.16",
-        "ps-node": "0.1.6"
-    },
-    "pnpm": {
-        "overrides": {
-            "inquirer": "9.2.16"
-        }
     },
     "volta": {
         "node": "22.12.0"
