@@ -1,0 +1,64 @@
+{
+  "name": "tanssi",
+  "version": "1.0.0",
+  "description": "Tanssi monorepo",
+  "private": "true",
+  "type": "module",
+  "workspaces": [
+    "test",
+    "typescript-api"
+  ],
+  "scripts": {
+    "clean-all": "rm -rf node_modules && pnpm -r clean",
+    "build": "pnpm -r build",
+    "postinstall": "pnpm build"
+  },
+  "dependencies": {
+    "@polkadot/api": "15.4.1",
+    "@polkadot/api-augment": "15.4.1",
+    "@polkadot/api-base": "15.4.1",
+    "@polkadot/api-derive": "15.4.1",
+    "@polkadot/rpc-augment": "15.4.1",
+    "@polkadot/rpc-core": "15.4.1",
+    "@polkadot/rpc-provider": "15.4.1",
+    "@polkadot/typegen": "15.4.1",
+    "@polkadot/types": "15.4.1",
+    "@polkadot/types-augment": "15.4.1",
+    "@polkadot/types-codec": "15.4.1",
+    "@polkadot/types-create": "15.4.1",
+    "@polkadot/types-known": "15.4.1",
+    "@polkadot/types-support": "15.4.1",
+    "@polkadot/keyring": "13.3.1",
+    "@polkadot/util": "13.3.1",
+    "@polkadot/util-crypto": "13.3.1"
+    
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "@polkadot/api": "15.4.1",
+      "@polkadot/api-augment": "15.4.1",
+      "@polkadot/api-base": "15.4.1",
+      "@polkadot/api-derive": "15.4.1",
+      "@polkadot/rpc-augment": "15.4.1",
+      "@polkadot/rpc-core": "15.4.1",
+      "@polkadot/rpc-provider": "15.4.1",
+      "@polkadot/typegen": "15.4.1",
+      "@polkadot/types": "15.4.1",
+      "@polkadot/types-augment": "15.4.1",
+      "@polkadot/types-codec": "15.4.1",
+      "@polkadot/types-create": "15.4.1",
+      "@polkadot/types-known": "15.4.1",
+      "@polkadot/types-support": "15.4.1",
+      "@polkadot/keyring": "13.3.1",
+      "@polkadot/util": "13.3.1",
+      "@polkadot/util-crypto": "13.3.1",
+      "inquirer": "9.2.16"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
