@@ -103,6 +103,22 @@
         "@polkadot/types-known": "*",
         "@polkadot/types-support": "*"
     },
+    "dependencies": {
+        "@polkadot/api": "*",
+        "@polkadot/api-augment": "*",
+        "@polkadot/api-base": "*",
+        "@polkadot/api-derive": "*",
+        "@polkadot/rpc-augment": "*",
+        "@polkadot/rpc-core": "*",
+        "@polkadot/rpc-provider": "*",
+        "@polkadot/typegen": "*",
+        "@polkadot/types": "*",
+        "@polkadot/types-augment": "*",
+        "@polkadot/types-codec": "*",
+        "@polkadot/types-create": "*",
+        "@polkadot/types-known": "*",
+        "@polkadot/types-support": "*"
+    },
     "devDependencies": {
         "@types/node": "*",
         "chalk": "^5.4.1",
