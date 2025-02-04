@@ -1831,7 +1831,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
 
         if eligible {
             let a_u8: &[u8] = a.as_ref();
-            let seed = sp_runtime::format!("{:?}", a_u8);
+            let seed = scale_info::prelude::format!("{:?}", a_u8);
             let authority_keys = get_authority_keys_from_seed(&seed, None);
             let _ = Session::set_keys(
                 RuntimeOrigin::signed(a.clone()),
