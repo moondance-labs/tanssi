@@ -17,7 +17,7 @@ then
 else
   git clone --recurse-submodules https://github.com/moondance-labs/tanssi-bridge-relayer $relayer_root_dir
   pushd $relayer_root_dir
-  git fetch && git checkout $RELAYER_BRANCH
+  git fetch && git checkout $RELAYER_COMMIT
   popd
 fi
 

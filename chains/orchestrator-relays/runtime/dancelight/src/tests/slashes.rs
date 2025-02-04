@@ -511,7 +511,7 @@ fn test_slashes_are_sent_to_ethereum() {
             let expected_slashes = vec![SlashData {
                 encoded_validator_id: AccountId::from(ALICE).encode(),
                 slash_fraction: Perbill::from_percent(100).deconstruct(),
-                timestamp: 0,
+                external_idx: 0,
             }];
 
             let expected_slashes_command = Command::ReportSlashes {
@@ -573,7 +573,8 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
                     RuntimeOrigin::root(),
                     0,
                     AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
-                    Perbill::from_percent(75)
+                    Perbill::from_percent(75),
+                    1
                 ));
             }
 
@@ -705,7 +706,8 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
                     RuntimeOrigin::root(),
                     0,
                     AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
-                    Perbill::from_percent(75)
+                    Perbill::from_percent(75),
+                    1
                 ));
             }
 

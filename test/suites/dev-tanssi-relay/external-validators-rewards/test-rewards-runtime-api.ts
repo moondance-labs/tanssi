@@ -34,7 +34,7 @@ describeSuite({
                         .sudo(polkadotJs.tx.externalValidators.removeWhitelisted(aliceStash.address))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                     await polkadotJs.tx.sudo
-                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address]))
+                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address], 1))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 ]);
 
