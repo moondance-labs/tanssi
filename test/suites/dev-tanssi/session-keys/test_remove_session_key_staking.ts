@@ -60,9 +60,8 @@ describeSuite({
                 const currentSessionBeforePurge = await polkadotJs.query.session.currentIndex();
 
                 // Bob's key should be an authority
-                const authoritiesBeforePurge = await polkadotJs.query.authorityAssignment.collatorContainerChain(
-                    currentSessionBeforePurge
-                );
+                const authoritiesBeforePurge =
+                    await polkadotJs.query.authorityAssignment.collatorContainerChain(currentSessionBeforePurge);
                 expect(authoritiesBeforePurge.toJSON()["containerChains"]["2000"]).toContainEqual(bobKey);
 
                 // now purge keys

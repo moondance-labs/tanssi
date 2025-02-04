@@ -32,9 +32,8 @@ describeSuite({
                 expect(checkpointRoot.toHuman()).to.equal(initialCheckpoint["validators_root"]);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 expect(latestFinalizedSlot.toHuman().slot).to.equal(initialCheckpoint["header"]["slot"].toString());
             },

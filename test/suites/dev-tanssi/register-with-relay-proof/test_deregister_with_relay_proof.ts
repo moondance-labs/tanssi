@@ -129,9 +129,8 @@ describeSuite({
                 const balanceBeforeAlice = (await polkadotJs.query.system.account(alice.address)).data;
                 const balanceBeforeBob = (await polkadotJs.query.system.account(bob.address)).data;
 
-                const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
-                    polkadotJs
-                );
+                const { relayProofBlockNumber, relayStorageProof } =
+                    await fetchStorageProofFromValidationData(polkadotJs);
                 const tx = polkadotJs.tx.registrar.deregisterWithRelayProof(
                     2003,
                     relayProofBlockNumber,

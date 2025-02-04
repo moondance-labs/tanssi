@@ -69,8 +69,8 @@ describeSuite({
                 const expectedbasePlusWeightFee = context.isEthereumChain
                     ? expectedBaseFee + 1600000000000n
                     : isRelay
-                    ? expectedBaseFee + 5800000n
-                    : expectedBaseFee + 1600000n;
+                      ? expectedBaseFee + 5800000n
+                      : expectedBaseFee + 1600000n;
 
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&

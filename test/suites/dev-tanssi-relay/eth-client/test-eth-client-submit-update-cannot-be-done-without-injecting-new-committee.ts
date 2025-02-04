@@ -65,9 +65,8 @@ describeSuite({
                 expect(result[0].error.name).to.eq("SyncCommitteeUpdateRequired");
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 // The update did not go through, so the slot is the same as the latest one we pushed
                 // The sync committee update has a a finalized slot lower than the initial, so we keep the

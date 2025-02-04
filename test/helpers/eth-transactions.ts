@@ -28,10 +28,10 @@ export function expectEVMResult<T extends Errors, Type extends keyof T>(
     const foundReason = ethereumResult.isError
         ? ethereumResult.asError.type
         : ethereumResult.isFatal
-        ? ethereumResult.asFatal.type
-        : ethereumResult.isRevert
-        ? ethereumResult.asRevert.type
-        : ethereumResult.asSucceed.type;
+          ? ethereumResult.asFatal.type
+          : ethereumResult.isRevert
+            ? ethereumResult.asRevert.type
+            : ethereumResult.asSucceed.type;
 
     expect(ethereumResult.type, `Invalid EVM Execution - (${ethereumResult.type}.${foundReason})`).to.equal(resultType);
     if (reason) {

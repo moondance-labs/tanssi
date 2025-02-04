@@ -44,9 +44,8 @@ describeSuite({
                 expect(result[0].error.name).to.eq("SkippedSyncCommitteePeriod");
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 // The update did not go through, so the slot is the same as the initial one
                 expect(latestFinalizedSlot.toHuman().slot).to.equal(initialSlot);

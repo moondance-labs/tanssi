@@ -101,16 +101,14 @@ describeSuite({
                 // In the next block we should send the slashes. For this we will confirm:
                 // A: that the unprocessed slashes decrease
                 // B: that the nonce of the primary channel increases
-                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 await context.createBlock();
                 const expectedUnprocessedMessagesAfterOneBlock =
                     await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
-                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
                 expect(primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt() + 1n);
                 expect(expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(0);
             },

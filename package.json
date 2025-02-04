@@ -11,6 +11,8 @@
   "scripts": {
     "clean-all": "rm -rf node_modules && pnpm -r clean",
     "build": "pnpm -r build",
+    "fmt": "pnpm -r fmt",
+    "fmt:fix": "pnpm -r fmt:fix",
     "postinstall": "pnpm build"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "@polkadot/api-augment": "15.4.1",
     "@polkadot/api-base": "15.4.1",
     "@polkadot/api-derive": "15.4.1",
+    "@polkadot/keyring": "13.3.1",
     "@polkadot/rpc-augment": "15.4.1",
     "@polkadot/rpc-core": "15.4.1",
     "@polkadot/rpc-provider": "15.4.1",
@@ -28,12 +31,11 @@
     "@polkadot/types-create": "15.4.1",
     "@polkadot/types-known": "15.4.1",
     "@polkadot/types-support": "15.4.1",
-    "@polkadot/keyring": "13.3.1",
     "@polkadot/util": "13.3.1",
     "@polkadot/util-crypto": "13.3.1"
-    
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/node": "22.10.5"
   },
   "pnpm": {

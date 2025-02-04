@@ -60,14 +60,17 @@ function compileSolidity(fileRef: string, contractContent: string): { [name: str
     if (!result.contracts) {
         throw result;
     }
-    return Object.keys(result.contracts[filename]).reduce((p, contractName) => {
-        p[contractName] = {
-            byteCode: "0x" + result.contracts[filename][contractName].evm.bytecode.object,
-            contract: result.contracts[filename][contractName],
-            sourceCode: contractContent,
-        };
-        return p;
-    }, {} as { [name: string]: Compiled });
+    return Object.keys(result.contracts[filename]).reduce(
+        (p, contractName) => {
+            p[contractName] = {
+                byteCode: "0x" + result.contracts[filename][contractName].evm.bytecode.object,
+                contract: result.contracts[filename][contractName],
+                sourceCode: contractContent,
+            };
+            return p;
+        },
+        {} as { [name: string]: Compiled }
+    );
 }
 
 // Shouldn't be run concurrently with the same 'name'

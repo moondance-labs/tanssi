@@ -149,16 +149,14 @@ describeSuite({
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareDetails.address);
             await setMiddlewareTx.wait();
 
-            const initialBeaconUpdate = JSON.parse(
-                <string>(
+            const initialBeaconUpdate = JSON.parse(<string>(
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
                         env: {
                             RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                             ...process.env,
                         },
                     })
-                ).stdout
-            );
+                ).stdout);
 
             const tokenLocation: MultiLocation = {
                 parents: 0,

@@ -76,16 +76,14 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
-                    polkadotJs
-                );
+                const { relayProofBlockNumber, relayStorageProof } =
+                    await fetchStorageProofFromValidationData(polkadotJs);
 
                 const parathreadParams = null;
                 const relayStorageRoots = await polkadotJs.query.relayStorageRoots.relayStorageRootKeys();
                 const lastStoredRelayBlockNumber = relayStorageRoots.toJSON()[relayStorageRoots.toJSON().length - 1];
-                const lastRelayStorageRoot = await polkadotJs.query.relayStorageRoots.relayStorageRoot(
-                    lastStoredRelayBlockNumber
-                );
+                const lastRelayStorageRoot =
+                    await polkadotJs.query.relayStorageRoots.relayStorageRoot(lastStoredRelayBlockNumber);
 
                 // message: paraId || account (alice) || lastRelayStorageRoot
                 const message = new Uint8Array([

@@ -69,9 +69,8 @@ describeSuite({
                 ]);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 // The update did go through, we should have the latest state
                 const expectedSlot = nextPeriodUpdate["finalized_header"]["slot"];

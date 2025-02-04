@@ -19,9 +19,9 @@
         "create-local-interfaces": "pnpm tsx ./scripts/runtime-upgrade.ts && pnpm fmt:fix",
         "generate": "pnpm run load:meta && pnpm run generate:defs && pnpm run generate:meta",
         "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
-        "fmt": "prettier --check --ignore-path ../.prettierignore ./",
-        "fmt:fix": "prettier --write --ignore-path ../.prettierignore 'src'",
-        "postgenerate": "pnpm run pretty",
+        "fmt": "biome format src",
+        "fmt:fix": "biome format --write src",
+        "postgenerate": "pnpm fmt:fix",
         "load:meta": "npm run load:meta:flashbox && npm run load:meta:dancebox",
         "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9948 > metadata-dancebox.json",
         "load:meta:flashbox": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' https://fraa-flashbox-rpc.a.stagenet.tanssi.network > metadata-flashbox.json",
@@ -37,8 +37,7 @@
         "prebuild": "rimraf build",
         "build": "tsc -b --verbose",
         "publish": "npm publish",
-        "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
-        "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*'"
+        "deploy": "pnpm run generate && pnpm run build && pnpm run publish"
     },
     "main": "./build/dancebox/index.js",
     "module": "./build/dancebox/index.js",
@@ -113,8 +112,6 @@
     "devDependencies": {
         "@types/node": "*",
         "chalk": "^5.4.1",
-        "prettier": "^3.4.2",
-        "prettier-plugin-jsdoc": "^1.3.2",
         "rimraf": "^6.0.1",
         "tsx": "^4.19.2",
         "typescript": "^5.7.2"
